@@ -1,0 +1,21 @@
+<?php $this->jQuery()->addJavascriptFile('/js/user/user.js'); ?>
+
+<div id="message"></div>
+
+<fieldset class="well well-small" id="profil_<?php echo $this->name ?>" >
+    <legend style="border: none;">
+        <img src="/img/logo-<?php echo $this->name ?>.png" 
+        <?php if ($this->name == 'episciences') echo "width='150'" ?>/> 
+    </legend>
+    <p class="description"><?php echo $this->translate($this->element->getLegend()); ?></p>
+    <?php 
+    foreach ($this->element->getElements() as $element) {
+        if ($element->getDecorator('HtmlTag')) {
+            $element->getDecorator('HtmlTag')->setOption("class", "col-md-9 form-group");
+        }
+        
+        echo $element; 
+    }
+    ?>
+</fieldset>
+

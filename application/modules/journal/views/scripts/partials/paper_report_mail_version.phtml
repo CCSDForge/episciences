@@ -1,0 +1,50 @@
+<?php if ($this->report && $this->report->getCriteria()) : ?>
+    <div>
+        <?php /** @var Episciences_Rating_Criterion $criterion */
+        foreach ($this->report->getCriteria() as $id => $criterion) : ?>
+            <?php if ($criterion->isEmpty()) {
+                continue;
+            } ?>
+            <div style="margin-top: 10px">
+                <div class="label label-default"><?php echo $criterion->getLabel($this->locale); ?></div>
+            </div>
+            <?php if ($criterion->isSeparator()) : ?>
+                <hr/>
+            <?php endif; ?>
+            <div style="margin-left: 5px;">
+                <?php if (is_numeric($criterion->getNote())) : ?>
+                    <strong><?= $this->translate('Votre avis'); ?></strong>
+                    <div>
+                        <?php
+                        // if criterion has a coef, or selected option has no label
+                        if ($criterion->hasCoefficient() || !$criterion->getOptionLabel($criterion->getNote(), $this->locale)) {
+                            echo $criterion->getNote() . '/' . $criterion->getMaxNote();
+                        }
+                        // if selected option has a label
+                        if ($criterion->getOptionLabel($criterion->getNote(), $this->locale)) {
+                            if ($criterion->hasCoefficient()) {
+                                echo ' - ';
+                            }
+                            echo $criterion->getOptionLabel($criterion->getNote(), $this->locale);
+                        }
+                        ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($criterion->getComment()) : ?>
+                    <strong><?= $this->translate('Commentaire'); ?></strong>
+                    <div><?php echo $criterion->getComment(); ?></div>
+                <?php endif; ?>
+                <?php if ($criterion->hasAttachment()) :
+                    ?><strong><?= $this->translate('Fichier'); ?></strong>
+                    <div>
+                        <a href="<?= HTTP . '://' . $_SERVER['HTTP_HOST'] . '/' . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment(); ?>" target="_blank">
+                            <?= $this->translate('Télécharger le fichier', $this->locale); ?>
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <?php if ($criterion->isCriterion() && !$criterion->hasValue()) : ?> - <?php endif; ?>
+
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>

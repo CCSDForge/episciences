@@ -1,0 +1,152 @@
+<?php
+
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
+$this->jQuery()->addJavascriptFile('/js/user/dataTableInit.js');
+
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+
+?>
+
+<style>
+    #myDisplayGroup-label {
+        display: none;
+    }
+
+    #or-label {
+        display: inline;
+
+    }
+</style>
+
+
+<!-- User management guideline -->
+<?php if (APPLICATION_ENV != 'demo') : ?>
+    <div id="guideline" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Bonnes pratiques'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <p><?php echo $this->translate("Avant de créer un compte pour un nouvel utilisateur, veuillez vérifier qu'il/elle n'existe pas déjà dans la base des utilisateurs."); ?></p>
+            <ol>
+                <li><?php echo $this->translate("Vérifiez que l'utilisateur n'a pas déjà des droits dans la revue. Entrez le nom de la personne dans le champ de recherche situé en haut à droite de la liste des utilisateurs.") ?></li>
+                <li><?php echo $this->translate("Si la recherche ne retourne aucun résultat, vérifiez que l'utilisateur n'a pas déjà un compte sur HAL. Entrez le nom de la personne dans le champ &laquo;Ajouter un utilisateur&raquo;. Vous pourrez ainsi consulter la base d'utilisateurs de HAL.") ?></li>
+                <li><?php echo $this->translate("Si la recherche ne retourne aucun résultat, vous pouvez créer un compte pour l'utilisateur en cliquant sur le bouton &laquo;Créer un nouveau compte&raquo;.") ?></li>
+            </ol>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if (APPLICATION_ENV != 'demo') : ?>
+    <?php if (Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor() || Episciences_Auth::isSecretary()) : ?>
+        <div class="form-actions">
+            <?php echo $this->autocomplete; ?>
+        </div>
+    <?php endif; ?>
+<?php endif; ?>
+
+<?php if ($this->localUsers) : ?>
+    <table class="table table-striped table-bordered dataTable" id="localUsers">
+        <thead>
+        <tr>
+            <th><?php echo $this->translate('Id'); ?></th>
+            <th><?php echo $this->translate("Nom d'utilisateur"); ?></th>
+            <th><?php echo $this->translate("Identifiant"); ?></th>
+            <th><?php echo $this->translate('E-mail'); ?></th>
+            <th><?php echo $this->translate('Rôles'); ?></th>
+            <th><?php echo $this->translate('Actions'); ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($this->localUsers as $user) : ?>
+            <?php
+            // On filtre l'affichage des utilisateurs root, si on est pas root
+            if (!Episciences_Auth::isRoot() && in_array(Episciences_Acl::ROLE_ROOT, $user['ROLES'][RVID])) {
+                continue;
+            }
+            ?>
+            <tr id="localUsers_<?php echo $this->escape($user['uid']); ?>">
+                <td><?php echo $user['uid'] ?></td>
+                <td><?php echo $this->escape($user['SCREEN_NAME']); ?></td>
+                <?php if (array_key_exists('CAS', $user)) : ?>
+                    <td><?php echo $this->escape($user['CAS']['USERNAME']); ?></td>
+                    <td><?php echo $this->escape($user['CAS']['EMAIL']); ?></td>
+                <?php else: ?>
+                    <td><?= $this->escape($user['CAS']['USERNAME']); ?></td>
+                    <td><?= $this->escape($user['CAS']['EMAIL']); ?></td>
+                    <?php error_log(RVCODE . '_NOTICE_UNDEFINED_CAS_INDEX_IN_ARRAY_USER: ' . json_encode($user)); ?>
+                <?php endif; ?>
+                <td>
+                    <div class="tags" style="float:left; max-width: 250px; display: inline">
+                        <?php if ($user['ROLES'][RVID]) : ?>
+                            <?php
+                            if (count($user['ROLES'][RVID]) > 1 && array_search(Episciences_Acl::ROLE_MEMBER, $user['ROLES'][RVID])){unset($user['ROLES'][RVID][array_search(Episciences_Acl::ROLE_MEMBER, $user['ROLES'][RVID])]); } // Bug ICI
+                            echo $this->partial('partials/user_roles.phtml', array('roles' => $user['ROLES'][RVID])) ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (APPLICATION_ENV != 'demo' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
+                        <button onclick="getRoles(this, <?php echo $user['uid'] ?>)"
+                                class="btn btn-sm btn-default popover-link" style="float: right; font-size: 10px"><span
+                                    class="darkgrey caret"></span></button>
+                    <?php endif; ?>
+
+                </td>
+                <td style="text-align:right;">
+                    <a href="/user/view?userid=<?php echo $user['uid']; ?>"><span data-toggle="tooltip"
+                                                                                  title="<?php echo $this->translate("Voir ce compte."); ?>"
+                                                                                  class="darkgrey fas fa-address-card"></span></a>&nbsp;
+                    <?php if (Episciences_Auth::isSecretary()) : ?>
+                        <?php if ($user['uid'] == Episciences_Auth::getUid()) : ?>
+                            <span style="cursor: pointer" data-toggle="tooltip"
+                                  title="<?php echo $this->translate("Vous êtes déjà connecté avec ce compte."); ?>"
+                                  class="lightergrey fas fa-user-secret"></span>
+                        <?php else : ?>
+                            <a href="/user/su/uid/<?php echo $user['uid']; ?>"><span data-toggle="tooltip"
+                                                                                     title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                                                                                     class="darkgrey fas fa-user-secret"></span></a>&nbsp;
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    <?php if (Episciences_Auth::isSecretary()) : ?>
+                        <a href="/user/edit?userid=<?php echo $user['uid']; ?>">
+                            <span data-toggle="tooltip" title="<?php echo $this->translate("Modifier ce compte."); ?>" class="darkgrey glyphicon glyphicon-edit"></span>
+                        </a>&nbsp;
+                        <?php if (APPLICATION_ENV == 'demo') : ?>
+                            <span style="cursor: pointer" data-toggle="tooltip"
+                                  title="<?php echo $this->translate("Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes."); ?>"
+                                  class="lightergrey glyphicon glyphicon-trash">
+                            </span>
+                        <?php elseif (Episciences_Auth::getUid() == $user['uid']) : ?>
+                            <span style="cursor: pointer" data-toggle="tooltip"
+                                  title="<?php echo $this->translate('Ce compte vous appartient, vous ne pouvez pas le supprimer.'); ?>"
+                                  class="lightergrey glyphicon glyphicon-trash">
+
+                            </span>
+                        <?php else : ?>
+                            <a id="delete_localUsers_<?php echo $user['uid']; ?>" href="#">
+                                <span data-toggle="tooltip" title="<?php echo $this->translate("Supprimer ce compte."); ?>" class="darkgrey glyphicon glyphicon-trash"></span>
+                            </a>
+                        <?php endif; ?>
+                    <?php else : ?>
+                        <span style="cursor: pointer" data-toggle="tooltip"
+                              title="<?= $this->translate("Vous n'avez pas les droits nécessaires pour modifier ce compte."); ?>"
+                              class="darkgrey glyphicon glyphicon-edit">
+                        </span>
+                        <span style="cursor: pointer" data-toggle="tooltip"
+                              title="<?= $this->translate('Vous n\'avez pas les droits nécessaires pour supprimer ce compte.'); ?>"
+                              class="lightergrey glyphicon glyphicon-trash">
+                        </span>
+                    <?php endif; ?>
+                </td>
+
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+
+<?php else : ?>
+
+    <?php echo $this->translate('Aucun utilisateur enregistré'); ?>.
+
+<?php endif; ?>

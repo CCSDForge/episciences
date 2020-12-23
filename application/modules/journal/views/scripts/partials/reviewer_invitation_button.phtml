@@ -1,0 +1,74 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$isAllowed =
+    (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) &&
+    (APPLICATION_ENV === 'development' || Episciences_Auth::getUid() !== $paper->getUid()) &&
+    $paper->isEditable() &&
+    !$paper->copyEditingProcessStarted() &&
+    !$paper->isReadyToPublish() &&
+    !$paper->isAccepted();
+?>
+<?php if ($isAllowed): ?>
+
+    <?php
+    $url = '/administratepaper/invitereviewer?docid=' . $this->paper->getDocid();
+    $referer = '/' . $this->controller . '/' . $this->action;
+    /** @var Episciences_Volume $volume */
+    $volume = $this->volume;
+    ?>
+
+    <form id="invitereviewer_form_<?php echo $paper->getDocid(); ?>" method="post" action="<?php echo $url; ?>">
+        <input type="hidden" name="docid" value="<?php echo $paper->getDocid(); ?>">
+        <?php if ($volume) {
+            $url .= '&vid=' . $volume->getVid();
+            echo '<input type="hidden" name="vid" value="' . $volume->getVid() . '">';
+            if ($volume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE)) {
+                $url .= '&special_issue=true';
+                echo '<input type="hidden" name="special_issue" value="true">';
+            }
+        }
+        $url .= '&page=' . urlencode($url);
+        ?>
+        <input type="hidden" name="page" value="<?php echo $url; ?>">
+        <?php if ($this->action === 'list' || $this->action === 'assigned') : ?>
+            <input type="hidden" name="referer" value="<?php echo $referer; ?>">
+            <button id="invite_reviewer_<?php echo $paper->getDocid(); ?>"
+                    class="btn btn-default btn-xs pull-right"
+                    data-toggle="tooltip"
+                    title="<?php echo $this->translate('Inviter un relecteur'); ?>">
+                <span class="glyphicon glyphicon-send"></span>
+            </button>
+        <?php elseif ($this->action === 'view' || $this->action === 'displayinvitations') : ?>
+            <input type="hidden" name="referer" value="<?php echo $referer . '?id=' . $paper->getDocid(); ?>">
+            <button id="invite_reviewer_<?php echo $paper->getDocid(); ?>" class="btn btn-default btn-sm"
+                    title="<?php echo $this->translate('Inviter un relecteur'); ?>">
+                <span class="glyphicon glyphicon-send"></span>
+                <?php echo $this->translate('Inviter un relecteur'); ?>
+            </button>
+        <?php endif; ?>
+    </form>
+    <?php
+
+    /* $confirmTitle = $this->translate('Voulez-vous inviter un relecteur ?');
+     $confirmTrigger = '#invite_reviewer_' . $paper->getDocid();
+     $idForm = 'invitereviewer_form_' . $paper->getDocid();
+     $jsInit = "$('#$idForm').submit(function(e) {e.preventDefault(); });";
+     $jsCallback = 'confirmInvitereviewer(this)'; // Sans ";" a la fin du JS : déjà inclut dans Ccsd_View_Helper_Confirm::render
+
+     $confirmContent = $this->render('partials/invitereviewer_guideline.phtml');
+
+     echo $this->confirm($confirmTitle, $confirmContent, $confirmTrigger)
+         ->setId($paper->getDocid())
+         ->setJsInit($jsInit)
+         ->setJsCallback($jsCallback);*/
+    ?>
+
+<?php endif; ?>
+
+
+
+
+
+
+

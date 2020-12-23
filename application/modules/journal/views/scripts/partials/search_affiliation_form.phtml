@@ -1,0 +1,120 @@
+<?php
+$op = '';
+$this->declareVars(array(
+        'parsedSearchParams' => array()
+));
+
+// if ($this->formErrorsMessages) {
+// var_dump($this->formErrorsMessages);
+// }
+
+$formAction = $this->url(array(
+        'controller' => 'search',
+        'action' => 'affiliation'
+), null, true);
+
+?>
+
+
+<!-- Simple Search -->
+
+<div class="span12 offset2 clearfix">
+	<form id="search-simple" action="<?php echo $formAction; ?>"
+		name="search-simple" method="get" class="form-horizontal span11">
+
+		<div class="input-append">
+			<div class="btn-group">
+				<input data-src="affi" id="q" name="q" class="span6" type="text" pattern=".{0,300}"
+					title="300 caractères max."
+					placeholder="<?php echo $this->translate("Affiliation"); ?>"
+					x-webkit-speech style="min-width: 200px;" tabindex="1"
+					value="<?php if (array_key_exists('q', $this->parsedSearchParams) ) { echo $this->escape($this->parsedSearchParams['q']); } ?>" />
+
+
+
+
+
+						<?php
+    //if (array_key_exists('q', $this->parsedSearchParams)) {
+        ?>
+
+						 <span data-toggle="dropdown" data-target="#searchoptionsdropdown"
+					class="add-on btn dropdown-toggle"> <span id="search-options-dropdown"
+					class="glyphicon glyphicon-cog"></span></span>
+<?php
+    //}
+    ?>
+					<button name="submit" type="submit" class="btn btn-primary">
+					<span class="glyphicon glyphicon-search white"></span>&nbsp;<?php echo $this->translate('Rechercher');?>
+					</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+<!-- //Simple Search -->
+
+<div class="span6 offset6 clearfix">
+	<div id="searchoptionsdropdown" class="pull-left btn-group dropdown"
+		style="min-width: 400px; padding-bottom: 0px;">
+
+		<ul class="keepopen dropdown-menu clearfix">
+			<li class="nav-header"><?php echo $this->translate('Options'); ?>
+				<button type="button" style="z-index: 9999; position: relative;"
+					class="close"
+					onclick="$('.dropdown').removeClass('open open-permanent')">×</button>
+
+
+			</li>
+
+			<li class="divider"></li>
+			<li class="clearfix nav-list">
+				<!-- Nombre de résultats par page ============================== -->
+				<p><?php //echo $this->translate('Nombre de résultats par page :'); ?></p>
+				<div class="btn-group" data-toggle="buttons-radio">
+<?php
+$urlParams = $this->parsedSearchParams;
+
+// foreach ($this->paginatorNumberOfResultsArray as $paginatorNumberOfResults) {
+//     $isActive = '';
+
+//     if (isset($this->parsedSearchParams['rpp']) and ($this->parsedSearchParams['rpp'] == $paginatorNumberOfResults)) {
+//         // valeur en cours
+//         $isActive = ' btn-success active disabled';
+//     }
+
+//     if (! isset($this->parsedSearchParams['rpp']) and $paginatorNumberOfResults == $this->paginatordefaultNumberOfResults) {
+//         // valeur par défaut
+//         $isActive = ' btn-success active disabled';
+//     }
+
+//     $urlParams['rpp'] = $paginatorNumberOfResults;
+
+//     echo '<a href="' . $this->escape($this->url($urlParams, null, TRUE)) . '" class="btn btn-small' . $isActive . '">';
+//     echo $this->escape($paginatorNumberOfResults);
+//     echo '</a>';
+// }
+?>
+</div> <!-- Nombre de résultats par page ============================== -->
+
+
+
+			</li>
+
+
+			<li class="form-actions modal-footer"><button type="button"
+					class="btn"
+					onclick="$('.dropdown').removeClass('open open-permanent')"><?php echo $this->translate('Annuler');?></button></li>
+		</ul>
+
+	</div>
+</div>
+
+
+
+
+
+
+
+
+

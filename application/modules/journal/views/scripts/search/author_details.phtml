@@ -1,0 +1,169 @@
+<?php
+$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+$this->jQuery()
+    ->addJavascriptFile('/js/search/autocomplete.js')
+    ->addJavascriptFile('/js/search/search.js')
+    ->addJavascriptFile('/js/vendor/jquery.fastLiveFilter.js');
+?>
+
+
+
+
+<?php
+
+echo $this->partial('partials/search_navbar.phtml');
+
+if ((isset($this->parsedSearchParams['rpp'])) and ($this->parsedSearchParams['rpp'] == $this->paginatordefaultNumberOfResults)) {
+    unset($this->parsedSearchParams['rpp']);
+}
+?>
+
+
+<div
+	id="search-form"
+	class="row"
+>
+
+<?php echo $this->partial('partials/search_author_form.phtml', array('parsedSearchParams' => $this->parsedSearchParams)); ?>
+
+</div>
+
+
+
+
+
+
+<?php
+
+// --------------------------------------------------------------------------------------------------------------------
+// affichage des valeurs des facettes
+
+?>
+
+<?php $nbrBlocsFacettes = 0; ?>
+<?php foreach ($this->facetsArray as $facet): ?>
+
+
+    <?php if ($facet['data']) : ?>
+
+    <?php
+
+        $nbOfFacetValues = count($facet['data']);
+
+        if ($nbrBlocsFacettes == 0) {
+            echo '<div class="row-fluid">';
+        }
+        ?>
+
+
+
+<div class="span4 well">
+	<p class="lead">
+            <?php echo $this->translate($this->escape($facet['metadata']['displayName'])); ?>
+	</p>
+
+
+
+
+<?php if ($nbOfFacetValues > 10): ?>
+
+<input
+		id="<?php echo $facet['metadata']['queryFieldName']; ?>-facet-input"
+		type="text"
+		name="filter"
+		class="facet-input input-medium"
+		placeholder="<?php echo $this->translate('Filtrer'); ?>"
+	/>
+
+<?php endif; ?>
+
+            <div class="facet-content">
+
+		<ul
+			class="unstyled <?php echo $facet['metadata']['queryFieldName']; ?>-facet-list"
+		>
+
+
+ <?php
+
+        foreach ($facet['data'] as $facetValueLabel => $valueCount) {
+
+            // la valeur de la facette a un separateur eg
+            // ID_FacetSep_Libellé
+            if ($facet['metadata']['hasSepInValue'] == true) {
+                $facetValueLabelArray = explode(Ccsd_Search_Solr::SOLR_FACET_SEPARATOR, $facetValueLabel);
+                $facetValueLabel = $facetValueLabelArray[1];
+                $facetValueCode = $facetValueLabelArray[0];
+            } else {
+                $facetValueCode = $facetValueLabel;
+            }
+
+            // langues
+            if ($facet['metadata']['queryFieldName'] == 'language') {
+                $facetValueLabel = ucfirst(Zend_Locale::getTranslation($facetValueLabel, 'language'));
+            }
+
+            // TI ou notice
+            if ($facet['metadata']['queryFieldName'] == 'file') {
+                if ($facetValueLabel == 'true') {
+                    $facetValueLabel = $this->translate('Avec');
+                } else {
+                    $facetValueLabel = $this->translate('Sans');
+                }
+            }
+            // Traduction du libellé
+            if ($facet['metadata']['translated'] == true) {
+                $facetValueLabel = $this->translate($facetValueLabel);
+            }
+
+            $urlParams = $this->parsedSearchParams;
+            $urlParams[$facet['metadata']['queryFieldName']] = $facetValueCode;
+            $urlParams['q'] = 'author_id_i:' . $this->autId;
+
+            ?>
+
+
+            <li class="facet-item"><a
+				href="<?php echo $this->url($urlParams, null, TRUE) ; ?>"
+			><?php echo $this->escape($facetValueLabel); ?> </a> (<?php echo $this->escape($valueCount); ?>)
+   			</li>
+
+
+<?php
+        } // iterate facets
+
+        ?>
+</ul>
+	</div>
+	<!-- <div class="facet-content"> -->
+</div>
+
+
+<!-- </div> -->
+<!--  <div class="span4"> -->
+<?php
+        if ($nbrBlocsFacettes == 2) {
+            echo '</div><!-- div class row --><hr/>';
+            $nbrBlocsFacettes = 0;
+        } else {
+            $nbrBlocsFacettes ++;
+        }
+        ?>
+
+
+		<?php endif; ?>
+
+<?php endforeach; ?>
+
+
+
+
+
+
+
+
+
+
+
+
+

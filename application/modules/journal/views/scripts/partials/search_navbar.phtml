@@ -1,0 +1,48 @@
+<div class="row">
+	<div class="span9 offset2">
+
+		<ul id="search-navbar" class="nav nav-tabs">
+
+
+<?php
+
+// $navListArr = array(
+//         'index' => 'Documents',
+//         'author' => 'Auteurs',
+//         'affiliation' => 'Affiliations'
+// );
+
+
+$navListArr = array(
+        'index' => 'Documents',
+        'author' => 'Auteurs',
+        'affiliation' => 'Affiliations'
+);
+
+
+
+$actionName = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+$controllerName = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+
+foreach ($navListArr as $linkAction => $linkName) {
+
+
+
+    echo '<li class="' . $linkAction;
+    if ($actionName == $linkAction) {
+        echo ' active';
+    }
+
+    echo '"><a href="' . $this->url(array(
+            'controller' => $controllerName,
+            'action' => $linkAction
+    )) . '" data-original-title="' . $linkName . '" title="' . $linkName . '">' . $this->translate($linkName) . '</a></li>';
+}
+
+?>
+
+
+</ul>
+	</div>
+</div>
+

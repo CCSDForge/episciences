@@ -1,0 +1,66 @@
+<?php
+
+$this->jQuery()->addJavascriptFile('/js/administratepaper/editorsAndCopyEditors-assignment.js');
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+/** @var Episciences_Paper $paper */
+$paper = $this->article;
+$copyEditors = $this->copyEditors;
+$editors = $this->editors;
+?>
+
+<div id="<?= $this->id; ?>" class="copyeditors">
+    <?php if (count($copyEditors)) : ?>
+        <?php /** @var Episciences_CopyEditor $copyEditor */
+        foreach ($copyEditors as $copyEditor) : ?>
+            <div class="copy-editor" style="margin-bottom: 5px;">
+
+                <button class="btn btn-default fas fa-ellipsis-v popover-link context-button"
+                        data-uid="<?= $copyEditor->getUid(); ?>"
+                        data-docid="<?= $paper->getDocid(); ?>"
+                        data-id = "<?= $this->id; ?>"
+                        role="button"
+                >
+                </button>
+
+                <span style="margin-left: 0.5em;"><strong><?= $copyEditor->getScreenName() ?></strong></span>
+
+                <?php
+                $sections = $copyEditor->getAssignedSections();
+
+                if ($sections) {
+                    $msg = $this->translate(array("Préparateur de copie de la rubrique ", "Préparateur de copie des rubriques : ", count($sections)));
+                    $sectionNames = [];
+                    /** @var Episciences_Section $section */
+                    foreach ($sections as $section) {
+                        $sectionNames[] = '"' . $this->translate('section_' . $section->getSid() . '_title') . '"';
+                    }
+                    $msg .= implode(', ', $sectionNames);
+                } else {
+                    $msg = '';
+                }
+                ?>
+                <?php if ($msg) : ?><span class="lightgrey" style="margin-left: 5px;">(<?= $msg ?>
+                    )</span><?php endif; ?>
+
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p>
+            <?= $this->translate("Aucun préparateur de copie pour le moment") . '.' ?>
+        </p>
+    <?php endif; // endif(count($copyEditors)) ?>
+
+    <?php if (Episciences_Auth::isSecretary() || array_key_exists(Episciences_Auth::getUid(), $editors)) : ?>
+        <?php
+        $btnName = 'Assigner des préparateurs de copie';
+        $btnId = 'copyeditors';
+        ?>
+        <?= $this->partial('partials/paper_editors_copyeditors_assign_button.phtml', [
+            'paper' => $paper, 'btnName' => $btnName, 'btnId' => $btnId, 'isPartial' => $this->isPartial
+        ]);
+        ?>
+    <?php endif; ?>
+</div>
+

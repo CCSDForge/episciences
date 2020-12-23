@@ -1,0 +1,15 @@
+<?php echo $this->partial('partials/search_form.phtml', array('search_form' => $this->search_form)); ?>
+
+<?php if ($this->paginator) : ?>
+<div style="float: right"><?php echo $this->paginationControl($this->paginator, 'Sliding', 'partials/search_pagination.phtml',  array('parsedSearchParams'=>$this->parsedSearchParams)); ?></div>
+<?php endif; ?>
+
+<div style="clear: both">
+<?php echo $this->partial('partials/search_results.phtml', array(
+		'results' => $this->results, 'parsedSearchParams'=>$this->parsedSearchParams, 'currentSortTypeLabel'=> $this->currentSortTypeLabel, 'spellSuggestions' => $this->spellSuggestions, 'queryTime' => $this->queryTime, 'numFound'=>$this->numFound
+		)); ?>
+</div>
+
+<?php if ($this->paginator) : ?>
+<div style="float: right"><?php echo $this->paginationControl($this->paginator, 'Sliding', 'partials/search_pagination.phtml',  array('parsedSearchParams'=>$this->parsedSearchParams)); ?></div>
+<?php endif; ?>

@@ -1,0 +1,41 @@
+<ul class="nav navbar-nav navbar-ri">
+	<li class="dropdown">
+		<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+		<img class="user-photo-thumb" src="/user/photo/size/thumb?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>" alt="<?= $this->translate('Ma photo'); ?>"/>
+
+			&nbsp;<?php echo Episciences_Auth::getScreenName(); ?>
+		 	<b class="caret"></b> 
+		 </a>
+		 <ul class="dropdown-menu pull-right">
+			<li style="padding:0 10px;">
+				<table>
+		            <tr>
+                            <td width="110px;">
+                            <a href="/user">
+	                            	<img src="/user/photo/size/normal?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>" class="user-photo-normal img-thumbnail" alt="<?= $this->translate('Ma photo');?>"/>
+	                        </a>
+                            </td>
+		                	<td class="text-left">
+		                	<strong><?php echo Episciences_Auth::getScreenName(); ?></strong><br />
+		                	<i><?php echo Episciences_Auth::getInstance()->getIdentity()->getEMail(); ?></i><br />
+		                	<a href="/user/edit" class="btn btn-primary btn-xs"><?php echo $this->translate("Modifier mon profil") ?></a>
+		                	<a href="/user/changepassword" class="btn btn-primary btn-xs"><?php echo $this->translate("Modifier mon mot de passe") ?></a>
+		                </td>
+		            </tr>
+	            	<tr>
+						<td colspan="2">
+							<span class="nav-header"><?php echo $this->translate("Privilèges") ?></span>
+							<?php if (is_array(Episciences_Auth::getRoles()) && count(Episciences_Auth::getRoles())) : ?>
+								<div><?php echo $this->partial('user/roles_only_tags.phtml', array('roles'=>Episciences_Auth::getRoles())); ?></div>
+							<?php endif; ?>
+						</td>
+					</tr>	            
+				</table>
+			</li>
+			<li class="divider"></li>
+			<li style="padding:0 10px 10px; text-align:center;">
+					<span><a href="/user/logout" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-off"></span>&nbsp;<?php echo $this->translate("Déconnexion") ?></a></span>
+			</li>
+		</ul>
+	</li>
+</ul>

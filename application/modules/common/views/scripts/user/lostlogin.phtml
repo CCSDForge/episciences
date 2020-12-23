@@ -1,0 +1,23 @@
+<?php if (Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_NOT_FOUND == $this->resultMessage) : ?>
+<div class="alert alert-danger">
+	<?php echo $this->translate('Aucun nom d\'utilisateur lié à cette adresse e-mail n\'a été trouvé');?>.
+</div>
+<?php endif; ?>
+
+<?php if (Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_FOUND == $this->resultMessage) : ?>
+<div class="alert alert-success"><?php echo $this->translate('Votre nom d\'utilisateur vous a été envoyé par e-mail')?>.</div>
+<div class="alert alert-info">
+	<?php echo $this->translate('Vous allez recevoir le recevoir à l\'adresse')?> :  
+	<a href="mailto:<?php echo $this->escape($this->userEmail); ?>"><?php echo $this->escape($this->userEmail); ?></a>
+</div>
+<?php $url = $this->url(array('controller' => 'user', 'action' => 'login'), null, true); ?>
+<?php echo $this->translate("Vous pouvez maintenant vous authentifier")?>.
+<a class="btn" href="<?php echo $url?>"><?php echo $this->translate('Connexion')?></a>
+<?php endif; ?>
+
+<?php 
+if ($this->form) {
+    $this->form->setAction($this->url());
+    echo $this->form;
+}
+?>

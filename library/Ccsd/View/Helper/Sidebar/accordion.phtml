@@ -1,0 +1,126 @@
+<style>
+   .menu-accordion .caret {
+		right:0;
+		margin-top: 10px;
+		float: right;
+	}
+	
+	.menu-accordion .smenu-list {
+		list-style-type:none;
+		margin-left: 5px;
+		padding: 5px;
+	}
+    .menu-accordion .smenu-list>li.active>a {
+		text-decoration: underline;
+	}
+   .menu-accordion .list-group-item:hover, .menu-accordion .list-group-item.active {
+        text-decoration: none;
+        background-color: #f5f5f5;
+    }
+
+
+</style>
+
+<!-- 
+<li class="list-group-item " style="">
+                        <a href="javascript:void(0);" tabindex="-1"><span style="margin-right: 15px; float: left">Journal management</span></a>
+                        <span class="caret" style="right: 15px; position: absolute"></span>
+                        <span class="clearfix"></span>
+                        <ul style="display:none;" class="smenu-list">
+                                                            <li class=""><a target="" href="/user/list">Users</a></li>
+                                                            <li class=""><a target="" href="/administrate/review">Review</a></li>
+                                                            <li class=""><a target="" href="/administratemail/index">Mail</a></li>
+                                                            <li class=""><a target="" href="/website/index">Website</a></li>
+                                                    </ul>
+                    </li>
+                    -->
+
+<div id="global-navigation" class="menu-accordion">
+    <ul class="list-group">
+        <?php foreach ($nav->getPages() as $page) {
+            //Page à ne pas afficher (pas le droit)
+            if (!$nav->accept($page)) continue;
+            if ($page->hasPages()) {
+                //Présence de sous pages
+                $resource = $page->getController() . '-' . $page->getAction();
+                if ("administrate-index" == $resource || "rights-index" == $resource) {
+                    ?>
+                    <li class="smenu list-group-item nav-header"><?php echo $this->view->translate($page->getLabel())?></li>
+                    <?php
+                    foreach($page->getPages() as $page) {
+                        if (!$nav->accept($page)) continue;
+                        $active = $page->isActive(true);
+                        ?>
+                        <li class="smenu list-group-item menu <?php echo $active ? 'active' : ''?>">
+                            <a tabindex="-1" href="<?php echo ($page->hasPages() ? 'javascript:void(0);' : $this->view->pagelink($page, $prefix)); ?>" style="display: table-cell">
+                            	<span style="margin-right: 15px; float: left"><?php echo $this->view->translate($page->getLabel())?></span>
+                                <?php if ($page->hasPages()) { ?><span class="caret" style="right: 15px; position: absolute"></span><?php } ?>
+                            </a>
+                        	<span class="clearfix"></span>
+                            <?php if ($page->hasPages()) { ?>
+                            <ul class="smenu-list" <?php echo $active ? '' : 'style="display:none;"'?>>
+                                <?php foreach ($page->getPages() as $subPage) {
+                                    //Page à ne pas afficher (pas le droit)
+                                    if (!$nav->accept($subPage)) continue;
+                                    ?>
+                                    <li class="<?php echo $subPage->isActive(true) ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($subPage, $prefix) ?>" target="<?php echo $subPage->getTarget() ?>"><?php echo $this->view->translate($subPage->getLabel())?></a></li>
+                                <?php } ?>
+                            </ul>
+                            <?php } ?>
+                        </li>
+                    <?php
+                    }
+                } else {
+                    $active = $page->isActive(true);
+                    ?>
+                    <li class="smenu list-group-item <?php echo $active ? 'active' : ''?>">
+                        <a tabindex="-1" href="javascript:void(0);" style="display: table-cell">
+                        	<span style="margin-right: 15px; float: left"><?php echo $this->view->translate($page->getLabel())?></span>
+                        	<span class="caret" style="right: 15px; position: absolute"></span>
+                        </a>
+                        <span class="clearfix"></span>
+                        
+                        <ul class="smenu-list" <?php echo $active ? '' : 'style="display:none;"'?>>
+                            <?php foreach ($page->getPages() as $subPage) {
+                                //Page à ne pas afficher (pas le droit)
+                                if (!$nav->accept($subPage)) continue;
+                                ?>
+                        	<li class="<?php echo ($subPage->hasPages() ? 'smenu' : '');?> <?php echo $subPage->isActive(true) ? 'active' : ''?>">
+                        		<a href="<?php echo ($subPage->hasPages() ? 'javascript:void(0);' : $this->view->pagelink($subPage, $prefix)); ?>" target="<?php echo $subPage->getTarget() ?>">
+                        			<?php echo $this->view->translate($subPage->getLabel())?>
+                        		</a>
+                                <ul class="smenu-list" <?php echo $subPage->isActive(true) ? '' : 'style="display:none;"'?>>
+                                    <?php foreach ($subPage->getPages() as $subsubPage) {
+                                        //Page à ne pas afficher (pas le droit)
+                                        if (!$nav->accept($subsubPage)) continue;
+                                        ?>
+                                        <li class="<?php echo $subsubPage->isActive(true) ? 'active' : ''?>">
+                                            <a href="<?php echo $this->view->pagelink($subsubPage, $prefix) ?>" target="<?php echo $subsubPage->getTarget() ?>">
+                                                <?php echo $this->view->translate($subsubPage->getLabel())?>
+                                            </a>
+                                        </li>
+                                    <?php } ?>
+                                </ul>
+                        	</li>
+                            <?php } ?>
+                        </ul>
+                    </li>
+                <?php
+                }
+            } else {
+                $active = $page->isActive(true);
+                ?>
+                <li class="list-group-item <?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix) ?>" target="<?php echo $page->getTarget() ?>"><?php echo $this->view->translate($page->getLabel())?></a></li>
+            <?php
+            }
+        } ?>
+    </ul>
+</div>
+
+<script>
+$(document).ready(function(){
+	$('.menu-accordion .smenu>a').click(function() {
+		$(this).siblings('ul:first').toggle('blind',{},500);
+	});	
+});
+</script>

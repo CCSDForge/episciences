@@ -1,0 +1,56 @@
+<div class="row">
+
+<?php
+echo $this->partial('partials/browse_alphabet.phtml');
+
+$searchParams['q'] = '*';
+$searchParams['controller'] = 'search';
+$searchParams['action'] = 'index';
+
+if (! is_array($this->facets)) {
+    echo '<div class="col-md-7">';
+    echo '<p class="lead">';
+    echo $this->translate("Pas de données pour l'instant.");
+    echo '</p>';
+    echo '</div>';
+
+    return;
+}
+?>
+
+
+<div class="col-md-7">
+		<ul class="list-group">
+
+
+<?php
+
+echo $this->partial('partials/browse_sort.phtml');
+$st = Zend_Controller_Front::getInstance()->getRequest()->getParam('submitType_s');
+if ($st != null) {
+    $searchParams['submitType_s'] = $st;
+}
+
+foreach ($this->facets as $itemId => $facet) {
+
+	$searchParams[$this->urlFilterName] = $itemId;
+    $url = $this->url($searchParams, null, TRUE);
+
+    echo '<li class="list-group-item">';
+    echo '<a href="' . $this->escape($url) . '">';
+    echo $this->translate($this->escape($facet['name']));
+    echo '</a>';
+
+    echo '<a href="' . $this->escape($url) . '" class="btn btn-default btn-xs pull-right">' . $facet['count'] . '</a>';
+    echo '</li>';
+}
+
+
+?>
+
+</ul>
+<?php if (count($this->facets) == Ccsd_Search_Solr::SOLR_MAX_RETURNED_FACETS_RESULTS): ?>
+<p class="bg-info"><?php echo $this->translate('Affichage limité aux ') . Ccsd_Search_Solr::SOLR_MAX_RETURNED_FACETS_RESULTS . $this->translate(' premières réponses.'); ?></p>
+<?php endif; ?>
+	</div>
+</div>

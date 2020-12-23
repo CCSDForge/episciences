@@ -1,0 +1,13 @@
+<?php $delete_action = 'comments/removefilecomment'?>
+<form id="del_pcid_<?php echo $this->comment['PCID']; ?>" method="post">
+    <input type="hidden" name = "del_pcid_<?php echo $this->comment['PCID']; ?>"   value="<?php echo $this->comment['PCID']; ?>">
+    <input type="hidden" name = "del_docid_<?php echo $this->comment['DOCID']; ?>" value="<?php echo $this->comment['DOCID']; ?>">
+    <input type="hidden" name = "del_file_<?php echo $this->comment['FILE']; ?>"   value="<?php echo $this->comment['FILE']; ?>">
+    <button class="btn btn-danger btn-xs pull-right"
+            onclick="javascript:
+                    if(confirm(translate('Voulez-vous supprimer ce fichier?'))){
+                    location.href ='<?php echo $delete_action; ?>'
+                    }">
+        <span class="glyphicon glyphicon-trash" style="margin-right: 5px;"></span><?php echo $this->translate('Supprimer'); ?>
+    </button>
+</form>

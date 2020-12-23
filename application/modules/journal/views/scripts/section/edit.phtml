@@ -1,0 +1,16 @@
+<?php 
+	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+	$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+	
+	echo $this->form; 
+?>
+
+<script>
+	__initMCE ('textarea', undefined, {
+		theme: "modern",
+		plugins: "link image code fullscreen table",
+		toolbar1: "bold italic underline",
+		menubar: false
+	});
+</script>

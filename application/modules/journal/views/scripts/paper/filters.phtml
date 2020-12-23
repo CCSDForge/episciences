@@ -1,0 +1,26 @@
+<div class="panel panel-default collapsable">
+	<div class="panel-heading">
+		<h2 class="panel-title"><?php echo $this->translate('Filtres'); ?></h2>
+	</div>
+	<div class="panel-body<?php echo ($this->open) ? ' in' : ''; ?>">
+	<form 	class="form-inline"
+			action="<?php echo $this->escape($this->element->getAction()); ?>" 
+			method="<?php echo $this->escape($this->element->getMethod()); ?>">
+	
+			<?php echo $this->element->status; ?>
+			<?php if (Zend_Controller_Front::getInstance()->getRequest()->getActionName() == 'ratings') : ?>
+				<?php echo $this->element->ratingStatus; ?>
+                <hr class="center-block" style="width:25%;">
+			<?php endif;?>
+	        <?php echo $this->element->vid; ?>
+	        <?php echo $this->element->sid; ?>
+            <hr class="center-block" style="width:25%;">
+	        <?php echo $this->element->editors; ?>
+            <?= $this->element->reviewers; ?>
+            <?= $this->element->doi; ?>
+
+	        <?php echo $this->element->submit; ?>
+
+	</form>
+	</div>
+</div>

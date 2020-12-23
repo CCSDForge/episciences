@@ -1,0 +1,32 @@
+[
+  {
+    "label": "Mon espace",
+    "controller": "user",
+    "action": "index",
+    "resource": "user-index",
+    "privilege": "guest",
+    "pages": [
+      {
+        "label": "Connexion",
+        "controller": "user",
+        "action": "login",
+        "resource": "user-login",
+        "privilege": "guest"
+      },
+      {
+        "label": "Login oublié ?",
+        "controller": "user",
+        "action": "lostlogin",
+        "resource": "user-lostlogin",
+        "privilege": "guest"
+      },
+      {
+        "label": "Mot de passe oublié ?",
+        "controller": "user",
+        "action": "lostpassword",
+        "resource": "user-lostpassword",
+        "privilege": "guest"
+      }
+    ]
+  }
+]

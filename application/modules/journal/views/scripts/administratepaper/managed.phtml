@@ -1,0 +1,104 @@
+<?php // $this->jQuery()->addJavascriptFile('/js/paper/submitted.js'); ?>
+<?php $this->layout()->pageTitle = $this->translate("Gérer les articles"); ?>
+<?php $this->layout()->description = $this->translate("Liste des articles pour lesquels je suis rédacteur"); ?>
+
+<?php $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName(); ?>
+<?php $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName(); ?>
+<?php echo $this->paperFilter(); ?>
+
+    <hr/>
+
+<?php if ($this->list) : ?>
+
+    <?php
+    $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+    $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+    $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+    ?>
+
+
+    <table class="table table-bordered dataTable" id="papers">
+        <thead>
+        <tr>
+            <th></th>
+            <th><?php echo $this->translate('Titre'); ?></th>
+            <th class="text-center"><?php echo $this->translate('Volume'); ?></th>
+            <th class="text-center"><?php echo $this->translate('Rubrique'); ?></th>
+            <th width="120" class="text-center"><?php echo $this->translate('Relecteurs'); ?></th>
+            <th class="text-center"><?php echo $this->translate('Rédacteurs'); ?></th>
+            <th class="text-center"><?php echo $this->translate('Proposé par'); ?></th>
+            <th class="text-center"><?php echo $this->translate('Proposé le'); ?></th>
+
+        </tr>
+        </thead>
+
+        <tbody>
+
+        <?php /** @var Episciences_Paper $paper */
+        foreach ($this->list as $paper) : ?>
+            <tr id="paper_<?php echo $paper->getDocid(); ?>">
+
+                <?php // article status ******************************************* ?>
+                <td class="text-center">
+                    <a href="#"
+                       data-toggle="tooltip"
+                       title="<?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>">
+                        <span style="font-size: 20px"
+                              class="glyphicon glyphicon glyphicon-info-sign status-<?php echo $paper->getStatus(); ?>"></span>
+                        <span
+                            style="display: none"><?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?></span>
+                    </a>
+                </td>
+
+                <?php // article title ******************************************* ?>
+                <td>
+                    <a href="/<?php echo $controller ?>/view?id=<?php echo $paper->getDocid(); ?>">
+                        <strong><?php echo Ccsd_Tools::truncate($paper->getTitle(), 75); ?></strong>
+                        <?php if ($paper->getMetadata('version') != 1) : ?>
+                            (v<?php echo $paper->getMetadata('version'); ?>)
+                        <?php endif; ?>
+                    </a>
+                </td>
+
+                <?php // article volume ******************************************* ?>
+                <td class="text-center"><?php
+                    if (array_key_exists($paper->getVid(), $this->volumes)) {
+                        echo $this->translate($this->volumes[$paper->getVid()]->getNameKey());
+                    } else {
+                        echo '-';
+                    }
+                    ?></td>
+
+                <?php // article section ******************************************* ?>
+                <td class="text-center"><?php
+                    if (array_key_exists($paper->getSid(), $this->sections)) {
+                        echo $this->translate($this->sections[$paper->getSid()]->getNameKey());
+                    } else {
+                        echo '-';
+                    }
+                    ?></td>
+
+                <?php // article reviewers ***************************************** ?>
+                <td><?php echo $this->partial('partials/paper_reviewers.phtml', array('article' => $paper)); ?></td>
+
+                <?php // article editors ******************************************* ?>
+                <td><?php // echo $this->partial('partials/paper_editors.phtml', array('article'=>$paper, 'isPartial'=>true)); ?></td>
+
+                <?php // contributor name ************************************************** ?>
+                <td>
+                    <?php echo $paper->getSubmitter()['SCREEN_NAME']; ?>
+                </td>
+
+                <?php // submission date ************************************************ ?>
+                <td>
+                    <?php echo $this->Date($paper->getWhen()); ?>
+                </td>
+
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+
+<?php else : ?>
+    <?php echo $this->translate('Aucun article pour le moment') ?>.
+<?php endif; ?>

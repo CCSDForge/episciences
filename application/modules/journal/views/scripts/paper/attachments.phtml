@@ -1,0 +1,45 @@
+<?php
+
+// Attached file description
+$description = Episciences_Tools::buildAttachedFilesDescription();
+
+// Le bloc fichiers joints présent plusieurs fois dans le DOM, donc attribuer un ID unique pour chaque bloc.
+/** @var Ccsd_Form $selfElement */
+$selfElement = $this->element;
+$attribsForm = $selfElement->getAttribs();
+?>
+<form data-library="ccsd" role="form"<?php foreach ($attribsForm as $name => $value) {
+    echo ' ' . $name . '="' . $value . '"';
+} ?>>
+    <?php foreach ($selfElement->getElements() as $name => $element) : ?>
+        <?php
+        if ($element->helper === 'formHidden') {
+            $pcId = isset($element->pcId) ? $element->pcId : 0;
+            $docId = isset($element->docId) ? $element->docId : 0;
+        }
+        ?>
+        <?= $element; ?>
+    <?php endforeach; ?>
+
+    <div id="attachments-<?= $pcId; ?>" class="form-group row">
+        <div class="col-md-9 col-md-offset-3" style="padding-left: 10px">
+            <div id="upload_widget_<?= $pcId; ?>" class="upload_widget" data-upload-container="test">
+                <span id="help-block-<?= $pcId; ?>" class="help-block text-info"><?= $description; ?></span>
+                <div id="upload_button_<?= $pcId; ?>" class="upload_button btn btn-default btn-xs select-files">
+                    <span class="glyphicon glyphicon-folder-open"></span>
+                    <?= $this->translate('Ajouter des fichiers') . '...'; ?>
+                </div>
+                <input id="upload_input_<?= $pcId; ?>" class="upload_input" type="file" multiple/>
+                <div class="uploads_container"></div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    // init paper comment Id.
+    paperCommentId = <?= $pcId ?>;
+</script>
+
+<script src="<?php echo VENDOR_JQUERY_FILE_UPLOAD; ?>"></script>
+<script src="/js/library/es.fileupload.js"></script>

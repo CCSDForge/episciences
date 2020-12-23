@@ -1,0 +1,58 @@
+<?php
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+
+$output = $this->output;
+
+foreach ($this->papers as $i => $paper) {
+
+
+    $row = array();
+
+    $row[] = $paper->getDocid();
+
+    // status
+    $row[] = '<a    href="#"
+                    data-toggle="tooltip" 
+                    title="' . ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))) . '">
+                    <span style="font-size: 20px" class="glyphicon glyphicon glyphicon-info-sign status-' . $paper->getStatus() . '"></span>
+                    <span style="display: none">' . ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))) . '</span>
+            </a>';
+
+    // paper title
+    $title = '<a 	href="/' . $controller . '/view?id=' . $paper->getDocid() . '"
+					data-toggle="tooltip"
+					title="' . $paper->getTitle() . '">
+					<strong>' . Ccsd_Tools::truncate($paper->getTitle(), 75) . '</strong>';
+    if ($paper->getMetadata('version') && $paper->getMetadata('version') != 1) {
+        $title .= '(v' . $paper->getMetadata('version') . ')';
+    }
+    $title .= '</a>';
+    $row[] = $title;
+
+    // volume
+    $row[] = $this->partial('partials/paper_volumes.phtml', array('article' => $paper, 'volumes' => $this->volumes, 'isPartial' => true));
+
+    // section
+    $row[] = $this->partial('partials/paper_section.phtml', array('article' => $paper, 'sections' => $this->sections, 'isPartial' => true));
+
+    // reviewers
+    // $row[] = '';
+    $row[] = $this->partial('partials/paper_reviewers.phtml', array('article' => $paper, 'isPartial' => true));
+
+    // editors
+    // $row[] = '';
+    $row[] = $this->partial('partials/paper_editors.phtml', array('article' => $paper, 'isPartial' => true));
+
+    // contributor
+    $row[] = ($paper->getSubmitter()->getFullname()) ? $paper->getSubmitter()->getFullname() : $paper->getSubmitter()->getScreenName();
+
+    // submission date
+    $row[] = $this->Date($paper->getWhen());
+
+    $output['aaData'][] = $row;
+
+}
+
+echo Zend_Json::encode($output);

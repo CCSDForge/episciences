@@ -1,0 +1,22 @@
+<?php
+$this->jQuery()
+    ->addStylesheet(VENDOR_BOOTSTRAP_COLORPICKER_CSS)
+    ->addJavascriptFile(VENDOR_BOOTSTRAP_COLORPICKER);
+?>
+<script>
+    $(function () {
+        $('.colorpicker').colorpicker();
+    });
+</script>
+<?php
+$description =    $this->translate("Personnalisation de l'apparence du site. Deux solutions sont proposées :");
+$description .= "<br/>";
+$description .=    "- <strong>".$this->translate("Simple :")."</strong> ";
+$description .=    $this->translate("vous remplissez le formulaire ci-dessous. Le système créera automatiquement la feuille de style du site.");
+$description .= "<br/>";
+$description .=    "- <strong>".$this->translate("Avancée :")."</strong> ";
+$description .=    $this->translate("vous pouvez éditer directement la feuille de style du site.");
+
+$this->layout()->description = $this->translate($description);
+
+echo $this->form;

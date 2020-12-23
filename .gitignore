@@ -1,0 +1,37 @@
+# See : https://git-scm.com/docs/gitignore
+/.settings
+/.buildpath
+/.project
+/.idea/
+/.sass-cache/
+/.php_cs.cache/
+/public/fontawesome/5.13.0/scss/.sass-cache/
+
+# /data/
+/data/
+!/data/default/
+
+/public/css/templates/
+# libraries
+/vendor/
+
+# Private configs
+/config/pwd.json
+
+# composer
+/composer.lock
+/composer.phar
+
+
+# logs and errors
+/scripts/imports/*
+/scripts/*.log
+/errors/
+
+#webpack
+public/build/
+assets/node_modules/
+
+/node_modules/
+/scripts/archives/
+/assets/

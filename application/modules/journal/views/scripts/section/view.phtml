@@ -1,0 +1,92 @@
+<h1><?php echo $this->translate($this->section->getNameKey())?></h1>
+
+<div id="section">
+
+	<?php if (Zend_Registry::get('Zend_Translate')->isTranslated($this->section->getDescriptionKey())) : ?>
+	<div id="description">
+		<?php echo $this->translate($this->section->getDescriptionKey()); ?>
+	</div>
+	<?php endif; ?>
+
+
+    <?php // list editors ?>
+    <?php echo $this->partial('partials/section_list_editors.phtml', ['section' => $this->section]); ?>
+
+
+	<?php if ($this->section->getIndexedPapers()) : ?>
+	<div id="papers">
+	<hr/>
+	<?php $locale = Episciences_Tools::getLocale(); ?>
+	<?php foreach ($this->section->getIndexedPapers() as $doc) : ?>
+		
+			<?php
+				$title = Episciences_Tools::getTitleFromIndexedPaper($doc, $locale);
+				$abstract = Episciences_Tools::getAbstractFromIndexedPaper($doc, $locale);
+			?>
+	
+			<?php // Titre de l'article ******************************** ?>
+			<h3><a href="/<?php echo $this->escape($doc['docid']); ?>"><?php echo $title ?></a></h3>
+	
+			<?php // Noms des auteurs *********************************** ?>
+			<?php if ($doc['author_fullname_s']) : ?>
+			<span class="authors"><?php 
+			
+			$arrayOfAuthors = '';
+			$authorSeparator = '&nbsp;;&nbsp;';
+			$maxNumberOfAuthors = 10;
+			$outputFormat = '<a data-toggle="tooltip" data-placement="bottom" title="' . $this->translate("Articles de l'auteur") . '" href="%s">%s</a>';
+			$arrayOfAuthorsWithURL = '';
+			
+			foreach ($doc['author_fullname_s'] as $author) {
+				$tab = Ccsd_Search_Solr::facetStringResultAsArray($author);
+				$arrayOfAuthors[] = $tab[0];
+			}
+			
+			if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
+				$multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
+			
+				foreach ($multiArraysOfAuthors[0] as $authorName) {
+					$url = $this->url(array(
+							'controller' => 'search',
+							'action' => 'index',
+							'q' => '*',
+							'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+				}
+				$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
+			} else {
+			
+				foreach ($arrayOfAuthors as $authorName) {
+					$url = $this->url(array(
+							'controller' => 'search',
+							'action' => 'index',
+							'q' => '*',
+							'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+				}
+				$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
+				if (substr($authorList, - 1) != '.') {
+					$authorList .= '.';
+				}
+			}
+			
+			echo $authorList;
+			
+			?></span>
+			<?php endif; ?>
+			
+			<?php // Résumé de l'article *********************************** ?>
+			<?php
+		        if ($abstract) {
+		            echo '<blockquote class="abstract">';
+		            echo Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
+		            echo '</blockquote>';
+		        }
+			?>
+				        
+	        <hr />
+	
+	<?php endforeach; ?>
+	</div>
+	<?php endif; ?>
+</div>

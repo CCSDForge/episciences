@@ -1,0 +1,131 @@
+<?php $this->layout()->pageTitle = $this->translate("Invitation à la relecture d'un article"); ?>
+
+<?php if ($this->errors) : ?>
+    <div class="panel panel-danger">
+        <div class="panel-heading">
+            <h3 class="panel-title"><?php echo $this->translate('Erreur') ?></h3>
+        </div>
+        <div class="panel-body">
+            <?php foreach ($this->errors as $error) : ?>
+                <div><?php echo $this->translate($error) ?></div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php else : ?>
+
+    <?php // $this->layout()->description = "Vous avez été invité à relire cet article : "; ?>
+    <?php if (!$this->invitation->hasExpired() && !$this->invitation->isAnswered()) : ?>
+        <?php $this->jQuery()->addJavascriptFile("/js/reviewer/invitation.js"); ?>
+    <?php endif; ?>
+
+    <p><?php echo $this->translate('Vous avez été invité à relire cet article : '); ?></p>
+    <?php echo $this->paper->getXslt(); ?>
+
+    <?php // Author comments?>
+    <?php echo $this->render('partials/paper_author_comments_bloc.phtml'); ?>
+
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Détails') ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php if (is_a($this->invitation->getSender(), 'Episciences_User')) : ?>
+                <div>
+                    <?php echo $this->translate("Invitation envoyée par :"); ?>
+                    <?php echo $this->invitation->getSender()->getFullname(); ?>
+                </div>
+            <?php endif; ?>
+
+            <div>
+                <?php echo $this->translate("Date d'envoi de l'invitation :"); ?>
+                <?php echo $this->Date($this->invitation->getSending_date()); ?>
+            </div>
+            <div>
+                <?php echo $this->translate("Date d'expiration de l'invitation :"); ?>
+                <?php echo $this->Date($this->invitation->getExpiration_date()); ?>
+            </div>
+
+            <br/>
+            <div>
+                <?php echo $this->translate("Relecture attendue avant le :"); ?>
+                <?php echo $this->Date($this->rating_deadline); ?>
+                <?php
+                /*
+                $value = explode(' ', trim($this->rating_deadline));
+                $delay_value = $value[0];
+                $delay_unit = $value[1];
+                $delay_units = array('day'=>'jour(s)', 'week'=>'semaine(s)', 'month'=>'mois');
+                echo $delay_value . ' ' . $this->translate($delay_units[$delay_unit]);
+                */
+                ?>
+            </div>
+
+            <?php if ($this->invitation->isAnswered()) : ?>
+                <br/>
+                <div class="red">
+                    <?php echo $this->translate("Vous avez déjà répondu à cette invitation."); ?>
+                </div>
+                <br/>
+                <div><?php echo $this->translate('Réponse envoyée le :') ?><?php echo $this->Date($this->invitation->getAnswer()->getAnswer_date()); ?></div>
+                <div><?php echo $this->translate('Vous avez répondu :') ?><?php echo ucfirst($this->invitation->getAnswer()->getAnswer()); ?></div>
+                <?php if ($this->invitation->getAnswer()->getDetail('comment')) : ?>
+                    <div><?php echo $this->translate('Commentaire :') ?><?php echo $this->invitation->getAnswer()->getDetail('comment') ?></div>
+                <?php endif; ?>
+                <?php if ($this->invitation->getAnswer()->getDetail('reviewer_suggest')) : ?>
+                    <div><?php echo $this->translate('Vous avez suggéré de proposer la relecture à :') ?><?php echo $this->invitation->getAnswer()->getDetail('reviewer_suggest') ?></div>
+                <?php endif; ?>
+
+            <?php elseif ($this->invitation->hasExpired()) : ?>
+                <br/>
+                <div class="red">
+                    <?php echo $this->translate("Cette invitation a expiré."); ?>
+                </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+    <?php if (!$this->invitation->hasExpired() && !$this->invitation->isAnswered()) : ?>
+        <div class="form-actions text-center">
+            <?php if ($this->user_form) : ?>
+                <button id="accept-button" type="button" class="btn btn-success" onclick="show_user_form()">
+                    <?php echo $this->translate("J'accepte de relire cet article") ?>
+                </button>
+            <?php else : ?>
+                <form method="post" style="display:inline">
+                    <button name="submitaccept" id="submitaccept" type="submit"
+                            class="btn btn-success"><?php echo $this->translate("J'accepte de relire cet article") ?></button>
+                </form>
+            <?php endif ?>
+            <button id="refuse-button" type="button" class="btn btn-danger"
+                    onclick="refuseInvitation()"><?php echo $this->translate("Je refuse de relire cet article") ?></button>
+        </div>
+
+        <?php
+        if ($this->user_form) {
+            echo $this->user_form;
+        }
+        ?>
+
+        <div id="refuse_form" style="display: none">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h2 class="panel-title"><?php echo $this->translate('Détails de la réponse') ?></h2>
+                </div>
+                <div class="panel-body in">
+                    <p class="text-danger">
+                        <strong><?php echo $this->translate("Vous ne souhaitez pas relire cet article") ?></strong></p>
+                    <?php echo $this->refuse_form; ?>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($this->invalid_form) : ?>
+            <script>
+                display_errors();
+            </script>
+        <?php endif; ?>
+
+    <?php endif; // endif (!hasExpired && !isAnswered) ?>
+
+<?php endif; // endif (errors) ?>

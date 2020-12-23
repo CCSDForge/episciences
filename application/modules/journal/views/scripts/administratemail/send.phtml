@@ -1,0 +1,89 @@
+<style>
+    <!--
+    .autocomplete {
+        display: inline;
+        height: 26px;
+        min-width: 75px;
+        resize: none;
+        padding-left: 2px !important;
+        outline: none;
+        border: none !important;
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        -moz-box-shadow: none !important;
+    }
+
+    #from-element,
+    #replyto-element,
+    #to-element,
+    #cc-element,
+    #bcc-element {
+        margin-bottom: 5px;
+    }
+
+    #subject-element {
+        margin-bottom: 20px;
+    }
+
+    #content-element .col-md-9 {
+        padding: 0;
+    }
+
+    #from-element div,
+    #replyto-element div,
+    #to-element .col-md-9,
+    #cc-element .col-md-9,
+    #bcc-element .col-md-9,
+    #subject-element .col-md-9 {
+        border: none;
+        border-bottom: 1px solid #ccc;
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        -moz-box-shadow: none !important;
+        border-radius: 0;
+    }
+
+    #from, #replyto, #subject<?php if ($this->ajax): ?>, #to<?php endif?> {
+        border: none;
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        -moz-box-shadow: none !important;
+        border-radius: 0;
+        background: #fff;
+    }
+
+    .recipient-tag.unknown {
+        border: 1px dashed #F57433;
+    }
+
+    -->
+</style>
+
+<script>
+    var users = <?php echo $this->js_users; ?>;
+    var sender_uid = <?php echo Episciences_Auth::getUid(); ?>;
+    var recipient = <?php echo ($this->js_recipient) ? $this->js_recipient : "null" ?>;
+    var in_modal = <?php echo ($this->ajax) ? 'true' : 'false' ?>;
+</script>
+<?php echo $this->form; ?>
+
+<?php if ($this->ajax) : // if in ajax, js are loaded in parent page ?>
+    <div id="add_contacts_box" style="display:none"></div>
+    <script><?php echo file_get_contents(APPLICATION_PUBLIC_PATH . '/js/administratemail/send.js'); ?></script>
+    <script>__initMCE(".tinymce");</script>
+<?php else : ?>
+    <?php
+    // if not in ajax, need to load js
+    $this->jQuery()->addStylesheet('/css/ui-lightness/jquery-ui-1.10.3.custom.css');
+    $this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
+
+    $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+    $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+    $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+    $this->jQuery()->addJavascriptFile("/js/administratemail/send.js");
+
+    $this->jQuery()->addJavascriptFile("/js/library/es.mail.js");
+
+    $this->jQuery()->addJavascript('__initMCE(".tinymce");');
+    ?>
+<?php endif; ?>

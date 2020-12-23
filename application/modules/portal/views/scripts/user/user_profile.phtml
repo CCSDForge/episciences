@@ -1,0 +1,37 @@
+<div style="float: left; margin-right: 20px">
+    <img src="/user/photo/size/thumbnail?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>"
+         class="user-photo-normal"/>
+</div>
+
+<div style="margin-bottom: 10px">
+
+    <strong>
+        <?php if ($this->user['SCREEN_NAME']) : ?>
+            <?php echo $this->escape($this->user['SCREEN_NAME']); ?>
+        <?php else : ?>
+            <?php if ($this->user['civ']) echo $this->escape($this->user['civ']) . ' '; ?>
+            <?php if ($this->user['firstname']) echo $this->escape($this->user['firstname']) . ' '; ?>
+            <?php if ($this->user['middlename']) echo $this->escape($this->user['middlename']) . ' '; ?>
+            <?php if ($this->user['lastname']) echo $this->escape($this->user['lastname']); ?>
+        <?php endif; ?>
+    </strong>
+
+    <?php if (is_array($this->user['ROLES']) && count($this->user['ROLES'])) : ?>
+        <table style="margin-top: 10px" class="table table-striped table-condensed">
+            <?php foreach ($this->user['ROLES'] as $rvid => $roles) : ?>
+                <?php /** @var  $reviews Episciences_Review */ ?>
+                <tr>
+                    <td style="padding-right: 10px;">
+                        <span class="lightgrey glyphicon glyphicon-bookmark"></span>
+                        <a
+                                href="<?php echo $this->escape($this->reviews[$rvid]->getUrl()); ?>"><?php echo $this->escape($this->reviews[$rvid]->getName()); ?></a>
+
+                    </td>
+                    <td style="text-align: right"><?php echo $this->partial('user/roles_tags.phtml', array('roles' => $roles)); ?>
+                        <br/></td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    <?php endif; ?>
+
+</div>

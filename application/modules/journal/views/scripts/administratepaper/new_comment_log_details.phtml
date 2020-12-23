@@ -1,0 +1,67 @@
+<?php $log = $this->log; ?>
+    <table class="log-details" rules="groups">
+        <tr>
+            <td class="td-label"><?= $this->translate("Posté le"); ?></td>
+            <td class="small"><?= $this->Date($log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+        </tr>
+        <tr>
+            <td class="td-label"><?= ucfirst($this->translate('par')); ?></td>
+            <td class="small">
+                <?= $this->user['fullname']; ?>
+            </td>
+        </tr>
+        <?php if (array_key_exists('submitter', $log['detail'])) : ?>
+            <tr>
+                <td class="td-label"><?= $this->translate('À'); ?></td>
+                <td class="small">
+                    <?= $log['detail']['submitter']['fullname']; ?>
+                </td>
+            </tr>
+        <?php endif; ?>
+        <tr>
+            <td class="td-label"><?= $this->translate("Type"); ?></td>
+            <td class="small">
+                <?php $type = $log['detail']['comment']['type']; ?>
+                <?= array_key_exists($type, Episciences_CommentsManager::$_typeLabel) ? $this->translate(Episciences_CommentsManager::$_typeLabel[$type]) : 'undefined_comment_type_label'; ?>
+            </td>
+        </tr>
+
+        <?php if (!empty($log['detail']['comment']['message'])) : ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Message"); ?></td>
+                <td class="small"><?= Episciences_Tools::formatText(htmlspecialchars_decode($log['detail']['comment']['message'])); ?></td>
+            </tr>
+        <?php endif; ?>
+    </table>
+<?php
+$attachments = $log['detail']['comment']['file'];
+$files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachments, true) : (array)$attachments; ?>
+<?php if (!empty($files)): ?>
+    <hr>
+    <?php if (is_array($files)): ?>
+        <p class="small">
+            <strong><?= $this->translate(['Fichier joint', 'Fichiers joints', count($files)]); ?> :</strong>
+        </p>
+        <?php foreach ($files as $file): ?>
+            <?php
+            $attachmentUrl = '';
+            $type = $log['detail']['comment']['type'];
+            $docId = $log['detail']['comment']['docid'];
+
+            if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments
+                $attachmentUrl = 'tmp_files/' . $docId . '/' . $file;
+            } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes))) { //other comments
+                $attachmentUrl = 'docfiles/comments/' . $docId . '/' . $file;
+
+            } else { //copy editing comments
+                $attachmentUrl = 'docfiles/ce/' . $docId . '/' . $file . '/' . $log['detail']['comment']['pcid'];
+            }
+            ?>
+            <?= '<div class="small">'; ?>
+            <?= '<a target="_blank" href="/' . $attachmentUrl . '">'; ?>
+            <?= $file; ?>
+            <?= '</a>'; ?>
+            <?= '</div>'; ?>
+        <?php endforeach; ?>
+    <?php endif; ?>
+<?php endif; ?>

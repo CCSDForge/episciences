@@ -1,0 +1,137 @@
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
+$this->jQuery()->addJavascriptFile('/js/volume/datatable.js');
+$this->jQuery()->addJavascriptFile('/js/editors/volume-assignment.js');
+
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+
+?>
+
+    <style>
+        .sortable-placeholder {
+            width: 100%;
+            height: 35px;
+            background: #ddd !important;
+        }
+
+        .sortable-handle, .sortable-handle .glyphicon {
+            cursor: move;
+        }
+    </style>
+
+    <div class="form-actions">
+        <a class="btn btn-default" href="/volume/add">
+            <span class="glyphicon glyphicon-book"></span>
+            <span><?php echo $this->translate('Créer un volume'); ?></span>
+        </a>
+    </div>
+    <hr/>
+
+
+<?php if ($this->volumes) : ?>
+
+    <div>
+        <table class="table table-striped table-bordered dataTable" id="volumes">
+            <thead>
+            <tr>
+                <th style="display: none"><?php echo $this->translate('Position') ?></th>
+                <th></th>
+                <th><?php echo $this->translate('Titre'); ?></th>
+                <th><?php echo $this->translate('Rédacteurs'); ?></th>
+                <th style="text-align:center"><?php echo $this->translate("Spécial"); ?></th>
+                <th style="text-align:center"><?php echo $this->translate("En cours"); ?></th>
+                <th style="text-align:center"><?php echo $this->translate("Statut"); ?></th>
+                <th style="width:10%;text-align:center"><?php echo $this->translate('Actions'); ?></th>
+            </tr>
+            </thead>
+            <tbody class="sortable">
+            <?php foreach ($this->volumes as $volume) : ?>
+                <?php $volume->loadSettings(); ?>
+                <tr id="volume_<?php echo $volume->getVid(); ?>">
+                    <td style="display:none;"><?php echo $volume->getPosition(); ?></td>
+                    <td class="sortable-handle"><span class="glyphicon glyphicon-move"></span></td>
+                    <td>
+                        <a title="<?php echo $this->translate('Modifier'); ?>"
+                           href="/volume/edit?id=<?php echo $volume->getVid(); ?>">
+                            <?php echo $this->translate($volume->getNameKey()); ?>
+                        </a>
+                        <?php if ($this->review->getSetting(Episciences_Review::SETTING_SPECIAL_ISSUE_ACCESS_CODE) &&
+                            $volume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+                            $volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE)
+                        ) : ?>
+                            <span class="access_code">
+                                (<?php echo $this->translate("code d'accès :") ?>
+                                <?php echo $volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE); ?>)
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <button id="popover-link-<?php echo $volume->getVid() ?>"
+                                style="float: right;
+                                font-size: 10px"
+                                class="btn btn-xs btn-default popover-link"
+                                onclick="getEditors(this, <?php echo $volume->getVid() ?>)">
+                            <span class="caret"></span>
+                        </button>
+
+                        <div class="editors">
+                            <?php if ($volume->getEditors()) : ?>
+                                <?php echo $this->partial('volume/editors_list.phtml', array('editors' => $volume->getEditors())) ?>
+                            <?php endif; ?>
+                        </div>
+
+                    </td>
+                    <td style="text-align:center"><?php
+                        $special = '';
+                        $class = "";
+                        if ($volume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) == 1) {
+                            $special = "Oui";
+                            $class = "label-success";
+                        }
+                        ?>
+                        <span class="label <?php echo $class ?>"><?php echo $this->translate($special); ?></span>
+                    </td>
+                    <td style="text-align:center"><?php
+                        $current = '';
+                        if ($volume->getSetting(Episciences_Volume::SETTING_CURRENT_ISSUE) == 1) {
+                            $current = "Oui";
+                            $class = "label-success";
+                        }
+                        ?>
+                        <span class="label <?php echo $class ?>"><?php echo $this->translate($current); ?></span>
+                    </td>
+                    <td style="text-align:center"><?php
+                        if ($volume->getSetting(Episciences_Volume::SETTING_STATUS) == 1) {
+                            $status = "Ouvert";
+                            $class = "label-success";
+                        } else {
+                            $status = "Fermé";
+                            $class = "label-danger";
+                        }
+                        ?>
+                        <span class="label <?php echo $class ?>"><?php echo $this->translate($status); ?></span>
+                    </td>
+                    <td style="text-align:center;">
+
+                        <a href="/volume/edit?id=<?php echo $volume->getVid(); ?>" class="btn btn-default btn-xs"
+                           title="<?php echo $this->translate("Modifier"); ?>">
+                            <span class="glyphicon glyphicon-pencil"></span>
+                        </a>
+&nbsp;
+                        <a href="/volume/delete?id=<?php echo $volume->getVid(); ?>" class="delete btn btn-danger btn-xs"
+                           title="<?php echo $this->translate("Supprimer"); ?>">
+                            <span class="glyphicon glyphicon-trash"></span>
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+<?php else : ?>
+
+    <?php echo $this->translate('Aucun volume enregistré') ?>.
+
+<?php endif; ?>

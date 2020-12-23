@@ -1,0 +1,55 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$users = $this->users;
+$userRole = $this->userRole;
+?>
+<?php if (count($users)) : ?>
+    <?php if (count($users) > 1) : ?>
+        <span style="display: none;">
+                            <?php
+                            $msg = "";
+                            foreach ($users as $user) {
+                                echo $user->getScreenName() . PHP_EOL;
+                                $msg .= $user->getScreenName() . '<br>';
+                            }
+                            ?>
+                            </span>
+        <a data-toggle="tooltip" title="<?= htmlentities($msg); ?>">
+            <span style="margin-left: 5px;"><?= count($users) . ' ' . $this->translate($userRole !== Episciences_User_Assignment::ROLE_COPY_EDITOR ? 'rédacteurs' : 'préparateurs de copie'); ?></span>
+        </a>
+    <?php else : ?>
+        <?php foreach ($users as $user) : ?>
+            <div style="margin-bottom: 5px">
+
+                <?php // user(editor or copy editor) status icon *********************************************** ?>
+                <?php
+
+                $sections = $user->getAssignedSections();
+                if ($sections) {
+                    $tipColor = 'lightgrey';
+                    $infoMsg = $userRole !== Episciences_User_Assignment::ROLE_COPY_EDITOR ? 'Rédacteur' : 'Préparateur de copie';
+                    $msg = $this->translate(array("$infoMsg de la rubrique ", "$infoMsg des rubriques : ", count($sections)));
+                    $sectionNames = array();
+                    foreach ($sections as $section) {
+                        /** @var  Episciences_Section $section */
+                        $sectionNames[] = '"' . $this->translate('section_' . $section->getSid() . '_title') . '"';
+                    }
+                    $msg .= implode(', ', $sectionNames);
+                } else {
+                    $tipColor = 'almostwhite';
+                    $msg = '';
+                }
+                ?>
+                <?php if ($msg) : ?><a data-toggle="tooltip" title="<?= htmlentities($msg); ?>"><?php endif; ?>
+                    <span class="glyphicon glyphicon glyphicon-info-sign <?= $tipColor; ?>"></span>
+                    <?php if ($msg) : ?></a><?php endif; ?>
+                <?php // user(editor or copy editor) name ************************************************** ?>
+                <span style="margin-left: 5px;">
+                    <?= $user->getScreenName() ?>
+                </span>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; // endif(count($users) > 1) ?>
+
+<?php endif; // endif(count($users)) ?>

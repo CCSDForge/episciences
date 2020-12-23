@@ -1,0 +1,196 @@
+<style>
+    .panel-noborder {
+        border: none;
+        box-shadow: none;
+    }
+</style>
+<?php
+
+if ($this->referer !== '/administratepaper/list') {
+    $back = "Gestion de l'article";
+} else {
+    $back = 'Gestion des articles';
+}
+$invitation_panel_title = '';
+?>
+
+<?php if ($this->paper) : ?>
+    <?php // Bonnes partiques : inviter un relecteur ?>
+    <div id="invitereviewer_guideline" class="panel panel-default collapsable" style="display: none;">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Bonnes pratiques'); ?></h2>
+        </div>
+        <div class="panel-body in" style="overflow-y:scroll; height: auto;">
+            <?php echo $this->render('partials/invitereviewer_guideline.phtml'); ?>
+        </div>
+    </div>
+
+    <?php if (!$this->isExistingCriterionGrid) : ?>
+        <div class="alert alert-danger" style="margin-top: 20px">
+            <strong><?php echo $this->translate("Attention, la grille d'évaluation n'est pas encore disponible. Une grille de relecture peut être élaborée <a href='/grid/list'> ici </a> pour guider les relecteurs grâce à une série de points prédéfinis à examiner."); ?></strong><br/>
+        </div>
+    <?php endif; ?>
+
+<span id="step-1" style="display: none;">
+        <div class="panel-group">
+            <?php if ($this->paper->getSetting(Episciences_Paper::SETTING_SUGGESTED_REVIEWER) || $this->paper->getSetting(Episciences_Paper::SETTING_UNWANTED_REVIEWER)) : ?>
+                <div class="panel panel-warning collapsable">
+                    <div class="panel-heading">
+                        <h2 class="panel-title"><?php echo $this->translate("Demandes de l'auteur : "); ?></h2>
+                    </div>
+                    <div id="suggested-reviewer-alert" class="panel-body in">
+                        <div class="alert alert-info alert-fixed">
+                            <?php if ($this->paper->getSetting(Episciences_Paper::SETTING_SUGGESTED_REVIEWER)) : ?>
+                                <div>
+                                    <?php echo $this->translate("L'auteur aimerait être relu par :"); ?>
+                                    <?php echo $this->paper->getSetting(Episciences_Paper::SETTING_SUGGESTED_REVIEWER); ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($this->paper->getSetting(Episciences_Paper::SETTING_UNWANTED_REVIEWER)) : ?>
+                                <div>
+                                    <?php echo $this->translate("L'auteur ne souhaite pas être relu par :"); ?>
+                                    <?php echo $this->paper->getSetting(Episciences_Paper::SETTING_UNWANTED_REVIEWER); ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+            <?php if ($this->reviewers) : ?>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <a
+                                id="show-known-reviewers" class="panel-title"
+                                data-toggle="collapse"
+                                data-target="#known-reviewers-body"
+                                title="<?php echo $this->translate('Afficher les relecteurs connus par la revue') ;?>"
+                        ><?php echo $this->translate('Relecteurs connus par la revue'); ?>
+                        </a>
+                    </div>
+                    <div id ="known-reviewers-body" class="panel-body in">
+                        <table class="table dataTable hover" id="known-reviewers">
+                            <thead>
+                            <th><?php echo $this->translate('Prénom'); ?></th>
+                            <th><?php echo $this->translate('Nom'); ?></th>
+                            <th><?php echo $this->translate('E-mail'); ?></th>
+                            <th><?php echo $this->translate('Identifiant'); ?></th>
+                            <th><?php echo $this->translate('Langue'); ?></th>
+                            </thead>
+                            <tbody>
+                            <?php /** @var Episciences_Reviewer $reviewer */
+                            foreach ($this->reviewers as $reviewer) : ?>
+                                <tr
+                                        id="reviewer_<?php echo $reviewer->getUid(); ?>"
+                                        data-toggle="tooltip" title="<?php echo $this->translate('Inviter ce relecteur') ?>&hellip;"
+                                        data-placement="top"
+                                >
+                                    <td><?php echo $reviewer->getFirstname() ?></td>
+                                    <td><?php echo $reviewer->getLastname() ?></td>
+                                    <td><?php echo $reviewer->getEmail() ?></td>
+                                    <td><?php echo $reviewer->getUsername() ?></td>
+                                    <td><?php echo ucfirst(Zend_Locale::getTranslation($reviewer->getLangueid(), 'language', Episciences_Tools::getLocale())); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <div id="new-user" class="panel panel-default" style="display: none;">
+                <div class="panel-heading">
+                    <h2 class="panel-title"><?php echo $this->translate('Nouveau relecteur') ?></h2>
+                </div>
+                <div class="panel-body in">
+                    <div>
+                        <input id="existing-reviewer" name="reviewer-type" type="hidden" value="<?php echo $value = (!$this->reviewers) ? 1 : 0; ?>"/>
+                    </div>
+                    <div class="panel-group">
+                        <div id="known-user" class="panel panel-default panel-noborder">
+                            <div class="panel-heading">
+                                <h6 class="panel-title"><?php echo $this->translate('Inviter un utilisateur connu'); ?></h6>
+                            </div>
+                            <div class="panel-body in">
+                                <div class="col-md-offset-2 col-md-8">
+                                    <input id="autocomplete"
+                                           placeholder="<?php echo $this->translate('Rechercher par courriel, nom, prénom, ou identifiant'); ?>"
+                                           type="text"
+                                           class="form-control input-sm"
+                                           style="border-radius: 5px; text-align: center"
+                                    />
+                                    <span class="glyphicon glyphicon-search"
+                                          style="position: absolute;padding: 8px; margin-right: 8px; pointer-events: none; left: 20px;">
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id ="tmp-user" class="panel panel-default panel-noborder">
+                            <div class="panel-heading">
+                                <h6 class="panel-title"><?php echo $this->translate('Inviter un nouvel utilisateur'); ?></h6>
+                            </div>
+                            <div class="panel-body in">
+                                <?php // alerts présences de comptes déjàs associés à un email?>
+                                <div id="alert_exist_login" style="display: none;"></div>
+                                <div id="user_form">
+                                    <div class="form-errors"></div>
+                                    <div id='loading_container' style="display:none"></div>
+                                    <br>
+                                    <?php echo $this->user_form; ?>
+                                </div>
+                                <div id="homonym_users" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div> <?php // fin panel-group 2?>
+                </div>
+            </div>
+        </div><?php // fin panel-group 1?>
+
+    <div id="new-user-footer" class="panel-body">
+        <div class="col-md-4">
+            <a href="<?php echo $this->referer; ?>" class="btn btn-default btn-sm pull-left">
+                <span class="glyphicon glyphicon-chevron-left"
+                      style="top: 2px; margin-right: 5px; color: #aaa"></span><?php echo $this->translate($back); ?>
+            </a>
+        </div>
+
+        <?php if($this->reviewers): ?>
+            <div class="col-md-2 col-md-offset-6">
+                <button id="new_user_button" class="btn btn-default pull-right">
+                    <span class="glyphicon glyphicon-plus-sign"
+                          style="top: 2px; margin-right: 5px; color: #aaa"></span><?php echo $this->translate('Nouveau relecteur'); ?>&hellip;
+                </button>
+            </div>
+        <?php endif; ?>
+    </div>
+</span>
+
+
+        <div id="step-2" class="panel panel-default" style="display: none;">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?php echo $this->translate('Inviter ce relecteur'); ?></h2>
+            </div>
+            <div class="panel-body in">
+                <br>
+                <?php echo $this->invitation_form ?>
+                <div class="form-errors"></div>
+            </div>
+            <div class="panel-footer">
+                <div class="modal-footer">
+                    <button id="back-button" class="btn btn-default btn-sm pull-left">
+                        <span class="glyphicon glyphicon-chevron-left"
+                              style="top: 2px; margin-right: 5px; color: #aaa"></span>
+                        <?php echo $this->translate('Retourner au choix du relecteur'); ?>
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm"
+                            id="submit-invitation"><?php echo $this->translate('Valider'); ?>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+
+<?php endif; ?>
+
+

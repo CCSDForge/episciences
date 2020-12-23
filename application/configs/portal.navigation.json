@@ -1,0 +1,58 @@
+[{
+    "label" : "Tableau de bord",
+    "controller" : "user",
+    "action" : "dashboard",
+    "resource" : "user-dashboard",
+    "privilege" : "member"
+}, {
+    "label" : "Gérer le portail",
+    "class" : "nav-header",
+    "controller" : "administrate",
+    "action" : "index",
+    "resource" : "administrate-index",
+    "privilege" : "chief_editor,administrator,webmaster",
+    "pages"	: [ {
+	    "label" : "Site web",
+	    "controller" : "website",
+	    "action" : "index",
+	    "resource" : "website-index",
+	    "privilege" : "chief_editor,administrator,webmaster",
+	    "pages" : [ {
+            "label" : "Général",
+            "controller" : "website",
+            "action" : "common",
+            "resource" : "website-common",
+            "privilege" : "chief_editor,administrator,webmaster"
+        }, {
+	        "label" : "Style",
+	        "controller" : "website",
+	        "action" : "style",
+	        "resource" : "website-style",
+	        "privilege" : "chief_editor,administrator,webmaster"
+	    }, {
+	        "label" : "En-tête",
+	        "controller" : "website",
+	        "action" : "header",
+	        "resource" : "website-header",
+	        "privilege" : "chief_editor,administrator,webmaster"
+	    }, {
+	        "label" : "Menu",
+	        "controller" : "website",
+	        "action" : "menu",
+	        "resource" : "website-menu",
+	        "privilege" : "chief_editor,administrator,webmaster"
+	    }, {
+	        "label" : "Actualités",
+	        "controller" : "website",
+	        "action" : "news",
+	        "resource" : "website-news",
+	        "privilege" : "chief_editor,administrator,webmaster"
+	    }, {
+	        "label" : "Ressources",
+	        "controller" : "website",
+	        "action" : "public",
+	        "resource" : "website-public",
+	        "privilege" : "chief_editor,administrator,webmaster"
+		}]
+	}]
+}]

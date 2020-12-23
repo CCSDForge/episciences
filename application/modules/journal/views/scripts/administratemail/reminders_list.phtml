@@ -1,0 +1,43 @@
+<style>
+	#reminders .delete {
+		margin-right: 5px;
+		-moz-opacity: 0.50;
+		-khtml-opacity: 0.50;
+		opacity: 0.50;
+		filter: progid:DXImageTransform.Microsoft.Alpha(opacity=50);
+	}
+	#reminders .delete:hover {
+		margin-right: 5px;
+		
+		-moz-opacity: 1;
+		-khtml-opacity: 1;
+		opacity: 1;
+		filter: progid:DXImageTransform.Microsoft.Alpha(opacity=100);
+	}  
+</style>
+<script>
+	$(document).ready(function() {
+		$('a.delete').on('click', function() { deleteReminder($(this)); return false;});
+	});
+</script>
+
+<div id="reminders">
+<?php if ($this->reminders) : ?>
+<?php foreach ($this->reminders as $i => $reminder) : ?>
+	<?php if ($i > 0 && $this->reminders[($i-1)]->getType() != $reminder->getType()) : ?><hr/><?php endif;?>
+	<div class="reminder">
+		<a class="delete" href="/administratemail/deletereminder?id=<?php echo $reminder->getId() ?>" title="<?php echo $this->translate('Supprimer')?>"><span class="darkgrey glyphicon glyphicon-remove-sign"></span></a>
+		<a 	class="modal-opener"
+			title="<?php echo $this->translate('Modifier une relance automatique'); ?>"
+			href="/administratemail/editreminder?id=<?php echo $reminder->getId() ?>"
+			data-callback="submit"
+		    data-width="50%"
+			><?php echo $reminder->getName(); ?></a>
+	</div>
+<?php endforeach; ?>
+<?php else : ?>
+	<div>
+		<?php echo $this->translate('Aucune relance automatique pour le moment.'); ?>
+	</div>
+<?php endif; ?>
+</div>

@@ -1,0 +1,45 @@
+<!-- Pagination -->
+<?php if ($this->pageCount): ?>
+
+	<ul class="pagination pagination-sm">
+		<!-- Previous page link -->
+		<?php
+			if (isset($this->previous)):
+		        $pageUrlParam['page'] = $this->previous;
+		        $urlParams = array_merge($this->parsedSearchParams, $pageUrlParam);
+        ?>
+		<li><a href="<?php echo $this->escape($this->url($urlParams, null, true)); ?>">&lt; <?php echo $this->translate('Précédente'); ?></a></li>
+		<?php else: ?>
+  		<li class="disabled"><span>&lt; <?php echo $this->translate('Précédente'); ?></span></li>
+		<?php endif; ?>
+
+		<!-- Numbered page links -->
+		<?php foreach ($this->pagesInRange as $page): ?>
+  			<?php
+				if ($page != $this->current) :
+            		unset($urlParams);
+					$pageUrlParam['page'] = $page;
+            		$urlParams = array_merge($this->parsedSearchParams, $pageUrlParam);
+            ?>
+			<li><a href="<?php echo $this->escape($this->url($urlParams, null, true)); ?>"><?php echo $this->escape($page); ?></a></li>
+			<?php else: ?>
+			<li class="active"><span><?php echo $this->escape($page); ?></span></li>
+  			<?php endif; ?>
+		<?php endforeach; ?>
+
+		<!-- Next page link -->
+		<?php
+			if (isset($this->next)) :
+        		unset($urlParams);
+        		$pageUrlParam['page'] = $this->next;
+        		$urlParams = array_merge($this->parsedSearchParams, $pageUrlParam);
+        ?>
+  		<li><a href="<?php echo $this->escape($this->url($urlParams, null, true)); ?>"><?php echo $this->translate('Suivante'); ?> &gt;</a></li>
+		<?php else: ?>
+		<li class="disabled"><span><?php echo $this->translate('Suivante'); ?> &gt;</span></li>
+		<?php endif; ?>
+		
+	</ul>
+	
+<?php endif; ?>
+<!-- // Pagination -->

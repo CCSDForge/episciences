@@ -1,0 +1,10 @@
+<?php
+/**
+ * @deprecated see suggestion: git 182
+ */
+$this->jQuery()->addJavascriptFile("/js/review/editors_assignment.js");
+$this->layout()->description = $this->translate("Configuration de l'assignation automatique de rédacteurs");
+?>
+<div id="editors-assignment" class="col-md-offset-1 col-md-8">
+    <?= $this->form; ?>
+</div>

@@ -1,0 +1,22 @@
+<p>
+    <strong><?php echo $this->translate('Demande de modification :')?></strong>
+    (<?php echo $this->Date($this->comment['when'], null, Zend_Date::DATE_LONG.' - '.Zend_Date::TIME_SHORT) ?>)
+</p>
+
+<?php /*if ($this->comment['file']) : */?><!--
+    <div class="col-sm-10">
+        &gt; <a href="/docfiles/comments/<?php /*echo $this->comment['docid'] . '/' . $this->comment['file'] */?>"
+                target="_blank">
+            <?php /*echo $this->translate('Fichier') . ' : ' . $this->comment['FILE']; */?>
+        </a>
+    </div>
+    <div class="col-sm-2">
+        <?php /*echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $this->comment]); */?>
+    </div>
+<?php /*endif;*/?>
+
+--><?php /*echo $this->comment['message']; */?>
+
+<hr />
+
+<?php echo $this->form; ?>

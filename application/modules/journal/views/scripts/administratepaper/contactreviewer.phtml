@@ -1,0 +1,12 @@
+<?php echo $this->form; ?>
+<?php $this->jQuery()->addJavascriptFile("/js/forms/form.js"); ?>
+
+<script>var test = __initMCE("textarea");</script>
+<script src="/js/forms/form.js"></script>
+<script>
+$(document).ready(function () {
+	params = {"required": [{"name": "comment", "message": "Le champ 'Commentaire' est obligatoire."}]};
+	form.init($('#modal-box form'));
+	form.validationRules(params);
+});
+</script>

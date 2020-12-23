@@ -1,0 +1,35 @@
+img.flag_en {
+  height: 12px;
+  width: 16px;
+  background: url("/img/flags/en.png") no-repeat scroll 0 0 transparent;
+}
+
+img.flag_en_selected, img.flag_en:hover {
+  height: 12px;
+  width: 16px;
+  background: url("/img/flags/en.png") no-repeat scroll 0 -12px transparent;
+}
+
+img.flag_fr {
+  height: 12px;
+  width: 16px;
+  background: url("/img/flags/fr.png") no-repeat scroll 0 0 transparent;
+}
+
+img.flag_fr_selected, img.flag_fr:hover {
+  height: 12px;
+  width: 16px;
+  background: url("/img/flags/fr.png") no-repeat scroll 0 -12px transparent;
+}
+
+img.flag_es {
+  height: 12px;
+  width: 16px;
+  background: url("/img/flags/es.png") no-repeat scroll 0 0 transparent;
+}
+
+img.flag_es_selected, img.flag_es:hover {
+  height: 12px;
+  width: 16px;
+  background: url("/img/flags/es.png") no-repeat scroll 0 -12px transparent;
+}

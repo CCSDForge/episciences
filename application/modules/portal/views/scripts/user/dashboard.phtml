@@ -1,0 +1,427 @@
+<?php // one block per journal where user is chief editor ?>
+<?php if (Episciences_Auth::isChiefEditor('all')) : ?>
+<?php foreach ($this->reviewsPapers as $rvid => $reviewPapers) : ?>
+    <div class="panel panel-default collapsable">
+
+        <div class="panel-heading">
+            <h2 class="panel-title">
+                <?php echo $this->reviews[$rvid]->getName(); ?>
+                <small> - <?php echo $this->translate('Rédacteur en chef'); ?></small>
+            </h2>
+        </div>
+
+        <div class="panel-body in">
+
+            <?php
+
+            // Articles en attente de rédacteur : todo
+            // Article en attente de décision : todo
+
+            ?>
+
+            <?php // articles waiting for reviewers ********************************************* ?>
+            <?php $count = Episciences_PapersManager::countByStatus($reviewPapers, array(Episciences_Paper::STATUS_SUBMITTED)); ?>
+            <?php if ($count) : ?>
+                <a href="<?php
+                echo $this->reviews[$rvid]->getUrl();
+                echo $this->url(array(
+                    'controller' => 'administratepaper',
+                    'action' => 'list',
+                    'status' => array(Episciences_Paper::STATUS_SUBMITTED)));
+                ?>"><strong><?php echo $count; ?></strong>
+                    <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                    <?php echo $this->translate('en attente'); ?></a><br/>
+            <?php endif; ?>
+
+            <?php // articles being reviewed ********************************* ?>
+            <?php $count = Episciences_PapersManager::countByStatus($reviewPapers, array(Episciences_Paper::STATUS_BEING_REVIEWED)); ?>
+            <?php if ($count) : ?>
+                <a href="<?php
+                echo $this->reviews[$rvid]->getUrl();
+                echo $this->url(array(
+                    'controller' => 'administratepaper',
+                    'action' => 'list',
+                    'status' => array(Episciences_Paper::STATUS_BEING_REVIEWED)));
+                ?>"><strong><?php echo $count; ?></strong>
+                    <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                    <?php echo $this->translate('en cours de relecture'); ?></a><br/>
+            <?php endif; ?>
+
+            <?php // all articles ********************************************************************* ?>
+            <?php $count = count($reviewPapers); ?>
+            <?php if ($count) : ?>
+                <br/>
+                <strong><?php echo $this->translate('Total'); ?> : </strong>
+                <a href="<?php
+                echo $this->reviews[$rvid]->getUrl();
+                echo $this->url(array(
+                    'controller' => 'administratepaper',
+                    'action' => 'list'));
+                ?>"><strong><?php echo $count; ?></strong>
+                    <?php echo $this->translate(array('article', 'articles', $count)); ?></a><br/><br/>
+            <?php endif; ?>
+
+
+        </div>
+
+    </div>
+<?php endforeach; // endforeach journal (chief editor block) ?>
+<?php endif; //Episciences_Auth::isChiefEditor ?>
+
+
+<?php // one block per journal where user is editor ?>
+<?php if ($this->reviewsManagedPapers) : ?>
+    <?php foreach ($this->reviewsManagedPapers as $rvid => $managedPapers) : ?>
+        <?php if ($rvid != 0 && Episciences_Auth::isEditor($rvid, true)) : ?>
+
+            <div class="panel panel-default collapsable">
+
+                <div class="panel-heading">
+                    <h2 class="panel-title">
+                        <?php echo $this->reviews[$rvid]->getName(); ?>
+                        <small> - <?php echo $this->translate('Rédacteur'); ?></small>
+                    </h2>
+                </div>
+
+                <div class="panel-body in">
+
+                    <?php
+
+                    // Articles sans relecteur
+                    // Articles en cours de relecture
+                    // Articles en attente de décision (relus?)
+
+                    ?>
+
+                    <?php // articles waiting for reviewers ********************************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($managedPapers, array(Episciences_Paper::STATUS_SUBMITTED)); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'administratepaper',
+                            'action' => 'managed',
+                            'status' => array(Episciences_Paper::STATUS_SUBMITTED)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate('en attente'); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // articles being reviewed ********************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($managedPapers, array(Episciences_Paper::STATUS_BEING_REVIEWED)); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'administratepaper',
+                            'action' => 'managed',
+                            'status' => array(Episciences_Paper::STATUS_BEING_REVIEWED)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate('en cours de relecture'); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // all articles ********************************************************************* ?>
+                    <?php $count = count($managedPapers); ?>
+                    <?php if ($count) : ?>
+                        <br/>
+                        <strong><?php echo $this->translate('Total'); ?> : </strong>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'administratepaper',
+                            'action' => 'managed'));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?></a><br/><br/>
+                    <?php endif; ?>
+
+                </div>
+
+            </div>
+
+        <?php endif; ?>
+    <?php endforeach; // endforeach journal (editor block) ?>
+<?php endif; // endif managed articles (editor) ?>
+
+
+
+<?php // my submissions (all journals) ***************************************** ?>
+<div class="panel panel-default collapsable">
+
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Mes articles'); ?></h2>
+    </div>
+
+    <div class="panel-body in">
+        <?php if ($this->submittedPapers) : ?>
+
+            <?php foreach ($this->submittedPapers as $rvid => $reviewSubmitted) : ?>
+
+                <?php // Nom de la revue ********************************************* ?>
+                <p>
+                    <span class="lightgrey glyphicon glyphicon-bookmark" style="margin-right: 5px"></span>
+                    <strong><?php echo $this->reviews[$rvid]->getName(); ?></strong>
+                </p>
+
+                <hr/>
+
+                <p style="margin-left: 20px">
+                    <?php // articles waiting for reviewers ********************************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, array(Episciences_Paper::STATUS_SUBMITTED)); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_SUBMITTED)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate('en attente'); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // articles being reviewed ********************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, array(Episciences_Paper::STATUS_BEING_REVIEWED)); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_BEING_REVIEWED)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate('en cours de relecture'); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // articles waiting for comments ************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, Episciences_Paper::STATUS_WAITING_FOR_COMMENTS); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_WAITING_FOR_COMMENTS)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate("en attente d'éclaircissements"); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // articles waiting for minor revision ************************** ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate('en attente de modifications mineures'); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // articles waiting for major revision ************************** ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate('en attente de modifications majeures'); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // accepted articles ******************************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, Episciences_Paper::STATUS_ACCEPTED); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_ACCEPTED)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate(array('accepté', 'acceptés', $count)); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // published articles ******************************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, Episciences_Paper::STATUS_PUBLISHED); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_PUBLISHED)));
+                        ?>"><strong><?php echo $count; ?></strong>
+                            <?php echo $this->translate(array('article', 'articles', $count)); ?>
+                            <?php echo $this->translate(array('publié', 'publiés', $count)); ?></a><br/>
+                    <?php endif; ?>
+
+                    <?php // rejected articles ******************************************* ?>
+                    <?php $count = Episciences_PapersManager::countByStatus($reviewSubmitted, Episciences_Paper::STATUS_REFUSED); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?php
+                        echo $this->reviews[$rvid]->getUrl();
+                        echo $this->url(array(
+                            'controller' => 'paper',
+                            'action' => 'submitted',
+                            'status' => array(Episciences_Paper::STATUS_REFUSED)));
+                        ?>">
+                            <?php echo $this->translate(["%s article refusé", "%s articles refusés", $count], $count); ?>
+                            </a><br/>
+                    <?php endif; ?>
+
+                    <?php // submitted articles (total) ******************************************** ?>
+                    <?php $count = count($reviewSubmitted); ?>
+                    <?php if ($count) : ?>
+                        <br/>
+                        <strong><?php echo $this->translate('Total'); ?> : </strong>
+                        <a href="<?php echo $this->reviews[$rvid]->getUrl() . $this->url(array('controller' => 'paper', 'action' => 'submitted')); ?>">
+
+                            <strong><?php echo $count; ?></strong>
+
+                            <?php echo $this->translate(["article", "articles", $count]) ?>
+                        </a>
+
+
+                        <br/><br/>
+                    <?php endif; ?>
+
+                </p>
+
+            <?php endforeach; // endforeach journals (my articles block) ?>
+
+        <?php else : ?>
+            <p><?php echo $this->translate("Vous n'avez soumis aucun article pour le moment"); ?>.</p>
+        <?php endif; ?>
+    </div>
+
+</div>
+
+
+<?php // my reviewings (all journals) ***************************************************************  ?>
+<?php if (Episciences_Auth::isReviewer('all')) : ?>
+    <div class="panel panel-default collapsable">
+
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Mes relectures'); ?></h2>
+        </div>
+
+        <div class="panel-body in">
+
+            <?php if ($this->reviewings) : ?>
+
+                <?php foreach ($this->reviewings as $rvid => $reviewRatings) : ?>
+
+                    <?php // journal name ********************************************* ?>
+                    <p>
+                        <span class="lightgrey glyphicon glyphicon-bookmark" style="margin-right: 5px"></span>
+                        <strong><?php echo $this->reviews[$rvid]->getName(); ?></strong>
+                    </p>
+
+                    <hr/>
+
+                    <p style="margin-left: 20px">
+
+                        <?php // pending reviewings (not started yet) ********************************************* ?>
+                        <?php $ratings = Episciences_Reviewer_ReviewingsManager::getReviewingsWith($reviewRatings, array('status' => Episciences_Reviewer_Reviewing::STATUS_PENDING)); ?>
+                        <?php $count = count($ratings); ?>
+                        <?php if ($count) : ?>
+                            <a href="<?php
+                            echo $this->reviews[$rvid]->getUrl();
+                            echo $this->url(array(
+                                'controller' => 'paper',
+                                'action' => 'ratings',
+                                'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_PENDING));
+                            ?>"><strong><?php echo $count; ?></strong>
+                                <?php echo $this->translate(array('relecture', 'relectures', $count)); ?>
+                                <?php echo $this->translate('en attente'); ?></a><br/>
+                        <?php endif; ?>
+
+                        <?php // reviewings in progress ****************************************************************** ?>
+                        <?php $ratings = Episciences_Reviewer_ReviewingsManager::getReviewingsWith($reviewRatings, array('status' => Episciences_Reviewer_Reviewing::STATUS_WIP)); ?>
+                        <?php $count = count($ratings); ?>
+                        <?php if ($count) : ?>
+                            <a href="<?php
+                            echo $this->reviews[$rvid]->getUrl();
+                            echo $this->url(array(
+                                'controller' => 'paper',
+                                'action' => 'ratings',
+                                'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_WIP));
+                            ?>"><strong><?php echo $count; ?></strong>
+                                <?php echo $this->translate(array('relecture', 'relectures', $count)); ?>
+                                <?php echo $this->translate('en cours'); ?></a><br/>
+                        <?php endif; ?>
+
+                        <?php // reviewings completed ****************************************************************** ?>
+                        <?php $ratings = Episciences_Reviewer_ReviewingsManager::getReviewingsWith($reviewRatings, array('status' => Episciences_Reviewer_Reviewing::STATUS_COMPLETE)); ?>
+                        <?php $count = count($ratings); ?>
+                        <?php if ($count) : ?>
+                            <a href="<?php
+                            echo $this->reviews[$rvid]->getUrl();
+                            echo $this->url(array(
+                                'controller' => 'paper',
+                                'action' => 'ratings',
+                                'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_COMPLETE));
+                            ?>"><strong><?php echo $count; ?></strong>
+                                <?php echo $this->translate(array('relecture', 'relectures', $count)); ?>
+                                <?php echo $this->translate(array('terminée', 'terminées', $count)); ?></a><br/>
+                        <?php endif; ?>
+
+                        <?php // all reviewings ********************************************************************* ?>
+                        <?php $count = count($reviewRatings); ?>
+                        <?php if ($count) : ?>
+                            <br/>
+                            <strong><?php echo $this->translate('Total'); ?> : </strong>
+                            <a href="<?php
+                            echo $this->reviews[$rvid]->getUrl();
+                            echo $this->url(array(
+                                'controller' => 'paper',
+                                'action' => 'ratings'));
+                            ?>"><strong><?php echo $count; ?></strong>
+                                <?php echo $this->translate(array('relecture', 'relectures', $count)); ?></a><br/><br/>
+                        <?php endif; ?>
+
+
+                    </p>
+
+                <?php endforeach; // endforeach journal (my reviewings block)?>
+
+            <?php else : ?>
+                <p><?php echo $this->translate("Vous n'avez rien à relire pour le moment."); ?></p>
+            <?php endif; ?>
+
+        </div>
+
+    </div>
+<?php endif; ?>
+
+
+
+<?php // user account ***************************************************** ?>
+<?php // TODO : Afficher rôles pour chaque revue  ?>
+<?php // TODO : Afficher sections où je suis "rédacteur de section" ?>
+<div class="panel panel-default collapsable">
+
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Mon compte'); ?></h2>
+    </div>
+
+    <div class="panel-body in">
+        <?php echo $this->partial('user/user_profile.phtml', array('reviews' => $this->reviews, 'user' => $this->user)); ?>
+    </div>
+
+    <div class="panel-footer">
+        <div class="small"><a href="/user/edit"><span
+                    class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?></a>
+        </div>
+    </div>
+
+</div>

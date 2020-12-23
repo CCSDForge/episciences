@@ -1,0 +1,18 @@
+<?php
+
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+$message = '';
+
+if ($controller === 'administratepaper') {
+    $message = "Retour sur la page de l'article";
+    $url = '/paper/view?id=' . $this->docId;
+} else {
+    $message = "Retour sur la page de la  gestion de l'article";
+    $url = '/administratepaper/view?id=' . $this->docId;
+
+}
+?>
+<a class="btn btn-default btn-xs pull-right" href="<?= $url; ?>" style="margin-left: 10px;"><span class="fas fa-undo-alt" style="margin-right: 5px;"></span><?= $this->translate($message); ?></a>

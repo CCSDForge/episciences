@@ -1,0 +1,7 @@
+ul.tree .%%ICLOSE%%:hover {
+    background-position: -408px -120px;
+}
+                
+ul.tree .%%IOPEN%%:hover {
+    background-position: -384px -120px;
+}

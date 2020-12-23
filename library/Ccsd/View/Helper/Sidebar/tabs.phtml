@@ -1,0 +1,60 @@
+<?php
+/**
+ * @var Ccsd_View_Helper_Sidebar Ccsd_View
+ * @see
+ * @var  Hal_Website_Navigation  $nav  ???? ou est la methode accept???
+ * @var string $prefix
+ */
+?>
+<style type="text/css">
+    .nav-tabs > li {
+        margin-bottom: -2px;
+    }
+    .dropdown:hover>.dropdown-menu {
+        display: block;
+     }
+</style>
+<div id="global-navigation" class="sidebar-nav" role="navigation">
+    <ul class="nav nav-tabs">
+        <?php
+
+        foreach ($nav->getPages() as $i => $page) {
+            /** @var Zend_Navigation_Page $page  */
+            //Page à ne pas afficher (pas le droit)
+            if (!$nav->accept($page))
+                continue;
+            $active = $page->isActive(true);
+
+            if ($page->hasPages()) { //Présence de sous pages
+                ?>
+                <li class="dropdown <?php echo $active ? 'active' : ''?>">
+                    <a href="<?php echo $this->view->pagelink($page, $prefix) ?>" class="dropdown-toggle" data-toggle="dropdown"> <?php echo $this->view->translate($page->getLabel())?><b class="caret"></b></a>
+                    <ul class="dropdown-menu"><?php
+                        foreach ($page->getPages() as $sPage) {
+                            //Page à ne pas afficher (pas le droit)
+                            if (!$nav->accept($sPage)) continue;
+                            if ($sPage->hasPages()) { ?>
+                                <li class="dropdown-submenu">
+                                    <a href="<?php echo $this->view->pagelink($sPage, $prefix) ?>" class="disabled dropdown-toggle" data-toggle="dropdown"><?php echo $this->view->translate($sPage->getLabel())?></a>
+                                    <ul class="dropdown-menu"><?php
+                                        foreach ($sPage->getPages() as $ssPage) {
+                                            //Page à ne pas afficher (pas le droit)
+                                            if (!$nav->accept($ssPage)) continue; ?>
+                                            <li><a href="<?php echo $this->view->pagelink($ssPage, $prefix) ?>" <?php echo $this->view->target($ssPage->getTarget()) ?> ><?php echo $this->view->translate($ssPage->getLabel())?></a></li><?php
+                                    } ?>
+                                    </ul>
+                                </li><?php
+                            } else { ?>
+                                    <li><a href="<?php echo $this->view->pagelink($sPage, $prefix) ?>" <?php echo $this->view->target($sPage->getTarget()) ?> ><?php echo $this->view->translate($sPage->getLabel())?></a></li>
+                            <?php }
+                        } ?>
+                    </ul>
+                </li><?php
+            } else {
+                //Pas de sous pages
+                ?>
+                <li class="<?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix) ?>" <?php echo $this->view->target($page->getTarget()) ?> ><?php echo $this->view->translate($page->getLabel())?></a></li>
+            <?php }
+        }?>
+    </ul>
+</div>

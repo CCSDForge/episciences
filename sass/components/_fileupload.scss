@@ -1,0 +1,76 @@
+.upload_button {
+    border: 1px solid #ccc;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    color: #333;
+    padding: 5px 10px;
+    font-size:12px;
+    cursor:pointer;
+    display:inline-block;
+    line-height: 18px;
+}
+
+.upload_button:hover {
+    color: #999;
+    border: 1px solid #aaa;
+    cursor: pointer;
+}
+
+.file_container {
+    margin-top: 1px;
+    overflow: hidden;
+    width: 300px;
+    border: 1px solid #ccc;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    padding: 8px 10px;
+    line-height: 1;
+}
+
+/* progress bar */
+.file_container progress {
+    height: 8px;
+    width: calc(100% - 30px);
+}
+
+.file_container p {
+    padding: 0;
+    color: #666;
+    margin: 2px 0 0 0;
+    display: inline-block;
+    width: 95%;
+}
+
+.file_container p .file_name {
+    width: 85%;
+    display: inline-block;
+}
+
+.file_container .truncate {
+    max-width: 70%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis !important;
+}
+
+/* remove file button */
+.file_container .remove_file {
+    color: #ccc;
+    font-size: 12px;
+    float: right;
+}
+
+.file_container .remove_file:hover {
+    cursor: pointer;
+    color: #666;
+}
+
+.file_container .progress_value {
+    float: right;
+}
+
+.hidden, .upload_input {
+    display: none !important;
+}

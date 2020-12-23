@@ -1,0 +1,14 @@
+<?php //$this->jQuery()->addJavascriptFile('/js/paper/submitted.js'); ?>
+<?php $this->layout()->pageTitle = $this->translate("Mes articles"); ?>
+<?php $this->layout()->description = $this->translate('Liste des articles que j\'ai proposée à "%s".', RVNAME); ?>
+
+<?php echo $this->partial(
+		'partials/author_papers_list.phtml', array(
+			'papers'=>$this->list, 
+			'volumes'=>$this->volumes,
+			'sections'=>$this->sections
+		)); ?>
+<br>
+<div>
+	<a href="/submit"><button class="btn btn-primary" type="button"><?php echo $this->translate("Proposer un article");?></button></a>
+</div>

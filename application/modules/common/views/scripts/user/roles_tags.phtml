@@ -1,0 +1,37 @@
+<div class="col-md-3">
+    <ul class="list-unstyled">
+        <?php foreach ($this->roles as $role) : ?>
+            <li>
+                <span class="label role-<?php echo $role ?>"><?php echo $this->translate($role) ?></span>
+            </li>
+
+
+        <?php endforeach; ?>
+    </ul>
+</div>
+
+
+<div class="col-md-6">
+
+    <?php
+
+    if ($this->editorSections != null) {
+
+        $sectionNames = [];
+        /** @var Episciences_Section $section */
+
+        echo '<ul class="list-unstyled">';
+
+        echo '<li>' . $this->translate(["Rédacteur de la rubrique : ", "Rédacteur des rubriques : ", count($this->editorSections)]) . '</li>';
+
+        foreach ($this->editorSections as $section) {
+            echo '<li><a href="' . $this->url(['controller' => 'section', 'action' => 'view', 'id' => $section->getSid()]) . '">' . $this->translate('section_' . $section->getSid() . '_title', null, true) . '</a></li>';
+        }
+
+        echo '</ul>';
+    }
+    ?>
+</div>
+
+
+

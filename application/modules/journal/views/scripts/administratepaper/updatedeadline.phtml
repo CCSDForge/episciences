@@ -1,0 +1,32 @@
+<style>
+    .errors {
+        display: none;
+        margin-top: 20px;
+        color: red;
+    }
+
+    .errors-label {
+        font-weight: bold;
+        text-align: right;
+    }
+
+    .errors-message {
+        padding-left: 20px;
+    }
+
+</style>
+
+<?php echo $this->form; ?>
+<div class="row errors">
+    <span class="col-md-3 errors-label"><?php echo $this->translate('Erreurs') ?></span>
+    <span class="col-md-9 errors-message"></span>
+</div>
+
+<script>
+    var available_languages = <?php echo $this->available_languages?>;
+    var reviewer = <?php echo $this->js_reviewer; ?>;
+    var review = <?php echo $this->js_review; ?>;
+    var paper = <?php echo $this->js_paper; ?>;
+    var editor = <?php echo $this->js_editor; ?>;
+</script>
+<script src="/js/administratepaper/updatedeadline-modal.js"></script>

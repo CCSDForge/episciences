@@ -1,0 +1,48 @@
+<script src="/js/administratepaper/request-doi.js"></script>
+
+
+<div id="doi-panel" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('DOI'); ?></h2>
+    </div>
+    <div class="panel-body in">
+
+        <?php
+        if ($this->doiQueueStatus) {
+            $doiStatusText = $this->translate($this->doiQueueStatus);
+            echo '<span id="doi-status" class="doi-status">' . sprintf($this->doiQueueStatusHtml, $doiStatusText) . '</span>';
+        } else {
+            echo '<span id="doi-status" class="doi-status"></span>';
+        }
+
+
+        if ($this->paperDoi) {
+            echo '<span id="doi-link" class="doi-link">' . $this->DoiAsLink($this->paperDoi) . '</span>';
+            $doiActionText = $this->translate('Mettre à jour le DOI');
+        } else {
+            echo '<span id="doi-link" class="doi-link"></span>';
+            $doiActionText = $this->translate('Ajouter un DOI');
+        }
+
+        ?>
+
+        <?php if (($this->canBeAssignedDOI) && (Episciences_Auth::isAllowedToManageDoi())) : ?>
+            <?php if ($this->doiQueueStatus === Episciences_Paper_DoiQueue::STATUS_MANUAL)  : ?>
+                <button id="doi-action" class="btn btn-default btn-sm popover-link edit-doi" style="margin-left: 5px"
+                        onclick="getDoiForm(this, <?php echo $this->docid ?>)">
+                    <span class="fas fa-edit" style="margin-right: 5px"></span><?php echo $doiActionText; ?>
+                </button>
+            <?php endif; ?>
+
+            <?php if ($this->doiQueueStatus === Episciences_Paper_DoiQueue::STATUS_NOT_ASSIGNED): ?>
+                <button id="requestNewDoi" data-docid="<?php echo $this->docid ?>"
+                        class="btn btn-default btn-sm popover-link" style="margin-left: 5px">
+                <span class="fas fa-robot"
+                      style="margin-right: 5px"></span><?php echo $this->translate('Demander un DOI'); ?>
+                </button>
+            <?php endif; ?>
+        <?php endif; ?>
+
+    </div>
+
+</div>

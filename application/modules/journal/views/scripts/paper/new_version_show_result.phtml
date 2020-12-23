@@ -1,0 +1,8 @@
+<div id="showResult" style="display:none"></div>
+<?= $this->form; ?>
+<script>
+    let src_url = "/js/submit/functions.js?_=v<?php echo APPLICATION_VERSION; ?>";
+    let visual_delete_url = "/js/common/visualDeleteFile.js?_=v<?php echo APPLICATION_VERSION; ?>";
+    $.getScript(src_url);
+    $.getScript(visual_delete_url);
+</script>

@@ -1,0 +1,66 @@
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+$this->jQuery()->addJavascriptFile('/js/library/es.fileupload.js');
+
+// Attached file description
+$description = Episciences_Tools::buildAttachedFilesDescription();
+// Le bloc fichiers joints présent plusieurs fois dans le DOM, donc attribuer un ID unique pour chaque bloc.
+$attribsForm = $this->element->getAttribs();
+$suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
+?>
+<form data-library="ccsd"
+      role="form"<?php foreach ($this->element->getAttribs() as $name => $value) {
+    echo ' ' . $name . '="' . $value . '"';
+} ?>>
+
+    <?php foreach ($this->element->getElements() as $name => $element) : ?>
+        <?php
+        if ($element->getName() == 'submit') {
+            continue;
+        }
+        ?>
+        <?php if ($element->helper == 'formHidden') : ?>
+            <?php echo $element; ?>
+        <?php else: ?>
+            <div id="<?php echo str_replace(['-'], '', $name); ?>-element" class="form-group row">
+                <?php echo $element ?>
+            </div>
+        <?php endif; ?>
+    <?php endforeach; ?>
+
+    <div id="attachments-element<?php echo $suffix; ?>" class="form-group row">
+        <div class="col-md-9 col-md-offset-3" style="padding-left: 10px">
+            <div id="upload_widget<?php echo $suffix; ?>" class="upload_widget" data-upload-container="test">
+                <span id = "help-block<?php echo $suffix; ?>" class="help-block text-info"><?php echo $description; ?></span>
+                <div id="upload_button<?php echo $suffix; ?>" class="upload_button btn btn-default">
+                    <span class="glyphicon glyphicon-file"></span>
+                    <?php echo $this->translate('Fichiers joints'); ?>
+                </div>
+                <input id="upload_input_<?php echo $suffix;?>" class="upload_input" type="file" multiple/>
+                <div class="uploads_container"></div>
+            </div>
+        </div>
+    </div>
+
+    <?php if (isset($this->element->submit)) : ?>
+        <div class="form-actions text-center">
+            <?php echo $this->element->submit ?>
+        </div>
+    <?php endif; ?>
+</form>
+<?php // à l'ouverture d'une modal : Charger un fichier JavaScript à partir du serveur?>
+<script>
+    // init paper comment Id, see es.fileupload.js
+    paperCommentId = null;
+    $(document).ready(function () {
+        if (modalStructureExists()) {
+            $.ajaxSetup({
+                cache: true
+            });
+            $.getScript('/js/library/es.fileupload.js').fail(function () {
+                console.log('loading failed');
+            });
+        }
+    });
+
+</script>

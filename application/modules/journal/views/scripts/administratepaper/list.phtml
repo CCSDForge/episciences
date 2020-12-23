@@ -1,0 +1,66 @@
+<?php $this->layout()->pageTitle = $this->translate("Gérer les articles");
+$this->layout()->description = ($this->pageDescription) ? $this->pageDescription : $this->translate("Gestion des articles de la revue.");
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+
+/** @var Zend_Form $form */
+$form = $this->paperFilter();
+
+// A gérer en AJAX (dataTable)
+$form->getElement('submit')->setAttrib('type', '');
+$form->setAction('');
+
+echo $form;
+?>
+<hr/>
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addJavascriptFile('/js/administratepaper/editorsAndCopyEditors-assignment.js');
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
+$this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+?>
+
+<table class="table table-bordered dataTable table-responsive-lg" id="papers">
+    <thead>
+    <tr>
+        <th class="text-center"><?= $this->translate('Id permanent'); ?></th>
+        <th class="text-center"><?= $this->translate('Id document'); ?></th>
+        <th class="text-center" data-name="<?= $this->translate('Statut'); ?>"><?= $this->translate('Statut'); ?></th>
+        <th><?= $this->translate('Titre'); ?></th>
+        <th class="text-center"><?= $this->translate('Volume principal'); ?></th>
+        <th class="text-center"><?=$this->translate('Rubrique'); ?></th>
+        <th class="text-center"><?= $this->translate('Relecteurs'); ?></th>
+        <th class="text-center"><?= $this->translate('Rédacteurs'); ?></th>
+        <th class="text-center"><?= $this->translate('Préparateurs de copie'); ?></th>
+        <th class="text-center"><?= $this->translate('Contributeur'); ?></th>
+        <th class="text-center"><?= $this->translate('Proposé le'); ?></th>
+        <th class="text-center"><?= $this->translate('Date de publication'); ?></th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+
+<script type="text/javascript">
+
+    /*$.ajaxSetup({
+        cache: true
+    });*/
+
+    let selfController = <?php echo "'$controller'"; ?>;
+    let selfAction = <?php echo "'$action'"; ?>;
+
+    $.getScript("/js/paper/submitted.js?_=v<?php echo APPLICATION_VERSION; ?>;");
+    $.getScript("/js/administratepaper/section-assignment.js?_=v<?php echo APPLICATION_VERSION; ?>");
+    $.getScript("/js/administratepaper/volume-assignment.js?_=v<?php echo APPLICATION_VERSION; ?>");
+</script>
+
+
+
+

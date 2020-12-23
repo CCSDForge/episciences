@@ -1,0 +1,59 @@
+.status-flag {
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.article-block {
+  background-color: $white;
+  border: 1px solid $lighter-grey;
+  @include border-radius(4px, 4px);
+  margin: 15px 0;
+  padding: 14px 19px 14px 19px;
+  position: relative;
+}
+
+.article-block > .article-title {
+  font-weight: bold;
+}
+
+.article-block > .authors {
+  font-style: italic;
+}
+
+.article-block > .authors > .authors-label {
+  font-weight: bold;
+}
+
+// paper history
+.history-filters a, .history-filters a:hover {
+  text-decoration: none;
+}
+
+.history-filters {
+  margin-bottom: 10px;
+}
+
+.datepicker-button {
+  cursor: pointer;
+}
+
+.history-datepicker-input,
+.history-datepicker-button,
+.history-search {
+  display: inline-block;
+}
+
+.history-logs {
+  clear: both;
+  max-height: 300px;
+  overflow: auto;
+}
+
+// articles list - editors list
+.editors-list {
+  max-height: 150px;
+  overflow: auto;
+  margin-bottom: 10px;
+}

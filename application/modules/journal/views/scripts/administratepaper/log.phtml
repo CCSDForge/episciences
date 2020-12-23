@@ -1,0 +1,276 @@
+<style>
+    table.log-details {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    table.log-details td {
+        padding: 5px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    table.log-details .td-label {
+        color: #666;
+        width: 175px;
+    }
+</style>
+
+<?php switch ($this->log['action']): ?>
+<?php case Episciences_Paper_Logger::CODE_STATUS: ?>
+        <?php break ?>
+    <?php
+    case Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT:
+    case Episciences_Paper_Logger::CODE_COPY_EDITOR_ASSIGNMENT: ?>
+
+        <?= $this->partial('administratepaper/assignment_log_details.phtml',
+            ['log' => $this->log, 'user' => $this->user, 'tableTitle' => "Date d'assignation", 'uidTitle' => 'Assigné par']);
+        ?>
+        <?php break; ?>
+    <?php
+    case Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT:
+    case Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT: ?>
+        <?= $this->partial('administratepaper/assignment_log_details.phtml',
+            ['log' => $this->log, 'user' => $this->user, 'tableTitle' => "Date de désassignation", 'uidTitle' => 'Désassigné par']);
+        ?>
+        <?php break; ?>
+
+    <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Date de l'invitation"); ?></td>
+                <td class="small"><?php echo $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Invité par"); ?></td>
+                <td class="small">
+                    <?php if ($this->log['uid'] == EPISCIENCES_UID) : ?>
+                        <?php echo "Episciences"; ?>
+                    <?php else : ?>
+                        <?php echo $this->user['fullname']; ?>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Nom"); ?></td>
+                <td class="small"><?php echo $this->log['detail']['user']['fullname']; ?></td>
+            </tr>
+        </table>
+        <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Invitation acceptée le"); ?></td>
+                <td class="small"><?php echo $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Nom"); ?></td>
+                <td class="small"><?php echo $this->log['detail']['user']['fullname']; ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Identifiant"); ?></td>
+                <td class="small"><?php echo $this->log['detail']['user']['username']; ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Adresse e-mail"); ?></td>
+                <td class="small"><?php echo $this->log['detail']['user']['email']; ?></td>
+            </tr>
+        </table>
+        <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Invitation refusée le"); ?></td>
+                <td class="small"><?php echo $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Nom"); ?></td>
+                <td class="small"><?php echo $this->log['detail']['user']['fullname']; ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Identifiant"); ?></td>
+                <td class="small"><?php echo $this->log['detail']['user']['username']; ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Adresse e-mail"); ?></td>
+                <td class="small"><?php echo $this->log['detail']['user']['email']; ?></td>
+            </tr>
+        </table>
+        <?php if ($this->log['detail']['reviewer_suggestion']) : ?>
+            <div>
+                <span style="font-weight:bold"><?php echo $this->translate('Suggestion de relecteur :') ?></span>
+                <?php echo $this->log['detail']['reviewer_suggestion']; ?>
+            </div>
+        <?php endif; ?>
+        <?php if ($this->log['detail']['refusal_reason']) : ?>
+            <div>
+                <span style="font-weight:bold"><?php echo $this->translate('Motif du refus :') ?></span>
+                <?php echo $this->log['detail']['refusal_reason']; ?>
+            </div>
+        <?php endif; ?>
+        <?php break; ?>
+    <?php
+    case Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT:
+    case Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS:
+    case Episciences_Paper_Logger::CODE_REVIEWING_COMPLETED:
+    case Episciences_Paper_Logger::CODE_VOLUME_SELECTION:
+    case Episciences_Paper_Logger::CODE_SECTION_SELECTION:
+    case Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST:
+    case Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST:
+    case Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT: ?>
+        <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_MAIL_SENT: ?>
+    <?php case Episciences_Paper_Logger::CODE_REMINDER_SENT: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Date d'envoi"); ?></td>
+                <td class="small"><?php echo $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("De"); ?></td>
+                <td class="small">
+                    <?php if (array_key_exists('From', $this->log['detail']['mail']) && $this->log['detail']['mail']['From']) : ?>
+                        <?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['From']), 0, 'UTF-8')); ?>
+                    <?php else : ?>
+                        -
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Répondre à"); ?></td>
+                <td class="small">
+                    <?php if (array_key_exists('Reply-To', $this->log['detail']['mail']) && $this->log['detail']['mail']['Reply-To']) : ?>
+                        <?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['Reply-To']), 0, 'UTF-8')); ?>
+                    <?php else : ?>
+                        -
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate('À'); ?></td>
+                <td class="small">
+                    <?php if (array_key_exists('To', $this->log['detail']['mail']) && $this->log['detail']['mail']['To']) : ?>
+                        <?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['To']), 0, 'UTF-8')); ?>
+                    <?php else : ?>
+                        -
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php if (array_key_exists('Cc', $this->log['detail']['mail'])) : ?>
+                <tr>
+                    <td class="td-label"><?php echo $this->translate('Cc'); ?></td>
+                    <td class="small"><?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['Cc']), 0, 'UTF-8')); ?></td>
+                </tr>
+            <?php endif; ?>
+
+            <?php if (array_key_exists('Bcc', $this->log['detail']['mail'])) : ?>
+                <tr>
+                    <td class="td-label"><?php echo $this->translate('Bcc'); ?></td>
+                    <td class="small"><?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['Bcc']), 0, 'UTF-8')); ?></td>
+                </tr>
+            <?php endif; ?>
+            <tr>
+                <td class="td-label"><?php echo $this->translate('Sujet'); ?></td>
+                <td class="small">
+                    <?php if (array_key_exists('Subject', $this->log['detail']['mail']) && $this->log['detail']['mail']['Subject']) : ?>
+                        <?php echo $this->log['detail']['mail']['Subject']; ?>
+                    <?php else : ?>
+                        -
+                    <?php endif; ?>
+                </td>
+            </tr>
+        </table>
+
+        <div>
+            <?php echo quoted_printable_decode($this->log['detail']['mail']['bodyHtml']); ?>
+        </div>
+
+        <?php if (!empty($this->log['detail']['mail']['attachments'])) : ?>
+
+            <hr/>
+
+            <p class="small">
+                <strong><?php echo $this->translate([
+                        'Fichier joint',
+                        'Fichiers joints',
+                        count($this->log['detail']['mail']['attachments'])])
+                    ?> :</strong>
+            </p>
+
+            <?php
+            foreach ($this->log['detail']['mail']['attachments'] as $attachment) {
+
+                $filepath = (is_array($attachment)) ? $attachment['path'] : $attachment;
+                $path_info = pathinfo($filepath);
+                $filepath = (array_key_exists('dirname', $path_info)) ? $path_info['dirname'] : null;
+                $filename = (array_key_exists('basename', $path_info)) ? $path_info['basename'] : null;
+                if (!$filename || !$filepath) {
+                    continue;
+                }
+                $filepath = str_replace(REVIEW_FILES_PATH, '', $filepath . '/' . urlencode($filename));
+
+                echo '<div class="small">';
+                echo '<a target="_blank" href="/' . $filepath . '">';
+                echo $filename;
+                echo '</a>';
+                echo '</div>';
+            }
+            ?>
+        <?php endif; ?>
+
+        <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Fait le"); ?></td>
+                <td class="small"><?php echo $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Effectué par"); ?></td>
+                <td class="small">
+                    <?php echo $this->user['fullname']; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Dernier statut connu"); ?></td>
+                <td class="small"><?php echo $this->translate(Episciences_PapersManager::getStatusLabel($this->log['detail']['lastStatus'])); ?></td>
+            </tr>
+        </table>
+        <?php break; ?>
+
+    <?php case Episciences_Paper_Logger::CODE_CONTINUE_PUBLICATION_PROCESS: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Fait le"); ?></td>
+                <td class="small"><?php echo $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Effectué par"); ?></td>
+                <td class="small">
+                    <?php echo $this->user['fullname']; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Statut"); ?></td>
+                <td class="small"><?php echo $this->translate(Episciences_PapersManager::getStatusLabel($this->translate(Episciences_PapersManager::getStatusLabel($this->log['detail']['lastStatus'])))); ?></td>
+            </tr>
+        </table>
+
+        <?php break; ?>
+    <?php
+    case Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT:
+    case Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST:
+    case Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_DEPOSED:
+    case Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST :
+    case Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED :
+    case Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED :
+    case Episciences_Paper_Logger::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED :
+    case Episciences_Paper_Logger::CODE_CE_READY_TO_PUBLISH :
+    case Episciences_Paper_Logger::CODE_AUTHOR_COMMENT_COVER_LETTER:
+    case Episciences_Paper_Logger::CODE_EDITOR_COMMENT:
+    case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
+    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR:
+    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER:
+        ?>
+        <?= $this->partial('administratepaper/new_comment_log_details.phtml', ['log' => $this->log, 'user' => $this->user]); ?>
+        <?php break; ?>
+    <?php endswitch ?>

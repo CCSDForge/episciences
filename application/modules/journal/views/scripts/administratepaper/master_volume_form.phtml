@@ -1,0 +1,30 @@
+<div>
+    <?php if (null !== $this->paperPosition): ?>
+    <?php
+        $alert = $this->translate('Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles.');
+        $alert .= '<br>';
+        $alert .= $this->translate('Il est toujours possible de modifier cet ordre manuellement via l’édition du volume.');
+        ?>
+    <div class="alert alert-warning alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">&times;</button>
+        <strong><i class="fas fa-exclamation-circle"></i></strong> <?= $alert?>
+    </div>
+    <?php endif; ?>
+    <form action="/administratepaper/savemastervolume" id="volume-form-<?= $this->docid ?>" style="height : 34px;">
+
+        <div class="pull-right" style="padding-left : 10px;">
+            <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+        </div>
+
+        <div class="input-group">
+            <span class="input-group-addon"><?= $this->translate('Volume') ?></span>
+            <label for="master_volume_select"></label>
+            <select class="form-control" name="vid" id="master_volume_select">
+                <option><?php echo $this->translate('Hors volume') ?></option>
+                <?php foreach ($this->volumes as $volume) : ?>
+                    <option <?= ($volume->getVid() === $this->vid) ? 'selected="selected"' : '' ?> value="<?= $volume->getVid() ?>"><?= $this->translate($volume->getNameKey()) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </form>
+</div>

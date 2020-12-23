@@ -1,0 +1,20 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$docId = $paper->getDocid();
+?>
+<?php if ($this->isPartial) : ?>
+    <span class="pull-right" data-toggle="tooltip"
+          title="<?= $this->translate($this->btnName); ?>">
+    <button id="<?= $this->btnId; ?>" class="btn btn-default btn-xs pull-right popover-link"
+            onclick="getAssignUserForm(this, <?= $docId; ?>, <?= $paper->getVid(); ?>, true)">
+            <span class="caret"></span>
+    </button>
+    </span>
+<?php else : ?>
+    <button id="<?= $this->btnId; ?>" class="btn btn-default btn-sm popover-link"
+            onclick="getAssignUserForm(this, <?= $docId; ?>, <?= $paper->getVid(); ?>, false)">
+        <span class="caret"></span>
+        <?= $this->translate($this->btnName); ?>
+    </button>
+<?php endif; ?>

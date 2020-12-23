@@ -1,0 +1,2013 @@
+<?php
+
+/**
+ * Class Episciences_Review
+ * Journal Settings
+ */
+class Episciences_Review
+{
+
+    const STATUS_NOTVALID = 0;
+    const STATUS_VALID = 1;
+    const STATUS_REFUSED = 2;
+    const DEFAULT_INVITATION_DEADLINE = '1 month';
+    const DEFAULT_RATING_DEADLINE = '2 month';
+    const DEFAULT_RATING_DEADLINE_MIN = '2 month';
+    const DEFAULT_RATING_DEADLINE_MAX = '6 month';
+
+    const ASSIGNMENT_EDITORS_MODE = ['predefined' => '0', 'default' => '1', 'advanced' => '2'];
+
+    const DEFAULT_LANG = 'en';
+
+    const SETTING_INVITATION_DEADLINE = 'invitation_deadline';
+    const SETTING_INVITATION_DEADLINE_UNIT = 'invitation_deadline_unit';
+    const SETTING_RATING_DEADLINE = 'rating_deadline';
+    const SETTING_RATING_DEADLINE_UNIT = 'rating_deadline_unit';
+    const SETTING_RATING_DEADLINE_MIN = 'rating_deadline_min';
+    const SETTING_RATING_DEADLINE_MIN_UNIT = 'rating_deadline_min_unit';
+    const SETTING_RATING_DEADLINE_MAX = 'rating_deadline_max';
+    const SETTING_RATING_DEADLINE_MAX_UNIT = 'rating_deadline_max_unit';
+    const SETTING_DESCRIPTION = 'description';
+    const SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS = 'canSpecifyUnwantedReviewers';
+    const SETTING_CAN_SUGGEST_EDITOR = 'canSuggestEditor';
+    const SETTING_CAN_PICK_EDITOR = 'canPickEditors';
+    const SETTING_CAN_ANSWER_WITH_TMP_VERSION = 'canAnswerWithTmpVersion';
+    const SETTING_MAX_EDITORS = 'max_editors';
+    const SETTING_CAN_CHOOSE_VOLUME = 'canChooseVolume';
+    // git 168
+    const SETTING_CAN_PICK_SECTION = 'canPickSEction';
+    const SETTING_CAN_SUGGEST_REVIEWERS = 'canSuggestReviewers';
+    const SETTING_REVIEWERS_CAN_COMMENT_ARTICLES = 'reviewersCanCommentArticles';
+    const SETTING_REQUIRED_REVIEWERS = 'requiredReviewers';
+    const SETTING_ENCAPSULATE_EDITORS = 'encapsulateEditors';
+    const SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'canAbandonContinuePublicationProcess';
+    // git #155
+    const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
+    //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
+    const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
+    const SETTING_EDITORS_CAN_ACCEPT_PAPERS = 'editorsCanAcceptPapers';
+    const SETTING_EDITORS_CAN_REJECT_PAPERS = 'editorsCanRejectPapers';
+    const SETTING_EDITORS_CAN_PUBLISH_PAPERS = 'editorsCanPublishPapers';
+    const SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS = 'editorsCanAskPaperRevisions';
+    const SETTING_EDITORS_CAN_EDIT_TEMPLATES = 'editorsCanEditTemplates';
+    const SETTING_EDITORS_CAN_ASSIGN_REVIEWERS = 'editorsCanAssignReviewers';
+    const SETTING_EDITORS_CAN_ASSIGN_EDITORS = 'editorsCanAssignEditors';
+    const SETTING_SHOW_RATINGS = 'showRatings';
+    const SETTING_DOMAINS = 'domains';
+    const SETTING_ISSN = 'ISSN';
+    const SETTING_REPOSITORIES = 'repositories';
+    const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
+    const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
+    const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
+    //Assignation automatique de rédacteurs
+    const SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT = 'systemAutoEditorsAssignment';
+    //Paramétrage avancé
+    const SETTING_EDITORS_ASSIGNMENT_DETAILS = 'editorsAssignmentDetails';
+    //Details de l'assignation de rédacteurs
+    const SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS = 'systemCanAssignChiefEditors';
+    const SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS = 'systemCanAssignSuggestEditors';
+    const SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS = 'systemCanAssignSectionEditors';
+    const SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS = 'systemCanAssignOnlySpecialVolumeEditors';
+    const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
+    const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
+
+
+    // Notifications
+    const SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS = 'systemCanNotifyChiefEditors';
+    const SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS = 'systemCanNotifyAdministrator';
+    const SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES = 'systemCanNotifySecretaries';
+    const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
+
+    const ASSIGNMENT_EDITORS_DETAIL = [
+        self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => '0',
+        self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS => '1',
+        self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS => '2',
+        self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS => '3',
+        self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS => '4',
+        self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS => '5',
+        self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES => '6'
+    ];
+
+    const ENABLED = '1';
+    const DISABLED = '0';
+
+    // Automatically reassign the same reviewers
+    const SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION = 'NewVersionAutomaticallyReassignSameReviewers';
+    const MAJOR_REVISION_ASSIGN_REVIEWERS = 'majorRevisionAssignReviewers';
+    const MINOR_REVISION_ASSIGN_REVIEWERS = 'minorRevisionAssignReviewers';
+
+    protected $_db = null;
+    protected $_rvid = 0;
+    protected $_code = '';
+    protected $_name = '';
+    protected $_status = '';
+    protected $_creation = null;
+
+
+    /**
+     * @var int
+     */
+    protected $_piwikid = 0;
+
+    protected $_primary = 'RVID';
+    protected $_jsonSettings = array(); // Paramètres à encoder/décoder en JSON
+    protected $_settingsKeys = array(); // Noms des paramètres autorisés
+    protected $_settings = array(); // Paramètres de la revue
+
+    protected $_issn = null;
+    protected $_repositories = array();
+
+    /**
+     * @var Episciences_Review_DoiSettings
+     */
+    protected $_doiSettings;
+
+    /** @var int  */
+    public static $_currentReviewId = null;
+
+    /**
+     * Episciences_Review constructor.
+     * @param array|null $options
+     */
+    public function __construct(array $options = null)
+    {
+        $this->_db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $this->_settingsKeys = array(
+            self::SETTING_INVITATION_DEADLINE,
+            self::SETTING_INVITATION_DEADLINE_UNIT,
+            self::SETTING_RATING_DEADLINE,
+            self::SETTING_RATING_DEADLINE_UNIT,
+            self::SETTING_RATING_DEADLINE_MIN,
+            self::SETTING_RATING_DEADLINE_MIN_UNIT,
+            self::SETTING_RATING_DEADLINE_MAX,
+            self::SETTING_RATING_DEADLINE_MAX_UNIT,
+            self::SETTING_DESCRIPTION,
+            self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
+            //self::SETTING_CAN_SUGGEST_EDITOR,
+            self::SETTING_CAN_PICK_EDITOR,
+            self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
+            //self::SETTING_MAX_EDITORS,
+            self::SETTING_CAN_CHOOSE_VOLUME,
+            self::SETTING_CAN_PICK_SECTION,
+            self::SETTING_CAN_SUGGEST_REVIEWERS,
+            self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
+            self::SETTING_REQUIRED_REVIEWERS,
+            self::SETTING_ENCAPSULATE_EDITORS,
+            //self::SETTING_EDITORS_CAN_MAKE_DECISIONS,
+            self::SETTING_EDITORS_CAN_ACCEPT_PAPERS,
+            self::SETTING_EDITORS_CAN_REJECT_PAPERS,
+            self::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
+            self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
+            self::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
+            //self::SETTING_EDITORS_CAN_ASSIGN_REVIEWERS,
+            //self::SETTING_EDITORS_CAN_ASSIGN_EDITORS,
+            self::SETTING_SHOW_RATINGS,
+            self::SETTING_DOMAINS,
+            self::SETTING_ISSN,
+            self::SETTING_REPOSITORIES,
+            self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
+            self::SETTING_ENCAPSULATE_REVIEWERS,
+            self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
+            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
+            self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
+            self::SETTING_SYSTEM_NOTIFICATIONS,
+            self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+            self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+            self::SETTING_ENCAPSULATE_COPY_EDITORS,
+            self::SETTING_CAN_RESUBMIT_REFUSED_PAPER
+        );
+
+
+        $this->_jsonSettings = array(
+            self::SETTING_REPOSITORIES,
+            self::SETTING_DOMAINS,
+            self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
+            self::SETTING_SYSTEM_NOTIFICATIONS,
+            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT
+        );
+
+        if (is_array($options)) {
+            $this->setOptions($options);
+        }
+
+        if(null === self::$_currentReviewId){
+            self::setCurrentReviewId($this->getRvid());
+        }
+    }
+
+    /**
+     * @param array $options
+     * @return $this
+     */
+    public function setOptions(array $options): self
+    {
+        $methods = get_class_methods($this);
+
+        $doiSet = new Episciences_Review_DoiSettings($options);
+
+        if ($doiSet instanceof Episciences_Review_DoiSettings) {
+            $this->setDoiSettings($doiSet);
+        }
+
+        foreach ($options as $key => $value) {
+            $method = 'set' . ucfirst(strtolower($key));
+            if (in_array($method, $methods, true)) {
+                $this->$method($value);
+            } elseif (in_array($key, $this->_settingsKeys, true)) {
+                $this->setSetting($key, $value);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     * @param $value
+     * @return $this
+     */
+    public function setSetting(string $name, $value): self
+    {
+        $this->_settings[$name] = $value;
+        return $this;
+    }
+
+    /**
+     * check from database if review exists
+     * @param int|string $rvid
+     * @return boolean
+     */
+    public static function exist($rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if (is_numeric($rvid)) {
+            $select = $db->select()->from('REVIEW', 'COUNT(*)')->where('RVID = ?', (int)$rvid);
+        } else {
+            $select = $db->select()->from('REVIEW', 'COUNT(*)')->where('CODE = ?', $rvid);
+        }
+        return (int)$db->fetchOne($select) === 1;
+    }
+
+    /**
+     * fetch review config from database
+     * @param $rvId
+     * @return array
+     */
+    public static function getData($rvId): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if (is_numeric($rvId)) {
+            $select = $db->select()->from('REVIEW')->where('RVID = ?', (int)$rvId);
+        } else {
+            $select = $db->select()->from('REVIEW')->where('CODE = ?', $rvId);
+        }
+        return $db->fetchRow($select);
+    }
+
+    /**
+     * fetch review chief editors
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getChiefEditors(): array
+    {
+        return self::getUsers(Episciences_Acl::ROLE_CHIEF_EDITOR);
+    }
+
+    /**
+     * fetch an array of Episciences_User, optionnaly filtered by role
+     * @param null $role
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getUsers($role = null): array
+    {
+        $result = array();
+        /** @var Episciences_User[] $users */
+        $users = Episciences_UsersManager::getUsersWithRoles($role);
+
+        if ($users) {
+
+            foreach ($users as $uid => $user) {
+                if (is_array($role)) {
+                    $role = $role[0];
+                }
+                $class_name = 'Episciences_' . ucfirst($role);
+                if (@class_exists($class_name)) {
+                    $result[$uid] = new $class_name($user->toArray());
+                } else {
+                    $result[$uid] = new Episciences_User($user->toArray());
+                }
+            }
+
+        }
+
+        return $result;
+    }
+
+    /**
+     * fetch review administrators
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getAdministrators(): array
+    {
+        return self::getUsers(Episciences_Acl::ROLE_ADMIN);
+    }
+
+    /**
+     * fetch review editors
+     * if strict is true, only fetch editors.
+     * if strict is false, fetch editors and chief editors
+     * @param bool $strict
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getEditors($strict = true): array
+    {
+        if ($strict) {
+            return self::getUsers(Episciences_Acl::ROLE_EDITOR);
+        }
+
+        return self::getUsers(array(Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR));
+    }
+
+    /**
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getCopyEditors(): array
+    {
+        return self::getUsers(Episciences_Acl::ROLE_COPY_EDITOR);
+    }
+
+    /**
+     * fetch review guest editors
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getGuestEditors(): array
+    {
+        return self::getUsers(Episciences_Acl::ROLE_GUEST_EDITOR);
+    }
+
+    /**
+     * fetch review reviewers
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getReviewers(): array
+    {
+        return self::getUsers(Episciences_Acl::ROLE_REVIEWER);
+    }
+
+    /**
+     * fetch review editorial secretaries
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getSecretaries(): array
+    {
+        return self::getUsers(Episciences_Acl::ROLE_SECRETARY);
+    }
+
+    /**
+     * fetch review webmasters
+     * @return Episciences_User[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getWebmasters(): array
+    {
+        return self::getUsers(Episciences_Acl::ROLE_WEBMASTER);
+    }
+
+    /**
+     * @return int|string|null
+     * @throws Zend_Exception
+     */
+    public static function getDefaultLanguage()
+    {
+        $languages = Episciences_Tools::getLanguages();
+        return (array_key_exists(self::DEFAULT_LANG, $languages)) ? self::DEFAULT_LANG : key($languages);
+    }
+
+    /**
+     * Journal's URL
+     * @return string
+     */
+    public function getUrl(): string
+    {
+        if ($this->getCode() === 'portal') {
+            return HTTP . '://' . DOMAIN;
+        }
+        return HTTP . '://' . $this->getCode() . '.' . DOMAIN;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCode(): string
+    {
+        return $this->_code;
+    }
+
+    /**
+     * @param $code
+     * @return $this
+     */
+    public function setCode($code): self
+    {
+        $this->_code = $code;
+        return $this;
+    }
+
+    /**
+     * Récupération d'une liste d'article de la revue, peut être filtrée par des options
+     * @param array $options
+     * $options['is']['key'] = value     : WHERE key = value
+     * $options['isNot']['key'] = value : WHERE key != value
+     * $options['limit'] = limit    : LIMIT limit
+     * $options['offset'] = offset     : LIMIT limit, offset
+     * @param bool $cached
+     * @param bool $isFilterInfos
+     * @return Episciences_Paper[]
+     * @throws Zend_Exception
+     */
+    public function getPapers(array $options = null, $cached = false, bool $isFilterInfos = false): array
+    {
+        $options['is']['rvid'] = $this->getRvid();
+        return Episciences_PapersManager::getList($options, $cached, $isFilterInfos);
+    }
+
+    /**
+     * @return int
+     */
+    public function getRvid(): int
+    {
+        return $this->_rvid;
+    }
+
+    /**
+     * @param $rvId
+     * @return $this
+     */
+    public function setRvid($rvId): self
+    {
+        $this->_rvid = (int)$rvId;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public static function getCurrentReviewId(): int
+    {
+        return self::$_currentReviewId;
+    }
+
+    /**
+     * @param int $currentReviewId
+     */
+    public static function setCurrentReviewId(int $currentReviewId)
+    {
+        self::$_currentReviewId = $currentReviewId;
+    }
+
+    /**
+     * Retourne le nombre d'enregistrements
+     * @param array $options
+     * @param bool $isFilterInfos :  Lorsqu'un utilisateur filtre les informations dans une table,
+     * un message est ajouté pour donner une idée de la force du filtrage.
+     * @return string
+     * @throws Zend_Exception
+     */
+    public function getPapersCount(array $options = [], bool $isFilterInfos = false): string
+    {
+        $options['is']['rvid'] = $this->getRvid();
+        return Episciences_PapersManager::getCount($options, $isFilterInfos);
+    }
+
+    /**
+     * @param array|null $options
+     * @param bool $toArray
+     * @return array
+     */
+    public function getVolumes(array $options = null, $toArray = false): array
+    {
+        $options['where'] = 'RVID = ' . $this->getRvid();
+        return Episciences_VolumesManager::getList($options, $toArray);
+    }
+
+    /**
+     * @param array|null $limit
+     * @return array
+     */
+    public function getCurrentIssues(array $limit = null): array
+    {
+        $subSelect = $this->_db->select()
+            ->from(T_VOLUME_SETTINGS, array('VID'))
+            ->where('SETTING = ?', 'current_issue')
+            ->where('VALUE = ?', 1);
+
+        $select = $this->_db->select()->from(T_VOLUMES);
+        $select->where('VID IN (' . new Zend_db_Expr($subSelect) . ')');
+        $select->where('RVID = ?', $this->getRvid());
+        $select->order('POSITION ASC');
+        if ($limit) {
+            $select->limit($limit[0], $limit[1]);
+        }
+        $result = $this->_db->fetchAll($select);
+
+        $volumes = array();
+        foreach ($result as $volume) {
+            $oVolume = new Episciences_Volume($volume);
+            $volumes[$oVolume->getVid()] = $oVolume;
+        }
+
+        return $volumes;
+    }
+
+    /**
+     * fetch all volumes with papers
+     * @param array|null $limit
+     * @return Episciences_Volume[]
+     */
+    public function getVolumesWithPapers(array $limit = null): array
+    {
+        return $this->getVolumesFromSql($this->getVolumesWithPapersQuery(), $limit);
+    }
+
+    /**
+     * given a sql query, fetch an array of Episciences_Volume
+     * @param Zend_Db_Select $select
+     * @param null $limit
+     * @return Episciences_Volume[]
+     */
+    private function getVolumesFromSql(Zend_Db_Select $select, $limit = null): array
+    {
+        if ($limit && is_array($limit)) {
+            $select->limit($limit[0], $limit[1]);
+        }
+        $result = $this->_db->fetchAll($select);
+
+        $volumes = array();
+        foreach ($result as $volume) {
+            $oVolume = new Episciences_Volume($volume);
+            $volumes[$oVolume->getVid()] = $oVolume;
+        }
+
+        return $volumes;
+    }
+
+    /**
+     * return an sql query for getting all volumes with papers
+     * @return Zend_Db_Select
+     */
+    private function getVolumesWithPapersQuery(): \Zend_Db_Select
+    {
+        // select all papers which have a master volume
+        $subSelect = $this->_db->select()
+            ->from(T_PAPERS, array('VID'))
+            ->where('RVID = ?', $this->getRvid())
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+            ->where('VID > 0');
+
+        // select all papers which have secondary volumes
+        $subSelect2 = $this->_db->select()
+            ->from(['p' => T_PAPERS], [])
+            ->join(['vp' => T_VOLUME_PAPER], 'p.DOCID = vp.DOCID', ['VID'])
+            ->where('RVID = ?', $this->getRvid())
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+
+        // select all volumes with papers
+        $select = $this->_db->select()->from(T_VOLUMES);
+        $select->where('VID IN (' . new Zend_db_Expr($subSelect) . ') OR VID IN (' . new Zend_db_Expr($subSelect2) . ')');
+        $select->where('RVID = ?', $this->getRvid());
+        $select->order('POSITION');
+        $select->order('VID DESC');
+
+        return $select;
+    }
+
+    /**
+     * fetch all special issues with papers
+     * @param array|null $limit
+     * @return Episciences_Volume[]
+     */
+    public function getSpecialIssuesWithPapers(array $limit = null): array
+    {
+        return $this->getVolumesFromSql($this->getSpecialIssuesWithPapersQuery(), $limit);
+    }
+
+    /**
+     * return an sql query for getting all special volumes with papers
+     * @return Zend_Db_Select
+     */
+    private function getSpecialIssuesWithPapersQuery(): \Zend_Db_Select
+    {
+        $select = $this->getVolumesWithPapersQuery();
+
+        // select all special volumes
+        $subSelect = $this->_db->select()
+            ->from(T_VOLUME_SETTINGS, array('VID'))
+            ->where('SETTING = ?', 'special_issue')
+            ->where('VALUE = ?', 1);
+
+        // select all special issues with papers
+        $select->where('VID IN (' . new Zend_db_Expr($subSelect) . ')');
+
+
+        return $select;
+    }
+
+    /**
+     * fetch all regular issues with papers
+     * @param array|null $limit
+     * @return Episciences_Volume[]
+     */
+    public function getRegularIssuesWithPapers(array $limit = null): array
+    {
+        return $this->getVolumesFromSql($this->getRegularIssuesWithPapersQuery(), $limit);
+    }
+
+    /**
+     * return an sql query for getting all regular volumes with papers
+     * @return Zend_Db_Select
+     */
+    private function getRegularIssuesWithPapersQuery(): \Zend_Db_Select
+    {
+        $select = $this->getVolumesWithPapersQuery();
+
+        // select all regular volumes
+        $subSelect = $this->_db->select()
+            ->from(T_VOLUME_SETTINGS, array('VID'))
+            ->where('SETTING = ?', 'special_issue')
+            ->where('VALUE = ?', 0);
+
+        // select all regular issues with papers
+        $select->where('VID IN (' . new Zend_db_Expr($subSelect) . ')');
+
+        return $select;
+    }
+
+    /**
+     * @param array|null $options
+     * @param bool $toArray
+     * @return array
+     */
+    public function getSections(array $options = null, $toArray = false): array
+    {
+        $options['where'] = 'RVID = ' . $this->getRvid();
+        return Episciences_SectionsManager::getList($options, $toArray);
+    }
+
+
+    /**
+     * Get sections with published papers
+     * @param array|null $limit
+     * @return array of Episciences_Section
+     */
+    public function getSectionsWithPapers(array $limit = null): array
+    {
+        $subSelect = $this->_db->select()
+            ->from(T_PAPERS, array('SID'))
+            ->where('RVID = ?', $this->getRvid())
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+            ->where('SID > 0');
+
+        $select = $this->_db->select()->from(T_SECTIONS);
+        $select->where('SID IN (' . new Zend_db_Expr($subSelect) . ')');
+        $select->where('RVID = ?', $this->getRvid());
+        $select->order('POSITION ASC');
+        if ($limit) {
+            $select->limit($limit[0], $limit[1]);
+        }
+        $result = $this->_db->fetchAll($select);
+
+        $sections = array();
+        foreach ($result as $section) {
+            $oSection = new Episciences_Section($section);
+            $oSection->getEditors();
+            $sections[$oSection->getSid()] = $oSection;
+        }
+
+        return $sections;
+    }
+
+    /**
+     * @return Ccsd_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Validate_Exception
+     */
+    public function settingsForm(): \Ccsd_Form
+    {
+        /** @var Ccsd_Form $form */
+        $form = new Ccsd_Form();
+        $form->setAttrib('class', 'form-horizontal');
+        $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
+
+        // global settings **********************************************
+        $form->addElement('text', 'ISSN', [
+                'label' => '<abbr title="International Standard Serial Number">ISSN</abbr>',
+                'description' => 'Format attendu : <code>12345678</code>',
+                'validators' => [new Zend_Validate_Barcode(['adapter' => 'ISSN', 'checksum' => false])]
+            ]
+        );
+
+        $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
+
+        //Description
+        //$form = $this->addDescriptionSettingsForm($form);
+
+        // display group: global settings
+        $form->addDisplayGroup(['ISSN'], 'global', ["legend" => "Paramètres généraux"]);
+        $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
+
+        // publication settings **********************************************
+        //Repositories settings
+        $form = $this->addRepositoriesSettingsForm($form);
+
+        //contributors settings
+        $form = $this->addContributorsSettingsForm($form);
+
+        //rating settings
+        $form = $this->addRatingSettingsForm($form);
+
+        // editor settings **********************************************
+        $form = $this->addEditorsSettingsForm($form);
+
+        // special issue settings **********************************************
+        $form = $this->addSpecialIssueSettingsForm($form);
+
+        $form = $this-> addNotificationSettingsForm($form);
+
+        //Copy editing checkBox
+        $form = $this->addCopyEditorForm($form);
+
+        // display group: publication settings
+        $form->addDisplayGroup([
+            self::SETTING_REPOSITORIES,
+            self::SETTING_CAN_PICK_SECTION,
+            self::SETTING_CAN_PICK_EDITOR,
+            self::SETTING_CAN_SUGGEST_REVIEWERS,
+            self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
+            self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
+            self::SETTING_CAN_CHOOSE_VOLUME,
+            self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
+            self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+        ], 'publication', ["legend" => "Paramètres de soumission"]);
+        $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
+
+        // display group : rating settings
+        $form->addDisplayGroup([
+            self::SETTING_INVITATION_DEADLINE,
+            self::SETTING_RATING_DEADLINE,
+            self::SETTING_RATING_DEADLINE_MIN,
+            self::SETTING_RATING_DEADLINE_MAX,
+            self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
+            self::SETTING_SHOW_RATINGS,
+            self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION
+        ], 'reviewing', ["legend" => "Paramètres de relecture"]);
+        $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
+
+        // display group : editor settings
+        $form->addDisplayGroup([
+            self::SETTING_REQUIRED_REVIEWERS,
+            self::SETTING_ENCAPSULATE_EDITORS,
+            self::SETTING_EDITORS_CAN_ACCEPT_PAPERS,
+            self::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
+            self::SETTING_EDITORS_CAN_REJECT_PAPERS,
+            self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
+            self::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
+            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
+            self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+        ], 'editors', ["legend" => "Paramètres des rédacteurs"]);
+        $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
+
+        $form->addDisplayGroup([
+           self::SETTING_SYSTEM_NOTIFICATIONS
+        ], 'notifications', ['legend' => "Paramètres de notification"]);
+        $form->getDisplayGroup('notifications')->removeDecorator('DtDdWrapper');
+
+        // display group : special issues settings
+        $form->addDisplayGroup([
+            self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
+            self::SETTING_ENCAPSULATE_REVIEWERS,
+            self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES
+        ], 'special_issues', ["legend" => "Paramètres des volumes spéciaux"]);
+        $form->getDisplayGroup('special_issues')->removeDecorator('DtDdWrapper');
+
+        // display group : copy editors settings
+        $form->addDisplayGroup([
+            self::SETTING_ENCAPSULATE_COPY_EDITORS
+        ], 'copyEditors', array("legend" => "Préparation de copie"));
+        $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
+
+        // submit button
+        $form->setActions(true)->createSubmitButton('submit', [
+                'label' => 'Enregistrer les paramètres',
+                'class' => 'btn btn-primary'
+            ]
+        );
+
+        return $form;
+    }
+
+    /**
+     * Save review settings in DB
+     * @return bool
+     */
+    public function save(): bool
+    {
+        $settingsValues = [];
+
+        // ISSN
+        $settingsValues[self::SETTING_ISSN] = $this->getSetting(self::SETTING_ISSN);
+
+        // Repositories
+        $settingsValues[self::SETTING_REPOSITORIES] = $this->getSetting(self::SETTING_REPOSITORIES);
+
+        // contributor can choose volume
+        $settingsValues[self::SETTING_CAN_CHOOSE_VOLUME] = $this->getSetting(self::SETTING_CAN_CHOOSE_VOLUME);
+
+        //choix de sections
+        $settingsValues[self::SETTING_CAN_PICK_SECTION] = $this->getSetting(self::SETTING_CAN_PICK_SECTION);
+
+        // contributor can suggest reviewers
+        $settingsValues[self::SETTING_CAN_SUGGEST_REVIEWERS] = $this->getSetting(self::SETTING_CAN_SUGGEST_REVIEWERS);
+
+        // contributor can specify unwanted reviewers
+        $settingsValues[self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS] = $this->getSetting(self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS);
+
+        // contributor can pick editors
+        $settingsValues[self::SETTING_CAN_PICK_EDITOR] = $this->getSetting(self::SETTING_CAN_PICK_EDITOR);
+
+        // contributor can answer a revision request with a temporary version
+        $settingsValues[self::SETTING_CAN_ANSWER_WITH_TMP_VERSION] = $this->getSetting(self::SETTING_CAN_ANSWER_WITH_TMP_VERSION);
+
+        // rating deadline
+        $settingsValues[self::SETTING_RATING_DEADLINE] = $this->getSetting(self::SETTING_RATING_DEADLINE) . ' ' . $this->getSetting(self::SETTING_RATING_DEADLINE_UNIT);
+
+        // rating deadline minimum
+        $settingsValues[self::SETTING_RATING_DEADLINE_MIN] = $this->getSetting(self::SETTING_RATING_DEADLINE_MIN) . ' ' . $this->getSetting(self::SETTING_RATING_DEADLINE_MIN_UNIT);
+
+        // rating deadline maximum
+        $settingsValues[self::SETTING_RATING_DEADLINE_MAX] = $this->getSetting(self::SETTING_RATING_DEADLINE_MAX) . ' ' . $this->getSetting(self::SETTING_RATING_DEADLINE_MAX_UNIT);
+
+        // invitation deadline
+        $settingsValues[self::SETTING_INVITATION_DEADLINE] = $this->getSetting(self::SETTING_INVITATION_DEADLINE) . ' ' . $this->getSetting(self::SETTING_INVITATION_DEADLINE_UNIT);
+
+        // reviewer can comment paper (send a message to the contributor)
+        $settingsValues[self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES] = $this->getSetting(self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES);
+
+        // display rating reports on paper public page
+        $settingsValues[self::SETTING_SHOW_RATINGS] = $this->getSetting(self::SETTING_SHOW_RATINGS);
+
+        // Nombre minimum de relectures pour pouvoir accepter un article
+        $settingsValues[self::SETTING_REQUIRED_REVIEWERS] = $this->getSetting(self::SETTING_REQUIRED_REVIEWERS);
+
+        // Encapsulation des rédacteurs
+        $settingsValues[self::SETTING_ENCAPSULATE_EDITORS] = $this->getSetting(self::SETTING_ENCAPSULATE_EDITORS);
+
+        // Permettre aux rédacteurs de changer le statut d'un article
+        //$settingsValues[self::SETTING_EDITORS_CAN_MAKE_DECISIONS] = $this->getSetting(self::SETTING_EDITORS_CAN_MAKE_DECISIONS);
+
+        // Permettre aux rédacteurs d'accepter un article
+        $settingsValues[self::SETTING_EDITORS_CAN_ACCEPT_PAPERS] = $this->getSetting(self::SETTING_EDITORS_CAN_ACCEPT_PAPERS);
+
+        // Permettre aux rédacteurs de publier un article
+        $settingsValues[self::SETTING_EDITORS_CAN_PUBLISH_PAPERS] = $this->getSetting(self::SETTING_EDITORS_CAN_PUBLISH_PAPERS);
+
+        // Permettre aux rédacteurs de refuser un article
+        $settingsValues[self::SETTING_EDITORS_CAN_REJECT_PAPERS] = $this->getSetting(self::SETTING_EDITORS_CAN_REJECT_PAPERS);
+
+        // Permettre aux rédacteurs de demander des modifications sur un article
+        $settingsValues[self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS] = $this->getSetting(self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS);
+
+        // Permettre aux rédacteurs de modifier les templates
+        $settingsValues[self::SETTING_EDITORS_CAN_EDIT_TEMPLATES] = $this->getSetting(self::SETTING_EDITORS_CAN_EDIT_TEMPLATES);
+
+        // Permettre aux rédacteurs d'assigner des relecteurs à un article
+        //$settingsValues[self::SETTING_EDITORS_CAN_ASSIGN_REVIEWERS] = $this->getSetting(self::SETTING_EDITORS_CAN_ASSIGN_REVIEWERS);
+
+        // Permettre aux rédacteurs de choisir les rédacteurs d'un article
+        //$settingsValues[self::SETTING_EDITORS_CAN_ASSIGN_EDITORS] = $this->getSetting(self::SETTING_EDITORS_CAN_ASSIGN_EDITORS);
+
+        // Protection des volumes spéciaux par un code d'accès
+        $settingsValues[self::SETTING_SPECIAL_ISSUE_ACCESS_CODE] = $this->getSetting(self::SETTING_SPECIAL_ISSUE_ACCESS_CODE);
+
+        // Encapsulation des relecteurs au sein des volumes
+        $settingsValues[self::SETTING_ENCAPSULATE_REVIEWERS] = $this->getSetting(self::SETTING_ENCAPSULATE_REVIEWERS);
+
+        // Les rédacteurs peuvent réattribuer la gestion d'un article
+        $settingsValues[self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES] = $this->getSetting(self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES);
+
+        // Encapsulation des préparateurs de copie
+        $settingsValues[self::SETTING_ENCAPSULATE_COPY_EDITORS] = $this->getSetting(self::SETTING_ENCAPSULATE_COPY_EDITORS);
+
+        // DOIs
+
+        $doiSettings = $this->getDoiSettings();
+
+        if ($doiSettings instanceof Episciences_Review_DoiSettings) {
+            $settingsValues = array_merge($settingsValues, $doiSettings->__toArray());
+        }
+
+        // Assignation auto de relecteurs
+        $settingsValues[self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION] = $this->getSetting(self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION);
+
+        // Assignation auto de rédacteurs
+        $this->initAutoAssignation($settingsValues);
+
+        // Notifications
+        $settingsValues[self::SETTING_SYSTEM_NOTIFICATIONS] = $this->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);
+
+        // Abondonner (reprendre) le processus de publication
+        // Les auteurs
+        $settingsValues[self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS] = $this->getSetting(self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS);
+
+        //Les rédacteurs
+        $settingsValues[self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS] = $this->getSetting(self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS);
+
+        // Resoumettre un artcile déjà refusé (nouvelle version)
+        $settingsValues[self::SETTING_CAN_RESUBMIT_REFUSED_PAPER] = $this->getSetting(self::SETTING_CAN_RESUBMIT_REFUSED_PAPER);
+
+
+        $values = [];
+
+
+        // Enregistrement des paramètres
+        foreach ($settingsValues as $setting => $value) {
+            $setting = $this->_db->quote($setting);
+            if (is_array($value) && !empty($value)) {
+                $value = Zend_Json::encode($value);
+            }
+            $value = $this->_db->quote($value);
+            $values[] = '(' . $this->_rvid . ',' . $setting . ',' . $value . ')';
+        }
+
+        $sql = 'INSERT INTO ';
+        $sql .= T_REVIEW_SETTINGS;
+        $sql .= ' (RVID, SETTING, VALUE) VALUES ';
+        $sql .= implode(',', $values);
+        $sql .= ' ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)';
+
+        if (!$this->_db->getConnection()->query($sql)) {
+            return false;
+        }
+
+        // Préparation des données de traduction
+        $path = REVIEW_LANG_PATH;
+        $file = 'reviews.php';
+        $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, $file, '#review_' . RVID . '_#');
+
+        // Nom de la revue
+        /*
+        $titles = $this->getTitle();
+        foreach ($titles as $lang=>$translated) {
+        $translations[$lang]['review_'.RVID.'_title'] = $translated;
+        }
+        */
+
+        // Description de la rubrique
+        /* $descriptions = $this->getSetting('description');
+         foreach ($descriptions as $lang => $translated) {
+             $translations[$lang]['review_' . RVID . '_description'] = $translated;
+         }*/
+
+        // Enregistrement des traductions
+        Episciences_Tools::writeTranslations($translations, $path, $file);
+
+        return true;
+    }
+
+    /**
+     * get review settings
+     * @return array
+     */
+    public function getSettings(): array
+    {
+        return $this->_settings;
+    }
+
+    /**
+     * get the specified setting
+     * @param $setting
+     * @return mixed
+     */
+    public function getSetting($setting)
+    {
+        if (count($this->_settings) === 0) {
+            $this->loadSettings();
+        }
+        return Ccsd_Tools::ifsetor($this->_settings[$setting], false);
+    }
+
+
+    /**
+     * load review settings from database
+     */
+    public function loadSettings()
+    {
+        // review configuration
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ' . $this->_rvid);
+
+        $journalDoiSettings = [];
+        foreach (Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select) as $row) {
+            if (in_array($row['SETTING'], $this->_jsonSettings, false)) {
+                $value = json_decode($row['VALUE'], true);
+                $this->setSetting($row['SETTING'], $value);
+            } elseif (in_array($row['SETTING'], Episciences_Review_DoiSettings::getDoiSettings(), false)) {
+                $journalDoiSettings[$row['SETTING']] = $row['VALUE'];
+            } else {
+                $this->setSetting($row['SETTING'], $row['VALUE']);
+            }
+        }
+
+        $doiSettings = new Episciences_Review_DoiSettings($journalDoiSettings);
+        $this->setDoiSettings($doiSettings);
+
+    }
+
+    /**
+     * delete settings
+     */
+    public function deleteSettings()
+    {
+        $this->_db->delete(T_REVIEW_SETTINGS, 'RVID = ' . $this->_rvid . ' AND SETTING != "domains"');
+    }
+
+    /**
+     * get repositories
+     * @return array|mixed
+     */
+    public function getRepositories()
+    {
+        if (array_key_exists('repositories', $this->_settings)) {
+            return $this->_settings['repositories'];
+        }
+
+        return array();
+    }
+
+    /**
+     * get translations path
+     * @return string
+     */
+    public function getTranslationsPath(): string
+    {
+        return realpath($this->getPath() . '/languages') . '/';
+    }
+
+    /**
+     * get review data path
+     * @return bool|string
+     */
+    public function getPath()
+    {
+        return realpath(APPLICATION_PATH . '/../data/' . $this->getCode());
+    }
+
+    /**
+     * get review name
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->_name;
+    }
+
+
+    public function getCreation()
+    {
+        return $this->_creation;
+    }
+
+
+
+    // SETTERS ******************************************************************************
+
+    /**
+     * @param $name
+     * @return $this
+     */
+    public function setName($name): self
+    {
+        $this->_name = $name;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getStatus(): string
+    {
+        return $this->_status;
+    }
+
+    /**
+     * @param $status
+     * @return $this
+     */
+    public function setStatus($status): self
+    {
+        $this->_status = $status;
+        return $this;
+    }
+
+    /**
+     * @param $creation
+     * @return $this
+     */
+    public function setCreation($creation): self
+    {
+        $this->_creation = $creation;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getPiwikid(): int
+    {
+        return $this->_piwikid;
+    }
+
+    /**
+     * @param int $piwikid
+     * @return $this
+     */
+    public function setPiwikid(int $piwikid): self
+    {
+        $this->_piwikid = $piwikid;
+        return $this;
+    }
+
+
+    /**
+     * @return Episciences_Review_DoiSettings
+     */
+    public function getDoiSettings(): Episciences_Review_DoiSettings
+    {
+        return $this->_doiSettings;
+    }
+
+    /**
+     * @param Episciences_Review_DoiSettings $doiSettings
+     */
+    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings)
+    {
+        $this->_doiSettings = $doiSettings;
+    }
+
+    /**
+     * @deprecated : see suggestions: git #182
+     * @return Ccsd_Form|Zend_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    public function getEditorsAssignationForm()
+    {
+        $this->loadSettings();
+
+        $form = new Ccsd_Form();
+        $form->setAttrib('class', 'form-horizontal');
+        $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
+
+        $multiOptions = [];
+
+        $multiOptions[self::ASSIGNMENT_EDITORS_MODE['default']] = $this->getDefaultLabel();
+        $multiOptions[self::ASSIGNMENT_EDITORS_MODE['predefined']] = "Prédéfini (tous)";
+        $multiOptions[self::ASSIGNMENT_EDITORS_MODE['advanced']] = "Assignation avancée";
+
+        // Mode d'assignation des rédacteurs
+        $form->addElement('select', self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT, [
+            'label' => 'Mode',
+            'description' => "Selon le mode choisi, les soumissions sont automatiquement attribuées à tous les éditeurs",
+            'value' => $this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT),
+            'multioptions' => $multiOptions]);
+
+        $form->addSubForm($this->getEditorsAssignationDetailForm(), 'advancedAssignation');
+        return $form;
+    }
+
+    /**
+     * @deprecated see suggestions: git #182
+     * @return Ccsd_Form_SubForm
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    public function getEditorsAssignationDetailForm(): \Ccsd_Form_SubForm
+    {
+
+        $form = new Ccsd_Form_SubForm();
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $backButtonOptions = [
+            'class' => 'btn btn-default',
+            'label' => 'Retour aux paramètres de la revue',
+            'onclick' => 'window.location.href=\'/review/settings\';',
+            'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'closeOnly' => true]]]
+        ];
+
+        $selectedOptions = [];
+        $assignmentOptionsLabels = [];
+
+        if (!empty(self::getChiefEditors())) {
+            $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS]] = 'Assigner tous les rédacteurs en chef';
+        }
+
+        if ((int)$this->getSetting(self::SETTING_CAN_PICK_SECTION) > 0) {
+            $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]] = 'Assigner tous les rédacteurs de la section';
+
+        }
+
+        if ((int)$this->getSetting(self::SETTING_CAN_CHOOSE_VOLUME) > 0) {
+            $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS]] = 'Assigner tous les rédacteurs du volume (hors volume spécial)';
+        }
+
+        $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS]] = 'Assigner tous les rédacteurs du volume spécial';
+
+        if ((int)$this->getSetting(self::SETTING_CAN_PICK_EDITOR) > 0) {
+            $assignmentOptionsLabels[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS]] = 'Assigner tous les rédacteurs suggérés par le contributeur';
+        }
+
+        if (!empty(self::getAdministrators())) {
+            $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS]] = 'Notifier tous les administrateurs';
+        }
+
+        if (!empty(self::getSecretaries())) {
+            $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES]] = 'Notifier tous les secrétaires de rédaction';
+        }
+
+        if ($this->getSetting(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS)) {
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS]] = 'Assigner tous les rédacteurs en chef';
+        }
+
+        if ($this->getSetting(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS)) {
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]] = 'Assigner tous les rédacteurs de la section';
+        }
+
+        if ($this->getSetting(self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS)) {
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS]] = 'Assigner tous les rédacteurs du volume spécial';
+        }
+
+        if ($this->getSetting(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS)) {
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS]] = 'Assigner tous les rédacteurs du volume (hors volume spécial)';
+        }
+
+        if ($this->getSetting(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS)) {
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS]] = 'Assigner tous les rédacteurs suggérés par le contributeur';
+        }
+
+        if ($this->getSetting(self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS)) {
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS]] = 'Notifier tous les administraeurs';
+        }
+
+        if ($this->getSetting(self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES)) {
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES]] = 'Notifier tous les secrétaires de rédaction';
+        }
+
+
+        $advancedMultiSelectOptions = [
+            'label' => "Option(s)",
+            'disabled' => 'disabled',
+            'multiOptions' => $assignmentOptionsLabels,
+            'value' => array_keys($selectedOptions),
+            'required' => $this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT) === self::ASSIGNMENT_EDITORS_MODE['advanced']
+        ];
+
+        if ($this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT) === self::ASSIGNMENT_EDITORS_MODE['advanced']) {
+            $advancedMultiSelectOptions['description'] = "Liste des options disponibles";
+            unset($advancedMultiSelectOptions['disabled']);
+        }
+
+        $form->addElement('multiselect', self::SETTING_EDITORS_ASSIGNMENT_DETAILS, $advancedMultiSelectOptions);
+        $form->getElement(self::SETTING_EDITORS_ASSIGNMENT_DETAILS)->getDecorator('label')->setOptions([
+            'class' => 'col-md-3 control-label',
+            'data-toggle' => 'tooltip',
+            'title' => $translator->translate("Choisissez au moins une option")
+        ]);
+
+        if ($this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT) === self::ASSIGNMENT_EDITORS_MODE['advanced']) {
+
+            $form->addElement('submit', 'save', [
+                'label' => "Enregistrer les paramètres",
+                'class' => 'btn btn-primary',
+                'decorators' => [['HtmlTag', ['tag' => 'div', 'id' => 'save-content', 'openOnly' => true, 'class' => 'pull-right']], 'ViewHelper']
+            ]);
+
+            // back to settings
+            $form->addElement('button', 'back', $backButtonOptions);
+
+        } else {
+
+            $backButtonOptions['decorators'] = [['HtmlTag', ['tag' => 'div', 'id' => 'save-content', 'openOnly' => true, 'class' => 'pull-right']], 'ViewHelper'];
+            // back to
+            $form->addElement('button', 'back', $backButtonOptions);
+
+        }
+
+        return $form;
+    }
+
+    /**
+     * @deprecated see suggestions : git #182
+     * Initialisation de parametres d'assignation automatique de rédacteurs
+     * @return array
+     */
+    private function editorsAssignationDetailsInit(): array
+    {
+        $settingsValues = [];
+        $autoAssignment = $this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
+        // Initialisation de paramètres d'assignation de rédacteurs
+        foreach (self::ASSIGNMENT_EDITORS_DETAIL as $setting => $order) {
+
+            if ($autoAssignment === self::ASSIGNMENT_EDITORS_MODE['default']) { // default mode
+
+                $this->applyDefaultAssignation($setting, $settingsValues);
+
+            } elseif ($autoAssignment === self::ASSIGNMENT_EDITORS_MODE['predefined']) { // Assigner tous les rédacteurs (volume + section + rédacteurs suggérés)
+                $this->applyPredefinedAssignation($setting, $settingsValues);
+
+            } else {
+                $settingsValues[$setting] = $this->getSetting($setting);
+            }
+        }
+        return $settingsValues;
+    }
+
+    /**
+     * @return string
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getDefaultLabel(): string
+    {
+        if (empty(self::getChiefEditors())) {
+            if (empty(self::getAdministrators())) {
+                if (empty(self::getSecretaries())) {
+                    $label = 'Aucun';
+                } else {
+                    $label = 'Par defaut, notifier les secrétaires de rédaction';
+                }
+            } else {
+                $label = 'Par defaut, notifier les administrateurs';
+            }
+        } else {
+            $label = 'Par defaut, seulement les rédacteurs en chef';
+        }
+        return $label;
+    }
+
+    /**
+     * @deprecated see suggestions : git #182
+     * @param string $setting
+     * @param array $settingsValues
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function applyDefaultAssignation(string $setting, array &$settingsValues)
+    {
+        if (!empty(self::getChiefEditors())) {// toutes les options sont désactivées sauf l'assignation des rédacteurs en chef
+            $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
+        } else { // toutes les options sont désactivées sauf la notification des administrateurs
+            if (!empty(self::getAdministrators())) {
+                $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
+            } elseif (!empty(self::getSecretaries())) {// toutes les options sont désactivées sauf la notification des secrétaires de rédaction
+                $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
+            } else { // AUCUN
+                $settingsValues[$setting] = self::DISABLED;
+            }
+        }
+    }
+
+    /**
+     * @deprecated see suggestions : git #182
+     * @param string $setting
+     * @param array $settingsValues
+     */
+    private function applyPredefinedAssignation(string $setting, array &$settingsValues)
+    {
+        if ($setting === self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS) {
+            $settingsValues[$setting] = (int)$this->getSetting(self::SETTING_CAN_PICK_EDITOR) > 0 ? self::ENABLED : self::DISABLED;
+            return;
+        }
+
+        if ($setting === self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES || $setting === self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS) { // pas de notifications
+            $settingsValues[$setting] = self::DISABLED;
+            return;
+        }
+
+        $settingsValues[$setting] = self::ENABLED; // toutes les autres options sont actives
+    }
+
+    /**
+     * @param bool $accessCodeFilterActivated (default = true : filters special volumes if they are protected by an access code)
+     * @param bool $translated (default = false : translate volumes keys)
+     * @return array
+     * @throws Zend_Exception
+     */
+    public function getVolumesOptions(bool $accessCodeFilterActivated = true, bool $translated = false): array
+    {
+        // Récupération des volumes
+        $options[] = "Hors volume";
+        $volumes = $this->getVolumes();
+        $settings = $this->getSettings();
+        /** @var Episciences_Volume $oVolume */
+        foreach ($volumes as $oVolume) {
+            $oVolume->loadSettings();
+
+            if ($accessCodeFilterActivated) {
+                if (
+                    $oVolume->getSetting('status') === 1 &&
+                    (
+                        $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) !== 1 ||
+                        (!array_key_exists(self::SETTING_SPECIAL_ISSUE_ACCESS_CODE, $settings) || $settings[self::SETTING_SPECIAL_ISSUE_ACCESS_CODE] !== 1)
+                    )
+                ) {
+                    $options[$oVolume->getVid()] = !$translated ? $oVolume->getNameKey() : Zend_Registry::get("Zend_Translate")->translate($oVolume->getNameKey());
+                }
+            } else { // all volumes name keys
+                $options[$oVolume->getVid()] = !$translated ? $oVolume->getNameKey() : Zend_Registry::get("Zend_Translate")->translate($oVolume->getNameKey());
+            }
+
+        }
+        return $options;
+    }
+
+    /**
+     * @param $form
+     * @return mixed
+     * @throws Zend_Exception
+     */
+    private function addRepositoriesSettingsForm($form)
+    {
+        $translator = Zend_Registry::get('Zend_Translate');
+        // enabled repositories
+        $repositories = [];
+        foreach (Episciences_Repositories::getRepositories() as $repoId => $repo) {
+            if ($repoId > 0) {
+                $repositories[$repoId] = $repo['label'];
+            }
+        }
+
+        $form->addElement('multiselect', self::SETTING_REPOSITORIES, [
+            'label' => 'Archives disponibles',
+            'description' => 'Liste des archives disponibles pour la soumission d\'articles.',
+            'multiOptions' => $repositories,
+            'value' => array_keys($repositories),
+            'required' => true,
+        ]);
+
+        $form->getElement(self::SETTING_REPOSITORIES)->getDecorator('label')->setOptions([
+            'class' => 'col-md-2',
+            'data-toggle' => 'tooltip',
+            'title' => $translator->translate('Choisissez les archives (au moins une) qui seront disponibles pour la soumission d\'articles.')
+        ]);
+
+        return $form;
+    }
+
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Zend_Form
+     * @throws Zend_Form_Exception
+     */
+    private function addDescriptionSettingsForm(Ccsd_Form $form): \Zend_Form
+    {
+        $lang = ['class' => 'Episciences_Tools', 'method' => 'getLanguages'];
+
+        return $form->addElement('MultiTextAreaLang', 'description', [
+            'label' => 'Description',
+            'populate' => $lang,
+            'tiny' => true,
+            'rows' => 5,
+            //'display' => Ccsd_Form_Element_MultiText::DISPLAY_ADVANCED
+        ]);
+
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    private function addEditorsSettingsForm(Ccsd_Form $form): \Ccsd_Form
+    {
+
+        $translator = Zend_Registry::get('Zend_Translate');
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+
+        $tooltipMsg = $translator->translate("Nombre minimum de relectures avant de pouvoir accepter un article.");
+        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
+        $label = $translator->translate("Minimum de relectures requis");
+        $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS, [
+                'label' => $tooltip . $label,
+                'value' => 0,
+                'style' => 'width: 40px']
+        );
+
+        $form->addElement('checkbox', self::SETTING_ENCAPSULATE_EDITORS, [
+                'label' => "Cloisonner les rédacteurs",
+                'description' => "S'ils sont cloisonnés, les rédacteurs ne peuvent voir que les articles qui leur sont assignés",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_ACCEPT_PAPERS, [
+                'label' => "Les rédacteurs peuvent accepter les articles",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_PUBLISH_PAPERS, [
+                'label' => "Les rédacteurs peuvent publier les articles",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_REJECT_PAPERS, [
+                'label' => "Les rédacteurs peuvent refuser les articles",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS, [
+                'label' => "Les rédacteurs peuvent demander des modifications sur les articles",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_EDIT_TEMPLATES, [
+                'label' => "Permettre aux rédacteurs de modifier les templates de mails",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        // Editors can abandon(continue) publication process
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS, [
+            'label' => "Permettre aux rédacteurs d’abandonner le processus de publication",
+            'options' => array('uncheckedValue' => 0, 'checkedValue' => 1),
+            'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES, [
+                'label' => "Les rédacteurs peuvent réattribuer la gestion de l'article",
+                //'description'    =>    "",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        // TODO
+        // editor can reassign paper to another editor
+
+       // assignation auto des rédacteurs
+        return $this->addAutoAssignationEditorsSettingsForm($form);
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Form_Exception
+     */
+    private function addContributorsSettingsForm(Ccsd_Form $form): \Ccsd_Form
+    {
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        // contributor can choose the volume
+        $form->addElement('checkbox', self::SETTING_CAN_CHOOSE_VOLUME, [
+                'label' => 'Permettre aux auteurs de choisir le volume',
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        // choix de sections
+        $form->addElement('select', self::SETTING_CAN_PICK_SECTION, [
+            'label' => 'Choix de section',
+            'value' => 1,
+            'multioptions' => [
+                '0' => "L'auteur ne peut pas choisir la section",
+                '1' => "L'auteur peut choisir la section",
+                '2' => "L'auteur doit choisir la section"
+            ]]
+        );
+
+        $form->getElement(self::SETTING_CAN_PICK_SECTION)->getDecorator('label')->setOption('class', 'col-md-2');
+
+        // contributor can suggest reviewers
+        $form->addElement('checkbox', self::SETTING_CAN_SUGGEST_REVIEWERS, [
+                'label' => 'Permettre aux auteurs de suggérer des relecteurs',
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        // contributor can specify unwanted reviewers
+        $form->addElement('checkbox', self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS, [
+                'label' => 'Permettre aux auteurs d\'indiquer par qui ils ne souhaitent pas être relus',
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        // contributor can pick an editor
+        $form->addElement('select', self::SETTING_CAN_PICK_EDITOR, [
+                'label' => 'Choix du rédacteur',
+                'value' => 0,
+                'multioptions' => [
+                    '0' => "L'auteur ne peut pas choisir de rédacteurs",
+                    '1' => "L'auteur peut choisir des rédacteurs",
+                    '2' => "L'auteur doit choisir des rédacteurs",
+                    '3' => "L'auteur doit choisir un et un seul rédacteur"
+                ]]
+        );
+
+        $form->getElement(self::SETTING_CAN_PICK_EDITOR)->getDecorator('label')->setOption('class', 'col-md-2');
+
+        // contributor can answer with a tmp version
+        $form->addElement('checkbox', self::SETTING_CAN_ANSWER_WITH_TMP_VERSION, [
+            'label' => 'Permettre aux auteurs de répondre à une demande de modifications par une version temporaire',
+            'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+            'decorators' => $checkboxDecorators]);
+
+        // Contriburor can abandon(continue) publication process
+        $form->addElement('checkbox', self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS, [
+            'label' => "Permettre aux auteurs d’abandonner le processus de publication",
+            'options' => array('uncheckedValue' => 0, 'checkedValue' => 1),
+            'decorators' => $checkboxDecorators]
+        );
+
+        // possibilité de soumettre une nouvelle version d'un article refusé
+        $form->addElement('checkbox', self::SETTING_CAN_RESUBMIT_REFUSED_PAPER, [
+                'label' => "Permettre aux auteurs de resoumettre un artcile dèjà refusé (nouvelle version)",
+                'options' => array('uncheckedValue' => 0, 'checkedValue' => 1),
+                'decorators' => $checkboxDecorators]
+        );
+
+        return $form;
+
+    }
+
+    /**
+     * @param Ccsd_form $form
+     * @return Ccsd_form|Zend_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    private function addRatingSettingsForm(Ccsd_form $form)
+    {
+        $translator = Zend_Registry::get('Zend_Translate');
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        // delay before invitation expires (default: one month)
+        $form->addElement('text', self::SETTING_INVITATION_DEADLINE, [
+                'label' => "Délai avant expiration d'une invitation",
+                'style' => 'width: 40px',
+                'required' => true,
+                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]]
+            ]
+        );
+
+        // default delay between invitation date and rating deadline (default: 2 months)
+        $tooltipMsg = $translator->translate("Délai laissé au relecteur pour rendre son rapport d'évaluation. La date limite est calculée à partir de la date d'envoi de l'invitation.");
+        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
+        $label = $translator->translate("Délai de relecture par défaut");
+        $form->addElement('text', self::SETTING_RATING_DEADLINE, [
+                'label' => $tooltip . $label,
+                'style' => 'width: 40px',
+                'required' => true,
+                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'validators' => [new Episciences_Form_Validate_CheckDefaultRatingDeadline()]
+            ]
+        );
+
+        // minimum delay between invitation date and rating deadline (default: 2 months)
+        $tooltipMsg = $translator->translate("Les rédacteurs ont la possibilité de modifier le délai de relecture pour chacun des relecteurs d'un article dont ils ont la charge. Ce délai modifié ne peut pas être inférieur au paramètre <strong>Délai de relecture minimum</strong>.");
+        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
+        $label = $translator->translate("Délai de relecture minimum");
+        $form->addElement('text', self::SETTING_RATING_DEADLINE_MIN, [
+                'label' => $tooltip . $label,
+                'style' => 'width: 40px',
+                'required' => true,
+                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'validators' => [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()]
+            ]
+        );
+
+        // maximum delay between invitation date and rating deadline (default: 6 months)
+        $tooltipMsg = $translator->translate("Les rédacteurs ont la possibilité de modifier le délai de relecture pour chacun des relecteurs d'un article dont ils ont la charge. Ce délai modifié ne peut pas être supérieur au paramètre <strong>Délai de relecture maximum</strong>.");
+        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
+        $label = $translator->translate("Délai de relecture maximum");
+        $form->addElement('text', self::SETTING_RATING_DEADLINE_MAX, [
+                'label' => $tooltip . $label,
+                'style' => 'width: 40px',
+                'required' => true,
+                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'validators' => [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()]
+            ]
+        );
+
+        // reviewers can comment paper
+        $form->addElement('checkbox', self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES, [
+                'label' => "Permettre aux relecteurs d'envoyer des messages à l'auteur",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        // display rating reports on paper public page
+        $form->addElement('checkbox', self::SETTING_SHOW_RATINGS, [
+                'label' => "Afficher les rapports de relecture sur la page de consultation d'un article",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        //Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise"
+
+        return $this->AddAutomaticallyReassignSameReviewersSettingsForm($form);
+
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Form_Exception
+     */
+    private function addSpecialIssueSettingsForm(Ccsd_Form $form): \Ccsd_Form
+    {
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        $form->addElement('checkbox', self::SETTING_SPECIAL_ISSUE_ACCESS_CODE, [
+                'label' => "Protéger la soumission dans les volumes spéciaux par un code d'accès",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_ENCAPSULATE_REVIEWERS, [
+                'label' => "Cloisonner les relecteurs",
+                'description' => "S'ils sont cloisonnés, les relecteurs d'un volume ne seront pas visibles ailleurs dans la revue",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        return $form;
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Zend_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    private function AddAutomaticallyReassignSameReviewersSettingsForm(Ccsd_Form $form): \Zend_Form
+    {
+        $translator = Zend_Registry::get('Zend_Translate');
+        $description = $translator->translate("Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise");
+        $twoPoints = $translator->translate(" :");
+        $mjrLabel = $translator->translate("En cas de demande de modifications majeures");
+        $mrLabel = $translator->translate("En cas de demande de modifications mineures");
+        $multiCheckboxOptions = [self::MAJOR_REVISION_ASSIGN_REVIEWERS => $mjrLabel, self::MINOR_REVISION_ASSIGN_REVIEWERS => $mrLabel];
+        $multiCheckboxDecorators = [
+            'ViewHelper',
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
+            ['Description',['tag' => 'span', 'class' => 'hint']],
+            ['Errors', ['placement' => 'APPEND']],
+            ['Label', ['tag' => 'label', 'class' => "col-md-9 control-label"]]
+        ];
+
+        return $form->addElement('multiCheckbox', self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION, [
+            'description' => $description . $twoPoints,
+            'multiOptions' => $multiCheckboxOptions,
+            'decorators' => $multiCheckboxDecorators
+        ]);
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    private function addAutoAssignationEditorsSettingsForm(Ccsd_Form $form): \Ccsd_Form
+    {
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        $chiefEditorsCheckBox = $translator->translate('Rédacteurs en chef');
+        $sectionCheckBox = $translator->translate("Rédacteurs de section");
+        $volumeCheckBox = $translator->translate("Rédacteurs de volume (hors volume spécial)");
+        $suggestedEditorsCheckBox = $translator->translate("Rédacteurs suggérés par le contributeur");
+        $specialVolumeCheckBox = $translator->translate("Rédacteurs de volume spécial");
+
+        $multiCheckboxOptions = [
+            self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => $chiefEditorsCheckBox,
+            self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS => $sectionCheckBox,
+            self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS => $volumeCheckBox,
+            self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS => $suggestedEditorsCheckBox,
+            self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS => $specialVolumeCheckBox
+        ];
+
+        $form->addElement('multiCheckbox', self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT, [
+            'description' => $translator->translate("Lorsqu'un article est soumis, assigner les") . $translator->translate(" :"),
+            'multiOptions' => $multiCheckboxOptions,
+            'separator' => '<br>',
+            'decorators' => $checkboxDecorators
+        ]);
+
+        return $form;
+    }
+
+    /**
+     * @deprecated
+     * @param array $options
+     * @param string $title
+     */
+    private function disable(array &$options, string $title = ""){
+
+        $options['disabled'] = true;
+        $options ['data-toggle'] = 'tooltip';
+        $options ['title'] = $title;
+    }
+
+    /**
+     * @deprecated
+     * @param array $options
+     */
+    private function enable(array &$options){
+        if(array_key_exists('disabled', $options)){
+            unset($options['disabled']);
+        }
+        if(array_key_exists('data-toggle', $options)){
+            unset($options['data-toggle']);
+        }
+
+        if(array_key_exists('title', $options)){
+            unset($options['title']);
+        }
+    }
+
+    /**
+     * @param Zend_Form
+     * @return Ccsd_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    private function addNotificationSettingsForm(Ccsd_Form $form) : Zend_Form{
+        $translator = Zend_Registry::get('Zend_Translate');
+        $twoPoints = $translator->translate(" :");
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+        $chiefEditorsCheckBox = $translator->translate('Rédacteurs en chef');
+        $adminCheckBox = $translator->translate("Administrateurs");
+        $secretaryCheckBox = $translator->translate("Secrétaires de rédaction");
+        $multiCheckboxOptions = [self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS => $chiefEditorsCheckBox, self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS => $adminCheckBox , self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES => $secretaryCheckBox];
+
+        return $form->addElement('multiCheckbox', self::SETTING_SYSTEM_NOTIFICATIONS, [
+            'description' => $translator->translate("Lorsqu'un article est soumis, mis à jour ou refusé, notifier les") . $twoPoints,
+            'multiOptions' => $multiCheckboxOptions,
+            'separator' => '<br>',
+            'decorators' => $checkboxDecorators
+        ]);
+
+    }
+
+    /**
+     * @param array $settingsValues
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function initAutoAssignation(array &$settingsValues = [])
+    {
+        $autoAssignation = $this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
+
+        if (empty(self::getChiefEditors()) && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)) {
+            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)]);
+        }
+
+        if ((int)$this->getSetting(self::SETTING_CAN_PICK_SECTION) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)) {
+            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)]);
+        }
+
+        if ((int)$this->getSetting(self::SETTING_CAN_CHOOSE_VOLUME) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)) {
+            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)]);
+        }
+
+        if ((int)$this->getSetting(self::SETTING_CAN_PICK_EDITOR) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true) ) {
+            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true)]);
+        }
+        $settingsValues[self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT] = $autoAssignation;
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Zend_Form
+     * @throws Zend_Form_Exception
+     */
+    private function addCopyEditorForm(Ccsd_Form $form): \Zend_Form
+    {
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        return $form->addElement('checkbox', self::SETTING_ENCAPSULATE_COPY_EDITORS, array(
+            'label' => "Cloisonner les préparateurs de copie",
+            'description' => "S'ils sont cloisonnés, les préparateurs de copie ne peuvent voir que les articles qui leur sont assignés",
+            'options' => array('uncheckedValue' => 0, 'checkedValue' => 1),
+            'decorators' => $checkboxDecorators)
+        );
+    }
+
+    /**
+     * get the list of users to be notified
+     * @param array $recipients
+     * @param int | string $rvId : (rvid or rvcode)
+     * @param bool $strict = false [ne pas en tenir compte du module de notifications]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function checkReviewNotifications(array &$recipients, $rvId = RVID, $strict = true)
+    {
+        $review = Episciences_ReviewsManager::find($rvId);
+        $notificationSettings = $review->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);
+
+        if (!$strict) {
+            Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
+            Episciences_Submit::addIfNotExists(self::getSecretaries(), $recipients);
+            Episciences_Submit::addIfNotExists(self::getAdministrators(), $recipients);
+
+        } else {
+            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS, $notificationSettings, true)) {
+                Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
+            }
+
+            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES, $notificationSettings, true)) {
+                Episciences_Submit::addIfNotExists(self::getSecretaries(), $recipients);
+            }
+
+            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS, $notificationSettings, true)) {
+                Episciences_Submit::addIfNotExists(self::getAdministrators(), $recipients);
+            }
+
+        }
+    }
+
+    /**
+     * @return string
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function forYourInformation(): string
+    {
+        $cc = [];
+        $FYI = '';
+        self::checkReviewNotifications($cc);
+        /** @var Episciences_User $recipient */
+        foreach ($cc as $recipient) {
+            $FYI .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
+            $FYI .= '; ';
+        }
+        return substr($FYI, 0, -2);
+    }
+}

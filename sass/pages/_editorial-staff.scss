@@ -1,0 +1,31 @@
+/**
+ * Editorial staff page
+ */
+@import "../base/colors";
+#editorial_staff h2 {
+  font-weight: bold;
+  border-bottom: 1px solid $almost-white;
+}
+
+.staff_member {
+  margin-bottom: 5px;
+  margin-left: 20px;
+  padding: 2px;
+}
+
+.staff_member img {
+  display: inline-block;
+  margin-right: 20px;
+  border-radius: 20px!important;
+}
+
+.staff_member .details {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.staff_member .fullname {
+  font-weight: bold;
+  color: #6e6e6e;
+}
+

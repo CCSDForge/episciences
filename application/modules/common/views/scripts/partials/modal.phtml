@@ -1,0 +1,61 @@
+<!-- Modal (Updated to BS3) -->
+<div class="modal fade" id="modal-box" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+
+    <div class="modal-dialog" <?php
+    if ($this->style) {
+        echo 'style="';
+        foreach ($this->style as $property => $value) {
+            echo $property . ':' . $value . ';';
+        }
+        echo '"';
+    }
+    ?>>
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="modal-title"></h4>
+            </div>
+
+            <div class="modal-body">
+                <script type="text/javascript">$(this).parent('.modal-body').html(getLoader());</script>
+            </div>
+
+            <div class="modal-footer">
+                <?php if ($this->buttons !== false) : ?>
+                    <button type="button" class="btn btn-default"
+                            data-dismiss="modal"><?php echo $this->translate('Annuler'); ?></button>
+                    <button type="button" class="btn btn-primary"
+                            id="submit-modal"><?php echo $this->translate('Valider'); ?></button>
+                <?php endif; ?>
+            </div>
+
+
+        </div><!-- /.modal-content -->
+
+    </div><!-- /.modal-dialog -->
+
+</div><!-- /.modal -->
+
+
+<script>
+
+    $(document).ready(function () {
+
+        $('button#submit-modal').click(function () {
+            if (typeof form == 'undefined' || form.validate()) {
+                if (typeof form != 'undefined') {
+                    form.ajaxSubmit();
+                } else {
+                    $('#modal-box form').submit();
+                    $('#modal-box').modal('hide');
+                }
+            } else {
+                form.displayErrors();
+            }
+        });
+
+    });
+
+</script>

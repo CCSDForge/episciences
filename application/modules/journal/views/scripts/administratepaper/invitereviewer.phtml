@@ -1,0 +1,75 @@
+<?php
+
+$this->jQuery()->addJavascriptFile('/js/vendor/jquery.ui.autocomplete.html.js');
+$this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
+$this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
+$this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
+$this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+//datatable
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+?>
+
+<?php $this->layout()->pageTitle = $this->translate('Inviter un relecteur'); ?>
+<?php
+$description = $this->translate("Inviter un relecteur à évaluer l'article");
+$description .=  ' : <br>';
+$description .= '#' . $this->paper->getDocId();
+$description .= ' - ' . $this->paper->getTitle();
+?>
+<?php $this->layout()->description = $description; ?>
+
+    <?php echo $this->partial(
+        'partials/invitereviewer.phtml', [
+            'paper' => $this->paper,
+            'reviewers' => $this->reviewers,
+            'user_form' => $this->user_form,
+            'invitation_form' => $this->invitation_form,
+            'referer' => $this->referer,
+            'isExistingCriterionGrid' => $this->isExistingCriterionGrid
+        ]
+    ); ?>
+
+<style>
+
+    .dataTable.hover tr:hover td {
+        cursor: pointer;
+        background: #62A2D9 !important;
+        border-top: 1px solid #0F6EBF;
+        border-bottom: 1px solid #0F6EBF;
+        color: #fff;
+    }
+
+</style>
+
+<script type="text/javascript">
+    // Valeurs du formulaire
+    var contributor = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
+    var editor = <?php echo Zend_Json::encode(['full_name' => Episciences_Auth::getFullName(), 'email' => Episciences_Auth::getEmail()]); ?>;
+    var review = <?php if ($this->js_review) : ?><?php echo $this->js_review; ?><?php else:?>null<?php endif;?>;
+    var reviewers = <?php if ($this->js_reviewers) : ?><?php echo $this->js_reviewers; ?><?php else:?>null<?php endif;?>;
+    var ignore_list = <?php if ($this->js_ignore_list) : ?><?php echo $this->js_ignore_list; ?><?php else:?>null<?php endif;?>;
+    var templates = <?php if ($this->js_templates) : ?><?php echo $this->js_templates; ?><?php else:?>null<?php endif;?>;
+    var paper = <?php if ($this->js_paper) : ?><?php echo $this->js_paper; ?><?php else:?>null<?php endif;?>;
+    var uid = <?php if ($this->js_uid) : ?><?php echo $this->js_uid; ?><?php else:?>null<?php endif;?>;
+    var available_languages = <?php echo $this->available_languages?>;
+    var allJsReviewers = <?php if ($this->allJsReviewers) : ?><?php echo $this->allJsReviewers; ?><?php else:?>null<?php endif;?>;
+    //git #180 : ajout d'un nouveau tag : les noms des auteurs
+    let allAuthors = '<?=  $this->js_allAuthors ; ?>';
+
+    $(document).ready(function () {
+        $('#submit-invitation').click(function () {
+            if (validate_step2()) {
+                $('#invitation-form').submit();
+            }
+        });
+    });
+</script>
+
+<?php $this->jQuery()->addJavascriptFile('/js/administratepaper/invitereviewer-modal.js'); ?>
+

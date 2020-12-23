@@ -1,0 +1,36 @@
+//Slightly lighten a color
+//@access public
+//@param {Color} $color - color to tint
+//@param {Number} $percentage - percentage of `$color` in returned color
+//@return {Color}
+@function tint($color, $percentage) {
+  @return mix(white, $color, $percentage);
+}
+
+body {
+  color: $text-color;
+  //font: normal 125% / 1.4;
+}
+
+h1 {
+  font-size: $h1-text-size;
+  color: $h1-text-color;
+  line-height: 30px;
+  padding-bottom: 5px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid tint($h1-text-color, 75);
+}
+
+h2 {
+  font-size: $h2-text-size;
+  line-height: $h2-text-size;
+  margin-bottom: 20px;
+  color: $h2-text-color;
+}
+
+h3 {
+  font-size: $h3-text-size;
+  line-height: $h3-text-size;
+  margin-bottom: 15px;
+  color: $h3-text-color;
+}

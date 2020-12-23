@@ -1,0 +1,76 @@
+<?php if ($this->templates) : ?>
+    <?php
+    $editTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour modifier ce template";
+    $deleteTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour supprimer le template personnalisé";
+    ?>
+
+    <div id="templates">
+        <?php
+        $previous_group = '';
+        $current_group = '';
+        ?>
+        <?php foreach ($this->templates as $template) : ?>
+            <?php $current_group = $template['TYPE']; ?>
+            <?php if ($current_group != $previous_group) : ?>
+                <h3><strong><?php echo $this->translate($current_group . '_tpl_group'); ?></strong></h3>
+            <?php endif; ?>
+            <div style="border-bottom: 1px solid #aaa; padding-bottom: 6px; margin-bottom: 4px;  margin-left: 15px; clear: both">
+
+
+                <?php if ($this->editorsCanEditTmplates): ?>
+
+                    <?php
+                    $editTemplateTitle = 'Modifier ce template';
+                    $deleteTemplateTitle = 'Supprimer le template personnalisé';
+                    ?>
+                    <a class="modal-opener"
+                       title="<?php echo $this->translate($editTemplateTitle); ?>"
+                       href="/administratemail/edittemplate?id=<?php echo $template['ID'] ?>">
+                        <?php echo $this->translate($template['KEY'] . '_tpl_name') ?>
+                    </a>
+                <?php else: ?>
+                    <span class="text-info"><?= $this->translate($template['KEY'] . '_tpl_name') ?></span>
+                <?php endif; ?>
+
+                <div style="float: right">
+                    <?php if ($this->editorsCanEditTmplates): ?>
+                        <a class="modal-opener"
+                           href="/administratemail/edittemplate?id=<?php echo $template['ID'] ?>"
+                           title="<?php echo $this->translate($editTemplateTitle); ?>">
+                            <button class="btn btn-default btn-xs" data-toggle="tooltip"
+                                    title="<?php echo $this->translate($editTemplateTitle); ?>"
+                                    role="button" >
+                                <span class="glyphicon glyphicon-edit"></span>&nbsp;<?php echo $this->translate('Modifier'); ?>
+                            </button>
+                        </a>
+                        <?php if ($template['PARENTID']) : ?>
+                            <a class="delete-template"
+                               href="/administratemail/deletetemplate?id=<?php echo $template['ID'] ?>"
+                               title="<?php echo $this->translate($deleteTemplateTitle); ?>">
+                                <button class="btn btn-default btn-xs" data-toggle="tooltip"
+                                        title="<?php echo $this->translate($deleteTemplateTitle); ?>"
+                                        role="button" >
+                                    <span class="glyphicon glyphicon-trash"></span>&nbsp;<?php echo $this->translate('Rétablir'); ?>
+                                </button>
+                            </a>
+
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php $previous_group = $template['TYPE']; ?>
+        <?php endforeach; ?>
+    </div>
+    <?php
+    // Modal box (contient le formulaire de modification de template)
+    $this->jQuery()->addJavascriptFile('/js/administratemail/templates.js');
+    $style = ['width' => '50%'];
+    echo $this->partial('partials/modal.phtml', ['style' => $style]);
+    ?>
+
+<?php endif; ?>
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+?>

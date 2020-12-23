@@ -1,0 +1,99 @@
+{
+  "EPISCIENCES": {
+    "UID": 1984,
+    "USER_PHOTO_PATH": "/userPhoto/path/",
+    "MAIL_PATH": "/data/mail/path/",
+    "EXCEPTIONS_LOG_PATH": "/logs/mail/path/",
+    "SOLR_LOG_PATH": "/logs/file/path/",
+    "HAL_API": "https://api.example.org/",
+    "SECRET_KEY": "YourSecretAuthKey"
+  },
+  "CAS": {
+    "HOST": "a_db_host",
+    "PORT": 3306,
+    "NAME": "a_db_name",
+    "USER": "a_db_user_name",
+    "PWD": "a_db_password",
+    "SERVICE": "cas.example.org"
+  },
+  "CAS_SERVICE": {
+    "HOST": "cas.example.com",
+    "PORT": 443,
+    "URL": "/cas/",
+    "VERSION": "2.0",
+    "SSLVALIDATION": false,
+    "SSLCACERT": "/fullPathTo/ca.crt",
+    "LOG_PATH": "/fullPathTo/cas.log"
+  },
+  "SOLR": {
+    "HOST": "a_db_host",
+    "PORT": 3306,
+    "NAME": "a_db_name",
+    "USER": "a_db_user_name",
+    "PWD": "a_db_password"
+  },
+  "EPI": {
+    "HOST": "a_db_host",
+    "NAME": "a_db_name",
+    "USER": "a_db_user_name",
+    "PWD": "a_db_password"
+  },
+  "HAL": {
+    "HOST": "a_db_host",
+    "NAME": "a_db_name",
+    "USER": "a_db_user_name",
+    "PWD": "a_db_password"
+  },
+  "FUSION": {
+    "HOST": "https://example.org",
+    "TOKEN_AUTH": "exampleToken"
+  },
+  "SMTP": {
+    "SERVER": "relay.example.org"
+  },
+  "CAPTCHA": {
+    "BRAND": "HCAPTCHA"
+  },
+  "RECAPTCHA": {
+    "PUBKEY": "see https://www.google.com/recaptcha/admin",
+    "PRIVKEY": "see https://www.google.com/recaptcha/admin"
+  },
+  "HCAPTCHA": {
+    "SITEKEY": "see https://www.hcaptcha.com/",
+    "SECRETKEY": "see https://www.hcaptcha.com/"
+  },
+  "ENDPOINTS": {
+    "INDEXING_HOST": "solr-hostname-for-indexing.example.com",
+    "INDEXING_PROTOCOL": "HTTP",
+    "INDEXING_PORT": 8983,
+    "INDEXING_PATH": "",
+    "INDEXING_TIMEOUT": 300,
+    "INDEXING_USERNAME": "",
+    "INDEXING_PASSWORD": "",
+    "SEARCH_HOST": "solr-hostname-for-query.example.com",
+    "SEARCH_PROTOCOL": "HTTP",
+    "SEARCH_PORT": 8983,
+    "SEARCH_PATH": "",
+    "SEARCH_TIMEOUT": 40,
+    "SEARCH_USERNAME": "",
+    "SEARCH_PASSWORD": "",
+    "CORENAME": "episciences"
+  },
+  "GROBID": {
+    "HOST": "http://grobid.example.org",
+    "PORT": 8080
+  },
+  "GHOSTSCRIPT": {
+    "PATH": "/pathTo/ghostscript",
+    "CACHE": "/pathTo/cache/ghostscript"
+  },
+  "DOI": {
+    "AGENCY": "CROSSREF",
+    "PREFIX": "10.00000",
+    "LOGIN": "login",
+    "PASSWORD": "password",
+    "TESTAPI": "https://test.crossref.org/servlet/deposit",
+    "API": "https://doi.crossref.org/servlet/deposit",
+    "EMAIL_CONTACT": "feedback@example.org"
+  }
+}

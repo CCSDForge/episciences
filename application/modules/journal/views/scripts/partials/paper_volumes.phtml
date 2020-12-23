@@ -1,0 +1,70 @@
+<?php
+
+//$this->jQuery()->addJavascriptFile('/js/administratepaper/volume-assignment.js');
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+$vid = $this->article->getVid();
+$docId = $this->article->getDocid();
+
+?>
+
+<div id="volumes_<?= $docId; ?>">
+
+    <?php // master volume ********************************************** ?>
+    <div id="master_volume_<?= $docId; ?>">
+        <?php // master volume assignment button (check if paper is editable) ********************************************** ?>
+        <?php if (!$this->article->isPublished() &&
+            !$this->article->isRefused() &&
+            !$this->article->isRemoved() &&
+            !$this->article->isObsolete() &&
+            !$this->article->isDeleted()) : ?>
+            <button class="btn btn-default btn-xs popover-link" role="button" <?= $this->disabled?>
+                    style="margin-right: 5px"
+                    onclick="getMasterVolumeForm(this, <?= $docId; ?>, <?= $vid; ?>, '<?= $this->isPartial ?>')">
+                <span class="caret"></span>
+            </button>
+        <?php else : ?>
+            <button class="btn btn-default btn-xs disabled" style="margin-right: 5px"><span class="caret"></span></button>
+        <?php endif; ?>
+        <?php if (!$this->isPartial) : ?>
+            <?php echo $this->translate('Volume principal :'); ?>
+        <?php endif; ?>
+        <span id="master_volume_name_<?= $docId; ?>">
+            <?php if ($vid && array_key_exists($vid, $this->volumes)) : ?>
+                <?= $this->translate($this->volumes[$vid]->getNameKey()); ?>
+                <?= $this->partial('partials/paper_volume_position.phtml', [
+                    'docId' => $docId,
+                    'vid' => $vid,
+                    'position' => $this->article->getPosition(),
+                    'from' => $action
+                ]);
+                ?>
+            <?php else: ?>
+                <?php echo $this->translate('aucun'); ?>
+            <?php endif; ?>
+        </span>
+    </div>
+
+    <?php if (!$this->isPartial) : ?>
+        <?php // secondary volumes ********************************************** ?>
+        <div id="other_volumes_<?= $docId; ?>">
+            <?php // secondary volumes assignment button (check if paper is editable) ********************************************** ?>
+            <?php if (!$this->article->isRefused() &&
+                !$this->article->isRemoved() &&
+                !$this->article->isObsolete() &&
+                !$this->article->isDeleted()) : ?>
+                <button class="btn btn-default btn-xs popover-link" role="button" <?= $this->disabled; ?> <?= $this->ariaDisabled; ?>
+                        style="margin-right: 5px"
+                        onclick="getOtherVolumesForm(this, <?php echo $docId; ?>, '<?php echo $this->isPartial ?>')">
+                    <span class="caret"></span>
+                </button>
+            <?php else: ?>
+                <button class="btn btn-default btn-xs disabled " style="margin-right: 5px"><span class="caret"></span></button>
+            <?php endif; ?>
+            <?php echo $this->translate('Volumes secondaires :'); ?>
+            <span id="other_volumes_list_<?= $docId; ?>"><?php echo $this->partial('partials/paper_other_volumes.phtml', ['article' => $this->article, 'volumes' => $this->volumes]); ?></span>
+        </div>
+    <?php endif; ?>
+
+</div>

@@ -1,0 +1,54 @@
+<?php
+
+//$this->jQuery()->addJavascriptFile('/js/administratepaper/section-assignment.js');
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+$sid = $this->article->getSid();
+
+?>
+
+<div class="section">
+
+    <?php // Nom de la rubrique ********************************************** ?>
+    <?php if ($sid && array_key_exists($sid, $this->sections)) : ?>
+        <?php echo $this->translate($this->sections[$sid]->getNameKey()); ?>
+    <?php elseif (!$this->isPartial) : ?>
+        <?php echo $this->translate('Hors rubrique'); ?>
+    <?php endif; ?>
+
+    <?php // Bouton d'assignation à une rubrique ********************************************** ?>
+    <?php if ($this->isAllowed && !$this->article->isPublished() && !$this->article->isRefused() && !$this->article->isObsolete() && !$this->article->isDeleted()) : ?>
+
+        <?php if ($this->isPartial) : ?>
+            <span class="pull-right" data-toggle="tooltip"
+                  title="<?php echo $this->translate('Déplacer dans une rubrique'); ?>">
+	<button class="btn btn-default btn-xs pull-right popover-link"
+            onclick="getSectionForm(this, <?php echo $this->article->getDocid() ?>, '<?php echo $this->isPartial ?>')">
+			<span class="caret"></span>
+	</button>
+	</span>
+        <?php else : ?>
+            <div style="margin-top: 5px">
+                <button class="btn btn-default btn-sm popover-link"
+                        onclick="getSectionForm(this, <?php echo $this->article->getDocid() ?>, '<?php echo $this->isPartial ?>')">
+                    <span class="caret"></span> &nbsp;
+                    <?php echo $this->translate('Déplacer dans une rubrique'); ?>
+                </button>
+            </div>
+        <?php endif; ?>
+
+    <?php elseif (!$this->isAllowed && Episciences_Auth::getUid() == $this->article->getUid()) : ?>
+        <span class="pull-right" data-toggle="tooltip"
+              title="<?php echo $this->translate('Vous ne pouvez pas modifier un article que vous avez vous-même déposé.'); ?>">
+		<button class="btn btn-default btn-xs pull-right popover-link" disabled="disabled"> 
+			<span class="caret"></span>
+		</button>
+	</span>
+
+    <?php endif; ?>
+</div>
+
+
+
+

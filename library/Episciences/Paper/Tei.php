@@ -1,0 +1,653 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: kevin
+ * Date: 01/09/17
+ * Time: 15:50
+ */
+
+class Episciences_Paper_Tei
+{
+    private $_paper;
+
+    /**
+     * @var Episciences_Review
+     */
+    private $_review;
+    private $_languages;
+    private $_translator;
+    private $_defaultLocale;
+
+
+    /**
+     * @return mixed
+     */
+    public function getTranslator()
+    {
+        return $this->_translator;
+    }
+
+    /**
+     * @param mixed $translator
+     */
+    public function setTranslator($translator)
+    {
+        $this->_translator = $translator;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getLanguages()
+    {
+        return $this->_languages;
+    }
+
+    /**
+     * @param mixed $languages
+     */
+    public function setLanguages($languages)
+    {
+        if (array_key_exists('en', $languages)) {
+            $defaultLocale = 'en';
+        } else {
+            reset($languages);
+            $defaultLocale = key($languages);
+        }
+        $this->setDefaultLocale($defaultLocale);
+        $this->_languages = $languages;
+    }
+
+    /**
+     * @return Episciences_Paper|null
+     */
+    public function getPaper()
+    {
+        return $this->_paper;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     */
+    public function setPaper(Episciences_Paper $paper)
+    {
+        $this->_paper = $paper;
+    }
+
+    /**
+     * @return array
+     */
+    private function getVolumeName()
+    {
+        $languages = $this->getLanguages();
+        $translator = $this->getTranslator();
+
+        $volumeName = array();
+        if ($this->getPaper()->getVid()) {
+            $volume = Episciences_VolumesManager::find($this->getPaper()->getVid());
+            if ($volume instanceof Episciences_Volume) {
+                foreach ($languages as $locale => $language) {
+                    if ($translator->isTranslated($volume->getNameKey(), false, $locale)) {
+                        $volumeName[$locale] = $translator->translate($volume->getNameKey(), $locale);
+                    }
+                }
+            }
+        }
+
+        return $volumeName;
+    }
+
+    /**
+     * @return array
+     */
+    private function getSectionName()
+    {
+        $languages = $this->getLanguages();
+        $translator = $this->getTranslator();
+
+        $sectionName = array();
+        if ($this->getPaper()->getSid()) {
+            $section = Episciences_SectionsManager::find($this->getPaper()->getSid());
+            if ($section instanceof Episciences_Section) {
+                foreach ($languages as $locale => $language) {
+                    if ($translator->isTranslated($section->getNameKey(), false, $locale)) {
+                        $sectionName[$locale] = $translator->translate($section->getNameKey(), $locale);
+                    }
+                }
+            }
+        }
+
+        return $sectionName;
+    }
+
+    /**
+     * Episciences_Paper_Tei constructor.
+     * @param Episciences_Paper $paper
+     * @throws Zend_Exception
+     */
+    public function __construct(Episciences_Paper $paper)
+    {
+        $this->setPaper($paper);
+
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+        $review->loadSettings();
+        $this->setReview($review);
+
+        $this->setLanguages(Episciences_Tools::getLanguages());
+
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        // load journal translations in context of OAI (eg volumes ; sections)
+        if (APPLICATION_MODULE == 'oai') {
+            if (is_dir($review->getTranslationsPath()) && count(scandir($review->getTranslationsPath())) > 2) {
+                $translator->addTranslation($review->getTranslationsPath());
+            }
+        }
+
+        $this->setTranslator($translator);
+
+        return $this;
+
+    }
+
+    /**
+     * @return Episciences_User
+     */
+    public function getSubmitter()
+    {
+        $submitter = new Episciences_User();
+        $submitter->findWithCAS($this->getPaper()->getUid());
+
+        return $submitter;
+    }
+
+    /**
+     * generate XML TEI
+     * @return string
+     */
+    public function generateXml()
+    {
+        // xml init and settings
+        $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
+        $xml->formatOutput = true;
+        $xml->substituteEntities = true;
+        $xml->preserveWhiteSpace = false;
+
+        // generate headers
+        $root = $xml->createElement('TEI');
+        $root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.tei-c.org/ns/1.0');
+        $xml->appendChild($root);
+
+        // get head section
+        $root->appendChild($this->generateXmlHead($xml));
+        // get text section
+        $root->appendChild($this->generateXmlText($xml));
+        // save to string
+        return $xml->saveXML($xml->documentElement);
+
+    }
+
+    /**
+     * generate head section of XML TEI
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlHead(DOMDocument $xml)
+    {
+        // HEAD ********************************
+        $head = $xml->createElement('teiHeader');
+
+        $fd = $xml->createElement('fileDesc');
+        $ts = $xml->createElement('titleStmt');
+        $title = $xml->createElement('title', 'Episciences.org TEI export of ' . $this->getPaper()->getIdentifier() . ' - ' . $this->getPaper()->getCitation());
+        $ts->appendChild($title);
+        $fd->appendChild($ts);
+
+        $ps = $xml->createElement('publicationStmt');
+        $ps->appendChild($xml->createElement('distributor', 'CCSD'));
+        $headeravailability = $xml->createElement('availability');
+        $headeravailability->setAttribute('status', 'restricted');
+        $headerlicence = $xml->createElement('licence', 'Distributed under a Creative Commons Attribution 4.0 International License');
+        $headerlicence->setAttribute('target', 'http://creativecommons.org/licenses/by/4.0/');
+        $headeravailability->appendChild($headerlicence);
+        $ps->appendChild($headeravailability);
+        $headerdate = $xml->createElement('date');
+        $headerdate->setAttribute('when', date('Y-m-d', strtotime($this->getPaper()->getPublication_date())));
+        $ps->appendChild($headerdate);
+        $fd->appendChild($ps);
+
+        $sourceDesc = $xml->createElement('sourceDesc');
+        $p = $xml->createElement('p', 'Episciences.org API platform');
+
+        $sourceDesc->appendChild($p);
+        $fd->appendChild($sourceDesc);
+
+        $head->appendChild($fd);
+
+        $comments = $this->getComments();
+        // notesStmt > note type='commentary'
+        if (!empty($comments)) {
+            $ns = $xml->createElement('notesStmt');
+            foreach ($comments as $locale => $t) {
+                $c = $xml->createElement('note', $t);
+                if (Zend_Locale::isLocale($locale)) {
+                    $c->setAttribute('xml:lang', $locale);
+                }
+                $c->setAttribute('type', 'commentary');
+                $ns->appendChild($c);
+            }
+            $head->appendChild($ns);
+        }
+
+        return $head;
+
+    }
+
+    /**
+     * generate text section of XML TEI
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlText(DOMDocument $xml)
+    {
+        // create text section
+        $text = $xml->createElement('text');
+        // create body section
+        $body = $xml->createElement('body');
+        // create listBibl section
+        $lb = $xml->createElement('listBibl');
+        // create biblFull section
+        $b = $xml->createElement('biblFull');
+
+        // add titleStmt section to biblFull
+        $b->appendChild($this->generateXmlTextTitleStmt($xml));
+        // add editionStmt section to biblFull
+        $b->appendChild($this->generateXmlTextEditionStmt($xml));
+        // add publicationStmt section to biblFull
+        $b->appendChild($this->generateXmlTextPublicationStmt($xml));
+        // add sourceDesc section to biblFull
+        $b->appendChild($this->generateXmlTextSourceDesc($xml));
+        // add profileDesc section to biblFull
+        $b->appendChild($this->generateXmlTextProfileDesc($xml));
+
+        // add biblFull section to listBibl
+        $lb->appendChild($b);
+        // add listBibl section to body
+        $body->appendChild($lb);
+        // add body section to text
+        $text->appendChild($body);
+
+        return $text;
+    }
+
+    /**
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlTextTitleStmt(DOMDocument $xml)
+    {
+        $ts = $xml->createElement('titleStmt');
+
+        foreach ($this->getPaper()->getAllTitles() as $locale => $t) {
+            if (is_array($t)) {
+                foreach ($t as $tLang=>$title) {
+                    $tit = $xml->createElement('title', $title);
+                    if (Zend_Locale::isLocale($tLang)) {
+                        $tit->setAttribute('xml:lang', $tLang);
+                    }
+                    $ts->appendChild($tit);
+                }
+            } else {
+                $tit = $xml->createElement('title', $t);
+                if (Zend_Locale::isLocale($locale)) {
+                    $tit->setAttribute('xml:lang', $locale);
+                }
+                $ts->appendChild($tit);
+            }
+
+
+
+        }
+
+        foreach ($this->getPaper()->getMetadata('authors') as $author) {
+            list($lastname, $firstname) = explode(', ', $author);
+            $aut = $xml->createElement('author');
+            $aut->setAttribute('role', 'aut');
+            $persName = $xml->createElement('persName');
+            $first = $xml->createElement('forename', $firstname);
+            $first->setAttribute('type', 'first');
+            $persName->appendChild($first);
+            $persName->appendChild($xml->createElement('surname', $lastname));
+            $aut->appendChild($persName);
+            $aut->appendChild($xml->createElement('email'));
+            $ts->appendChild($aut);
+        }
+
+        return $ts;
+    }
+
+    /**
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlTextEditionStmt(DOMDocument $xml)
+    {
+        $submitter = $this->getSubmitter();
+
+        // ** editionStmt ****************************************
+        $es = $xml->createElement('editionStmt');
+        $edition = $xml->createElement('edition');
+        $d = $xml->createElement('date', $this->getPaper()->getSubmission_date());
+        $d->setAttribute('type', 'whenSubmitted');
+        $edition->appendChild($d);
+        $d = $xml->createElement('date', $this->getPaper()->getPublication_date());
+        $d->setAttribute('type', 'whenProduced');
+        $edition->appendChild($d);
+        $ref = $xml->createElement('ref');
+        $ref->setAttribute('type', 'file');
+
+        $ref->setAttribute('target', $this->getReview()->getUrl() . '/' . $this->getPaper()->getDocid() . '/pdf');
+        $edition->appendChild($ref);
+        $es->appendChild($edition);
+
+        // ** respStmt ****************************************
+        $respStmt = $xml->createElement('respStmt');
+        $respStmt->appendChild($xml->createElement('resp', 'contributor'));
+        $name = $xml->createElement('name');
+        $name->setAttribute('key', $submitter->getUid());
+        $persName = $xml->createElement('persName');
+        $persName->appendChild($xml->createElement('forename', $submitter->getFirstname()));
+        $persName->appendChild($xml->createElement('surname', $submitter->getLastname()));
+        $name->appendChild($persName);
+        $name->appendChild($xml->createElement('email', $submitter->getEmail()));
+        $respStmt->appendChild($name);
+        $es->appendChild($respStmt);
+
+        return $es;
+    }
+
+    /**
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlTextPublicationStmt(DOMDocument $xml)
+    {
+        $ps = $xml->createElement('publicationStmt');
+        $ps->appendChild($xml->createElement('distributor', 'CCSD'));
+
+        $id = $xml->createElement('idno', $this->getReview()->getCode() . ':' . $this->getPaper()->getDocid());
+        $id->setAttribute('type', 'id');
+        $ps->appendChild($id);
+
+        $id = $xml->createElement('idno', $this->getReview()->getUrl() . '/' . $this->getPaper()->getDocid());
+        $id->setAttribute('type', 'url');
+        $ps->appendChild($id);
+
+        $id = $xml->createElement('idno', $this->getPaper()->getCitation());
+        $id->setAttribute('type', 'ref');
+        $ps->appendChild($id);
+
+        return $ps;
+    }
+
+    /**
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlTextSourceDesc(DOMDocument $xml)
+    {
+        $sourceDesc = $xml->createElement('sourceDesc');
+        $biblStruct = $xml->createElement('biblStruct');
+        $analytic = $xml->createElement('analytic');
+
+        foreach ($this->getPaper()->getAllTitles() as $locale => $t) {
+            if (!Zend_Locale::isLocale($locale)) {
+                continue;
+            }
+            $title = $xml->createElement('title', $t);
+            $title->setAttribute('xml:lang', $locale);
+            $analytic->appendChild($title);
+        }
+
+        foreach ($this->getPaper()->getMetadata('authors') as $author) {
+            list($lastname, $firstname) = explode(', ', $author);
+            $aut = $xml->createElement('author');
+            $aut->setAttribute('role', 'aut');
+            $persName = $xml->createElement('persName');
+            $first = $xml->createElement('forename', $firstname);
+            $first->setAttribute('type', 'first');
+            $persName->appendChild($first);
+            $persName->appendChild($xml->createElement('surname', $lastname));
+            $aut->appendChild($persName);
+            $aut->appendChild($xml->createElement('email'));
+            $analytic->appendChild($aut);
+        }
+        $biblStruct->appendChild($analytic);
+
+        $monogr = $xml->createElement('monogr');
+
+        $identifier = $xml->createElement('idno', $this->getPaper()->getIdentifier());
+        $identifier->setAttribute('type', Episciences_Repositories::getLabel($this->getPaper()->getRepoid()));
+        $monogr->appendChild($identifier);
+
+        if ($this->getReview()->getSetting('ISSN')) {
+            $journal = $xml->createElement('idno', Ccsd_View_Helper_FormatIssn::FormatIssn($this->getReview()->getSetting('ISSN')));
+            $journal->setAttribute('type', 'issn');
+            $monogr->appendChild($journal);
+        }
+
+        $journal = $xml->createElement('title', $this->getReview()->getName());
+        $journal->setAttribute('level', 'j');
+        $monogr->appendChild($journal);
+
+        $imprint = $xml->createElement('imprint');
+        $imprint->appendChild($xml->createElement('publisher', ucfirst(DOMAIN)));
+
+        $volumeName = $this->getVolumeName();
+        if (array_key_exists($this->getDefaultLocale(), $volumeName)) {
+            $vn = $xml->createElement('biblScope', $volumeName[$this->getDefaultLocale()]);
+            $vn->setAttribute('unit', 'volume');
+            $imprint->appendChild($vn);
+        }
+
+        $sectionName = $this->getSectionName();
+        if (array_key_exists($this->getDefaultLocale(), $sectionName)) {
+            $sn = $xml->createElement('biblScope', $sectionName[$this->getDefaultLocale()]);
+            $sn->setAttribute('unit', 'issue');
+            $imprint->appendChild($sn);
+        }
+
+        if ($this->getPaper()->getPublication_date()) {
+            $d = $xml->createElement('date', date(DateTime::ATOM, strtotime($this->getPaper()->getPublication_date())));
+            $d->setAttribute('type', 'datePub');
+            $imprint->appendChild($d);
+        }
+
+        $monogr->appendChild($imprint);
+        $biblStruct->appendChild($monogr);
+
+        if ($this->getPaper()->getDoi()) {
+            $doi = $xml->createElement('idno', $this->getPaper()->getDoi());
+            $doi->setAttribute('type', 'doi');
+            $biblStruct->appendChild($doi);
+        }
+
+        $sourceDesc->appendChild($biblStruct);
+
+        return $sourceDesc;
+    }
+
+    /**
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlTextProfileDesc(DOMDocument $xml)
+    {
+        $profileDesc = $xml->createElement('profileDesc');
+
+        if ($this->getPaper()->getMetadata('language')) {
+            $langUsage = $xml->createElement('langUsage');
+            $languageNode = $xml->createElement('language', Zend_Locale::getTranslation($this->getPaper()->getMetadata('language'), 'language', 'en'));
+            $languageNode->setAttribute('ident', $this->getPaper()->getMetadata('language'));
+            $langUsage->appendChild($languageNode);
+            $profileDesc->appendChild($langUsage);
+        }
+
+        $textClassNode = $xml->createElement('textClass');
+        $keywordsNode = $xml->createElement('keywords');
+
+
+
+        $keywordsNode->setAttribute('scheme', 'author');
+
+        $subjects = $this->getPaper()->getMetadata('subjects');
+
+        if (is_array($subjects)) {
+            foreach ($subjects as $lang => $keyword) {
+
+                if (is_array($keyword)) {
+                    foreach ($keyword as $kwdLang=>$kwd) {
+                        $termNode = $xml->createElement('term', $kwd);
+                        if (Zend_Locale::isLocale($kwdLang)) {
+                            $termNode->setAttribute('xml:lang', $kwdLang);
+                        }
+                        $keywordsNode->appendChild($termNode);
+                    }
+                } else {
+                    $termNode = $xml->createElement('term', $keyword);
+                    if (Zend_Locale::isLocale($lang)) {
+                        $termNode->setAttribute('xml:lang', $lang);
+                    }
+                    $keywordsNode->appendChild($termNode);
+                }
+            }
+        }
+        $textClassNode->appendChild($keywordsNode);
+        $profileDesc->appendChild($textClassNode);
+
+        foreach ($this->getAbstracts() as $locale => $abstractText) {
+
+            if (is_array($abstractText)) {
+                $locale = Episciences_Tools::epi_array_key_first($abstractText);
+                $abstractText = array_shift($abstractText);
+            }
+
+            $abstractText = trim($abstractText);
+            $abstractNode = $xml->createElement('abstract');
+            if (Zend_Locale::isLocale($locale)) {
+                $abstractNode->setAttribute('xml:lang', $locale);
+            }
+            $p = $xml->createElement('p', $abstractText);
+            $abstractNode->appendChild($p);
+            $profileDesc->appendChild($abstractNode);
+        }
+
+
+
+        return $profileDesc;
+    }
+
+    /**
+     * @return array
+     */
+    private function getComments()
+    {
+        $comments = array();
+        foreach ($this->getPaper()->getAllAbstracts() as $locale => $abstract) {
+            if (is_array($abstract)) {
+                $locale = Episciences_Tools::epi_array_key_first($abstract);
+                $abstractText = array_shift($abstract);
+                $abstractText = $this->cleanComment($abstractText);
+                    if ($this->isComment($abstractText)) {
+                        $comments[][$locale] = $abstractText;
+                    }
+
+            } else {
+                $abstract = $this->cleanComment($abstract);
+                // sort comments from abstracts
+                if ($this->isComment($abstract)) {
+                    $comments[$locale] = $abstract;
+                }
+            }
+        }
+        return $comments;
+    }
+
+    private function isComment(string $comment) {
+        if (strpos(strtolower($comment), 'comment:') === 0) {
+            return true;
+        }
+        return false;
+    }
+
+
+    private function cleanComment(string $comment) {
+        return trim(preg_replace("/\r|\n/", " ", $comment));
+    }
+
+
+    /**
+     * Get an array of abstracts
+     * @return array
+     */
+    private function getAbstracts()
+    {
+        $abstracts = [];
+        foreach ($this->getPaper()->getAllAbstracts() as $locale => $abstract) {
+            if (is_array($abstract)) {
+                $abstractLang = Episciences_Tools::epi_array_key_first($abstract);
+                $abstractText = array_shift($abstract);
+                $abstractText = $this->cleanAbstract($abstractText);
+                $abstracts[][$abstractLang] = $abstractText;
+            } else {
+                $abstract = $this->cleanAbstract($abstract);
+                $abstracts[$locale] = $abstract;
+            }
+        }
+
+        return $abstracts;
+    }
+
+
+
+    /**
+     * @param Episciences_Review $review
+     */
+    private function setReview(Episciences_Review $review)
+    {
+        $this->_review = $review;
+    }
+
+    /**
+     * @return null|Episciences_Review
+     */
+    private function getReview()
+    {
+        return $this->_review;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getDefaultLocale()
+    {
+        return $this->_defaultLocale;
+    }
+
+    /**
+     * @param mixed $defaultLocale
+     */
+    public function setDefaultLocale($defaultLocale)
+    {
+        $this->_defaultLocale = $defaultLocale;
+    }
+
+    /**
+     * @param $t
+     * @return string
+     */
+    private function cleanAbstract(string $abstract): string
+    {
+        return trim(preg_replace("/\r|\n/", " ", $abstract));
+    }
+}

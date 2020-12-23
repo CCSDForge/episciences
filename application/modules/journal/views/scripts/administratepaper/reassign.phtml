@@ -1,0 +1,42 @@
+<?php if ($this->errors) : ?>
+<div class="alert alert-danger" role="alert">
+<?php foreach ($this->errors as $error) : ?>
+	<div class="red"><?php echo $this->translate($error)?></div>
+<?php endforeach; ?>
+</div>
+<?php else : ?>
+<style>
+	.errors {
+		display: none;
+		margin-top: 20px;
+		color: red;
+	}
+	
+	.errors-label {
+		font-weight: bold;
+		text-align: right;
+	}
+	
+	.errors-message {
+		padding-left: 20px;
+	}
+	
+</style>
+
+<?php echo $this->form; ?>
+<div class="row errors">
+	<span class="col-md-3 errors-label"><?php echo $this->translate('Erreurs')?></span>
+	<span class="col-md-9 errors-message"></span>
+</div>
+
+<script>
+var available_languages = <?php if ($this->available_languages) :?><?php echo $this->available_languages; ?><?php else: ?>null<?php endif;?>;
+var review = <?php if ($this->js_review) :?><?php echo $this->js_review; ?><?php else: ?>null<?php endif;?>;
+var paper = <?php if ($this->js_paper) :?><?php echo $this->js_paper; ?><?php else: ?>null<?php endif;?>;
+var template = <?php if ($this->js_template) :?><?php echo $this->js_template; ?><?php else: ?>null<?php endif;?>;
+var editors = <?php if ($this->js_editors) :?><?php echo $this->js_editors; ?><?php else: ?>null<?php endif;?>;
+</script>
+<script src="/js/administratepaper/reassign-editor.js"></script>
+<?php endif; ?>
+
+

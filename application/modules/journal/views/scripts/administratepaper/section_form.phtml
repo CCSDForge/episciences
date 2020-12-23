@@ -1,0 +1,72 @@
+<?php
+$hasEditors = [];
+foreach ($this->sections as $section) {
+    $hasEditors[$section->getSid()] = $section->hasEditors();
+}
+?>
+
+<script>
+
+    hasEditors = <?= Zend_Json::encode($hasEditors); ?>;
+
+    function setSection(sid) {
+        $('.checkbox label').removeClass('text-muted');
+
+        if ($.isNumeric(sid)) {
+            $('.checkbox').fadeIn();
+            if (sid in hasEditors && hasEditors[sid]) {
+                $('.checkbox input').prop('disabled', false);
+                $('.checkbox input').prop('checked', true);
+                $('.checkbox').tooltip('destroy');
+            } else {
+                $('.checkbox input').prop('disabled', true);
+                $('.checkbox label').addClass('text-muted');
+                $('.checkbox input').prop('checked', false);
+                $('.checkbox').tooltip({
+                    'title': translate("Cette rubrique n'a pas de rédacteurs assignés"),
+                    'placement': 'bottom'
+                });
+            }
+
+        } else {
+            $('.checkbox').hide();
+        }
+    }
+
+</script>
+
+<div>
+    <form id="section-assignment-form-<?= $this->docid; ?>" role="form">
+
+        <div class="pull-right" style="padding-left : 10px;">
+            <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer"); ?></button>
+        </div>
+
+        <div class="input-group">
+            <span class="input-group-addon"><?= $this->translate('Rubrique'); ?></span>
+            <label for="section_select"></label>
+            <select class="form-control" name="sid" onchange="setSection(this.value)" id="section_select">
+                <option><?= $this->translate('Hors rubrique'); ?></option>
+                <?php foreach ($this->sections as $section) : ?>
+                    <option <?php if ($section->getSid() == $this->sid) {
+                        echo 'selected="selected"';
+                    } ?> value="<?= $section->getSid(); ?>">
+                        <?= $this->translate($section->getNameKey()); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+
+        <div class="checkbox" style="display: none">
+            <label>
+                <input type="checkbox" name="assignEditors" id="assignEditors">
+                <?= $this->translate('Assigner les rédacteurs de cette rubrique à cet article'); ?>
+            </label>
+        </div>
+
+
+    </form>
+</div>
+
+

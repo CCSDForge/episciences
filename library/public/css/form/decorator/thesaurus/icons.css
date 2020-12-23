@@ -1,0 +1,14 @@
+.tree i.glyphicon {
+    margin-right: 5px;
+}
+              
+%%ICONS_HOVER%%
+
+.tree li input:checked + label i.glyphicon:first{  
+    background-position: -408px -120px;
+    width: 16px;
+}
+
+[class^="glyphicon-"], [class*=" glyphicon-"] {
+    cursor: pointer;
+}  

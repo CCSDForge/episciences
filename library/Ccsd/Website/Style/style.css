@@ -1,0 +1,27 @@
+@CHARSET "UTF-8";
+
+body {
+    background-color: %bg_color%;
+    background-image: url(%bg_img_file%);
+    background-repeat: %bg_img_repeat%;
+    background-position: %bg_img_pos_h% %bg_img_pos_v%; 
+}
+
+a {
+	color: %link_color%;
+}
+
+h1, h2, h3 {
+    font-family: %title_font_family%;
+	color: %title_color%;
+    font-size: %title_size%;
+}
+#container{
+	background-color: %container_color%;
+    padding: 10px 10px 50px;
+}
+div, table,label, input, button, select, textarea {
+	font-family: %font_family%;
+    font-size: %font_size%;
+    color: %color%;
+}

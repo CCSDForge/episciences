@@ -1,0 +1,74 @@
+<?php $this->layout()->description = $this->translate("Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."); ?>
+
+<div class="form-actions">
+     <form action="/website/public" method="post" id="form" class="form" enctype="multipart/form-data">
+         <input type="hidden" name="method" id="method" value="" />
+         <input type="hidden" name="name" id="name" value="" />
+         <input type="file" name="file" id="file" style="display:none;"/>
+         <div class="row">
+             <div class="col-lg-3 text-right">
+                 <?php echo $this->translate("Ajouter un nouveau fichier"); ?>
+             </div>
+             <div class="col-lg-6">
+                 <div class="input-group">
+                     <input class="form-control" type="text" name="file" id="value_file" disabled="disabled" />
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button" onclick="$('#file').click();"><i class="glyphicon glyphicon-file"></i>&nbsp;<?php echo $this->translate("Parcourir"); ?></button>
+                    </span>
+                 </div>
+             </div>
+             <div class="col-lg-3">
+                 <button type="submit" class="btn btn-default"><i class="glyphicon glyphicon-plus"></i>&nbsp;<?php echo $this->translate("Déposer le fichier"); ?></button>
+             </div>
+         </div>
+         <script>
+             $('#file').change(function() {
+                 $('#value_file').val($(this).val());
+             });
+         </script>
+
+     </form>
+</div>
+
+<table class="table table-striped table-hover">
+	<thead>
+		<tr>
+			<th width="10px"></th>
+			<th><?php echo $this->translate("Fichiers"); ?></th>
+			<th width="20px"><?php echo $this->translate("Actions"); ?></th>
+		</tr>
+	</thead>
+	<tbody>
+		<?php foreach ($this->files as $name => $link) {
+			$ext = Ccsd_File::getExtension($link);
+			?>
+			<tr class="file">
+				<td width="10px"><span class="<?php echo Ccsd_File::getIconeExtension($ext);?> active"></span></td>
+				<td>
+					<a href="<?php echo REVIEW_URL . $name?>" target="_blank"><span class="name"><?php echo $name?></span></a>
+					<blockquote style="display:none;"><?php echo $this->translate("Lien"); ?> :  <b><?php echo REVIEW_URL . $name?></b><br />
+					<?php echo $this->translate("Extension"); ?> : <b><?php echo $ext?></b><br />
+					<?php echo $this->translate("Taille"); ?> : <b><?php echo Ccsd_File::getSize($link);?></b><br/>
+					<?php echo $this->translate("Dernière modification"); ?> : <b><?php echo date ("d/m/Y", filemtime($link))?></b></blockquote>
+				</td>
+				<td style="text-align:right">
+					<a href="javascript:void(0)" onclick="$(this).closest('tr.file').find('blockquote').toggle();" title="<?php echo $this->translate("Informations"); ?>"><span class="glyphicon glyphicon-info-sign"></span></a>&nbsp;
+					<a href="javascript:void(0)" class="delete-file" title="<?php echo $this->translate("Supprimer"); ?>"><span class="glyphicon glyphicon-trash"></span></a></td>
+			</tr>
+		<?php }?>
+	</tbody>
+</table>
+
+<?php echo $this->confirm("Confirmation", "Souhaitez-vous supprimer le fichier")
+			->setTrigger('.delete-file')
+			->setJsInit('$("#confirm-id").val($(this).closest("tr.file").find(".name").text());')
+			->setJsCallback('deleteFile();');?>
+			
+<script>
+function deleteFile()
+{
+	$('#method').val('remove');
+	$('#name').val($('#confirm-id').val());
+	$('#form').submit();
+}
+</script>

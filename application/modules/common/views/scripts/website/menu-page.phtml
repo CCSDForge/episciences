@@ -1,0 +1,26 @@
+<div>
+    <table>
+        <tr>
+            <td width="20px"><span class="glyphicon glyphicon-move"></span></td>
+            <td width="70px">
+
+                <a role="button" href="#" onclick="return false;" class="editPage btn btn-default btn-xs"><span
+                            class="glyphicon glyphicon-pencil"></span></a>
+
+                <a role="button" href="javascript:void(0)" class="remove-page btn btn-default btn-xs"
+                   title="<?php echo $this->translate("Supprimer"); ?>"><span class="glyphicon glyphicon-trash"></span></a>
+
+            </td>
+            <td class="page-label"><?php echo $this->page->getLabel(Zend_Registry::get('lang')) ?>&nbsp;
+                <div class="div-plus"
+                     style="<?php echo (isset($this->pagesDisplay[$this->i]) && $this->pagesDisplay[$this->i]) ? 'display:block;' : 'display:none;' ?>">
+                    <hr/>
+                    <div id="form-<?php echo $this->i; ?>">
+                        <?php include __DIR__ . "/menu-page-form.phtml"; ?>
+                    </div>
+                </div>
+            </td>
+
+        </tr>
+    </table>
+</div>

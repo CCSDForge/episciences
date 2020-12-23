@@ -1,0 +1,336 @@
+[
+  {
+    "label": "Tableau de bord",
+    "controller": "user",
+    "action": "dashboard",
+    "resource": "user-dashboard",
+    "privilege": "member"
+  },
+  {
+    "label": "Proposer un article",
+    "controller": "submit",
+    "action": "index",
+    "resource": "submit-index",
+    "privilege": "member"
+  },
+  {
+    "label": "Mon espace",
+    "controller": "user",
+    "action": "index",
+    "resource": "user-index",
+    "privilege": "member",
+    "pages": [
+      {
+        "label": "Articles assignés",
+        "controller": "administratepaper",
+        "action": "assigned",
+        "resource": "administratepaper-assigned",
+        "privilege": "chief_editor,administrator,editor,guest_editor,copyeditor"
+      },
+      {
+        "label": "Mes articles",
+        "controller": "paper",
+        "action": "submitted",
+        "resource": "paper-submitted",
+        "privilege": "member"
+      },
+      {
+        "label": "Mes relectures",
+        "controller": "paper",
+        "action": "ratings",
+        "resource": "paper-ratings",
+        "privilege": "reviewer",
+        "pages": [
+          {
+            "label": "Toutes mes relectures",
+            "controller": "",
+            "action": "/paper/ratings",
+            "resource": "/paper/ratings",
+            "privilege": "reviewer",
+            "target": "_self"
+          },
+          {
+            "label": "Relectures en cours",
+            "controller": "",
+            "action": "/paper/ratings?ratingStatus[]=0&ratingStatus[]=1",
+            "resource": "/paper/ratings?ratingStatus[]=0&ratingStatus[]=1",
+            "privilege": "reviewer",
+            "target": "_self"
+          },
+          {
+            "label": "Invitations en attente",
+            "controller": "",
+            "action": "/paper/ratings?ratingStatus[]=3",
+            "resource": "/paper/ratings?ratingStatus[]=3",
+            "privilege": "reviewer",
+            "target": "_self"
+          },
+          {
+            "label": "Relectures terminées",
+            "controller": "",
+            "action": "/paper/ratings?ratingStatus[]=2",
+            "resource": "/paper/ratings?ratingStatus[]=2",
+            "privilege": "reviewer",
+            "target": "_self"
+          }
+        ]
+      },
+      {
+        "label": "Modifier mon profil",
+        "controller": "user",
+        "action": "edit",
+        "resource": "user-edit",
+        "privilege": "member"
+      },
+      {
+        "label": "Modifier mon mot de passe",
+        "controller": "user",
+        "action": "changepassword",
+        "resource": "user-changepassword",
+        "privilege": "member"
+      },
+      {
+        "label": "Permissions",
+        "controller": "user",
+        "action": "permissions",
+        "resource": "user-permissions"
+      }
+    ]
+  },
+  {
+    "label": "Gérer la revue",
+    "class": "nav-header",
+    "controller": "administrate",
+    "action": "index",
+    "resource": "administrate-index",
+    "privilege": "chief_editor,administrator,editor,webmaster,secretary",
+    "pages": [
+      {
+        "label": "Utilisateurs",
+        "controller": "administrate",
+        "action": "users",
+        "resource": "administrate-users",
+        "privilege": "chief_editor,administrator,editor,secretary",
+        "pages": [
+          {
+            "label": "Liste",
+            "controller": "user",
+            "action": "list",
+            "resource": "user-list",
+            "privilege": "chief_editor,administrator,editor,secretary"
+          }
+        ]
+      },
+      {
+        "label": "Revue",
+        "controller": "administrate",
+        "action": "review",
+        "resource": "administrate-review",
+        "privilege": "chief_editor,administrator,editor,secretary",
+        "pages": [
+          {
+            "label": "Paramètres",
+            "controller": "review",
+            "action": "settings",
+            "resource": "review-settings",
+            "privilege": "chief_editor,administrator,secretary"
+          },
+          {
+            "label": "Paramètres DOI",
+            "controller": "doi",
+            "action": "settings",
+            "resource": "doi-settings",
+            "privilege": "epiadmin"
+          },
+          {
+            "label": "Volumes",
+            "controller": "volume",
+            "action": "list",
+            "resource": "volume-list",
+            "privilege": "chief_editor,administrator,secretary",
+            "pages": [
+              {
+                "label": "Créer un volume",
+                "controller": "volume",
+                "action": "add",
+                "resource": "volume-add",
+                "privilege": "chief_editor,administrator,secretary"
+              },
+              {
+                "label": "Modifier un volume",
+                "controller": "volume",
+                "action": "edit",
+                "resource": "volume-edit",
+                "privilege": "chief_editor,administrator,secretary"
+              }
+            ]
+          },
+          {
+            "label": "Rubriques",
+            "controller": "section",
+            "action": "list",
+            "resource": "section-list",
+            "privilege": "chief_editor,administrator,secretary",
+            "pages": [
+              {
+                "label": "Créer une rubrique",
+                "controller": "section",
+                "action": "add",
+                "resource": "section-add",
+                "privilege": "chief_editor,administrator,secretary"
+              },
+              {
+                "label": "Modifier une rubrique",
+                "controller": "section",
+                "action": "edit",
+                "resource": "section-edit",
+                "privilege": "chief_editor,administrator,secretary"
+              }
+            ]
+          },
+          {
+            "label": "Grilles de relecture",
+            "controller": "grid",
+            "action": "list",
+            "resource": "grid-list",
+            "privilege": "chief_editor,administrator,editor,secretary",
+            "pages": [
+              {
+                "label": "Ajouter un critère",
+                "controller": "grid",
+                "action": "addcriterion",
+                "resource": "grid-addcriterion",
+                "privilege": "chief_editor,administrator,secretary"
+              },
+              {
+                "label": "Ajouter un séparateur",
+                "controller": "grid",
+                "action": "addseparator",
+                "resource": "grid-addseparator",
+                "privilege": "chief_editor,administrator,secretary"
+              },
+              {
+                "label": "Modifier un séparateur",
+                "controller": "grid",
+                "action": "editseparator",
+                "resource": "grid-editseparator",
+                "privilege": "chief_editor,administrator,secretary"
+              },
+              {
+                "label": "Modifier un critère",
+                "controller": "grid",
+                "action": "editcriterion",
+                "resource": "grid-editcriterion",
+                "privilege": "chief_editor,administrator,secretary"
+              }
+            ]
+          },
+          {
+            "label": "Gestion des articles",
+            "controller": "administratepaper",
+            "action": "list",
+            "resource": "administratepaper-list",
+            "privilege": "chief_editor,administrator,editor,secretary",
+            "pages": [
+              {
+                "label": "Gérer un article",
+                "controller": "administratepaper",
+                "action": "view",
+                "resource": "administratepaper-view",
+                "privilege": "chief_editor,administrator,editor,guest_editor,copyeditor,secretary"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Mails",
+        "controller": "administratemail",
+        "action": "index",
+        "resource": "administratemail-index",
+        "privilege": "chief_editor,administrator,editor,secretary,webmaster",
+        "pages": [
+          {
+            "label": "Templates",
+            "controller": "administratemail",
+            "action": "templates",
+            "resource": "administratemail-templates",
+            "privilege": "chief_editor,administrator,editor,secretary,webmaster"
+          },
+          {
+            "label": "Relances automatiques",
+            "controller": "administratemail",
+            "action": "reminders",
+            "resource": "administratemail-reminders",
+            "privilege": "chief_editor,administrator,editor,secretary"
+          },
+          {
+            "label": "Mailing",
+            "controller": "administratemail",
+            "action": "send",
+            "resource": "administratemail-send",
+            "privilege": "chief_editor,administrator,editor,secretary"
+          },
+          {
+            "label": "Historique",
+            "controller": "administratemail",
+            "action": "history",
+            "resource": "administratemail-history",
+            "privilege": "chief_editor,administrator,editor,secretary"
+          }
+        ]
+      },
+      {
+        "label": "Site web",
+        "controller": "website",
+        "action": "index",
+        "resource": "website-index",
+        "privilege": "chief_editor,administrator,webmaster,secretary",
+        "pages": [
+          {
+            "label": "Général",
+            "controller": "website",
+            "action": "common",
+            "resource": "website-common",
+            "privilege": "chief_editor,administrator,webmaster,secretary"
+          },
+          {
+            "label": "Style",
+            "controller": "website",
+            "action": "style",
+            "resource": "website-style",
+            "privilege": "chief_editor,administrator,webmaster,secretary"
+          },
+          {
+            "label": "En-tête",
+            "controller": "website",
+            "action": "header",
+            "resource": "website-header",
+            "privilege": "chief_editor,administrator,webmaster,secretary"
+          },
+          {
+            "label": "Menu",
+            "controller": "website",
+            "action": "menu",
+            "resource": "website-menu",
+            "privilege": "chief_editor,administrator,webmaster,secretary"
+          },
+          {
+            "label": "Actualités",
+            "controller": "website",
+            "action": "news",
+            "resource": "website-news",
+            "privilege": "chief_editor,administrator,webmaster,secretary"
+          },
+          {
+            "label": "Ressources",
+            "controller": "website",
+            "action": "public",
+            "resource": "website-public",
+            "privilege": "chief_editor,administrator,webmaster,secretary"
+          }
+        ]
+      }
+    ]
+  }
+]

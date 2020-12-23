@@ -1,0 +1,40 @@
+[
+  {
+    "label": "Mon espace",
+    "controller": "user",
+    "action": "index",
+    "resource": "user-index",
+    "pages": [
+      {
+        "label": "Connexion",
+        "controller": "user",
+        "action": "login",
+        "resource": "user-login"
+      },
+      {
+        "label": "Créer un compte",
+        "controller": "user",
+        "action": "create",
+        "resource": "user-lostlogin"
+      },
+      {
+        "label": "Login oublié ?",
+        "controller": "user",
+        "action": "lostlogin",
+        "resource": "user-lostlogin"
+      },
+      {
+        "label": "Mot de passe oublié ?",
+        "controller": "user",
+        "action": "lostpassword",
+        "resource": "user-lostpassword"
+      },
+      {
+        "label": "Permissions",
+        "controller": "user",
+        "action": "permissions",
+        "resource": "user-permissions"
+      }
+    ]
+  }
+]

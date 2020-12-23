@@ -1,0 +1,16 @@
+<div class="editors">
+    <?= $this->partial('partials/paper_assigned_editors_copyeditors.phtml', ['paper' => $this->paper, 'users' => $this->users]); ?>
+    <?php // editors assignment button ********************************************** ?>
+    <?php
+    if (Episciences_Auth::isSecretary() && $this->paper->isEditable()) : ?>
+        <?php
+        $btnName = 'Assigner des rédacteurs';
+        $btnId = 'editors';
+        ?>
+
+        <?= $this->partial('partials/paper_editors_copyeditors_assign_button.phtml', [
+            'paper' => $this->paper, 'btnName' => $btnName, 'btnId' => $btnId, 'isPartial' => true
+        ]);
+        ?>
+    <?php endif; ?>
+</div>

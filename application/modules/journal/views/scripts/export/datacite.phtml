@@ -1,0 +1,181 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$authors = $paper->getMetadata('authors');
+$subjects = $paper->getMetadata('subjects');
+
+$titles = $paper->getAllTitles();
+
+$abstracts = $paper->getAllAbstracts();
+
+$dateSubmitted = new DateTime($paper->getSubmission_date());
+$dateUpdated = new DateTime($paper->getModification_date());
+$dateIssued = new DateTime($paper->getPublication_date());
+$publicationYear = new DateTime($paper->getPublication_date());
+
+/** @var $journal Episciences_Review */
+$journal = $this->journal;
+
+
+if (defined('RVISSN')) {
+    $issn = $this->FormatIssn(RVISSN);
+} else {
+    $issn = '';
+}
+
+$seriesInformation['journalName'] = $journal->getName();
+
+if ($this->volume != '') {
+    $seriesInformation['volume'] = $this->volume;
+}
+
+if ($this->section != '') {
+    $seriesInformation['section'] = $this->section;
+}
+if ($issn != '') {
+    $seriesInformation['issn'] = $issn;
+}
+
+
+$seriesInformation = implode(' ; ', $seriesInformation);
+
+$schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://datacite.org/schema/kernel-4" xsi:schemaLocation="http://datacite.org/schema/kernel-4 http://schema.datacite.org/meta/kernel-4.3/metadata.xsd"';
+?>
+<resource <?php echo $schemInfo; ?>>
+    <identifier identifierType="DOI"><?php echo htmlentities($this->doi, ENT_XML1); ?></identifier>
+    <creators>
+        <?php
+        if (is_array($authors)) {
+            foreach ($authors as $creatorName) {
+                list($familyName, $givenName) = explode(', ', $creatorName);
+                ?>
+                <creator>
+                    <creatorName><?php echo $this->escape($creatorName) ?></creatorName>
+                    <givenName><?php echo $this->escape($givenName) ?></givenName>
+                    <familyName><?php echo $this->escape($familyName) ?></familyName>
+                </creator>
+                <?php
+            }
+        }
+        ?>
+    </creators>
+
+
+    <titles>
+        <?php
+        foreach ($titles as $lang => $title) {
+            if ($lang && Zend_Locale::isLocale($lang)) {
+                $langTitle = ' xml:lang="' . $lang . '"';
+            } else {
+                $langTitle = '';
+            }
+            echo '<title' . $langTitle . '>' . $this->escape($title) . '</title>';
+        }
+        ?>
+    </titles>
+
+    <publisher><?php echo DOMAIN; ?></publisher>
+
+    <publicationYear><?php echo $publicationYear->format('Y'); ?></publicationYear>
+
+
+    <?php if (is_array($subjects)): ?>
+        <subjects>
+            <?php
+            $langSubject = '';
+            foreach ($subjects as $lang => $keyword) {
+
+                if (is_array($keyword)) {
+                    foreach ($keyword as $kwdLang => $kwd) {
+
+                        if (Zend_Locale::isLocale($kwdLang)) {
+                            $langSubject = ' xml:lang="' . $kwdLang . '"';
+                        }
+                        echo PHP_EOL . '<subject' . $langSubject . ' subjectScheme="author">' . $this->escape($kwd) . '</subject>';
+                    }
+                } else {
+                    if (Zend_Locale::isLocale($lang)) {
+                        $langSubject = ' xml:lang="' . $lang . '"';
+                    }
+                    echo PHP_EOL . '<subject' . $langSubject . ' subjectScheme="author">' . $this->escape($keyword) . '</subject>';
+                }
+            }
+            ?>
+        </subjects>
+    <?php endif; ?>
+
+
+    <contributors>
+        <contributor contributorType="ContactPerson">
+            <contributorName nameType="Organizational"><?php echo 'contact@' . DOMAIN; ?></contributorName>
+            <affiliation><?php echo DOMAIN; ?></affiliation>
+        </contributor>
+    </contributors>
+
+    <dates>
+        <date dateType="Submitted"><?php echo $dateSubmitted->format('c'); ?></date>
+        <date dateType="Updated"><?php echo $dateUpdated->format('c'); ?></date>
+        <date dateType="Issued"><?php echo $dateIssued->format('c'); ?></date>
+    </dates>
+
+
+    <language><?php echo $this->paperLanguage; ?></language>
+
+    <resourceType resourceTypeGeneral="Text">Journal article</resourceType>
+
+    <alternateIdentifiers>
+        <alternateIdentifier
+                alternateIdentifierType="URL"><?php echo APPLICATION_URL . '/' . $paper->getDocid(); ?></alternateIdentifier>
+    </alternateIdentifiers>
+
+    <relatedIdentifiers>
+
+        <?php if ($paper->getRepoid() == Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
+            <relatedIdentifier relatedIdentifierType="arXiv" relationType="References">
+                arXiv:<?php echo $paper->getIdentifier(); ?></relatedIdentifier>
+        <?php else: ?>
+            <relatedIdentifier relatedIdentifierType="URL"
+                               relationType="References"><?php echo $paper->getDocUrl(); ?></relatedIdentifier>
+        <?php endif; ?>
+
+        <?php if (isset($issn) && $issn != '') : ?>
+            <relatedIdentifier relatedIdentifierType="ISSN"
+                               relationType="IsPartOf"><?php echo $this->escape($issn); ?></relatedIdentifier>
+        <?php endif; ?>
+    </relatedIdentifiers>
+
+
+    <formats>
+        <format>PDF</format>
+    </formats>
+
+    <version>1</version>
+
+    <descriptions>
+        <description descriptionType="SeriesInformation"><?php echo $this->escape($seriesInformation) ?></description>
+
+        <?php if ($abstracts): ?>
+            <?php
+            foreach ($abstracts as $lang => $abstract) {
+
+                if (('International audience' == $abstract) || (preg_match("/^Comment:/", $abstract))) {
+                    $descriptionType = 'Other';
+                } else {
+                    $descriptionType = 'Abstract';
+                }
+
+                if ($lang && Zend_Locale::isLocale($lang)) {
+                    $langId = ' xml:lang="' . $lang . '"';
+                } else {
+                    $langId = '';
+                }
+                echo '<description' . $langId . ' descriptionType="' . $descriptionType . '">';
+                echo $this->escape($abstract);
+                echo '</description>';
+            }
+            ?>
+        <?php endif; ?>
+    </descriptions>
+
+
+</resource>

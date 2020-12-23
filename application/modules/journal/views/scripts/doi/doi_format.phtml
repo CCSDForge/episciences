@@ -1,0 +1,62 @@
+<?php
+/**
+ * Template form for DOI format
+ */
+$name = $this->element->getName();
+?>
+
+<label class="col-md-3 control-label
+				<?php if ($this->element->hasErrors()): ?> error<?php endif; ?>
+				<?php if ($this->element->isRequired()): ?> required<?php endif; ?>"
+       for="<?php echo $name; ?>">
+    <?php echo $this->element->getLabel(); ?>
+</label>
+
+<div class="col-md-6">
+
+    <?php if ($this->element->hasErrors()): ?>
+        <span class="help-block error"><?php echo $this->formErrors($this->element->getMessages()); ?></span>
+    <?php endif ?>
+
+    <?php
+    // Valeur enregistrées (ou par défaut)
+    $doiFormat = ($this->element->getValue()) ? $this->element->getValue() : constant('Episciences_Review_DoiSettings::SETTING_DOI_DEFAULT_DOI_FORMAT');
+    ?>
+
+    <input name="<?php echo $name; ?>"
+           id="<?php echo $name; ?>"
+           type="text"
+           class="form-control input-sm"
+           style="display: inline-block; width: 300px"
+           value="<?php echo $doiFormat; ?>"/>
+</div>
+
+
+<div class="col-md-6">
+    <dl class="dl-horizontal">
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_REVIEW_CODE ?></code></dt>
+        <dd><?php echo $this->translate('Code de la revue') ?>&nbsp;<em>(<?php echo strtoupper(RVCODE); ?>)</em></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME ?></code></dt>
+        <dd><?php echo $this->translate("Volume de l'article") ?></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_ORDER ?></code></dt>
+        <dd><?php echo $this->translate("Numéro de l'article dans un volume (ordre)") ?></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION ?></code></dt>
+        <dd><?php echo $this->translate("Section de l'article") ?></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_ID ?></code></dt>
+        <dd><?php echo $this->translate("Numéro de l'article (Identifiant pérenne)") ?></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR ?></code></dt>
+        <dd><?php echo $this->translate('Année de publication') ?>&nbsp;<em>(<?php echo date('Y'); ?>)</em></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_MONTH ?></code></dt>
+        <dd><?php echo $this->translate('Mois de publication') ?>&nbsp;<em>(<?php echo date('m'); ?>)</em></dd>
+
+        <dt><code>%%</code></dt>
+        <dd><?php echo $this->translate("le caractère <kbd>%</kbd>"); ?></dd>
+    </dl>
+
+</div>

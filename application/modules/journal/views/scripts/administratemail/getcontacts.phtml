@@ -1,0 +1,100 @@
+<script>
+    var sender_uid = <?php echo Episciences_Auth::getUid(); ?>;
+    var target = '<?php echo $this->target ?>';
+    var all_contacts = <?php echo $this->js_contacts ?>;
+
+
+    <?php
+    define('JS_PREFIX', 'js_');
+
+    $jsRoles = [
+        Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL => 'Rédacteurs en chef',
+        Episciences_Acl::ROLE_GUEST_EDITOR_PLURAL => 'Rédacteurs invités',
+        Episciences_Acl::ROLE_EDITOR_PLURAL => 'Rédacteurs',
+        Episciences_Acl::ROLE_SECRETARY_PLURAL => 'Secrétaires de rédaction',
+        Episciences_Acl::ROLE_WEBMASTER_PLURAL => 'Webmasters',
+        Episciences_Acl::ROLE_REVIEWER_PLURAL => 'Relecteurs',
+        Episciences_Acl::ROLE_MEMBER_PLURAL => 'Membres'
+    ];
+
+    foreach (array_keys($jsRoles) as $jsRoleName) {
+        $jsRoleNamePrefixed = JS_PREFIX . $jsRoleName;
+        if ((isset($this->$jsRoleNamePrefixed)) && ($this->$jsRoleNamePrefixed != '')) {
+            echo PHP_EOL . "var $jsRoleName = " . $this->$jsRoleNamePrefixed . ';';
+        }
+    }
+    ?>
+    $.ajaxSetup({
+        cache: true
+    });
+    var url = "/js/administratemail/get-contacts.js?_=v<?php echo APPLICATION_VERSION; ?>";
+    $.getScript(url)
+
+        .done(function() {
+            initGetContacts();
+    })
+        .fail(function() {
+           console.log('loading failed');
+        });
+</script>
+
+
+<link rel="stylesheet" type="text/css" href="/css/administratemail/get-contacts.css"/>
+
+<div id="contact-type-dropdown" class="btn-group">
+    <button class="btn btn-default dropdown-toggle" type="button" id="contact-type-button" data-toggle="dropdown">
+        <span><?php echo $this->translate('Tous les contacts'); ?></span>
+        <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+        <li role="presentation" data-value="all_contacts">
+            <a role="menuitem" tabindex="-1" href="#"><?php echo $this->translate('Tous les contacts'); ?></a>
+        </li>
+        <li role="presentation" class="divider"></li>
+
+        <?php
+
+        foreach ($jsRoles as $jsRoleCode => $jsRoleName) {
+            $jsRoleNamePrefixed = JS_PREFIX . $jsRoleCode;
+            if ((isset($this->$jsRoleNamePrefixed)) && ($this->$jsRoleNamePrefixed != '')) {
+                echo '<li role="presentation" data-value="' . $jsRoleCode . '">
+            <a role="menuitem" tabindex="-1" href="#">';
+                echo $this->translate($jsRoleName);
+                echo '</a ></li>';
+            }
+        }
+        ?>
+    </ul>
+</div>
+
+<div style="float: right">
+    <input class="form-control" id="filter-input" type="text"
+           placeholder="<?php echo $this->translate('Filtrer les contacts') ?>">
+</div>
+
+<div id="toggleAll" style="margin: 20px 0 5px 10px;" data-action="select">
+    <span class="checkbox-label"><strong><?php echo $this->translate('Tout sélectionner') ?></strong></span>
+</div>
+<div id="contact-list">
+
+    <?php if (!empty($this->contacts)) : ?>
+        <table>
+            <?php foreach ($this->contacts as $contact) : ?>
+                <tr id="contact_<?php echo $contact['uid']; ?>">
+                    <td><?php echo $contact['fullname']; ?></td>
+                    <td class="grey"><?php echo $contact['username']; ?></td>
+                    <td><?php echo $contact['mail']; ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    <?php else : ?>
+        <?php echo $this->translate('Aucun destinataire'); ?>
+    <?php endif; ?>
+
+</div>
+
+<form name="add_contacts_form" data-submission="false">
+    <input id="hidden_added_contacts" name="hidden_added_contacts" type="hidden">
+</form>
+
+<span id="added_contacts_tags"></span>

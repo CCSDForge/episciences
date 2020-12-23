@@ -1,0 +1,81 @@
+/* navbar */
+.logo-ccsd {
+    margin: 14px;
+}
+.navbar-nav.navbar-right.navbar-lang:last-child {
+    margin-right: 15px;
+}
+.navbar-lang>li>a {
+    padding-left: 1px;
+    padding-right: 2px;
+}
+#container {
+    margin-top: 50px;
+}
+.navbar-lang>li>a>.badge{
+    background-color: #444444;
+}
+.navbar-inverse .navbar-lang>li.active>a {
+    background-color:inherit;
+}
+.navbar-lang>li.active>a>.badge{
+    background-color: #777777;
+}
+.nav-header {
+    display: block;
+    padding: 3px 15px;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 20px;
+    color: #999999;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+}
+.navbar a , .navbar .label{
+    font-family: Arial, Helvetica, sans-serif;
+}
+.breadcrumb {
+    margin-top: 10px;
+}
+
+
+/* Elements supprimés dans bootstrapV3 utilisés au CCSD*/
+.form-actions{
+    padding: 19px 20px 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    background-color: #f5f5f5;
+    border-top: 1px solid #e5e5e5;
+}
+.dropdown-submenu{position:relative;}
+.dropdown-submenu>.dropdown-menu{top:0;left:100%;margin-top:-6px;margin-left:-1px;-webkit-border-radius:0 6px 6px 6px;-moz-border-radius:0 6px 6px 6px;border-radius:0 6px 6px 6px;}
+.dropdown-submenu:hover>.dropdown-menu{display:block;}
+.dropdown-submenu>a:after{display:block;content:" ";float:right;width:0;height:0;border-color:transparent;border-style:solid;border-width:5px 0 5px 5px;border-left-color:#cccccc;margin-top:5px;margin-right:-10px;}
+.dropdown-submenu:hover>a:after{border-left-color:#ffffff;}
+.dropdown-submenu.pull-left{float:none;}.dropdown-submenu.pull-left>.dropdown-menu{left:-100%;margin-left:10px;-webkit-border-radius:6px 0 6px 6px;-moz-border-radius:6px 0 6px 6px;border-radius:6px 0 6px 6px;}
+
+.ui-datepicker-trigger {
+    display:none;
+}
+.calendar-trigger {
+    cursor: pointer;
+}
+.ui-datepicker td .ui-state-hover, .ui-menu .ui-menu-item a.ui-state-focus {
+    background-color: #428BCD;
+    background-image: inherit;
+    border-color: #428BCD;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    -khtml-border-radius: 0px;
+    border-radius: 0px;
+}
+
+.alert-text {
+    color: #666666;
+    background-color: #f7f7f9;
+    border: 1px solid #e1e1e8;
+}
+
+.mce-i-widghal:before {
+content : "\e010";
+}

@@ -1,0 +1,123 @@
+<?php if ($this->logs) : ?>
+    <div class="history-filters">
+        <a class="popover-button" data-title="<?php echo $this->translate("Filtrer les logs par date") ?>">
+            <button type="button" class="history-datepicker-button btn btn-default btn-sm"><span
+                    class="glyphicon glyphicon-calendar"></span></button>
+        </a>
+        <div style="display: inline-block">
+            <input type="search" class="form-control input-sm history-search"
+                   placeholder="<?php echo $this->translate('Filtrer les logs') ?>">
+        </div>
+
+        <div id="history-popover-content" style="display: none">
+
+            <div class="input-group" style="margin-bottom: 5px">
+            <span class="input-group-addon datepicker-button">
+                <span class="glyphicon glyphicon-calendar"></span>
+            </span>
+                <input type="text"
+                       class="form-control input-sm datepicker-input"
+                       name="history-filter-start"
+                       id="history-filter-start"
+                       placeholder="<?php echo $this->translate("Depuis") ?>">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 5px">
+            <span class="input-group-addon datepicker-button">
+                <span class="glyphicon glyphicon-calendar"></span>
+            </span>
+                <input type="text"
+                       class="form-control input-sm datepicker-input"
+                       id="history-filter-end"
+                       name="history-filter-end"
+                       placeholder="<?php echo $this->translate("Jusqu'à") ?>">
+            </div>
+
+            <div class="history-popover-buttons" style="text-align: right">
+                <button class="btn btn-default btn-sm cancel"><?php echo $this->translate('Effacer') ?></button>
+                <button class="btn btn-default btn-sm submit"><?php echo $this->translate('Valider') ?></button>
+            </div>
+        </div>
+    </div>
+
+
+    <style>
+        .history-tabs {
+            margin-bottom: 5px;
+        }
+
+        .history-tabs li {
+            margin-bottom: 0;
+            outline: 0;
+        }
+
+        .history-tabs li a {
+            padding: 8px 10px 5px 10px;
+            color: #999;
+            outline: 0;
+        }
+
+        .history-tabs li.active {
+            color: #000;
+        }
+
+        .history-tabs li.current {
+            font-weight: bold !important;
+        }
+
+        .history-logs a {
+            text-decoration: none;
+        }
+
+        .log-detail-icon {
+            float: right;
+            top: 6px;
+            right: 6px;
+            font-size: 10px;
+            opacity: 0.7;
+            display: none;
+        }
+
+        .modal-opener .log-entry {
+            cursor: pointer;
+        }
+
+        .modal-opener .log-entry:hover .log-detail-icon {
+            display: block !important;
+        }
+    </style>
+
+    <div>
+
+        <!-- version tabs -->
+        <ul class="nav nav-tabs history-tabs" role="tablist">
+            <?php foreach ($this->logs as $i => $version) : ?>
+                <li role="presentation"
+                    <?php if ($version['docid'] == $this->docid) : ?>class="active current"<?php endif; ?>>
+                    <?php // le point (.) n'est pas interprété dans l'ID => son remplacement par un tiret (-) ?>
+                    <a href="#history-version-<?php echo str_replace('.','-', $i); ?>" aria-controls="version-<?php echo $i ?>" role="tab"
+                       data-toggle="tab">
+                        <?php echo $this->translate('Version ') . $i; ?>
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+
+        <!-- version content -->
+        <div class="tab-content history-logs">
+            <?php foreach ($this->logs as $i => $version) : ?>
+                <?php // le point (.) n'est pas interprété dans l'ID => son remplacement par un tiret (-) ?>
+                <div role="tabpanel"
+                     class="tab-pane<?php if ($version['docid'] == $this->docid) : ?> active<?php endif; ?>"
+                     id="history-version-<?php echo str_replace('.','-', $i); ?>">
+                    <!-- <div style="margin: 0 5px 5px 0; text-align: right" class="grey">Consulter cette version</div>  -->
+                    <?php echo $this->partial('partials/paper_history_logs.phtml', array('logs' => $version['logs'])); ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+    </div>
+
+<?php else : ?>
+    <?php echo $this->translate('Historique indisponible'); ?>
+<?php endif; ?>

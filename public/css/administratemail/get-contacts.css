@@ -1,0 +1,53 @@
+#contact-list {
+	border-top: 1px solid #ccc;
+	border-bottom: 1px solid #ccc;
+	margin-bottom: 10px;
+	max-height: 400px;
+	overflow: auto;
+}
+
+#contact-list table {
+	width: 100%;
+}
+
+#contact-list tr {
+	cursor: pointer;
+}
+
+#contact-list td {
+	padding: 5px 10px;
+	border-bottom: 1px solid #ccc;
+}
+
+#contact-list tr.selected td {
+	background-color: #F0F6FA;
+}
+
+.css-checkbox {
+	display: inline-block;
+	vertical-align: text-bottom;
+	border: 1px solid #ccc;
+	font-size: 1px;
+	width: 14px;
+	height: 14px;
+	margin: 0 4px 1px 1px;
+	cursor: default;
+}
+
+.css-checkbox:hover, #contact-list tr:hover .css-checkbox {
+	border: 1px solid #7EB5D6;
+}
+
+.checkbox-label {
+	cursor: pointer;
+}
+
+#added_contacts {
+	min-height: 24px;
+	max-height: 72px;
+	overflow: auto;
+}
+
+.tooltip {
+	color: #ffffff !important;
+}

@@ -1,0 +1,56 @@
+<div style="max-width: 400px;">
+    <form action="/administratepaper/saveothervolumes" id="volumes-form-<?php echo $this->docid ?>" role="form">
+
+        <div style="max-height: 100px; overflow: auto">
+            <?php foreach ($this->volumes as $volume) : ?>
+                <label class="multicheckbox_option">
+                    <input type="checkbox" <?php if ($volume['checked']) : ?>checked="checked"<?php endif ?>
+                           id="cb_v_<?php echo $volume['vid'] ?>"
+                           name="volume_<?php echo $volume['vid'] ?>"/>
+                    <span><?php echo $volume['name']; ?></span>
+                </label>
+            <?php endforeach; ?>
+        </div>
+
+        <button type="submit" class="btn btn-primary"
+                style="margin-top: 10px"><?php echo $this->translate("Enregistrer"); ?></button>
+
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('.multicheckbox_option').click(function () {
+            //console.log ($(this).find('input').is(':checked'));
+            ($(this).find('input').is(':checked')) ? $(this).addClass('selected') : $(this).removeClass('selected');
+            //console.log ($(this).find('input').attr('name'));
+        });
+        $('.multicheckbox_option label').click(function (e) {
+            e.stopPropagation();
+        });
+
+
+    });
+</script>
+
+<style>
+    .multicheckbox_option {
+        display: inline-block;
+        width: 100%;
+        cursor: pointer;
+        margin-bottom: 1px;
+        line-height: 25px;
+        padding-left: 3px;
+    }
+
+    .multicheckbox_option input {
+        margin: 0 3px 0 0;
+        position: relative;
+        vertical-align: text-bottom;
+    }
+
+    .multicheckbox_option:hover {
+        background-color: #357ebd;
+        color: #fff;
+    }
+</style>

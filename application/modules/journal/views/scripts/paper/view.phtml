@@ -1,0 +1,335 @@
+<?php
+
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$status = $paper->getStatus();
+$isAllowed = Episciences_Auth::isLogged() &&
+    (
+        Episciences_Auth::isSecretary() ||
+        Episciences_Auth::isEditor() ||
+        Episciences_Auth::isReviewer() ||
+        Episciences_Auth::getUid() == $paper->getUid()
+    );
+
+$isAllowedToAnswerNewVersion = Episciences_Auth::isLogged() &&
+    (
+        Episciences_Auth::isSecretary() ||
+        $paper->getEditor(Episciences_Auth::getUid()) ||
+        Episciences_Auth::getUid() == $paper->getUid()
+    );
+
+$language = ($paper->getMetadata('language') != null) ? $paper->getMetadata('language') : 'en';
+
+if ($paper->isPublished()) {
+    $this->headLink(['rel' => 'schema.DC', 'href' => 'http://purl.org/dc/elements/1.1/']);
+    $this->headMeta()->prependName('citation_language', $language);
+    $this->headMeta()->prependName('DC.language', $language);
+
+    $this->headMeta()->prependName('DC.type', 'journal');
+    $this->headMeta()->prependProperty('og:type', 'journal');
+
+    $title = $paper->getTitle($language, true);
+    $this->headMeta()->prependName('citation_title', $title);
+    $this->headMeta()->prependName('DC.title', $title);
+    $this->headMeta()->prependProperty('og:title', $title);
+
+    $id = $paper->getDocid();
+    $url = APPLICATION_URL . '/' . $id;
+    $this->headMeta()->prependName('DC.identifier', $url);
+    $this->headMeta()->prependName('DC.identifier', $id);
+    $this->headMeta()->prependProperty('og:url', $url);
+
+    $authors = $paper->getMetadata('authors');
+    if ($authors) {
+        if (is_array($authors)) {
+            foreach ($authors as $author) {
+                $this->headMeta()->prependName('citation_author', $author);
+                $this->headMeta()->prependName('DC.creator', $author);
+            }
+        } else {
+            $this->headMeta()->prependName('citation_author', $authors);
+            $this->headMeta()->prependName('DC.creator', $authors);
+        }
+    }
+
+    $abstract = $paper->getAbstract($language, true);
+    if ($abstract) {
+        $this->headMeta()->prependName('citation_abstract', $abstract);
+        $this->headMeta()->prependName('DC.description', $abstract);
+        $this->headMeta()->prependName('description', $abstract);
+        $this->headMeta()->prependProperty('og:description', $abstract);
+    }
+
+    $keywords = $paper->getMetadata('subjects');
+    if (is_array($keywords) && !empty($keywords)) {
+        foreach ($keywords as $word) {
+            $this->headMeta()->prependName('citation_keywords', $word);
+            $this->headMeta()->prependName('DC.subject', $word);
+            $this->headMeta()->prependName('keywords', $word);
+        }
+    } elseif ($keywords) {
+        $this->headMeta()->prependName('citation_keywords', $keywords);
+        $this->headMeta()->prependName('DC.subject', $keywords);
+        $this->headMeta()->prependName('keywords', $keywords);
+    }
+
+    $pdf = $url . '/pdf';
+    $this->headMeta()->prependName('citation_pdf_url', $pdf);
+    $this->headMeta()->prependName('DC.identifier', $pdf);
+    $this->headMeta()->prependProperty('og:url', $pdf);
+
+    if ($paper->getPublication_date()) {
+        $date = $this->Date($paper->getPublication_date(), $language, Zend_Date::YEAR . '-' . Zend_Date::MONTH . '-' . Zend_Date::DAY);
+        $this->headMeta()->prependName('citation_date', $date);
+        $this->headMeta()->prependName('DC.date', $date);
+    }
+
+    $journal = RVNAME;
+    $this->headMeta()->prependName('citation_journal_title', $journal);
+    $this->headMeta()->prependName('DC.relation.ispartof', $journal);
+
+    // $this->headMeta()->prependName('citation_doi’, $doi); // pas de DOI pour le moment
+
+    if ($paper->getVid()) {
+
+        $key = 'volume_' . $paper->getVid() . '_title';
+
+        try {
+            if (Zend_Registry::get('Zend_Translate')->isTranslated($key, false, $language)) {
+                $volume = $this->translate('volume_' . $paper->getVid() . '_title', $language);
+            } else {
+                $volume = $this->translate('volume_' . $paper->getVid() . '_title');
+            }
+
+            $this->headMeta()->prependName('citation_volume', $volume);
+            $this->headMeta()->prependName('DC.citation.volume', $volume);
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+        }
+    }
+
+    $this->headMeta()->prependName('DC.publisher', 'Episciences.org');
+}
+?>
+
+<?php
+$this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle($language, true));
+$this->jQuery()->addJavascriptFile('/js/paper/view.js');
+
+?>
+
+<?php if (Episciences_Auth::isLogged() && (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid()))): ?>
+    <?= $this->partial('partials/paper_controller_link_switch.phtml', ['docId' => $paper->getDocid()]); ?>
+<?php endif; ?>
+
+<?php // obsolete paper notice ****************************************************** ?>
+<?php if ($paper->isObsolete()) : ?>
+    <div class="alert alert-info" style="margin-top: 20px">
+        <strong><?php echo $this->translate('Attention, cet article est obsolète.'); ?></strong><br/>
+        <?php
+        $url = $this->url([
+            'controller' => Zend_Controller_Front::getInstance()->getRequest()->getControllerName(),
+            'action' => Zend_Controller_Front::getInstance()->getRequest()->getActionName(),
+            'id' => $paper->getLatestVersionId()]);
+        ?>
+        <?php echo $this->translate("Il s'agit d'une ancienne version de %s cet article %s", '<a href="' . $url . '">', '</a>'); ?>
+    </div>
+<?php endif; ?>
+
+
+<?php // paper ************************************************************************* ?>
+<?php echo $paper->getXslt(); ?>
+
+<?php if ($isAllowed): ?>
+    <?php // paper status ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate("Statut de l'article"); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
+            <p>
+                <strong><?= $statusMsg; ?></strong><span
+                        class="label label-status-<?= $status; ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))); ?></span>
+            </p>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // préparation de copie?>
+<?php if ($isAllowed && ($this->copyEditingDemands) && !$paper->isPublished()) : ?>
+    <div id="copy-editing" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Préparation de copie'); ?></h2>
+        </div>
+        <div class="panel-body in" style="overflow: visible">
+            <?= $this->partial('partials/paper_copy_editing.phtml', [
+                    'copyEditingDemands' => $this->copyEditingDemands,
+                    'copyEditingReplyForms' => $this->copyEditingReplyForms,
+                    'paperStatus' => $status,
+                    'latestDocId' => $this->latestDocId,
+                    'linkToLatestDocId' => $this->linkToLatestDocId
+                ]
+            ); ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // versions *****************************************************
+if (Episciences_Auth::isLogged()) {
+    echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]);
+}
+?>
+
+<?php // rating reports ************************************************************************* ?>
+<?php if ($this->reports) : ?>
+    <div id="ratings" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Evaluations'); ?></h2>
+        </div>
+        <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+            <?php echo $this->partial('partials/paper_reports.phtml', ['paper' => $paper, 'reports' => $this->reports]);
+            ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+<?php // author's comments and cover letter ************************************************************************* ?>
+<?php if ($isAllowed && $this->author_comments && !$paper->isPublished()) : ?>
+    <?php // Author comments  *****************************************?>
+    <?php echo $this->render('partials/paper_author_comments_bloc.phtml'); ?>
+<?php endif; ?>
+
+<?php // reviewer comments ************************************** ?>
+<?php if ($isAllowed && $this->comments && !$paper->isPublished()) : ?>
+    <div id="comments" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Commentaires des relecteurs'); ?></h2>
+        </div>
+        <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+            <?php echo $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->comments, 'replyForms' => $this->replyForms, 'paperContributorUid' => $this->paper->getUid()]) ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+<?php // revision requests ***************************************************** ?>
+<?php if ($isAllowedToAnswerNewVersion && ($this->revision_requests || $this->currentDemand || $this->previousVersionsDemands) && !$paper->isPublished()) : ?>
+    <div id="answer" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Demandes de modifications'); ?></h2>
+        </div>
+        <div class="panel-body in" style="overflow: visible">
+            <?= $this->partial('partials/answer_revision_request_form.phtml', [
+                'paper' => $paper,
+                'review' => $this->review,
+                'current_demand' => $this->currentDemand
+            ]);
+            ?>
+
+            <?= !empty($this->currentDemand) ? '<hr>' : ''; ?>
+
+            <?php echo $this->partial('partials/paper_demands.phtml', [
+                'paper' => $paper,
+                'review' => $this->review,
+                'current_demand' => $this->currentDemand,
+                'previous_demands' => $this->revision_requests,
+                'previousVersions' => $this->previousVersions,
+                'previousVersionsDemands' => $this->previousVersionsDemands
+            ]);
+            ?>
+        </div>
+
+    </div>
+<?php endif; ?>
+
+
+<?php // export options ***************************************************** ?>
+<?php if ($paper->isPublished()) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Exporter') ?></h2>
+        </div>
+        <div class="panel-body in" style="overflow: visible">
+            <a class="btn btn-default btn-sm" target="_blank"
+               href="<?php echo $this->url(['id' => $paper->getDocid()], 'bibtex') ?>">
+                BibTeX
+            </a>
+            <a class="btn btn-default btn-sm" target="_blank"
+               href="<?php echo $this->url(['id' => $paper->getDocid()], 'tei') ?>">
+                <abbr title="Text Encoding Initiative">TEI</abbr>
+            </a>
+            <a class="btn btn-default btn-sm" target="_blank"
+               href="<?php echo $this->url(['id' => $paper->getDocid()], 'dc') ?>">
+                <abbr title="Dublin Core">DC</abbr>
+            </a>
+            <a class="btn btn-default btn-sm" target="_blank"
+               href="<?php echo $this->url(['id' => $paper->getDocid()], 'datacite') ?>">DataCite</a>
+            <a class="btn btn-default btn-sm" target="_blank"
+               href="<?php echo $this->url(['id' => $paper->getDocid()], 'crossref') ?>">Crossref</a>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // share options ***************************************************** ?>
+<?php if ($paper->isPublished()) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Partager') ?></h2>
+        </div>
+        <div class="panel-body in" style="overflow: visible">
+            <!-- AddToAny BEGIN -->
+            <div class="a2a_kit a2a_kit_size_32 a2a_default_style">
+                <a class="a2a_dd" href="https://www.addtoany.com/share"></a>
+                <a class="a2a_button_twitter"></a>
+                <a class="a2a_button_facebook"></a>
+                <a class="a2a_button_email"></a>
+                <a class="a2a_button_reddit"></a>
+                <a class="a2a_button_mendeley"></a>
+                <a class="a2a_button_citeulike"></a>
+                <a class="a2a_button_evernote"></a>
+                <a class="a2a_button_linkedin"></a>
+            </div>
+            <script>
+                var a2a_config = a2a_config || {};
+                a2a_config.num_services = 6;
+            </script>
+            <script async src="https://static.addtoany.com/menu/page.js"></script>
+            <!-- AddToAny END -->
+        </div>
+    </div>
+<?php endif; ?>
+
+
+<?php if ($this->page_count || $this->file_count) : ?>
+    <!-- stats -->
+    <div id="stats" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Statistiques de consultation'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php if ($this->page_count) : ?>
+                <div><?php echo $this->translate("Cette page a été consultée %s fois.", $this->page_count); ?></div>
+            <?php endif; ?>
+            <?php if ($this->file_count) : ?>
+                <div><?php echo $this->translate("Le PDF de cet article a été téléchargé %s fois.", $this->file_count); ?></div>
+            <?php endif; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+<?php
+// modal (for revision request answer forms)
+$style = ['width' => '50%'];
+echo $this->partial('partials/modal.phtml', ['style' => $style]);
+?>
+
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
+$this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
+?>

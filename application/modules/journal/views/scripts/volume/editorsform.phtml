@@ -1,0 +1,12 @@
+<style>
+.editors-list {
+	max-height: 150px;
+	overflow: auto;
+	margin-bottom: 10px;
+}
+</style>
+<?php if ($this->editorsForm) : ?>
+	<?php echo $this->editorsForm; ?>
+<?php else : ?>
+	<?php echo $this->translate('Aucun rédacteur enregistré') . '.' ?>
+<?php endif;?>

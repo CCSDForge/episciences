@@ -1,0 +1,132 @@
+<?php
+$users = $this->users;
+$trace = $this->trace;
+$message = '';
+?>
+
+<?php if (empty($users)) : ?>
+
+    <?php if (array_key_exists('error', $trace)) : ?>
+
+        <?php $message = $trace['error']; ?>
+
+    <?php elseif (array_key_exists('ignore_reviewer', $trace) && $trace['ignore_reviewer']): ?>
+
+        <?php $message = $trace['message']; ?>
+
+    <?php endif; ?>
+    <div>
+        <br>
+        <p class="alert-warning"><?php echo $message; ?></p>
+    </div>
+<?php else : ?>
+    <?php
+    $ccsd_users = [];
+    $must = (!$this->is_search_with_mail) ? $this->translate('pouvez') : $this->translate('devez');
+    $alert_text = $this->translate('Vous') . ' ' . $must . ' ' . $this->translate('choisir un relecteur dans la liste ci-dessous : ');
+    $list_title = '';
+    ?>
+    <div class="alert alert-info" style="<?php if (!$this->is_search_with_mail) : echo 'margin-top: 20px;'; endif; ?>">
+        <h4>
+            <strong>
+                <?php if (!$this->is_search_with_mail) : ?>
+                    <?php
+                    $alert_text .= $this->translate("Si votre relecteur n'est pas dans la liste ci-dessous, continuez avec le nouvel utilisateur que vous venez de saisir.");
+                    $list_title .= $this->translate('Nous avons trouvé des utilisateurs homonymes :');
+
+                    ?>
+                <?php else: ?>
+                    <?php
+                    $list_title .= $this->translate('Nous avons trouvé des utilisateurs avec une adresse de courriel identique');
+                    ?>
+                <?php endif; ?>
+                <?php echo $list_title; ?>
+            </strong>
+        </h4>
+        <p>
+            <i>
+                <?php echo $this->translate($alert_text); ?>
+            </i>
+        </p>
+    </div>
+
+    <div>
+        <br>
+        <table class="table dataTable hover" id="ccsd_user_invitation">
+            <thead>
+            <th><?php echo $this->translate('Prénom'); ?></th>
+            <th><?php echo $this->translate('Nom'); ?></th>
+            <th><?php echo $this->translate('Identifiant'); ?></th>
+            <th><?php echo $this->translate('Courriel'); ?></th>
+            <th><?php echo $this->translate('Langue'); ?></th>
+            <th><?php echo $this->translate('Invitation(s)'); ?></th>
+            <th><?php echo $this->translate('Relecture(s)'); ?></th>
+            <th>
+                <span class="glyphicon glyphicon-info-sign"
+                      data-toggle="tooltip"
+                      data-placement="top"
+                      title="<?php echo $this->translate('Utilisateur de Episciences ?'); ?>"
+                      style="padding-right: 10px;"
+                >
+                </span>
+            </th>
+            </thead>
+            <tbody>
+            <?php /** @var Episciences_User $user */
+            foreach ($users as $user) : ?>
+                <?php
+                $ccsd_users[$user->getUid()] = [
+                    'firstname' => $this->escape($user->getFirstname()),
+                    'lastname' => $this->escape($user->getLastname()),
+                    'email' => $this->escape($user->getEmail()),
+                    'full_name' => (!$user->getFirstname()) ? $this->escape($user->getLastname()) : $this->escape($user->getLastname() . ' ' . $user->getFirstname()),
+                    'user_name' => $user->getUsername(),
+                    'locale' => $user->getLangueid()
+                ];
+                ?>
+                <tr
+                        id="ccsduser_<?php echo $user->getUid(); ?>"
+                        data-toggle="tooltip"
+                        data-placement="top"
+                        title="<?php echo $this->translate('Inviter ce relecteur') . '...'; ?>"
+                >
+                    <td><?php echo $user->getFirstname(); ?></td>
+                    <td><?php echo $user->getLastname(); ?></td>
+                    <td><?php echo $user->getUsername(); ?></td>
+                    <td><?php echo $user->getEmail(); ?></td>
+                    <td><?php echo ucfirst(Zend_Locale::getTranslation($user->getLangueid(), 'language', Episciences_Tools::getLocale())); ?></td>
+                    <td class="text-center"><?php echo $this->users_stat[$user->getUid()]['invitations_nbr']; ?></td>
+                    <td class="text-center"><?php echo $this->users_stat[$user->getUid()]['reviewing_complete_nbr']; ?></td>
+                    <td>
+                        <?php if ($this->users_stat[$user->getUid()]['is_epi_user']): ?>
+                            <span class="glyphicon glyphicon-ok-sign text-success"></span>
+                        <?php else: ?>
+                            <span class="glyphicon glyphicon-minus"></span>
+
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+
+        var ccsd_users = <?php echo json_encode($ccsd_users);?>;
+
+        <?php if($this->is_search_with_mail) : ?>
+        var is_search_with_mail = <?php echo $this->is_search_with_mail; ?>
+        <?php endif; ?>
+
+            $(document).ready(function () {
+                $('[data-toggle="tooltip"]').tooltip();
+                dt_init('ccsd_user_invitation', ccsd_users);
+            });
+
+    </script>
+
+<?php endif; ?>
+
+
+

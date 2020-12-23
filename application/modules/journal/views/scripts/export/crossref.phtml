@@ -1,0 +1,156 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$authors = $paper->getMetadata('authors');
+$subjects = $paper->getMetadata('subjects');
+
+$titles = $paper->getAllTitles();
+
+$abstracts = $paper->getAllAbstracts();
+
+$dateSubmitted = new DateTime($paper->getSubmission_date());
+$dateUpdated = new DateTime($paper->getModification_date());
+$dateIssued = new DateTime($paper->getPublication_date());
+$publicationYear = new DateTime($paper->getPublication_date());
+
+/** @var $journal Episciences_Review */
+$journal = $this->journal;
+
+
+if (defined('RVISSN')) {
+    $issn = $this->FormatIssn(RVISSN);
+} else {
+    $issn = '';
+}
+
+$timestamp = time();
+?>
+<doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://www.crossref.org/schema/4.4.2 https://www.crossref.org/schemas/crossref4.4.2.xsd
+http://www.crossref.org/schema/4.4.2 "
+           xmlns="http://www.crossref.org/schema/4.4.2" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1"
+           version="4.4.2">
+    <head>
+        <doi_batch_id><?php echo DOMAIN . '_' . $paper->getPaperid() . '_' . $timestamp; ?></doi_batch_id>
+        <timestamp><?php echo $timestamp; ?></timestamp>
+        <depositor>
+            <depositor_name><?php echo DOMAIN; ?></depositor_name>
+            <email_address><?php echo DOI_EMAIL_CONTACT; ?></email_address>
+        </depositor>
+        <registrant><?php echo DOMAIN; ?></registrant>
+    </head>
+    <body>
+    <journal>
+        <journal_metadata language="en">
+            <full_title><?php echo $journal->getName(); ?></full_title>
+            <?php if ($issn !== '') : ?>
+                <issn media_type="electronic"><?php echo $issn; ?></issn>
+            <?php endif; ?>
+        </journal_metadata>
+        <journal_issue>
+            <publication_date media_type="online">
+                <month>08</month>
+                <day>13</day>
+                <year>2008</year>
+            </publication_date>
+
+            <?php if ($this->volume !== '') : ?>
+                <journal_volume>
+                    <volume><?php echo $this->volume; ?></volume>
+                </journal_volume>
+            <?php endif; ?>
+            <?php if ($this->section !== '') : ?>
+                <issue><?php echo $this->section; ?>></issue>
+            <?php endif; ?>
+        </journal_issue>
+        <journal_article publication_type="full_text">
+            <titles>
+                <?php foreach ($titles as $lang => $title) : ?>
+                    <title><?php echo $this->escape($title) ?></title>
+                <?php endforeach; ?>
+            </titles>
+
+
+            <?php
+            if (is_array($authors)) { ?>
+                <contributors>
+                    <?php
+                    foreach ($authors
+
+                    as $order => $creatorName) {
+                    list($familyName, $givenName) = explode(', ', $creatorName);
+                    ?>
+                    <?php if ($order === 0) : ?>
+                    <person_name sequence="first" contributor_role="author">
+                        <?php else: ?>
+                        <person_name sequence="additional" contributor_role="author">
+                            <?php endif; ?>
+
+                            <given_name><?php echo $this->escape($givenName) ?></given_name>
+                            <surname><?php echo $this->escape($familyName) ?></surname>
+                            <?php
+                            /**
+                             * <affiliation>Crossref University</affiliation>
+                             * <ORCID authenticated="true">https://orcid.org/0000-0002-4011-3590</ORCID>
+                             */
+                            ?>
+                        </person_name>
+                        <?php
+                        }
+                        ?>
+                </contributors>
+                <?php
+            }
+            ?>
+            <?php if ($abstracts): ?>
+
+                <jats:abstract>
+                    <?php
+                    foreach ($abstracts as $lang => $abstract) {
+
+                        if ($lang && Zend_Locale::isLocale($lang)) {
+                            $langId = ' xml:lang="' . $lang . '"';
+                        } else {
+                            $langId = '';
+                        }
+
+                        echo '<jats:p' . $langId . '>';
+                        echo $this->escape($abstract);
+                        echo '</jats:p>';
+                    }
+                    ?>
+                </jats:abstract>
+            <?php endif; ?>
+
+            <publication_date media_type="online">
+                <month><?php echo $publicationYear->format('m'); ?></month>
+                <day><?php echo $publicationYear->format('d'); ?></day>
+                <year><?php echo $publicationYear->format('Y'); ?></year>
+            </publication_date>
+
+            <publisher_item>
+                <item_number
+                        item_number_type="article_number"><?php echo $paper->getPaperid(); ?></item_number>
+            </publisher_item>
+
+            <program xmlns="http://www.crossref.org/relations.xsd">
+                <related_item>
+                    <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
+                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">
+                            arXiv:<?php echo $paper->getIdentifier(); ?></intra_work_relation>
+                    <?php else: ?>
+                        <intra_work_relation identifier-type="uri"
+                                             relationship-type="isSameAs"><?php echo $paper->getDocUrl(); ?></intra_work_relation>
+                    <?php endif; ?>
+                </related_item>
+            </program>
+
+            <doi_data>
+                <doi><?php echo htmlentities($this->doi, ENT_XML1); ?></doi>
+                <resource><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?></resource>
+            </doi_data>
+
+        </journal_article>
+    </journal>
+    </body>
+</doi_batch>

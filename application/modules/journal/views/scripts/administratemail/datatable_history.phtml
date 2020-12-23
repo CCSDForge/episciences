@@ -1,0 +1,44 @@
+<?php foreach ($this->history as $mail) : ?>
+    <tr id="history_mail_<?php echo $mail['ID']; ?>">
+        <td>
+            <a class="modal-opener"
+               href="/administratemail/view?id=<?php echo $mail['ID'] ?>"
+               data-width="50%" data-toggle="tooltip"
+               title="<?php echo $this->translate('Voir cet e-mail'); ?>">
+                <?php echo ($mail['SUBJECT']) ? $mail['SUBJECT'] : $this->translate('Aucun sujet'); ?>
+            </a>
+        </td>
+        <td>
+            <div style="max-height: 50px; overflow-y: auto;"><?php
+                $recipients = array_merge(explode(';', $mail['TO']), explode(';', $mail['CC']), explode(';', $mail['BCC']));
+                echo '<div>';
+                foreach ($recipients as $recipient) {
+                    echo '<div>' . htmlentities($recipient) . '</div>';
+                }
+                echo '</div>'; ?>
+            </div>
+        </td>
+        <td>
+            <?php
+            try {
+                $attachments = ($mail['FILES']) ? Zend_Json::decode($mail['FILES']) : [];
+                $nbOfAttachments = count($attachments);
+            } catch (Zend_Json_Exception $exception) {
+                $nbOfAttachments = 0;
+            }
+
+            if ($nbOfAttachments == 0) {
+                echo '-';
+            } else {
+                echo $nbOfAttachments;
+            }
+
+
+            ?>
+        </td>
+        <td>
+            <span style="display: none"><?php echo $mail['WHEN']; ?></span>
+            <?php echo $mail['WHEN']; ?>
+        </td>
+    </tr>
+<?php endforeach; ?>

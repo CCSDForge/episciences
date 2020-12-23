@@ -1,0 +1,39 @@
+<?php $name = $this->element->getName(); ?>
+<label 	class="col-md-3 control-label 
+				<?php if ($this->element->hasErrors()): ?> error<?php endif; ?>
+				<?php if ($this->element->isRequired()): ?> required<?php endif; ?>" 
+			for="<?php echo $name; ?>">
+		<?php echo $this->element->getLabel(); ?>
+</label>
+			
+<div class="col-md-9">
+	
+		<?php if ($this->element->hasErrors()): ?>
+		<span class="help-block error"><?php echo $this->formErrors($this->element->getMessages()); ?></span>
+		<?php endif?>
+		
+		<?php 
+		// Valeurs enregistrées (ou par défaut)
+		$delay = (!empty(trim($this->element->getValue()))) ? $this->element->getValue() : constant('Episciences_Review::DEFAULT_' . strtoupper($name));
+		$value = explode(' ', trim($delay));
+		$delay_value = $value[0];
+		$delay_unit = $value[1];
+		
+		// Valeurs possibles du select
+		$delay_units = array('day'=>'jour(s)', 'week'=>'semaine(s)', 'month'=>'mois');
+		?>
+	
+		<input 	name="<?php echo $name; ?>"
+				id="<?php echo $name; ?>" 
+				type="text" 
+				class="form-control input-sm" 
+				style="display: inline-block; width: 40px"
+				value="<?php echo $delay_value; ?>" />
+	
+		<select name="<?php echo $name; ?>_unit" class="form-control input-sm" style="display: inline-block; width: 200px">
+		<?php foreach ($delay_units as $value=>$label) : ?>
+			<option value="<?php echo $value?>"<?php if ($value == $delay_unit) { echo 'selected="selected"'; } ?>><?php echo $this->translate($label)?></option>
+		<?php endforeach; ?>
+		</select>
+	
+</div>

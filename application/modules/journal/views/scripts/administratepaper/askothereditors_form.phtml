@@ -1,0 +1,24 @@
+<div id="askeditors-element" class="form-group row">
+    <label class="col-md-3 control-label">To</label>
+    <div class="col-md-9" style="max-height: 80px; overflow: auto">
+        <?php foreach ($this->element->getDecorator('ViewScript')->getOption('editors') as $editor) : ?>
+            <div>
+                <label>
+                    <input name="editor_<?php echo $editor->getUid() ?>" type="checkbox"
+                        <?php if (!$this->paper->getEditor($editor->getUid())) { // Si n'est pas editeur de cet article
+                            echo 'checked="checked"';
+                        } ?>
+                    />
+                    <?php echo $editor->getFullname(); ?>
+                    &lt;<?php echo $editor->getEmail() ?>&gt;
+                </label>
+            </div>
+        <?php endforeach ?>
+    </div>
+</div>
+
+<?php foreach ($this->element->getElements() as $element) : ?>
+    <div id="<?php echo $element->getName(); ?>-element" class="form-group row">
+        <?php echo $element; ?>
+    </div>
+<?php endforeach; ?>

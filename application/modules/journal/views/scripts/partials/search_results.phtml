@@ -1,0 +1,140 @@
+<?php
+
+$this->declareVars(array('parsedSearchParams' => array()));
+
+// supprime le nombre de page dans l'url si c'est le meme que par défaut
+
+if ((isset($this->parsedSearchParams['rpp'])) and ($this->parsedSearchParams['rpp'] == $this->paginatordefaultNumberOfResults)) {
+    unset($this->parsedSearchParams['rpp']);
+}
+
+if ($this->results) {
+	
+	if ($this->numFound > 0) {
+		echo '<div class="results-count">'.$this->numFound . ' ' . $this->translate(array('résultat', 'résultats', $this->numFound)) . '</div>';
+	} else {
+		echo '<div class="span9 offset3">';
+		echo '<p class="lead">';
+		echo $this->translate('Aucun résultat');
+		echo '</p>';
+		echo '</div>';
+	}
+	
+	echo '<hr />';
+	
+	if ($this->numFound == 0) {
+        return null;
+    }
+    
+?>
+	<?php $locale = Episciences_Tools::getLocale(); ?>
+	<?php foreach ($this->results as $doc) : ?>
+
+		<?php 
+			/*
+			* $doc->docid
+			* $doc->title_t
+			* $doc->abstract_t (array)
+			* $doc->revue_id_i
+			* $doc->revue_title_t
+			*
+			* Manque :
+			* volume
+			* rubrique
+			*/
+		?>
+		
+		<?php
+				$title = Episciences_Tools::getTitleFromIndexedPaper($doc, $locale);
+				$abstract = Episciences_Tools::getAbstractFromIndexedPaper($doc, $locale);
+				
+				$volume = ($doc->{$locale.'_volume_title_t'}) ? $doc->{$locale.'_volume_title_t'} : $doc->{$doc->language_s.'_volume_title_t'};
+				$section = ($doc->{$locale.'_section_title_t'}) ? $doc->{$locale.'_section_title_t'} : $doc->{$doc->language_s.'_section_title_t'};
+		?>
+	
+		<?php // Titre de l'article ******************************** ?>
+		<h3><a href="/<?php echo $this->escape($doc->docid); ?>"><?php echo $this->escape($title); ?></a></h3>
+
+		<?php // Noms des auteurs *********************************** ?>
+		<?php if ($doc->author_fullname_s) : ?>
+		<span class="authors"><?php 
+		
+		$arrayOfAuthors = [];
+		$authorSeparator = '&nbsp;;&nbsp;';
+		$maxNumberOfAuthors = 10;
+		$outputFormat = '<a data-toggle="tooltip" data-placement="bottom" title="' . $this->translate("Articles de l'auteur") . '" href="%s">%s</a>';
+		$arrayOfAuthorsWithURL = [];
+		
+		foreach ($doc->author_fullname_s as $author) {
+			$tab = Ccsd_Search_Solr::facetStringResultAsArray($author);
+			$arrayOfAuthors[] = $tab[0];
+		}
+		
+		if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
+			$multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
+		
+			foreach ($multiArraysOfAuthors[0] as $authorName) {
+				$url = $this->url(array(
+						'controller' => 'search',
+						'action' => 'index',
+						'q' => '*',
+						'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+				$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+			}
+			$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
+		} else {
+		
+			foreach ($arrayOfAuthors as $authorName) {
+				$url = $this->url(array(
+						'controller' => 'search',
+						'action' => 'index',
+						'q' => '*',
+						'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+				$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+			}
+			$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
+			if (substr($authorList, - 1) != '.') {
+				$authorList .= '.';
+			}
+		}
+		
+		echo $authorList;
+		
+		?></span>
+		<?php endif; ?>
+		
+		<?php // Résumé de l'article *********************************** ?>
+		<?php
+	        if ($abstract) {
+	            echo '<blockquote class="abstract">';
+	            echo Ccsd_Tools_String::truncate($abstract, 300, '&nbsp;[&hellip;]');
+	            echo '</blockquote>';
+	        }
+		?>
+		
+		<?php // Date de publication *********************************** ?>		
+		<?php if ($doc->publication_date_tdate) : ?>
+	        <div class="publication-date">
+		        <?php echo $this->translate('Publié le : '); ?>
+		        <?php echo $this->Date($doc->publication_date_tdate); ?>
+	        </div>
+		<?php endif;?>
+		
+		<?php // Volume ************************************************ ?>		
+		<?php if ($volume) : ?>
+	        <div class="volume">
+		        <a href="/volume/view/id/<?php echo $doc->volume_id_i ?>"><?php echo $volume; ?></a>
+	        </div>
+		<?php endif;?>
+		
+		<?php if ($section) : ?>
+	        <div class="section">
+		        <a href="/section/view/id/<?php echo $doc->section_id_i ?>"><?php echo $section; ?></a>
+	        </div>
+		<?php endif;?>
+        
+        
+        <hr />
+	<?php endforeach;  // end results ?>
+
+<?php } // if results ?>

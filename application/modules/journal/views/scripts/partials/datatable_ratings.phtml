@@ -1,0 +1,100 @@
+<?php
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+?>
+<?php /** @var Episciences_Paper $paper */
+foreach ($this->papers as $paper) : ?>
+    <?php
+    /* @var Episciences_User_Invitation $invitation */
+    $invitation = $this->reviewer->getInvitation($paper->getDocId());
+    /* @var Episciences_Reviewer_Reviewing $reviewing */
+    $reviewing = $this->reviewer->getReviewing($paper->getDocid());
+    $status = $reviewing->getStatus();
+    ?>
+    <tr id="paper_<?= $paper->getDocid() ?>">
+        <?php // article status ******************************************* ?>
+        <td class="text-center">
+            <a href="#"
+               data-toggle="tooltip"
+               title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))) ?>">
+                        <span style="font-size: 20px"
+                              class="glyphicon glyphicon glyphicon-info-sign status-<?php echo $paper->getStatus(); ?>"></span>
+                <span
+                        style="display: none"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))) ?></span>
+            </a>
+        </td>
+        <?php // reviewing status ******************************************* ?>
+        <td<?php // if ($status == Episciences_Reviewer_Reviewing::STATUS_UNANSWERED) echo ' class="darkorange"'; ?>>
+            <?php echo ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($status))); ?>
+        </td>
+
+        <?php // reviewing report submission date ******************************************* ?>
+        <td>
+            <?php
+
+            if ($reviewing->getAssignment()->getDeadline()) {
+                $date = date_create($reviewing->getAssignment()->getDeadline());
+
+            } else {
+                $date = date_create($reviewing->getAssignment()->getWhen());
+                date_add($date, date_interval_create_from_date_string($this->review_deadline));
+            }
+
+            echo $this->Date(date_format($date, 'Y-m-d'));
+
+            ?>
+        </td>
+
+        <?php // article id ******************************************* ?>
+        <td><?php echo $paper->getDocid(); ?></td>
+
+        <?php // reviewing round **************************************** ?>
+        <td>
+            <?php
+            $previousVersions = $paper->getPreviousVersions();
+            echo ($previousVersions) ? count($previousVersions) + 1 : 1;
+            ?>
+        </td>
+
+        <?php // article title ******************************************* ?>
+        <td>
+            <?php
+            $url = ($invitation && (in_array($status, [Episciences_Reviewer_Reviewing::STATUS_UNANSWERED, Episciences_Reviewer_Reviewing::STATUS_DECLINED], true))) ?
+                ('/reviewer/invitation/id/' . $invitation->getId()) :
+                ('/' . $controller . '/rating?id=' . $paper->getDocid());
+            ?>
+            <a href="<?php echo $url ?>"><strong><?php echo Ccsd_Tools::truncate($paper->getTitle(), 75); ?></strong></a>
+        </td>
+
+        <?php // article volume ******************************************* ?>
+        <td class="text-center"><?php
+            if (array_key_exists($paper->getVid(), $this->volumes)) {
+                echo $this->translate($this->volumes[$paper->getVid()]->getNameKey());
+            } else {
+                echo '-';
+            }
+            ?></td>
+
+        <?php // article section ******************************************* ?>
+        <td class="text-center"><?php
+            if (array_key_exists($paper->getSid(), $this->sections)) {
+                echo $this->translate($this->sections[$paper->getSid()]->getNameKey());
+            } else {
+                echo '-';
+            }
+            ?></td>
+
+        <?php // contributor name ************************************************** ?>
+        <?php if ($action !== 'submitted' && $action !== 'ratings' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
+            <td class="text-center">
+                <?php if ($paper->getSubmitter()) echo $paper->getSubmitter()->getScreenName(); ?>
+            </td>
+        <?php endif; ?>
+
+        <?php // submission date ************************************************ ?>
+        <td class="text-center">
+            <?php echo $paper->getWhen(); ?>
+        </td>
+    </tr>
+<?php endforeach; ?>

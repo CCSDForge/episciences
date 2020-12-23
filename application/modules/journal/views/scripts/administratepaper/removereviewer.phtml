@@ -1,0 +1,41 @@
+<style>
+    .errors {
+        display: none;
+        margin-top: 20px;
+        color: red;
+    }
+
+    .errors-label {
+        font-weight: bold;
+        text-align: right;
+    }
+
+    .errors-message {
+        padding-left: 20px;
+    }
+
+</style>
+
+<?php $isUninvited = $this->isUninvited; ?>
+
+<?= $this->form ?>
+
+<script>
+    var isUninvited = '<?= $isUninvited ?>';
+</script>
+
+<?php if (!$isUninvited): ?>
+    <div class="row errors">
+        <span class="col-md-3 errors-label"><?php echo $this->translate('Erreurs') ?></span>
+        <span class="col-md-9 errors-message"></span>
+    </div>
+    <script>
+        var available_languages = <?= $this->available_languages ?>;
+        var reviewer = <?= $this->js_reviewer ?>;
+        var review = <?= $this->js_review ?>;
+        var paper = <?= $this->js_paper ?>;
+        var editor = <?= $this->js_editor ?>;
+    </script>
+<?php endif; ?>
+
+<script src="/js/administratepaper/reviewer-removal-modal.js"></script>

@@ -1,0 +1,48 @@
+<div class="row">
+
+    <div class="col-md-2">
+        <img src="/user/photo/uid/<?php echo $this->escape($this->user['uid']); ?>/size/large?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>"
+             class="user-photo-normal"/>
+    </div>
+
+    <div class="col-md-10">
+        <div class="row">
+            <div class="col-md-3">
+
+                <ul class="list-inline">
+                    <?php if ($this->user['SCREEN_NAME']) : ?>
+                        <li><?php echo $this->escape($this->user['SCREEN_NAME']); ?></li>
+                    <?php else : ?>
+
+                        <li>
+                            <?php if ($this->user['civ']) {
+                                echo $this->escape($this->user['civ']) . ' ';
+                            } ?>
+                            <?php if ($this->user['firstname']) {
+                                echo $this->escape($this->user['firstname']) . ' ';
+                            } ?>
+                            <?php if ($this->user['middlename']) {
+                                echo $this->escape($this->user['middlename']) . ' ';
+                            } ?>
+                            <?php if ($this->user['lastname']) {
+                                echo $this->escape($this->user['lastname']);
+                            } ?>
+                        </li>
+                    <?php endif; ?>
+
+                </ul>
+
+
+            </div>
+
+
+            <?php if (is_array($this->user['ROLES']) && array_key_exists(RVID, $this->user['ROLES']) && count($this->user['ROLES'][RVID])) : ?>
+                <?php echo $this->partial('user/roles_tags.phtml', ['roles' => $this->user['ROLES'][RVID], 'editorSections' => $this->user['editorSections']]); ?>
+            <?php endif; ?>
+
+
+        </div>
+
+    </div>
+
+</div>

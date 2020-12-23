@@ -1,0 +1,154 @@
+<style>
+ul.nav {
+	margin-bottom: 0px;
+}
+.slider-margin {
+	margin-bottom: 20px;
+}
+.menu-slider {
+	display: none;
+	position: relative;
+	border-left: 1px solid #dddddd;
+	border-right: 1px solid #dddddd;
+	border-bottom: 1px solid #dddddd;
+	border-radius: 0px 4px 4px 0px;
+	background: #f8f8f8;
+	padding: 20px;
+}
+.menu-slider>div {
+	text-align:center;
+}
+.menu-slider>div span:not(:last-child):after {
+	content: " | "; 
+}
+.menu-slider-group {
+	width: 220px;
+	min-height: 150px;
+	float: left;
+	text-align: left;
+	margin-left: 5px;
+}
+.menu-slider-elem {
+	float: left;
+	margin: 5px 10px;
+}
+.menu-slider-group ul {
+	list-style: none;
+	border-left: 5px solid #eeeeee;
+	margin-left: 5px;
+	padding-left: 5px;
+}
+
+</style>
+
+
+
+<?php $sliders = array();?>
+
+
+<div id="global-navigation">
+	<ul class="nav nav-tabs">
+		<?php 
+		$displayPage = true;
+		//Affichage des onglets principaux
+		foreach ($nav->getPages() as $i => $page) {
+			//Page à ne pas afficher (pas le droit)
+			if (!$nav->accept($page)) continue;
+			
+			if ($page->getClass() == 'nav-header') $displayPage = true;
+			
+			if ($displayPage) {
+				//Menu actif ?
+				if ($page->getClass() == 'nav-header') {
+					//Cas d'une section
+					$pageInSection = $active = false;
+					$text = '';
+					//2ème parcours pour afficher les pages des sections
+					foreach ($nav->getPages() as $i2 => $page2) {
+						//La page est dans la section, on la traite
+						if ($page2->getClass() != 'nav-header' && $pageInSection) {
+							if ($page2->isActive(true)) {
+								$active = true;
+							}
+							$sliders[$i][$i2] = $page2;
+						}
+						if ($page2->getClass() == 'nav-header') {
+							$pageInSection = $i == $i2;
+						}
+					}					
+				} else {
+					$active = $page->isActive(true);
+				}
+				
+				if ($page->hasPages()) {
+					$sliders[$i] = $page->getPages();
+				} 
+								
+				if ($page->hasPages() || $page->getClass() == 'nav-header') {
+					?>
+					<li class="dropdown <?php echo $active ? 'active' : ''?>"><a href="javascript:void(0)" onclick="displaySubMenu('.submenu<?php echo $i?>')"><?php echo $this->view->translate($page->getLabel());?><b class="caret"></b></a></li>
+					<?php
+				} else {
+					?>
+					<li class="<?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix); ?>"><?php echo $this->view->translate($page->getLabel());?></a></li>
+					<?php
+				}
+			} else {
+				
+			}
+			if ($page->getClass() == 'nav-header') $displayPage = false;
+
+		} ?>
+	</ul>
+	
+	<div class="menu-slider">
+		<?php foreach ($sliders as $i => $pages) {?>
+			<div class="row submenu<?php echo $i?>" style="display:none;">
+			<?php foreach ($pages as $spages) {
+				if (!$nav->accept($spages)) continue;
+				
+				if ($spages->hasPages()) {
+					?>
+					<div class="menu-slider-group">
+						<b><?php echo $this->view->translate($spages->getLabel());?></b>
+						<ul>
+							<?php 
+							foreach ($spages as $sspages) {
+								?>
+								<li><a href="<?php echo $this->view->pagelink($sspages, $prefix)?>"><?php echo $this->view->translate($sspages->getLabel());?></a></li>
+								<?php
+							}
+							?>
+						</ul>
+					</div>
+					<?php
+				} else {
+					?>
+					<div class="menu-slider-elem"><a href="<?php echo $this->view->pagelink($spages, $prefix)?>"><?php echo $this->view->translate($spages->getLabel());?></a></div>
+					<?php
+				}
+			}
+			?>
+			</div>
+		<?php }?>
+	</div>
+</div>
+<div class="slider-margin"></div>
+<script>
+ function displaySubMenu(sub)
+ {
+	if ($(sub).is(':visible')) {
+		$('.menu-slider').slideUp();
+	} else {
+		if ($('.menu-slider>div:visible').length == 0) {
+			$('.menu-slider>div').hide();
+			$(sub).show();
+		} else {
+			$('.menu-slider>div:visible').fadeOut({'duration': 100, 'complete': function() {$(sub).fadeIn({'duration': 400});}});
+		}
+		if (! $('.menu-slider').is(':visible')) {
+			$('.menu-slider').slideDown();
+		}
+	}
+ }
+</script>

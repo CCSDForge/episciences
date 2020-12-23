@@ -1,0 +1,67 @@
+<?php
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+?>
+<?php /** @var Episciences_Paper $paper */
+foreach ($this->papers as $paper) : ?>
+    <tr id="paper_<?php echo $paper->getDocid(); ?>">
+
+        <?php // paper id ******************************************* ?>
+        <td  class="text-center">
+            <?php echo $paper->getPaperid(); ?>
+        </td>
+
+        <?php // article id ******************************************* ?>
+        <td  class="text-center">
+            <?php echo $paper->getDocId(); ?>
+        </td>
+
+        <?php // article status code ******************************************* ?>
+        <td class="text-center">
+            <a href="#"
+               data-toggle="tooltip"
+               title="<?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>">
+                        <span style="font-size: 20px"
+                              class="glyphicon glyphicon glyphicon-info-sign status-<?php echo $paper->getStatus(); ?>"></span>
+                <span
+                    style="display: none"><?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?></span>
+            </a>
+        </td>
+
+        <?php // article title ******************************************* ?>
+        <td>
+            <a href="/<?php echo $controller ?>/view?id=<?php echo $paper->getDocid(); ?>">
+                <strong><?php echo Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($paper->getTitle()), 75); ?></strong>
+                <?php if ($paper->getVersion() != 1) : ?>
+                    (v<?php echo $paper->getVersion(); ?>)
+                <?php endif; ?>
+            </a>
+        </td>
+
+        <?php // article volume ******************************************* ?>
+        <td class="text-center"><?php
+            if (array_key_exists($paper->getVid(), $this->volumes)) {
+                echo $this->translate($this->volumes[$paper->getVid()]->getNameKey());
+            } else {
+                echo '-';
+            }
+            ?></td>
+
+        <?php // article section ******************************************* ?>
+        <td class="text-center"><?php
+            if (array_key_exists($paper->getSid(), $this->sections)) {
+                echo $this->translate($this->sections[$paper->getSid()]->getNameKey());
+            } else {
+                echo '-';
+            }
+            ?></td>
+
+        <?php // submission date ************************************************ ?>
+        <td>
+            <span style="display: none"><?php echo $paper->getWhen(); ?></span>
+            <?php echo $paper->getWhen(); ?>
+        </td>
+
+    </tr>
+<?php endforeach; ?>

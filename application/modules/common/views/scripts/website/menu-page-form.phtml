@@ -1,0 +1,25 @@
+<?php
+
+$form = $this->page->getForm($this->i);
+$form->removeDecorator('Form');
+
+echo $form;
+
+if (!$this->page->isMultiple()) {
+    //Page simple
+    ?>
+    <script>
+        $('#type option[type="<?php echo get_class($this->page)?>"]').attr('disabled', 'disabled');
+    </script>
+    <?php
+}
+if ($this->page->isFile()) {
+    //Pour contourner le pb de Zend_File
+    ?>
+    <script>
+        $('#form-<?php echo $this->i?> input:file').each(function () {
+            $(this).attr('name', 'pages_<?php echo $this->i?>[' + $(this).attr('name') + ']');
+        });
+    </script>
+    <?php
+}

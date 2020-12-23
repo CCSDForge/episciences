@@ -1,0 +1,28 @@
+.ui-autocomplete {
+  max-height: 200px;
+  overflow: auto;
+  padding: 5px;
+  background: #fff;
+}
+
+.ui-autocomplete .ui-menu-item {
+  border-bottom: 1px solid #ddd;
+  list-style-image: none;
+  background: #fff;
+  font-size:12px;
+}
+
+.ui-autocomplete .ui-menu-item a.ui-state-focus,
+.ui-autocomplete .ui-menu-item a.ui-state-active {
+  /*background: #f6f6f6;*/
+  border: 1px solid #ccc;
+}
+
+.ui-autocomplete .ui-menu-item .email {
+  font-size:10px;
+  font-style: italic;
+}
+
+input.ui-autocomplete-input {
+  margin-bottom: 0;
+}

@@ -1,0 +1,18 @@
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} -s [OR]
+RewriteCond %{REQUEST_FILENAME} -l [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.*$ - [NC,L]
+
+RewriteRule ^.*$ index.php [NC,L]
+
+<FilesMatch "\.(ttf|otf|eot|woff)$">
+  <IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+  </IfModule>
+</FilesMatch>
+
+<FilesMatch "^robots.txt$">
+    ForceType application/x-httpd-php
+</FilesMatch>

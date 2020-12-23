@@ -1,0 +1,65 @@
+$status-colors: (
+        // submitted
+        0:  $light-grey,
+        // ok for reviewing
+        1: $dark-grey,
+        // being reviewed
+        2:  $darker-grey,
+        // reviewed
+        3:  $dark-blue,
+        // accepted
+        4:  $green,
+        // refused
+        5:  $fire-red,
+        // obsolete
+        6:  $red,
+        // waiting for minor revision
+        7:  $yellow,
+        // waiting for comments
+        8:  $orange,
+        // temporary version
+        9:  $dark-orange,
+        // no revision
+        10: $orangered,
+        // new version
+        11 : $coral-red,
+        // deleted
+        12 : $alizarin-red,
+        // removed
+        13 : $mars-red,
+        // reviewer invited
+        14 : $azur-blue,
+        // waiting for major revision
+        15:  $orange,
+        // published
+        16:  $darker-green,
+        // Abandoned
+        17: $tomato-red,
+        //  copy editing: waiting for author sources
+        18: $ocker-red,
+        // copy editing: author sources deposed
+        19 : $steel-blue,
+        //copy editing: review formatting deposed
+        20 : $spinach-green,
+        // copy editing: waiting author final version
+        21 : $burnt-orange,
+        // copy editing: author final version deposed
+        22 : $olive-green,
+        // copy editing: ready to publish
+        23 : $sage-green,
+        // copy editing: author formatting deposed
+        24 : $blue-duck
+);
+
+@each $status-code, $status-color in $status-colors {
+  .status-#{$status-code} {
+    color: $status-color;
+  }
+  .label-status-#{$status-code} {
+    @if $status-color == $yellow or $status-color == $green {
+      color: #000000;
+      // need more contrast on bright colors
+    }
+    background-color: $status-color;
+  }
+}

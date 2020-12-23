@@ -1,0 +1,15 @@
+.modal-header {
+  cursor: move;
+}
+
+.modal-backdrop {
+  background: $white;
+}
+
+.modal-backdrop, .modal-backdrop.fade.in {
+  @include opacity(0.7);
+}
+
+.datepicker {
+  z-index: 9999 !important
+}

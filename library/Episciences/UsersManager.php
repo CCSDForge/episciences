@@ -1,0 +1,292 @@
+<?php
+
+class Episciences_UsersManager
+{
+    /**
+     * fetch review user list
+     * @return array
+     */
+    public static function getAllUsers()
+    {
+        $localUsers = self::getLocalUsers();
+        $casUsers = (!empty($localUsers)) ? self::getCasUsers(array_keys($localUsers)) : [];
+
+        foreach ($localUsers as $key => $user) {
+            if (array_key_exists($key, $casUsers)) {
+                $localUsers[$key]['CAS'] = $casUsers[$key];
+                unset ($casUsers[$key]);
+            }
+        }
+
+        return array('episciences' => $localUsers, 'CAS' => $casUsers);
+    }
+
+    /**
+     * fetch review user list, filtered by role
+     * @param null $with
+     * @param null $without
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getUsersWithRoles($with = null, $without = null): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $users = array();
+
+      $select = self::getUsersWithRolesQuery($with, $without);
+
+        $result = $db->fetchCol($select);
+
+        foreach ($result as $uid) {
+
+            $oUser = new Episciences_User();
+
+            if (!$oUser->findWithCAS($uid)) {
+                continue;
+            }
+
+            $oUser->loadRoles();
+            $users[$uid] = $oUser;
+        }
+
+        return $users;
+    }
+
+    /**
+     * @param null $with
+     * @param null $without
+     * @return mixed
+     */
+
+    public static function getUsersWithRolesQuery($with = null, $without = null){
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->distinct()
+            ->from(array('u' => T_USERS), 'UID')
+            ->joinUsing(T_USER_ROLES, 'UID', array())
+            ->where('RVID = ?', Episciences_Review::$_currentReviewId);
+
+        if (is_array($with) && !empty($with)) {
+            $select->where('ROLEID IN (?)', $with);
+        } else if (!empty($with)) {
+            $select->where('ROLEID = ?', $with);
+        }
+
+        if (is_array($without) && !empty($without)) {
+            $select->where('ROLEID NOT IN (?)', $without);
+        } else if (!empty($without)) {
+            $select->where('ROLEID != ?', $without);
+        }
+        $select->order('SCREEN_NAME ASC');
+        return $select;
+    }
+
+
+    /**
+     * fetch a list of all review users (users who have at least one role attached to the review)
+     * @return array
+     */
+    public static function getLocalUsers()
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $users = array();
+
+        $select = $db->select()->distinct()->from(T_USER_ROLES, 'UID')->where('RVID = ?', RVID);
+        $result = $db->fetchCol($select);
+
+        foreach ($result as $uid) {
+
+            $oUser = new Episciences_User();
+            if (!$oUser->find($uid)) {
+                continue;
+            }
+
+            $oUser->loadRoles();
+            $users[$uid] = $oUser->toArray();
+        }
+
+        return ($users);
+    }
+
+    /**
+     * fetch CAS users from db (can be filtered by uid)
+     * @param null $uids
+     * @return array
+     */
+    public static function getCasUsers($uids = null)
+    {
+        $casDb = Ccsd_Db_Adapter_Cas::getAdapter();
+        $select = $casDb->select()->from('T_UTILISATEURS');
+
+        if (is_array($uids) && !empty($uids)) {
+            $select->where('UID IN (?)', $uids);
+        }
+
+        return ($casDb->fetchAssoc($select));
+    }
+
+    /**
+     * assign users (reviewers or editors) to an item (paper, section or volume)
+     * @param $ids
+     * @param array $params
+     * @return array|bool
+     */
+    public static function assign($ids, array $params)
+    {
+        return self::saveAssignment(Episciences_User_Assignment::STATUS_ACTIVE, $ids, $params);
+    }
+
+    /**
+     * unassign users (reviewers or editors) from an item (paper, volume, or section)
+     * @param $ids
+     * @param array $params
+     * @return array|bool
+     */
+    public static function unassign($ids, array $params)
+    {
+        return self::saveAssignment(Episciences_User_Assignment::STATUS_INACTIVE, $ids, $params);
+    }
+
+    private static function saveAssignment($status, $ids, array $params)
+    {
+        $assignments = array();
+
+        // if no ids, do nothing
+        if (empty($ids)) {
+            return $assignments;
+        }
+
+        // prepare assignment values
+        $assignmentValues = [
+            'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
+            'itemid' => $params['itemid'],
+            'item' => $params['item'],
+            'roleid' => $params['roleid'],
+            'tmp_user' => Ccsd_Tools::ifsetor($params['tmp_user'], 0),
+            'status' => Ccsd_Tools::ifsetor($params['status'], $status)
+        ];
+
+        if ($status == Episciences_User_Assignment::STATUS_ACTIVE) {
+            $assignmentValues['deadline'] = Ccsd_Tools::ifsetor($params['deadline'], null);
+        }
+
+        // if only one id was given, push it in an array for processing
+        if (!is_array($ids)) {
+            $ids = array($ids);
+        }
+
+        foreach ($ids as $uid) {
+            $assignmentValues['uid'] = $uid;
+            $oAssignment = new Episciences_User_Assignment($assignmentValues);
+            $oAssignment->save();
+            $assignments[] = $oAssignment;
+        }
+
+        return $assignments;
+    }
+
+
+    /**
+     * sort an array of users according to their name
+     * @param Episciences_User[] $users
+     * @return array
+     */
+    public static function sortByName(array $users)
+    {
+        usort($users, static function ($a, $b) {
+            /**
+             * @var Episciences_User $a
+             * @var Episciences_User $b
+             */
+            if ($a->getLastname() == $b->getLastname()) {
+                if ($a->getFirstname() == $b->getFirstname()) {
+                    return 0;
+                }
+
+                return ($a->getFirstname() > $b->getFirstname()) ? -1 : 1; // LOL
+            }
+            return ($a->getLastname() < $b->getLastname()) ? -1 : 1;
+        });
+
+        return $users;
+    }
+
+    /**
+     * Met à jour l'UID du l'utilisateur
+     * @param int $oldUid : l'UID à supprimer
+     * @param int $newUid : Nouvel UID
+     * @return int: le nombre de lignes affectées
+     * @throws Zend_Db_Adapter_Exception
+     */
+
+    public static function updateRolesUid(int $oldUid = 0, int $newUid = 0)
+    {
+
+        if ($oldUid == 0 || $newUid == 0) {
+            return 0;
+        }
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $data['UID'] = $newUid;
+        $where['UID = ?'] = $oldUid;
+        return $db->update(T_USER_ROLES, $data, $where);
+    }
+
+
+    /**
+     * Supprime un utilisateur
+     * @param int $uid
+     * @return int
+     */
+
+    public static function removeUserUid(int $uid)
+    {
+
+        if ($uid == 0) {
+            return 0;
+        }
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $where['UID = ?'] = $uid;
+        return $db->delete(T_USERS, $where);
+    }
+
+    /**
+     * Ajoute un user
+     * @param int $uid
+     * @param string $languageId
+     * @param string $screenName
+     * @return int
+     */
+    public static function insertLocalUser(int $uid = 0, string $languageId = '', string $screenName = '')
+    {
+        if (0 >= $uid || '' === $languageId || '' === $screenName) {
+            return 0;
+        }
+
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            return $db->insert(T_USERS, ['UID' => $uid, 'LANGUEID' => $languageId, 'SCREEN_NAME' => $screenName]);
+
+        } catch (Exception $e) {
+            error_log('Insert In T_USERS : ' . $e->getMessage());
+            return 0;
+        }
+
+    }
+
+    /**
+     * @param Episciences_User[] $users
+     * @return array
+     */
+    public static function skipRootFullName(array $users)
+    {
+        $tmp = [];
+        foreach ($users as $user) {
+            if ($user->getUid() == 1) {
+                continue;
+            }
+            $tmp[$user->getUid()] = $user->getFullName();
+        }
+        return $tmp;
+    }
+
+}

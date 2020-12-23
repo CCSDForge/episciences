@@ -1,0 +1,222 @@
+<?php
+$this->headTitle($this->translate('Relire un article'));
+$this->headTitle("#" . $this->paper->getDocid() . ' - ' . $this->paper->getTitle() . ' (v' . $this->paper->getVersionNumber() . ')');
+/** @var Episciences_Rating_Report[] $previousRatings */
+$previousRatings = $this->previousRatings;
+?>
+
+<?php // obsolete paper notice ********************************************* ?>
+<?php if ($this->paper->getStatus() == Episciences_Paper::STATUS_OBSOLETE) : ?>
+    <div class="alert alert-info" style="margin-top: 20px">
+        <strong><?php echo $this->translate('Attention, cet article est obsolète.'); ?></strong><br/>
+        <?php
+        $url = $this->url(array(
+            'controller' => Zend_Controller_Front::getInstance()->getRequest()->getControllerName(),
+            'action' => Zend_Controller_Front::getInstance()->getRequest()->getActionName(),
+            'id' => $this->paper->getLatestVersionId()));
+        ?>
+        <?php echo $this->translate("Il s'agit d'une ancienne version de %s cet article %s", '<a href="' . $url . '">', '</a>'); ?>
+    </div>
+<?php endif; ?>
+
+
+<?php // paper ************************************************************** ?>
+<?php echo $this->paper->getXslt(); ?>
+
+
+<?php // author's comments and cover letter ************************************************************************* ?>
+<?php if (Episciences_Auth::isLogged() &&
+    (Episciences_Auth::isChiefEditor() || Episciences_Auth::isSecretary() || Episciences_Auth::isEditor() || Episciences_Auth::isReviewer() || Episciences_Auth::getUid() == $this->paper->getUid()) &&
+    $this->author_comments &&
+    !$this->paper->isPublished()) :  ?>
+
+    <?php // Author comments  *****************************************?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo  $this->translate("Commentaire de l'auteur / lettre d'accompagnement"); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->render('partials/paper_author_comments.phtml') ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+
+<?php // rating logs ******************************************************** ?>
+<?php if ($this->logs) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Historique de votre relecture'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php foreach ($this->logs as $log) : ?>
+                <div class="small">
+                    <div>
+                        <span><strong><?php echo $this->Date($log['WHEN']); ?> : </strong></span>
+                        <span>
+                    <?php if ($log['TYPEID'] == Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION) : ?>
+                        <?php echo $this->translate('Demande de modifications mineures'); ?>
+                    <?php elseif ($log['TYPEID'] == Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION) : ?>
+                        <?php echo $this->translate('Demande de modifications majeures'); ?>
+                    <?php elseif ($log['TYPEID'] == Episciences_Paper::STATUS_WAITING_FOR_COMMENTS) : ?>
+                        <?php echo $this->translate('Demande d\'éclaircissements'); ?>
+                    <?php else : ?>
+                        <?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($log['TYPEID']))) ?>
+                    <?php endif; ?>
+                </span>
+                        <span><?php if ($log['COMMENT']) { echo $log['COMMENT']; } ?></span>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+<?php // reviewer comments *********************************************************** ?>
+<?php if ($this->comment_form || $this->comments) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <?php
+            if(!$this->onbehalf){
+                $title = "Envoyer un message à l'auteur";
+            } else {
+                $title = "Messages envoyés à l'auteur";
+            }
+            ?>
+            <h2 class="panel-title"><?php echo $this->translate($title); ?></h2>
+        </div>
+        <div class="panel-body<?php if ($this->comments || array_key_exists('postComment', $_POST)) { echo ' in'; } ?>">
+            <?php
+            /* On masque le formulaire d'envoi de messages à l'auteur, si l'evaluation est faite à la place d'un reviewer.*/
+                if(!$this->onbehalf) { echo $this->comment_form; }
+            ?>
+            <?php if ($this->comments) : ?>
+                <hr/>
+                <div style="max-height: 200px; margin-top: 20px; overflow: auto;">
+                    <?php echo $this->partial('partials/paper_reviewer_comments.phtml', array('comments' => $this->comments, 'paperContributorUid' => $this->paper->getUid())) ?>
+                </div>
+
+            <?php endif; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+<?php // ratings ************************************************************ ?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title">
+            <?php
+                $h2 = $this->translate('Evaluation');
+
+                if($this->onbehalf && $this->url_reviewer) {
+                    $h2 .= ' <span class="alert-warning">' . '[ ' .
+                        $this->translate('De la part de') . ' : ' .
+                        $this->url_reviewer['SCREEN_NAME'] . ']
+                      </span>';
+                }
+
+                echo $h2;
+            ?>
+        </h2>
+    </div>
+    <div class="panel-body in" id="accordion">
+
+        <?php
+        // rating grid, if there is one ***************************************************
+        if ($this->paper->isEditable() &&(!$this->report || !$this->report->isCompleted())) {
+            echo ($this->rating_form) ? $this->rating_form : $this->translate("La grille d'évaluation n'est pas encore disponible") . '.';
+        }
+        ?>
+
+        <?php // completed rating reports *************************************************************** ?>
+        <?php if (($this->report && $this->report->isCompleted()) || $previousRatings) : ?>
+            <div class="panel-group" id="accordion">
+
+                <?php // current version rating report ?>
+                <?php if ($this->report && $this->report->isCompleted()) : ?>
+                    <div class="panel panel-warning">
+                        <div class="panel-heading" data-parent="#accordion" data-toggle="collapse"
+                             data-target="#current-rating">
+                            <h4 class="panel-title">
+                                <?php if ($this->report->getScore()) : ?>
+                                    <strong><?php echo $this->report->getScore() . '/' . $this->report->getMax_score(); ?></strong><?php endif; ?>
+
+                                <?php
+
+                                echo '(' . $this->translate('round') . ' ' . (count($previousRatings) + 1) . ')';
+
+                                ?>
+                                <span
+                                        class="grey pull-right"><?= $this->Date($this->report->getUpdate_date()); ?>
+                                    <span class="glyphicon glyphicon-chevron-down" style="margin-left: 5px;"></span>
+                                </span>
+                            </h4>
+                        </div>
+                        <div id="current-rating" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <?php echo $this->partial('partials/paper_report.phtml', array('report' => $this->report)); ?>
+                            </div>
+                        </div>
+                    </div>
+
+                <?php endif; ?>
+
+                <?php // previous versions rating reports ?>
+                <?php if (!empty($previousRatings)) : ?>
+                    <?php $count = count($previousRatings); ?>
+                    <?php foreach ($previousRatings as $id => $report) : ?>
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-parent="#accordion" data-toggle="collapse"
+                                 data-target="#previous-rating-<?php echo $id ?>">
+                                <h4 class="panel-title grey">
+                                    <?php if ($report->getScore()) : ?>
+                                        <strong><?= $report->getScore() . '/' . $report->getMax_score(); ?></strong>
+                                    <?php endif; ?>
+                                    (<?= $this->translate('round') . ' ' . $count;
+                                    $count--; ?>)
+                                    <?php $when = !empty($report->getUpdate_date()) ? $report->getUpdate_date() : $report->getCreation_date(); ?>
+                                    <span class="grey pull-right"><?= $this->Date($when); ?>
+                                        <span class="glyphicon glyphicon-chevron-down" style="margin-left: 5px;"></span>
+                                    </span>
+                                </h4>
+                            </div>
+                            <div id="previous-rating-<?= $id ?>" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    <?= $this->partial('partials/paper_report.phtml', [
+                                        'report' => $report,
+                                        'grid' => $this->grid,
+                                        'docid' => $report->getDocid(),
+                                        'parentid' => $this->paper->getDocid()]); ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
+            </div>
+        <?php endif; ?>
+
+    </div>
+</div>
+
+
+<?php // scripts ************************************************************
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+$this->jQuery()->addJavascriptFile('/js/paper/rating.js');
+$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
+?>
+<script>
+       __initMCE('textarea', undefined, {
+        theme: "modern",
+        plugins: "link image code fullscreen table",
+        toolbar1: "bold italic underline",
+        entity_encoding: "raw",
+        menubar: false
+    });
+
+</script>

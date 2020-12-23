@@ -1,0 +1,76 @@
+<?php
+$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+$this->jQuery()
+    //->addJavascriptFile('/js/search/autocomplete.js')
+    ->addJavascriptFile('/js/search/search.js')
+    ->addJavascriptFile('/js/vendor/jquery.fastLiveFilter.js');
+?>
+
+
+<div id="search-form" class="row">
+<?php
+echo $this->partial('partials/search_form.phtml',
+        array(
+                'search_form' => $this->search_form,
+                'parsedSearchParams' => $this->parsedSearchParams,
+                'formErrorsMessages' => $this->formErrorsMessages,
+                'paginatorNumberOfResultsArray' => $this->paginatorNumberOfResultsArray,
+                'paginatordefaultNumberOfResults' => $this->paginatordefaultNumberOfResults,
+        		// 'isAdvancedSearch' => $this->isAdvancedSearch
+        ));
+
+?>
+</div>
+<!-- row search form -->
+
+
+<div class="row">
+
+	<?php if ($this->numFound > 0): ?>
+		<div id="search-facets" class="col-md-3"><?php
+		echo $this->partial('partials/search_facets.phtml',
+			array(
+					'facets' => $this->facetsArray,
+					'activeFilters' => $this->activeFilters,
+					'parsedSearchParams' => $this->parsedSearchParams,
+					'paginatordefaultNumberOfResults' => $this->paginatordefaultNumberOfResults,
+					'numFound' => $this->numFound
+			));
+		?></div>
+	
+		<?php if ($this->paginator): ?>
+		<div class="col-md-9"><?php
+	        echo $this->paginationControl($this->paginator, 'Sliding', 'partials/search_pagination.phtml', array(
+	                'parsedSearchParams' => $this->parsedSearchParams
+	        ));
+		?></div>
+		
+		<?php else: ?>
+		<br/>
+		<?php endif; ?>
+		
+	<?php endif; ?>
+
+ 	<div id="search-results" class="col-md-9"><?php
+ 	echo $this->partial('partials/search_results.phtml',
+        array(
+                'results' => $this->results,
+                'parsedSearchParams' => $this->parsedSearchParams,
+                'currentSortTypeLabel' => $this->currentSortTypeLabel,
+                'spellSuggestions' => $this->spellSuggestions,
+                'queryTime' => $this->queryTime,
+                'numFound' => $this->numFound,
+                'paginatordefaultNumberOfResults' => $this->paginatordefaultNumberOfResults
+        ));
+	?></div>
+
+	<?php if ($this->paginator): ?>
+	<div class="col-md-9 col-md-offset-3"><?php
+    echo $this->paginationControl($this->paginator, 'Sliding', 'partials/search_pagination.phtml', array(
+            'parsedSearchParams' => $this->parsedSearchParams
+    )); 
+	?></div>
+	
+	<?php endif; ?>
+ </div>
+<!-- div class row -->

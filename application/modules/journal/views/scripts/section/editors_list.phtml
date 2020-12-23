@@ -1,0 +1,19 @@
+<?php if ($this->editors) : ?>
+<?php /* @var $editor Episciences_Editor */ ?>
+    <?php if (count($this->editors) > 1) : ?>
+        <?php
+        $editors_string = '';
+        foreach ($this->editors as $editor) {
+            $editors_string .= '<span>' . $this->escape($editor->getScreenName()) . '</span><br/>';
+        }
+        ?>
+        <span data-toggle="tooltip"
+              title="<?php echo $editors_string; ?>"><?php echo count($this->editors) . ' ' . mb_strtolower($this->translate(Episciences_Acl::ROLE_EDITOR_PLURAL), 'UTF-8'); ?></span>
+    <?php else : ?>
+        <span>
+	<?php echo $this->escape(array_shift($this->editors)->getScreenName()); ?>
+</span>
+        <br/>
+    <?php endif; ?>
+
+<?php endif; ?>

@@ -1,0 +1,39 @@
+<?php
+$this->layout()->pageTitle = $this->translate("Créer un compte");
+$this->layout()->pageDescription = $this->translate("Création d'un compte sur le Service Central d'Authentification du CCSD");
+?>
+<?php if (Ccsd_User_Models_User::ACCOUNT_CREATE_SUCCESS == $this->resultMessage) : ?>
+    <div class="alert alert-info alert-fixed">
+        <p><?php echo $this->translate("Le compte %s a bien été créé.", $this->fullUserName); ?></p><br/>
+        <p><?php echo $this->translate('Vous devez valider votre compte avant de pouvoir vous authentifier.'); ?></p>
+        <p><?php echo $this->translate("Nous venons de vous envoyer un e-mail à l'adresse : "); ?><a
+                    href="mailto:<?php echo $this->escape($this->userEmail); ?>"
+            ><?php echo $this->escape($this->userEmail); ?></a>
+        </p>
+        <p>
+            <strong><?php echo $this->translate('Cet e-mail contient un lien de validation sur lequel vous devez cliquer pour valider votre compte.'); ?></strong>
+        </p>
+    </div>
+
+    <p>
+        <a href="<?php echo $this->url([], null, true); ?>">
+            <button class="btn btn-default">
+                <span class="glyphicon glyphicon-home" style="margin-right: 5px"></span>
+                <?php echo $this->translate("Retourner à l'accueil"); ?>
+            </button>
+        </a>
+    </p>
+<?php endif; ?>
+
+<?php
+if ($this->form) {
+    if (CAPTCHA_BRAND != '') {
+        if (CAPTCHA_BRAND == 'RECAPTCHA') {
+            echo '<script src="https://www.google.com/recaptcha/api.js?hl=' . Zend_Registry::get('lang') . '" async defer></script>';
+        } elseif (CAPTCHA_BRAND == 'HCAPTCHA') {
+            echo '<script src="https://hcaptcha.com/1/api.js?hl=' . Zend_Registry::get('lang') . '" async defer></script>';
+        }
+    }
+
+    echo $this->form;
+}

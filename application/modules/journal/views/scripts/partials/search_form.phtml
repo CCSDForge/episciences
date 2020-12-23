@@ -1,0 +1,171 @@
+<?php
+
+	$op = '';
+	$this->declareVars(array('parsedSearchParams' => array()));
+	$formAction = $this->url(array('controller' => 'search', 'action' => 'index'), null, true);
+	
+	// if ($this->formErrorsMessages) {
+	// var_dump($this->formErrorsMessages);
+	// }
+
+?>
+
+
+<!-- Simple Search -->
+
+<br>
+
+<style>#search-form .popover {width: 400px;}</style>
+
+<form id="search-simple-form" action="<?php echo $formAction; ?>" name="search-simple" method="get" class="col-md-9 col-md-offset-1 form">
+
+	<div class="input-group">
+		<input
+    		data-src="default"
+			id="q"
+			name="q"
+			class="form-control"
+			type="text"
+			pattern=".{0,300}"
+			title="300 caractères max."
+			placeholder="<?php echo $this->translate('Termes de recherche'); ?>"
+			x-webkit-speech
+			style="min-width: 200px;"
+			tabindex="1"
+			value="<?php if (array_key_exists('q', $this->parsedSearchParams) ) { echo $this->escape($this->parsedSearchParams['q']); } ?>"
+		/> 
+			
+		<div class="input-group-btn">
+			<button name="submit" type="submit" class="btn btn-primary">
+				<span class="glyphicon glyphicon-search"></span>&nbsp;<?php echo $this->translate('Rechercher'); ?>
+			</button>
+
+			<?php // if (array_key_exists('q', $this->parsedSearchParams)) : ?>
+			<?php if (false) : ?>
+			<button
+				id="search-options"
+				type="button"
+				class="btn btn-default">
+				<span class="glyphicon glyphicon-cog"></span>
+			</button>
+			<?php endif;?>
+		</div>
+	</div>
+
+	
+	<!-- Bouton pour recherche avancée -->
+	<!--  
+	<div class="col-md-9 col-md-offset-9" style="margin-top: 0.5em;">
+		<button
+			id="search-advanced"
+        	type="button"
+			class="btn btn-link btn-xs">
+			<span class="glyphicon glyphicon-plus"></span>&nbsp;<?php echo $this->translate('Recherche avancée'); ?>&hellip;
+		</button>
+	</div>
+	 -->
+	
+	
+	<?php
+
+	// Ajout des filtres en cours au formulaire de recherche
+	$parsedSearchParams = $this->parsedSearchParams;
+	if (is_array($parsedSearchParams)) {
+		unset($parsedSearchParams['controller'], $parsedSearchParams['action'], $parsedSearchParams['q']);
+		foreach ($parsedSearchParams as $elementName=>$elementValue) {
+			echo PHP_EOL . '<input type="hidden" name="' . $this->escape($elementName) . '" value="'. $this->escape($elementValue) .'">';
+		}
+	}
+	
+	?>	
+
+</form>
+	
+<!-- //Simple Search -->
+
+
+
+
+<?php if (false) : ?>
+<!-- Options de la recherche ============================== -->
+<div id="search-options-content" style="display: none;">
+
+	<!-- Nombre de résultats par page ============================== -->
+	<p><?php echo $this->translate('Nombre de résultats par page :'); ?></p>
+	<div class="btn-group" data-toggle="buttons-radio">
+	<?php
+		$urlParams = $this->parsedSearchParams;
+		
+		foreach (Episciences_Search_Settings::$_numberSearchResultsArray as $paginatorNumberOfResults) {
+		    $isActive = '';
+		
+		    if (isset($this->parsedSearchParams['rpp']) and ($this->parsedSearchParams['rpp'] == $paginatorNumberOfResults)) {
+		        // valeur en cours
+		        $isActive = ' btn-primary active disabled';
+		    }
+		
+		    if (! isset($this->parsedSearchParams['rpp']) and $paginatorNumberOfResults == Episciences_Search_Settings::DEFAULT_NUMBER_SEARCH_RESULTS) {
+		        // valeur par défaut
+		        $isActive = ' btn-primary active disabled';
+		    }
+		
+		    $urlParams['rpp'] = $paginatorNumberOfResults;
+		
+		    echo '<a href="' . $this->escape($this->url($urlParams, null, TRUE)) . '" class="btn btn-sm' . $isActive . '">';
+		    echo $this->escape($paginatorNumberOfResults);
+		    echo '</a>';
+		}
+	?>
+	</div> <!-- Nombre de résultats par page ============================== -->
+	
+	<hr />
+	
+	<!-- Tri des résultats -->
+	<p><?php echo $this->translate('Tri des résultats :'); ?></p>
+	
+	<?php
+		$sortDataForView['score desc'] = '<span class="glyphicon glyphicon-sort-by-attributes-alt pull-left"></span>&nbsp;' . $this->translate('Pertinence');
+		
+		$sortDataForView['aut asc'] = '<span class="glyphicon glyphicon-user pull-left"></span>&nbsp;' . $this->translate('Auteur A&rarr;Z');
+		$sortDataForView['aut desc'] = '<span class="glyphicon glyphicon-user pull-left"></span>&nbsp;' . $this->translate('Auteur Z&rarr;A');
+		
+		$sortDataForView['tit asc'] = '<span class="glyphicon glyphicon-sort-by-alphabet pull-left"></span>&nbsp;' . $this->translate('Titre A&rarr;Z');
+		$sortDataForView['tit desc'] = '<span class="glyphicon glyphicon-sort-by-alphabet-alt pull-left" ></span>&nbsp;' . $this->translate('Titre Z&rarr;A');
+		
+		$sortDataForView['date asc'] = '<span class="glyphicon glyphicon-sort-by-order pull-left"></span>&nbsp;' . $this->translate('Date croissante');
+		$sortDataForView['date desc'] = '<span class="glyphicon glyphicon-sort-by-order-alt pull-left"></span>&nbsp;' . $this->translate('Date décroissante');
+	?>
+	
+	<div class="btn-group btn-group-vertical">
+    <?php
+		$urlParams = $this->parsedSearchParams;
+
+		foreach ($sortDataForView as $sortType => $sortLabel) {
+			$isActive = '';
+			if (isset($this->parsedSearchParams['sort']) and ($this->parsedSearchParams['sort'] == $sortType)) {
+				$isActive = ' btn-primary active disabled';
+			} elseif (! isset($this->parsedSearchParams['sort']) and ($sortType == 'score desc')) {
+				$isActive = ' btn-primary active disabled';
+			} else {
+				$urlParams['sort'] = $sortType;
+			}
+	
+			echo '<a  href="';
+			echo $this->escape($this->url($urlParams, null, TRUE));
+			echo '" class="btn btn-sm' . $isActive . '">';
+			echo $this->translate($sortLabel);
+			echo '</a>';
+		}
+	?>
+	</div>
+	<!-- // Tri des résultats -->
+	
+	
+	<br />
+	<hr />
+	<button class="close-search-options" type="button" class="btn btn-default" onclick="$('#search-options').popover('hide')">
+		<?php echo $this->translate('Annuler');?>
+	</button>
+
+</div> <!-- // Options de la recherche ============================== -->
+<?php endif;?>

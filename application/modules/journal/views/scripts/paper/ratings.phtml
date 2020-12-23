@@ -1,0 +1,46 @@
+<?php $this->layout()->pageTitle = $this->translate("Mes relectures"); ?>
+<?php $this->layout()->description = $this->translate("Liste des articles pour lesquels je suis relecteur"); ?>
+<?php $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName(); ?>
+<?php $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName(); ?>
+<?php
+/** @var Zend_Form $form */
+$form = $this->paperFilter();
+// A gérer en AJAX (dataTable)
+$form->getElement('submit')->setAttrib('type', '');
+$form->setAction('');
+echo $form;
+?>
+<hr/>
+<?php //if ($this->papers) : ?>
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+?>
+<table class="table table-bordered dataTable" id="papers">
+    <thead>
+    <tr>
+        <th data-name="<?php echo $this->translate("Statut de l'article"); ?>"></th>
+        <th><?php echo $this->translate('Statut de ma relecture'); ?></th>
+        <th><?php echo $this->translate('Attendu le'); ?></th>
+        <th><?php echo $this->translate("Id"); ?></th>
+        <th><?php echo $this->translate('Round'); ?></th>
+        <th><?php echo $this->translate('Titre'); ?></th>
+        <th class="text-center"><?php echo $this->translate('Volume'); ?></th>
+        <th class="text-center"><?php echo $this->translate('Rubrique'); ?></th>
+        <?php if ($action !== 'submitted' && $action !== 'ratings' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
+            <th class="text-center"><?php echo $this->translate('Proposé par'); ?></th>
+        <?php endif; ?>
+        <th class="text-center"><?php echo $this->translate('Proposé le'); ?></th>
+    </tr>
+    </thead>
+
+    <tbody></tbody>
+</table>
+
+<script type="text/javascript">
+    let selfAction = <?php echo "'$action'"; ?>;
+    let selfController = <?php echo "'$controller'"; ?>;
+</script>
+
+<?php $this->jQuery()->addJavascriptFile('/js/paper/submitted.js'); ?>

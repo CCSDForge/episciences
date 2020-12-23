@@ -1,0 +1,57 @@
+<?php
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+/** @var Episciences_Paper $paper */
+$paper = $this->article;
+?>
+
+
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Contributeur'); ?></h2>
+    </div>
+    <div class="panel-body in">
+        <div id="<?= $this->id; ?>">
+            <div class="contributor" style="margin-bottom: 5px">
+
+                <img src="/user/photo/uid/<?= $paper->getUid(); ?>/size/normal?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                     class="user-photo-small" alt="avatar">
+                <span style="margin-left: 0.5em;"><strong><?php echo $paper->getSubmitter()->getScreenName() ?></strong></span>
+
+
+                <a class="btn btn-default" href="/user/view/userid/<?= $paper->getUid(); ?>" target="_blank">
+                    <span data-toggle="tooltip"
+                          class="fas fa-address-card"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Voir le profil") ?>">
+                    </span>
+                </a>
+
+                <a class="modal-opener btn btn-default"
+                   href="/administratemail/send/recipient/<?= $paper->getUid(); ?>/paper/<?= $paper->getDocid(); ?>">
+                    <span data-toggle="tooltip"
+                          class="glyphicon glyphicon-envelope"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Contacter ce contributeur") ?>">
+                    </span>
+                </a>
+
+
+                <?php if (Episciences_Auth::isSecretary()) : ?>
+                    <a class="btn btn-default" href="/user/su/uid/<?php echo $paper->getUid(); ?>">
+                        <span data-toggle="tooltip"
+                              style="margin: 0.2rem"
+                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                              class="fas fa-user-secret">
+
+                        </span>
+                    </a>&nbsp;
+                <?php endif; ?>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+

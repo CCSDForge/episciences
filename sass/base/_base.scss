@@ -1,0 +1,148 @@
+html, body {
+  outline: 0;
+  height: 100%;
+}
+
+.inherit {
+  color: inherit
+}
+
+#container {
+  min-height: 100%;
+  margin-top: 0;
+  padding-top: 60px !important;
+}
+
+.panel .panel-heading {
+  cursor: pointer;
+}
+
+.panel-heading h2 {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.panel-primary .panel-title,
+.panel-success .panel-title,
+.panel-info .panel-title,
+.panel-warning .panel-title,
+.panel-danger .panel-title {
+  color: inherit;
+}
+
+.overlay {
+  @include opacity(0.7);
+  background: $white;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.smaller {
+  font-size: 10px;
+}
+
+hr {
+  margin: 10px 0;
+}
+
+table hr {
+  margin: 3px 0;
+}
+
+.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.es-block {
+  background-color: $white;
+  border: 1px solid $lighter-grey;
+  @include border-radius(4px, 4px);
+  margin: 15px 0;
+  padding: 14px 19px 14px 19px;
+  position: relative;
+}
+
+.es-block-focus {
+  @include border-radius(3px, 3px);
+  border: 1px solid $almost-white;
+  margin: 20px 0;
+  padding: 20px;
+}
+
+.es-block-focus-red {
+  border-left: 5px solid $red;
+}
+
+[class*="span"] {
+  margin-bottom: 10px;
+}
+
+.collapseButton {
+  float: right;
+  cursor: pointer;
+  @include opacity(0.7);
+
+  &:hover {
+    @include opacity(0.7);
+  }
+}
+
+.rotation-90 {
+  @include transform(rotate(90deg));
+}
+
+.rotation-180 {
+  @include transform(rotate(180deg));
+}
+
+
+[data-toggle="tooltip"] {
+  cursor: pointer;
+}
+
+
+.label.closable {
+  line-height: 17px;
+  margin-bottom: 2px;
+}
+
+.label.closable .close {
+  margin-left: 10px;
+}
+
+table.table {
+  font-size: 12px;
+}
+
+.icon-action {
+  margin: 0 3px;
+  cursor: pointer;
+}
+
+
+.user-photo-normal, .user-photo-thumb, .user-photo-small {
+  border-radius: 20px !important;
+  border-color: white;
+}
+
+.user-photo-normal {
+  width: 90px;
+  height: auto;
+}
+
+.user-photo-thumb {
+  width: 16px;
+  height: 16px;
+}
+
+.user-photo-small {
+  max-width: 60px;
+  height: 42px;
+}
+
+.facet-content input[type="checkbox"] {
+  display: none;
+}

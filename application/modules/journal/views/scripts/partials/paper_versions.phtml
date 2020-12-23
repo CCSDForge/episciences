@@ -1,0 +1,33 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: chibane
+ * Date: 17/09/18
+ * Time: 15:40
+ */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+?>
+<div id="versions" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Versions') ?></h2>
+    </div>
+    <div class="panel-body in" style="overflow: visible">
+        <ol class="list-unstyled">
+            <?php foreach ($this->versions as $v => $docid) : ?>
+                <li>
+                    <?php if ($this->paper->getDocid() !== $docid) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docid ?>"><?php endif; ?>
+                        <?= $this->translate("Version") ?>&nbsp;<?= $v ?>
+                        <?php if ($this->paper->getDocid() !== $docid) : ?></a><?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+            <li>
+                <a class="pull-right" target="_blank" href="<?= $this->translate('help_versions_link') ?>">
+                    <i class="glyphicon glyphicon-question-sign"></i>&nbsp;<?= $this->translate('help_versions_text') ?>
+                </a>
+            </li>
+        </ol>
+    </div>
+</div>
+

@@ -1,0 +1,69 @@
+<div id="global-navigation">
+    <ul class="nav nav-stacked nav-pills">
+    	<?php foreach ($nav->getPages() as $page) {
+    		//Page à ne pas afficher (pas le droit)
+            if (!$nav->accept($page)) continue;    		
+    		//Page active
+    		$active = $page->isActive(true); 		
+    		if ($page->hasPages()) {
+				//Présence de sous pages
+                $resource = $page->getController() . '-' . $page->getAction();
+                if ("administrate-index" == $resource || "rights-index" == $resource) {
+                   ?>
+                   <li class="nav-header"><?php echo $this->view->translate($page->getLabel())?></li>
+                   <?php
+                    foreach($page->getPages() as $page) {
+                        if (!$nav->accept($page)) continue;
+                        $active = $page->isActive(true);
+                        ?>
+                       <li class="dropdown-submenu <?php echo $active ? 'active' : ''?>">
+                           <a tabindex="-1" href="<?php echo $prefix . $page->getController() . '/' . $page->getAction();?>"><?php echo $this->view->translate($page->getLabel())?></a>
+                            <?php if ($page->hasPages()) { ?>
+                               <ul class="dropdown-menu">
+                                   <?php foreach ($page->getPages() as $subPage) {
+                                       //Page à ne pas afficher (pas le droit)
+                                       if (!$nav->accept($subPage)) continue;
+                                       ?>
+                                       <li><a href="<?php echo $this->view->pagelink($subPage, $prefix) ?>" target="<?php echo $subPage->getTarget() ?>"><?php echo $this->view->translate($subPage->getLabel())?></a></li>
+                                   <?php } ?>
+                               </ul>
+                            <?php } ?>
+                       </li>
+                   <?php
+                   }
+                } else {
+                ?>
+    			<li class="dropdown-submenu <?php echo $active ? 'active' : ''?>">
+        			<a tabindex="-1" href="<?php echo $prefix . $page->getController() . '/' . $page->getAction();?>"><?php echo $this->view->translate($page->getLabel())?></a>
+    				<?php if ($page->hasPages()) { ?>
+                        <ul class="dropdown-menu">
+                            <?php foreach ($page->getPages() as $subPage) {
+                                //Page à ne pas afficher (pas le droit)
+                                if (!$nav->accept($subPage)) continue;
+                                ?>
+                                <li <?php echo ($subPage->hasPages() ? 'class="dropdown-submenu"' : '') ?> ><a href="<?php echo $this->view->pagelink($subPage, $prefix) ?>" target="<?php echo $subPage->getTarget() ?>"><?php echo $this->view->translate($subPage->getLabel())?></a>
+                                <?php if ($subPage->hasPages()) { ?>
+                                    <ul class="dropdown-menu">
+                                        <?php foreach ($subPage->getPages() as $subsubPage) {
+                                            //Page à ne pas afficher (pas le droit)
+                                            if (!$nav->accept($subsubPage)) continue;
+                                            ?>
+                                        <li><a href="<?php echo $this->view->pagelink($subsubPage, $prefix) ?>" target="<?php echo $subsubPage->getTarget() ?>"><?php echo $this->view->translate($subsubPage->getLabel())?></a></li>
+                                    <?php } ?>
+                                    </ul>
+                                <?php } ?>
+                                </li>
+                            <?php } ?>
+                        </ul>
+                    <?php } ?>
+    			</li>
+    			<?php
+                }
+    		} else {
+    			?>
+    			<li class="<?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix) ?>" target="<?php echo $page->getTarget() ?>"><?php echo $this->view->translate($page->getLabel())?></a></li>
+    			<?php
+    		}
+    	} ?>
+    </ul>
+</div>

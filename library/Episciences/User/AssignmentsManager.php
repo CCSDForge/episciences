@@ -1,0 +1,155 @@
+<?php
+
+class Episciences_User_AssignmentsManager
+{
+    /**
+     * fetch user assignments list (default: only fetch most recent assignment for each user)
+     * @param array $params
+     * @param bool $fetchLastOnly
+     * @return array|Episciences_User_Assignment[]
+     */
+    public static function getList(array $params, $fetchLastOnly = true)
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $subquery = $db->select()
+            ->from(T_ASSIGNMENTS, array('ITEMID', 'MAX(`WHEN`) AS WHEN'))
+            ->group('ITEMID');
+
+        $select = $db->select()
+            ->from(array('a' => T_ASSIGNMENTS), '*');
+
+
+        foreach ($params as $param => $value) {
+            if (is_array($value)) {
+                if (strtolower($param) !== 'status') {
+                    $subquery->where("$param IN (?)", $value);
+                }
+                $select->where("$param IN (?)", $value);
+            } else {
+                if (strtolower($param) !== 'status') {
+                    $subquery->where("$param = ?", $value);
+                }
+                $select->where("$param = ?", $value);
+            }
+        }
+
+        if ($fetchLastOnly) {
+            $select->join(array('b' => $subquery), 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', array());
+        }
+
+        $result = array();
+        $data = $db->fetchAssoc($select);
+
+        foreach ($data as $assignment) {
+            $oAssignment = new Episciences_User_Assignment($assignment);
+            $result[$oAssignment->getItemid()] = $oAssignment;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param $id
+     * @return bool|Episciences_User_Assignment
+     */
+    public static function findById($id)
+    {
+        if (!is_numeric($id)) {
+            return false;
+        }
+
+        return self::find(array('ID' => $id));
+    }
+
+    /**
+     * @param array $params
+     * @return bool|Episciences_User_Assignment
+     */
+    public static function find(array $params)
+    {
+
+        if (null == $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter())) {
+            return false;
+        }
+
+        $data = $db->fetchRow($sql);
+
+        if (empty($data)) {
+            return false;
+        }
+
+        return new Episciences_User_Assignment($data);
+    }
+
+    /**
+     * Met à jour l'UID de l'utilisateur
+     * @param int $oldUid : l'UID à supprimer
+     * @param int $newUid : Nouvel UID
+     * @return int : le nombre de lignes affectées
+     * @throws Zend_Db_Adapter_Exception
+     */
+
+    public static function updateUid(int $oldUid = 0, int $newUid = 0)
+    {
+
+        if ($oldUid === 0 || $newUid === 0) {
+            return 0;
+        }
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $data['UID'] = $newUid;
+        $where['UID = ?'] = $oldUid;
+        return $db->update(T_ASSIGNMENTS, $data, $where);
+    }
+
+    /**
+     * Retourne toutes les assignations
+     * @param $params
+     * @return array|bool
+     */
+    public static function findAll($params)
+    {
+        $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter());
+
+        /** @var  Episciences_User_Assignment[] $assignments */
+        $assignments = [];
+
+        if (null === $sql) {
+            return false;
+        }
+
+        foreach ($db->fetchAll($sql) as $value) {
+            $assignments[] = new Episciences_User_Assignment($value);
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * @param array $params
+     * @param Zend_Db_Adapter_Abstract $db
+     * @return Zend_Db_Select|null
+     */
+    private static function findQuery(array $params, Zend_Db_Adapter_Abstract $db)
+    {
+        if (null === $db || !is_array($params) || empty($params)) {
+            return null;
+        }
+
+        $sql = $db->select()->from(T_ASSIGNMENTS, '*');
+
+        foreach ($params as $param => $value) {
+            if (is_array($value)) {
+                $sql->where("$param IN (?)", $value);
+            } else {
+                $sql->where("$param = ?", $value);
+            }
+
+        }
+
+        $sql->order('ID DESC');
+
+        return $sql;
+    }
+
+}

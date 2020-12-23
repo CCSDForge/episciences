@@ -1,0 +1,43 @@
+.nav-collapse .btn-group .icon-user {
+  margin-right: 5px;
+  opacity:0.9;
+  filter: alpha(opacity=90);
+}
+
+// user button
+.nav-collapse .btn-primary {
+
+  color: $white;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+  background-repeat: repeat-x;
+
+  background-color: #444;
+  background-image: -moz-linear-gradient(top, #555, $darker-grey);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#555), to($darker-grey));
+  background-image: -webkit-linear-gradient(top, #555, $darker-grey);
+  background-image: -o-linear-gradient(top, #555, $darker-grey);
+  background-image: linear-gradient(to bottom, #555, $darker-grey);
+  border-color: $darker-grey $darker-grey #444;
+  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff0088cc', endColorstr='#ff0044cc', GradientType=0);
+  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+}
+
+.nav-collapse .btn-primary:hover,
+.nav-collapse .btn-primary:active,
+.nav-collapse .btn-primary.active,
+.nav-collapse .btn-primary.disabled,
+.nav-collapse .btn-primary[disabled] {
+  color: $white;
+  background-color: $almost-black;
+}
+
+.nav-collapse .btn-primary:active,
+.nav-collapse .btn-primary.active {
+  background-color: $almost-black \9;
+}
+
+.nav-collapse .btn-group.open .btn-primary.dropdown-toggle {
+  background-color: $darker-grey;
+  border-color: $black $almost-black;
+}

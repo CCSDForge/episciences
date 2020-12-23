@@ -1,0 +1,37 @@
+// compass
+//@import "compass/reset";
+@import "compass/css3";
+
+// variables (available colors)
+@import "abstracts/variables";
+// theme configuration (text colors, size, backgrounds...)
+@import "themes/theme";
+
+@import "base/base";
+// color classes
+@import "base/colors";
+// titles, texts...
+@import "base/typography";
+@import "layout/navbar";
+@import "layout/sidebar";
+@import "layout/forms";
+
+// components
+@import "components/datatables";
+@import "components/autocomplete";
+@import "components/progress-bar";
+@import "components/modals";
+@import "components/sortable";
+@import "components/user-role-colors";
+@import "components/paper-status-colors";
+@import "components/flags";
+
+// pages
+@import "pages/search";
+@import "pages/articles";
+@import "pages/volumes-and-sections";
+@import "pages/rating-grids";
+@import "pages/editorial-staff";
+
+//attachments files
+@import "components/fileupload";

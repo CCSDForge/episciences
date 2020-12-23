@@ -1,0 +1,78 @@
+<?php if ($this->parentid) : ?>
+    <?php
+    $url = $this->url(array(
+        'controller' => Zend_Controller_Front::getInstance()->getRequest()->getControllerName(),
+        'action' => Zend_Controller_Front::getInstance()->getRequest()->getActionName(),
+        'id' => $this->docid));
+    ?>
+    <span class="glyphicon glyphicon-info-sign"></span>
+    <span style="margin-left: 5px">
+		<?php echo $this->translate("Ceci est la relecture d'une %sversion précédente%s", '<a target="_blank" href="' . $url . '">', '</a>'); ?>
+	</span>
+    <hr/>
+<?php endif; ?>
+
+<?php if ($this->report->getCriteria()) : ?>
+<div <?php if (!$this->report->getStatus()) {
+    echo 'class="grey"';
+} ?>>
+    <?php /** @var Episciences_Rating_Criterion $criterion */ ?>
+    <?php foreach ($this->report->getCriteria() as $id => $criterion) : ?>
+        <?php if ($criterion->isEmpty()) {
+            continue;
+        } // if criterion has no value of any kind, skip it ?>
+        <div id="criterion-<?= $id; ?>">
+            <div id="criterion-separator-<?= $id;?>" style="margin-top: 10px;"<?= ($criterion->isSeparator()) ? "class='separator'" : ''; ?>>
+                <span class="label label-default"><?php echo $criterion->getLabel(); ?></span>
+            </div>
+            <div style="margin-left: 5px;" id="criterion-details-<?= $id; ?>">
+                <?php if (is_numeric($criterion->getNote()) && $criterion->hasOptions()) : ?>
+                    <strong><?= $this->translate('Votre avis'); ?></strong>
+                    <div style="margin-left: 5px;" id="criterion-options-<?= $id; ?>>">
+                        <?php
+                        // if option label is not translated
+                        if ($criterion->hasCoefficient() || !$criterion->getOptionLabel($criterion->getNote())) {
+                            echo $criterion->getNote() . '/' . $criterion->getMaxNote();
+                            if ($criterion->getOptionLabel($criterion->getNote())) {
+                                echo ' - ';
+                            }
+                        }
+
+                        if ($criterion->getOptionLabel($criterion->getNote())) {
+                            echo $criterion->getOptionLabel($criterion->getNote());
+                        }
+                        ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($criterion->getComment()) : ?>
+                    <strong><?= $this->translate('Commentaire'); ?></strong>
+                    <div style="margin-left: 5px;"
+                         id="criterion-comment-<?= $id; ?>"><?= $criterion->getComment(); ?></div>
+                <?php endif; ?>
+
+                <?php if ($criterion->hasAttachment()) : ?>
+                    <strong><?= $this->translate('Fichier'); ?></strong>
+                    <div id="criterion-attachment-<?= $id; ?>" class="row">
+                        <?php // echo '/docfiles/reports/'.$this->report->getDocid().'/'.$criterion->getAttachment();?>
+                        <div class="col-sm-10">
+                            <a href="<?php echo '/' . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment(); ?>"
+                               target="_blank">
+                                <button class="btn btn-default btn-xs">
+                                    <span style="margin-right: 5px" class="glyphicon glyphicon-download"></span>
+                                    <?php echo $this->translate('Télécharger le fichier') . ' : ' . $criterion->getAttachment(); ?>
+                                </button>
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <?php echo $this->partial('partials/remove_report_file_attachment.phtml', ['report' => $this->report, 'criterion' => $criterion, 'paper' => $this->paper]); ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($criterion->isEmpty()) : ?> - <?php endif; ?>
+            </div>
+        </div>
+
+    <?php endforeach; ?>
+    </div><?php endif; ?>

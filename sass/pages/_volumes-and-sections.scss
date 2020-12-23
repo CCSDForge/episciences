@@ -1,0 +1,67 @@
+#volume #papers,
+#section #papers {
+  margin-top: 20px;
+  padding: 0 20px 0 20px;
+}
+
+#volume h1, #volume h1 a,
+#volume h2, #volume h2 a,
+#volume h3, #volume h3 a,
+#section h1, #section h1 a,
+#section h2, #section h2 a,
+#section h3, #section h3 a  {
+  color: #007cba;
+  font-weight: bold;
+}
+
+#volume .abstract,
+#section .abstract {
+  color: #999;
+  font-size: 90%;
+  margin-top: 10px;
+}
+
+#metadatas .metadata .label {
+  cursor: move !important;
+}
+
+#papers-element #papers .paper {
+  width: 350px;
+  line-height: 1.5;
+  margin-bottom: 2px;
+  padding: 5px 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: move;
+}
+
+.volume-paper-placeholder {
+  width: 350px;
+  height: 30px;
+  background: #fafafa;
+  border: 1px solid #ddd;
+  margin-bottom: 2px !important;
+}
+
+
+.alert-violet {
+  color: #86708A;;
+  background-color: #E3D9E5;
+  border-color: #C9BFCB;
+}
+
+.alert-violet h4 {
+  color: #ce5c00;
+}
+/* label violet */
+.label-violet,
+.badge-violet {
+  background-color: #86708A;;
+}
+
+.label-violet[href],
+.badge-violet[href] {
+  background-color: #356635;
+}

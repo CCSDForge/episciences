@@ -1,0 +1,83 @@
+<?php echo $this->paperFilter(); ?>
+
+<?php if ($this->papers) : ?>
+
+    <?php foreach ($this->papers as $vid => $volume) : ?>
+
+        <?php if ($vid == 0) : ?>
+            <h2><?php echo RVNAME . ' ' . '(' . $this->translate('hors volume') . ')'; ?></h2>
+        <?php else : ?>
+            <h2>
+                <?php echo $this->translate('Volume : '); ?>
+                <?php echo $this->translate('volume_' . $vid . '_title'); ?>
+            </h2>
+        <?php endif; ?>
+
+        <?php foreach ($volume as $status => $articles) : ?>
+            <div class="es-block">
+                <p>
+                    <strong
+                        class="status-<?php echo $status ?>"><?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))); ?></strong>
+                    (<?php echo count($articles) . ' ' . $this->translate(array('article', 'articles', count($articles))); ?>
+                    )
+                </p>
+                <?php $lastKey = array_search(end($volume), $volume); ?>
+                <?php foreach ($articles as $key => $article) : ?>
+                    <hr/>
+                    <div>
+                        <a href="<?php echo ($this->parent == 'user_papers') ? '/paper' : '/administratepaper'; ?>/view?id=<?php echo $article['docId']; ?>">
+                            <strong><?php echo $this->truncate($article['metadata']['title'])->toLength(85); ?></strong>
+                            (v<?php
+                            echo $article['metadata']['version'] ?>)
+                        </a></div>
+                    <div class="smaller"><?php
+                        if (is_array($article['metadata']['authors'])) {
+                            echo $this->translate('Auteurs') . ' : ';
+                            echo implode(' and ', $article['metadata']['authors']);
+                        } else {
+                            echo $this->translate('Auteur') . ' : ';
+                            echo $article['metadata']['authors'];
+                        }
+                        ?></div>
+                    <?php if (array_key_exists('editor', $article)) : ?>
+                        <div
+                            class="smaller"><?php echo $this->translate('Rédacteur') . ' : ' . $article['editor']['SCREEN_NAME']; ?></div>
+                    <?php endif; ?>
+                    <?php if ($this->parent != 'user_papers') : ?>
+                        <?php echo $this->partial('partials/paper_reviewers.phtml', array('article' => $article)); ?>
+                    <?php endif; ?>
+                    <div class="smaller"><?php
+                        echo $this->translate('Proposé le') . ' : ';
+                        echo $this->Date($article['date']);
+                        if ($this->parent != 'user_papers' && !empty($article['submitter']['SCREEN_NAME'])) {
+                            echo ' (' . $this->translate('par') . ' ' . $article['submitter']['SCREEN_NAME'] . ')';
+                        }
+                        ?></div>
+                    <?php if ($article['sId'] || $article['vId']) : ?>
+                        <div class="smaller"><?php
+
+                            if ($article['vId']) {
+                                echo $this->translate('Volume') . ' : ';
+                                echo $this->translate('volume_' . $article['vId'] . '_title');
+                            }
+
+                            if ($article['sId'] && $article['vId']) {
+                                echo ' - ';
+                            }
+
+                            if ($article['sId']) {
+                                echo $this->translate('Rubrique') . ' : ';
+                                echo $this->translate('section_' . $article['sId'] . '_title');
+                            }
+
+                            ?></div>
+                    <?php endif; ?>
+
+                <?php endforeach; ?>
+            </div>
+        <?php endforeach; ?>
+    <?php endforeach; ?>
+
+<?php else : ?>
+    <?php echo $this->translate('Aucun article pour le moment') ?>.
+<?php endif; ?>

@@ -1,0 +1,50 @@
+<?php
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+/** @var Zend_Form $form */
+$form = $this->paperFilter();
+
+// A gérer en AJAX (dataTable)
+$form->getElement('submit')->setAttrib('type', '');
+$form->setAction('');
+
+echo $form;
+?>
+<hr/>
+<?php //if ($this->papers) : ?>
+
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+?>
+
+
+<table class="table table-bordered dataTable" id="papers">
+    <thead>
+    <tr>
+        <th class="text-center"><?php echo $this->translate('Id permanent'); ?></th>
+        <th class="text-center"><?php echo $this->translate('Id document'); ?></th>
+        <th class="text-center"
+            data-name="<?php echo $this->translate('Statut'); ?>"><?php echo $this->translate('Statut'); ?></th>
+        <th><?php echo $this->translate('Titre'); ?></th>
+        <th class="text-center"><?php echo $this->translate('Volume'); ?></th>
+        <th class="text-center"><?php echo $this->translate('Rubrique'); ?></th>
+        <th class="text-center"><?php echo $this->translate('Proposé le'); ?></th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script type="text/javascript">
+    let selfAction = <?php echo "'$action'"; ?>;
+    let selfController = <?php echo "'$controller'"; ?>;
+</script>
+
+<?php $this->jQuery()->addJavascriptFile('/js/paper/submitted.js'); ?>
+
+<?php //else : ?>
+<?php //echo $this->translate('Aucun article pour le moment') ?>
+<?php //endif; ?>

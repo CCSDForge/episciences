@@ -1,0 +1,123 @@
+<?php
+$this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
+
+<div id="volume">
+
+    <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($this->volume->getDescriptionKey())) : ?>
+        <div id="description">
+            <?php echo $this->translate($this->volume->getDescriptionKey()); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($this->volume->getMetadatas()) : ?>
+        <div id="metadatas">
+            <?php foreach ($this->volume->getMetadatas() as $metadata) : ?>
+
+                <?php if ($metadata->hasFile() && $metadata->isPicture()) : ?>
+                    <img src="<?php echo $metadata->getFileUrl() ?>" style="max-width: 100%"/>
+                <?php endif; ?>
+
+                <?php if ($metadata->getContent()) : ?>
+                    <p><?php echo $metadata->getContent(); ?></p>
+                <?php endif; ?>
+
+                <?php if ($metadata->hasFile() && !$metadata->isPicture()) : ?>
+                    <a href="<?php echo $metadata->getFileUrl() ?>" target="_blank">
+                        <button class="btn btn-default btn-sm">
+                            <span class="glyphicon glyphicon-file"></span>
+                            <?php echo $metadata->getTitle() ?>
+                        </button>
+                    </a>
+                <?php endif; ?>
+
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($this->volume->getIndexedPapers()) : ?>
+        <div id="papers">
+            <hr/>
+            <?php $locale = Episciences_Tools::getLocale(); ?>
+            <?php foreach ($this->volume->getIndexedPapers() as $i => $doc) : ?>
+
+                <?php // Titre de l'article ******************************** ?>
+                <h3>
+                    <?php echo $i + 1; ?>.
+                    <a href="/<?php echo $this->escape($doc['docid']); ?>"><?php
+                        echo htmlspecialchars(Episciences_Tools::decodeLatex(Episciences_Tools::getTitleFromIndexedPaper($doc, $locale)));
+                        ?></a>
+                </h3>
+
+                <?php // Noms des auteurs *********************************** ?>
+                <?php if ($doc['author_fullname_s']) : ?>
+                    <span class="authors"><?php
+
+                        $arrayOfAuthors = [];
+                        $authorSeparator = '&nbsp;;&nbsp;';
+                        $maxNumberOfAuthors = 10;
+                        $outputFormat = '<a data-toggle="tooltip" data-placement="bottom" title="' . $this->translate("Articles de l'auteur") . '" href="%s">%s</a>';
+                        $arrayOfAuthorsWithURL = [];
+
+                        foreach ($doc['author_fullname_s'] as $author) {
+                            $tab = Ccsd_Search_Solr::facetStringResultAsArray($author);
+                            $arrayOfAuthors[] = $tab[0];
+                        }
+
+                        if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
+                            $multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
+
+                            foreach ($multiArraysOfAuthors[0] as $authorName) {
+                                $url = $this->url(array(
+                                    'controller' => 'search',
+                                    'action' => 'index',
+                                    'q' => '*',
+                                    'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                            }
+                            $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
+                        } else {
+
+                            foreach ($arrayOfAuthors as $authorName) {
+                                $url = $this->url(array(
+                                    'controller' => 'search',
+                                    'action' => 'index',
+                                    'q' => '*',
+                                    'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                            }
+                            $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
+                            if (substr($authorList, -1) != '.') {
+                                $authorList .= '.';
+                            }
+                        }
+
+                        echo $authorList;
+
+                        ?></span>
+                <?php endif; ?>
+
+                <?php // Résumé de l'article *********************************** ?>
+                <?php
+                $abstract = Episciences_Tools::getAbstractFromIndexedPaper($doc, $locale);
+                if ($abstract) {
+                    echo '<blockquote class="abstract">';
+                    echo Episciences_Tools::decodeLatex(Ccsd_Tools_String::truncate(htmlspecialchars($abstract), ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]'));
+                    echo '</blockquote>';
+                }
+                ?>
+
+                <?php // Rubrique *********************************************** ?>
+                <?php $section = Episciences_Tools::getSectionFromIndexedPaper($doc, $locale); ?>
+                <?php if ($section) : ?>
+                    <div class="small">
+                        <span><?php echo $this->translate('Rubrique : ') ?></span>
+                        <span><?php echo $section; ?></span>
+                    </div>
+                <?php endif; ?>
+
+                <hr/>
+
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>

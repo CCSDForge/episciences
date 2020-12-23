@@ -1,0 +1,312 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$status = $paper->getStatus();
+
+$this->layout()->pageTitle = htmlspecialchars(Episciences_Tools::decodeLatex($paper->getTitle())) . ' <span class="title-part">(v' . $paper->getVersionNumber() . ')</span>';
+$this->headTitle($this->translate('Gérer un article'));
+$this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle() . ' (v' . $paper->getVersionNumber() . ')');
+
+$editors = $this->editors;
+$copyEditors = $this->copyEditors;
+$showCopyEditorsBloc = $paper->isEditable() && ($paper->isAccepted() || $paper->copyEditingProcessStarted() || $paper->isReadyToPublish());
+$invitations = $this->invitations;
+$this->suggestedRefuse = false;
+$this->suggestedAccept = false;
+$this->suggestedRevision = false;
+?>
+
+<style>
+
+    .title-part {
+        font-size: 75%;
+        color: #999;
+    }
+
+    .status-menu li a.disabled, .status-menu li a.disabled:hover {
+        cursor: default;
+        color: #ccc !important;
+        background-color: #fff !important;
+    }
+</style>
+
+
+<?= $this->partial('partials/paper_controller_link_switch.phtml', ['docId' => $paper->getDocid()]); ?>
+
+<?php if ($paper->isObsolete()) : ?>
+    <div class="alert alert-info" style="margin-top: 20px">
+        <strong><?php echo $this->translate('Attention, cet article est obsolète.'); ?></strong><br/>
+        <?php echo $this->translate("Il s'agit d'une ancienne version de "); ?>
+        <a href="/administratepaper/view?id=<?php echo $paper->getLatestVersionId() ?>"><?php echo $this->translate('cet article'); ?></a>.
+    </div>
+<?php endif; ?>
+
+
+<?php if ($paper->isDeleted()) : ?>
+    <div class="alert alert-danger" style="margin-top: 20px">
+        <strong><?php echo $this->translate('Attention, cet article a été supprimé par son auteur.'); ?></strong><br/>
+    </div>
+<?php endif; ?>
+
+
+<?php // Bloc "Papier" ***************************************************** ?>
+<div><?php echo $paper->getXslt(); ?></div>
+
+<?php // contributor section  ?>
+<?php if ($paper->getUid()): ?>
+    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor']) ?>
+<?php endif; ?>
+
+<?php echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]); ?>
+<?php echo $this->partial('partials/paper_doi.phtml', ['canBeAssignedDOI' => $this->canBeAssignedDOI, 'paperid' => $paper->getPaperid(), 'docid' => $paper->getDocid(), 'paperDoi' => $paper->getDoi(), 'doiQueueStatus' => $this->doiQueueStatus, 'doiQueueStatusHtml' => $this->doiQueueStatusHtml]) ?>
+<?php echo $this->render('partials/paper_author_comments_bloc.phtml'); ?>
+
+<?php // paper status ***************************************************** ?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Statut de l\'article'); ?></h2>
+    </div>
+    <div class="panel-body in">
+        <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
+        <p>
+            <strong><?= $statusMsg; ?></strong><span
+                    class="label label-status-<?= $status; ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))); ?></span>
+        </p>
+
+        <?php if ($this->suggestions) : ?>
+            <?php foreach ($this->suggestions as $suggestion) : ?>
+                <?php
+                if ($suggestion ['UID'] == Episciences_Auth::getUid()) {
+                    if ($suggestion['TYPE'] == Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION) {
+                        $this->suggestedAccept = true;
+                    } elseif ($suggestion['TYPE'] == Episciences_CommentsManager::TYPE_SUGGESTION_REFUS) {
+                        $this->suggestedRefuse = true;
+                    } elseif ($suggestion['TYPE'] == Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION) {
+                        $this->suggestedRevision = true;
+                    }
+                }
+                ?>
+                <p>
+                    <?php
+                    echo '<b>' . $this->Date($suggestion['WHEN']) . ' : </b>';
+                    echo '<p>' . $this->translate("Le rédacteur") . ' ';
+                    echo '(' . $suggestion['SCREEN_NAME'] . ') ';
+                    if ($suggestion['TYPE'] == Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION) {
+                        echo $this->translate("suggère d'accepter l'article");
+                    } elseif ($suggestion['TYPE'] == Episciences_CommentsManager::TYPE_SUGGESTION_REFUS) {
+                        echo $this->translate("suggère de refuser l'article");
+                    } elseif ($suggestion['TYPE'] == Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION) {
+                        echo $this->translate("suggère de demander des modifications à l'article");
+                    }
+                    echo (!empty($suggestion['MESSAGE'])) ? $this->translate(' :') . ' </p>' . $this->escape($suggestion['MESSAGE']) : '.';
+                    ?>
+                </p>
+                <hr/>
+            <?php endforeach; // endforeach suggestions ?>
+        <?php endif; //endif suggestions?>
+
+
+        <?php if ($paper->isEditable()) : ?>
+            <?php echo $this->render('partials/paper_status_button.phtml'); ?>
+        <?php endif; ?>
+
+    </div>
+</div>
+
+<?php //préparation de copie?>
+<?php if ($this->copyEditingDemands) : ?>
+    <div id="copy-editing" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Préparation de copie'); ?></h2>
+        </div>
+        <div class="panel-body in" style="overflow: visible">
+            <?= $this->partial('partials/paper_copy_editing.phtml', [
+                'copyEditingDemands' => $this->copyEditingDemands,
+                'copyEditingReplyForms' => $this->copyEditingReplyForms,
+                'paperStatus' => $status,
+                'latestDocId' => $this->latestDocId,
+                'linkToLatestDocId' => $this->linkToLatestDocId
+            ]); ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+<?php // Bloc "Volumes & Rubriques" ***************************************************** ?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Volumes & rubriques'); ?></h2>
+    </div>
+    <div class="panel-body in">
+        <?php echo $this->partial('partials/paper_volumes_and_sections.phtml', ['article' => $paper, 'volumes' => $this->volumes, 'sections' => $this->sections, 'isPartial' => false]); ?>
+    </div>
+</div>
+
+<?php // Bloc "Relecteurs" ***************************************************** ?>
+<?php if (
+    (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) &&
+    (
+        isset($invitations['active']) || isset($invitations['pending']) || isset($invitations['inactive']) ||
+        isset($invitations['expired']) || isset($invitations['cancelled']) ||
+        (!$paper->isAccepted() && !$paper->isPublished() && !$paper->isRefused() && !$paper->isRemoved() && !$paper->isObsolete())
+    )
+) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Relecteurs'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->partial('partials/paper_reviewers.phtml', [
+                'article' => $paper,
+                'invitations' => $invitations,
+                'volume' => ($paper->getVid()) ? $this->volumes[$paper->getVid()] : null,
+            ]) ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // rating reports ***************************************************** ?>
+<?php if ($paper->getRatings()) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Evaluations'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->partial('partials/paper_reports.phtml', ['paper' => $paper,
+                'reports' => $paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)])
+            ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // reviewer comments ***************************************************** ?>
+<?php if ($this->reviewer_comments) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Commentaires des relecteurs'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->reviewer_comments, 'paperContributorUid' => $paper->getUid()]) ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
+
+<?php // editors section ***************************************************** ?>
+<?php if ($paper->getStatus() != Episciences_Paper::STATUS_OBSOLETE) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Rédacteurs'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->partial('partials/paper_editors.phtml', ['article' => $paper, 'editors' => $editors, 'id' => 'editors', 'isMonitoringRefused' => $this->isMonitoringRefused]); ?>
+        </div>
+        <?php if (!empty($this->rejections)) : ?>
+            <div class="panel-footer">
+                <?php foreach ($this->rejections as $rejection) : ?>
+                    <p>
+                        <?php
+                        $text = '<b>' . $this->Date($rejection['WHEN']) . ' : </b>';
+                        $text .= '<p>';
+                        $text .= $this->translate("Le rédacteur") . ' ';
+                        $text .= '(' . $rejection['SCREEN_NAME'] . ') ';
+                        $text .= $this->translate("ne souhaite plus gérer cet article");
+                        $text .= ' : </p>';
+                        $text .= $this->escape($rejection['MESSAGE']);
+                        ?>
+                        <?= $text; ?>
+                    </p>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+<?php endif; ?>
+
+
+
+<?php // editor comments ***************************************************** ?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Commentaires des rédacteurs'); ?></h2>
+    </div>
+    <div class="panel-body in">
+        <?php echo $this->render('partials/paper_editor_comments.phtml') ?>
+    </div>
+</div>
+
+
+<?php // revision requests ***************************************************** ?>
+<?php if ($this->demands || $this->currentDemand || $this->previousVersionsDemands) : ?>
+    <div id="answer" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Demandes de modifications'); ?></h2>
+        </div>
+        <div class="panel-body in" style="overflow: visible">
+            <?php echo $this->partial('partials/paper_demands.phtml', [
+                'paper' => $paper,
+                'current_demand' => $this->currentDemand,
+                'previous_demands' => $this->demands,
+                'previousVersions' => $this->previousVersions,
+                'previousVersionsDemands' => $this->previousVersionsDemands
+            ]); ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // bloc "Préparateurs de copie" ?>
+
+<?php if ($showCopyEditorsBloc) : ?>
+    <?php // Copy Editor section : le copy editing n'est possible que si le document est en l'état accepted ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Préparateurs de copie'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->partial('partials/paper_copy_editors.phtml', ['article' => $paper, 'editors' => $editors, 'copyEditors' => $copyEditors, 'id' => 'copy-editors']); ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // history ***************************************************** ?>
+<div id="history" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Historique'); ?></h2>
+    </div>
+    <div class="panel-body in" style="overflow: visible">
+        <?php echo $this->partial('partials/paper_history.phtml', ['docid' => $paper->getDocid(), 'logs' => $this->logs]); ?>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var review = <?php if ($this->js_review) : ?><?php echo $this->js_review; ?><?php else:?>null<?php endif;?>;
+    var paper = <?php if ($this->js_paper) : ?><?php echo $this->js_paper; ?><?php else:?>null<?php endif;?>;
+    var paper_ratings = <?php if ($this->js_ratings) : ?><?php echo $this->js_ratings; ?><?php else:?>null<?php endif;?>;
+    var author = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
+    var sender = <?php if ($this->js_sender) : ?><?php echo $this->js_sender; ?><?php else:?>null<?php endif;?>;
+    var available_languages = <?php echo $this->available_languages?>;
+</script>
+
+<?php
+//datatable (for reviewer invitation modal)
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+
+$this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
+$this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+
+$this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
+$this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
+$this->jQuery()->addJavascriptFile('/js/administratepaper/view.js');
+
+$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
+$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
+//$this->jQuery()->addJavascriptFile('/js/common/confirmInvitereviewer.js');
+?>
+
