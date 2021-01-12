@@ -89,6 +89,20 @@ class Episciences_Paper_DoiQueue
     }
 
     /**
+     * @return array
+     */
+    public function toArray()
+    {
+        return [
+            'id_doi_queue' => $this->getId_doi_queue(),
+            'paperid' => $this->getPaperid(),
+            'doi_status' => $this->getDoi_status(),
+            'date_init' => $this->getDate_init(),
+            'date_updated' => $this->getDate_updated()
+        ];
+    }
+
+    /**
      * @return int
      */
     public function getId_doi_queue(): int
@@ -170,5 +184,6 @@ class Episciences_Paper_DoiQueue
     {
         $this->_date_updated = $date_updated;
     }
+
 
 }
