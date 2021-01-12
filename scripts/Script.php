@@ -446,9 +446,6 @@ abstract class Script {
 
         try {
             $application = new Zend_Application(APPLICATION_ENV, APPLICATION_PATH . '/configs/application.ini');
-            foreach ( $application->getOption('consts') as $const => $value) {
-                define ($const, $value);
-            }
             $this->_application = $application;
         } catch ( Exception $e ) {
             echo $e->getMessage ();
