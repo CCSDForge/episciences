@@ -156,7 +156,9 @@ abstract class Script {
 
         ini_set ( "display_errors", '1' );
 
-        define ('APPLICATION_PATH', __DIR__ . '/../application');
+        if (!defined('APPLICATION_PATH')) {
+            define('APPLICATION_PATH', __DIR__ . '/../application');
+        }
 
         $libraries = array(realpath(APPLICATION_PATH . '/../library'));
         set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, array(get_include_path()))));
