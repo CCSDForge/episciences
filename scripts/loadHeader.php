@@ -71,8 +71,13 @@ Zend_Registry::set('languages', ['fr', 'en', 'es', 'eu']);
 Zend_Registry::set('Zend_Locale', new Zend_Locale('fr'));
 
 
-// ------- FONCTIONS UTILITAIRES
-/** add verbosity */
+/**
+ * add verbosity
+ * @param $msg
+ * @param string $colormsg
+ * @param string $color
+ * @param bool $newline
+ */
 function verbose($msg, $colormsg = '', $color = '', $newline = true)
 {
     global $verbose;
@@ -82,7 +87,13 @@ function verbose($msg, $colormsg = '', $color = '', $newline = true)
     }
 }
 
-/** add debug */
+/**
+ * add debug
+ * @param $msg
+ * @param string $colormsg
+ * @param string $color
+ * @param bool $newline
+ */
 function debug($msg, $colormsg = '', $color = '', $newline = true)
 {
     global $debug;
