@@ -62,11 +62,6 @@ try {
     $application = new Zend_Application(APPLICATION_ENV, APPLICATION_INI);
     $application->getBootstrap()->bootstrap(['db']);
     $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-    foreach ($application->getOption('consts') as $const => $value) {
-        if (!defined($const)) {
-            define($const, $value);
-        }
-    }
 } catch (Exception $e) {
     die($e->getMessage());
 }
