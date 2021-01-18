@@ -357,20 +357,24 @@ class Episciences_Volume
     public function loadPaperPositions()
     {
         $positions = [];
-        $select = $this->_db->select()
-            ->from(T_VOLUME_PAPER_POSITION, ['POSITION', 'PAPERID'])
-            ->where('VID = ?', $this->getVid())
-            ->order('POSITION');
+        try {
+            $select = $this->_db->select()
+                ->from(T_VOLUME_PAPER_POSITION, ['POSITION', 'PAPERID'])
+                ->where('VID = ?', $this->getVid())
+                ->order('POSITION');
 
-        $tmp = $this->_db->fetchPairs($select);
-        reset($tmp); // Remet le pointeur interne de tableau au début
-        if (key($tmp) == 1) {
-            foreach ($tmp as $position => $docid) {
-                $i = $position - 1;
-                $positions[$i] = $docid;
+            $tmp = $this->_db->fetchPairs($select);
+            reset($tmp); // Remet le pointeur interne de tableau au début
+            if (key($tmp) == 1) {
+                foreach ($tmp as $position => $docid) {
+                    $i = $position - 1;
+                    $positions[$i] = $docid;
+                }
+            } else {
+                $positions = $tmp;
             }
-        } else {
-            $positions = $tmp;
+        } catch (Exception $exception) {
+            $positions = [];
         }
 
         $this->setPaperPositions($positions);

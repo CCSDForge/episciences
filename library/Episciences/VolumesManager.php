@@ -471,17 +471,23 @@ class Episciences_VolumesManager
      */
     public static function loadPositionsInVolume(int $vid = 0): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()
-            ->from(T_VOLUME_PAPER_POSITION, ['PAPERID', 'POSITION']);
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(T_VOLUME_PAPER_POSITION, ['PAPERID', 'POSITION']);
 
-        if (!empty($vid)) {
-            $select->where('VID = ?', $vid);
+            if (!empty($vid)) {
+                $select->where('VID = ?', $vid);
+            }
+
+            $select->order('POSITION ASC');
+
+            $res = $db->fetchPairs($select);
+
+        } catch (Exception $exception) {
+            $res = [];
         }
-
-        $select->order('POSITION ASC');
-
-        return $db->fetchPairs($select);
+        return $res;
     }
 
 }
