@@ -72,7 +72,7 @@ http://www.crossref.org/schema/4.4.2 "
                      <title><?php echo $this->escape($title) ?></title>
                     <?php $titleCount++; ?>
                 <?php elseif ($titleCount > 0) :?>
-                    <original_language_title lang="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                    <original_language_title language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
                 <?php endif; ?>
 
 
