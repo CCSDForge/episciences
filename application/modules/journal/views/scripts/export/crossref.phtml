@@ -65,8 +65,17 @@ http://www.crossref.org/schema/4.4.2 "
         </journal_issue>
         <journal_article publication_type="full_text">
             <titles>
+                <?php $titleCount  = 0; ?>
                 <?php foreach ($titles as $lang => $title) : ?>
-                    <title><?php echo $this->escape($title) ?></title>
+                <?php
+                if ($titleCount == 0): ?>
+                     <title><?php echo $this->escape($title) ?></title>
+                    <?php $titleCount++; ?>
+                <?php elseif ($titleCount > 0) :?>
+                    <original_language_title lang="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                <?php endif; ?>
+
+
                 <?php endforeach; ?>
             </titles>
 
