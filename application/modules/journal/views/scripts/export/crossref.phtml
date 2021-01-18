@@ -56,7 +56,7 @@ http://www.crossref.org/schema/4.4.2 "
 
             <?php if ($this->volume !== '') : ?>
                 <journal_volume>
-                    <volume><?php echo $this->volume; ?></volume>
+                    <volume><?php echo Ccsd_Tools_String::truncate($this->volume, 32, '...'); ?></volume>
                 </journal_volume>
             <?php endif; ?>
             <?php if ($this->section !== '') : ?>
