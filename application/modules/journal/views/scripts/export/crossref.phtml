@@ -49,9 +49,9 @@ http://www.crossref.org/schema/4.4.2 "
         </journal_metadata>
         <journal_issue>
             <publication_date media_type="online">
-                <month>08</month>
-                <day>13</day>
-                <year>2008</year>
+                <month><?php echo $publicationYear->format('m'); ?></month>
+                <day><?php echo $publicationYear->format('d'); ?></day>
+                <year><?php echo $publicationYear->format('Y'); ?></year>
             </publication_date>
 
             <?php if ($this->volume !== '') : ?>
