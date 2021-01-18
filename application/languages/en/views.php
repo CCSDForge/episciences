@@ -453,7 +453,7 @@ return [
     "Répondre sans faire de modifications" => "Answer without any modifications",
     "Envoyer une version temporaire" => "Send a temporary version",
     "Proposer une nouvelle version" => "Upload a new version",
-    'Contacter sans dépôt de version' => 'Contact without send a new version',
+    'Contacter sans dépôt de version' => 'Contact without sending a new version',
     "Répondre" => "Reply",
     "Répondre :" => "Answer:",
     "Votre version temporaire a bien été enregistrée." => "Your temporary version has been saved",
