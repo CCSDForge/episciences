@@ -99,7 +99,7 @@ class Episciences_Paper_DoiQueueManager
     {
         $result = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = $db->query("SELECT * FROM `doi_queue` DQ, `PAPERS` P WHERE P.RVID = ? AND P.DOI !='' AND P.PAPERID = DQ.paperid AND P.STATUS = ?  AND DQ.doi_status = ?",
+        $query = $db->query("SELECT * FROM `doi_queue` DQ, `PAPERS` P WHERE P.RVID = ? AND P.DOI !='' AND P.PAPERID = DQ.paperid AND P.STATUS = ?  AND DQ.doi_status = ? ORDER BY P.PAPERID",
             [$rvid, Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_ASSIGNED]);
 
         foreach ($query->fetchAll() as $k => $row) {
