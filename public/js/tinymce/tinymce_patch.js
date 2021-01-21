@@ -8,7 +8,6 @@ function __initMCE(selectorName, context, options) {
 };
 
 function __initEditor(selectorName, context, options) {
-    var editor;
 
     if (options == undefined) {
         options = {
