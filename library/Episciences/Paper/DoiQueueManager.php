@@ -75,7 +75,6 @@ class Episciences_Paper_DoiQueueManager
         return $resUpdate;
     }
 
-
     /**
      * @param int $paperId
      * @return bool
@@ -88,5 +87,28 @@ class Episciences_Paper_DoiQueueManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $resDelete = $db->delete(T_DOI_QUEUE, ['paperid = ?' => $paperId]);
         return $resDelete > 0;
+    }
+
+
+    /**
+     * @param int $rvid
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function findDoisToRequest(int $rvid)
+    {
+        $result = [];
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $query = $db->query("SELECT * FROM `doi_queue` DQ, `PAPERS` P WHERE P.RVID = ? AND P.DOI !='' AND P.PAPERID = DQ.paperid AND P.STATUS = ?  AND DQ.doi_status = ?",
+            [$rvid, Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_ASSIGNED]);
+
+        foreach ($query->fetchAll() as $k => $row) {
+            $p = new Episciences_Paper($row);
+            $q = new Episciences_Paper_DoiQueue($row);
+            $result[$k]['paper'] = $p;
+            $result[$k]['doiq'] = $q;
+        }
+
+        return $result;
     }
 }
