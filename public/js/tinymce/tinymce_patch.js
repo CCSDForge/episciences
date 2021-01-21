@@ -9,16 +9,26 @@ function __initMCE(selectorName, context, options) {
 
 function __initEditor(selectorName, context, options) {
 
-    if (options == undefined) {
-        options = {
+    // see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
+    let domainAbsoluteURLsOptions = {
+        relative_urls: false,
+        remove_script_host: false,
+        document_base_url: window.location.origin
+    }
+
+    if (options === undefined) {
+        options = $.extend(domainAbsoluteURLsOptions, {
             theme: "modern",
             plugins: "link image code fullscreen table",
             toolbar1: "bold italic underline | forecolor backcolor | styleselect | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image  | fullscreen",
             menubar: false,
-        };
+        });
+
+    } else {
+        options = $.extend(options, domainAbsoluteURLsOptions);
     }
 
-    if (context != undefined) {
+    if (context !== undefined) {
         $(selectorName, $(context)).tinymce(options);
     } else {
         options = $.extend(options, {selector: selectorName});
