@@ -460,7 +460,11 @@ class Episciences_VolumesManager
         }
 
         if ($values) {
-            $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
+            try {
+                $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
+            } catch (Exception $e) {
+                error_log($e->getMessage());
+            }
         }
     }
 
