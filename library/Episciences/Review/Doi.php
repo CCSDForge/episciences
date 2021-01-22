@@ -113,58 +113,6 @@ class Episciences_Review_Doi
     }
 
     /**
-     * @param Episciences_Paper $paper
-     * @return string
-     * @throws Zend_Exception
-     */
-    public function createDoiWithTemplate(Episciences_Paper $paper)
-    {
-        $volume = '';
-        $volumePosition = '';
-        $section = '';
-
-        if ($paper->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($paper->getVid());
-            if ($oVolume) {
-                $volume = $oVolume->getName('en', true);
-                $volumePosition = $oVolume->getPosition();
-            }
-        }
-
-
-        if ($paper->getSid()) {
-            /* @var $oSection Episciences_Section */
-            $oSection = Episciences_SectionsManager::find($paper->getSid());
-            if ($oSection) {
-                $section = $oSection->getName('en', true);
-            } else {
-                $section = '';
-            }
-        }
-
-        $template['%%'] = '%';
-
-        $template[self::DOI_FORMAT_REVIEW_CODE] = RVCODE;
-        $template[self::DOI_FORMAT_PAPER_VOLUME] = $volume;
-        $template[self::DOI_FORMAT_PAPER_VOLUME_ORDER] = $volumePosition;
-        $template[self::DOI_FORMAT_PAPER_SECTION] = $section;
-        $template[self::DOI_FORMAT_PAPER_ID] = $paper->getPaperid();
-        $template[self::DOI_FORMAT_PAPER_YEAR] = date('Y');
-        $template[self::DOI_FORMAT_PAPER_MONTH] = date('m');
-
-
-        $search = array_keys($template);
-        $replace = array_values($template);
-
-        $doi = str_replace($search, $replace, $this->getDoiFormat());
-        $doi = str_replace(' ', '', $doi);
-
-        // DOI spec: DOI is case insensitive, uppercased for comparison
-        return $this->getDoiPrefix() . '/' . strtoupper($doi);
-    }
-
-    /**
      * @return string
      */
     public function getDoiFormat(): string

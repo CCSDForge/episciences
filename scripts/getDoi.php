@@ -7,10 +7,17 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Http\Message\ResponseInterface;
+
 
 $localopts = [
     'paperid=i' => "Paper ID",
-    'dry-run' => 'Dry run with Test API'
+    'dry-run' => 'Work with Test API',
+    'check' => 'Check DOI submission status',
+    'rvid=i' => 'RVID of a journal',
+    'assign-accepted' => 'Assign DOI to all accepted papers',
+    'assign-published' => 'Assign DOI to all accepted papers',
+    'request' => 'Request all assigned DOI of a journal'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -37,6 +44,11 @@ class getDoi extends JournalScript
     protected $_doiQueue;
 
     /**
+     * @var Episciences_Review_DoiSettings
+     */
+    protected $_doiSettings;
+
+    /**
      * @var bool
      */
     protected $_dryRun = true;
@@ -48,6 +60,7 @@ class getDoi extends JournalScript
      */
     public function __construct($localopts)
     {
+
         // missing required parameters will be asked later
         $this->setRequiredParams([]);
         $this->setArgs(array_merge($this->getArgs(), $localopts));
@@ -59,6 +72,52 @@ class getDoi extends JournalScript
             $this->setDryRun(false);
         }
 
+    }
+
+    /**
+     * @return mixed|void
+     * @throws GuzzleException
+     */
+    public
+    function run()
+    {
+        $this->initApp();
+        $this->initDb();
+        $this->initTranslator();
+        define_review_constants();
+
+
+        if ($this->getParam('check')) {
+            $response = $this->getDoiStatus();
+            echo $response->getBody();
+            exit;
+        }
+        if ($this->getParam('rvid')) {
+            $review = Episciences_ReviewsManager::findByRvid($this->getParam('rvid'));
+            $review->loadSettings();
+            $this->setReview($review);
+            define('RVCODE', $review->getCode());
+            define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . RVCODE) . '/');
+            define('CACHE_PATH', REVIEW_PATH . "tmp/");
+
+            $this->setDoiSettings($review->getDoiSettings());
+
+            if ($this->getParam('assign-accepted')) {
+                $this->assignDois(Episciences_Paper::STATUS_ACCEPTED);
+                exit;
+            }
+
+            if ($this->getParam('assign-published')) {
+                $this->assignDois(Episciences_Paper::STATUS_PUBLISHED);
+                exit;
+            }
+            if ($this->getParam('request')) {
+                $this->requestDois();
+                exit;
+            }
+
+        }
+
         $paper = Episciences_PapersManager::get($this->getParam('paperid'), false);
         $this->setPaper($paper);
         $review = Episciences_ReviewsManager::find($this->getPaper()->getRvid());
@@ -66,35 +125,6 @@ class getDoi extends JournalScript
         define('RVCODE', $review->getCode());
         $doiQ = Episciences_Paper_DoiQueueManager::findByPaperId($this->getPaper()->getPaperid());
         $this->setDoiQueue($doiQ);
-
-    }
-
-    /**
-     * @return Episciences_Paper
-     */
-    public function getPaper(): Episciences_Paper
-    {
-        return $this->_paper;
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     */
-    public function setPaper($paper)
-    {
-        $this->_paper = $paper;
-    }
-
-    /**
-     * @return mixed|void
-     * @throws GuzzleException
-     */
-    public function run()
-    {
-        $this->initApp();
-        $this->initDb();
-        $this->initTranslator();
-        define_review_constants();
         $this->getMetadataFile();
 
         if (!$this->isDryRun()) {
@@ -107,6 +137,7 @@ class getDoi extends JournalScript
             }
         }
 
+
         $response = $this->postMetadataFile();
         $this->updateMetadataQueue();
         echo PHP_EOL . 'API Answered: ' . $response->getBody() . PHP_EOL;
@@ -115,9 +146,180 @@ class getDoi extends JournalScript
     }
 
     /**
+     * @return ResponseInterface
+     * @throws GuzzleException
+     * https://doi.crossref.org/servlet/submissionDownload?usr=_username_&pwd=_password_&doi_batch_id=_doi batch id_&file_name=filename&type=_submission type_
+     */
+    private
+    function getDoiStatus(): ResponseInterface
+    {
+
+        if ($this->isDryRun()) {
+            $apiUrl = DOI_TESTAPI_QUERY;
+        } else {
+            $apiUrl = DOI_API_QUERY;
+        }
+
+
+        $client = new Client();
+        return $client->request('GET', $apiUrl,
+            [
+                'query' => ['usr' => DOI_LOGIN,
+                    'pwd' => DOI_PASSWORD,
+                    'file_name' => $this->getMetadataFileName(),
+                    'type' => 'result'
+                ]
+            ]
+
+        );
+    }
+
+    /**
+     * @return bool
+     */
+    public
+    function isDryRun(): bool
+    {
+        return $this->_dryRun;
+    }
+
+    /**
+     * @param bool $dryRun
+     */
+    public
+    function setDryRun(bool $dryRun)
+    {
+        $this->_dryRun = $dryRun;
+    }
+
+    /**
+     * @return string
+     */
+    private
+    function getMetadataFileName(): string
+    {
+        return $this->getPaper()->getPaperid() . '.xml';
+    }
+
+    /**
+     * @return Episciences_Paper
+     */
+    public
+    function getPaper(): Episciences_Paper
+    {
+        return $this->_paper;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     */
+    public
+    function setPaper($paper)
+    {
+        $this->_paper = $paper;
+    }
+
+    /**
+     * @param string $paperStatus
+     * @throws Zend_Db_Select_Exception
+     * @throws Zend_Exception
+     */
+    private function assignDois(string $paperStatus)
+    {
+        $doiSettings = $this->getDoiSettings();
+        $settings = [
+            ['is' => ['rvid' => $this->getParam('rvid')]],
+            ['is' => ['status' => $paperStatus]],
+        ];
+
+
+        $papers = Episciences_PapersManager::getList($settings);
+        echo count($papers) . ' papers';
+
+
+        foreach ($papers as $p) {
+            /** Episciences_Paper $p */
+            if (empty($p->getDoi())) {
+                $doi = $doiSettings->createDoiWithTemplate($p);
+                $p->setDoi($doi);
+                $p->save();
+                $doiQ = new Episciences_Paper_DoiQueue(['paperid' => $p->getPaperId(), 'doi_status' => Episciences_Paper_DoiQueue::STATUS_ASSIGNED]);
+                try {
+                    Episciences_Paper_DoiQueueManager::add($doiQ);
+                } catch (Exception $exception) {
+                    if ((int)$exception->getCode() !== 23000) {
+                        echo $exception->getMessage();
+                    }
+                }
+                echo PHP_EOL . 'Assigned ' . $doi . ' to ' . $p->getPaperId() . PHP_EOL;
+            }
+
+        }
+    }
+
+    /**
+     * @return Episciences_Review_DoiSettings
+     */
+    public function getDoiSettings(): Episciences_Review_DoiSettings
+    {
+        return $this->_doiSettings;
+    }
+
+    /**
+     * @param Episciences_Review_DoiSettings $doiSettings
+     */
+    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings)
+    {
+        $this->_doiSettings = $doiSettings;
+    }
+
+    /**
+     * @param string $paperStatus
+     * @throws Zend_Db_Select_Exception
+     * @throws Zend_Exception
+     */
+    private function requestDois()
+    {
+        $res = Episciences_Paper_DoiQueueManager::findDoisToRequest($this->getParam('rvid'));
+
+
+        $countOfPapers = count($res);
+
+        if ($countOfPapers === 0) {
+            echo PHP_EOL . 'Nothing to send, you may need to assign DOI before sending requests' . PHP_EOL;
+            exit;
+        }
+
+        if (!$this->isDryRun()) {
+            $confirmation = $this->ask(sprintf('Please confirm requesting %d DOIs to production API (Data charges may apply)', $countOfPapers), ['Yes', 'No', '¯\_(ツ)_/¯'], self::BASH_RED);
+            if ($confirmation == 1) {
+                die(PHP_EOL . 'Process canceled: nothing was sent.' . PHP_EOL);
+            } elseif ($confirmation == 2) {
+                $this->displayHelp();
+                exit;
+            }
+        }
+
+        printf("Sending %d papers to API", $countOfPapers);
+
+        foreach ($res as $doiToProcess) {
+
+            $this->setPaper($doiToProcess['paper']);
+            $this->setDoiQueue($doiToProcess['doiq']);
+            echo PHP_EOL . 'Processing paperId: ' . $this->getPaper()->getPaperid() . PHP_EOL;
+            $this->getMetadataFile();
+            $response = $this->postMetadataFile();
+            $this->updateMetadataQueue(Episciences_Paper_DoiQueue::STATUS_REQUESTED);
+            echo PHP_EOL . 'API Answered: ' . $response->getBody() . PHP_EOL;
+
+        }
+    }
+
+    /**
      * @return mixed
      */
-    private function getMetadataFile()
+    private
+    function getMetadataFile()
     {
         $paperUrl = HTTP . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . strtolower(DOI_AGENCY);
         $client = new Client();
@@ -127,13 +329,14 @@ class getDoi extends JournalScript
             error_log($e->getMessage());
         }
 
-        return file_put_contents($this->getMetadataFileName(), $res->getBody());
+        return file_put_contents($this->getMetadataPathFileName(), $res->getBody());
     }
 
     /**
      * @return string
      */
-    private function getJournalUrl()
+    private
+    function getJournalUrl()
     {
         return $this->getReview()->getCode() . '.' . DOMAIN;
     }
@@ -141,7 +344,8 @@ class getDoi extends JournalScript
     /**
      * @return Episciences_Review
      */
-    public function getReview(): Episciences_Review
+    public
+    function getReview(): Episciences_Review
     {
         return $this->_review;
     }
@@ -149,7 +353,8 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Review $review
      */
-    public function setReview($review)
+    public
+    function setReview($review)
     {
         $this->_review = $review;
     }
@@ -157,32 +362,18 @@ class getDoi extends JournalScript
     /**
      * @return string
      */
-    private function getMetadataFileName(): string
+    private
+    function getMetadataPathFileName(): string
     {
-        return CACHE_PATH . $this->getPaper()->getPaperid() . '.xml';
+        return CACHE_PATH . $this->getMetadataFileName();
     }
 
     /**
-     * @return bool
-     */
-    public function isDryRun(): bool
-    {
-        return $this->_dryRun;
-    }
-
-    /**
-     * @param bool $dryRun
-     */
-    public function setDryRun(bool $dryRun)
-    {
-        $this->_dryRun = $dryRun;
-    }
-
-    /**
-     * @return \Psr\Http\Message\ResponseInterface
+     * @return ResponseInterface
      * @throws GuzzleException
      */
-    private function postMetadataFile(): \Psr\Http\Message\ResponseInterface
+    private
+    function postMetadataFile(): ResponseInterface
     {
 
         if ($this->isDryRun()) {
@@ -208,7 +399,7 @@ class getDoi extends JournalScript
                 ],
                 [
                     'name' => 'fname',
-                    'contents' => fopen($this->getMetadataFileName(), 'rb')
+                    'contents' => fopen($this->getMetadataPathFileName(), 'rb')
                 ],
             ]
         ]);
@@ -217,16 +408,18 @@ class getDoi extends JournalScript
     /**
      * @return int
      */
-    private function updateMetadataQueue(): int
+    private
+    function updateMetadataQueue($doiStatus = Episciences_Paper_DoiQueue::STATUS_REQUESTED): int
     {
-        $this->getDoiQueue()->setDoi_status(Episciences_Paper_DoiQueue::STATUS_REQUESTED);
+        $this->getDoiQueue()->setDoi_status($doiStatus);
         return Episciences_Paper_DoiQueueManager::update($this->getDoiQueue());
     }
 
     /**
      * @return Episciences_Paper_DoiQueue
      */
-    public function getDoiQueue(): Episciences_Paper_DoiQueue
+    public
+    function getDoiQueue(): Episciences_Paper_DoiQueue
     {
         return $this->_doiQueue;
     }
@@ -234,7 +427,8 @@ class getDoi extends JournalScript
     /**
      * @param mixed $doiQueue
      */
-    public function setDoiQueue($doiQueue)
+    public
+    function setDoiQueue($doiQueue)
     {
         $this->_doiQueue = $doiQueue;
     }

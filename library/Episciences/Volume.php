@@ -612,7 +612,11 @@ class Episciences_Volume
         }
 
         if ($values) {
-            $this->_db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
+            try {
+                $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
+            } catch (Exception $e) {
+                error_log($e->getMessage());
+            }
         }
     }
 
