@@ -227,31 +227,38 @@ class getDoi extends JournalScript
     private function assignDois(string $paperStatus)
     {
         $doiSettings = $this->getDoiSettings();
+        $rvid = (int)$this->getParam('rvid');
 
 
         $settings['is'] = [
-            'rvid' => (int)$this->getParam('rvid'),
+            'rvid' => $rvid,
             'status' => $paperStatus
         ];
 
         $papers = Episciences_PapersManager::getList($settings);
-        echo count($papers) . ' papers';
+        $countOfPapers = count($papers);
+        echo $countOfPapers . ' papers';
+        $paperNumber = 1;
 
         foreach ($papers as $p) {
-            /** Episciences_Paper $p */
-            if (empty($p->getDoi())) {
+            /** @var $p Episciences_Paper */
+            if (empty($p->getDoi()) && ($rvid === $p->getRvid())) {
                 $doi = $doiSettings->createDoiWithTemplate($p);
                 $p->setDoi($doi);
                 $p->save();
                 $doiQ = new Episciences_Paper_DoiQueue(['paperid' => $p->getPaperId(), 'doi_status' => Episciences_Paper_DoiQueue::STATUS_ASSIGNED]);
                 try {
                     Episciences_Paper_DoiQueueManager::add($doiQ);
+                    $paperNumber++;
+
                 } catch (Exception $exception) {
                     if ((int)$exception->getCode() !== 23000) {
                         echo $exception->getMessage();
                     }
                 }
-                echo PHP_EOL . 'Assigned ' . $doi . ' to ' . $p->getPaperId() . PHP_EOL;
+
+                printf(PHP_EOL . 'Assigned %s to %s. ', $doi, $p->getPaperId());
+                printf('-> paper %d/%d' . PHP_EOL, $paperNumber, $countOfPapers);
             }
 
         }
