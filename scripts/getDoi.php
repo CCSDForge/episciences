@@ -227,15 +227,15 @@ class getDoi extends JournalScript
     private function assignDois(string $paperStatus)
     {
         $doiSettings = $this->getDoiSettings();
-        $settings = [
-            ['is' => ['rvid' => $this->getParam('rvid')]],
-            ['is' => ['status' => $paperStatus]],
-        ];
 
+
+        $settings['is'] = [
+            'rvid' => (int)$this->getParam('rvid'),
+            'status' => $paperStatus
+        ];
 
         $papers = Episciences_PapersManager::getList($settings);
         echo count($papers) . ' papers';
-
 
         foreach ($papers as $p) {
             /** Episciences_Paper $p */
