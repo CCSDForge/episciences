@@ -1420,10 +1420,10 @@ class Episciences_Review
 
             if ($accessCodeFilterActivated) {
                 if (
-                    $oVolume->getSetting('status') === 1 &&
+                    (int)$oVolume->getSetting('status') === 1 &&
                     (
-                        $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) !== 1 ||
-                        (!array_key_exists(self::SETTING_SPECIAL_ISSUE_ACCESS_CODE, $settings) || $settings[self::SETTING_SPECIAL_ISSUE_ACCESS_CODE] !== 1)
+                        (int)$oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) !== 1 ||
+                        (!array_key_exists(self::SETTING_SPECIAL_ISSUE_ACCESS_CODE, $settings) || (int)$settings[self::SETTING_SPECIAL_ISSUE_ACCESS_CODE] !== 1)
                     )
                 ) {
                     $options[$oVolume->getVid()] = !$translated ? $oVolume->getNameKey() : Zend_Registry::get("Zend_Translate")->translate($oVolume->getNameKey());
