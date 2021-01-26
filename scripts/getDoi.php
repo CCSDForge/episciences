@@ -17,7 +17,8 @@ $localopts = [
     'rvid=i' => 'RVID of a journal',
     'assign-accepted' => 'Assign DOI to all accepted papers',
     'assign-published' => 'Assign DOI to all accepted papers',
-    'request' => 'Request all assigned DOI of a journal'
+    'request' => 'Request all assigned DOI of a journal',
+    'journal-hostname=s' => 'Get XML files from an alternate journal hostname, eg: test.episciences.org'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -54,6 +55,11 @@ class getDoi extends JournalScript
     protected $_dryRun = true;
 
     /**
+     * @var string
+     */
+    protected $_journalHostname;
+
+    /**
      * getDoi constructor.
      * @param $localopts
      * @throws Zend_Db_Statement_Exception
@@ -70,6 +76,11 @@ class getDoi extends JournalScript
             $this->setDryRun(true);
         } else {
             $this->setDryRun(false);
+        }
+
+        $journalHostname = $this->getParam('journal-hostname');
+        if ($journalHostname) {
+            $this->setJournalHostname($journalHostname);
         }
 
     }
@@ -328,7 +339,9 @@ class getDoi extends JournalScript
     private
     function getMetadataFile()
     {
+
         $paperUrl = HTTP . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . strtolower(DOI_AGENCY);
+        echo PHP_EOL . 'Requesting: ' . $paperUrl;
         $client = new Client();
         try {
             $res = $client->request('GET', $paperUrl);
@@ -345,7 +358,26 @@ class getDoi extends JournalScript
     private
     function getJournalUrl()
     {
+        if ($this->getJournalHostname() != '') {
+            return $this->getJournalHostname();
+        }
         return $this->getReview()->getCode() . '.' . DOMAIN;
+    }
+
+    /**
+     * @return string
+     */
+    public function getJournalHostname(): string
+    {
+        return $this->_journalHostname;
+    }
+
+    /**
+     * @param string $journalDomain
+     */
+    public function setJournalHostname(string $journalDomain)
+    {
+        $this->_journalHostname = $journalDomain;
     }
 
     /**
