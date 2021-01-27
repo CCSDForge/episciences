@@ -109,7 +109,7 @@ class Episciences_Review_DoiSettings
      * @return string
      * @throws Zend_Exception
      */
-    public function createDoiWithTemplate(Episciences_Paper $paper)
+    public function createDoiWithTemplate(Episciences_Paper $paper): string
     {
         $volume = '';
         $paperPosition = '';
@@ -151,6 +151,7 @@ class Episciences_Review_DoiSettings
 
         $doi = str_replace(' ',  '', $this->getDoiFormat());
         $doi = str_replace($search, $replace, $doi);
+        $doi = str_replace(' ',  '', $doi);
 
         // DOI spec: DOI is case insensitive
         return $this->getDoiPrefix() . '/' . strtolower($doi);
