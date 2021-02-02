@@ -3193,6 +3193,7 @@ class AdministratepaperController extends PaperDefaultController
             echo Zend_Json::encode($result);
             return;
         }
+
         $uid = $reviewer->getUid();
 
         if (!$isUninvited) {
@@ -3251,14 +3252,15 @@ class AdministratepaperController extends PaperDefaultController
             $errors[] = "Le log de suppression du relecteur n'a pas pu être enregistré";
         }
 
-        //remove rating report
-        Episciences_Rating_ReportManager::deleteByUid($uid);
+        if ($uid) {
+            //remove rating report
+            Episciences_Rating_ReportManager::deleteByUid($uid);
+            // delete reviewer alias
+            Episciences_Reviewer_AliasManager::delete($docId, $uid);
 
-        // delete reviewer alias
-        Episciences_Reviewer_AliasManager::delete($docId, $uid);
-
-        //delete reviewer grid
-        Episciences_Tools::deleteDir(REVIEW_FILES_PATH . $docId . '/reports/' . $reviewer->getUid());
+            //delete reviewer grid
+            Episciences_Tools::deleteDir(REVIEW_FILES_PATH . $docId . '/reports/' . $uid);
+        }
 
         if (!$isUninvited) { // Seulement si une invitation est à l'origine de la relecture
             //mail to the reviewer
