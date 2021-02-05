@@ -142,8 +142,8 @@ class Episciences_Review_DoiSettings
         $template[self::DOI_FORMAT_PAPER_VOLUME_ORDER] = $paperPosition;
         $template[self::DOI_FORMAT_PAPER_SECTION] = $section;
         $template[self::DOI_FORMAT_PAPER_ID] = $paper->getPaperid();
-        $template[self::DOI_FORMAT_PAPER_YEAR] = date('Y');
-        $template[self::DOI_FORMAT_PAPER_MONTH] = date('m');
+        $template[self::DOI_FORMAT_PAPER_YEAR] = $paper->getPublicationYear();
+        $template[self::DOI_FORMAT_PAPER_MONTH] = $paper->getPublicationMonth();
 
 
         $search = array_keys($template);
