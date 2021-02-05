@@ -98,11 +98,19 @@ class getDoi extends JournalScript
         define_review_constants();
 
 
+        if ($this->getParam('paperid')) {
+            $paper = Episciences_PapersManager::get($this->getParam('paperid'), false);
+            $this->setPaper($paper);
+        }
+
+
         if ($this->getParam('check')) {
             $response = $this->getDoiStatus();
-            echo $response->getBody();
+            echo $this->readCrossrefStatusResponse($response->getBody());
             exit;
         }
+
+
         if ($this->getParam('rvid')) {
             $review = Episciences_ReviewsManager::findByRvid($this->getParam('rvid'));
             $review->loadSettings();
@@ -129,8 +137,7 @@ class getDoi extends JournalScript
 
         }
 
-        $paper = Episciences_PapersManager::get($this->getParam('paperid'), false);
-        $this->setPaper($paper);
+
         $review = Episciences_ReviewsManager::find($this->getPaper()->getRvid());
         $this->setReview($review);
         define('RVCODE', $review->getCode());
@@ -228,6 +235,16 @@ class getDoi extends JournalScript
     function setPaper($paper)
     {
         $this->_paper = $paper;
+    }
+
+    /**
+     * @param $response
+     * @return string
+     */
+    private function readCrossrefStatusResponse($response)
+    {
+        $doi_batch_diagnostic = simplexml_load_string($response);
+        return (string)$doi_batch_diagnostic->record_diagnostic['status'];
     }
 
     /**
