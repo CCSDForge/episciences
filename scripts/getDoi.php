@@ -117,6 +117,7 @@ class getDoi extends JournalScript
             $this->setReview($review);
             define('RVCODE', $review->getCode());
             define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . RVCODE) . '/');
+            define('REVIEW_LANG_PATH', REVIEW_PATH . 'languages/');
             define('CACHE_PATH', REVIEW_PATH . "tmp/");
 
             $this->setDoiSettings($review->getDoiSettings());
