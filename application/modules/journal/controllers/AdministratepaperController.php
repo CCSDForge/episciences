@@ -942,7 +942,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // load paper detail
             /** @var Episciences_Paper $oPaper */
-            $oPaper = (!$docId) ? null : Episciences_PapersManager::get($docId);
+            $oPaper = (!$docId) ? null : Episciences_PapersManager::get($docId, false);
 
             if (!$oPaper) {
                 Episciences_Tools::header('HTTP/1.1 404 Not Found');
@@ -1342,7 +1342,7 @@ class AdministratepaperController extends PaperDefaultController
         $vid = $request->getParam('vid');
         $referer = $request->getPost('referer');
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
         if (!$paper) {
             return false;
         }
@@ -2983,7 +2983,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         //paper object
-        $oPaper = Episciences_PapersManager::get($oAssignment->getItemid());
+        $oPaper = Episciences_PapersManager::get($oAssignment->getItemid(), false);
         if (!$oPaper) {
             return false;
         }
@@ -3168,7 +3168,7 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
-        $paper = Episciences_PapersManager::get($oAssignment->getItemid());
+        $paper = Episciences_PapersManager::get($oAssignment->getItemid(), false);
         $docId = $paper->getDocid();
 
         if (!$paper) {
@@ -3193,6 +3193,7 @@ class AdministratepaperController extends PaperDefaultController
             echo Zend_Json::encode($result);
             return;
         }
+
         $uid = $reviewer->getUid();
 
         if (!$isUninvited) {
@@ -3251,14 +3252,15 @@ class AdministratepaperController extends PaperDefaultController
             $errors[] = "Le log de suppression du relecteur n'a pas pu être enregistré";
         }
 
-        //remove rating report
-        Episciences_Rating_ReportManager::deleteByUid($uid);
+        if ($uid) {
+            //remove rating report
+            Episciences_Rating_ReportManager::deleteByUid($uid);
+            // delete reviewer alias
+            Episciences_Reviewer_AliasManager::delete($docId, $uid);
 
-        // delete reviewer alias
-        Episciences_Reviewer_AliasManager::delete($docId, $uid);
-
-        //delete reviewer grid
-        Episciences_Tools::deleteDir(REVIEW_FILES_PATH . $docId . '/reports/' . $reviewer->getUid());
+            //delete reviewer grid
+            Episciences_Tools::deleteDir(REVIEW_FILES_PATH . $docId . '/reports/' . $uid);
+        }
 
         if (!$isUninvited) { // Seulement si une invitation est à l'origine de la relecture
             //mail to the reviewer
