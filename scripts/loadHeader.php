@@ -67,7 +67,7 @@ try {
 }
 
 /*---------  Choix de la langue -----------*/
-Zend_Registry::set('languages', ['fr', 'en', 'es', 'eu']);
+Zend_Registry::set('languages', ['fr', 'en']);
 Zend_Registry::set('Zend_Locale', new Zend_Locale('fr'));
 
 
