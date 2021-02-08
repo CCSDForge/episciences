@@ -149,11 +149,11 @@ class Episciences_Review_DoiSettings
         $search = array_keys($template);
         $replace = array_values($template);
 
-        $doi = str_replace(' ',  '', $this->getDoiFormat());
+        $doi = str_replace(' ', '', $this->getDoiFormat());
         $doi = str_replace($search, $replace, $doi);
-        $doi = str_replace(' ',  '', $doi);
-        $doi = str_replace('..',  '.', $doi);
-        $doi = str_replace('--',  '-', $doi);
+        $doi = str_replace(' ', '', $doi);
+        $doi = str_replace('..', '.', $doi);
+        $doi = str_replace('--', '-', $doi);
 
         // DOI spec: DOI is case insensitive
         return $this->getDoiPrefix() . '/' . strtolower($doi);
