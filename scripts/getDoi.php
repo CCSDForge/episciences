@@ -120,6 +120,8 @@ class getDoi extends JournalScript
             define('REVIEW_LANG_PATH', REVIEW_PATH . 'languages/');
             define('CACHE_PATH', REVIEW_PATH . "tmp/");
 
+            $this->initTranslator();
+
             $this->setDoiSettings($review->getDoiSettings());
 
             if ($this->getParam('assign-accepted')) {
