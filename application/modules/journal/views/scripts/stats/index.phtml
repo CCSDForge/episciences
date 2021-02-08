@@ -1,0 +1,47 @@
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS);
+$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MORE);
+$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_SOLID_GAUGE);
+$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_EXPORTING);
+$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_EXPORT_DATA);
+$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_EXPORT_ACCESSIBILITY);
+
+$this->jQuery()->addJavascriptFile('/js/stats/submissions.js');
+
+
+$this->layout()->pageTitle = $this->translate('Statistiques');
+$this->layout()->description = $this->translate('Indicateurs de statistiques pour la revue "%s".', RVNAME);
+?>
+
+<div id="statsIndex" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Soumissions') ?></h2>
+    </div>
+    <div class="panel-body in" style="display: flex;">
+        <?= $this->partial('stats/submissions.phtml', ['yearCategories' => $this->yearCategories]) ?>
+    </div>
+</div>
+
+<div id="users-stats" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Utilisateurs') ?></h2>
+    </div>
+    <div class="panel-body in">
+        <div class="col-md-8">
+
+        </div>
+        <!--        <div class="col-md-4"> </div>-->
+    </div>
+
+</div>
+
+<script>
+    let yearCategoriesFromView = <?= json_encode($this->yearCategoriesJs) ?>;
+    let allSubmissionsFromView = <?= json_encode($this->allSubmissionsJs) ?>;
+    let seriesFromView = <?= json_encode($this->seriesJs) ?>;
+</script>
+
+
+
+
+

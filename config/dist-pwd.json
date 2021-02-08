@@ -6,7 +6,8 @@
     "EXCEPTIONS_LOG_PATH": "/logs/mail/path/",
     "SOLR_LOG_PATH": "/logs/file/path/",
     "HAL_API": "https://api.example.org/",
-    "SECRET_KEY": "YourSecretAuthKey"
+    "SECRET_KEY": "YourSecretAuthKey",
+    "SELF_API": "https://host:8000/api/"
   },
   "CAS": {
     "HOST": "a_db_host",
