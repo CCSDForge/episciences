@@ -211,6 +211,12 @@ function defineVendorJsLibraries()
     define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
     define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
     define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
+    define('VENDOR_HIGHCHARTS', 'https://code.highcharts.com/highcharts.js');
+    define('VENDOR_HIGHCHARTS_MORE', 'https://code.highcharts.com/highcharts-more.js');
+    define('VENDOR_HIGHCHARTS_MODULES_SOLID_GAUGE', 'https://code.highcharts.com/modules/solid-gauge');
+    define('VENDOR_HIGHCHARTS_MODULES_EXPORTING', 'https://code.highcharts.com/modules/exporting.js');
+    define('VENDOR_HIGHCHARTS_MODULES_EXPORT_DATA', 'https://code.highcharts.com/modules/export-data.js');
+    define('VENDOR_HIGHCHARTS_MODULES_EXPORT_ACCESSIBILITY', 'https://code.highcharts.com/modules/accessibility.js');
 }
 
 /**
@@ -239,5 +245,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('PWD_PATH', '');
         define('FUSION_TOKEN_AUTH', '');
         define('EPISCIENCES_SOLR_LOG_PATH', '');
+        define('EPISCIENCES_SELF_API', '');
     }
 }
