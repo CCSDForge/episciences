@@ -1117,7 +1117,8 @@ class UserDefaultController extends Zend_Controller_Action
         $element->setValue($userRoles);
         $element->setSeparator('<br/>');
         $element->removeDecorator('Label');
-        $element->getDecorator('HtmlTag')->setOption('tag', 'div');
+        $element->addDecorator('HtmlTag', array('tag' => 'div', 'class'  => "checkbox"));
+        //$element->getDecorator('HtmlTag')->setOption('tag', 'div');
         $form->addElement($element);
 
         $button = new Zend_Form_Element_Button('updateUserRoles');
