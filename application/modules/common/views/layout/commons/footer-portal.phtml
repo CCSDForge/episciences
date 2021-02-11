@@ -30,21 +30,21 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                 <ul class="contact">
                     <span>Support</span>
                     <li>
-                        <i class="fas fa-book"></i>&nbsp;<a href="https://docs.episciences.org/">Documentation</a>
+                        <i class="fas fa-book"></i>&nbsp;<a href="https://docs.episciences.org/"><?php echo $this->translate('Documentation'); ?></a>
                     </li>
                     <?php
-                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL])) {
+                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== '') {
                         echo sprintf('<li><i class="fas fa-life-ring"></i>&nbsp;<a href="mailto:%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL], $this->translate('Courriel support technique'));
                     }
-                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT])) {
+                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT] !== '') {
                         echo sprintf('<li><i class="fas fa-life-ring" ></i >&nbsp;<a href="%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT], $this->translate('Support technique'));
                     }
                     ?>
                     <li>
-                        <i class="fas fa-balance-scale"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/legal">Mentions légales</a>
+                        <i class="fas fa-balance-scale"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
                     </li>
                     <li>
-                        <i class="fas fa-cookie-bite"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/privacy">Vie privée</a>
+                        <i class="fas fa-cookie-bite"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
                     </li>
                 </ul>
             </div>

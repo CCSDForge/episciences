@@ -70,7 +70,7 @@
 
 #formLang > div::after {
   content: "\25bc";
-  color: white;
+  color: $darker-grey;
   margin-left: -5px;
   font-size: 10px;
   float: right;
@@ -86,7 +86,7 @@
   cursor: pointer;
   font-weight: bold;
   line-height: 1;
-  color: #fff;
+  color: $darker-grey;
   background-color: transparent;
   border:0;
   width: 35px;

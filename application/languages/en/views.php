@@ -1669,6 +1669,8 @@ return [
     "À propos" => "About",
     'Revues hébergées' => 'Hosted journals',
     'Courriel support technique' => 'Technical support Email',
-    'Support technique' => 'Technical support'
+    'Support technique' => 'Technical support',
+    'Mentions légales' => 'Legal mentions',
+    'Vie privée' => 'Privacy'
 
 ];
