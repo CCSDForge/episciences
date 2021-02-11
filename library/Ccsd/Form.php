@@ -30,8 +30,6 @@ class Ccsd_Form extends Zend_Form
     public function init()
     {
         $view = $this->getView();
-        if (isset($view))
-            $view->jQuery()->addStylesheet("/css/ccsd_form.css");
 
         $this->loadDefaultDecorators();
         

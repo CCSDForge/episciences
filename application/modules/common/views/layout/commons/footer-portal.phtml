@@ -1,3 +1,68 @@
+<?php
+$journalSettings = Zend_Registry::get('reviewSettings');
+?>
+<footer>
+    <div class="container">
+        <div class="row">
+
+
+            <div class="col-lg-5 col-md-5 col-sm-4 col-xs-12">
+                <ul class="about">
+                    <span><?php echo $this->translate("À propos d'Episciences"); ?></span>
+                    <li>
+                        <a href="https://www.episciences.org/">Episciences</a>
+                    </li>
+
+                    <li>
+                        <a href="https://www.episciences.org/page/journals"><?php echo $this->translate('Revues hébergées'); ?></a>
+                    </li>
+
+                    <li>
+                        <a href="https://www.ccsd.cnrs.fr/category/episciences/">Blog</a>
+                    </li>
+                    <li>
+                        <a href="mailto:contact at episciences.org">Contact</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+                <ul class="contact">
+                    <span>Support</span>
+                    <li>
+                        <i class="fas fa-book"></i>&nbsp;<a href="https://docs.episciences.org/">Documentation</a>
+                    </li>
+                    <?php
+                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL])) {
+                        echo sprintf('<li><i class="fas fa-life-ring"></i>&nbsp;<a href="mailto:%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL], $this->translate('Courriel support technique'));
+                    }
+                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT])) {
+                        echo sprintf('<li><i class="fas fa-life-ring" ></i >&nbsp;<a href="%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT], $this->translate('Support technique'));
+                    }
+                    ?>
+
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-4 col-xs-12">
+                <ul class="social">
+                    <span>Code/dev</span>
+                    <li>
+                        <i class="fas fa-code-branch"></i>&nbsp;<a
+                                href="https://github.com/CCSDForge/episciences">Code</a>
+                    </li>
+
+                    <li>
+                        <a href="https://doc.episciences.org/oai-pmh">OAI-PMH</a>
+                    </li>
+                </ul>
+            </div>
+
+
+        </div>
+    </div>
+</footer>
+
+<!--
 <div class="container text-center">
     <hr/>
     <div class="row">
@@ -24,3 +89,4 @@
 
 
 
+-->

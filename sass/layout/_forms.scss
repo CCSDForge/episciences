@@ -1,3 +1,229 @@
+.btn-group .dropdown-toggle:active, .btn-group.open .dropdown-toggle {
+  box-shadow: none !important;
+}
+
+.btn-group.open {
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.125) inset;
+}
+
+.form-horizontal .btn-group button {
+  font-size: 11px;
+}
+
+.btn-group {
+  border-left: none !important;
+}
+
+.form-horizontal .open > .dropdown-menu {
+  left: inherit !important;
+  right: 0;
+}
+
+input[type="checkbox"].form-control {
+  height: inherit !important;
+  text-align: left !important;
+}
+
+.has-error .input-group-addon button {
+  background-color: #F2DEDE !important;
+  border-color: transparent !important;
+  color: #B94A48 !important;
+}
+
+.has-error .input-group-addon button .caret {
+  border-color: #B94A48 !important;
+}
+
+
+.tree {
+  padding: 0;
+}
+
+.tree li {
+  list-style-type: none !important;
+}
+
+.form {
+  width: 100%;
+  margin: 5px auto;
+  padding: 0;
+}
+
+.form dt {
+  padding: 0;
+  clear: left;
+  width: 200px;
+  float: left;
+  text-align: left;
+  margin: 5px 5px 5px 0;
+}
+
+.form dd {
+  padding: 0;
+  float: left;
+  margin: 5px 0 5px 0;
+  width: 500px;
+}
+
+.required:after {
+  content: ' *';
+  color: #d14;
+  font-weight: bold;
+}
+
+.form ul.errors {
+  color: #d14;
+  margin-top: -10px;
+  font-size: 12px;
+}
+
+.form dd input {
+  width: 486px;
+}
+
+.form dd input[type="radio"], .form dd input[type="checkbox"] {
+  width: 25px;
+}
+
+.form dd select {
+  width: 500px;
+}
+
+.form dd textarea {
+  width: 486px;
+}
+
+.form dd .inputlangmulti {
+  width: 357px;
+}
+
+.form dd .inputmulti {
+  width: 446px;
+}
+
+.form dd p.description {
+  margin: 0 0 5px;
+}
+
+.form:after {
+  clear: left;
+}
+
+.ccsd_form_required {
+  clear: both;
+  text-align: left;
+  /* cf ccsd.css .form dd p.description */
+  font-style: italic;
+  margin: 0 0 5px;
+  font-size: 12px;
+  line-height: 14px;
+  color: darkgray;
+  /* end cf ccsd.css .form dd p.description */
+}
+
+.ccsd_form_required:before {
+  content: '* ';
+  color: #d14;
+  font-weight: bold;
+}
+
+.form dd p.description, .ccsd_form_required {
+  font-style: italic;
+  font-size: 12px;
+  line-height: 14px;
+  color: darkgray;
+}
+
+.help-block {
+  font-style: italic !important;
+  font-size: 12px !important;
+  line-height: 14px !important;
+  color: darkgray;
+}
+
+.errors ~ input {
+  border-color: #b94a48;
+}
+
+
+/* 486px - 10px - 16px */
+div.input-prepend input {
+  width: 460px;
+}
+
+
+/* 486px - 10px - 16px */
+div.input-append input {
+  width: 460px;
+}
+
+
+ul.errors li:first-child:nth-last-child(2) {
+  list-style-type: none;
+}
+
+
+.btn-group + .btn-group {
+  margin-left: inherit !important;
+}
+
+@-moz-document url-prefix() {
+  .pull-right .input-group {
+    display: table !important;
+  }
+}
+
+.ui-datepicker-calendar .ui-state-hover {
+  font-weight: normal !important;
+}
+
+
+.textarea-group:not(.advanced) + .textarea-group:not(.advanced) {
+  margin-top: 45px;
+}
+
+.textarea-group + .textarea-group:not(.advanced) {
+  margin-top: 45px;
+}
+
+.input-group .label button:focus, .input-group .label button:active, .input-group .label button:hover {
+  border-color: transparent !important;
+}
+
+.margin-top-5 + .margin-top-5 {
+  margin-top: 5px;
+}
+
+.ui-sortable-placeholder {
+  display: inline-block !important;
+
+}
+
+.glyphicon-refresh.active {
+  -webkit-animation: spin 4s linear infinite !important;
+  -moz-animation: spin 4s linear infinite !important;
+  animation: spin 4s linear infinite !important;
+}
+
+@-moz-keyframes spin {
+  100% {
+    -moz-transform: rotate(360deg);
+  }
+}
+
+@-webkit-keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
 #to_tags, #cc_tags, #bcc_tags {
   float: left;
 }
@@ -116,10 +342,12 @@ input[type="checkbox"] + label {
   font-size: 12px;
   line-height: 12px;
 }
+
 .navbar .nav-lang > li > a, .navbar .nav-lang > li > span {
   float: left;
   padding: 10px 2px;
 }
+
 .navbar .nav-lang > li > a.active {
   color: $white;
 }
@@ -141,6 +369,6 @@ fieldset legend {
   margin-bottom: 15px;
 }
 
-select#vid, select#sid{
+select#vid, select#sid {
   width: 100%;
 }

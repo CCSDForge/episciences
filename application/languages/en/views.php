@@ -1661,7 +1661,14 @@ return [
     'Paramètres DOI' => 'DOI Settings',
     'DOI assigné' => 'DOI assigned',
     'DOI créé.' => 'DOI created.',
-    'Statut du DOI modifié.' => 'DOI status updated.'
+    'Statut du DOI modifié.' => 'DOI status updated.',
 
+    'Ce site utilise des cookies et collecte des informations personnelles vous concernant' => 'This site uses cookies and collects personal data',
+    'Fermer' => 'Close',
+    "À propos d'Episciences" => "About Episciences",
+    "À propos" => "About",
+    'Revues hébergées' => 'Hosted journals',
+    'Courriel support technique' => 'Technical support Email',
+    'Support technique' => 'Technical support'
 
 ];

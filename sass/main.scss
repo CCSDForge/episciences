@@ -12,6 +12,7 @@
 @import "base/colors";
 // titles, texts...
 @import "base/typography";
+@import "layout/ccsd";
 @import "layout/navbar";
 @import "layout/sidebar";
 @import "layout/forms";
@@ -25,6 +26,7 @@
 @import "components/user-role-colors";
 @import "components/paper-status-colors";
 @import "components/flags";
+@import "components/footer";
 
 // pages
 @import "pages/search";
@@ -32,6 +34,8 @@
 @import "pages/volumes-and-sections";
 @import "pages/rating-grids";
 @import "pages/editorial-staff";
+
+
 
 //attachments files
 @import "components/fileupload";
