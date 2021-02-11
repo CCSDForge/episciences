@@ -1,13 +1,8 @@
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS);
-$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MORE);
-$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_SOLID_GAUGE);
-$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_EXPORTING);
-$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_EXPORT_DATA);
-$this->jQuery()->addJavascriptFile(VENDOR_HIGHCHARTS_MODULES_EXPORT_ACCESSIBILITY);
 
+$this->jQuery()->addJavascriptFile(VENDOR_CHART);
+$this->jQuery()->addJavascriptFile('/js/stats/common.js');
 $this->jQuery()->addJavascriptFile('/js/stats/submissions.js');
-
 
 $this->layout()->pageTitle = $this->translate('Statistiques');
 $this->layout()->description = $this->translate('Indicateurs de statistiques pour la revue "%s".', RVNAME);

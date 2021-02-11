@@ -39,15 +39,16 @@ class StatsController extends Zend_Controller_Action
             }
         }
 
-        $seriesJs = [
-            ['name' => $this->view->translate('Articles'), 'data' => $series['nbSubmissions']],
-            ['name' => '% ' . RVCODE , 'data' => $series['percentage']]
-        ];
+        $seriesJs = //[
+            ['label' => $this->view->translate('Soumissions'), 'data' => $series['nbSubmissions']];
+        //,
+            //['name' => '% ' . RVCODE , 'data' => $series['percentage']]
+        //];
 
 
         foreach ($series['nbSubmissionsByRepo'] as $repoLabel => $values) {
-            $seriesJs[] = ['name' => $repoLabel, 'data' => $values['nbSubmissions']];
-            $seriesJs[] = ['name' => '% ' . $repoLabel , 'data' => $values['percentage']];
+            //$seriesJs[] = ['name' => $repoLabel, 'data' => $values['nbSubmissions']];
+            //$seriesJs[] = ['name' => '% ' . $repoLabel , 'data' => $values['percentage']];
         }
 
 
