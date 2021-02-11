@@ -1,27 +1,48 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const chart = Highcharts.chart('submissionByYear', {
-        chart: {
-            type: 'column'
-        },
-        title: {
-            text: translate('Répartition des ') + allSubmissionsFromView + ' ' + translate('articles soumis') + ' ' + translate('par année')
-        },
+$(function () {
 
-        credits: {
-            enabled: false
-        },
+    let context = $("#submissions-by-year-chart");
+    let options = {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true
+                }
+            }]
+        }
+    };
 
-        xAxis: {
-            categories: yearCategoriesFromView
-        },
-        yAxis: {
-            title: {
-                text: translate('Nombre de soumissions')
-            }
-        },
-        series: seriesFromView
+    let data = {
+        labels: yearCategoriesFromView,
+        datasets: [{
+            label: seriesFromView.label,
+            data: seriesFromView.data,
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255,0.2)',
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(200, 250, 64, 0.2)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255,1)',
+                'rgba(255, 159, 64, 1)',
+                'rgba(200, 250, 64, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
 
-    });
+    createChart(context, 'bar', data, options);
+
 });
+
+
+
 
 
