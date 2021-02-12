@@ -20,6 +20,7 @@ class Episciences_Section
      * @const string
      */
     const SECTION_TRANSLATION_PREFIX = 'section_';
+    const UNLABELED_SECTION = 'Unlabeled section';
 
     /**
      * Section ID
@@ -550,14 +551,6 @@ class Episciences_Section
     }
 
     /**
-     * @return string
-     */
-    public function getNameKey()
-    {
-        return self::SECTION_TRANSLATION_PREFIX . $this->getSid() . '_title';
-    }
-
-    /**
      * Définit le titre de la rubrique (dans différentes langues)
      * @return string
      */
@@ -593,7 +586,7 @@ class Episciences_Section
     {
         $this->_countOfPapers = $countOfPapers;
     }
-    
+
     /**
      * @param null $lang
      * @param bool $forceResult
@@ -621,10 +614,18 @@ class Episciences_Section
                 }
             }
             if (!$result) {
-                $result = 'Unlabeled section';
+                $result = self::UNLABELED_SECTION;
             }
         }
         return $result;
+    }
+
+    /**
+     * @return string
+     */
+    public function getNameKey()
+    {
+        return self::SECTION_TRANSLATION_PREFIX . $this->getSid() . '_title';
     }
 
 }

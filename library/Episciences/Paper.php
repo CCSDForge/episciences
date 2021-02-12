@@ -1042,14 +1042,6 @@ class Episciences_Paper
     /**
      * @return bool
      */
-    public function isPublished(): bool
-    {
-        return ($this->getStatus() === self::STATUS_PUBLISHED);
-    }
-
-    /**
-     * @return bool
-     */
     public function isRefused(): bool
     {
         return ($this->getStatus() === self::STATUS_REFUSED);
@@ -1736,7 +1728,7 @@ class Episciences_Paper
     public function get($format = 'tei')
     {
         $format = strtolower(trim($format));
-        $validFormats = ['bibtex', 'tei', 'dc', 'datacite','crossref'];
+        $validFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref'];
         if (!in_array($format, $validFormats)) {
             return false;
         }
@@ -3157,6 +3149,40 @@ class Episciences_Paper
     }
 
     /**
+     * @return string
+     */
+    public function getPublicationYear(): string
+    {
+        $year = date('Y');
+        if ($this->isPublished()) {
+            $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
+            $year = $date->format('Y');
+        }
+        return $year;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPublished(): bool
+    {
+        return ($this->getStatus() === self::STATUS_PUBLISHED);
+    }
+
+    /**
+     * @return string
+     */
+    public function getPublicationMonth(): string
+    {
+        $month = date('m');
+        if ($this->isPublished()) {
+            $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
+            $month = $date->format('m');
+        }
+        return $month;
+    }
+
+    /**
      * return Bibtex formatted paper
      * @return string
      */
@@ -3348,6 +3374,4 @@ class Episciences_Paper
         $tei = new Episciences_Paper_Tei($this);
         return $tei->generateXml();
     }
-
-
 }

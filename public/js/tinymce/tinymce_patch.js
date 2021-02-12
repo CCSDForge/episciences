@@ -22,6 +22,8 @@ function __initEditor(selectorName, context, options) {
             plugins: "link image code fullscreen table",
             toolbar1: "bold italic underline | forecolor backcolor | styleselect | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image  | fullscreen",
             menubar: false,
+            height : 200,
+            resize:true,
         });
 
     } else {

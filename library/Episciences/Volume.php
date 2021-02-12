@@ -11,6 +11,7 @@ class Episciences_Volume
     const SETTING_CURRENT_ISSUE = 'current_issue';
     const SETTING_SPECIAL_ISSUE = 'special_issue';
     const SETTING_ACCESS_CODE = 'access_code';
+    const UNLABELED_VOLUME = 'Unlabeled volume';
     protected $_db = null;
     private $_vid;
     private $_rvid;
@@ -778,7 +779,7 @@ class Episciences_Volume
                 }
             }
             if (!$result) {
-                $result = 'Unlabeled volume';
+                $result = self::UNLABELED_VOLUME;
             }
         }
         return $result;

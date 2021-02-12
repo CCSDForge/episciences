@@ -43,12 +43,10 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                 defined('RVID') || define('RVID', $oReview->getRvid());
                 defined('RVNAME') || define('RVNAME', $oReview->getName());
                 defined('PIWIKID') || define('PIWIKID', $oReview->getPiwikid());
-                if ($oReview->getSetting('ISSN') != '') {
-                    defined('RVISSN') || define('RVISSN', $oReview->getSetting('ISSN'));
-                }
-
-
-                $namespace = 'revue-' . RVID;
+                $oReview->loadSettings();
+                Zend_Registry::set('reviewSettings', $oReview->getSettings());
+                defined('RVISSN') || define('RVISSN', $oReview->getSetting(Episciences_Review::SETTING_ISSN));
+                $namespace = 'episciences-' . RVCODE;
             } else {
                 exit("Configuration Error: This journal does not exists.");
             }
@@ -70,7 +68,6 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         Zend_Session::setOptions($sessionOptions);
         Zend_Session::start();
     }
-
 
 
     /**

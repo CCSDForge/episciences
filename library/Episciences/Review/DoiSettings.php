@@ -109,7 +109,7 @@ class Episciences_Review_DoiSettings
      * @return string
      * @throws Zend_Exception
      */
-    public function createDoiWithTemplate(Episciences_Paper $paper)
+    public function createDoiWithTemplate(Episciences_Paper $paper): string
     {
         $volume = '';
         $paperPosition = '';
@@ -142,15 +142,18 @@ class Episciences_Review_DoiSettings
         $template[self::DOI_FORMAT_PAPER_VOLUME_ORDER] = $paperPosition;
         $template[self::DOI_FORMAT_PAPER_SECTION] = $section;
         $template[self::DOI_FORMAT_PAPER_ID] = $paper->getPaperid();
-        $template[self::DOI_FORMAT_PAPER_YEAR] = date('Y');
-        $template[self::DOI_FORMAT_PAPER_MONTH] = date('m');
+        $template[self::DOI_FORMAT_PAPER_YEAR] = $paper->getPublicationYear();
+        $template[self::DOI_FORMAT_PAPER_MONTH] = $paper->getPublicationMonth();
 
 
         $search = array_keys($template);
         $replace = array_values($template);
 
-        $doi = str_replace(' ',  '', $this->getDoiFormat());
+        $doi = str_replace(' ', '', $this->getDoiFormat());
         $doi = str_replace($search, $replace, $doi);
+        $doi = str_replace(' ', '', $doi);
+        $doi = str_replace('..', '.', $doi);
+        $doi = str_replace('--', '-', $doi);
 
         // DOI spec: DOI is case insensitive
         return $this->getDoiPrefix() . '/' . strtolower($doi);

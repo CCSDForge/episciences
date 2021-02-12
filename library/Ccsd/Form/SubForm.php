@@ -10,8 +10,7 @@ class Ccsd_Form_SubForm extends Zend_Form_SubForm
     
     public function init()
     {
-        $this->getView()->jQuery()->addStylesheet("/css/ccsd_form.css");
-        
+
         $this->loadDefaultDecorators();
         
         $this->addPrefixPath('ZendX_JQuery_Form_Element','ZendX/JQuery/Form/Element', Zend_Form::ELEMENT);

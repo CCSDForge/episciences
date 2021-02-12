@@ -36,24 +36,16 @@ echo $this->doctype('HTML5');
     ?>
     <?php echo $this->headMeta(); ?>
     <?php echo $this->headTitle(); ?>
-
-
     <link href="https://cdnjs.cloudflare.com" rel="preconnect" crossorigin>
-    <link href="https://cdnjs.cloudflare.com" rel="dns-prefetch" >
-
-    <link href="https://cas.ccsd.cnrs.fr" rel="dns-prefetch" >
-
+    <link href="https://cdnjs.cloudflare.com" rel="dns-prefetch">
+    <link href="https://cas.ccsd.cnrs.fr" rel="dns-prefetch">
     <?php
-
     // CSS
     $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
-
-    $this->jQuery()->addStylesheet("/css/ccsd.css");
     $this->jQuery()->addStylesheet("/css/main.css");
-
-    //CSS spécifique à la revue
+    // journal's CSS
     if ($this->cssFile) {
         $this->jQuery()->addStylesheet($this->cssFile);
     }
@@ -72,12 +64,14 @@ echo $this->doctype('HTML5');
     ?>
     <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
     <script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['$$','$$']]}});</script>
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css"/>
 </head>
 
 <body>
 <div id="container" class="container<?php echo $this->containerClass; ?>">
 
-    <?php $this->navbar(true, array('languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')), true, array('isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml'), '/', Ccsd_View_Helper_Navbar::APP_EPI); ?>
+    <?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml'], '/', Ccsd_View_Helper_Navbar::APP_EPI); ?>
 
     <div class="logo">
         <?php
@@ -147,12 +141,12 @@ echo $this->doctype('HTML5');
 
 
     <?php
-    if (APPLICATION_ENV == ENV_DEV) {
-        echo $this->render('commons/debug.phtml');
-    }
+
 
     if (APPLICATION_MODULE === 'portal') {
         echo $this->render('commons/footer-portal.phtml');
+    } elseif (APPLICATION_MODULE === 'journal') {
+        echo $this->render('commons/footer.phtml');
     }
 
     if (APPLICATION_ENV == ENV_PROD) {
@@ -160,10 +154,32 @@ echo $this->doctype('HTML5');
     }
     ?>
 
-
-
-
-
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js"
+            data-cfasync="false"></script>
+    <script>
+        window.cookieconsent.initialise({
+            "palette": {
+                "popup": {
+                    "background": "#efefef",
+                    "text": "#404040"
+                },
+                "button": {
+                    "background": "#8ec760",
+                    "text": "#ffffff"
+                }
+            },
+            "theme": "edgeless",
+            "content": {
+                "message": "<?php echo $this->translate('Ce site utilise des cookies et collecte des informations personnelles vous concernant') ?>",
+                "dismiss": "<?php echo $this->translate('Fermer')?>",
+                "href": "//www.<?php echo DOMAIN; ?>/page/privacy"
+            }
+        });
+    </script>
+    <?php
+    if (APPLICATION_ENV == ENV_DEV) {
+    echo $this->render('commons/debug.phtml');
+    }
+    ?>
 </body>
 </html>
