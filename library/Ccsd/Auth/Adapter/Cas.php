@@ -434,7 +434,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
             }
         }
 
-        if ($this->getCasSslValidation() == false) {
+        if (!$this->getCasSslValidation()) {
             // no SSL validation for the CAS server
             phpCAS::setNoCasServerValidation();
         } else {
@@ -452,15 +452,20 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
             $resultOfAuth = false;
         }
 
-        if ($resultOfAuth == true) {
+        if ($resultOfAuth) {
 
-            $userMapper = new Ccsd_User_Models_UserMapper();
             if ($this->_identity instanceof Ccsd_User_Models_User) {
                 $user = $this->_identity;
             } else {
                 $user = new Ccsd_User_Models_User();
             }
-            $userMapper->find(phpCAS::getAttribute('UID'), $user);
+            /**
+             * Theses attributes must be sent by CAS server
+             */
+            $user->setEmail(phpCAS::getAttribute('EMAIL'));
+            $user->setUid(phpCAS::getAttribute('UID'));
+            $user->setFirstname(phpCAS::getAttribute('FIRSTNAME'));
+            $user->setLastname(phpCAS::getAttribute('LASTNAME'));
 
             // at this step, the user has been authenticated by the CAS server
             // and the user's login name can be read with phpCAS::getUser().

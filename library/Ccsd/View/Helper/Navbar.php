@@ -138,18 +138,17 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
         $view = $this->view;
         $request = Zend_Controller_Front::getInstance()->getRequest();
         ?>
-        <link rel="stylesheet" href='/css/navbar.css' type='text/css' media='screen'>
-        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation" aria-label="Menu portail">
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation" aria-label="Menu">
             <div class="navbar-header ">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#nav-services">
                     <span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span
                             class="icon-bar"></span> <span class="icon-bar"></span>
                 </button>
-                <div class="logo-ccsd">
-                    <a class="brand" href="https://www.ccsd.cnrs.fr/"
-                       title="Centre pour la Communication Scientifique Directe"><img src="/img/ccsd.png"
+                <div class="logo-episciences">
+                    <a class="brand" href="https://www.episciences.org/"
+                       title="Episciences"><img src="/img/episciences_tampon_50x50.png"
                                                                                       style="border: 0;"
-                                                                                      alt="CCSD"/></a>
+                                                                                      alt="Episciences stamp logo"/></a>
                     <?php
                     if ($this->_labelEnv != false) { ?>
                         <span style="margin-left: 8px;"
@@ -159,25 +158,6 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
             <!--<?php //Liens services
             ?>-->
             <div class="collapse navbar-collapse" id="nav-services">
-                <ul class="nav navbar-nav">
-                    <li class="dropdown active">
-                        <button class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">Episciences.org <b
-                                    class="caret" style="border-top-color:#ee5a35;border-bottom-color:#ee5a35;"></b>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a href="https://www.episciences.org/">Episciences.org</a></li>
-                            <li>
-                                <a href="https://www.episciences.org/page/journals"><?php echo $view->translate('Revues'); ?></a>
-                            </li>
-                            <li><a href="https://doc.episciences.org/oai-pmh">OAI-PMH</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="https://doc.episciences.org/"
-                           rel="help"><?php echo $this->view->translate('Documentation'); ?></a></li>
-                    <li>
-                        <a href="https://support.ccsd.cnrs.fr">Support</a>
-                    </li>
-                </ul>
                 <?php
                 if ($this->_displayLogin) { ?>
                     <div class="nav navbar-nav navbar-right">

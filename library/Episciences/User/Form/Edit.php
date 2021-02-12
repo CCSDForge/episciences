@@ -10,17 +10,15 @@ class Episciences_User_Form_Edit extends Ccsd_User_Form_Accountedit
 
         $ccsd_sub_form = new Ccsd_Form_SubForm();
         $ccsd_sub_form->setElements($this->getElements());
-        $ccsd_sub_form->setLegend("Informations de mon compte CCSD");
         $ccsd_sub_form->setDecorators([['ViewScript', ['viewScript' => 'user/form_edit.phtml', 'name' => 'ccsd']]]);
         $ccsd_sub_form->getElement('PHOTO')->getDecorator('Picture')->setUID($this->getUID());
-
         $this->clearElements();
 
         $episciences_sub_form = new Ccsd_Form_SubForm();
 
         try {
             $episciences_sub_form->setConfig(new Zend_Config_Ini(__DIR__ . '/../config/account.ini', 'episciences-account'));
-            $episciences_sub_form->setLegend("Informations de mon profil Episciences");
+            $episciences_sub_form->setLegend('');
             $episciences_sub_form->setDecorators([['ViewScript', ['viewScript' => 'user/form_edit.phtml', 'name' => 'episciences']]]);
             $this->addSubForms(["ccsd" => $ccsd_sub_form, "episciences" => $episciences_sub_form]);
             $this->setActions(true);
