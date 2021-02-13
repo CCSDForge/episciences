@@ -211,7 +211,7 @@ function defineVendorJsLibraries()
     define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
     define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
     define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
-    define('VENDOR_CHART', 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js');
+    define('VENDOR_CHART', ' https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.0.0-beta.10/chart.min.js');
 }
 
 /**
@@ -225,6 +225,7 @@ function defineVendorCssLibraries()
     define('VENDOR_FONT_AWESOME', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/fontawesome.min.css");
     define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/solid.min.css");
     define('VENDOR_JQUERY_UI_THEME_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css');
+    define('VENDOR_CHART_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css');
 }
 
 /**

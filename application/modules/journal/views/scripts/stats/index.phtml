@@ -1,40 +1,77 @@
 <?php
-
-$this->jQuery()->addJavascriptFile(VENDOR_CHART);
-$this->jQuery()->addJavascriptFile('/js/stats/common.js');
-$this->jQuery()->addJavascriptFile('/js/stats/submissions.js');
-
 $this->layout()->pageTitle = $this->translate('Statistiques');
-$this->layout()->description = $this->translate('Indicateurs de statistiques pour la revue "%s".', RVNAME);
+$this->layout()->description = $this->translate('Indicateurs de statistiques pour la revue') . ' <code>' . RVNAME . '</code>';
 ?>
+<?php if ($this->errorMessage): ?>
+    <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
+<?php else: ?>
+    <?php
+    /** @var Zend_Controller_Request_Http $request */
+    $request = Zend_Controller_Front::getInstance()->getRequest();
+    $controller = $request->getControllerName();
+    $action = $request->getActionName();
 
-<div id="statsIndex" class="panel panel-default collapsable">
-    <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Soumissions') ?></h2>
-    </div>
-    <div class="panel-body in" style="display: flex;">
-        <?= $this->partial('stats/submissions.phtml', ['yearCategories' => $this->yearCategories]) ?>
-    </div>
-</div>
+    $this->jQuery()->addJavascriptFile(VENDOR_CHART);
+    $this->jQuery()->addJavascriptFile('/js/stats/common.js');
+    $this->jQuery()->addJavascriptFile('/js/stats/submissions.js');
 
-<div id="users-stats" class="panel panel-default collapsable">
-    <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Utilisateurs') ?></h2>
-    </div>
-    <div class="panel-body in">
-        <div class="col-md-8">
+    $this->jQuery()->addStylesheet(VENDOR_CHART_CSS);
 
+
+    ?>
+
+    <div id="statsIndex" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Soumissions') ?> <?= $this->yearQuery ? ' - <code>' . $this->yearQuery . '</code>' : '' ?></h2>
         </div>
-        <!--        <div class="col-md-4"> </div>-->
+        <div class="panel-body in">
+            <div class="row">
+                <div class="col-md-2"></div>
+                <div class="col-md-10">
+                    <?= $this->partial('stats/submissions.phtml', [
+                        'allSubmissions' => $this->allSubmissionsJs,
+                        'allPublications' => $this->allPublications,
+                        'allRefusals' => $this->allRefusals,
+                        'allAcceptations' => $this->allAcceptations,
+                        'publicationsPercentage' => $this->publicationsPercentage,
+                        'refusalsPercentage' => $this->refusalsPercentage,
+                        'acceptationsPercentage' => $this->acceptationsPercentage,
+                        'errorMessage' => $this->errorMessage
+                    ]) ?>
+                </div>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <?php if ($this->yearCategories) : ?>
+                <div>
+                    <a id="all-submission-stats-btn"
+                       class="btn btn-default btn-xs <?= !$this->yearQuery ? 'disabled' : '' ?>" <?= !$this->yearQuery ? 'aria-disabled="true"' : '' ?>
+                       role="button"
+                       href="<?= '/' . $controller . '/' . $action ?>">
+                        <?= $this->translate('Toutes') ?>
+                    </a>
+
+                    <?php foreach ($this->yearCategories as $year): ?>
+                        <a id="submission-stats-"<?= $year ?>
+                           class="btn btn-default btn-xs <?= ($this->yearQuery === $year) ? 'disabled' : '' ?>"
+                           role="button" <?= ($this->yearQuery === $year) ? 'aria-disabled="true"' : '' ?>
+                           href="<?= '/' . $controller . '/' . $action . '?year=' . $year ?>"><?= $year ?></a>
+                    <?php endforeach; ?>
+
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 
-</div>
 
-<script>
-    let yearCategoriesFromView = <?= json_encode($this->yearCategoriesJs) ?>;
-    let allSubmissionsFromView = <?= json_encode($this->allSubmissionsJs) ?>;
-    let seriesFromView = <?= json_encode($this->seriesJs) ?>;
-</script>
+    <script>
+        let chartTypeFromView = <?= json_encode($this->chartTypeJs) ?>;
+        let yearCategoriesFromView = <?= json_encode($this->yearCategoriesJs) ?>;
+        let allSubmissionsFromView = <?= json_encode($this->allSubmissionsJs) ?>;
+        let seriesFromView = <?= json_encode($this->seriesJs) ?>;
+    </script>
+
+<?php endif; ?>
 
 
 
