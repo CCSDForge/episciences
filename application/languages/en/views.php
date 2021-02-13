@@ -1687,6 +1687,12 @@ return [
     'Courriel support technique' => 'Technical support Email',
     'Support technique' => 'Technical support',
     'Mentions légales' => 'Legal mentions',
-    'Vie privée' => 'Privacy'
+    'Vie privée' => 'Privacy',
+
+    //stats
+    'Sur un total de' => 'Out of a total of',
+    'soumissions' => 'submissions',
+    'Indicateurs de statistiques pour la revue' => 'Statistical indicators for the journal',
+    "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
 
 ];
