@@ -1690,9 +1690,16 @@ return [
     'Vie privée' => 'Privacy',
 
     //stats
+    'Statistiques' => 'Statistics',
     'Sur un total de' => 'Out of a total of',
+    'Soumissions en %' => 'Submissions %',
     'soumissions' => 'submissions',
+    'Délai moyen en jours entre "dépôt-acceptation" et "dépôt-publication"' => 'Average time in days between "submission-acceptance" and "submission-publication"',
+    'Par année, la répartition des soumissions, articles publiés et articles refusés' => 'By year, the breakdown of submissions, articles published and articles refused',
+    'Répartition des soumissions par année et par archive' => 'Breakdown of submissions by year and repository',
     'Indicateurs de statistiques pour la revue' => 'Statistical indicators for the journal',
+    'La répartition des soumissions, articles publiés et articles refusés' => 'The breakdown of submissions, articles published and articles refused',
+    'Répartition des soumissions par archive' => 'The breakdown of submissions by repository',
     "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
 
 ];

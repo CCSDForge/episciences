@@ -16,7 +16,6 @@ class StatsController extends Zend_Controller_Action
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
 
-        $chartType = self::CHART_TYPE['BAR'];
         $uri = 'papers/stats/nb-submissions';
         $delayBetweenSubmissionAndAcceptanceUri = 'papers/stats/delay-between-submit-and-acceptance';
         $delayBetweenSubmissionAndPublicationUri = 'papers/stats/delay-between-submit-and-publication';
@@ -76,6 +75,7 @@ class StatsController extends Zend_Controller_Action
         $seriesJs['allSubmissionsPercentage']['datasets'][] = ['data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage], 'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2]]];
         $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3];
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
+        $seriesJs['allSubmissionsPercentage']['title'] = $this->view->translate("Soumissions en %");
 
 
         foreach ($yearCategories as $year) {
@@ -122,23 +122,36 @@ class StatsController extends Zend_Controller_Action
         }
 
         //figure 2
-        $seriesJs['submissionsByYear'][] = ['label' => $label1, 'data' => $series['submissionsByYear'], 'backgroundColor' => self::COLORS_CODE[1]];
-        $seriesJs['submissionsByYear'][] = ['label' => $label2, 'data' => $series['publishedSubmissions'], 'backgroundColor' => self::COLORS_CODE[4]];
-        $seriesJs['submissionsByYear'][] = ['label' => $label3, 'data' => $series['refusedSubmissions'], 'backgroundColor' => self::COLORS_CODE[2]];
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label1, 'data' => $series['submissionsByYear'], 'backgroundColor' => self::COLORS_CODE[1]];
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label2, 'data' => $series['publishedSubmissions'], 'backgroundColor' => self::COLORS_CODE[4]];
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label3, 'data' => $series['refusedSubmissions'], 'backgroundColor' => self::COLORS_CODE[2]];
+        $seriesJs['submissionsByYear']['chartType'] = self::CHART_TYPE['BAR'];
+        $seriesJs['submissionsByYear']['title'] = !$yearQuery ?
+            $this->view->translate("Par année, la répartition des soumissions, articles publiés et articles refusés") :
+            $this->view->translate("La répartition des soumissions, articles publiés et articles refusés");
 
         foreach ($series['submissionsByRepo'] as $repoId => $values) {
             $backgroundColor = ($repoId > count(self::COLORS_CODE) - 1) ? self::COLORS_CODE[array_rand(self::COLORS_CODE)] : self::COLORS_CODE[$repoId];
             $repoLabel = Episciences_Repositories::getLabel($repoId);
 
             //figure3
-            $seriesJs['submissionsByRepo']['repositories'][] = ['label' => $repoLabel, 'data' => $values['nbSubmissions'], 'backgroundColor' => $backgroundColor];
-            $seriesJs['submissionsByRepo']['percentage'][] = ['label' => '% ' . $repoLabel, 'data' => $values['percentage']];
+            $seriesJs['submissionsByRepo']['repositories']['datasets'][] = ['label' => $repoLabel, 'data' => $values['nbSubmissions'], 'backgroundColor' => $backgroundColor];
+            $seriesJs['submissionsByRepo']['percentage']['datasets'][] = ['label' => '% ' . $repoLabel, 'data' => $values['percentage']];
         }
+
+        $seriesJs['submissionsByRepo']['repositories']['chartType'] = self::CHART_TYPE['BAR'];
+        $seriesJs['submissionsByRepo']['repositories']['title'] = !$yearQuery ?
+            $this->view->translate("Répartition des soumissions par année et par archive") :
+            $this->view->translate("Répartition des soumissions par archive") ;
+        $seriesJs['submissionsByRepo']['percentage']['chartType'] = self::CHART_TYPE['PIE'];
+        $seriesJs['submissionsByRepo']['percentage']['title'] = '';
+
 
         // figure4
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Acceptation'), 'data' => $series['delayBetweenSubmissionAndAcceptance'], 'backgroundColor' => self::COLORS_CODE[5]];
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Publication'), 'data' => $series['delayBetweenSubmissionAndPublication'], 'backgroundColor' => self::COLORS_CODE[4]];
         $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
+        $seriesJs['submissionDelay']['title'] = $this->view->translate('Délai moyen en jours entre "dépôt-acceptation" et "dépôt-publication"');
 
 
         $this->view->allSubmissionsJs = !$yearQuery ? $allSubmissions : $series['submissionsByYear'][0];
@@ -150,7 +163,6 @@ class StatsController extends Zend_Controller_Action
         $this->view->acceptationsPercentage = $acceptationsPercentage;
         $this->view->yearCategoriesJs = $yearCategories;
         $this->view->seriesJs = $seriesJs;
-        $this->view->chartTypeJs = $chartType;
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
     }

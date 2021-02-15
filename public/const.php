@@ -211,7 +211,7 @@ function defineVendorJsLibraries()
     define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
     define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
     define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
-    define('VENDOR_CHART', ' https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.0.0-beta.10/chart.min.js');
+    define('VENDOR_CHART', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.0.0-beta.10/chart.min.js');
 }
 
 /**
