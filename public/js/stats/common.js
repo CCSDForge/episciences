@@ -5,8 +5,26 @@ function createChart(context, data, type = null, title = '') {
                 display: true,
                 text: title
             }
-        }
+        },
     };
+
+    if (type !== 'pie') {
+        let scalesOptions = {
+            scales: {
+                x: {
+                    gridLines: {
+                        display: false
+                    }
+                },
+                y: {
+                    gridLines: {
+                        display: false
+                    }
+                }
+            }
+        }
+        Object.assign(options, scalesOptions);
+    }
 
     if (type === 'barH') { // Graphique à barres horizontales
         options['indexAxis'] = 'y';

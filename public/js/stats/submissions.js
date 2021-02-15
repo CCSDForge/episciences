@@ -4,8 +4,6 @@ $(function () {
     let context2 = $("#submissions-by-repo-chart");
     let context3 = $('#submissions-delay-chart');
 
-    let type = chartTypeFromView;
-
     let allPercentageOfSubmissionsStats = {
         labels: seriesFromView.allSubmissionsPercentage.labels,
         datasets: seriesFromView.allSubmissionsPercentage.datasets
@@ -13,13 +11,13 @@ $(function () {
 
     let statsByYearData = {
         labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionsByYear
+        datasets: seriesFromView.submissionsByYear.datasets
     };
 
 
     let statsByRepoData = {
         labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionsByRepo.repositories
+        datasets: seriesFromView.submissionsByRepo.repositories.datasets
     };
 
     let submissionDelay = {
@@ -27,10 +25,12 @@ $(function () {
         datasets: seriesFromView.submissionDelay.datasets
     }
 
-    createChart(context0, allPercentageOfSubmissionsStats, seriesFromView.allSubmissionsPercentage.chartType, translate("Soumissions en %"));
-    createChart(context1, statsByYearData, type, translate("Par année, la répartition des soumissions, articles publiés et articles refusés"));
-    createChart(context2, statsByRepoData, type, translate("Répartition des soumissions par année et par archive"));
-    createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType, translate('Délai moyen en jours entre "dépôt et acceptation" et "dépôt et publication"'));
+    //figure1
+    createChart(context0, allPercentageOfSubmissionsStats, seriesFromView.allSubmissionsPercentage.chartType, seriesFromView.allSubmissionsPercentage.title);
+    //figure2
+    createChart(context1, statsByYearData, seriesFromView.submissionsByYear.chartType, seriesFromView.submissionsByYear.title);
+    createChart(context2, statsByRepoData, seriesFromView.submissionsByRepo.repositories.chartType, seriesFromView.submissionsByRepo.repositories.title);
+    createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType, seriesFromView.submissionDelay.title);
 });
 
 
