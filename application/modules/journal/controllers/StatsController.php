@@ -11,7 +11,6 @@ class StatsController extends Zend_Controller_Action
 
     public function indexAction()
     {
-        $query = [];
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
@@ -23,8 +22,14 @@ class StatsController extends Zend_Controller_Action
 
         /** @var array $data */
         try {
+            $response = $this->askApi($uri)->getContents();
             $submissions = json_decode($this->askApi($uri), true);
         } catch (GuzzleException $e) {
+            $this->view->errorMessage = $errorMessage;
+            return;
+        }
+
+        if (!$submissions) {
             $this->view->errorMessage = $errorMessage;
             return;
         }
@@ -142,7 +147,7 @@ class StatsController extends Zend_Controller_Action
         $seriesJs['submissionsByRepo']['repositories']['chartType'] = self::CHART_TYPE['BAR'];
         $seriesJs['submissionsByRepo']['repositories']['title'] = !$yearQuery ?
             $this->view->translate("Répartition des soumissions par année et par archive") :
-            $this->view->translate("Répartition des soumissions par archive") ;
+            $this->view->translate("Répartition des soumissions par archive");
         $seriesJs['submissionsByRepo']['percentage']['chartType'] = self::CHART_TYPE['PIE'];
         $seriesJs['submissionsByRepo']['percentage']['title'] = '';
 
@@ -216,7 +221,10 @@ class StatsController extends Zend_Controller_Action
         $defaultOptions = [
             'headers' => [
                 'Accept' => 'application/json',
-                'Content-type' => 'application/json'
+                'Content-type' => 'application/json',
+                'X-AUTH-TOKEN' => EPISCIENCES_SECRET_KEY,
+                'X-AUTH-RVID' => RVID,
+                'X-AUTH-UID' => Episciences_Auth::getUid()
             ]
         ];
 
