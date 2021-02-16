@@ -26,9 +26,7 @@
 		<xsl:text>{</xsl:text>
 		<xsl:value-of select="$review_code" />
 		<xsl:text>:</xsl:text>
-		<xsl:value-of select="episciences/id" />
-
-		<!-- TITLE -->
+		<xsl:value-of select="episciences/id" /><xsl:text>,</xsl:text>
 		<xsl:text>&#10;  TITLE = {{</xsl:text>
 		<xsl:value-of select="php:function('Ccsd_Tools::protectLatex', string(metadata/oai_dc:dc/dc:title))" />
 		<xsl:text>}},</xsl:text>
