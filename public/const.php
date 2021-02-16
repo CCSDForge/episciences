@@ -242,5 +242,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('FUSION_TOKEN_AUTH', '');
         define('EPISCIENCES_SOLR_LOG_PATH', '');
         define('EPISCIENCES_SELF_API', '');
+        define('EPISCIENCES_SECRET_KEY', '');
     }
 }
