@@ -26,11 +26,11 @@ $(function () {
     }
 
     //figure1
-    createChart(context0, allPercentageOfSubmissionsStats, seriesFromView.allSubmissionsPercentage.chartType, seriesFromView.allSubmissionsPercentage.title);
+    createChart(context0, allPercentageOfSubmissionsStats, seriesFromView.allSubmissionsPercentage.chartType);
     //figure2
-    createChart(context1, statsByYearData, seriesFromView.submissionsByYear.chartType, seriesFromView.submissionsByYear.title);
-    createChart(context2, statsByRepoData, seriesFromView.submissionsByRepo.repositories.chartType, seriesFromView.submissionsByRepo.repositories.title);
-    createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType, seriesFromView.submissionDelay.title);
+    createChart(context1, statsByYearData, seriesFromView.submissionsByYear.chartType);
+    createChart(context2, statsByRepoData, seriesFromView.submissionsByRepo.repositories.chartType);
+    createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType);
 });
 
 
