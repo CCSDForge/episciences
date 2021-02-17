@@ -1,0 +1,26 @@
+<?php
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+?>
+<div class="text-center" style="margin-bottom: 10px;">
+    <?php if ($this->yearCategories) : ?>
+        <div>
+            <a id="all-submission-stats-btn"
+               class="btn btn-default btn-xs <?= !$this->yearQuery ? 'disabled' : '' ?>" <?= !$this->yearQuery ? 'aria-disabled="true"' : '' ?>
+               role="button"
+               href="<?= '/' . $controller . '/' . $action ?>">
+                <?= $this->translate('Toutes') ?>
+            </a>
+
+            <?php foreach ($this->yearCategories as $year): ?>
+                <a id="submission-stats-"<?= $year ?>
+                   class="btn btn-default btn-xs <?= ($this->yearQuery === $year) ? 'disabled' : '' ?>"
+                   role="button" <?= ($this->yearQuery === $year) ? 'aria-disabled="true"' : '' ?>
+                   href="<?= '/' . $controller . '/' . $action . '?year=' . $year ?>"><?= $year ?></a>
+            <?php endforeach; ?>
+
+        </div>
+    <?php endif; ?>
+</div>

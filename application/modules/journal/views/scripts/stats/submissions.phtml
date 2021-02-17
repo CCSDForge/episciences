@@ -1,53 +1,52 @@
-<div class="row">
-    <div class="col-md-2">
-        <div style="padding-top: 10px; ">
-            <p><?= $this->translate('Sur un total de') ?>
-                <code><?= $this->allSubmissions ?></code> <?= $this->translate('soumissions') ?>
-            </p>
-            <div>
-                <ul>
-                    <li><code><?= $this->allPublications ?></code> <?= $this->translate('articles publiés') ?>
-                        <!-- (<code><?= $this->publicationsPercentage ?></code> <i class="fas fa-percentage"></i>) -->
-                    </li>
-                    <li><code><?= $this->allAcceptations ?></code> <?= $this->translate('articles acceptés') ?>
-                        <!-- (<code><?= $this->acceptationsPercentage ?></code> <i class="fas fa-percentage"></i>) -->
-                    </li>
-                    <li><code><?= $this->allRefusals ?></code> <?= $this->translate('articles refusés') ?>
-                        <!-- (<code><?= $this->refusalsPercentage ?></code> <i class="fas fa-percentage"></i>) -->
-                    </li>
-                </ul>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading"> <h2 class="panel-title"><?= $this->chart1Title ?></h2></div>
+    <div class="panel-body in">
+        <div class="col-md-3">
+            <div style="padding-top: 10px; ">
+                <p><?= $this->translate('Sur un total de') ?>
+                    <code><?= $this->allSubmissions ?></code> <?= $this->translate('soumissions') ?>
+                </p>
+                <div>
+                    <ul>
+                        <li><code><?= $this->allPublications ?></code> <?= $this->translate('articles publiés') ?>
+                        </li>
+                        <li><code><?= $this->allAcceptations ?></code> <?= $this->translate('articles acceptés') ?>
+                        </li>
+                        <li><code><?= $this->allRefusals ?></code> <?= $this->translate('articles refusés') ?></li>
+                    </ul>
 
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-10">
-        <figure>
+        <div class="col-md-7">
             <canvas id="all-submissions-percentage" style="height: auto; width: auto;"></canvas>
-            <figcaption></figcaption>
-        </figure>
-    </div>
-
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <figure>
-            <canvas id="submissions-by-year-chart" style="height: auto; width: auto;"></canvas>
-            <figcaption></figcaption>
-        </figure>
-
-        <figure>
-            <canvas id="submissions-by-repo-chart" style="height: auto; width: auto;"></canvas>
-            <figcaption></figcaption>
-        </figure>
-
-        <figure>
-            <canvas id="submissions-delay-chart" style="height: auto; width: auto;"></canvas>
-            <figcaption></figcaption>
-        </figure>
+        </div>
     </div>
 </div>
+
+<div class="panel panel-default collapsable">
+    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart2Title ?></h2></div>
+    <div class="panel-body">
+        <canvas id="submissions-by-year-chart" style="height: auto; width: auto;"></canvas>
+    </div>
+</div>
+
+<div class="panel panel-default collapsable">
+    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart3Title ?></h2></div>
+    <div class="panel-body">
+        <canvas id="submissions-by-repo-chart" style="height: auto; width: auto;"></canvas>
+    </div>
+</div>
+
+<div class="panel panel-default collapsable">
+    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart4Title ?></h2></div>
+    <div class="panel-body">
+        <canvas id="submissions-delay-chart" style="height: auto; width: auto;"></canvas>
+    </div>
+</div>
+
+
+
 
 
 

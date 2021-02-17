@@ -1690,16 +1690,18 @@ return [
     'Vie privée' => 'Privacy',
 
     //stats
+    'Dépôt-Acceptation' => 'Submission-Acceptance',
+    'Dépôt-Publication' => 'Submission-Publication',
     'Statistiques' => 'Statistics',
     'Sur un total de' => 'Out of a total of',
-    'Soumissions en %' => 'Submissions %',
+    'Soumissions en <code>%</code>' => 'Submissions <code>%</code>',
     'soumissions' => 'submissions',
-    'Délai moyen en jours entre "dépôt-acceptation" et "dépôt-publication"' => 'Average time in days between "submission-acceptance" and "submission-publication"',
-    'Par année, la répartition des soumissions, articles publiés et articles refusés' => 'By year, the breakdown of submissions, articles published and articles refused',
-    'Répartition des soumissions par année et par archive' => 'Breakdown of submissions by year and repository',
+    'Délai moyen en <code>jours</code> entre <code>dépôt et acceptation</code> (<code>dépôt et publication</code>)' => 'Average time in <code>days</code> between <code>submission and acceptance</code> (<code>submission and publication</code>)',
+    'Par <code>année</code>, la répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'By <code>year</code>, the breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',
+    'Répartition des soumissions par <code>année</code> et par <code>archive</code>' => 'Breakdown of submissions by <code>year</code> and <code>repository</code>',
     'Indicateurs de statistiques pour la revue' => 'Statistical indicators for the journal',
-    'La répartition des soumissions, articles publiés et articles refusés' => 'The breakdown of submissions, articles published and articles refused',
-    'Répartition des soumissions par archive' => 'The breakdown of submissions by repository',
+    'La répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'The breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',
+    'Répartition des soumissions par <code>archive</code>' => 'The breakdown of submissions by <code>repository</code>',
     "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
 
 ];
