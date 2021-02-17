@@ -216,13 +216,13 @@ class StatsController extends Zend_Controller_Action
     private function askApi($uri, array $options = []): StreamInterface
     {
 
-        $url = EPISCIENCES_SELF_API . $uri . '?rvid=' . RVID;
+        $url = EPISCIENCES_API_URL . $uri . '?rvid=' . RVID;
 
         $defaultOptions = [
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-type' => 'application/json',
-                'X-AUTH-TOKEN' => EPISCIENCES_SECRET_KEY,
+                'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
                 'X-AUTH-RVID' => RVID,
                 'X-AUTH-UID' => Episciences_Auth::getUid()
             ]
