@@ -241,7 +241,7 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('PWD_PATH', '');
         define('FUSION_TOKEN_AUTH', '');
         define('EPISCIENCES_SOLR_LOG_PATH', '');
-        define('EPISCIENCES_SELF_API', '');
-        define('EPISCIENCES_SECRET_KEY', '');
+        define('EPISCIENCES_API_URL', '');
+        define('EPISCIENCES_API_SECRET_KEY', '');
     }
 }

@@ -7,7 +7,8 @@
     "SOLR_LOG_PATH": "/logs/file/path/",
     "HAL_API": "https://api.example.org/",
     "SECRET_KEY": "YourSecretAuthKey",
-    "SELF_API": "https://host:8000/api/"
+    "API_URL": "https://host:8000/api/",
+    "API_SECRET_KEY": "YourSecretAuthKey"
   },
   "CAS": {
     "HOST": "a_db_host",
