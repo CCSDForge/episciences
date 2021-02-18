@@ -3024,16 +3024,6 @@ class Episciences_Paper
     }
 
     /**
-     * @return bool|string
-     */
-    public function getLastRevisionDate()
-    {
-        $previousVersions = $this->getPreviousVersions();
-        $lastPaper = !empty($previousVersions) ? array_shift($previousVersions) : null;
-        return $lastPaper ? $lastPaper->getWhen() : $this->getWhen();
-    }
-
-    /**
      * return an array of papers (previous versions of this paper)
      * @param bool $isCurrentVersionIncluded
      * @return array|null

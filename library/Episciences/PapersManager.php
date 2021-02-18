@@ -2298,11 +2298,11 @@ class Episciences_PapersManager
             $addTags = [];
 
             if ($name === 'waitingAuthorFormatting') {
-                $paperSubmissionDate = date('Y-m-d', strtotime($paper->getWhen()));
+                $paperSubmissionDate = date('Y-m-d', strtotime($paper->getSubmission_date())); // Current version
                 $doi = $paper->getDoi();
                 $volumeId = $paper->getVid();
                 $volume = Episciences_VolumesManager::find($volumeId);
-                $lastRevisionDateIso = date('Y-m-d', strtotime($paper->getLastRevisionDate())); // last version
+                $lastRevisionDateIso = date('Y-m-d', strtotime($paper->getWhen())); // latest version
                 $revisionsDate = $paper->buildRevisionDates($locale); // all versions
                 $revisionsDateIso = $paper->buildRevisionDates(); // all versions in ISO format
                 $paperPosition = $paper->getPaperPositionInVolume(); // position of paper in volume
