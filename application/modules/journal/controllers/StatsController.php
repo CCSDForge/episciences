@@ -7,7 +7,7 @@ use Psr\Http\Message\StreamInterface;
 class StatsController extends Zend_Controller_Action
 {
     const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9"];
-    const CHART_TYPE = ['BAR' => 'bar', 'PIE' => 'pie', 'BAR_H' => 'barH'];
+    const CHART_TYPE = ['BAR' => 'bar', 'PIE' => 'pie', 'BAR_H' => 'barH', 'DOUGHNUT' => 'doughnut', 'LINE' => 'line'];
 
     public function indexAction()
     {
@@ -18,6 +18,7 @@ class StatsController extends Zend_Controller_Action
         $uri = 'papers/stats/nb-submissions';
         $delayBetweenSubmissionAndAcceptanceUri = 'papers/stats/delay-between-submit-and-acceptance';
         $delayBetweenSubmissionAndPublicationUri = 'papers/stats/delay-between-submit-and-publication';
+        $usersUri = 'users/stats/nb-users';
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
 
         /** @var array $data */
@@ -158,6 +159,42 @@ class StatsController extends Zend_Controller_Action
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Publication'), 'data' => $series['delayBetweenSubmissionAndPublication'], 'backgroundColor' => self::COLORS_CODE[4]];
         $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
 
+        //Users stats
+
+        $nbUsersByRole = [];
+        $rolesJs = [];
+
+        if (!$yearQuery) {
+            /** @var array $data */
+            try {
+                $usersStats = json_decode($this->askApi($usersUri, [], 'users'), true);
+            } catch (GuzzleException $e) {
+                $this->view->errorMessage = $errorMessage;
+                return;
+            }
+
+            $fk = array_key_first($usersStats);
+            $usersDetails = $usersStats[$fk]['details'];
+            $roles = array_keys($usersDetails);
+            $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
+            unset($roles[$rootKey]);
+
+            //figure 5
+            $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par <code>rôles</code>");
+
+            $data = [];
+
+            foreach ($roles as $key => $role) {
+                $rolesJs[] = $this->view->translate($role);
+                $data[] = $usersDetails[$role]['nbUsers'];
+            }
+
+            $nbUsersByRole['datasets'][] = ['label' => $this->view->translate("Nombre d'utilisateurs"), 'data' => $data, 'backgroundColor' => self::COLORS_CODE[4]];
+            $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
+            $this->view->allUsers = $usersStats[$fk]['value'];
+
+        }
+
         $this->view->allSubmissionsJs = !$yearQuery ? $allSubmissions : $series['submissionsByYear'][0];
         $this->view->allPublications = $allPublications;
         $this->view->publicationsPercentage = $publicationsPercentage;
@@ -169,6 +206,8 @@ class StatsController extends Zend_Controller_Action
         $this->view->seriesJs = $seriesJs;
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
+        $this->view->roles = $rolesJs;
+        $this->view->nbUsersByRole = $nbUsersByRole;
     }
 
     /**
@@ -191,7 +230,7 @@ class StatsController extends Zend_Controller_Action
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
-        $url = EPISCIENCES_API_URL. 'papers/stats/nb-submissions';
+        $url = EPISCIENCES_API_URL . 'papers/stats/nb-submissions';
 
         if (!Episciences_Auth::isRoot()) {
             $url .= '?rvid=' . RVID;
@@ -209,13 +248,15 @@ class StatsController extends Zend_Controller_Action
     /**
      * @param $uri
      * @param array $options
+     * @param string|null $resource
      * @return StreamInterface
      * @throws GuzzleException
      */
-    private function askApi($uri, array $options = []): StreamInterface
+    private function askApi($uri, array $options = [], string $resource = null): StreamInterface
     {
+        $url = EPISCIENCES_API_URL . $uri;
 
-        $url = EPISCIENCES_API_URL . $uri . '?rvid=' . RVID;
+        $url = $resource !== 'users' ? $url . '?rvid=' . RVID : $url . '?roles.rvid=' . RVID;
 
         $defaultOptions = [
             'headers' => [
