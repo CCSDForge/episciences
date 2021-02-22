@@ -1252,6 +1252,7 @@ return [
     "Le document n'a pas été trouvé ou n'a pas pu être chargé." => "The document could not be found, or could not be loaded.",
     "Lettre d'accompagnement" => 'Cover letter',
     'Visible par : ' => 'Visible by: ',
+    "Progression : " => "Progression:",
 
     "Vous n'êtes pas l'auteur de cet article." => "You are not the author of this article.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
