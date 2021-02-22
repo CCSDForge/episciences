@@ -1611,6 +1611,7 @@ return [
     "Vous êtes sur le point de supprimer un rapport de relecture." => "You are about to delete a rating report.",
 
     "Relire les articles" => 'Rate articles',
+    "Progression : " => "Progression:",
     "Vous n'avez rien à relire pour le moment." => "You haven't any article to review yet.",
     "relecture non commencée" => 'pending reviewing',
     "relectures non commencées" => 'pending reviewings',
