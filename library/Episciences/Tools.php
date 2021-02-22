@@ -40,7 +40,7 @@ class Episciences_Tools
         "\\v{s}" => 'š',
         "\\v s" => 'š',
         // git #270 : (circumflex)
-        '\\^a' =>  'â',
+        '\\^a' => 'â',
 
         // a
         //acute accent
@@ -651,8 +651,9 @@ class Episciences_Tools
      *            par défaut select
      * @param boolean $addDefaultFilters
      *            par défaut false
-     * @throws Exception
      * @return mixed string boolean du GET ou curl_error()
+     * @throws Exception
+     * @see /library/Ccsd/Search/Solr/configs/endpoints.ini
      */
     public static function solrCurl($queryString, $core = 'episciences', $handler = 'select', $addDefaultFilters = false)
     {
@@ -1000,9 +1001,10 @@ class Episciences_Tools
      * @param string $text
      * @return mixed|string|string[]|null
      */
-    public static function formatText(string $text = ''){
+    public static function formatText(string $text = '')
+    {
         $tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
-        if(!empty($text)){
+        if (!empty($text)) {
             $text = str_replace('\t', $tab, $text);
             $text = preg_replace("/ {4,}/", $tab, $text);
             $text = nl2br($text);
@@ -1068,7 +1070,8 @@ class Episciences_Tools
      * @param string $body
      * @return string|string[]|null
      */
-    public static function cleanBody(string $body = ''){
+    public static function cleanBody(string $body = '')
+    {
         return preg_replace('#<span class="username">(.*)<\/span>#', '', $body);
     }
 
@@ -1201,7 +1204,7 @@ class Episciences_Tools
 
         if (empty($result)) {
             error_log('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
-            return  $text;
+            return $text;
         }
 
         $cHref = '/tmp_files/' . $paperId . '/';
@@ -1216,5 +1219,41 @@ class Episciences_Tools
         }
 
         return $text;
+    }
+
+    /**
+     * Convert to bytes (from human readable size)
+     * @param string $humanReadableVal
+     * @return int
+     * @throws Exception
+     */
+    public static function convertToBytes(string $humanReadableVal): int
+    {
+        $availableUnits = ['b', 'k', 'm', 'g', 't', 'p', 'e'];
+
+        $humanReadableVal = trim($humanReadableVal);
+        $unit = ($humanReadableVal !== '') ? strtolower($humanReadableVal{strlen($humanReadableVal) - 1}) : 'b';
+        $val = (int)$humanReadableVal;
+
+        if (!in_array($unit, $availableUnits, true)) {
+            throw new Exception('Conversion from { ' . $unit . ' } to { bytes } is not available.');
+        }
+
+        switch ($unit) {
+            case 'e' :
+                $val *= 1024;
+            case 'p' :
+                $val *= 1024;
+            case 't' :
+                $val *= 1024;
+            case 'g':
+                $val *= 1024;
+            case 'm':
+                $val *= 1024;
+            case 'k':
+                $val *= 1024;
+            case 'b':
+        }
+        return $val;
     }
 }

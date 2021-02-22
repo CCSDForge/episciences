@@ -1,6 +1,7 @@
 <?php
+require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
-class FileController extends Zend_Controller_Action
+class FileController extends DefaultController
 {
     const APPLICATION_OCTET_STREAM = 'application/octet-stream';
 
@@ -39,7 +40,7 @@ class FileController extends Zend_Controller_Action
 
         $path = REVIEW_FILES_PATH . $docId . '/' . $folder . '/';
 
-        if(null !== $parentCommentId ){
+        if (null !== $parentCommentId) {
             $path .= $parentCommentId . '/';
         }
 
@@ -61,7 +62,7 @@ class FileController extends Zend_Controller_Action
         $path = REVIEW_FILES_PATH . 'attachments/';
         $filepath = $path . $file;
 
-        $this->loadFile($filepath,true);
+        $this->loadFile($filepath, true);
     }
 
     // Accès à la version temporaire d'un document
@@ -166,11 +167,11 @@ class FileController extends Zend_Controller_Action
         }
 
         if ($forceDownload) {
-            header ('Content-Description: File Transfer');
-            header ('Expires: 0');
-            header ('Cache-Control: must-revalidate');
-            header ('Pragma: public');
-            header ('Content-Disposition: attachment;filename='. $downloadableFilename);
+            header('Content-Description: File Transfer');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Disposition: attachment;filename=' . $downloadableFilename);
         }
 
         header("Content-Type: " . $contentType);
@@ -188,61 +189,71 @@ class FileController extends Zend_Controller_Action
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $result = [];
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        // Copy editing : modifier le path
-        $path = $request->getPost('path');
-        $pcId = (int)$request->getPost('pcId');
-        $docId = (int)$request->getPost('docId');
-        $paperId = (int)$request->getPost('paperId');
 
-        try {
-            /** @var Zend_File_Transfer_Adapter_Http $adapter */
-            $adapter = new Zend_File_Transfer_Adapter_Http();
-            $adapter->addValidators([
-                ['FilesSize', false, MAX_FILE_SIZE],
-                ['Extension', false, ALLOWED_EXTENSIONS],
-                ['MimeType', false, ALLOWED_MIMES_TYPES]
-            ]);
+        if ($this->isPostMaxSizeReached()) {
+            $message = $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limiée à');
+            $message .= ' ';
+            $message .= '<code>' . Episciences_Tools::byteConvert(MAX_FILE_SIZE) . '</code>';
+            $result ['status'] = 'error';
+            $result ['messages'][] = $message;
+        } else {
+            /** @var Zend_Controller_Request_Http $request */
+            $request = $this->getRequest();
+            // Copy editing : modifier le path
+            $path = $request->getPost('path');
+            $pcId = (int)$request->getPost('pcId');
+            $docId = (int)$request->getPost('docId');
+            $paperId = (int)$request->getPost('paperId');
 
-            $files = $adapter->getFileInfo();
-            foreach ($files as $info) {
+            try {
+                /** @var Zend_File_Transfer_Adapter_Http $adapter */
+                $adapter = new Zend_File_Transfer_Adapter_Http();
+                $adapter->addValidators([
+                    ['FilesSize', false, MAX_FILE_SIZE],
+                    ['Extension', false, ALLOWED_EXTENSIONS],
+                    ['MimeType', false, ALLOWED_MIMES_TYPES]
+                ]);
 
-                $filename = $info['name'];
+                $files = $adapter->getFileInfo();
+                foreach ($files as $info) {
 
-                if (!$adapter->isUploaded() || !$adapter->isValid()) {
-                    $result ['status'] = 'error';
-                    $result['messages'] = $adapter->getMessages();
-                    break;
-                }
+                    $filename = $info['name'];
 
-                // todo : créer classe upload
-                // todo: créer classe filesManager
-                // todo: prendre le chemin en paramètre
+                    if (!$adapter->isUploaded() || !$adapter->isValid()) {
+                        $result ['status'] = 'error';
+                        $result['messages'] = $adapter->getMessages();
+                        break;
+                    }
 
-                $sFolder = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
-                
-                if (!is_dir($sFolder)) {
-                    $resMkdir = mkdir($sFolder, 0770, true);
-                    if (!$resMkdir) {
-                        error_log('Fatal error : unable to create folder: ' . $sFolder);
+                    // todo : créer classe upload
+                    // todo: créer classe filesManager
+                    // todo: prendre le chemin en paramètre
+
+                    $sFolder = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
+
+                    if (!is_dir($sFolder)) {
+                        $resMkdir = mkdir($sFolder, 0770, true);
+                        if (!$resMkdir) {
+                            error_log('Fatal error : unable to create folder: ' . $sFolder);
+                        }
+                    }
+
+                    // rotate filename
+                    $filename = Episciences_Tools::filenameRotate($sFolder, $filename);
+
+                    // move file to tmp folder
+                    if (move_uploaded_file($info['tmp_name'], $sFolder . $filename)) {
+                        $result['status'] = 'success';
+                        $result['filename'] = $filename;
+                        $result['fileUrl'] = $this->buildFileUrl($filename, $path, $paperId, $docId, $pcId);
                     }
                 }
 
-                // rotate filename
-                $filename = Episciences_Tools::filenameRotate($sFolder, $filename);
-
-                // move file to tmp folder
-                if (move_uploaded_file($info['tmp_name'], $sFolder . $filename)) {
-                    $result['status'] = 'success';
-                    $result['filename'] = $filename;
-                    $result['fileUrl'] = $this->buildFileUrl($filename, $path, $paperId, $docId, $pcId);
-                }
+            } catch (Exception $e) {
+                $result['status'] = 'error';
+                $result['messages'] = $e->getMessage();
             }
 
-        } catch (Exception $e) {
-            $result['status'] = 'error';
-            $result['messages'] = $e->getMessage();
         }
 
         echo Zend_Json::encode($result);
@@ -281,13 +292,13 @@ class FileController extends Zend_Controller_Action
      */
     private function buildStorageFolder(string $path, int $paperId, int $docId, int $pcId)
     {
-        if($path === 'tmp_attachments'){
+        if ($path === 'tmp_attachments') {
             $folder = $paperId . '/tmp/';
-        }elseif ($path === 'comment_attachments') {
+        } elseif ($path === 'comment_attachments') {
             $folder = $docId . '/comments/';
         } elseif ($path === 'ce_attachments') {
             $folder = $docId . '/copy_editing_sources/' . $pcId . '/';
-        }else{
+        } else {
             $folder = 'attachments/';
         }
         return REVIEW_FILES_PATH . $folder;
@@ -302,12 +313,12 @@ class FileController extends Zend_Controller_Action
      * @param int $pcId
      * @return string
      */
-    private function buildFileUrl(string $fileName, string $path , int $paperId, int $docId , int $pcId)
+    private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId)
     {
-        if($path === 'tmp_attachments'){
-            $fileUrl = '/tmp_files/' . $paperId .  '/' . $fileName;
-        }elseif ($path === 'comment_attachments') {
-            $fileUrl = '/docfiles/comments/' . $docId .  '/' . $fileName;
+        if ($path === 'tmp_attachments') {
+            $fileUrl = '/tmp_files/' . $paperId . '/' . $fileName;
+        } elseif ($path === 'comment_attachments') {
+            $fileUrl = '/docfiles/comments/' . $docId . '/' . $fileName;
         } elseif ($path === 'ce_attachments') {
             $fileUrl = '/docfiles/ce/' . $docId . '/' . $fileName . '/' . $pcId;
         } else {
