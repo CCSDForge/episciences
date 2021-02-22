@@ -45,7 +45,19 @@ $(function () {
 
     $search_button.on('click', function () {
 
+        let $checkBoxCondition1 = $('#disclaimers-disclaimer1');
+        let $checkBoxCondition2 = $('#disclaimers-disclaimer2');
         let version =  $searchDocVersion.val();
+
+        // submission error: attempt to re-submit
+        if($checkBoxCondition1.is(':checked')){
+            $checkBoxCondition1.prop('checked', false)
+
+        }
+
+        if($checkBoxCondition2.is(':checked')){
+            $checkBoxCondition2.prop('checked', false);
+        }
 
         if ('' === version || isNaN(version)) {
             alert(translate("Veuillez indiquer la version du document (nombre uniquement)."));
