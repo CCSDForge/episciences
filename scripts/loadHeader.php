@@ -3,7 +3,7 @@
 set_time_limit(0);
 ini_set("memory_limit", '2048M');
 ini_set("display_errors", '1');
-ini_set('xdebug.overload_var_dump',0);
+ini_set('xdebug.mode',('off'));
 date_default_timezone_set('Europe/Paris');
 
 
