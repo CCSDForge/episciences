@@ -116,7 +116,7 @@ return [
     'Vous pouvez associer une image à ce compte (jpg, gif, png)' => 'You may add a picture to your account (jpg, gif, png)',
     "Votre message aurait été envoyé. NB : les messages ne sont pas réellement envoyés dans l'environnement : " => 'Your message would have been sent. NB: messages are not really sent when using the environment: ',
     "Merci de les corriger." => "Please correct them.",
-    "La taille maximale des fichiers que vous pouvez télécharger est limiée à" => "The maximum size of files you can download is limited to",
+    "La taille maximale des fichiers que vous pouvez télécharger est limitée à" => "The maximum size of files you can download is limited to",
 
 
     // Administration
@@ -1193,7 +1193,7 @@ return [
     /**
      * Submit
      */
-    'Merci de réessayer.' => 'Thank you re-try.',
+    'Merci de réessayer.' => 'Please try again.',
 
     // Erreurs de soumission d'une nouvelle version
     "Rechercher un document" => "Search a document",
