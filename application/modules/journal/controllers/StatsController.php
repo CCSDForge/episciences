@@ -211,41 +211,6 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * @throws GuzzleException
-     */
-    public function ajaxsubmissionsAction()
-    {
-
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-
-        if (!Episciences_Auth::isLogged() || !Episciences_Auth::isSecretary() || !Episciences_Auth::isRoot()) {
-            return;
-        }
-
-        if (!$request->isXmlHttpRequest()) {
-            return;
-        }
-
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        $url = EPISCIENCES_API_URL . 'papers/stats/nb-submissions';
-
-        if (!Episciences_Auth::isRoot()) {
-            $url .= '?rvid=' . RVID;
-        }
-
-        echo $this->askApi($url);
-    }
-
-    public function submissionsAction()
-    {
-
-
-    }
-
-    /**
      * @param $uri
      * @param array $options
      * @param string|null $resource
