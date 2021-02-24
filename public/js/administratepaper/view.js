@@ -193,6 +193,19 @@ $(document).ready(function () {
         let deadline = $(this).val();
         let attrName = $(this).attr('name');
         let name = attrName.substring(0, attrName.length - 8) + 'message'; // 8: length (deadline)
+
+        $.map(available_languages, function (val, index) {
+            let firstLanguage = index ;
+
+            if (index === locale) {
+                return false;
+            }
+
+            locale = firstLanguage;
+            return false;
+        });
+
+
         if (isISOdate(deadline) && isValidDate(deadline)) {
             let body = getObjectNameFromTinyMce(name); // object
             updateDeadlineTag(body, 'revision_deadline', deadline, locale);
