@@ -510,7 +510,7 @@ class Episciences_Submit
             $subform->addElement('hidden', 'h_repoId');
 
             // Pour gérer la recherche d'un document lors de la soumission d'une nouvelle version suite à une demande de modification
-            if (key_exists('newVersionOf', $settings)) {
+            if (array_key_exists('newVersionOf', $settings)) {
                 $subform->addElement('hidden', 'newVersionOf', ['value' => $settings['newVersionOf']]);
 
                 // Soumission d'un nouvelle version suite à une demande de modifications de la version temporaire
