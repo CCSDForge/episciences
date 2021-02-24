@@ -42,9 +42,9 @@ http://www.crossref.org/schema/4.4.2 "
     <body>
     <journal>
         <journal_metadata language="en">
-            <full_title><?php echo $journal->getName(); ?></full_title>
+            <full_title><?php echo $this->escape($journal->getName()); ?></full_title>
             <?php if ($issn !== '') : ?>
-                <issn media_type="electronic"><?php echo $issn; ?></issn>
+                <issn media_type="electronic"><?php echo $this->escape($issn); ?></issn>
             <?php endif; ?>
         </journal_metadata>
         <journal_issue>
@@ -56,11 +56,11 @@ http://www.crossref.org/schema/4.4.2 "
 
             <?php if ($this->volume !== '') : ?>
                 <journal_volume>
-                    <volume><?php echo Ccsd_Tools_String::truncate($this->volume, 29, '...'); ?></volume>
+                    <volume><?php echo Ccsd_Tools_String::truncate($this->escape($this->volume), 29, '...'); ?></volume>
                 </journal_volume>
             <?php endif; ?>
             <?php if ($this->section !== '') : ?>
-                <issue><?php echo $this->section; ?>></issue>
+                <issue><?php echo $this->escape($this->section); ?>></issue>
             <?php endif; ?>
         </journal_issue>
         <journal_article publication_type="full_text">
@@ -146,10 +146,10 @@ http://www.crossref.org/schema/4.4.2 "
                 <related_item>
                     <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
                         <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">
-                            arXiv:<?php echo $paper->getIdentifier(); ?></intra_work_relation>
+                            arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     <?php else: ?>
                         <intra_work_relation identifier-type="uri"
-                                             relationship-type="isSameAs"><?php echo $paper->getDocUrl(); ?></intra_work_relation>
+                                             relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
                     <?php endif; ?>
                 </related_item>
             </program>

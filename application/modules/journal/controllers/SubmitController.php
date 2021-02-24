@@ -26,7 +26,7 @@ class SubmitController extends DefaultController
             if ($this->isPostMaxSizeReached()) {
                 $message = $this->view->translate('Ce formulaire comporte des erreurs.');
                 $message .= ' ';
-                $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limiée à');
+                $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
                 $message .= ' ';
                 $message .= '<code>' . Episciences_Tools::byteConvert(MAX_FILE_SIZE) . '</code>. ';
                 $message .= $this->view->translate('Merci de les corriger.');

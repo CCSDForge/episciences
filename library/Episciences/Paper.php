@@ -3007,7 +3007,7 @@ class Episciences_Paper
         $translator = Zend_Registry::get('Zend_Translate');
         $locale = !$locale ? $translator->getLocale() : $locale;
         $volume = Episciences_VolumesManager::find($this->getVid());
-        return !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
+        return !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale, true);
     }
 
     /**
