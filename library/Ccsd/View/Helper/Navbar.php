@@ -200,7 +200,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                                         <?php $view->iconDisplay("glyphicon glyphicon-user glyphicon-white") ?>
                                         &nbsp;<?php echo $view->translate('Connexion'); ?></button>
                                     <button class="btn btn-small btn-primary dropdown-toggle" data-toggle="dropdown"
-                                            type="button">
+                                            type="button" style="padding-top: 7px;">
                                         <span class="caret"
                                               style="border-top-color: #fff; border-bottom-color: #fff;"></span>
                                     </button>
@@ -228,7 +228,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                     </div>
                     <?php
                 } ?>
-                
+
                 <form action="#" method="post" id="formLang" class="nav navbar-nav navbar-right navbar-lang">
                     <input type="hidden" name="lang" id="lang" value=""/>
                     <?php if (count($this->_languages) > 1) { ?>
