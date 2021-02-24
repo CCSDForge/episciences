@@ -123,7 +123,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
     {
         $docid    = $getopt->docid;
         $sqlwhere = $getopt->sqlwhere;
-        $cron     = strtoupper($getopt->cron);
+        $cron     = mb_strtoupper($getopt->cron);
         $file     = $getopt->file;
         $delete   = $getopt->delete;
         $debug    = $getopt->debug;
@@ -152,7 +152,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
         // indexation via CRONourrions travailler avec vous sur cette question afin de rendre HAL le plus
         if (($cron == $UPDATE) || ($cron == $DELETE)) {
             Ccsd_Log::message($indexer::$_coreName . " Données récupérées dans la table d'indexation", $debug, '', $indexer->getLogFilename());
-            $indexer->setOrigin(strtoupper($cron));
+            $indexer->setOrigin(mb_strtoupper($cron));
             $arrayOfDocId = $indexer->getListOfDocidFromIndexQueue();
             $indexer->processArrayOfDocid($arrayOfDocId);
             return;

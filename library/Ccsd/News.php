@@ -117,7 +117,7 @@ class Ccsd_News
 		if ($news) {
 			$reader = new Ccsd_Lang_Reader('news', $this->_dirLangFiles, $this->_languages, true);
 			foreach ($news as $key => $value) {
-				$key = strtolower($key);
+				$key = mb_strtolower($key);
 				if ($key == 'title' || $key == 'content') {
 					$data[$key] = $reader->get($value);
 				} else {
@@ -146,7 +146,7 @@ class Ccsd_News
 			if ($key == 'newsid') {
 				$id = $value;
 			} else if ($key != 'title' && $key != 'content' && $key != 'date') {
-				$bind[strtoupper($key)] = $value;
+				$bind[mb_strtoupper($key)] = $value;
 			}
 		}
 		

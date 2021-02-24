@@ -617,18 +617,18 @@ abstract class Ccsd_Externdoc
         }
 
         // Ils n'ont pas le même nom de famille
-        if (strtolower($aut1[self::AUTHORS_LAST]) != strtolower($aut2[self::AUTHORS_LAST])) {
+        if (mb_strtolower($aut1[self::AUTHORS_LAST]) != mb_strtolower($aut2[self::AUTHORS_LAST])) {
             return false;
         }
 
         // Les prénoms sont les mêmes
-        if (strtolower($aut1[self::AUTHORS_FIRST]) == strtolower($aut2[self::AUTHORS_FIRST])) {
+        if (mb_strtolower($aut1[self::AUTHORS_FIRST]) == mb_strtolower($aut2[self::AUTHORS_FIRST])) {
             return true;
         }
 
         // L'un des prénoms est une initiale et c'est la même initiale que l'autre
         if ((self::isInitial($aut1[self::AUTHORS_FIRST]) || self::isInitial($aut2[self::AUTHORS_FIRST])) &&
-            strtolower($aut1[self::AUTHORS_FIRST][0]) == strtolower($aut2[self::AUTHORS_FIRST][0])) {
+            mb_strtolower($aut1[self::AUTHORS_FIRST][0]) == mb_strtolower($aut2[self::AUTHORS_FIRST][0])) {
             return true;
         }
 
@@ -819,7 +819,7 @@ abstract class Ccsd_Externdoc
         }
 
         // Passage de la langue en minuscule
-        $metas[self::META_LANG] = strtolower($metas[self::META_LANG]);
+        $metas[self::META_LANG] = mb_strtolower($metas[self::META_LANG]);
 
         // Conversion de la langue
         $metas[self::META_LANG] = $dl->convertIso2ToIso1($metas[self::META_LANG]);

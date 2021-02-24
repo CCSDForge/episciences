@@ -371,11 +371,11 @@ class Ccsd_Tools
             return '';
         }
         $string = strtolower(self::space_clean($string));
-        $res = strtoupper(substr($string, 0, 1));
+        $res = mb_strtoupper(substr($string, 0, 1));
         for ($i = 1, $iMax = strlen($string); $i < $iMax; $i++) {
             $theIchar = substr($string, ($i - 1), 1);
             if ($theIchar == "-" || $theIchar == "'" || $theIchar == " " || $theIchar == ".") {
-                $res .= strtoupper(substr($string, $i, 1));
+                $res .= mb_strtoupper(substr($string, $i, 1));
             } else {
                 $res .= substr($string, $i, 1);
             }

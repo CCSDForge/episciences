@@ -61,7 +61,7 @@ Ccsd_Log::message('Indexation dans Apache Solr  | Solarium library version: ' . 
 // indexation via CRON
 if ( ($cronValue === 'update') || ($cronValue === 'delete') ){
     Ccsd_Log::message(" Données récupérées dans la table d'indexation", $debug, '', $indexer->getLogFilename());
-    $indexer->setOrigin(strtoupper($opts->cron));
+    $indexer->setOrigin(mb_strtoupper($opts->cron));
     $arrayOfDocId = $indexer->getListOfDocidFromIndexQueue();
     $indexer->processArrayOfDocid($arrayOfDocId);
     exit();

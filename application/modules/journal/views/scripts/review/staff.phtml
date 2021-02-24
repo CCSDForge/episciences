@@ -3,7 +3,7 @@
 <div id="editorial_staff">
     <?php foreach ($this->staff as $role => $members) : ?>
         <?php if (count($members)) : ?>
-            <h2 style="clear: both"><?php echo $this->translate(constant("Episciences_Acl::ROLE_" . strtoupper($role) . "_PLURAL")) ?></h2>
+            <h2 style="clear: both"><?php echo $this->translate(constant("Episciences_Acl::ROLE_" . mb_strtoupper($role) . "_PLURAL")) ?></h2>
             <?php foreach ($members as $member) : ?>
                 <div class="staff_member">
 

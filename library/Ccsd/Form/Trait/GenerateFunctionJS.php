@@ -117,7 +117,7 @@ trait Ccsd_Form_Trait_GenerateFunctionJS {
     public function __get ($name)   
     {
         if (substr ($name, 0,1) == '_' && !isset ($this->$name)) {
-            return "%%" . strtoupper(substr($name, 1)) . "%%";
+            return "%%" . mb_strtoupper(substr($name, 1)) . "%%";
         }
 
     }

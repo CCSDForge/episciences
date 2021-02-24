@@ -537,7 +537,7 @@ class Ccsd_Externdoc_Irstea extends Ccsd_Externdoc
 	{
 		$country = $this->getValue(self::XPATH_ROOT_RECORD.self::REL_XPATH_CEM_CONF_PAYS);
 		$country = empty($country) ? '' : $country;
-		return $this->country_get_iso3_mapping(strtoupper($country));
+		return $this->country_get_iso3_mapping(mb_strtoupper($country));
 	}
 	public function getConfDateDebut() : string
 	{

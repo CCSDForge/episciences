@@ -311,8 +311,8 @@ class AdministratemailController extends Zend_Controller_Action
                             'fullname' => $user->getFullName(),
                             'username' => $user->getUsername(),
                             'mail' => $user->getEmail(),
-                            'label' => $user->getFullName() . ' (' . strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>',
-                            'htmlLabel' => '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
+                            'label' => $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>',
+                            'htmlLabel' => '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
                                 . '<div class="grey">' . $user->getEmail() . '</div>'];
                     }
                 } else {
@@ -350,8 +350,8 @@ class AdministratemailController extends Zend_Controller_Action
                     $js_user['fullname'] = $user->getFullName();
                     $js_user['username'] = $user->getUsername();
                     $js_user['mail'] = $user->getEmail();
-                    $js_user['label'] = $user->getFullName() . ' (' . strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
-                    $js_user['htmlLabel'] = '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
+                    $js_user['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
+                    $js_user['htmlLabel'] = '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
                         . '<div class="grey">' . $user->getEmail() . '</div>';
                     $js_users[$user->getUid()] = $js_user;
                 }

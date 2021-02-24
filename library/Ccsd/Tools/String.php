@@ -254,7 +254,7 @@ class Ccsd_Tools_String {
 
         $string = mb_substr($string, 0, 1);
 
-        $string = strtoupper($string);
+        $string = mb_strtoupper($string);
 
         if (ctype_alpha($string) != 1) {
             return $returnIfMissing;

@@ -35,7 +35,7 @@ $name = $this->element->getName();
 <div class="col-md-6">
     <dl class="dl-horizontal">
         <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_REVIEW_CODE ?></code></dt>
-        <dd><?php echo $this->translate('Code de la revue') ?>&nbsp;<em>(<?php echo strtoupper(RVCODE); ?>)</em></dd>
+        <dd><?php echo $this->translate('Code de la revue') ?>&nbsp;<em>(<?php echo mb_strtoupper(RVCODE); ?>)</em></dd>
 
         <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_PAPER_VOLUME ?></code></dt>
         <dd><?php echo $this->translate("Volume de l'article") ?></dd>

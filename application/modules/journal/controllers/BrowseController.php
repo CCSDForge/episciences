@@ -31,7 +31,7 @@ class BrowseController extends Zend_Controller_Action
         $facets = [];
         $authors = Episciences_Search_Solr_Search::getFacet('author_fullname_s', $letter, $sortType, 10000);
         foreach ($authors as $name => $count) {
-            $facets[strtolower($name)] = ['name' => $name, 'count' => $count];
+            $facets[mb_strtolower($name)] = ['name' => $name, 'count' => $count];
         }
 
         $this->view->urlFilterName = 'author_fullname_t';

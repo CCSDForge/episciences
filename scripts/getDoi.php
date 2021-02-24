@@ -360,7 +360,7 @@ class getDoi extends JournalScript
     function getMetadataFile()
     {
 
-        $paperUrl = HTTP . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . strtolower(DOI_AGENCY);
+        $paperUrl = HTTP . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
         echo PHP_EOL . 'Requesting: ' . $paperUrl;
         $client = new Client();
         try {

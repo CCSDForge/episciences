@@ -238,7 +238,7 @@ class Ccsd_Locale
     public static function getFullLocale($locale) {
         if (strlen($locale) == 2) {
             // On essaye de completer par xx_XX.utf8
-            $localeFormatted= strtolower($locale) . '_' . strtoupper($locale);
+            $localeFormatted= mb_strtolower($locale) . '_' . mb_strtoupper($locale);
             $localeFormattedUtf8 = $localeFormatted . '.UTF-8';
             $resLocale = setlocale (LC_COLLATE, $localeFormattedUtf8, $localeFormatted, $locale);
             if ($resLocale) {
@@ -352,7 +352,7 @@ class Ccsd_Locale
      * @return string
      */
     public function convertIso2ToIso1($iso1Lang) {
-        $iso1Lang = strtolower($iso1Lang);
+        $iso1Lang = mb_strtolower($iso1Lang);
         if (isset($this->_conversionTable[$iso1Lang]))
             return $this->_conversionTable[$iso1Lang];
         else
@@ -365,7 +365,7 @@ class Ccsd_Locale
      * @return bool
      */
     public function langExists($lang) {
-        return in_array(strtolower($lang), array_values($this->_conversionTable));
+        return in_array(mb_strtolower($lang), array_values($this->_conversionTable));
     }
 }
 

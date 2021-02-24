@@ -184,7 +184,7 @@ abstract class Ccsd_Queue
     public function setOrigin(string $origin)
     {
         // compare uppercase
-        $origin = strtoupper($origin);
+        $origin = mb_strtoupper($origin);
 
         if (($origin != self::O_UPDATE) && ($origin != self::O_DELETE)) {
             $origin = self::O_UPDATE;

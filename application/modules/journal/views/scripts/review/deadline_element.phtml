@@ -14,7 +14,7 @@
 		
 		<?php 
 		// Valeurs enregistrées (ou par défaut)
-		$delay = (!empty(trim($this->element->getValue()))) ? $this->element->getValue() : constant('Episciences_Review::DEFAULT_' . strtoupper($name));
+		$delay = (!empty(trim($this->element->getValue()))) ? $this->element->getValue() : constant('Episciences_Review::DEFAULT_' . mb_strtoupper($name));
 		$value = explode(' ', trim($delay));
 		$delay_value = $value[0];
 		$delay_unit = $value[1];

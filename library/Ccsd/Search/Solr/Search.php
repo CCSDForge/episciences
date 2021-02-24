@@ -405,7 +405,7 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
         if ((defined('MODULE')) && defined('SPACE_COLLECTION') && defined('SPACE_NAME')) {
 
             if (MODULE == SPACE_COLLECTION) {
-                $query->createFilterQuery('df' . SPACE_NAME)->setQuery('collCode_s:' . strtoupper(SPACE_NAME));
+                $query->createFilterQuery('df' . SPACE_NAME)->setQuery('collCode_s:' . mb_strtoupper(SPACE_NAME));
             } else {
                 // portail
                 $query->createFilterQuery('df_status')->setQuery('NOT status_i:111');
