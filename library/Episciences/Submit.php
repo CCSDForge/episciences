@@ -516,11 +516,10 @@ class Episciences_Submit
                 // Soumission d'un nouvelle version suite à une demande de modifications de la version temporaire
                 $paper = Episciences_PapersManager::get($settings['newVersionOf']);
 
-                if ($paper->getRepoid() == 0 &&
-                    explode('/', $paper->getIdentifier()[0] == $paper->getPaperid()) &&
-                    ($paper->getStatus() == Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION ||
-                        $paper->getStatus() == Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION
-                    )
+                if (
+                    $paper->getRepoid() === 0 &&
+                    ($paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION || $paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION) &&
+                    (int)explode('/', $paper->getIdentifier())[0] === $paper->getPaperid()
                 ) {
                     $lastPaper = Episciences_PapersManager::getLastPaper($paper->getPaperid());
                     if ($lastPaper) { //  //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle (requête : demander la version définitive)
