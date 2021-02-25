@@ -1392,7 +1392,9 @@ class PaperController extends PaperDefaultController
             $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
             return;
         }
+
         $paper = Episciences_PapersManager::get($docId);
+        $uid = $paper->getUid();
 
         // paper not found
         if (!$paper) {
@@ -1402,7 +1404,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        if ($paper->getUid() == Episciences_Auth::getUid() || $paper->getUid() == $reviewer_uid) { // Relecture de son propre article
+        if ($uid === $reviewer_uid || $uid === Episciences_Auth::getUid()) { // Relecture de son propre article
             error_log('ACL: UID ' . Episciences_Auth::getUid() . ' tried to review his own article ' . $docId);
             $message = $this->view->translate("Cet article ne peut pas être relu par son auteur");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
@@ -1956,7 +1958,7 @@ class PaperController extends PaperDefaultController
         $reviewers = $paper->getReviewers([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_INACTIVE]);
         $isReviewer = array_key_exists(Episciences_Auth::getUid(), $reviewers) || ($reviewerUid && $paper->getReviewer($reviewerUid));
 
-        if (!$isReviewer || $reviewerUid == Episciences_Auth::getUid()) { // Not reviewer or add rating
+        if (!$isReviewer || $reviewerUid === Episciences_Auth::getUid()) { // Not reviewer or add rating
             if ($paper->getEditor(Episciences_Auth::getUid()) || Episciences_Auth:: isAllowedToUploadPaperReport()) {
                 $invitations = $paper->getInvitations();
                 // Une invitation à relire cet article est en cours  .
