@@ -274,19 +274,7 @@ class ReviewerController extends PaperDefaultController
             ]);
 
         // update paper status
-        if ($paper->getStatus() === Episciences_Paper::STATUS_SUBMITTED) {
-
-            $paper->setStatus(Episciences_Paper::STATUS_OK_FOR_REVIEWING);
-            $paper->save();
-            $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, ['status' => Episciences_Paper::STATUS_OK_FOR_REVIEWING]);
-
-        } elseif ($paper->getStatus() === Episciences_Paper::STATUS_REVIEWED) {
-
-            $paper->setStatus(Episciences_Paper::STATUS_BEING_REVIEWED);
-            $paper->save();
-            $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, ['status' => Episciences_Paper::STATUS_BEING_REVIEWED]);
-
-        }
+        $paper->refreshStatus();
 
         // e-mails sending ****************************************************************************************
         //  > thank you mail for the reviewer
