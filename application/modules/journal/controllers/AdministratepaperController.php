@@ -642,7 +642,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->grid = $paper->getGrid();
         $paper->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
 
-        $isRequiredReviewersOk = $review->getSetting('requiredReviewers') <= count($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED));
+        $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED));
         $this->view->isRequiredReviewersOk = $isRequiredReviewersOk;
 
         // #37430 Demande d'avis des autres rédacteurs, pas uniquement les redacteurs qui sont assignés a l'article.
