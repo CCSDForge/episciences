@@ -748,6 +748,7 @@ class Episciences_Paper
      * @param null $status : if status is given, filter reports that do not match
      * @param Episciences_User|null $user : if user is given, remove criteria that this user is not allowed to see
      * @return Episciences_Rating_Report[]
+     * @throws Zend_Db_Statement_Exception
      */
     public function getRatings($reviewer_uid = null, $status = null, Episciences_User $user = null)
     {
@@ -1444,9 +1445,11 @@ class Episciences_Paper
     /**
      * check if all reviewers have completed their report
      * @return bool
+     * @throws Zend_Db_Statement_Exception
      */
     public function isReviewed(): bool
     {
+
         $reports = $this->getReports();
 
         if (!$reports) {
@@ -1454,7 +1457,16 @@ class Episciences_Paper
             return false;
         }
 
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $this->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
+
+        if ($review->getSetting('requiredReviewers')) {
+            return (count($this->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)) >= (int)$review->getSetting('requiredReviewers'));
+        }
+
         $completed_reports = 0;
+
         foreach ($reports as $report) {
             if ($report->isCompleted()) {
                 $completed_reports++;
@@ -2549,6 +2561,7 @@ class Episciences_Paper
 
     /**
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
     public function refreshStatus()
     {
