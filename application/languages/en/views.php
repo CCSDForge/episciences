@@ -1694,7 +1694,7 @@ return [
     'Dépôt-Publication' => 'Submission-Publication',
     'Statistiques' => 'Statistics',
     'Sur un total de' => 'Out of a total of',
-    'Soumissions en <code>%</code>' => 'Submissions <code>%</code>',
+    'Soumissions' => 'Submissions',
     'soumissions' => 'submissions',
     'Délai moyen en <code>jours</code> entre <code>dépôt et acceptation</code> (<code>dépôt et publication</code>)' => 'Average time in <code>days</code> between <code>submission and acceptance</code> (<code>submission and publication</code>)',
     'Par <code>année</code>, la répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'By <code>year</code>, the breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',

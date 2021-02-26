@@ -77,7 +77,7 @@ class StatsController extends Zend_Controller_Action
         $label4 = ucfirst($this->view->translate('articles acceptés'));
 
         // figure 1
-        $this->view->chart1Title = $this->view->translate("Soumissions en <code>%</code>");
+        $this->view->chart1Title = $this->view->translate("Soumissions");
         $seriesJs['allSubmissionsPercentage']['datasets'][] = ['data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage], 'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2]]];
         $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3];
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
