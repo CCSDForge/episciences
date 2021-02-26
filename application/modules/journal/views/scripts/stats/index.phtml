@@ -6,6 +6,7 @@ $this->layout()->description = $this->translate('Indicateurs de statistiques pou
     <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
 <?php else: ?>
     <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART); ?>
+    <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART_PLUGIN_DATALABELS); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/common.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/submissions.js'); ?>
 

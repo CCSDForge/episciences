@@ -1,43 +1,69 @@
 function createChart(context, data, type = null, title = '') {
+    let isPieChart = type === 'pie';
+
+    for (let i = 0; i < data.datasets.length; i++) {
+        Object.assign(data.datasets[i], {maxBarThickness: 50}); // number (pixels)
+    }
+
     let options = {
+        legend: {
+            display: true,
+            position: 'bottom'
+        },
         plugins: {
             title: {
                 display: true,
                 text: title
+            },
+            datalabels: {
+                formatter: function (value, context) {
+                    return !isPieChart ? value : value + '%';
+                },
+                align: isPieChart ? 'center' : 'end',
+                anchor: isPieChart ? 'center' : 'end',
+                font: {
+                    size: "11",
+                    weight: "bold"
+                },
+                color: '#5627a8'
             }
         },
     };
 
-    if (type !== 'pie') {
+    if (!isPieChart) {
         let scalesOptions = {
             scales: {
-                x: {
+                xAxes: [{
                     gridLines: {
-                        display: false
-                    }
-                },
-                y: {
+                        display: true
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: ""
+                    },
+                }],
+                yAxes: [{
                     gridLines: {
-                        display: false
-                    }
-                }
+                        display: true
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: ""
+                    },
+                }],
             }
         }
         Object.assign(options, scalesOptions);
     }
 
-    if (type === 'barH') { // Graphique à barres horizontales
-        options['indexAxis'] = 'y';
-        type = 'bar';
-    }
-
-    if (type === null) {
-        type = 'bar'
+    if (type === 'barH') {
+        //options['indexAxis'] = 'y'; possible migration to v3 (currently in beta version)
+        type = 'horizontalBar';
     }
 
     return new Chart(context, {
         data: data,
-        type: type,
+        type: (type !== null) ? type : 'pie',
         options: options
     });
 }
