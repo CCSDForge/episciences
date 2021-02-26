@@ -1,5 +1,5 @@
 function __initMCE(selectorName, context, options) {
-    var f = __initEditor(selectorName, context, options);
+    let f = __initEditor(selectorName, context, options);
     __initAction(f);
 
     $(document).on('click', 'input[type="submit"], button[type="submit"]', function (event) {
@@ -30,7 +30,7 @@ function __initEditor(selectorName, context, options) {
         options = $.extend(options, domainAbsoluteURLsOptions);
     }
 
-    if (context !== undefined) {
+    if (context) {
         $(selectorName, $(context)).tinymce(options);
     } else {
         options = $.extend(options, {selector: selectorName});
