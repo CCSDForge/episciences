@@ -79,9 +79,10 @@ class getDoi extends JournalScript
         }
 
         $journalHostname = $this->getParam('journal-hostname');
-        if ($journalHostname) {
-            $this->setJournalHostname($journalHostname);
+        if ($journalHostname === null) {
+            $journalHostname = '';
         }
+        $this->setJournalHostname($journalHostname);
 
     }
 

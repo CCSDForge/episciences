@@ -100,6 +100,7 @@ class Episciences_Review
     const SETTING_CONTACT_TECH_SUPPORT = 'contactTechSupport';
     const SETTING_CONTACT_TECH_SUPPORT_EMAIL = 'contactTechSupportEmail';
     const SETTING_ISSN_PRINT = 'ISSN_PRINT';
+    const SETTING_JOURNAL_DOI = 'journalAssignedDoi';
     /** @var int */
     public static $_currentReviewId = null;
     protected $_db = null;
@@ -164,6 +165,7 @@ class Episciences_Review
             self::SETTING_DOMAINS,
             self::SETTING_ISSN,
             self::SETTING_ISSN_PRINT,
+            self::SETTING_JOURNAL_DOI,
             self::SETTING_CONTACT_JOURNAL,
             self::SETTING_CONTACT_JOURNAL_EMAIL,
             self::SETTING_CONTACT_TECH_SUPPORT,
@@ -802,26 +804,33 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('text', self::SETTING_JOURNAL_DOI, [
+                'label' => 'Le DOI de votre revue',
+                'description' => 'À renseigner si la revue possède un DOI',
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
+            ]
+        );
+
         $form->addElement('text', self::SETTING_CONTACT_JOURNAL, [
-                'label' => 'Contact de la revue',
+                'label' => 'Page de contact de la revue',
                 'description' => 'URL',
                 'validators' => [new Zend_Validate_StringLength(['max' => 255])]
             ]
         );
         $form->addElement('text', self::SETTING_CONTACT_JOURNAL_EMAIL, [
-                'label' => 'Contact de la revue',
+                'label' => 'Courriel de contact de la revue',
                 'description' => 'Adresse de courriel',
                 'validators' => [new Zend_Validate_EmailAddress()]
             ]
         );
         $form->addElement('text', self::SETTING_CONTACT_TECH_SUPPORT, [
-                'label' => 'Contact du support technique',
+                'label' => 'Page de contact du support technique',
                 'description' => 'URL',
                 'validators' => [new Zend_Validate_StringLength(['max' => 255])]
             ]
         );
         $form->addElement('text', self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, [
-                'label' => 'Contact courriel du support technique',
+                'label' => 'Courriel de contact du support technique',
                 'description' => 'Adresse de courriel',
                 'validators' => [new Zend_Validate_EmailAddress()]
             ]
@@ -830,13 +839,14 @@ class Episciences_Review
 
         $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_DOI)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT,self::SETTING_CONTACT_JOURNAL, self::SETTING_CONTACT_TECH_SUPPORT,self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_CONTACT_TECH_SUPPORT,self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1395,6 +1405,7 @@ class Episciences_Review
         // Footer information
         $settingsValues[self::SETTING_ISSN] = $this->getSetting(self::SETTING_ISSN);
         $settingsValues[self::SETTING_ISSN_PRINT] = $this->getSetting(self::SETTING_ISSN_PRINT);
+        $settingsValues[self::SETTING_JOURNAL_DOI] = $this->getSetting(self::SETTING_JOURNAL_DOI);
         $settingsValues[self::SETTING_CONTACT_JOURNAL] = $this->getSetting(self::SETTING_CONTACT_JOURNAL);
         $settingsValues[self::SETTING_CONTACT_TECH_SUPPORT] = $this->getSetting(self::SETTING_CONTACT_TECH_SUPPORT);
         $settingsValues[self::SETTING_CONTACT_JOURNAL_EMAIL] = $this->getSetting(self::SETTING_CONTACT_JOURNAL_EMAIL);

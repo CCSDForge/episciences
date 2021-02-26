@@ -129,10 +129,12 @@ return [
     // Paramètres de la revue
     'Un préfixe DOI commence toujours par "10." et se poursuit par un nombre.' => 'A DOI prefix always starts with "10." and continues with a number.',
     'Enregistrer les paramètres' => 'Save settings',
+    'Le DOI de votre revue' => "Your journal's DOI",
+    'À renseigner si la revue possède un DOI' => 'To be filled if the journal has a DOI',
     "Paramètres généraux" => 'Global parameters',
     "Langues de la revue" => 'Journal languages',
     "Domaines de la revue" => 'Journal subjects',
-    'Format attendu : <code>12345678</code>' => 'Expected format: <code>12345678</code>',
+    'Format attendu : <code>1234-5678</code>' => 'Expected format: <code>1234-5678</code>',
     "Liste des domaines de la revue" => 'Journal subject list',
     "Archives disponibles" => 'Repositories',
     "Liste des archives disponibles pour la soumission d'articles." => 'Open Access Repositories available for submission',
@@ -148,6 +150,11 @@ return [
     "L'auteur ne peut pas choisir la section" => "The contributor can't choose a section",
     "L'auteur peut choisir la section" => "The contributors can choose a section",
     "L'auteur doit choisir la section" => "The contributors has to choose section",
+    'Page de contact de la revue' => 'Journal contact URL',
+    'Courriel de contact de la revue' => 'Journal contact email',
+    'Page de contact du support technique' => 'Journal technical contact URL',
+    'Courriel de contact du support technique' => 'Journal technical contact email',
+
 
     //Assignation automatique des rédacteurs,
     "Rédacteurs de section" => "Section editors",
