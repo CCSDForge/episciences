@@ -34,6 +34,9 @@ function createChart(context, data, type = null, title = '') {
         let scalesOptions = {
             scales: {
                 xAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    },
                     gridLines: {
                         display: true
                     },
@@ -43,6 +46,9 @@ function createChart(context, data, type = null, title = '') {
                     },
                 }],
                 yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    },
                     gridLines: {
                         display: true
                     },
