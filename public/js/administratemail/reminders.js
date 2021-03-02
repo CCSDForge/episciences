@@ -233,6 +233,6 @@ function buildReminderMessage(reminderType) {
 
     message += ').'
 
-    return translate(message);
+    return message;
 
 }
