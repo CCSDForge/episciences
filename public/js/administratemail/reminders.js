@@ -1,3 +1,11 @@
+const TYPE_UNANSWERED_INVITATION = 0;
+const TYPE_BEFORE_REVIEWING_DEADLINE = 1;
+const TYPE_AFTER_REVIEWING_DEADLINE = 2;
+const TYPE_BEFORE_REVISION_DEADLINE = 3;
+const TYPE_AFTER_REVISION_DEADLINE = 4;
+const TYPE_NOT_ENOUGH_REVIEWERS = 5;
+const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6;
+
 function deleteReminder(btn) {
     bootbox.setDefaults({locale: locale});
     bootbox.confirm(translate("Êtes-vous sûr ?"), function (result) {
@@ -52,7 +60,7 @@ function submit() {
                     url: "/administratemail/refreshreminders",
                     type: "POST",
                 });
-                request.done(function(result){
+                request.done(function (result) {
                     $(container).hide();
                     $(container).html(result);
                     $(container).fadeIn();
@@ -82,7 +90,7 @@ function validate() {
     let type = $('#type').val()
     let recipient = $('#recipient').val();
 
-    if(in_array(recipient,  Object.keys(templates[type])) === -1){ // not found
+    if (in_array(recipient, Object.keys(templates[type])) === -1) { // not found
         errors.push(translate("Le champ Destinataire n'est pas valable pour ce type de rappel"));
     }
 
@@ -194,4 +202,37 @@ function setReminder(type, recipient) {
     if ($('#recipient').val() != recipient) {
         $('#recipient').val(recipient);
     }
+}
+
+function buildReminderMessage(reminderType) {
+    let type = parseInt(reminderType);
+    let message = translate('Saisir un nombre de jours');
+
+    message += ' (';
+
+    if (type === TYPE_UNANSWERED_INVITATION) {
+        message += translate("un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation (définie dans Gérer la revue/Revue/Paramètres)");
+    } else if (type === TYPE_BEFORE_REVIEWING_DEADLINE) {
+        message += translate("un rappel automatique de la date limite pour une relecture peut être envoyé x jours avant cette date (définie dans Gérer la revue/Revue/Paramètres)");
+
+    } else if (type === TYPE_AFTER_REVIEWING_DEADLINE) {
+        message += translate("un rappel automatique de la date limite pour une relecture peut être envoyé x jours après cette date (définie dans Gérer la revue/Revue/Paramètres)");
+
+    } else if (type === TYPE_BEFORE_REVISION_DEADLINE) {
+        message += translate("un rappel automatique de la date limite de modification peut être envoyé x jours avant cette date (définie dans la demande de modification)");
+
+    } else if (type === TYPE_AFTER_REVISION_DEADLINE) {
+        message += translate("un rappel automatique de la date limite de modification peut être envoyé x jours après cette date (définie dans la demande de modification)");
+
+    } else if (type === TYPE_NOT_ENOUGH_REVIEWERS) {
+        message += translate("si il y a pas suffisamment d'invitations, un rappel automatique peut être envoyé x jours après la date de la dernière invitation, si des invitations ont été envoyées. Sinon, après la date d'assignation de l'article au rédacteur. On n'envoie pas de relances, si on n'a pas spécifié de nombre minimum de relecteurs (définie dans Gérer la revue/Revue/Paramètres)");
+
+    } else if (type === TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE) {
+        message += translate("la relance sera envoyée x jours après la date d'acceptation de l'article");
+    }
+
+    message += ').'
+
+    return translate(message);
+
 }
