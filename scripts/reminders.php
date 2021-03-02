@@ -148,7 +148,6 @@ try {
         foreach ($remindersData as $index => $data) {
 
             if ($data['RVID'] != $review->getRvid()) {
-                displayMessage($rvCode . ' : UNDEFINED REMINDER: ' . json_encode($data), 'cyan', true);
                 continue;
             }
 
