@@ -48,7 +48,7 @@ http://www.crossref.org/schema/4.4.2 "
             <?php if ($issn !== '') : ?>
                 <issn media_type="electronic"><?php echo $this->escape($issn); ?></issn>
             <?php endif; ?>
-            <?php if ($journalDoi) : ?>
+            <?php if ($journalDoi !== '') : ?>
             <doi_data>
                 <doi><?php echo $this->escape($journalDoi); ?></doi>
                 <resource><?php echo $this->escape('https://' . RVCODE . '.' . DOMAIN); ?></resource>
