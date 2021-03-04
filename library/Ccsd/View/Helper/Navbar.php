@@ -136,6 +136,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
     {
         /** @var Zend_View $view */
         $view = $this->view;
+        /** @var Zend_Controller_Request_Http $request */
         $request = Zend_Controller_Front::getInstance()->getRequest();
         ?>
         <nav class="navbar navbar-default navbar-fixed-top" role="navigation" aria-label="Menu">
@@ -147,8 +148,8 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                 <div class="logo-episciences">
                     <a class="brand" href="https://www.episciences.org/"
                        title="Episciences"><img src="/img/episciences_tampon_50x50.png"
-                                                                                      style="border: 0;"
-                                                                                      alt="Episciences stamp logo"/></a>
+                                                style="border: 0;"
+                                                alt="Episciences stamp logo"/></a>
                     <?php
                     if ($this->_labelEnv != false) { ?>
                         <span style="margin-left: 8px;"
@@ -169,7 +170,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                             }
                         } else { ?>
                             <form class="form-inline pull-right" style="margin-top: 8px; margin-right: 8px;"
-                                  action="<?php echo $this->_prefixUrl; ?>user/login" id="form-login" method="post">
+                                  action="<?php echo $this->_prefixUrl; ?>user/login?locale=<?= $this->_lang ?>" id="form-login" method="post">
                                 <input type="hidden" name="forward-controller"
                                        value="<?php echo $request->getControllerName(); ?>"/>
                                 <input type="hidden" name="forward-action"
@@ -207,7 +208,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
                                     <ul class="dropdown-menu pull-right">
                                         <li><a href="#"
-                                               onclick="$('#form-login').submit();"><?= $this->view->translate('Connexion'); ?></a>
+                                               onclick="$('#form-login').submit();"><?= $this->view->translate('Connexion') ?></a>
                                         </li>
                                         <li class="divider"></li>
                                         <li>
@@ -230,17 +231,16 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                 } ?>
 
                 <form action="#" method="post" id="formLang" class="nav navbar-nav navbar-right navbar-lang">
-                    <input type="hidden" name="lang" id="lang" value=""/>
-                    <?php if (count($this->_languages) > 1) { ?>
+                    <input type="hidden" name="lang" id="lang" value="<?= $this->_lang ?>"/>
+                    <?php if (count($this->_languages) > 1) : ?>
                         <div>
                             <select id="select-lang" name="Langues" onchange="changeLang(this)">
-                                <?php
-                                foreach ($this->_languages as $l) { ?>
-                                    <option value="<?php echo $l ?>" <?php echo(($l == $this->_lang) ? 'selected' : ''); ?>>  <?php echo $l ?>  </option>
-                                <?php } ?>
+                                <?php foreach ($this->_languages as $l): ?>
+                                    <option value="<?= $l ?>" <?= (($l === $this->_lang) ? 'selected' : '') ?>>  <?= $l ?>  </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
-                    <?php } ?>
+                    <?php endif; ?>
                 </form>
             </div>
         </nav>
