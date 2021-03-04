@@ -1,0 +1,171 @@
+<?php
+/** @var Episciences_Paper $paper */
+
+$paper = $this->paper;
+$authors = $paper->getMetadata('authors');
+$subjects = $paper->getMetadata('subjects');
+
+$titles = $paper->getAllTitles();
+
+$abstracts = $paper->getAllAbstracts();
+
+$dateSubmitted = new DateTime($paper->getSubmission_date());
+$dateUpdated = new DateTime($paper->getModification_date());
+$dateIssued = new DateTime($paper->getPublication_date());
+$publicationYear = new DateTime($paper->getPublication_date());
+
+/** @var $journal Episciences_Review */
+$journal = $this->journal;
+
+$journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
+
+
+$journalSettings = Zend_Registry::get('reviewSettings');
+
+
+$timestamp = time();
+?>
+
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1d2 20140930//EN"
+        "http://jats.nlm.nih.gov/publishing/1.1d2/JATS-journalpublishing1.dtd">
+<article xml:lang="<?php echo $this->escape($this->paperLanguage); ?>">
+    <front>
+        <journal-meta>
+            <journal-id journal-id-type="publisher"><?php echo DOMAIN; ?></journal-id>
+
+            <journal-title-group>
+                <journal-title><?php echo $this->escape($journal->getName()); ?></journal-title>
+                <abbrev-journal-title><?php echo mb_strtoupper($this->escape($journal->getCode())); ?></abbrev-journal-title>
+            </journal-title-group>
+
+            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') : ?>
+                <journal-id journal-id-type="issn"
+                            specific-use="print"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></journal-id>
+            <?php endif; ?>
+
+            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') : ?>
+                <journal-id journal-id-type="issn"
+                            specific-use="electronic"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></journal-id>
+            <?php endif; ?>
+
+            <publisher>
+                <publisher-name><?php echo DOMAIN; ?></publisher-name>
+                <publisher-loc>
+
+                    <email>support@<?php echo DOMAIN; ?></email>
+                    <uri><?php echo $this->escape('https://www.' . DOMAIN); ?></uri>
+                    <uri><?php echo $this->escape('https://' . RVCODE . '.' . DOMAIN); ?></uri>
+                </publisher-loc>
+            </publisher>
+        </journal-meta>
+
+        <article-meta>
+            <article-id pub-id-type="doi"><?php echo htmlentities($this->doi, ENT_XML1); ?></article-id>
+            <article-id
+                    pub-id-type="publisher-id"><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?></article-id>
+
+            <title-group>
+                <?php $titleCount = 0; ?>
+                <?php foreach ($titles as $lang => $title) : ?>
+                    <?php
+                    if ($titleCount == 0): ?>
+                        <article-title
+                                xml:lang="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></article-title>
+                        <?php $titleCount++; ?>
+                    <?php elseif ($titleCount == 1) : ?>
+                        <trans-title-group xml:lang="<?php echo $this->escape($lang) ?>">
+                            <trans-title><?php echo $this->escape($title) ?></trans-title>
+                        </trans-title-group>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </title-group>
+
+            <contrib-group>
+
+                <?php
+                if (is_array($authors)) {
+                    foreach ($authors as $creatorName) {
+                        list($familyName, $givenName) = explode(', ', $creatorName);
+                        ?>
+                        <contrib contrib-type="author">
+                            <name>
+                                <surname><?php echo $this->escape($givenName) ?></surname>
+                                <given-names><?php echo $this->escape($familyName) ?></given-names>
+                            </name>
+                        </contrib>
+                        <?php
+                    }
+                }
+                ?>
+            </contrib-group>
+
+
+            <pub-date pub-type="epub">
+                <day><?php echo $publicationYear->format('d'); ?></day>
+                <month><?php echo $publicationYear->format('m'); ?></month>
+                <year><?php echo $publicationYear->format('Y'); ?></year>
+            </pub-date>
+
+            <?php if ($this->volume !== '') : ?>
+
+                <volume><?php echo Ccsd_Tools_String::truncate($this->escape($this->volume), 29, '...'); ?></volume>
+
+            <?php endif; ?>
+            <?php if ($this->section !== '') : ?>
+                <issue><?php echo $this->escape($this->section); ?>></issue>
+            <?php endif; ?>
+
+
+            <uri specific-use="for-review"><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?>/pdf</uri>
+
+            <self-uri><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?></self-uri>
+
+
+            <?php if ($abstracts): ?>
+                <?php $abstractCount = 0; ?>
+                <?php foreach ($abstracts as $lang => $abstract) {
+
+                if (!$lang || !Zend_Locale::isLocale($lang)) {
+                    continue;
+                }
+
+                if ($abstractCount === 0): ?>
+                    <abstract
+                            xml:lang="<?php echo $this->escape($lang) ?>">
+                        <p>
+                            <?php echo $this->escape($abstract) ?>
+                        </p>
+                    </abstract>
+                    <?php $abstractCount++; ?>
+                <?php elseif ($abstractCount == 1) : ?>
+                    <trans-abstract xml:lang="<?php echo $this->escape($lang) ?>">
+                        <p><?php echo $this->escape($abstract) ?></p>
+                    </trans-abstract>
+                <?php endif; ?>
+                <?php } ?>
+            <?php endif; ?>
+
+            <?php if (is_array($subjects)): ?>
+                <kwd-group>
+                    <?php
+                    $langSubject = '';
+                    foreach ($subjects as $lang => $keyword) {
+                        if (is_array($keyword)) {
+                            foreach ($keyword as $kwdLang => $kwd) {
+                                echo PHP_EOL . '<kwd>' . $this->escape($kwd) . '</kwd>';
+                            }
+                        } else {
+                            echo PHP_EOL . '<kwd>' . $this->escape($keyword) . '</kwd>';
+                        }
+                    }
+                    ?>
+                </kwd-group>
+            <?php endif; ?>
+
+        </article-meta>
+    </front>
+
+    <body></body>
+
+
+</article>
