@@ -1740,7 +1740,7 @@ class Episciences_Paper
     public function get($format = 'tei')
     {
         $format = strtolower(trim($format));
-        $validFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref'];
+        $validFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref','zbjats'];
         if (!in_array($format, $validFormats)) {
             return false;
         }
