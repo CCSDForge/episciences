@@ -68,6 +68,13 @@ $timestamp = time();
                 <?php $titleCount = 0; ?>
                 <?php foreach ($titles as $lang => $title) : ?>
                     <?php
+
+                    if (!$lang || !Zend_Locale::isLocale($lang)) {
+                        $lang = $this->paperLanguage;
+                        //default to paper language
+                    }
+
+
                     if ($titleCount == 0): ?>
                         <article-title
                                 xml:lang="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></article-title>
@@ -126,7 +133,8 @@ $timestamp = time();
                 <?php foreach ($abstracts as $lang => $abstract) {
 
                 if (!$lang || !Zend_Locale::isLocale($lang)) {
-                    continue;
+                    $lang = $this->paperLanguage;
+                    //default to paper language
                 }
 
                 if ($abstractCount === 0): ?>
