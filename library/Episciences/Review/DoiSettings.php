@@ -126,6 +126,13 @@ class Episciences_Review_DoiSettings
      */
     public function createDoiWithTemplate(Episciences_Paper $paper): string
     {
+
+        // return an empty DOI if there's no prefix
+        if ($this->getDoiPrefix() == '') {
+            return '';
+        }
+
+
         $volume = '';
         $paperPosition = '';
         $section = '';
@@ -175,8 +182,9 @@ class Episciences_Review_DoiSettings
         $doi = str_replace('..', '.', $doi);
         $doi = str_replace('--', '-', $doi);
 
+
         // DOI spec: DOI is case insensitive
-        return $this->getDoiPrefix() . '/' . strtolower($doi);
+        return  $this->getDoiPrefix() . '/' . strtolower($doi);
 
 
     }
