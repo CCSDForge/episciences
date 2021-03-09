@@ -9,67 +9,131 @@ class StatsController extends Zend_Controller_Action
     const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9"];
     const CHART_TYPE = ['BAR' => 'bar', 'PIE' => 'pie', 'BAR_H' => 'barH', 'DOUGHNUT' => 'doughnut', 'LINE' => 'line'];
 
+
     public function indexAction()
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
 
-        $uri = 'papers/stats/nb-submissions';
-        $delayBetweenSubmissionAndAcceptanceUri = 'papers/stats/delay-between-submit-and-acceptance';
-        $delayBetweenSubmissionAndPublicationUri = 'papers/stats/delay-between-submit-and-publication';
-        $usersUri = 'users/stats/nb-users';
+        $uri = 'review/stats/dashboard';
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
 
-        /** @var array $data */
         try {
-            $submissions = json_decode($this->askApi($uri), true);
+            $result = json_decode($this->askApi($uri), true);
         } catch (GuzzleException $e) {
             $this->view->errorMessage = $errorMessage;
             return;
         }
 
-        if (!$submissions) {
-            $this->view->errorMessage = $errorMessage;
+        if (empty($result)) {
+            $this->view->errorMessage = 'Aucun résultat';
             return;
         }
 
-        $firstKey = array_key_first($submissions);
-
-        $moreDetails = $submissions[$firstKey]['details']['moreDetails'];
-
-        $yearCategories = array_keys($moreDetails);
-        $this->view->yearCategories = $yearCategories;
-
-        $query = ($yearQuery && in_array($yearQuery, $yearCategories, true)) ? ['submissionDate' => $yearQuery] : [];
-
-        $allSubmissions = $submissions[$firstKey]['value']; // submissions by review
-
-
+        $firstKey = array_key_first($result);
         $series = [];
 
-        if ($yearQuery) {
+        $dashboard = $result[$firstKey];
+        $allSubmissions = $dashboard['submissions']['value']; // all review submissions
+
+        $moreDetails = $dashboard['submissions']['details']['moreDetails'];
+        $yearCategories = array_keys($moreDetails);
+
+        $this->view->yearCategories = $yearCategories; // navigation
+
+
+        if ($yearQuery) { // for stats by year
             $yearCategories = [$yearQuery];
         }
 
-        try {
-            $publicationsResult = json_decode($this->askApi($uri, ['query' => array_merge(['status' => Episciences_Paper::STATUS_PUBLISHED], $query)]), true)[$firstKey];
-            $refusalsResult = json_decode($this->askApi($uri, ['query' => array_merge(['status' => Episciences_Paper::STATUS_REFUSED], $query)]), true)[$firstKey];
-            $acceptationsResult = json_decode($this->askApi($uri, ['query' => array_merge(['status' => Episciences_Paper::STATUS_ACCEPTED], $query)]), true)[$firstKey];
+        $submissionsDelay = $dashboard['submissionsDelay'];
+        $publicationsDelay = $dashboard['publicationsDelay'];
 
-        } catch (GuzzleException $e) {
-            $this->view->errorMessage = $errorMessage;
-            return;
+        $allPublications = $dashboard['publications']['value'];
+        $publicationsPercentage = $dashboard['publications']['details']['percentage'];
+
+        $allRefusals = $dashboard['refusals']['value'];
+        $refusalsPercentage = $dashboard['refusals']['details']['percentage'];
+
+        $allAcceptations = $dashboard['acceptations']['value'];
+        $acceptationsPercentage = $dashboard['acceptations']['details']['percentage'];
+
+
+        foreach ($yearCategories as $year) {
+
+            $totalByYear = 0;
+            $nbPublications = 0;
+            $nbRefusals = 0;
+            $nbAcceptation = 0;
+
+            $submissionsByYearResponse = array_key_exists($year, $moreDetails) ? $moreDetails[$year] : [];
+
+            foreach ($submissionsByYearResponse as $repoId => $values) { // submissions by repository
+
+                $totalByRepo = 0;
+
+                foreach ($values as $status => $nbSubmissions) {
+
+                    $totalByYear += $nbSubmissions['nbSubmissions'];
+                    $totalByRepo += $nbSubmissions['nbSubmissions'];
+
+                    if ($status === Episciences_Paper::STATUS_PUBLISHED) {
+                        $nbPublications += $nbSubmissions['nbSubmissions'];
+                    }
+
+                    if ($status === Episciences_Paper::STATUS_REFUSED) {
+                        $nbRefusals += $nbSubmissions['nbSubmissions'];
+                    }
+
+                    if ($status === Episciences_Paper::STATUS_ACCEPTED) {
+                        $nbAcceptation += $nbSubmissions['nbSubmissions'];
+                    }
+
+                    unset($status, $nbSubmissions);
+                }
+
+                $series['submissionsByRepo'][$repoId]['nbSubmissions'][] = $totalByRepo;
+
+                unset($totalByRepo);
+
+            }
+
+
+            $series['submissionsByYear']['submissions'][] = $totalByYear;
+            $series['acceptationByYear']['acceptations'][] = $nbAcceptation;
+            $series['refusalsByYear']['refusals'][] = $nbRefusals;
+            $series['publicationsByYear']['publications'][] = $nbPublications;
+
+            if ($totalByYear) {
+                $series['acceptationByYear']['percentage'][] = round($nbAcceptation / $totalByYear * 100, 2);
+                $series['refusalsByYear']['percentage'][] = round($nbRefusals / $totalByYear * 100, 2);
+                $series['publicationsByYear']['percentage'][] = round($nbPublications / $totalByYear * 100, 2);
+            }
+
+            if (array_key_exists($year, $submissionsDelay['details'][RVID])) {
+                $series['delayBetweenSubmissionAndAcceptance'][] = $submissionsDelay['details'][RVID][$year]['delay'];
+            }
+
+            if (array_key_exists($year, $publicationsDelay['details'][RVID])) {
+                $series['delayBetweenSubmissionAndPublication'][] = $publicationsDelay['details'][RVID][$year]['delay'];
+            }
         }
 
-        $allPublications = $publicationsResult['value'];
-        $publicationsPercentage = $publicationsResult['details']['percentage'];
+        unset($totalByYear, $nbPublications, $nbRefusals, $nbPublications);
 
-        $allRefusals = $refusalsResult['value'];
-        $refusalsPercentage = $refusalsResult['details']['percentage'];
+        if ($yearQuery) {
 
-        $allAcceptations = $acceptationsResult['value'];
-        $acceptationsPercentage = $acceptationsResult['details']['percentage'];
+            $allSubmissions = $series['submissionsByYear']['submissions'][0];
+            $allPublications = $series['publicationsByYear']['publications'][0];
+            $allRefusals = $series['refusalsByYear']['refusals'][0];
+            $allAcceptations = $series['acceptationByYear']['acceptations'][0];
+
+            $publicationsPercentage = $series['publicationsByYear']['percentage'][0];
+            $refusalsPercentage = $series['refusalsByYear']['percentage'][0];
+            $acceptationsPercentage = $series['acceptationByYear']['percentage'][0];
+        }
+
 
         $label1 = ucfirst($this->view->translate('soumissions'));
         $label2 = ucfirst($this->view->translate('articles publiés'));
@@ -78,61 +142,23 @@ class StatsController extends Zend_Controller_Action
 
         // figure 1
         $this->view->chart1Title = $this->view->translate("Soumissions");
-        $seriesJs['allSubmissionsPercentage']['datasets'][] = ['data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage], 'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2]]];
+
+        $seriesJs['allSubmissionsPercentage']['datasets'][] = [
+            'data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage],
+            'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2]]
+        ];
+
         $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3];
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
-
-        foreach ($yearCategories as $year) {
-            try {
-                $submissionsByYearResponse = json_decode($this->askApi($uri, ['query' => ['submissionDate' => $year]]), true)[$firstKey];
-                $publishedSubmissions = json_decode($this->askApi($uri, ['query' => ['submissionDate' => $year, 'status' => Episciences_paper::STATUS_PUBLISHED]]), true)[$firstKey];
-                $refusedSubmissions = json_decode($this->askApi($uri, ['query' => ['submissionDate' => $year, 'status' => Episciences_paper::STATUS_REFUSED]]), true)[$firstKey];
-                $acceptedSubmissions = json_decode($this->askApi($uri, ['query' => ['submissionDate' => $year, 'status' => Episciences_paper::STATUS_ACCEPTED]]), true)[$firstKey];
-                $delayBetweenSubmissionAndAcceptance = json_decode($this->askApi($delayBetweenSubmissionAndAcceptanceUri, ['query' => ['submissionDate' => $year]]), true)[$firstKey];
-                $delayBetweenSubmissionAndPublication = json_decode($this->askApi($delayBetweenSubmissionAndPublicationUri, ['query' => ['submissionDate' => $year]]), true)[$firstKey];
-            } catch (GuzzleException $e) {
-                $this->view->errorMessage = $errorMessage;
-                return;
-            }
-
-            $series['submissionsByYear'][] = $submissionsByYearResponse['value'];
-            $series['percentageByYear'][] = $submissionsByYearResponse['details']['percentage'];
-
-            $series['publishedSubmissions'][] = $publishedSubmissions['value'];
-            $series['publishedPercentage'][] = $publishedSubmissions['details']['percentage'];
-
-            $series['refusedSubmissions'][] = $refusedSubmissions['value'];
-            $series['refusedPercentage'][] = $refusedSubmissions['details']['percentage'];
-
-            $series['acceptedSubmissions'][] = $acceptedSubmissions['value'];
-            $series['acceptedPercentage'][] = $acceptedSubmissions['details']['percentage'];
-            $series['delayBetweenSubmissionAndAcceptance'][] = $delayBetweenSubmissionAndAcceptance['value'];
-            $series['delayBetweenSubmissionAndPublication'][] = $delayBetweenSubmissionAndPublication['value'];
-
-            // submissions by repository
-            $repositories = array_keys($moreDetails[$year]);
-
-            foreach ($repositories as $repoId) {
-                try {
-                    $byRepoResponse = json_decode($this->askApi($uri, ['query' => ['submissionDate' => $year, 'repoid' => $repoId]]), true)[$firstKey];
-                } catch (GuzzleException $e) {
-                    $this->view->errorMessage = $errorMessage;
-                    return;
-                }
-                $series['submissionsByRepo'][$repoId]['nbSubmissions'][] = $byRepoResponse['value'];
-                $series['submissionsByRepo'][$repoId]['percentage'][] = $byRepoResponse['details']['percentage'];
-            }
-
-        }
 
         //figure 2
         $this->view->chart2Title = !$yearQuery ?
             $this->view->translate("Par <code>année</code>, la répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>") :
             $this->view->translate("La répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>");
 
-        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label1, 'data' => $series['submissionsByYear'], 'backgroundColor' => self::COLORS_CODE[1]];
-        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label2, 'data' => $series['publishedSubmissions'], 'backgroundColor' => self::COLORS_CODE[4]];
-        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label3, 'data' => $series['refusedSubmissions'], 'backgroundColor' => self::COLORS_CODE[2]];
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label1, 'data' => $series['submissionsByYear']['submissions'], 'backgroundColor' => self::COLORS_CODE[1]];
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label2, 'data' => $series['publicationsByYear']['publications'], 'backgroundColor' => self::COLORS_CODE[4]];
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label3, 'data' => $series['refusalsByYear']['refusals'], 'backgroundColor' => self::COLORS_CODE[2]];
         $seriesJs['submissionsByYear']['chartType'] = self::CHART_TYPE['BAR'];
 
 
@@ -142,7 +168,7 @@ class StatsController extends Zend_Controller_Action
 
             //figure3
             $seriesJs['submissionsByRepo']['repositories']['datasets'][] = ['label' => $repoLabel, 'data' => $values['nbSubmissions'], 'backgroundColor' => $backgroundColor];
-            $seriesJs['submissionsByRepo']['percentage']['datasets'][] = ['label' => '% ' . $repoLabel, 'data' => $values['percentage']];
+
         }
         $this->view->chart3Title = !$yearQuery ?
             $this->view->translate("Répartition des soumissions par <code>année</code> et par <code>archive</code>") :
@@ -160,21 +186,14 @@ class StatsController extends Zend_Controller_Action
         $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
 
         //Users stats
-
         $nbUsersByRole = [];
         $rolesJs = [];
 
-        if (!$yearQuery) {
+        if (!$yearQuery && array_key_exists('users', $dashboard)) {
             /** @var array $data */
-            try {
-                $usersStats = json_decode($this->askApi($usersUri, [], 'users'), true);
-            } catch (GuzzleException $e) {
-                $this->view->errorMessage = $errorMessage;
-                return;
-            }
 
-            $fk = array_key_first($usersStats);
-            $usersDetails = $usersStats[$fk]['details'];
+            $usersStats = $dashboard['users'];
+            $usersDetails = $usersStats['details'][RVID];
             $roles = array_keys($usersDetails);
             $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
             unset($roles[$rootKey]);
@@ -191,23 +210,27 @@ class StatsController extends Zend_Controller_Action
 
             $nbUsersByRole['datasets'][] = ['label' => $this->view->translate("Nombre d'utilisateurs"), 'data' => $data, 'backgroundColor' => self::COLORS_CODE[4]];
             $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
-            $this->view->allUsers = $usersStats[$fk]['value'];
+            $this->view->allUsers = $usersStats['value'];
 
         }
 
-        $this->view->allSubmissionsJs = !$yearQuery ? $allSubmissions : $series['submissionsByYear'][0];
+        $this->view->allSubmissionsJs = $allSubmissions;
         $this->view->allPublications = $allPublications;
-        $this->view->publicationsPercentage = $publicationsPercentage;
         $this->view->allRefusals = $allRefusals;
-        $this->view->refusalsPercentage = $refusalsPercentage;
         $this->view->allAcceptations = $allAcceptations;
+
+        $this->view->publicationsPercentage = $publicationsPercentage;
+        $this->view->refusalsPercentage = $refusalsPercentage;
         $this->view->acceptationsPercentage = $acceptationsPercentage;
+
         $this->view->yearCategoriesJs = $yearCategories;
         $this->view->seriesJs = $seriesJs;
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
         $this->view->roles = $rolesJs;
         $this->view->nbUsersByRole = $nbUsersByRole;
+
+
     }
 
     /**
