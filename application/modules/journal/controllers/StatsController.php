@@ -31,16 +31,29 @@ class StatsController extends Zend_Controller_Action
             return;
         }
 
-        $firstKey = array_key_first($result);
-        $series = [];
+        $dashboard = $result[array_key_first($result)];
 
-        $dashboard = $result[$firstKey];
         $allSubmissions = $dashboard['submissions']['value']; // all review submissions
-
         $moreDetails = $dashboard['submissions']['details']['moreDetails'];
-        $yearCategories = array_keys($moreDetails);
+
+        $yearCategories = array_filter(array_keys($moreDetails), static function ($value) {
+            return !empty($value);
+        });
 
         $this->view->yearCategories = $yearCategories; // navigation
+
+        if ($yearQuery && !in_array($yearQuery, $yearCategories, true)) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->renderScript('index/notfound.phtml');
+            return;
+        }
+
+        // initialisation
+        $series = [];
+        $series['delayBetweenSubmissionAndAcceptance'] = [];
+        $series['delayBetweenSubmissionAndPublication'] = [];
+        $allPublications = $allRefusals = $allAcceptations = 0;
+        $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = null;
 
 
         if ($yearQuery) { // for stats by year
@@ -50,22 +63,11 @@ class StatsController extends Zend_Controller_Action
         $submissionsDelay = $dashboard['submissionsDelay'];
         $publicationsDelay = $dashboard['publicationsDelay'];
 
-        $allPublications = $dashboard['publications']['value'];
-        $publicationsPercentage = $dashboard['publications']['details']['percentage'];
-
-        $allRefusals = $dashboard['refusals']['value'];
-        $refusalsPercentage = $dashboard['refusals']['details']['percentage'];
-
-        $allAcceptations = $dashboard['acceptations']['value'];
-        $acceptationsPercentage = $dashboard['acceptations']['details']['percentage'];
-
-
         foreach ($yearCategories as $year) {
 
-            $totalByYear = 0;
-            $nbPublications = 0;
-            $nbRefusals = 0;
-            $nbAcceptation = 0;
+            $totalByYear = $dashboard['submissions']['details']['submissionsByYear'][$year]['submissions'];
+
+            $nbPublications = $nbRefusals = $nbAcceptation = 0;
 
             $submissionsByYearResponse = array_key_exists($year, $moreDetails) ? $moreDetails[$year] : [];
 
@@ -75,18 +77,20 @@ class StatsController extends Zend_Controller_Action
 
                 foreach ($values as $status => $nbSubmissions) {
 
-                    $totalByYear += $nbSubmissions['nbSubmissions'];
                     $totalByRepo += $nbSubmissions['nbSubmissions'];
 
                     if ($status === Episciences_Paper::STATUS_PUBLISHED) {
+                        $allPublications += $nbSubmissions['nbSubmissions'];
                         $nbPublications += $nbSubmissions['nbSubmissions'];
                     }
 
                     if ($status === Episciences_Paper::STATUS_REFUSED) {
+                        $allRefusals += $nbSubmissions['nbSubmissions'];
                         $nbRefusals += $nbSubmissions['nbSubmissions'];
                     }
 
-                    if ($status === Episciences_Paper::STATUS_ACCEPTED) {
+                    if (in_array($status, Episciences_Paper::$_canBeAssignedDOI, true)) {
+                        $allAcceptations += $nbSubmissions['nbSubmissions'];
                         $nbAcceptation += $nbSubmissions['nbSubmissions'];
                     }
 
@@ -99,7 +103,6 @@ class StatsController extends Zend_Controller_Action
 
             }
 
-
             $series['submissionsByYear']['submissions'][] = $totalByYear;
             $series['acceptationByYear']['acceptations'][] = $nbAcceptation;
             $series['refusalsByYear']['refusals'][] = $nbRefusals;
@@ -111,11 +114,11 @@ class StatsController extends Zend_Controller_Action
                 $series['publicationsByYear']['percentage'][] = round($nbPublications / $totalByYear * 100, 2);
             }
 
-            if (array_key_exists($year, $submissionsDelay['details'][RVID])) {
+            if (!empty($submissionsDelay['details']) && array_key_exists($year, $submissionsDelay['details'][RVID])) {
                 $series['delayBetweenSubmissionAndAcceptance'][] = $submissionsDelay['details'][RVID][$year]['delay'];
             }
 
-            if (array_key_exists($year, $publicationsDelay['details'][RVID])) {
+            if (!empty($publicationsDelay['details']) && array_key_exists($year, $publicationsDelay['details'][RVID])) {
                 $series['delayBetweenSubmissionAndPublication'][] = $publicationsDelay['details'][RVID][$year]['delay'];
             }
         }
@@ -132,8 +135,13 @@ class StatsController extends Zend_Controller_Action
             $publicationsPercentage = $series['publicationsByYear']['percentage'][0];
             $refusalsPercentage = $series['refusalsByYear']['percentage'][0];
             $acceptationsPercentage = $series['acceptationByYear']['percentage'][0];
-        }
 
+        } elseif ($allSubmissions) {
+            $publicationsPercentage = round($allPublications / $allSubmissions * 100, 2);
+            $refusalsPercentage = round($allRefusals / $allSubmissions * 100, 2);
+            $acceptationsPercentage = round($allAcceptations / $allSubmissions * 100, 2);
+
+        }
 
         $label1 = ucfirst($this->view->translate('soumissions'));
         $label2 = ucfirst($this->view->translate('articles publiés'));
@@ -193,7 +201,7 @@ class StatsController extends Zend_Controller_Action
             /** @var array $data */
 
             $usersStats = $dashboard['users'];
-            $usersDetails = $usersStats['details'][RVID];
+            $usersDetails = $usersStats['details'];
             $roles = array_keys($usersDetails);
             $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
             unset($roles[$rootKey]);
@@ -229,8 +237,6 @@ class StatsController extends Zend_Controller_Action
         $this->view->errorMessage = null;
         $this->view->roles = $rolesJs;
         $this->view->nbUsersByRole = $nbUsersByRole;
-
-
     }
 
     /**
