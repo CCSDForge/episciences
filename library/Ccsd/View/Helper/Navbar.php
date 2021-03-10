@@ -248,6 +248,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
             function changeLang(select) {
                 let selectedLang = select.options[select.selectedIndex].value;
                 $('#lang').val(selectedLang);
+                $('#formLang').submit();
             }
         </script>
         <?php
