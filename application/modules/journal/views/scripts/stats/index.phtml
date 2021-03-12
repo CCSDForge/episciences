@@ -1,0 +1,66 @@
+<?php
+$this->layout()->pageTitle = $this->translate('Statistiques');
+$this->layout()->description = $this->translate('Indicateurs de statistiques pour la revue') . ' <code>' . RVNAME . '</code>';
+?>
+<?php if ($this->errorMessage): ?>
+    <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
+<?php else: ?>
+    <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART); ?>
+    <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART_PLUGIN_DATALABELS); ?>
+    <?php $this->jQuery()->addJavascriptFile('/js/stats/index.js'); ?>
+    <?php $this->jQuery()->addJavascriptFile('/js/stats/common.js'); ?>
+    <?php $this->jQuery()->addJavascriptFile('/js/stats/submissions.js'); ?>
+
+    <?php if (!$this->yearQuery) : ?>
+        <?php $this->jQuery()->addJavascriptFile('/js/stats/users.js'); ?>
+    <?php endif; ?>
+
+    <?php $this->jQuery()->addStylesheet(VENDOR_CHART_CSS); ?>
+
+    <h2><?= $this->translate('Soumissions') ?> <?= $this->yearQuery ? ' - <code>' . $this->yearQuery . '</code>' : '' ?></h2>
+
+    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
+
+    <div class="col-md-12">
+        <div id='loading-stats' style="display:none"></div>
+        <?= $this->partial('stats/submissions.phtml', [
+            'allSubmissions' => $this->allSubmissionsJs,
+            'allPublications' => $this->allPublications,
+            'allRefusals' => $this->allRefusals,
+            'allAcceptations' => $this->allAcceptations,
+            'publicationsPercentage' => $this->publicationsPercentage,
+            'refusalsPercentage' => $this->refusalsPercentage,
+            'acceptationsPercentage' => $this->acceptationsPercentage,
+            'chart1Title' => $this->chart1Title,
+            'chart2Title' => $this->chart2Title,
+            'chart3Title' => $this->chart3Title,
+            'chart4Title' => $this->chart4Title
+        ]) ?>
+    </div>
+
+    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
+
+    <?php if (!$this->yearQuery): ?>
+        <h2><?= $this->translate('Utilisateurs') ?> </h2>
+        <div class="col-md-12">
+            <?= $this->partial('stats/users.phtml', [
+                'chart5Title' => $this->chart5Title,
+                'allUsers' => $this->allUsers
+            ]) ?>
+        </div>
+    <?php endif; ?>
+
+    <script>
+        let yearCategoriesFromView = <?= json_encode($this->yearCategoriesJs) ?>;
+        let allSubmissionsFromView = <?= json_encode($this->allSubmissionsJs) ?>;
+        let seriesFromView = <?= json_encode($this->seriesJs) ?>;
+        let nbUsersByRoleFromView = <?= json_encode($this->nbUsersByRole) ?>;
+        let rolesFromView = <?= json_encode($this->roles) ?>;
+    </script>
+
+<?php endif; ?>
+
+
+
+
+
