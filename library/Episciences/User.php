@@ -20,6 +20,10 @@ class Episciences_User extends Ccsd_User_Models_User
 
     /** @var array */
     protected $_aliases = [];
+    protected $_api_password;
+    protected $_is_valid;
+    protected $_registration_date;
+    protected $_modification_date;
 
     /**
      * Constructeur d'un utilisateur
@@ -347,11 +351,24 @@ class Episciences_User extends Ccsd_User_Models_User
         // Enregistrement des données CAS
         // et renvoi de l'id si il s'agit d'un nouveau compte
         $casId = parent::save($forceInsert);
-        $uid = ($casId) ? $casId : $this->getUid();
+        $uid = ($casId) ?: $this->getUid();
         $this->setUid($uid);
 
-        $langId = ($this->getLangueid()) ? $this->getLangueid() : Zend_Registry::get('Zend_Locale')->getLanguage();
-        $data = ['UID' => $this->getUid(), 'SCREEN_NAME' => $this->getScreenName(), 'LANGUEID' => $langId];
+        $langId = ($this->getLangueid()) ?: Zend_Registry::get('Zend_Locale')->getLanguage();
+        $data = [
+            'UID' => $this->getUid(),
+            'LANGUEID' => $langId,
+            'SCREEN_NAME' => $this->getScreenName(),
+            'USERNAME' => $this->getUsername(),
+            'API_PASSWORD' => password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT),
+            'EMAIL' => $this->getEmail(),
+            'LASTNAME' => $this->getLastname(),
+            'FIRSTNAME' => $this->getFirstname(),
+            'MIDDLENAME' => $this->getMiddlename(),
+            'REGISTRATION_DATE' => $this->getRegistration_date(),
+            'MODIFICATION_DATE' => $this->getModification_date(),
+            'IS_VALID' => $this->getIs_valid()
+        ];
 
         // Création des données locales (compte ES + rôle)
         if (!$this->hasLocalData($this->getUid()) || !$this->hasRoles($this->getUid())) {
@@ -366,22 +383,19 @@ class Episciences_User extends Ccsd_User_Models_User
             }
 
             // L'utilisateur n'a pas de rôles pour cette revue : on lui en crée un
-            if (!$this->hasRoles($uid)) {
-                if (!$this->_db->insert(T_USER_ROLES, ['RVID' => RVID, 'UID' => $uid, 'ROLEID' => 'member'])) {
-                    return false;
-                }
+            $rData = ['RVID' => RVID, 'UID' => $uid, 'ROLEID' => 'member'];
+
+            if (!$this->hasRoles($uid) && !$this->_db->insert(T_USER_ROLES, $rData )) {
+                return false;
             }
 
             return $uid;
-
-
-        } else {
-            // Mise à jour des données locales
-            $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
-            return $this->getUid();
         }
 
-        return false;
+        // Mise à jour des données locales
+        $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+        return $this->getUid();
+
     }
 
     /**
@@ -453,27 +467,73 @@ class Episciences_User extends Ccsd_User_Models_User
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function find($uid)
+    public function find($uid): array
     {
         $select = $this->_db->select()
             ->from(T_USERS, '*')
             ->where('UID = ?', $uid);
 
-        $result = $select->query()->fetch();
+        $result = $select->query()->fetch(Zend_Db::FETCH_ASSOC);
 
-        if (!$result || 0 == count($result)) { // false si le user n'existe pas.
+        if (!$result || 0 === count($result)) { // false si le user n'existe pas.
             return [];
         }
 
         // Si les données locales n'existent pas, on crée le Screenname à partir du nom/prénom
-        if (!isset($result['SCREEN_NAME']) || ($result['SCREEN_NAME'] == '')) {
+        if (!isset($result['SCREEN_NAME']) || ($result['SCREEN_NAME'] === '')) {
             $result['SCREEN_NAME'] = Episciences_Auth::getFullName();
+        }
+
+        if (!isset($result['API_PASSWORD']) || ($result['API_PASSWORD'] === '')) {
+            $result['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT);
+        }
+
+        if (!isset($result['REGISTRATION_DATE'])) {
+            $result['REGISTRATION_DATE'] = $this->getTime_registered(); // cas registration
+        }
+
+        if (!isset($result['MODIFICATION_DATE'])) {
+            $result['MODIFICATION_DATE'] = $this->setModification_date()->getModification_date(); // cas registration
+        }
+
+        if (!isset($result['USERNAME']) || ($result['USERNAME'] === '')) {
+            $result['USERNAME'] = $this->getUsername();
+        }
+
+        if (!isset($result['EMAIL']) || ($result['EMAIL'] === '')) {
+            $result['EMAIL'] = $this->getEmail();
+        }
+
+        if (!isset($result['CIV'])) {
+            $result['CIV'] = $this->getCiv();
+        }
+
+        if (!isset($result['LASTNAME']) || ($result['LASTNAME'] === '')) {
+            $result['LASTNAME'] = $this->getLastname();
+        }
+
+        if (!isset($result['FIRSTNAME'])) {
+            $result['FIRSTNAME'] = $this->getFirstname();
+        }
+
+        if (!isset($result['MIDDLENAME'])) {
+            $result['MIDDLENAME'] = $this->getMiddlename();
         }
 
 
         $this->setUid($result['UID']);
+        $this->setUsername($result['USERNAME']);
+        $this->setEmail($result['EMAIL']);
         $this->setScreenName($result['SCREEN_NAME']);
+        $this->setLastname($result['LASTNAME']);
+        $this->setFirstname($result['FIRSTNAME']);
+        $this->setMiddlename($result['MIDDLENAME']);
+        $this->setCiv($result['CIV']);
         $this->setLangueid($result['LANGUEID']);
+        $this->setApi_password($result['API_PASSWORD']); // Episciences api password
+        $this->setIs_valid($result['IS_VALID']); // Episciences validation
+        $this->setRegistration_date($result['REGISTRATION_DATE']);  // Episciences registration date
+        $this->setModification_date($result['MODIFICATION_DATE']);  // Episciences modification date
 
         return $result;
     }
@@ -864,6 +924,88 @@ class Episciences_User extends Ccsd_User_Models_User
     {
         $this->_aliases[$docId] = $alias;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getApi_password()
+    {
+        return $this->_apiPassword;
+    }
+
+    /**
+     * @param mixed $apiPassword
+     */
+    public function setApi_password($apiPassword)
+    {
+        $this->_api_password = $apiPassword;
+    }
+
+    /**
+     * @return int
+     */
+    public function getIs_valid(): int
+    {
+        return $this->_is_valid;
+    }
+
+    /**
+     * @param int $valid
+     * @return Episciences_User
+     */
+    public function setIs_valid(int $valid = 1): \Episciences_User
+    {
+        $this->_is_valid = $valid;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getModification_date()
+    {
+        return $this->_modification_date;
+    }
+
+    /**
+     * @param mixed $modificationDate
+     * @return Episciences_User
+     */
+    public function setModification_date($modificationDate = null): \Episciences_User
+    {
+        if (null === $modificationDate) {
+            $modificationDate = date("Y-m-d H:i:s");
+        }
+
+        $this->_modification_date = $modificationDate;
+
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRegistration_date()
+    {
+        return $this->_registration_date;
+    }
+
+    /**
+     * @param mixed $registrationDate
+     * @return Episciences_User
+     */
+    public function setRegistration_date($registrationDate = null): \Episciences_User
+    {
+        if (null === $registrationDate) {
+            $registrationDate = date("Y-m-d H:i:s");
+        }
+
+        $this->_registration_date = $registrationDate;
+
+        return $this;
+
+    }
+
 
     /**
      * @param $docId
