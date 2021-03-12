@@ -355,17 +355,13 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function createAction()
     {
-        if (Episciences_Auth::isChiefEditor()
-            || Episciences_Auth::isAdministrator()
-            || Episciences_Auth::isEditor()
-            || Episciences_Auth::isSecretary()
-        ) {
+        if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) {
             $isAllowedToAddUserAccounts = true;
         } else {
             $isAllowedToAddUserAccounts = false;
         }
 
-        if (Episciences_Auth::isLogged() && !$isAllowedToAddUserAccounts) {
+        if (!$isAllowedToAddUserAccounts && Episciences_Auth::isLogged()) {
             // already signed in, and not an admin: not allowed to create another account
             $error = Zend_Registry::get('Zend_Translate')->translate("Vous ne pouvez pas créer de compte, car vous en possédez déjà un");
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
@@ -373,7 +369,7 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
 
-        if (((CAPTCHA_BRAND == 'RECAPTCHA') || (CAPTCHA_BRAND == 'HCAPTCHA')) && !$isAllowedToAddUserAccounts) {
+        if (((CAPTCHA_BRAND === 'RECAPTCHA') || (CAPTCHA_BRAND === 'HCAPTCHA')) && !$isAllowedToAddUserAccounts) {
             $displayCaptcha = true;
         } else {
             $displayCaptcha = false;
@@ -387,10 +383,10 @@ class UserDefaultController extends Zend_Controller_Action
         ]);
 
         if ($displayCaptcha) {
-            if (CAPTCHA_BRAND == 'RECAPTCHA') {
+            if (CAPTCHA_BRAND === 'RECAPTCHA') {
                 $datasitekey = RECAPTCHA_PUBKEY;
                 $htmlClassId = 'g-recaptcha';
-            } elseif (CAPTCHA_BRAND == 'HCAPTCHA') {
+            } elseif (CAPTCHA_BRAND === 'HCAPTCHA') {
                 $datasitekey = HCAPTCHA_SITEKEY;
                 $htmlClassId = 'h-captcha';
             }
@@ -415,7 +411,7 @@ class UserDefaultController extends Zend_Controller_Action
             );
         }
 
-
+        /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $selectedUserId = $request->getPost('selectedUserId');
 
@@ -433,6 +429,9 @@ class UserDefaultController extends Zend_Controller_Action
                 $casUserMapper = new Ccsd_User_Models_UserMapper();
                 $casUserMapper->find($selectedUserId, $user);
                 $user->setScreenName();
+                $user->setIs_valid();
+                $user->setRegistration_date();
+                $user->setModification_date();
                 $screenName = $user->getScreenName();
 
                 if ($user->save()) {
@@ -448,6 +447,7 @@ class UserDefaultController extends Zend_Controller_Action
             }
 
             $this->_helper->redirector('list', 'user');
+            return;
         }
 
         // create an account (CAS + Episciences)
@@ -455,6 +455,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             $user = new Episciences_User($form->getValues());
             $user->setTime_registered();
+            $user->setRegistration_date(); // Episciences registration
             $user->setScreenName(Ccsd_Tools::formatUser($user->getFirstname(), $user->getLastname()));
 
             if ($isAllowedToAddUserAccounts) {
@@ -494,6 +495,7 @@ class UserDefaultController extends Zend_Controller_Action
 
 
                 $user->setValid(0);
+                $user->setIs_valid(); // Episciences validation
 
                 $lastInsertId = $user->save();
                 try {
@@ -586,6 +588,7 @@ class UserDefaultController extends Zend_Controller_Action
     public function editAction()
     {
         $request = $this->getRequest();
+        /** @var Zend_Controller_Request_Http $request */
         $params = $request->getQuery();
 
         $user = new Episciences_User();
@@ -621,7 +624,7 @@ class UserDefaultController extends Zend_Controller_Action
         if ($this->getRequest()->isPost() && $form->isValid($request->getPost())) {
 
             $values = $form->getValues();
-            $user = new Episciences_User(array_merge($values["ccsd"], $values["episciences"]));
+            $user = new Episciences_User(array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]));
             $subform = $form->getSubForm('ccsd');
 
             if ($subform->PHOTO->isUploaded()) {
