@@ -42,7 +42,9 @@ $seriesInformation = implode(' ; ', $seriesInformation);
 $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://datacite.org/schema/kernel-4" xsi:schemaLocation="http://datacite.org/schema/kernel-4 http://schema.datacite.org/meta/kernel-4.3/metadata.xsd"';
 ?>
 <resource <?php echo $schemInfo; ?>>
+    <?php if($this->doi != ''): ?>
     <identifier identifierType="DOI"><?php echo htmlentities($this->doi, ENT_XML1); ?></identifier>
+    <?php endif;?>
     <creators>
         <?php
         if (is_array($authors)) {

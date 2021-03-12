@@ -35,16 +35,22 @@ $name = $this->element->getName();
 <div class="col-md-6">
     <dl class="dl-horizontal">
         <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_REVIEW_CODE ?></code></dt>
-        <dd><?php echo $this->translate('Code de la revue') ?>&nbsp;<em>(<?php echo mb_strtoupper(RVCODE); ?>)</em></dd>
+        <dd><?php echo $this->translate('Code de la revue') ?>&nbsp;<em>(<?php echo mb_strtolower(RVCODE); ?>)</em></dd>
 
         <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME ?></code></dt>
         <dd><?php echo $this->translate("Volume de l'article") ?></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_INT ?></code></dt>
+        <dd><?php echo $this->translate("Volume de l'article (seulement les nombres)") ?></dd>
 
         <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_ORDER ?></code></dt>
         <dd><?php echo $this->translate("Numéro de l'article dans un volume (ordre)") ?></dd>
 
         <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION ?></code></dt>
         <dd><?php echo $this->translate("Section de l'article") ?></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION_INT ?></code></dt>
+        <dd><?php echo $this->translate("Section de l'article (seulement les nombres)") ?></dd>
 
         <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_ID ?></code></dt>
         <dd><?php echo $this->translate("Numéro de l'article (Identifiant pérenne)") ?></dd>

@@ -10,6 +10,8 @@ class Episciences_Review_DoiSettings
     const DOI_FORMAT_REVIEW_CODE = '%R%';
     const DOI_FORMAT_PAPER_VOLUME = '%V%';
     const DOI_FORMAT_PAPER_SECTION = '%S%';
+    const DOI_FORMAT_PAPER_VOLUME_INT = '%V_INT%';
+    const DOI_FORMAT_PAPER_SECTION_INT = '%S_INT%';
     const DOI_FORMAT_PAPER_VOLUME_ORDER = '%VP%';
     const DOI_FORMAT_PAPER_ID = '%P%';
     const DOI_FORMAT_PAPER_YEAR = '%Y%';
@@ -87,6 +89,19 @@ class Episciences_Review_DoiSettings
     }
 
     /**
+     * @param string $tag
+     * @param string $charUsedToReplace
+     * @return string|string[]|null
+     */
+    private static function keepOnlyIntegersInTag(string $tag, string $charUsedToReplace = '.')
+    {
+        $strToReturn = trim($tag);
+        $strToReturn = preg_replace('/\D+/', $charUsedToReplace, $strToReturn);
+        $strToReturn = trim($strToReturn, $charUsedToReplace);
+        return trim($strToReturn, '.');
+    }
+
+    /**
      * Episciences_Review_DoiSettings to Array
      * @return array
      */
@@ -111,6 +126,13 @@ class Episciences_Review_DoiSettings
      */
     public function createDoiWithTemplate(Episciences_Paper $paper): string
     {
+
+        // return an empty DOI if there's no prefix
+        if ($this->getDoiPrefix() == '') {
+            return '';
+        }
+
+
         $volume = '';
         $paperPosition = '';
         $section = '';
@@ -135,12 +157,17 @@ class Episciences_Review_DoiSettings
             }
         }
 
+        $volumeInt = self::keepOnlyIntegersInTag($volume);
+        $sectionInt = self::keepOnlyIntegersInTag($section);
+
         $template['%%'] = '%';
 
         $template[self::DOI_FORMAT_REVIEW_CODE] = RVCODE;
         $template[self::DOI_FORMAT_PAPER_VOLUME] = $volume;
+        $template[self::DOI_FORMAT_PAPER_VOLUME_INT] = $volumeInt;
         $template[self::DOI_FORMAT_PAPER_VOLUME_ORDER] = $paperPosition;
         $template[self::DOI_FORMAT_PAPER_SECTION] = $section;
+        $template[self::DOI_FORMAT_PAPER_SECTION_INT] = $sectionInt;
         $template[self::DOI_FORMAT_PAPER_ID] = $paper->getPaperid();
         $template[self::DOI_FORMAT_PAPER_YEAR] = $paper->getPublicationYear();
         $template[self::DOI_FORMAT_PAPER_MONTH] = $paper->getPublicationMonth();
@@ -155,8 +182,9 @@ class Episciences_Review_DoiSettings
         $doi = str_replace('..', '.', $doi);
         $doi = str_replace('--', '-', $doi);
 
+
         // DOI spec: DOI is case insensitive
-        return $this->getDoiPrefix() . '/' . strtolower($doi);
+        return  $this->getDoiPrefix() . '/' . strtolower($doi);
 
 
     }

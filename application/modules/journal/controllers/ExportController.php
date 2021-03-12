@@ -103,7 +103,7 @@ class ExportController extends Zend_Controller_Action
      */
     public function dataciteAction()
     {
-        return $this->doiExport('datacite');
+        return $this->xmlExport('datacite');
     }
 
     /**
@@ -111,7 +111,7 @@ class ExportController extends Zend_Controller_Action
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    protected function doiExport($doiAgency = ''): bool
+    protected function xmlExport($format = ''): bool
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -192,14 +192,17 @@ class ExportController extends Zend_Controller_Action
 
         header('Content-Type: text/xml; charset: utf-8');
 
-        switch ($doiAgency) {
+        switch ($format) {
             case 'crossref':
                 $output = $this->view->render('export/crossref.phtml');
                 break;
+            case 'zbjats':
+                $output = $this->view->render('export/zbjats.phtml');
+                break;
             case 'datacite':
-            //break omitted
+                //break omitted
             default:
-        $output = $this->view->render('export/datacite.phtml');
+                $output = $this->view->render('export/datacite.phtml');
                 break;
 
         }
@@ -225,12 +228,22 @@ class ExportController extends Zend_Controller_Action
     }
 
     /**
-     * Export to DataCite Metadata Schema 4.0
+     * Export to Crossref
      */
     public function crossrefAction()
     {
-        return $this->doiExport('crossref');
+        return $this->xmlExport('crossref');
     }
+
+    /**
+     * Export to ZbJats
+     * https://zbmath.org/zbjats/
+     */
+    public function zbjatsAction()
+    {
+        return $this->xmlExport('zbjats');
+    }
+
 
     /**
      * Exporte en format TEI
