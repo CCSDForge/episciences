@@ -31,6 +31,8 @@ class NewFieldsUpgradeUser extends JournalScript
 
         if ($this->upgradeTable()) {
             $this->displayInfo('Update completed. Good Bye ! =)', true);
+        } else {
+            $this->displayCritical('Update incomplete.', true);
         }
     }
 
@@ -40,17 +42,32 @@ class NewFieldsUpgradeUser extends JournalScript
     public function upgradeTable(): bool
     {
         $db = $this->getDb();
-        $dataQuery = $db->select()->from(T_USERS);
+        $dataQuery = $db->select()->from(T_USERS)->order('UID DESC');
         $uidS = $db->fetchCol($dataQuery);
 
-        $isCloned = $this->cloneTable(T_USERS);
+        if ($isCloned = $this->cloneTable(T_USERS)) {
+            $this->displaySuccess('Generated new Table OK !', true);
+        }
 
-        if ($this->existColumn('USERNAME', T_USERS) || ($isCloned && $this->alterTable())) {
+        $sql = "ALTER TABLE USER  ADD USERNAME VARCHAR(100) NOT NULL, ADD API_PASSWORD VARCHAR(255) NOT NULL, ADD EMAIL VARCHAR(320) NOT NULL, ADD CIV VARCHAR(255) DEFAULT NULL,
+    ADD LASTNAME VARCHAR(100) NOT NULL, ADD FIRSTNAME VARCHAR(100) DEFAULT NULL, ADD MIDDLENAME VARCHAR(100) DEFAULT NULL, ADD REGISTRATION_DATE DATETIME DEFAULT NULL, ADD MODIFICATION_DATE DATETIME DEFAULT NULL,
+    ADD IS_VALID TINYINT(1) NOT NULL DEFAULT 1";
 
-            $user = new Episciences_User();
-            $casUser = new Ccsd_User_Models_UserMapper();
+        if ($this->existColumn('USERNAME', T_USERS) || ($isCloned && $this->alterTable($sql))) {
 
-            foreach ($uidS as $uid) {
+            $count = count($uidS);
+
+            $this->getProgressBar()->start();
+
+            foreach ($uidS as $key => $uid) {
+                $user = new Episciences_User();
+                $casUser = new Ccsd_User_Models_UserMapper();
+
+                $this->displayInfo('*** Update processing (' . $key . '/' . $count . ') [UID = ' . $uid . ' ] ***', true);
+                $progress = round((($key + 1) * 100) / $count);
+                $this->getProgressBar()->setProgress($progress);
+
+                $this->displayProgressBar();
 
                 try {
                     $casUser = $casUser->find($uid, $user);
@@ -69,22 +86,28 @@ class NewFieldsUpgradeUser extends JournalScript
 
                 // Mise à jour des données locales
                 $this->_db->update(T_USERS, $userData, ['UID = ?' => $uid]);
+                unset($user, $casUser);
 
             }
+
+            $this->getProgressBar()->stop();
+
+            $sql = 'ALTER TABLE USER ADD UNIQUE KEY `U_USERNAME` (`USERNAME`), ADD KEY `API_PASSWORD` (`API_PASSWORD`), ADD KEY `EMAIL` (`EMAIL`), ADD KEY `IS_VALID` (`IS_VALID`),
+    ADD KEY `FIRSTNAME` (`FIRSTNAME`), ADD KEY `LASTNAME` (`LASTNAME`)';
+
+            $this->alterTable($sql);
+
         }
 
         return true;
 
     }
 
-
-    private function alterTable(): bool
+    private function alterTable(string $sql): bool
     {
         $this->displayInfo('**** ALTER TABLE ***', true);
 
-        $sql = "ALTER TABLE USER  ADD USERNAME VARCHAR(100) NOT NULL, ADD API_PASSWORD VARCHAR(255) NOT NULL, ADD EMAIL VARCHAR(320) NOT NULL, ADD CIV VARCHAR(255) DEFAULT NULL,
-    ADD LASTNAME VARCHAR(100) NOT NULL, ADD FIRSTNAME VARCHAR(100) DEFAULT NULL, ADD MIDDLENAME VARCHAR(100) DEFAULT NULL, ADD REGISTRATION_DATE DATETIME DEFAULT NULL, ADD MODIFICATION_DATE DATETIME DEFAULT NULL,
-    ADD IS_VALID TINYINT(1) NOT NULL";
+        $this->displayTrace($sql, true);
 
         return $this->getDb()->prepare($sql)->execute();
     }
