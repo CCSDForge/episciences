@@ -135,6 +135,9 @@ abstract class JournalScript extends Script {
         $createQuery .= $db->quoteIdentifier($clone);
         $createQuery .= ' LIKE ';
         $createQuery .= $db->quoteIdentifier($table);
+
+        $this->displayTrace($createQuery, true);
+
         $result = $db->prepare($createQuery)->execute();
 
         if ($result && $withData) {
@@ -144,6 +147,7 @@ abstract class JournalScript extends Script {
             $insertQuery .= $db->quoteIdentifier($table);
             $result = $db->prepare($insertQuery)->execute();
         }
+
         return $result;
     }
 
