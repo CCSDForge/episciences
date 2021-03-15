@@ -49,11 +49,11 @@ class NewFieldsUpgradeUser extends JournalScript
             $this->displaySuccess('Generated new Table OK !', true);
         }
 
-        $sql = "ALTER TABLE USER  ADD USERNAME VARCHAR(100) NOT NULL, ADD API_PASSWORD VARCHAR(255) NOT NULL, ADD EMAIL VARCHAR(320) NOT NULL, ADD CIV VARCHAR(255) DEFAULT NULL,
-    ADD LASTNAME VARCHAR(100) NOT NULL, ADD FIRSTNAME VARCHAR(100) DEFAULT NULL, ADD MIDDLENAME VARCHAR(100) DEFAULT NULL, ADD REGISTRATION_DATE DATETIME DEFAULT NULL, ADD MODIFICATION_DATE DATETIME DEFAULT NULL,
-    ADD IS_VALID TINYINT(1) NOT NULL DEFAULT 1";
+        $sql = "ALTER TABLE USER  ADD USERNAME VARCHAR(100) NOT NULL, ADD API_PASSWORD VARCHAR(255) NOT NULL, ADD EMAIL VARCHAR(320) NOT NULL, ADD CIV VARCHAR(255) DEFAULT NULL, ADD LASTNAME VARCHAR(100) NOT NULL, ADD FIRSTNAME VARCHAR(100) DEFAULT NULL, ADD MIDDLENAME VARCHAR(100) DEFAULT NULL, ADD REGISTRATION_DATE DATETIME DEFAULT NULL, ADD MODIFICATION_DATE DATETIME DEFAULT NULL, ADD IS_VALID TINYINT(1) NOT NULL DEFAULT 1";
 
-        if ($this->existColumn('USERNAME', T_USERS) || ($isCloned && $this->alterTable($sql))) {
+        $isCloningStep = $this->existColumn('USERNAME', T_USERS);
+
+        if ($isCloningStep || ($isCloned && $this->alterTable($sql))) {
 
             $count = count($uidS);
 
@@ -71,11 +71,28 @@ class NewFieldsUpgradeUser extends JournalScript
 
                 try {
                     $casUser = $casUser->find($uid, $user);
+                    /** @var Episciences_User $localUserData */
                     $localUserData = $user->find($uid);
 
                 } catch (Exception $e) {
                     $this->displayError($e->getMessage());
                     return false;
+                }
+
+                $userRoles = $user->loadRoles();
+
+                if (empty($userRoles)) {
+                    $this->displayCritical("*** User (UID = $uid) doesn't belong to any journal ! ***", true);
+                    continue;
+                }
+
+                foreach ($userRoles as $rvId => $roles) {
+
+                    if ($rvId) {
+                        $review = Episciences_ReviewsManager::find($rvId);
+                        $localUserData['REGISTRATION_DATE'] = $review->getCreation();
+                        break;
+                    }
                 }
 
                 $casUserData = $casUser->toArray();
@@ -92,10 +109,10 @@ class NewFieldsUpgradeUser extends JournalScript
 
             $this->getProgressBar()->stop();
 
-            $sql = 'ALTER TABLE USER ADD UNIQUE KEY `U_USERNAME` (`USERNAME`), ADD KEY `API_PASSWORD` (`API_PASSWORD`), ADD KEY `EMAIL` (`EMAIL`), ADD KEY `IS_VALID` (`IS_VALID`),
-    ADD KEY `FIRSTNAME` (`FIRSTNAME`), ADD KEY `LASTNAME` (`LASTNAME`)';
-
-            $this->alterTable($sql);
+            if (!$isCloningStep) {
+                $sql = 'ALTER TABLE USER ADD UNIQUE KEY `U_USERNAME` (`USERNAME`), ADD KEY `API_PASSWORD` (`API_PASSWORD`), ADD KEY `EMAIL` (`EMAIL`), ADD KEY `IS_VALID` (`IS_VALID`), ADD KEY `FIRSTNAME` (`FIRSTNAME`), ADD KEY `LASTNAME` (`LASTNAME`)';
+                $this->alterTable($sql);
+            }
 
         }
 
