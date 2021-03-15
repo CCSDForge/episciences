@@ -46,7 +46,7 @@ class NewFieldsUpgradeUser extends JournalScript
         $uidS = $db->fetchCol($dataQuery);
 
         if ($isCloned = $this->cloneTable(T_USERS)) {
-            $this->displaySuccess('Generated new Table OK !', true);
+            $this->displaySuccess('Generate a new Table => OK', true);
         }
 
         $sql = "ALTER TABLE USER  ADD USERNAME VARCHAR(100) NOT NULL, ADD API_PASSWORD VARCHAR(255) NOT NULL, ADD EMAIL VARCHAR(320) NOT NULL, ADD CIV VARCHAR(255) DEFAULT NULL, ADD LASTNAME VARCHAR(100) NOT NULL, ADD FIRSTNAME VARCHAR(100) DEFAULT NULL, ADD MIDDLENAME VARCHAR(100) DEFAULT NULL, ADD REGISTRATION_DATE DATETIME DEFAULT NULL, ADD MODIFICATION_DATE DATETIME DEFAULT NULL, ADD IS_VALID TINYINT(1) NOT NULL DEFAULT 1";
