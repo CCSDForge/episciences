@@ -362,11 +362,12 @@ class Episciences_User extends Ccsd_User_Models_User
             'USERNAME' => $this->getUsername(),
             'API_PASSWORD' => password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT),
             'EMAIL' => $this->getEmail(),
+            'CIV' => $this->getCiv(),
             'LASTNAME' => $this->getLastname(),
             'FIRSTNAME' => $this->getFirstname(),
             'MIDDLENAME' => $this->getMiddlename(),
             'REGISTRATION_DATE' => $this->getRegistration_date(),
-            'MODIFICATION_DATE' => $this->getModification_date(),
+            'MODIFICATION_DATE' => $this->setModification_date()->getModification_date(),
             'IS_VALID' => $this->getIs_valid()
         ];
 

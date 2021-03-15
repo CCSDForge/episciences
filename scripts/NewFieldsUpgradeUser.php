@@ -79,23 +79,9 @@ class NewFieldsUpgradeUser extends JournalScript
                     return false;
                 }
 
-                $userRoles = $user->loadRoles();
-
-                if (empty($userRoles)) {
-                    $this->displayCritical("*** User (UID = $uid) doesn't belong to any journal ! ***", true);
-                    continue;
-                }
-
-                foreach ($userRoles as $rvId => $roles) {
-
-                    if ($rvId) {
-                        $review = Episciences_ReviewsManager::find($rvId);
-                        $localUserData['REGISTRATION_DATE'] = $review->getCreation();
-                        break;
-                    }
-                }
-
                 $casUserData = $casUser->toArray();
+
+                $localUserData['REGISTRATION_DATE'] = $user->getTime_modified(); // cas modified time
 
                 $userData = array_merge($localUserData, $casUserData);
 
