@@ -47,7 +47,7 @@ return [
     "Sujet" => "Subject",
     "Erreur" => "Error",
     "Tous" => 'All',
-    "Toutes" => 'All',
+    "Tout" => 'All',
     "Précédente" => 'Previous',
     "Suivante" => 'Next',
     "résultat" => ["result", "results"],
@@ -1705,6 +1705,7 @@ return [
     "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
     "Le nombre d'utilisateurs par <code>rôles</code>" => "Number of users by <code>roles</code>",
     "Nombre total d'utilisateurs : " => "Total number of users: ",
-    "Nombre d'utilisateurs" => "Users number"
+    "Nombre d'utilisateurs" => "Users number",
+    "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles."
 
 ];
