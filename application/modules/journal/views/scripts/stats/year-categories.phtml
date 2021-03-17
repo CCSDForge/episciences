@@ -11,7 +11,7 @@ $action = $request->getActionName();
                class="btn btn-default btn-xs <?= !$this->yearQuery ? 'disabled' : '' ?>" <?= !$this->yearQuery ? 'aria-disabled="true"' : '' ?>
                role="button"
                href="<?= '/' . $controller . '/' . $action ?>">
-                <?= $this->translate('Toutes') ?>
+                <?= $this->translate('Tout') ?>
             </a>
 
             <?php foreach ($this->yearCategories as $year): ?>

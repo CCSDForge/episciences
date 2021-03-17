@@ -197,8 +197,18 @@ class StatsController extends Zend_Controller_Action
         $nbUsersByRole = [];
         $rolesJs = [];
 
-        if (!$yearQuery && array_key_exists('users', $dashboard)) {
-            /** @var array $data */
+        if ($yearQuery || !array_key_exists('users', $dashboard)) {
+            $uUri = 'users/stats/nb-users';
+            try {
+                $usersStats = json_decode($this->askApi($uUri, ['registrationDate' => $yearQuery], 'users'), true);
+
+            } catch (GuzzleException $e) {
+                $usersStats = [];
+            }
+
+            $usersDetails = $usersStats[0]['details'];
+
+        } else {
 
             $usersStats = $dashboard['users'];
             $usersDetails = $usersStats['details'];
@@ -206,21 +216,25 @@ class StatsController extends Zend_Controller_Action
             $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
             unset($roles[$rootKey]);
 
-            //figure 5
-            $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par <code>rôles</code>");
-
-            $data = [];
-
-            foreach ($roles as $key => $role) {
-                $rolesJs[] = $this->view->translate($role);
-                $data[] = $usersDetails[$role]['nbUsers'];
-            }
-
-            $nbUsersByRole['datasets'][] = ['label' => $this->view->translate("Nombre d'utilisateurs"), 'data' => $data, 'backgroundColor' => self::COLORS_CODE[4]];
-            $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
-            $this->view->allUsers = $usersStats['value'];
-
         }
+
+        $roles = array_keys($usersDetails);
+        $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
+        unset($roles[$rootKey]);
+
+        //figure 5
+        $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par <code>rôles</code>");
+
+        $data = [];
+
+        foreach ($roles as $key => $role) {
+            $rolesJs[] = $this->view->translate($role);
+            $data[] = $usersDetails[$role]['nbUsers'];
+        }
+
+        $nbUsersByRole['datasets'][] = ['label' => $this->view->translate("Nombre d'utilisateurs"), 'data' => $data, 'backgroundColor' => self::COLORS_CODE[4]];
+        $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
+        $this->view->allUsers = !$yearQuery ? $usersStats['value'] : $usersStats[0]['value'];
 
         $this->view->allSubmissionsJs = $allSubmissions;
         $this->view->allPublications = $allPublications;
