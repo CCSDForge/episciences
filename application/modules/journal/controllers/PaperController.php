@@ -129,7 +129,6 @@ class PaperController extends PaperDefaultController
             $latestDocId = $paper->getLatestVersionId();
             $this->view->latestDocId = $latestDocId;
             $this->view->linkToLatestDocId = $this->buildPublicPaperUrl($latestDocId);
-            $paper->getLatestVersionId();
         }
 
         // paper *************************************************************
