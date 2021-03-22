@@ -15,6 +15,7 @@
     "ext-fileinfo": "*",
     "ext-posix": "*",
     "ext-pdo": "*",
+    "ext-geoip": "*",
     "jasig/phpcas": "^1.3.8",
     "solarium/solarium": "<5.0",
     "phpmailer/phpmailer": "^6.1",
@@ -25,7 +26,8 @@
     "ext-zip": "*",
     "guzzlehttp/guzzle": "<7",
     "shardj/zf1-future": "^1.19",
-    "shardj/zf1-extras-future": "^1.12"
+    "shardj/zf1-extras-future": "^1.12",
+    "geertw/ip-anonymizer": "^1.1"
   },
   "require-dev": {
     "phpunit/phpunit": "5.7.12",
