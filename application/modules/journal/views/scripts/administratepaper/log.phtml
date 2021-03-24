@@ -129,7 +129,7 @@
                 <td class="td-label"><?php echo $this->translate("De"); ?></td>
                 <td class="small">
                     <?php if (array_key_exists('From', $this->log['detail']['mail']) && $this->log['detail']['mail']['From']) : ?>
-                        <?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['From']), 0, 'UTF-8')); ?>
+                        <?php echo htmlentities(implode(', ', $this->log['detail']['mail']['From'])); ?>
                     <?php else : ?>
                         -
                     <?php endif; ?>
@@ -139,7 +139,7 @@
                 <td class="td-label"><?php echo $this->translate("Répondre à"); ?></td>
                 <td class="small">
                     <?php if (array_key_exists('Reply-To', $this->log['detail']['mail']) && $this->log['detail']['mail']['Reply-To']) : ?>
-                        <?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['Reply-To']), 0, 'UTF-8')); ?>
+                        <?php echo htmlentities(implode(', ', $this->log['detail']['mail']['Reply-To'])); ?>
                     <?php else : ?>
                         -
                     <?php endif; ?>
@@ -149,7 +149,7 @@
                 <td class="td-label"><?php echo $this->translate('À'); ?></td>
                 <td class="small">
                     <?php if (array_key_exists('To', $this->log['detail']['mail']) && $this->log['detail']['mail']['To']) : ?>
-                        <?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['To']), 0, 'UTF-8')); ?>
+                        <?php echo htmlentities(implode(', ', $this->log['detail']['mail']['To'])); ?>
                     <?php else : ?>
                         -
                     <?php endif; ?>
@@ -158,14 +158,14 @@
             <?php if (array_key_exists('Cc', $this->log['detail']['mail'])) : ?>
                 <tr>
                     <td class="td-label"><?php echo $this->translate('Cc'); ?></td>
-                    <td class="small"><?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['Cc']), 0, 'UTF-8')); ?></td>
+                    <td class="small"><?php echo htmlentities(implode(', ', $this->log['detail']['mail']['Cc'])); ?></td>
                 </tr>
             <?php endif; ?>
 
             <?php if (array_key_exists('Bcc', $this->log['detail']['mail'])) : ?>
                 <tr>
                     <td class="td-label"><?php echo $this->translate('Bcc'); ?></td>
-                    <td class="small"><?php echo htmlentities(iconv_mime_decode(implode(', ', $this->log['detail']['mail']['Bcc']), 0, 'UTF-8')); ?></td>
+                    <td class="small"><?php echo htmlentities(implode(', ', $this->log['detail']['mail']['Bcc'])); ?></td>
                 </tr>
             <?php endif; ?>
             <tr>
