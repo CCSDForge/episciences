@@ -234,7 +234,6 @@ abstract class Ccsd_Queue
         } catch (Exception $e) {
             Ccsd_Log::message("Erreur lors de la selection des DOCID à traiter.", true, 'ERR');
             Ccsd_Log::message($e->getMessage(), true, 'ERR');
-            Zend_Debug::dump($this);
             return false;
         }
         return $stmt->fetchAll(PDO::FETCH_NUM);

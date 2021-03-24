@@ -115,7 +115,7 @@ abstract class JournalScript extends Script {
     private function getJournal($rvid)
     {
         $journals = $this->getJournals();
-        return (array_key_exists($rvid, $journals)) ? $journals[$rvid] : null;
+        return $journals[$rvid] ?? null;
     }
 
 
