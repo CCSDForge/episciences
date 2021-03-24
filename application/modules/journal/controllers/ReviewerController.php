@@ -31,7 +31,7 @@ class ReviewerController extends PaperDefaultController
         // check reviewer identity
         if ($assignment->isTmp_user()) {
             // if this is a temp user invitation, check user identity (md5 param)
-            $tmp_user = Episciences_TmpUsersManager::find($assignment->getUid());
+            $tmp_user = Episciences_TmpUsersManager::findById($assignment->getUid());
             if ($isLogged || !$tmp_user || md5($tmp_user->getEmail()) !== $request->getParam('tmp')) {
                 $message = $this->view->translate("Cette invitation ne vous est pas destinée.");
                 $this->view->errors = array($message);

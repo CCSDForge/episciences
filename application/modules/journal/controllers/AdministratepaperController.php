@@ -1149,7 +1149,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //get user object
         if ($oAssignment->isTmp_user()) {
-            $oReviewer = Episciences_TmpUsersManager::find($oAssignment->getUid());
+            $oReviewer = Episciences_TmpUsersManager::findById($oAssignment->getUid());
             $oReviewer->generateScreen_name();
             if (!$oReviewer) {
                 return false;
@@ -1254,7 +1254,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //user
         if ($assignment->isTmp_user()) {
-            $reviewer = Episciences_TmpUsersManager::find($assignment->getUid());
+            $reviewer = Episciences_TmpUsersManager::findById($assignment->getUid());
             if ($reviewer) {
                 $reviewer->generateScreen_name();
             }
@@ -3001,7 +3001,7 @@ class AdministratepaperController extends PaperDefaultController
 
             //user object
             if ($oAssignment->isTmp_user()) {
-                $oReviewer = Episciences_TmpUsersManager::find($oAssignment->getUid());
+                $oReviewer = Episciences_TmpUsersManager::findById($oAssignment->getUid());
                 $oReviewer->generateScreen_name();
                 if (!$oReviewer) {
                     return false;
@@ -3179,7 +3179,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //user
         if ($oAssignment->isTmp_user()) {
-            $reviewer = Episciences_TmpUsersManager::find($oAssignment->getUid());
+            $reviewer = Episciences_TmpUsersManager::findById($oAssignment->getUid());
             if ($reviewer) {
                 $reviewer->generateScreen_name();
             }
