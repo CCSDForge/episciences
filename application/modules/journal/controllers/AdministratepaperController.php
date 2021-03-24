@@ -1617,8 +1617,7 @@ class AdministratepaperController extends PaperDefaultController
                     $resCreateDoi = Episciences_Paper::createPaperDoi(RVID, $paper);
 
                     if ($resCreateDoi['resUpdateDoi'] > 0) {
-                        $additionalTags = [Episciences_Mail_Tags::TAG_DOI => $resCreateDoi['doi']];
-
+                        $additionalTags = array_merge($additionalTags, [Episciences_Mail_Tags::TAG_DOI => $resCreateDoi['doi']]);
                     }
 
 
