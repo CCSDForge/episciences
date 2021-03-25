@@ -63,9 +63,18 @@ if ($paper->isPublished()) {
     $keywords = $paper->getMetadata('subjects');
     if (is_array($keywords) && !empty($keywords)) {
         foreach ($keywords as $word) {
-            $this->headMeta()->prependName('citation_keywords', $word);
-            $this->headMeta()->prependName('DC.subject', $word);
-            $this->headMeta()->prependName('keywords', $word);
+            if (is_array($word)) {
+                foreach ($word as $wordLang => $itemWord) {
+                    $this->headMeta()->prependName('citation_keywords', $itemWord);
+                    $this->headMeta()->prependName('DC.subject', $itemWord);
+                    $this->headMeta()->prependName('keywords', $itemWord);
+                }
+            } else {
+                $this->headMeta()->prependName('citation_keywords', $word);
+                $this->headMeta()->prependName('DC.subject', $word);
+                $this->headMeta()->prependName('keywords', $word);
+            }
+
         }
     } elseif ($keywords) {
         $this->headMeta()->prependName('citation_keywords', $keywords);
@@ -88,7 +97,11 @@ if ($paper->isPublished()) {
     $this->headMeta()->prependName('citation_journal_title', $journal);
     $this->headMeta()->prependName('DC.relation.ispartof', $journal);
 
-    // $this->headMeta()->prependName('citation_doi’, $doi); // pas de DOI pour le moment
+    $doi = $paper->getDoi();
+    if ($doi !== '') {
+        $this->headMeta()->prependName('DC.identifier', $doi);
+        $this->headMeta()->prependName('citation_doi', $doi);
+    }
 
     if ($paper->getVid()) {
 
