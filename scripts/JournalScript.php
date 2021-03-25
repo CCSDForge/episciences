@@ -117,4 +117,66 @@ abstract class JournalScript extends Script {
         $journals = $this->getJournals();
         return (array_key_exists($rvid, $journals)) ? $journals[$rvid] : null;
     }
+
+
+    /**
+     * Clone a table
+     * @param string $table : table to clone
+     * @param bool $withData : populate the table
+     * @return bool
+     */
+    protected function cloneTable(string $table, bool $withData = true): bool
+    {
+        $this->displayInfo(' *** Table cloning *** ', true);
+
+        $clone = $table . '_CLONE-' . date("Y-m-d H:i:s");
+        $db = $this->getDb();
+        $createQuery = 'CREATE TABLE IF NOT EXISTS ';
+        $createQuery .= $db->quoteIdentifier($clone);
+        $createQuery .= ' LIKE ';
+        $createQuery .= $db->quoteIdentifier($table);
+
+        $this->displayTrace($createQuery, true);
+
+        $result = $db->prepare($createQuery)->execute();
+
+        if ($result && $withData) {
+            $insertQuery = 'INSERT INTO ';
+            $insertQuery .= $db->quoteIdentifier($clone);
+            $insertQuery .= ' SELECT * FROM ';
+            $insertQuery .= $db->quoteIdentifier($table);
+            $result = $db->prepare($insertQuery)->execute();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param string $oldName
+     * @param $newName
+     * @return bool
+     */
+    protected function renameTable(string $oldName, $newName): bool
+    {
+        $db = $this->getDb();
+        $query = 'RENAME TABLE ';
+        $query .= $db->quoteIdentifier($oldName);
+        $query .= ' TO ' . $db->quoteIdentifier($newName);
+        return $db->prepare($query)->execute();
+    }
+
+    /**
+     * @param string $fieldName
+     * @param string $inTable
+     * @return bool
+     */
+    protected function existColumn(string $fieldName, string $inTable): bool
+    {
+        $db = $this->getDb();
+        $sql = 'SHOW COLUMNS FROM ';
+        $sql .= $db->quoteIdentifier($inTable);
+        $sql .= ' LIKE ';
+        $sql .= "'$fieldName'";
+        return ($db->prepare($sql)->execute() && ($db->fetchOne($sql) === $fieldName));
+    }
 }
