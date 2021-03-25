@@ -32,7 +32,9 @@ $(document).ready(function () {
                     }
                 },
                 'text'
-            );
+            ).done(function () {
+                location.reload();
+            });
         });
     });
 });
