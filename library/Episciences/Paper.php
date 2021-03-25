@@ -85,9 +85,12 @@ class Episciences_Paper
         self::STATUS_REFUSED
     ];
 
+    /**
+     * @const string DOI prefix
+     */
+    const DOI_ORG_PREFIX = 'https://doi.org/';
 
     // status priorities
-    const DOI_ORG_PREFIX = 'https://doi.org/';
     public static $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
         self::STATUS_BEING_REVIEWED => 1,
