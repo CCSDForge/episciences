@@ -991,6 +991,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
         Episciences_Mail_Tags::TAG_DOI,
         Episciences_Mail_Tags::TAG_VOLUME_ID,
+        Episciences_Mail_Tags::TAG_VOLUME_EDITORS,
         Episciences_Mail_Tags::TAG_SECTION_ID,
         Episciences_Mail_Tags::TAG_VOLUME_NAME,
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF,

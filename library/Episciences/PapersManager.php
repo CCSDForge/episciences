@@ -2327,6 +2327,7 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME => !empty($paperPosition) ? $paperPosition : $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_CURRENT_YEAR => date('Y'),
                     Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL => $site . '/public/' . RVCODE . '_episciences.zip',
+                    Episciences_Mail_Tags::TAG_VOLUME_EDITORS => ($volume && $volume->formatEditors()) ? $volume->formatEditors() :  $translator->translate('Aucun', $locale)
                 ];
 
             } elseif ($name === 'askOtherEditors') { // SCREEN_NAME and FULL_NAME tags can't have a default value for Ask Other Editors template, since there are multiple recipients
