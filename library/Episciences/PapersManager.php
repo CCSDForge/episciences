@@ -1820,13 +1820,13 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', [
-            'label' => 'CC',
-            'value' => Episciences_Review::forYourInformation()
-        ]);
+        $form->addElement('text', 'cc', ['label' => 'CC']);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC']);
+        $form->addElement('text', 'bcc', [
+            'label' => 'BCC',
+            'value' => Episciences_Review::forYourInformation()
+        ]);
 
         // from
         $form->addElement('text', 'from', [
