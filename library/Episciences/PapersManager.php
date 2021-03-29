@@ -828,7 +828,7 @@ class Episciences_PapersManager
             foreach ($invitations as $invitation_list) {
                 $invitation = array_shift($invitation_list);
                 //si l'invitation a expiré, on la place dans une catégorie à part
-                if ($invitation['ASSIGNMENT_STATUS'] == Episciences_User_Assignment::STATUS_PENDING && $invitation['EXPIRATION_DATE'] < date('Y-m-d')) {
+                if ($invitation['ASSIGNMENT_STATUS'] == Episciences_User_Assignment::STATUS_PENDING && self::compareToCurrentTime($invitation['EXPIRATION_DATE'])) {
                     if ((!is_array($status) && $status != Episciences_User_Assignment::STATUS_EXPIRED) ||
                         (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status))
                     ) {
@@ -2662,5 +2662,12 @@ class Episciences_PapersManager
         return $r;
     }
 
-
+    /**
+     * @param string $date
+     * @return bool
+     */
+    private static function compareToCurrentTime(string $date): bool
+    {
+        return strtotime($date) < time();
+    }
 }
