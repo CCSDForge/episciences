@@ -33,19 +33,27 @@ $timestamp = time();
         <journal-meta>
             <journal-id journal-id-type="publisher"><?php echo DOMAIN; ?></journal-id>
 
+            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') : ?>
+                <journal-id journal-id-type="issn"
+                            specific-use="electronic"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></journal-id>
+            <?php endif; ?>
+
+            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') : ?>
+                <journal-id journal-id-type="issn"
+                            specific-use="print"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></journal-id>
+            <?php endif; ?>
+
             <journal-title-group>
                 <journal-title><?php echo $this->escape($journal->getName()); ?></journal-title>
                 <abbrev-journal-title><?php echo mb_strtoupper($this->escape($journal->getCode())); ?></abbrev-journal-title>
             </journal-title-group>
 
             <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') : ?>
-                <journal-id journal-id-type="issn"
-                            specific-use="print"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></journal-id>
+                <issn specific-use="electronic"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></issn>
             <?php endif; ?>
 
             <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') : ?>
-                <journal-id journal-id-type="issn"
-                            specific-use="electronic"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></journal-id>
+                <issn specific-use="print"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></issn>
             <?php endif; ?>
 
             <publisher>
