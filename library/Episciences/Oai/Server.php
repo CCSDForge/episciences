@@ -89,6 +89,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             $sql = $db->select()
                 ->from(T_REVIEW, ['CODE', 'NAME'])
                 ->where('RVID != 0')
+                ->where('STATUS = 1')
                 ->order('CREATION DESC');
             foreach ($db->fetchAll($sql) as $row) {
                 $out['journal:' . $row['CODE']] = $row['NAME'];
