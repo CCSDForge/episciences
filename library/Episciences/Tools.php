@@ -1199,8 +1199,10 @@ class Episciences_Tools
         $paperId = $paper->getPaperid();
 
         $identifier = $paper->getIdentifier();
+        // Extract file(s) name
         $subStr = substr($identifier, (strlen($paperId) + 1));
-        $result = json_decode($subStr, true);
+
+        $result = !self::isJson($subStr) ?   $result = (array)$subStr : json_decode($subStr, true);
 
         if (empty($result)) {
             error_log('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
