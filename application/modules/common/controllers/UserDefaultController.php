@@ -584,15 +584,17 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * edit user account
+     * @throws Zend_Form_Exception
      */
     public function editAction()
     {
-        $request = $this->getRequest();
         /** @var Zend_Controller_Request_Http $request */
-        $params = $request->getQuery();
+        $request = $this->getRequest();
+
+        $userUid = !$request->isPost() ? (int)$request->getParam('userid') : (int)$request->getPost('UID');
 
         $user = new Episciences_User();
-        $userId = (isset($params['userid']) && Episciences_Auth::isSecretary()) ? (int)$params['userid'] : Episciences_Auth::getUid();
+        $userId = (!empty($userUid) && Episciences_Auth::isSecretary()) ? $userUid : Episciences_Auth::getUid();
 
         // Données par défaut du compte CAS
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
@@ -605,7 +607,6 @@ class UserDefaultController extends Zend_Controller_Action
 
         // Données par défaut du compte local (Episciences)
         $localUserDefaults = $user->find($userId);
-
 
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
@@ -621,7 +622,7 @@ class UserDefaultController extends Zend_Controller_Action
 
 
         // update required
-        if ($this->getRequest()->isPost() && $form->isValid($request->getPost())) {
+        if ($request->isPost() && $form->isValid($request->getPost())) {
 
             $values = $form->getValues();
             $user = new Episciences_User(array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]));
@@ -646,10 +647,9 @@ class UserDefaultController extends Zend_Controller_Action
                 return;
             }
 
-            $user->setUsername(Episciences_Auth::getUsername()); //sinon le username est supprimé de l'identité : en modification il n'est pas utilisé dans la méthode save()
-
             // Si on modifie son propre compte, on met à jour la session
             if (Episciences_Auth::getUid() == $user->getUid()) {
+                $user->setUsername(Episciences_Auth::getUsername()); //sinon le username est supprimé de l'identité : en modification il n'est pas utilisé dans la méthode save()
                 Episciences_Auth::setIdentity($user);
                 $localeSession = new Zend_Session_Namespace('Zend_Translate');
                 $localeSession->lang = Episciences_Auth::getLangueid();
@@ -657,7 +657,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
 
-            if ((Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor() || Episciences_Auth::isSecretary()) && Episciences_Auth::getUid() != $user->getUid()) {
+            if (Episciences_Auth::isSecretary() && Episciences_Auth::getUid() != $user->getUid()) {
                 $this->_helper->redirector('list', 'user');
             } else {
                 $this->_helper->redirector('dashboard', 'user');

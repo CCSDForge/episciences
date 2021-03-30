@@ -523,6 +523,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if (!isset($result['IS_VALID'])) {
             $result['IS_VALID'] = 1;
+        } else {
+            $result['IS_VALID'] = (int)$result['IS_VALID'];
         }
 
         $this->setUid($result['UID']);
