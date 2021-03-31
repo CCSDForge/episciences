@@ -40,7 +40,7 @@ return [
     "Relecteur" => ["Reviewer", "Reviewers"],
 
     'article' => ['article', 'articles'],
-    'Le mot Relecteur + ce chiffre forment le pseudonyme du relecteur' => 'The word Reviewer + this number form the reviewer alias',
+    'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
 
 
     "Historique" => "History",
