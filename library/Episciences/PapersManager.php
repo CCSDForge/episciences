@@ -2659,12 +2659,12 @@ class Episciences_PapersManager
             ->from(T_PAPERS, [new Zend_Db_Expr("COUNT('DOCID') AS NbSubmissions")])
             ->from(T_USERS,null)
             ->where(T_PAPERS . '.SUBMISSION_DATE >= ?', $limitDateTime)
-            ->where(T_PAPERS . '.UID = ?', T_USERS . '.UID');
+            ->where(T_PAPERS . '.UID = ' . T_USERS . '.UID');
 
         if ($onlyNewUsers) {
             $select->where('REGISTRATION_DATE >= ?', $limitDateTime);
         }
-
+Zend_Debug::dump($select->__toString());
         $result = $select->query()->fetch();
 
         if (!$result) {
