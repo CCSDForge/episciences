@@ -51,4 +51,55 @@ class ApiController extends Zend_Controller_Action
             ->setHeader('Content-type', 'application/json')
             ->setBody(Zend_Json_Encoder::encode($response));
     }
+
+    /**
+     * Metrics for OpenAIRE formatted for https://prometheus.io/
+     */
+    public function openaireMetricsAction()
+    {
+
+        $this->_helper->layout->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+
+
+
+        $serviceUnavailable = 'Service Unavailable';
+        try {
+            $nbOfSubmissionsCurrentYear = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', false);
+        } catch (Zend_Db_Statement_Exception $e) {
+            $nbOfSubmissionsCurrentYear = $serviceUnavailable;
+        }
+
+        try {
+            $nbOfSubmissionsCurrentYearNewUsers = Episciences_PapersManager::getSubmittedPapersCountAfterDate();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $nbOfSubmissionsCurrentYearNewUsers = $serviceUnavailable;
+        }
+        if ($nbOfSubmissionsCurrentYear === false) {
+            $nbOfSubmissionsCurrentYear = $serviceUnavailable;
+        }
+        if (!$nbOfSubmissionsCurrentYearNewUsers === false) {
+            $nbOfSubmissionsCurrentYearNewUsers = $serviceUnavailable;
+        }
+
+        if (($nbOfSubmissionsCurrentYearNewUsers === $serviceUnavailable) && ($nbOfSubmissionsCurrentYear === $serviceUnavailable)) {
+            $timeOut = 1800;
+            header('HTTP/1.0 503 Service Unavailable');
+            header('Retry-After: ' . $timeOut);
+            die(sprintf("Sorry, this service is not available at the moment. We must be busy fixing a problem, please try again in %s seconds", $timeOut));
+        }
+
+        $date = new DateTime();
+        $timeStamp = $date->getTimestamp();
+        $this->getResponse()->setHeader('Content-type', 'text/plain');
+        
+        echo '# HELP user_submissions_total Counter of the total number of submissions, updated upon request.';
+        echo PHP_EOL . '# TYPE user_submissions_total counter';
+        echo PHP_EOL;
+        printf('user_submissions_total{method="From all users accounts"} %s %s', $nbOfSubmissionsCurrentYear, $timeStamp);
+        echo PHP_EOL;
+        printf('user_submissions_total{method="From user accounts created in the current year"} %s %s', $nbOfSubmissionsCurrentYearNewUsers, $timeStamp);
+
+    }
 }

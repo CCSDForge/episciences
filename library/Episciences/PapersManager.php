@@ -2636,10 +2636,42 @@ class Episciences_PapersManager
             $resUpdate = $db->update(T_PAPERS, $values, $where);
         } catch (Zend_Db_Adapter_Exception $exception) {
             error_log($exception->getMessage());
-            error_log('Error updating DOI ' . $doi. ' for paperId ' . $paperId);
+            error_log('Error updating DOI ' . $doi . ' for paperId ' . $paperId);
             $resUpdate = 0;
         }
         return $resUpdate;
+    }
+
+    /**
+     * @param string $limitDateTime
+     * @param bool $onlyNewUsers
+     * @return false|int
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getSubmittedPapersCountAfterDate(string $limitDateTime = '', bool $onlyNewUsers = true)
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if ($limitDateTime === '') {
+            $limitDateTime = date('Y') . '-01-01 00:00:00';
+        }
+
+        $select = $db->select()
+            ->from(T_PAPERS, [new Zend_Db_Expr("COUNT('DOCID') AS NbSubmissions")])
+            ->from(T_USERS,null)
+            ->where(T_PAPERS . '.SUBMISSION_DATE >= ?', $limitDateTime)
+            ->where(T_PAPERS . '.UID = ?', T_USERS . '.UID');
+
+        if ($onlyNewUsers) {
+            $select->where('REGISTRATION_DATE >= ?', $limitDateTime);
+        }
+
+        $result = $select->query()->fetch();
+
+        if (!$result) {
+            return false;
+        }
+
+        return (int) $result['NbSubmissions'];
     }
 
     /**
@@ -2660,6 +2692,5 @@ class Episciences_PapersManager
 
         return $r;
     }
-
 
 }
