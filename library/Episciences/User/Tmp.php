@@ -8,7 +8,7 @@ class Episciences_User_Tmp extends Episciences_User
     private $_id;
     private $_lang;
 
-    public function find($id, $key = null)
+    public function find($id, $key = null) : array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -22,10 +22,9 @@ class Episciences_User_Tmp extends Episciences_User
         $data = $db->fetchRow($sql);
         if ($data) {
             $this->setOptions($data);
-            return $this;
         }
 
-        return false;
+        return $data;
     }
 
     public function save($forceInsert = false)
@@ -126,6 +125,5 @@ class Episciences_User_Tmp extends Episciences_User
     {
         $this->_status = $status;
     }
-
 
 }

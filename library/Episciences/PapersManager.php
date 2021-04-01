@@ -793,17 +793,18 @@ class Episciences_PapersManager
             //fetch reviewer detail
             if ($invitation['TMP_USER']) {
                 if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
-                    $reviewer = new Episciences_User_Tmp;
-                    $reviewer->find($invitation['UID']);
-                    $reviewer->generateScreen_name();
-                    $reviewers[$invitation['UID']] = $reviewer;
+                    $reviewer = new Episciences_User_Tmp();
+
+                    if(!empty($reviewer->find($invitation['UID']))){
+                        $reviewer->generateScreen_name();
+                        $reviewers[$invitation['UID']] = $reviewer;
+                    }
+
                 }
-            } else {
-                if (!array_key_exists($invitation['UID'], $reviewers)) {
-                    $reviewer = new Episciences_Reviewer;
-                    $reviewer->findWithCAS($invitation['UID']);
-                    $reviewers[$invitation['UID']] = $reviewer;
-                }
+            } else if (!array_key_exists($invitation['UID'], $reviewers)) {
+                $reviewer = new Episciences_Reviewer;
+                $reviewer->findWithCAS($invitation['UID']);
+                $reviewers[$invitation['UID']] = $reviewer;
             }
             $reviewer = $reviewers[$invitation['UID']];
             $tmp['reviewer'] = [
@@ -974,17 +975,18 @@ class Episciences_PapersManager
             if (isset($tmp_reviewers) && !empty($tmp_reviewers)) {
                 foreach ($tmp_reviewers as $tmp_reviewer) {
                     $reviewer = new Episciences_User_Tmp;
-                    $reviewer->find($tmp_reviewer['UID']);
-                    $reviewer->generateScreen_name();
-                    $reviewers['tmp_' . $tmp_reviewer['UID']] = $reviewer;
+                    if(!empty($reviewer->find($tmp_reviewer['UID']))){
+                        $reviewer->generateScreen_name();
+                        $reviewers['tmp_' . $tmp_reviewer['UID']] = $reviewer;
+                    }
                 }
             }
 
             return $reviewers;
 
-        } else {
-            return [];
         }
+
+        return [];
     }
 
     /**
