@@ -79,7 +79,7 @@ class ApiController extends Zend_Controller_Action
         if ($nbOfSubmissionsCurrentYear === false) {
             $nbOfSubmissionsCurrentYear = $serviceUnavailable;
         }
-        if (!$nbOfSubmissionsCurrentYearNewUsers === false) {
+        if ($nbOfSubmissionsCurrentYearNewUsers === false) {
             $nbOfSubmissionsCurrentYearNewUsers = $serviceUnavailable;
         }
 

@@ -2664,7 +2664,7 @@ class Episciences_PapersManager
         if ($onlyNewUsers) {
             $select->where('REGISTRATION_DATE >= ?', $limitDateTime);
         }
-Zend_Debug::dump($select->__toString());
+
         $result = $select->query()->fetch();
 
         if (!$result) {
