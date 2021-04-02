@@ -68,7 +68,7 @@ class BrowseController extends Zend_Controller_Action
 
         $viewYear = [];
         foreach ($facet as $value => $count) {
-            echo $viewYear[$value] = $count;
+            $viewYear[$value] = $count;
         }
 
 
