@@ -46,50 +46,36 @@ class BrowseController extends Zend_Controller_Action
     {
         $client = Ccsd_Search_Solr::getSolrSearchClient();
         $query = $client->createSelect()->setOmitHeader(true);
-        $query->setRows(0);
-
         $search = new Ccsd_Search_Solr_Search();
         $search->setQuery($query);
         $search->queryAddDefaultFilters(Episciences_Settings::getConfigFile('solr.es.defaultFilters.json'));
 
         $query = $search->getQuery();
+        $query->setRows(0);
 
-        // filtre les résultats en fonction du RVID
         if (RVID && RVID != 0) {
             $query->createFilterQuery('df' . RVID)->setQuery('revue_id_i:' . RVID);
         }
 
-        $this->view->rangeOffset = 10;
-        $this->view->rangeFirstYear = 1800;
-        $this->view->rangeLastYear = date('Y');
-
         $facetSet = $query->getFacetSet();
-        $facet = $facetSet->createFacetRange('year');
-        $facet->setField('publication_date_year_fs');
-        $facet->setStart($this->view->rangeFirstYear);
-        $facet->setGap($this->view->rangeOffset);
-        $facet->setEnd($this->view->rangeLastYear);
-        $facet->setHardend(false);
-        $facet->setOther('all');
+        $facetSet->createFacetField('year')->setField('publication_date_year_fs');
+        $facetSet->setMinCount(1);
+        $facetSet->setSort('index');
 
         $resultset = $client->select($query);
-
-        $results['yearArray'] = $resultset->getFacetSet()->getFacet('year');
-        $results['yearsBefore'] = $resultset->getFacetSet()
-            ->getFacet('year')
-            ->getBefore();
-        $results['yearsAfter'] = $resultset->getFacetSet()
-            ->getFacet('year')
-            ->getAfter();
-        $results['yearsBetween'] = $resultset->getFacetSet()
-            ->getFacet('year')
-            ->getBetween();
+        $facet = $resultset->getFacetSet()->getFacet('year');
 
 
-        $this->view->yearArray = $results['yearArray'];
-        $this->view->yearsBefore = $results['yearsBefore'];
-        $this->view->yearsAfter = $results['yearsAfter'];
-        $this->view->yearsBetween = $results['yearsBetween'];
+        $viewYear = [];
+        foreach ($facet as $value => $count) {
+            echo $viewYear[$value] = $count;
+        }
+
+
+        krsort($viewYear);
+
+        $this->view->yearsArray = $viewYear;
+
 
     }
 
@@ -229,7 +215,7 @@ class BrowseController extends Zend_Controller_Action
 
         $res = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
         if ($res) {
-            $this->view->articles = unserialize($res);
+            $this->view->articles = unserialize($res, ['allowed_classes' => false]);
         }
     }
 
@@ -246,5 +232,6 @@ class BrowseController extends Zend_Controller_Action
         $this->view->volumes = $volumes;
         $this->renderScript('browse/volumes.phtml');
     }
+
 
 }

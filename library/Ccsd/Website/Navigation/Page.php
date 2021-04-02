@@ -11,25 +11,25 @@ abstract class Ccsd_Website_Navigation_Page
      * Identifiant de la page
      * @var int
      */
-    protected $_pageId  =   0;
+    protected $_pageId = 0;
 
     /**
      * Identifiant de la page parente (0 par défaut)
      * @var int
      */
-    protected $_pageParentId    =   0;
+    protected $_pageParentId = 0;
 
     /**
      * Tableau des langues dispo de la page
      * @var array
      */
-    protected $_languages  =   array();
+    protected $_languages = [];
 
     /**
      * Tableau des labels de la page
      * @var array
      */
-    protected $_labels  =   array();
+    protected $_labels = [];
 
     /**
      * Page présente plusieurs fois pour un site
@@ -59,11 +59,11 @@ abstract class Ccsd_Website_Navigation_Page
      * Initialisation de la page
      * @param array $options
      */
-    public function __construct($options = array())
+    public function __construct($options = [])
     {
-    	$this->setOptions($options);
+        $this->setOptions($options);
         if (PHP_SAPI != 'cli') {
-        	$this->_form = new Ccsd_Form();
+            $this->_form = new Ccsd_Form();
         }
     }
 
@@ -71,61 +71,25 @@ abstract class Ccsd_Website_Navigation_Page
      * Définition des options de la page
      * @param array $options
      */
-    public function setOptions($options = array())
+    public function setOptions($options = [])
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
-            switch($option) {
-                case 'languages':   $this->_languages = $value;
-                                    break;
-                case 'pageid'   :   $this->_pageId = (int) $value;
-                                    break;
-                case 'labels'   :   $this->setLabels($value);
-                                    break;
-                case 'parentid' :   $this->setPageParentId($value);
-                                    break;
+            switch ($option) {
+                case 'languages':
+                    $this->_languages = $value;
+                    break;
+                case 'pageid'   :
+                    $this->_pageId = (int)$value;
+                    break;
+                case 'labels'   :
+                    $this->setLabels($value);
+                    break;
+                case 'parentid' :
+                    $this->setPageParentId($value);
+                    break;
             }
         }
-    }
-
-    /**
-     * Récupération des labels de la page
-     * @return array
-     */
-    public function getLabels()
-    {
-        $res = array();
-        foreach($this->getLanguages() as $lang) {
-            $res[$lang] = $this->getLabel($lang);
-        }
-        return $res;
-    }
-
-    /**
-     * Récupération de la liste des langues de la page
-     * @return array
-     */
-    public function getLanguages()
-    {
-    	return $this->_languages;
-    }
-
-    /**
-     * Retourne le label dans la langue demandée
-     * @param string $lang
-     * @return mixed|string
-     */
-    public function getLabel($lang)
-    {
-        return isset($this->_labels[$lang]) ? $this->_labels[$lang] : '';
-    }
-
-    /**
-     * Retourne la clé de traduction du label de la page
-     */
-    public function getLabelKey()
-    {
-    	return 'menu-label-' . $this->getPageId();
     }
 
     /**
@@ -135,37 +99,7 @@ abstract class Ccsd_Website_Navigation_Page
      */
     public function setLabel($label, $lang)
     {
-        $this->_labels[$lang]   =   $label;
-    }
-
-    /**
-     * Initialisation des labels
-     * @param array $labels
-     */
-    public function setLabels ($labels)
-    {
-        if (is_string($labels)) {
-        	foreach ($this->getLanguages() as $lang) {
-        		$this->setLabel($labels, $lang);
-        	}
-        } else {
-        	//Réinitialisation
-        	$this->_labels = array();
-        	foreach ($labels as $lang => $label) {
-	            if ($label != '') {
-	            	$this->setLabel($label, $lang);
-	            }
-	        }
-        }
-    }
-
-    /**
-     * Retourne la classe de la page
-     * @return string
-     */
-    public function getPageClass()
-    {
-    	return get_class($this);
+        $this->_labels[$lang] = $label;
     }
 
     /**
@@ -174,25 +108,16 @@ abstract class Ccsd_Website_Navigation_Page
      */
     public function getPageClassLabel()
     {
-    	return $this->getPageClass();
+        return $this->getPageClass();
     }
 
     /**
-     * récupération de l'id de la page
-     * @return int
+     * Retourne la classe de la page
+     * @return string
      */
-    public function getPageId()
+    public function getPageClass()
     {
-    	return $this->_pageId;
-    }
-
-    /**
-     * Initialisation de l'id de la page
-     * @param string $pageParentId
-     */
-    public function setPageId($pageId)
-    {
-    	$this->_pageId = $pageId;
+        return get_class($this);
     }
 
     /**
@@ -219,7 +144,7 @@ abstract class Ccsd_Website_Navigation_Page
      */
     public function getSuppParams()
     {
-    	return '';
+        return '';
     }
 
     /**
@@ -230,33 +155,8 @@ abstract class Ccsd_Website_Navigation_Page
         return $this->_multiple;
     }
 
-    //public function save() {}
-    public function load() {}
-
-    /**
-     * Retourne le controller associé à la page
-     */
-    public function getController()
+    public function load()
     {
-    	return $this->_controller;
-    }
-
-    /**
-     * Retourne l'action associée à la page
-     * @return string
-     */
-    public function getAction()
-    {
-    	return $this->_action;
-    }
-
-    /**
-     * Retourne la ressource associée à la page
-     * @return string
-     */
-    public function getResource()
-    {
-    	return ($this->getController() !='' ? ($this->getController() . '-') : '') . $this->getAction();
     }
 
     /**
@@ -265,29 +165,65 @@ abstract class Ccsd_Website_Navigation_Page
      */
     public function toArray()
     {
-    	$array = array();
-    	$array['label'] = $this->getLabelKey();
-    	$array['controller'] = $this->getController();
-    	$array['action'] = $this->getAction();
-    	$array['resource'] = $this->getResource();
-    	return $array;
+        $array = [];
+        $array['label'] = $this->getLabelKey();
+        $array['controller'] = $this->getController();
+        $array['action'] = $this->getAction();
+        $array['resource'] = $this->getResource();
+        return $array;
     }
 
-
-    /*public function setData($data)
+    /**
+     * Retourne la clé de traduction du label de la page
+     */
+    public function getLabelKey()
     {
-    	if (isset($data['label'])) {
-    		$this->setLabels($data['label']);
-    	}
-    }*/
-
-    public function initForm()
-    {
-    	unset($this->_form);
-    	$this->_form = new Ccsd_Form();
-    	$this->_form->setAttrib('class', 'form');
+        return 'menu-label-' . $this->getPageId();
     }
 
+    /**
+     * récupération de l'id de la page
+     * @return int
+     */
+    public function getPageId()
+    {
+        return $this->_pageId;
+    }
+
+    /**
+     * Initialisation de l'id de la page
+     * @param string $pageParentId
+     */
+    public function setPageId($pageId)
+    {
+        $this->_pageId = $pageId;
+    }
+
+    /**
+     * Retourne le controller associé à la page
+     */
+    public function getController()
+    {
+        return $this->_controller;
+    }
+
+    /**
+     * Retourne l'action associée à la page
+     * @return string
+     */
+    public function getAction()
+    {
+        return $this->_action;
+    }
+
+    /**
+     * Retourne la ressource associée à la page
+     * @return string
+     */
+    public function getResource()
+    {
+        return ($this->getController() != '' ? ($this->getController() . '-') : '') . $this->getAction();
+    }
 
     /**
      * Récupération du formulaire pour éditer une page
@@ -299,29 +235,89 @@ abstract class Ccsd_Website_Navigation_Page
     public function getForm($pageidx)
     {
         $this->initForm();
-        if (! $this->_form->getElement('pageid')) {
-    		$this->_form->addElement('hidden', 'pageid', array( 'value' => $pageidx, 'belongsTo' => 'pages_' . $pageidx));
-    	}
-    	if (! $this->_form->getElement('type')) {
-    		$this->_form->addElement('hidden', 'type', array('label' => 'Type de la page', 'value' => $this->getPageClass(), 'belongsTo' => 'pages_' . $pageidx));
-    	}
-    	if (! $this->_form->getElement('labels')) {
-			$populate = array();
-            foreach($this->getLanguages() as $lang) {
+        if (!$this->_form->getElement('pageid')) {
+            $this->_form->addElement('hidden', 'pageid', ['value' => $pageidx, 'belongsTo' => 'pages_' . $pageidx]);
+        }
+        if (!$this->_form->getElement('type')) {
+            $this->_form->addElement('hidden', 'type', ['label' => 'Type de la page', 'value' => $this->getPageClass(), 'belongsTo' => 'pages_' . $pageidx]);
+        }
+        if (!$this->_form->getElement('labels')) {
+            $populate = [];
+            foreach ($this->getLanguages() as $lang) {
                 $populate[$lang] = $lang;
             }
-            $this->_form->addElement('multiTextSimpleLang', 'labels', array(
-				'label' => 'Titre de la page',
-				'required' => true,
-				'value' => $this->getLabels(),
-				'populate'	=> $populate,
-				'class'	=>	'inputlangmulti',
+            $this->_form->addElement('multiTextSimpleLang', 'labels', [
+                'label' => 'Titre de la page',
+                'required' => true,
+                'value' => $this->getLabels(),
+                'populate' => $populate,
+                'class' => 'inputlangmulti',
                 //'length' => 0,
-				'belongsTo' => 'pages_' . $pageidx,
-				'validators' => array(new Ccsd_Form_Validate_RequiredLang(array('langs' => $this->getLanguages())))
-            ));
-    	}
-		return $this->_form;
+                'belongsTo' => 'pages_' . $pageidx,
+                'validators' => [new Ccsd_Form_Validate_RequiredLang(['langs' => $this->getLanguages()])]
+            ]);
+        }
+        return $this->_form;
+    }
+
+    public function initForm()
+    {
+        unset($this->_form);
+        $this->_form = new Ccsd_Form();
+        $this->_form->setAttrib('class', 'form');
+    }
+
+    /**
+     * Récupération de la liste des langues de la page
+     * @return array
+     */
+    public function getLanguages()
+    {
+        return $this->_languages;
+    }
+
+    /**
+     * Récupération des labels de la page
+     * @return array
+     */
+    public function getLabels()
+    {
+        $res = [];
+        foreach ($this->getLanguages() as $lang) {
+            $res[$lang] = $this->getLabel($lang);
+        }
+        return $res;
+    }
+
+    /**
+     * Initialisation des labels
+     * @param $labels
+     */
+    public function setLabels($labels)
+    {
+        if (is_string($labels)) {
+            foreach ($this->getLanguages() as $lang) {
+                $this->setLabel($labels, $lang);
+            }
+        } else {
+            //Réinitialisation
+            $this->_labels = [];
+            foreach ($labels as $lang => $label) {
+                if ($label != '') {
+                    $this->setLabel($label, $lang);
+                }
+            }
+        }
+    }
+
+    /**
+     * Retourne le label dans la langue demandée
+     * @param string $lang
+     * @return mixed|string
+     */
+    public function getLabel($lang)
+    {
+        return isset($this->_labels[$lang]) ? $this->_labels[$lang] : '';
     }
 
 }
