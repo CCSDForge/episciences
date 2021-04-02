@@ -128,6 +128,7 @@ table.table {
   border-color: white;
 }
 
+
 .user-photo-normal {
   width: 90px;
   height: auto;
@@ -145,4 +146,8 @@ table.table {
 
 .facet-content input[type="checkbox"] {
   display: none;
+}
+
+input[type="radio"] {
+  width: auto;
 }

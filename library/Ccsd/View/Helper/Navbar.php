@@ -108,7 +108,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
         $this->_active = $application;
 
         // Initialisation de la navbar en fonction de l'environnement
-        if (defined('APPLICATION_ENV') && APPLICATION_ENV != 'production') {
+        if (defined('APPLICATION_ENV') && APPLICATION_ENV !== 'production') {
             $this->_labelEnv = APPLICATION_ENV;
             switch (APPLICATION_ENV) {
 
@@ -129,7 +129,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
             }
         }
-        return $this->render();
+        $this->render();
     }
 
     public function render()
@@ -139,7 +139,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
         /** @var Zend_Controller_Request_Http $request */
         $request = Zend_Controller_Front::getInstance()->getRequest();
         ?>
-        <nav class="navbar navbar-default navbar-fixed-top" role="navigation" aria-label="Menu">
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" aria-label="Menu">
             <div class="navbar-header ">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#nav-services">
                     <span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span
@@ -170,7 +170,8 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                             }
                         } else { ?>
                             <form class="form-inline pull-right" style="margin-top: 8px; margin-right: 8px;"
-                                  action="<?php echo $this->_prefixUrl; ?>user/login?locale=<?= $this->_lang ?>" id="form-login" method="post">
+                                  action="<?php echo $this->_prefixUrl; ?>user/login"
+                                  id="form-login" method="post">
                                 <input type="hidden" name="forward-controller"
                                        value="<?php echo $request->getControllerName(); ?>"/>
                                 <input type="hidden" name="forward-action"
@@ -181,12 +182,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
                                 foreach ($forwardParams as $name => $value) {
                                     if (is_array($value)) {
-                                        if ($name != 'qa') {
-                                            echo '<input type="hidden" name="' . htmlspecialchars($name) . '[]" value="' . htmlspecialchars(implode(' OR ', $value)) . '" />';
-                                        } else {
-                                            // cas particulier pour la recherche avancée
-                                            $url = urldecode($_SERVER['REDIRECT_QUERY_STRING']);
-                                        }
+                                        echo '<input type="hidden" name="' . htmlspecialchars($name) . '[]" value="' . htmlspecialchars(implode(' OR ', $value)) . '" />';
                                     } else if (is_string($value)) {
                                         echo '<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($value) . '" />';
                                     }
