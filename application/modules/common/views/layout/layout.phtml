@@ -71,7 +71,7 @@ echo $this->doctype('HTML5');
 <body>
 
 
-<?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml'], '/', Ccsd_View_Helper_Navbar::APP_EPI); ?>
+<?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml']); ?>
 <div id="container" class="container<?php echo $this->containerClass; ?>">
 
 
