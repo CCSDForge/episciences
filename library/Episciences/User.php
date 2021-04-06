@@ -50,7 +50,7 @@ class Episciences_User extends Ccsd_User_Models_User
         foreach ($options as $key => $value) {
 
             //because setScreen_name() has been renamed to setScreenName()
-            if ($key == 'SCREEN_NAME') {
+            if ($key === 'SCREEN_NAME') {
                 $this->setScreenName($value);
                 continue;
             }
