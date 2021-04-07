@@ -21,7 +21,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /** @var array */
     protected $_aliases = [];
     protected $_api_password;
-    protected $_is_valid;
+    protected $_is_valid = 1;
     protected $_registration_date;
     protected $_modification_date;
 
@@ -950,7 +950,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return int
      */
-    public function getIs_valid(): int
+    public function getIs_valid()
     {
         return $this->_is_valid;
     }
