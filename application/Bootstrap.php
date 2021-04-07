@@ -61,19 +61,6 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         Zend_Session::start();
     }
 
-
-    /**
-     * Define consts from application.ini
-     */
-    protected function _initConst()
-    {
-        $consts = $this->getOption('consts') ?: [];
-
-        foreach ($consts as $key => $value) {
-            define($key, $value);
-        }
-    }
-
     // Initialisation du log des exceptions
     protected function _initLog()
     {
