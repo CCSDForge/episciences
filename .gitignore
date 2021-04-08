@@ -5,11 +5,12 @@
 /.idea/
 /.sass-cache/
 /.php_cs.cache/
-/public/fontawesome/5.13.0/scss/.sass-cache/
 
 # /data/
-/data/
-!/data/default/
+/data/default/files/*[0-9]/
+/data/*[a-z]
+
+
 
 /public/css/templates/
 # libraries
@@ -35,3 +36,4 @@ assets/node_modules/
 /node_modules/
 /scripts/archives/
 /assets/
+
