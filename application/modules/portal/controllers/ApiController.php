@@ -62,44 +62,62 @@ class ApiController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
 
 
-
-
         $serviceUnavailable = 'Service Unavailable';
+
+        // current year all time users
         try {
-            $nbOfSubmissionsCurrentYear = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', false);
+            $nbOfSubmissionsCurrentYear = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', '1970-01-01 00:00:00');
         } catch (Zend_Db_Statement_Exception $e) {
             $nbOfSubmissionsCurrentYear = $serviceUnavailable;
         }
 
+        // current year, current year users
         try {
-            $nbOfSubmissionsCurrentYearNewUsers = Episciences_PapersManager::getSubmittedPapersCountAfterDate();
+            $nbOfSubmissionsCurrentYearNewUsers = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', '');
         } catch (Zend_Db_Statement_Exception $e) {
             $nbOfSubmissionsCurrentYearNewUsers = $serviceUnavailable;
         }
+
+        // current year, users accounts created from 2021
+        try {
+            $nbOfSubmissionsNexusUsers = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', '2021-01-01 00:00:00');
+        } catch (Zend_Db_Statement_Exception $e) {
+            $nbOfSubmissionsNexusUsers = $serviceUnavailable;
+        }
+
         if ($nbOfSubmissionsCurrentYear === false) {
             $nbOfSubmissionsCurrentYear = $serviceUnavailable;
         }
+
         if ($nbOfSubmissionsCurrentYearNewUsers === false) {
             $nbOfSubmissionsCurrentYearNewUsers = $serviceUnavailable;
         }
 
-        if (($nbOfSubmissionsCurrentYearNewUsers === $serviceUnavailable) && ($nbOfSubmissionsCurrentYear === $serviceUnavailable)) {
+        if ($nbOfSubmissionsNexusUsers === false) {
+            $nbOfSubmissionsNexusUsers = $serviceUnavailable;
+        }
+
+        if (($nbOfSubmissionsCurrentYearNewUsers === $serviceUnavailable) && ($nbOfSubmissionsCurrentYear === $serviceUnavailable) && ($nbOfSubmissionsNexusUsers === $serviceUnavailable)) {
             $timeOut = 1800;
             header('HTTP/1.0 503 Service Unavailable');
             header('Retry-After: ' . $timeOut);
             die(sprintf("Sorry, this service is not available at the moment. We must be busy fixing a problem, please try again in %s seconds", $timeOut));
         }
 
-        $date = new DateTime();
-        $timeStamp = $date->getTimestamp();
         $this->getResponse()->setHeader('Content-type', 'text/plain');
-        
-        echo '# HELP user_submissions_total Counter of the total number of submissions, updated upon request.';
-        echo PHP_EOL . '# TYPE user_submissions_total counter';
+
+        echo '# HELP episciences_user_submissions_total Count of submissions for the current year, from all user accounts, at the time of request';
+        echo PHP_EOL . '# TYPE episciences_user_submissions_total counter';
+        printf(PHP_EOL . 'episciences_user_submissions_total %s', $nbOfSubmissionsCurrentYear);
         echo PHP_EOL;
-        printf('user_submissions_total{method="From all users accounts"} %s %s', $nbOfSubmissionsCurrentYear, $timeStamp);
+        echo PHP_EOL . '# HELP episciences_newuser_submissions_total Count of submissions for the current year, from user accounts created in the current year, at the time of request.';
+        echo PHP_EOL . '# TYPE episciences_newuser_submissions_total counter';
+        printf(PHP_EOL . 'episciences_newuser_submissions_total %s', $nbOfSubmissionsCurrentYearNewUsers);
         echo PHP_EOL;
-        printf('user_submissions_total{method="From user accounts created in the current year"} %s %s', $nbOfSubmissionsCurrentYearNewUsers, $timeStamp);
+        echo PHP_EOL . '# HELP episciences_nexususer_submissions_total Count of submissions for the current year, from user accounts created since 2021-01-01 00:00:00, at the time of request';
+        echo PHP_EOL . '# TYPE episciences_nexususer_submissions_total counter';
+        printf(PHP_EOL . 'episciences_nexususer_submissions_total %s', $nbOfSubmissionsNexusUsers);
+
 
     }
 }

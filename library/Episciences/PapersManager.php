@@ -2643,27 +2643,29 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param string $limitDateTime
-     * @param bool $onlyNewUsers
+     * @param string $limitDateTime empty for current year
+     * @param string $registrationDateTime empty for current year
      * @return false|int
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getSubmittedPapersCountAfterDate(string $limitDateTime = '', bool $onlyNewUsers = true)
+    public static function getSubmittedPapersCountAfterDate(string $limitDateTime = '', string $registrationDateTime = '')
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if ($limitDateTime === '') {
             $limitDateTime = date('Y') . '-01-01 00:00:00';
         }
 
+        if ($registrationDateTime === '') {
+            $registrationDateTime = date('Y') . '-01-01 00:00:00';
+        }
+
         $select = $db->select()
             ->from(T_PAPERS, [new Zend_Db_Expr("COUNT('DOCID') AS NbSubmissions")])
-            ->from(T_USERS,null)
+            ->from(T_USERS, null)
             ->where(T_PAPERS . '.SUBMISSION_DATE >= ?', $limitDateTime)
             ->where(T_PAPERS . '.UID = ' . T_USERS . '.UID');
 
-        if ($onlyNewUsers) {
-            $select->where('REGISTRATION_DATE >= ?', $limitDateTime);
-        }
+        $select->where('REGISTRATION_DATE >= ?', $registrationDateTime);
 
         $result = $select->query()->fetch();
 
@@ -2671,7 +2673,7 @@ class Episciences_PapersManager
             return false;
         }
 
-        return (int) $result['NbSubmissions'];
+        return (int)$result['NbSubmissions'];
     }
 
     /**
