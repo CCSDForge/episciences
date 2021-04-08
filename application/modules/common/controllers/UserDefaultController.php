@@ -825,7 +825,7 @@ class UserDefaultController extends Zend_Controller_Action
             $userMapper = new Ccsd_User_Models_UserMapper();
             $userLogins = $userMapper->findLoginByEmail($form->getValue('EMAIL'));
 
-            if($userLogins !== null){
+            if ($userLogins !== null) {
                 $userLogins = $userLogins->toArray();
             }
 
@@ -839,10 +839,16 @@ class UserDefaultController extends Zend_Controller_Action
 
             // liste des logins trouvés + mention compte validé ou non
             $listeUserLogins = '';
+
+            try {
+                $unValidatedAccount = Zend_Registry::get('Zend_Translate')->translate(" (Vous n'avez pas encore validé ce compte par le courriel de validation)");
+            } catch (Exception $e) {
+                $unValidatedAccount = " (Vous n'avez pas encore validé ce compte par le courriel de validation)";
+            }
             foreach ($userLogins as $login) {
                 $listeUserLogins .= '- ' . $login['USERNAME'];
                 if ($login['VALID'] == 0) {
-                    $listeUserLogins .= " (Vous n'avez pas validé ce compte)";
+                    $listeUserLogins .= $unValidatedAccount;
                 }
                 $listeUserLogins .= "\n";
             }
@@ -954,38 +960,38 @@ class UserDefaultController extends Zend_Controller_Action
 
         if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()
                 ->getPost())) {
-    
-                    $user = new Ccsd_User_Models_User();
-                    $userMapper = new Ccsd_User_Models_UserMapper();
-    
-                    $testPreviousPassword = $userMapper->findByUsernamePassword(Episciences_Auth::getInstance()->getIdentity()
-                        ->getUsername(), $form->getValue('PREVIOUS_PASSWORD'));
-    
-                    if ($testPreviousPassword == null) {
-    
-                        $this->view->resultMessage = $this->view->message("Votre ancien mot de passe n'est pas correct.", 'danger');
-                        $this->view->form = $form;
-                        return $this->render('changepassword');
-                    }
-    
-                    try {
-    
-                        $user->setUid(Episciences_Auth::getUid());
-                        $user->setPassword($form->getValue('PASSWORD'));
-                        $user->setTime_modified();
-                        $affectedRows = $userMapper->savePassword($user);
-    
-                        if ($affectedRows == 1) {
-                            $this->redirect('/user/logout/reason/passwordupdated/lang/' . Episciences_Auth::getLangueid());
-                        } else {
-                            $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
-                            return $this->render('changepassword');
-                        }
-                    } catch (Exception $e) {
-                        $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
-                        return $this->render('changepassword');
-                    }
+
+            $user = new Ccsd_User_Models_User();
+            $userMapper = new Ccsd_User_Models_UserMapper();
+
+            $testPreviousPassword = $userMapper->findByUsernamePassword(Episciences_Auth::getInstance()->getIdentity()
+                ->getUsername(), $form->getValue('PREVIOUS_PASSWORD'));
+
+            if ($testPreviousPassword == null) {
+
+                $this->view->resultMessage = $this->view->message("Votre ancien mot de passe n'est pas correct.", 'danger');
+                $this->view->form = $form;
+                return $this->render('changepassword');
+            }
+
+            try {
+
+                $user->setUid(Episciences_Auth::getUid());
+                $user->setPassword($form->getValue('PASSWORD'));
+                $user->setTime_modified();
+                $affectedRows = $userMapper->savePassword($user);
+
+                if ($affectedRows == 1) {
+                    $this->redirect('/user/logout/reason/passwordupdated/lang/' . Episciences_Auth::getLangueid());
+                } else {
+                    $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
+                    return $this->render('changepassword');
                 }
+            } catch (Exception $e) {
+                $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
+                return $this->render('changepassword');
+            }
+        }
 
         $this->view->form = $form;
     }
@@ -1120,7 +1126,7 @@ class UserDefaultController extends Zend_Controller_Action
         $element->setValue($userRoles);
         $element->setSeparator('<br/>');
         $element->removeDecorator('Label');
-        $element->addDecorator('HtmlTag', array('tag' => 'div', 'class'  => "checkbox"));
+        $element->addDecorator('HtmlTag', ['tag' => 'div', 'class' => "checkbox"]);
         //$element->getDecorator('HtmlTag')->setOption('tag', 'div');
         $form->addElement($element);
 

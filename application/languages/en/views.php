@@ -1191,6 +1191,7 @@ return [
     'Mot de passe actuel' => 'Current password',
     'Le mot de passe que vous allez remplacer' => "The password you're about to change",
     'Nouveau mot de passe' => 'New password',
+    " (Vous n'avez pas encore validé ce compte par le courriel de validation)"=>" (You haven't yet validated this account with the validation e-mail)",
     '7 caractères minimum pour votre nouveau mot de passe' => 'Your new password should be at least 7 characters long',
     'Confirmez le mot de passe' => 'Confirm your password',
     'Confirmez votre nouveau mot de passe' => 'Confirm your new password',
