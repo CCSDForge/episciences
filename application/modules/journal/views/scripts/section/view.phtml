@@ -31,11 +31,11 @@
 			<?php if ($doc['author_fullname_s']) : ?>
 			<span class="authors"><?php 
 			
-			$arrayOfAuthors = '';
+			$arrayOfAuthors = [];
 			$authorSeparator = '&nbsp;;&nbsp;';
 			$maxNumberOfAuthors = 10;
 			$outputFormat = '<a data-toggle="tooltip" data-placement="bottom" title="' . $this->translate("Articles de l'auteur") . '" href="%s">%s</a>';
-			$arrayOfAuthorsWithURL = '';
+			$arrayOfAuthorsWithURL = [];
 			
 			foreach ($doc['author_fullname_s'] as $author) {
 				$tab = Ccsd_Search_Solr::facetStringResultAsArray($author);
@@ -65,7 +65,7 @@
 					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
 				}
 				$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
-				if (substr($authorList, - 1) != '.') {
+				if (substr($authorList, - 1) !== '.') {
 					$authorList .= '.';
 				}
 			}

@@ -138,16 +138,11 @@ class Episciences_Paper_Tei
         $translator = Zend_Registry::get('Zend_Translate');
 
         // load journal translations in context of OAI (eg volumes ; sections)
-        if (APPLICATION_MODULE == 'oai') {
-            if (is_dir($review->getTranslationsPath()) && count(scandir($review->getTranslationsPath())) > 2) {
-                $translator->addTranslation($review->getTranslationsPath());
-            }
+        if ((APPLICATION_MODULE === 'oai') && is_dir($review->getTranslationsPath()) && count(scandir($review->getTranslationsPath())) > 2) {
+            $translator->addTranslation($review->getTranslationsPath());
         }
 
         $this->setTranslator($translator);
-
-        return $this;
-
     }
 
     /**
@@ -574,7 +569,7 @@ class Episciences_Paper_Tei
     }
 
     private function isComment(string $comment) {
-        if (strpos(strtolower($comment), 'comment:') === 0) {
+        if (stripos($comment, 'comment:') === 0) {
             return true;
         }
         return false;
@@ -643,7 +638,7 @@ class Episciences_Paper_Tei
     }
 
     /**
-     * @param $t
+     * @param string $abstract
      * @return string
      */
     private function cleanAbstract(string $abstract): string

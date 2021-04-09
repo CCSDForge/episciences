@@ -1,0 +1,46 @@
+{
+  "1": {
+    "fieldName": "volume_fs",
+    "displayName": "Volume",
+    "searchMapping": "volume_id_i",
+    "minCount": 1,
+    "hasSepInValue" : true,
+    "maxReturned": 1000,
+    "translated": true,
+    "translationPrefix": "",
+    "sort": ""
+  },
+  "2": {
+    "fieldName": "section_fs",
+    "displayName": "Section",
+    "searchMapping": "section_id_i",
+    "minCount": 1,
+    "hasSepInValue" : true,
+    "maxReturned": 1000,
+    "translated": true,
+    "translationPrefix": "",
+    "sort": ""
+  },
+  "3": {
+    "fieldName": "author_fullname_s",
+    "displayName": "Auteur",
+    "searchMapping": "author_fullname_t",
+    "minCount": 1,
+    "hasSepInValue" : false,
+    "maxReturned": 1000,
+    "translated": false,
+    "translationPrefix": "",
+    "sort": ""
+  },
+  "4": {
+    "fieldName": "publication_date_year_fs",
+    "displayName": "Année",
+    "searchMapping" : "publication_date_year_fs",
+    "minCount": 1,
+    "hasSepInValue": false,
+    "maxReturned": 200,
+    "translated": false,
+    "translationPrefix": "",
+    "sort": "index"
+  }
+}

@@ -1,75 +1,57 @@
 <?php
 
 /**
- * Navbar : Liens vers les différentes applications + lien connexion et langues
+ * Class Ccsd_View_Helper_Navbar
  */
 class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 {
-
     /**
-     * Liste des applications
-     */
-
-    const APP_EPI = 'epi';
-
-    /**
-     * Afficher le choix des langues de l'interface
+     * UI languages display
      *
      * @var bool
      */
     protected $_displayLang = false;
 
     /**
-     * Tableau des langues de l'interface
+     * Array Of UI languages
      *
      * @var array
      */
     protected $_languages = [];
 
     /**
-     * Langue courante de l'interface
-     *
      * @var string
      */
     protected $_lang = '';
 
     /**
-     * Afficher le bouton Connexion
-     *
      * @var bool
      */
     protected $_displayLogin = false;
 
     /**
-     * Indique si l'utilisateur est connecté
-     *
      * @var bool
      */
     protected $_isLogged = false;
 
     /**
-     * Fichier de rendu du bloc "utilisateur connecté"
-     *
      * @var string
      */
-    protected $_userRenderScript = 'common/user.phtml';
+    protected $_userRenderScript = 'commons/user.phtml';
 
     /**
-     * Application active
-     *
      * @var string
      */
-    protected $_active = self::APP_EPI;
+    protected $_navBarSearchScript = 'commons/navbar-search-form.phtml';
 
     /**
-     * Préfixe des URLs des liens de la navbar
-     *
-     * @var string
+     * @var bool
      */
-    protected $_prefixUrl = '/';
-
     protected $_labelEnv = false;
 
+    /**
+     * @var string
+     */
     protected $_labelEnvClass = '';
 
     /**
@@ -77,10 +59,8 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
      * @param bool $langOptions
      * @param bool $displayLogin
      * @param array $loginOptions
-     * @param string $prefixUrl
-     * @param string $application
      */
-    public function navbar($displayLang, $langOptions, $displayLogin, $loginOptions, $prefixUrl = '/', $application = self::APP_EPI)
+    public function navbar($displayLang, $langOptions, $displayLogin, $loginOptions)
     {
         if ($displayLang) {
             $this->_displayLang = true;
@@ -104,32 +84,35 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                 }
             }
         }
-        $this->_prefixUrl = $prefixUrl;
-        $this->_active = $application;
 
         // Initialisation de la navbar en fonction de l'environnement
-        if (defined('APPLICATION_ENV') && APPLICATION_ENV != 'production') {
-            $this->_labelEnv = APPLICATION_ENV;
-            switch (APPLICATION_ENV) {
-
-                case 'development':
-                    $this->_labelEnvClass = 'label-danger';
-                    break;
-
-                case 'testing':
-                    $this->_labelEnvClass = 'label-warning';
-                    break;
-
-                case 'preprod':
-                    $this->_labelEnvClass = 'label-primary';
-                    break;
-
-                default:
-                    break;
-
-            }
+        if (defined('APPLICATION_ENV') && APPLICATION_ENV !== 'production') {
+            $this->defineEnvironmentLabel();
         }
-        return $this->render();
+        $this->render();
+    }
+
+    private function defineEnvironmentLabel()
+    {
+        $this->_labelEnv = APPLICATION_ENV;
+        switch (APPLICATION_ENV) {
+
+            case 'development':
+                $this->_labelEnvClass = 'label-danger';
+                break;
+
+            case 'testing':
+                $this->_labelEnvClass = 'label-warning';
+                break;
+
+            case 'preprod':
+                $this->_labelEnvClass = 'label-primary';
+                break;
+
+            default:
+                break;
+
+        }
     }
 
     public function render()
@@ -139,38 +122,55 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
         /** @var Zend_Controller_Request_Http $request */
         $request = Zend_Controller_Front::getInstance()->getRequest();
         ?>
-        <nav class="navbar navbar-default navbar-fixed-top" role="navigation" aria-label="Menu">
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" aria-label="Menu">
             <div class="navbar-header ">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#nav-services">
                     <span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span
                             class="icon-bar"></span> <span class="icon-bar"></span>
                 </button>
+
                 <div class="logo-episciences">
-                    <a class="brand" href="https://www.episciences.org/"
-                       title="Episciences"><img src="/img/episciences_tampon_50x50.png"
-                                                style="border: 0;"
-                                                alt="Episciences stamp logo"/></a>
+                    <a class="brand" href="https://www.<?php echo DOMAIN; ?>">
+                        <img src="/img/episciences_tampon_50x50.png"
+                             style="border: 0;"
+                             alt="Logo"/></a>
                     <?php
                     if ($this->_labelEnv != false) { ?>
                         <span style="margin-left: 8px;"
                               class="label <?php echo $this->_labelEnvClass; ?>"><?php echo $view->translate($this->_labelEnv); ?></span><?php } ?>
                 </div>
+
             </div>
-            <!--<?php //Liens services
-            ?>-->
+
             <div class="collapse navbar-collapse" id="nav-services">
                 <?php
                 if ($this->_displayLogin) { ?>
                     <div class="nav navbar-nav navbar-right">
                         <?php
+                        try {
+                            echo $this->view->render($this->_navBarSearchScript);
+                        } catch (Exception $e) {
+                            trigger_error('Failed rendering ' . $this->_navBarSearchScript, E_USER_WARNING);
+                        }
+                        ?>
+
+
+                        <?php
                         if ($this->_isLogged) {
                             try {
                                 echo $this->view->render($this->_userRenderScript);
                             } catch (Exception $e) {
+                                trigger_error('Failed rendering ' . $this->_userRenderScript, E_USER_WARNING);
                             }
                         } else { ?>
-                            <form class="form-inline pull-right" style="margin-top: 8px; margin-right: 8px;"
-                                  action="<?php echo $this->_prefixUrl; ?>user/login?locale=<?= $this->_lang ?>" id="form-login" method="post">
+                            <a class="btn btn-default navbar-btn"
+                               href="/user/create">
+                                <i class="fas fa-plus"></i>&nbsp;<?php echo $view->translate('Créer un compte'); ?>
+                            </a>
+                            &nbsp;
+                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;"
+                                  action="/user/login"
+                                  id="form-login" method="post">
                                 <input type="hidden" name="forward-controller"
                                        value="<?php echo $request->getControllerName(); ?>"/>
                                 <input type="hidden" name="forward-action"
@@ -181,29 +181,25 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
                                 foreach ($forwardParams as $name => $value) {
                                     if (is_array($value)) {
-                                        if ($name != 'qa') {
-                                            echo '<input type="hidden" name="' . htmlspecialchars($name) . '[]" value="' . htmlspecialchars(implode(' OR ', $value)) . '" />';
-                                        } else {
-                                            // cas particulier pour la recherche avancée
-                                            $url = urldecode($_SERVER['REDIRECT_QUERY_STRING']);
-                                        }
+                                        echo '<input type="hidden" name="' . htmlspecialchars($name) . '[]" value="' . htmlspecialchars(implode(' OR ', $value)) . '" />';
                                     } else if (is_string($value)) {
                                         echo '<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($value) . '" />';
                                     }
                                 }
+                                ?>
 
-                                if (isset($url)) {
-                                    echo '<input type="hidden" name="forward-uri" value="' . htmlspecialchars($url) . '" />';
-                                } ?>
+
                                 <div class="btn-group">
+
+
                                     <button class="btn btn-small btn-primary" type="button"
                                             onclick="$('#form-login').submit();" accesskey="l">
-                                        <?php $view->iconDisplay("glyphicon glyphicon-user glyphicon-white") ?>
+                                        <i class="fas fa-sign-in-alt"></i>
                                         &nbsp;<?php echo $view->translate('Connexion'); ?></button>
                                     <button class="btn btn-small btn-primary dropdown-toggle" data-toggle="dropdown"
-                                            type="button" style="padding-top: 7px;">
+                                            type="button">
                                         <span class="caret"
-                                              style="border-top-color: #fff; border-bottom-color: #fff;"></span>
+                                              style=""></span>
                                     </button>
 
                                     <ul class="dropdown-menu pull-right">
@@ -212,14 +208,10 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                                         </li>
                                         <li class="divider"></li>
                                         <li>
-                                            <a href="<?php echo $this->_prefixUrl; ?>user/create"><?php echo $view->translate('Créer un compte'); ?></a>
-                                        </li>
-                                        <li class="divider"></li>
-                                        <li>
-                                            <a href="<?php echo $this->_prefixUrl; ?>user/lostpassword"><?php echo $view->translate('Mot de passe oublié ?'); ?></a>
+                                            <a href="/user/lostpassword"><?php echo $view->translate('Mot de passe oublié ?'); ?></a>
                                         </li>
                                         <li>
-                                            <a href="<?php echo $this->_prefixUrl; ?>user/lostlogin"><?php echo $view->translate('Login oublié ?'); ?></a>
+                                            <a href="/user/lostlogin"><?php echo $view->translate('Login oublié ?'); ?></a>
                                         </li>
                                     </ul>
                                 </div>

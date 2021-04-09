@@ -16,14 +16,17 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_FILE = 'file';
     const PAGE_NEWS = 'news';
     const PAGE_RSS = 'rss';
+
     const PAGE_BROWSE_BY_AUTHOR = 'browseByAuthor';
     const PAGE_BROWSE_BY_DATE = 'browseByDate';
     const PAGE_BROWSE_BY_SECTION = 'browseBySection';
     const PAGE_BROWSE_BY_VOLUME = 'browseByVolume';
+
     const PAGE_BROWSE_LATEST = 'browseLatest';
     const PAGE_BROWSE_CURRENT_ISSUES = 'browseCurrentIssues';
     const PAGE_BROWSE_SPECIAL_ISSUES = 'browseSpecialIssues';
     const PAGE_BROWSE_REGULAR_ISSUES = 'browseRegularIssues';
+
     const PAGE_SEARCH = 'search';
     const PAGE_EDITORIAL_STAFF = 'editorialStaff';
 
@@ -48,7 +51,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      * Initialisation des options de la navigation
      * @see Ccsd_Website_Navigation::setOptions($options)
      */
-    public function setOptions($options = array())
+    public function setOptions($options = [])
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
@@ -57,7 +60,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                     $this->_sid = $value;
                     break;
                 case 'languages':
-                    $this->_languages = is_array($value) ? $value : array($value);
+                    $this->_languages = is_array($value) ? $value : [$value];
                     break;
             }
 
@@ -75,11 +78,11 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             ->where('SID = ?', $this->_sid)
             ->order('NAVIGATIONID ASC');
 
-        $this->_pages = array();
+        $this->_pages = [];
         $reader = new Ccsd_Lang_Reader('menu', REVIEW_LANG_PATH, $this->_languages, true);
         foreach ($this->_db->fetchAll($sql) as $row) {
             //Récupération des infos sur la page en base
-            $options = array('languages' => $this->_languages);
+            $options = ['languages' => $this->_languages];
             foreach ($this->_languages as $lang) {
                 $options['labels'][$lang] = $reader->get($row['LABEL'], $lang);
             }
@@ -94,14 +97,14 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 $this->_idx = $row['PAGEID'];
             }
             if ($row['PARENT_PAGEID'] == 0) {
-                $this->_order[$row['PAGEID']] = array();
+                $this->_order[$row['PAGEID']] = [];
             } else {
                 if (isset($this->_order[$row['PARENT_PAGEID']])) {
-                    $this->_order[$row['PARENT_PAGEID']][$row['PAGEID']] = array();
+                    $this->_order[$row['PARENT_PAGEID']][$row['PAGEID']] = [];
                 } else {
                     foreach ($this->_order as $i => $elem) {
                         if (is_array($elem) && isset($this->_order[$i][$row['PARENT_PAGEID']])) {
-                            $this->_order[$i][$row['PARENT_PAGEID']][$row['PAGEID']] = array();
+                            $this->_order[$i][$row['PARENT_PAGEID']][$row['PAGEID']] = [];
                         }
                     }
                 }
@@ -109,7 +112,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
         if (count($this->_pages) == 0) {
             $this->_pages[0] = new Episciences_Website_Navigation_Page_Index();
-            $this->_order[0] = array();
+            $this->_order[0] = [];
         }
         $this->_idx++;
     }
@@ -120,16 +123,15 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      */
     public function save()
     {
-        //Zend_Debug::dump($this->_pages);
-        //Zend_Debug::dump($this->_order);exit;
-
         //Suppression de l'ancien menu
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
 
-        $lang = array();
+        $lang = [];
         //Enregistrement des nouvelles données
         $i = 1;
+
         foreach ($this->_order as $pageid => $spageids) {
+
             if (isset($this->_pages[$pageid])) {
                 //Initialisation de la pageid
                 $this->_pages[$pageid]->setPageId($i);
@@ -168,7 +170,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
 
         //Enregistrement des traductions dans des fichiers
-        //Zend_Debug::dump($lang);exit;
         $writer = new Ccsd_Lang_Writer($lang);
         $writer->write(REVIEW_LANG_PATH, 'menu');
     }
@@ -187,7 +188,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
 
         //Enregistrement en base
-        $bind = array(
+        $bind = [
             'SID' => $this->_sid,
             'PAGEID' => $page->getPageId(),
             'TYPE_PAGE' => $page->getPageClass(),
@@ -196,20 +197,22 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             'LABEL' => $page->getLabelKey(),
             'PARENT_PAGEID' => $page->getPageParentId(),
             'PARAMS' => $page->getSuppParams()
-        );
+        ];
+
+
         $this->_db->insert($this->_table, $bind);
     }
 
     /**
      * Vérification de l'unicité du lien permanent
-     * @param Ccsd_Website_Navigation_Page $page
-     * @return string|Ambigous <string, mixed>
+     * @param $page
+     * @return string|string[]|null
      */
     protected function getUniqPermalien($page)
     {
         $permalien = $page->getPermalien();
         //Liste des permaliens
-        $permaliens = array();
+        $permaliens = [];
         foreach ($this->_pages as $p) {
             if ($p->isCustom() && $p != $page) {
                 $permaliens[] = $p->getPermalien();
@@ -218,11 +221,28 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
         while (in_array($permalien, $permaliens)) {
             $newPermalien = preg_replace_callback('#([-_]?)(\d*)$#', function ($matches) {
-                if ($matches[0] != '') return ($matches[1] . ($matches[2] + 1));
+                if ($matches[0] != '') {
+                    return ($matches[1] . ($matches[2] + 1));
+                }
             }, $permalien);
             $permalien = ($permalien == $newPermalien) ? $permalien . '1' : $newPermalien;
         }
         return $permalien;
+    }
+
+    /**
+     * Création de la navigation pour le site
+     * @param string $filename nom du fichier de navigation
+     */
+    public function createNavigation($filename)
+    {
+        $dir = substr($filename, 0, strrpos($filename, '/'));
+        if (!is_dir($dir)) {
+            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
+            }
+        }
+        file_put_contents($filename, Zend_Json::encode($this->toArray()));
     }
 
     /**
@@ -231,7 +251,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      */
     public function toArray()
     {
-        $res = array();
+        $res = [];
         $id = 0;
         foreach ($this->_order as $pageid => $spageids) {
             if (isset($this->_pages[$pageid])) {
@@ -259,19 +279,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
 
         return $res;
-    }
-
-    /**
-     * Création de la navigation pour le site
-     * @param string $filename nom du fichier de navigation
-     */
-    public function createNavigation($filename)
-    {
-        $dir = substr($filename, 0, strrpos($filename, '/'));
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        file_put_contents($filename, Zend_Json::encode($this->toArray()));
     }
 
 }

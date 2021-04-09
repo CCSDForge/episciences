@@ -61,7 +61,6 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
 
     /**
      * Initialisation du nom de la page
-     * @return string
      */
     public function setPage($page)
     {
@@ -90,7 +89,6 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
 
     /**
      * Initialisation du permalien
-     * @return string
      */
     public function setPermalien($permalien)
     {
@@ -224,7 +222,7 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
 
         // Parcours du répertoire
         if ($dir = opendir(REVIEW_PAGE_PATH)) {
-            while (($file = readdir($dir))) {
+            while ($file = readdir($dir)) {
                 $details = $this->getDetails($file);
                 $filepath = REVIEW_PAGE_PATH . $details['name'] . '.' . $details['lang'] . '.' . $details['extension'];
                 // On cherche les fichiers qui portent le même nom (après suppression du timestamp) que celui qu'on souhaite enregistrer
@@ -294,27 +292,8 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
             $filename = $this->getPagePath($lang, $old);
             if (file_exists($filename)) {
                 rename($filename, $this->getPagePath($lang, $new));
-                /*
-                // TODO Rename old versions
-                $versions = $this->getPreviousVersions($lang);
-                foreach ($versions as $file) {
-                }
-                */
             }
         }
     }
 
-
-    /**
-     * Enregistrement des fichiers
-     * @param int $pageid
-     *
-     * public function save($pageid)
-     * {
-     * //Existance du répertoire
-     * if (! is_dir(PATH_PAGES)) {
-     * mkdir(PATH_PAGES, 0777, true);
-     * }
-     * file_put_contents(PATH_PAGES . 'page.' . $pageid . '.html', $this->_content);
-     * }*/
 }

@@ -137,7 +137,7 @@ abstract class Ccsd_Oai_Server {
 					}
 					$this->listIdentifiers();
 					break;
-				case "ListRecords":
+                case self::OAI_VERB_LISTRECS:
 					if ( ! array_key_exists("metadataPrefix", $this->_params) && ! array_key_exists("resumptionToken", $this->_params) ) {
 						$error = new Ccsd_Oai_Error('missingArgument', 'metadataPrefix');
 						if ( $this->_xml instanceof Ccsd_DOMDocument ) {
@@ -387,8 +387,11 @@ abstract class Ccsd_Oai_Server {
                 $header->appendXML($rec['header']);
                 $record->appendChild($header);
                 $metadata = $this->_xml->createElement('metadata');
-                if ( $format == 'xml-tei' ) {
+                if ( $format == 'xml-tei' || $format == 'tei' ) {
                     $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:tei', 'http://www.tei-c.org/ns/1.0');
+                }
+                if ( $format == 'datacite' ) {
+                    $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
                 }
                 $data = $this->_xml->createDocumentFragment();
                 $data->appendXML($rec['metadata']);
@@ -541,6 +544,9 @@ abstract class Ccsd_Oai_Server {
                         if ( $format == 'xml-tei' || $format == 'tei' ) {
                             $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:tei', 'http://www.tei-c.org/ns/1.0');
                         }
+                        if ( $format == 'datacite' ) {
+                            $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
+                        }
                         $data = $this->_xml->createDocumentFragment();
                         $data->appendXML($document['metadata']);
                         $metadata->appendChild($data);
@@ -558,7 +564,7 @@ abstract class Ccsd_Oai_Server {
         } else {
             if ( $docids === 0 ) {
                 $error = new Ccsd_Oai_Error('noRecordsMatch');
-            } else if ( $docids == 'token' ) {
+            } else if ( $docids === 'token' ) {
                 $error = new Ccsd_Oai_Error('badResumptionToken', $token);
             } else {
                 $error = new Ccsd_Oai_Error('100', 'Solr', 'Error');

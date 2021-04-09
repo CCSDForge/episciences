@@ -8,10 +8,10 @@ use Psr\Http\Message\StreamInterface;
 
 class StatsController extends Zend_Controller_Action
 {
-    const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9"];
-    const CHART_TYPE = ['BAR' => 'bar', 'PIE' => 'pie', 'BAR_H' => 'barH', 'DOUGHNUT' => 'doughnut', 'LINE' => 'line'];
+    public const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9"];
+    public const CHART_TYPE = ['BAR' => 'bar', 'PIE' => 'pie', 'BAR_H' => 'barH', 'DOUGHNUT' => 'doughnut', 'LINE' => 'line'];
 
-    const ACCEPTED_SUBMISSIONS = [
+    public const ACCEPTED_SUBMISSIONS = [
         Episciences_Paper::STATUS_ACCEPTED,
         Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
         Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
@@ -22,8 +22,8 @@ class StatsController extends Zend_Controller_Action
         Episciences_Paper::STATUS_CE_READY_TO_PUBLISH
     ];
 
-    const CURRENT_RVID = 23;
-    const IS_AVAILABLE = true;
+    public const CURRENT_RVID = RVID;
+    public const IS_AVAILABLE = false;
 
     public function indexAction()
     {
@@ -282,7 +282,7 @@ class StatsController extends Zend_Controller_Action
             'Content-type' => 'application/json',
             'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
             'X-AUTH-RVID' => self::CURRENT_RVID,
-            'X-AUTH-UID' => 583965
+            'X-AUTH-UID' => Episciences_Auth::getUid()
         ];
 
         $gOptions = [

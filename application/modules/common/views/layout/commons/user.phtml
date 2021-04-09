@@ -3,7 +3,7 @@
 		<a href="#" class="dropdown-toggle" data-toggle="dropdown">
 		<img class="user-photo-thumb" src="/user/photo/size/thumb?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>" alt="<?= $this->translate('Ma photo'); ?>"/>
 
-			&nbsp;<?php echo Episciences_Auth::getScreenName(); ?>
+			&nbsp;<?php echo $this->escape(Episciences_Auth::getScreenName()); ?>
 		 	<b class="caret"></b> 
 		 </a>
 		 <ul class="dropdown-menu pull-right">
@@ -16,8 +16,7 @@
 	                        </a>
                             </td>
 		                	<td class="text-left">
-		                	<strong><?php echo Episciences_Auth::getScreenName(); ?></strong><br />
-		                	<i><?php echo Episciences_Auth::getInstance()->getIdentity()->getEMail(); ?></i><br />
+		                	<strong><?php echo $this->escape(Episciences_Auth::getScreenName()); ?></strong><br />
 		                	<a href="/user/edit" class="btn btn-primary btn-xs"><?php echo $this->translate("Modifier mon profil") ?></a>
 		                	<a href="/user/changepassword" class="btn btn-primary btn-xs"><?php echo $this->translate("Modifier mon mot de passe") ?></a>
 		                </td>
@@ -34,7 +33,7 @@
 			</li>
 			<li class="divider"></li>
 			<li style="padding:0 10px 10px; text-align:center;">
-					<span><a href="/user/logout" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-off"></span>&nbsp;<?php echo $this->translate("Déconnexion") ?></a></span>
+					<span><a href="/user/logout" class="btn btn-default btn-xs"><i class="fas fa-sign-out-alt"></i>&nbsp;<?php echo $this->translate("Déconnexion") ?></a></span>
 			</li>
 		</ul>
 	</li>

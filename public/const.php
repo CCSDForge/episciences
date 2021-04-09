@@ -101,6 +101,8 @@ function define_review_constants()
         define('REVIEW_FILES_PATH', REVIEW_PATH . 'files/');
         define('REVIEW_GRIDS_PATH', REVIEW_FILES_PATH . 'rating_grids/');
 
+        define('REVIEW_DOCUMENT_DIR_NAME', 'documents');
+
         define('REVIEW_GRID_NAME_DEFAULT', 'grid_0.xml');
         define('REVIEW_PATH_DEFAULT', dirname(APPLICATION_PATH) . '/data/default/files/rating_grids' . '/');
 
