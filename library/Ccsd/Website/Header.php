@@ -104,7 +104,7 @@ class Ccsd_Website_Header
 			foreach ($row as $key => $value) {
 				$key = strtolower($key);
 				if ($key == 'text') {
-					$value = unserialize($value);
+					$value = unserialize($value, ['allowed_classes' => false]);
 				} 
 				$this->_logos['logo_' . $i][$key] = $value;
 			}

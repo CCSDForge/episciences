@@ -65,7 +65,7 @@ class Episciences_Search_Solr_Search extends Ccsd_Search_Solr_Search
 
         try {
             $solrResponse = Ccsd_Tools::solrCurl($baseQueryString, 'episciences');
-            $solrResponse = unserialize($solrResponse);
+            $solrResponse = unserialize($solrResponse, ['allowed_classes' => false]);
         } catch (Exception $e) {
             return [];
         }

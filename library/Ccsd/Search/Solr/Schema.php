@@ -60,7 +60,7 @@ class Ccsd_Search_Solr_Schema extends Ccsd_Search_Solr
             return $this;
         }
 
-        $r = unserialize($r);
+        $r = unserialize($r, ['allowed_classes' => false]);
 
         if (!isset($r ['fields'])) {
             $this->setFields(null);
@@ -220,7 +220,7 @@ class Ccsd_Search_Solr_Schema extends Ccsd_Search_Solr
                 continue;
             }
 
-            $r = unserialize($r);
+            $r = unserialize($r, ['allowed_classes' => false]);
 
             if (array_key_exists('facet_counts', $r)) {
                 $results += $r ['facet_counts'] ['facet_fields'];
@@ -300,7 +300,7 @@ class Ccsd_Search_Solr_Schema extends Ccsd_Search_Solr
             return null;
         }
 
-        $r = unserialize($r);
+        $r = unserialize($r, ['allowed_classes' => false]);
 
         foreach ($r ["fields"] as $fieldName => $field) {
             if (array_key_exists("dynamicBase", $field)) {

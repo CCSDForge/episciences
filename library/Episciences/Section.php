@@ -456,7 +456,7 @@ class Episciences_Section
             $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
 
             if ($result) {
-                $numFound = unserialize($result)['response']['numFound'];
+                $numFound = unserialize($result, ['allowed_classes' => false])['response']['numFound'];
             } else {
                 $numFound = 0;
             }
@@ -487,7 +487,7 @@ class Episciences_Section
             $positions = [];
             // $positions = $this->getPaperPositions();
 
-            $response = unserialize($result)['response'];
+            $response = unserialize($result, ['allowed_classes' => false])['response'];
             $unsorted_papers = [];
             $sorted_papers = [];
             foreach ($response['docs'] as $paper) {
