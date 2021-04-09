@@ -1021,11 +1021,14 @@ class Episciences_Mail_Reminder
 
             if ($data['TMP_USER'] == 1) {
                 $user = new Episciences_User_Tmp;
-                $user->find($data['UID']);
-                $user->generateScreen_name();
-                $fullname = $user->getFullName();
-                $lang = $user->getLangueid(true);
-                $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/' . $lang . '/tmp/' . md5($user->getEmail());
+
+                if(!empty($user->find($data['UID']))){
+                    $user->generateScreen_name();
+                    $fullname = $user->getFullName();
+                    $lang = $user->getLangueid(true);
+                    $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/' . $lang . '/tmp/' . md5($user->getEmail());
+                }
+
             } else {
                 $user = new Episciences_User;
                 $user->findWithCAS($data['UID']);

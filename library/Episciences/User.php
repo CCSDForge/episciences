@@ -21,7 +21,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /** @var array */
     protected $_aliases = [];
     protected $_api_password;
-    protected $_is_valid;
+    protected $_is_valid = 1;
     protected $_registration_date;
     protected $_modification_date;
 
@@ -367,7 +367,7 @@ class Episciences_User extends Ccsd_User_Models_User
             'FIRSTNAME' => $this->getFirstname(),
             'MIDDLENAME' => $this->getMiddlename(),
             'REGISTRATION_DATE' => $this->getRegistration_date(),
-            'MODIFICATION_DATE' => $this->setModification_date()->getModification_date(),
+            'MODIFICATION_DATE' => $this->getModification_date(),
             'IS_VALID' => $this->getIs_valid()
         ];
 
@@ -386,7 +386,7 @@ class Episciences_User extends Ccsd_User_Models_User
             // L'utilisateur n'a pas de rôles pour cette revue : on lui en crée un
             $rData = ['RVID' => RVID, 'UID' => $uid, 'ROLEID' => 'member'];
 
-            if (!$this->hasRoles($uid) && !$this->_db->insert(T_USER_ROLES, $rData )) {
+            if (!$this->hasRoles($uid) && !$this->_db->insert(T_USER_ROLES, $rData)) {
                 return false;
             }
 
@@ -486,7 +486,7 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         if (!isset($result['API_PASSWORD']) || ($result['API_PASSWORD'] === '')) {
-            $result['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT);
+            $result['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_BCRYPT);
         }
 
         if (!isset($result['REGISTRATION_DATE'])) {
@@ -521,6 +521,11 @@ class Episciences_User extends Ccsd_User_Models_User
             $result['MIDDLENAME'] = $this->getMiddlename();
         }
 
+        if (!isset($result['IS_VALID'])) {
+            $result['IS_VALID'] = 1;
+        } else {
+            $result['IS_VALID'] = (int)$result['IS_VALID'];
+        }
 
         $this->setUid($result['UID']);
         $this->setUsername($result['USERNAME']);
@@ -945,7 +950,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return int
      */
-    public function getIs_valid(): int
+    public function getIs_valid()
     {
         return $this->_is_valid;
     }
