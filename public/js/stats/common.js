@@ -43,7 +43,11 @@ function createChart(context, data, type = null, title = '') {
                     scaleLabel: {
                         display: true,
                         labelString: ""
+                    },
+                    afterDataLimits(scale) { // Prevent hiding data label value when the constraints of the graph are reached.
+                        scale.max += 1
                     }
+
                 }],
                 yAxes: [{
                     ticks: {
@@ -57,7 +61,7 @@ function createChart(context, data, type = null, title = '') {
                         labelString: ""
                     },
                     afterDataLimits(scale) { // Prevent hiding data label value when the constraints of the graph are reached.
-                       scale.max += 2
+                       scale.max += 100
                     }
                 }],
             }

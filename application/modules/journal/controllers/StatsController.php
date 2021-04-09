@@ -2,6 +2,8 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
 class StatsController extends Zend_Controller_Action
@@ -9,18 +11,38 @@ class StatsController extends Zend_Controller_Action
     const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9"];
     const CHART_TYPE = ['BAR' => 'bar', 'PIE' => 'pie', 'BAR_H' => 'barH', 'DOUGHNUT' => 'doughnut', 'LINE' => 'line'];
 
+    const ACCEPTED_SUBMISSIONS = [
+        Episciences_Paper::STATUS_ACCEPTED,
+        Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
+        Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
+        Episciences_Paper::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
+        Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
+        Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
+        Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
+        Episciences_Paper::STATUS_CE_READY_TO_PUBLISH
+    ];
+
+    const CURRENT_RVID = 23;
+    const IS_AVAILABLE = true;
 
     public function indexAction()
     {
+
+        if (!self::IS_AVAILABLE) {
+            $this->view->errorMessage = "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations.";
+            return;
+        }
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
 
         $uri = 'review/stats/dashboard';
+
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
 
-        try {
-            $result = json_decode($this->askApi($uri), true);
+        try { // api request
+            $result = json_decode($this->askApi($uri, ['rvid' => self::CURRENT_RVID, 'withDetails' => '', 'year' => $yearQuery]), true);
         } catch (GuzzleException $e) {
             $this->view->errorMessage = $errorMessage;
             return;
@@ -32,13 +54,8 @@ class StatsController extends Zend_Controller_Action
         }
 
         $dashboard = $result[array_key_first($result)];
-
-        $allSubmissions = $dashboard['submissions']['value']; // all review submissions
-        $moreDetails = $dashboard['submissions']['details']['moreDetails'];
-
-        $yearCategories = array_filter(array_keys($moreDetails), static function ($value) {
-            return !empty($value);
-        });
+        $details = $dashboard['submissions']['details'];
+        $yearCategories = array_keys($details['submissionsByYear']);
 
         $this->view->yearCategories = $yearCategories; // navigation
 
@@ -55,13 +72,13 @@ class StatsController extends Zend_Controller_Action
         $allPublications = $allRefusals = $allAcceptations = 0;
         $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = null;
 
-
         if ($yearQuery) { // for stats by year
             $yearCategories = [$yearQuery];
         }
 
         $submissionsDelay = $dashboard['submissionsDelay'];
         $publicationsDelay = $dashboard['publicationsDelay'];
+        $allSubmissions = $dashboard['submissions']['value']; // all review submissions
 
         foreach ($yearCategories as $year) {
 
@@ -69,15 +86,11 @@ class StatsController extends Zend_Controller_Action
 
             $nbPublications = $nbRefusals = $nbAcceptation = 0;
 
-            $submissionsByYearResponse = array_key_exists($year, $moreDetails) ? $moreDetails[$year] : [];
+            $submissionsByYearResponse = array_key_exists($year, $details['moreDetails']) ? $details['moreDetails'][$year] : [];
 
-            foreach ($submissionsByYearResponse as $repoId => $values) { // submissions by repository
-
-                $totalByRepo = 0;
+            foreach ($submissionsByYearResponse as $values) {
 
                 foreach ($values as $status => $nbSubmissions) {
-
-                    $totalByRepo += $nbSubmissions['nbSubmissions'];
 
                     if ($status === Episciences_Paper::STATUS_PUBLISHED) {
                         $allPublications += $nbSubmissions['nbSubmissions'];
@@ -89,17 +102,13 @@ class StatsController extends Zend_Controller_Action
                         $nbRefusals += $nbSubmissions['nbSubmissions'];
                     }
 
-                    if (in_array($status, Episciences_Paper::$_canBeAssignedDOI, true)) {
+                    if (in_array($status, self::ACCEPTED_SUBMISSIONS, true)) {
                         $allAcceptations += $nbSubmissions['nbSubmissions'];
                         $nbAcceptation += $nbSubmissions['nbSubmissions'];
                     }
 
                     unset($status, $nbSubmissions);
                 }
-
-                $series['submissionsByRepo'][$repoId]['nbSubmissions'][] = $totalByRepo;
-
-                unset($totalByRepo);
 
             }
 
@@ -114,19 +123,33 @@ class StatsController extends Zend_Controller_Action
                 $series['publicationsByYear']['percentage'][] = round($nbPublications / $totalByYear * 100, 2);
             }
 
-            if (!empty($submissionsDelay['details']) && array_key_exists($year, $submissionsDelay['details'][RVID])) {
-                $series['delayBetweenSubmissionAndAcceptance'][] = $submissionsDelay['details'][RVID][$year]['delay'];
+            // submission by repo
+            foreach ($details['submissionsByRepo'][$year] as $repoId => $val) {
+                $series['submissionsByRepo'][$repoId]['nbSubmissions'][] = $val['submissions'];
             }
 
-            if (!empty($publicationsDelay['details']) && array_key_exists($year, $publicationsDelay['details'][RVID])) {
-                $series['delayBetweenSubmissionAndPublication'][] = $publicationsDelay['details'][RVID][$year]['delay'];
+            if (!empty($submissionsDelay['details'])) {
+                if (array_key_exists($year, $submissionsDelay['details'][self::CURRENT_RVID])) {
+                    $series['delayBetweenSubmissionAndAcceptance'][] = $submissionsDelay['details'][self::CURRENT_RVID][$year]['delay'];
+                } else {
+                    $series['delayBetweenSubmissionAndAcceptance'][] = null;
+                }
             }
+
+            if (!empty($publicationsDelay['details'])) {
+
+                if (array_key_exists($year, $publicationsDelay['details'][self::CURRENT_RVID])) {
+                    $series['delayBetweenSubmissionAndPublication'][] = $publicationsDelay['details'][self::CURRENT_RVID][$year]['delay'];
+                } else {
+                    $series['delayBetweenSubmissionAndPublication'][] = null;
+                }
+            }
+
         }
 
         unset($totalByYear, $nbPublications, $nbRefusals, $nbPublications);
 
         if ($yearQuery) {
-
             $allSubmissions = $series['submissionsByYear']['submissions'][0];
             $allPublications = $series['publicationsByYear']['publications'][0];
             $allRefusals = $series['refusalsByYear']['refusals'][0];
@@ -140,7 +163,6 @@ class StatsController extends Zend_Controller_Action
             $publicationsPercentage = round($allPublications / $allSubmissions * 100, 2);
             $refusalsPercentage = round($allRefusals / $allSubmissions * 100, 2);
             $acceptationsPercentage = round($allAcceptations / $allSubmissions * 100, 2);
-
         }
 
         $label1 = ucfirst($this->view->translate('soumissions'));
@@ -193,48 +215,40 @@ class StatsController extends Zend_Controller_Action
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Publication'), 'data' => $series['delayBetweenSubmissionAndPublication'], 'backgroundColor' => self::COLORS_CODE[4]];
         $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
 
+        $isAvailableUsersStats = array_key_exists('users', $dashboard);
+
         //Users stats
-        $nbUsersByRole = [];
         $rolesJs = [];
-
-        if ($yearQuery || !array_key_exists('users', $dashboard)) {
-            $uUri = 'users/stats/nb-users';
-            try {
-                $usersStats = json_decode($this->askApi($uUri, ['registrationDate' => $yearQuery], 'users'), true);
-
-            } catch (GuzzleException $e) {
-                $usersStats = [];
-            }
-
-            $usersDetails = $usersStats[0]['details'];
-
-        } else {
-
-            $usersStats = $dashboard['users'];
-            $usersDetails = $usersStats['details'];
-            $roles = array_keys($usersDetails);
-            $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
-            unset($roles[$rootKey]);
-
-        }
-
-        $roles = array_keys($usersDetails);
-        $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
-        unset($roles[$rootKey]);
-
-        //figure 5
-        $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par <code>rôles</code>");
-
+        $nbUsersByRole = [];
         $data = [];
 
-        foreach ($roles as $key => $role) {
-            $rolesJs[] = $this->view->translate($role);
-            $data[] = $usersDetails[$role]['nbUsers'];
+        if ($isAvailableUsersStats) {
+            $allUsers = $dashboard['users']['value'];
+            $usersDetails = $dashboard['users']['details'][self::CURRENT_RVID];
+            $roles = array_keys($usersDetails);
+            $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
+
+            if ($rootKey !== false) {
+                unset($roles[$rootKey]);
+            }
+
+            foreach ($roles as $key => $role) {
+                $rolesJs[] = $this->view->translate($role);
+                $data[] = $usersDetails[$role]['nbUsers'];
+            }
+
+            //figure 5
+            $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par <code>rôles</code>");
+            $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
+            $this->view->allUsers = $allUsers;
+
         }
 
         $nbUsersByRole['datasets'][] = ['label' => $this->view->translate("Nombre d'utilisateurs"), 'data' => $data, 'backgroundColor' => self::COLORS_CODE[4]];
-        $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
-        $this->view->allUsers = !$yearQuery ? $usersStats['value'] : $usersStats[0]['value'];
+
+        $this->view->roles = $rolesJs;
+        $this->view->nbUsersByRole = $nbUsersByRole;
+
 
         $this->view->allSubmissionsJs = $allSubmissions;
         $this->view->allPublications = $allPublications;
@@ -249,43 +263,63 @@ class StatsController extends Zend_Controller_Action
         $this->view->seriesJs = $seriesJs;
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
-        $this->view->roles = $rolesJs;
-        $this->view->nbUsersByRole = $nbUsersByRole;
+        $this->view->isAvailableUsersStats = $isAvailableUsersStats;
     }
 
     /**
      * @param $uri
      * @param array $options
-     * @param string|null $resource
+     * @param bool $isAsynchronous
      * @return StreamInterface
      * @throws GuzzleException
      */
-    private function askApi($uri, array $options = [], string $resource = null): StreamInterface
+    private function askApi($uri, array $options = [], $isAsynchronous = false): StreamInterface
     {
         $url = EPISCIENCES_API_URL . $uri;
 
-        $url = $resource !== 'users' ? $url . '?rvid=' . RVID : $url . '?roles.rvid=' . RVID;
-
-        $defaultOptions = [
-            'headers' => [
-                'Accept' => 'application/json',
-                'Content-type' => 'application/json',
-                'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
-                'X-AUTH-RVID' => RVID,
-                'X-AUTH-UID' => Episciences_Auth::getUid()
-            ]
+        $headers = [
+            'Accept' => 'application/json',
+            'Content-type' => 'application/json',
+            'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
+            'X-AUTH-RVID' => self::CURRENT_RVID,
+            'X-AUTH-UID' => 583965
         ];
 
-        $options = array_merge($defaultOptions, $options);
+        $gOptions = [
+            'headers' => $headers,
+            'query' => $options
+        ];
 
         $client = new Client();
 
-        try {
-            return $client->request('GET', $url, $options)->getBody();
-        } catch (GuzzleException $e) {
-            error_log('SATATISTIC_MODULE: ' . $e->getMessage());
-            throw $e;
+        if (!$isAsynchronous) {
+            try {
+                $request = $client->request('GET', $url, $gOptions);
+            } catch (GuzzleException $e) {
+                error_log('SATATISTIC_MODULE: ' . $e->getMessage());
+                throw $e;
+            }
+
+            return $request->getBody();
+
         }
+
+        $promise = $client->requestAsync('GET', $url, $gOptions);
+
+        $promise->then(
+            function (ResponseInterface $res) {
+                return $res->getBody();
+            },
+            function (RequestException $e) {
+                error_log('SATATISTIC_MODULE: ' . $e->getMessage());
+                throw $e;
+            }
+        );
+
+        /** @var GuzzleHttp\Psr7\Response $response */
+        $response = $promise->wait();
+        return $response->getBody();
+
     }
 
 }
