@@ -53,7 +53,7 @@ class ApiController extends Zend_Controller_Action
     }
 
     /**
-     * Metrics for OpenAIRE formatted for https://prometheus.io/
+     * Metrics for OpenAIRE formatted as Openmetrics
      */
     public function openaireMetricsAction()
     {

@@ -2642,7 +2642,7 @@ class Episciences_PapersManager
         return $resUpdate;
     }
 
-    /**
+    /** OpenAire Metrics
      * @param string $limitDateTime empty for current year
      * @param string $registrationDateTime empty for current year
      * @return false|int
