@@ -282,7 +282,7 @@ class StatsController extends Zend_Controller_Action
             'Content-type' => 'application/json',
             'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
             'X-AUTH-RVID' => self::CURRENT_RVID,
-            'X-AUTH-UID' => Episciences_Auth::getUid()
+            'X-AUTH-LOGIN' => Episciences_Auth::getUsername()
         ];
 
         $gOptions = [
