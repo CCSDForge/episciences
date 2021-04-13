@@ -16,7 +16,7 @@ class Episciences_Oai_Client extends Ccsd_Oai_Client
      * @param string $format
      * @param string $userAgent
      */
-    public function __construct(string $url , string $format = 'array', string $userAgent = 'episciences.org')
+    public function __construct(string $url , string $format = 'array', string $userAgent = DOMAIN)
     {
         $this->_userAgent = $userAgent;
         parent::__construct($url, $format);

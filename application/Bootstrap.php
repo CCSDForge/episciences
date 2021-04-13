@@ -24,20 +24,12 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     protected function _initModule()
     {
-        if (APPLICATION_MODULE === 'portal') {
-            // PORTAIL
-            $namespace = 'portal';
-            defined('RVID') || define('RVID', 0);
-            defined('RVNAME') || define('RVNAME', 'Episciences');
-            defined('PIWIKID') || define('PIWIKID', 1);
-        } elseif (APPLICATION_MODULE === 'oai') {
-            // OAI
-            $namespace = 'oai';
+
+        if (APPLICATION_MODULE === 'oai') {
             defined('RVID') || define('RVID', 0);
             defined('RVNAME') || define('RVNAME', 'OAI Episciences');
             defined('PIWIKID') || define('PIWIKID', 0);
         } else {
-            // JOURNAL
             $oReview = Episciences_ReviewsManager::find(RVCODE);
             if ($oReview) {
                 defined('RVID') || define('RVID', $oReview->getRvid());
@@ -46,12 +38,12 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                 $oReview->loadSettings();
                 Zend_Registry::set('reviewSettings', $oReview->getSettings());
                 defined('RVISSN') || define('RVISSN', $oReview->getSetting(Episciences_Review::SETTING_ISSN));
-                $namespace = 'episciences-' . RVCODE;
             } else {
                 exit("Configuration Error: This journal does not exists.");
             }
         }
-        define('SESSION_NAMESPACE', $namespace);
+
+        define('SESSION_NAMESPACE', APPLICATION_MODULE . '-' . RVCODE);
     }
 
     /**
@@ -67,19 +59,6 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         ];
         Zend_Session::setOptions($sessionOptions);
         Zend_Session::start();
-    }
-
-
-    /**
-     * Define consts from application.ini
-     */
-    protected function _initConst()
-    {
-        $consts = $this->getOption('consts') ?: [];
-
-        foreach ($consts as $key => $value) {
-            define($key, $value);
-        }
     }
 
     // Initialisation du log des exceptions

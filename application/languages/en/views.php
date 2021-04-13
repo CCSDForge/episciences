@@ -47,7 +47,7 @@ return [
     "Sujet" => "Subject",
     "Erreur" => "Error",
     "Tous" => 'All',
-    "Toutes" => 'All',
+    "Tout" => 'All',
     "Précédente" => 'Previous',
     "Suivante" => 'Next',
     "résultat" => ["result", "results"],
@@ -1191,6 +1191,7 @@ return [
     'Mot de passe actuel' => 'Current password',
     'Le mot de passe que vous allez remplacer' => "The password you're about to change",
     'Nouveau mot de passe' => 'New password',
+    " (Vous n'avez pas encore validé ce compte par le courriel de validation)"=>" (You haven't yet validated this account with the validation e-mail)",
     '7 caractères minimum pour votre nouveau mot de passe' => 'Your new password should be at least 7 characters long',
     'Confirmez le mot de passe' => 'Confirm your password',
     'Confirmez votre nouveau mot de passe' => 'Confirm your new password',
@@ -1687,6 +1688,31 @@ return [
     'Courriel support technique' => 'Technical support Email',
     'Support technique' => 'Technical support',
     'Mentions légales' => 'Legal mentions',
-    'Vie privée' => 'Privacy'
+    'Vie privée' => 'Privacy',
+
+    //stats
+    'Dépôt-Acceptation' => 'Submission-Acceptance',
+    'Dépôt-Publication' => 'Submission-Publication',
+    'Statistiques' => 'Statistics',
+    'Sur un total de' => 'Out of a total of',
+    'Soumissions' => 'Submissions',
+    'soumissions' => 'submissions',
+    'Délai moyen en <code>jours</code> entre <code>dépôt et acceptation</code> (<code>dépôt et publication</code>)' => 'Average time in <code>days</code> between <code>submission and acceptance</code> (<code>submission and publication</code>)',
+    'Par <code>année</code>, la répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'By <code>year</code>, the breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',
+    'Répartition des soumissions par <code>année</code> et par <code>archive</code>' => 'Breakdown of submissions by <code>year</code> and <code>repository</code>',
+    'Indicateurs de statistiques pour la revue' => 'Statistical indicators for the journal',
+    'La répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'The breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',
+    'Répartition des soumissions par <code>archive</code>' => 'The breakdown of submissions by <code>repository</code>',
+    "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
+    "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations." => "This feature is a work is progress and not yet available, please retry later or contact support for more information.",
+    "Le nombre d'utilisateurs par <code>rôles</code>" => "Number of users by <code>roles</code>",
+    "Nombre total d'utilisateurs : " => "Total number of users: ",
+    "Nombre d'utilisateurs" => "Users number",
+    "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles.",
+    "Cela inclut les articles en cours de mise en forme et en attente de publication." => "This includes articles that are being copy editing and awaiting publication.",
+    "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year."
+
 
 ];

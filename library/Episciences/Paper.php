@@ -85,6 +85,10 @@ class Episciences_Paper
         self::STATUS_REFUSED
     ];
 
+    /**
+     * @const string DOI prefix
+     */
+    const DOI_ORG_PREFIX = 'https://doi.org/';
 
     // status priorities
     public static $_statusPriority = [
@@ -166,8 +170,17 @@ class Episciences_Paper
         self::STATUS_PUBLISHED,
     ];
 
+    /**
+     * @var int
+     */
     private $_docId;
+    /**
+     * @var int
+     */
     private $_paperId = 0;
+    /**
+     * @var string
+     */
     private $_doi;
     private $_version;
     private $_rvId = 0;
@@ -310,10 +323,14 @@ class Episciences_Paper
     /**
      * @return mixed
      */
-    public function getDoi()
+    public function getDoi($withPrefix = false)
     {
+        if ($withPrefix && $this->_doi !== '') {
+            return self::DOI_ORG_PREFIX . $this->_doi;
+        }
         return $this->_doi;
     }
+
 
     /**
      * @param string $doi
@@ -424,6 +441,8 @@ class Episciences_Paper
         $this->_rvId = (int)$id;
         return $this;
     }
+
+
 
     /**
      * @return array
@@ -1275,22 +1294,6 @@ class Episciences_Paper
     }
 
     /**
-     * load rating reports
-     * @param null $uid
-     * @param null $status
-     * @return Episciences_Paper
-     */
-    public function loadRatings($uid = null, $status = null): \Episciences_Paper
-    {
-        $reports = [];
-        foreach (Episciences_Rating_Manager::getList($this->getDocid(), $uid, $status) as $report) {
-            $reports[$report->getUid()] = $report;
-        }
-
-        return $this->setRatings($reports);
-    }
-
-    /**
      * fetch editors
      * @param bool $active
      * @param bool $getCASdata
@@ -1533,6 +1536,22 @@ class Episciences_Paper
     }
 
     /**
+     * load rating reports
+     * @param null $uid
+     * @param null $status
+     * @return Episciences_Paper
+     */
+    public function loadRatings($uid = null, $status = null): \Episciences_Paper
+    {
+        $reports = [];
+        foreach (Episciences_Rating_Manager::getList($this->getDocid(), $uid, $status) as $report) {
+            $reports[$report->getUid()] = $report;
+        }
+
+        return $this->setRatings($reports);
+    }
+
+    /**
      * check if at least one reviewer has started his report
      * @return bool
      * @throws Zend_Db_Statement_Exception
@@ -1740,7 +1759,7 @@ class Episciences_Paper
     public function get($format = 'tei')
     {
         $format = strtolower(trim($format));
-        $validFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref','zbjats'];
+        $validFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats'];
         if (!in_array($format, $validFormats)) {
             return false;
         }
@@ -1776,6 +1795,7 @@ class Episciences_Paper
     }
 
     /**
+     * Return Repository URL of a paper
      * @return mixed
      */
     public function getPaperUrl()
@@ -3039,6 +3059,27 @@ class Episciences_Paper
     }
 
     /**
+     * @param string $locale = null (ISO FORMAT)
+     * @return false|string
+     * @throws Zend_Date_Exception
+     * @throws Zend_Exception
+     */
+    public function buildRevisionDates(string $locale = null)
+    {
+        $revisionDates = '';
+        $previousVersions = $this->getPreviousVersions(true);
+        if (!$previousVersions) {
+            return $revisionDates;
+        }
+        ksort($previousVersions);
+        /**  @var  Episciences_Paper $paper */
+        foreach ($previousVersions as $paper) {
+            $revisionDates .= (!$locale) ? date('Y-m-d', strtotime($paper->getWhen())) . '; ' : Episciences_View_Helper_Date::Date($paper->getWhen(), $locale) . '; ';
+        }
+        return substr($revisionDates, 0, strlen($revisionDates) - 2);
+    }
+
+    /**
      * return an array of papers (previous versions of this paper)
      * @param bool $isCurrentVersionIncluded
      * @return array|null
@@ -3074,27 +3115,6 @@ class Episciences_Paper
         }
 
         return $this->_previousVersions;
-    }
-
-    /**
-     * @param string $locale = null (ISO FORMAT)
-     * @return false|string
-     * @throws Zend_Date_Exception
-     * @throws Zend_Exception
-     */
-    public function buildRevisionDates(string $locale = null)
-    {
-        $revisionDates = '';
-        $previousVersions = $this->getPreviousVersions(true);
-        if (!$previousVersions) {
-            return $revisionDates;
-        }
-        ksort($previousVersions);
-        /**  @var  Episciences_Paper $paper */
-        foreach ($previousVersions as $paper) {
-            $revisionDates .= (!$locale) ? date('Y-m-d', strtotime($paper->getWhen())) . '; ' : Episciences_View_Helper_Date::Date($paper->getWhen(), $locale) . '; ';
-        }
-        return substr($revisionDates, 0, strlen($revisionDates) - 2);
     }
 
     /**
@@ -3186,6 +3206,8 @@ class Episciences_Paper
         }
         return $month;
     }
+
+
 
     /**
      * return Bibtex formatted paper

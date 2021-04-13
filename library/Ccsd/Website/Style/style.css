@@ -14,7 +14,7 @@ a {
 h1, h2, h3 {
     font-family: %title_font_family%;
 	color: %title_color%;
-    font-size: %title_size%;
+    font-size: %title_size%px;
 }
 #container{
 	background-color: %container_color%;
@@ -22,6 +22,6 @@ h1, h2, h3 {
 }
 div, table,label, input, button, select, textarea {
 	font-family: %font_family%;
-    font-size: %font_size%;
+    font-size: %font_size%px;
     color: %color%;
 }

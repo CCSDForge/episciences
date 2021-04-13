@@ -44,6 +44,7 @@ if ($debug) {
 $linesProcessed = 0;
 $linesIgnored = 0;
 $linesInError = 0;
+$linesFromRobots = 0;
 
 $insertPrepared = $db->prepare("INSERT INTO `PAPER_STAT` (`DOCID`, `CONSULT`, `IP`, `ROBOT`, `AGENT`, `DOMAIN`, `CONTINENT`, `COUNTRY`, `CITY`, `LAT`, `LON`, `HIT`, `COUNTER`) VALUES (:DOCID, :CONSULT, :IP, :ROBOT, :AGENT, :DOMAIN, :CONTINENT, :COUNTRY, :CITY, :LAT, :LON, :HIT, :COUNTER) ON DUPLICATE KEY UPDATE COUNTER=COUNTER+1");
 
@@ -70,7 +71,7 @@ try {
 
             println("Dealing with: " . count($values) . ' lines');
 
-            if ($values == null OR sizeof($values) == 0) {
+            if ($values == null || sizeof($values) == 0) {
                 break;
             }
 
@@ -86,6 +87,12 @@ try {
 
                 $v = new Ccsd_Visiteurs($ip, $value['HTTP_USER_AGENT']);
                 $vData = $v->getLocalisation();
+
+                if ($v->isRobot()) {
+                    // we do not keep robot hits
+                    $linesFromRobots++;
+                    continue;
+                }
 
                 $hit = substr($value["DHIT"], 0, 7) . '-00';
 
@@ -122,6 +129,9 @@ try {
                 }
                 if ($linesInError > 0) {
                     println($linesInError . " lines with an error  NOK");
+                }
+                if ($linesFromRobots > 0) {
+                    println($linesFromRobots . " ignored lines from robots");
                 }
             }
 

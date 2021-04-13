@@ -61,7 +61,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             if (true === $isValid) { //Formulaire valide
                 $header->save($this->getRequest()->getPost(), $_FILES);
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage("Les modifications ont bien été enregistrées.");
-            } else { //Erreur sur le formulaire
+            } else {
                 $this->view->errors = $isValid;
                 $header->setHeader($this->getRequest()->getPost(), $_FILES);
                 $this->view->forms = $header->getForms(false);
@@ -90,12 +90,14 @@ class WebsiteDefaultController extends Zend_Controller_Action
     {
         $dir = REVIEW_PATH . 'public/';
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
+            }
         }
 
         $params = $this->getRequest()->getParams();
         if ($this->getRequest()->isPost() && isset($params['method'])) {
-            if ($params['method'] == 'remove') {
+            if ($params['method'] === 'remove') {
                 //Suppression d'un fichier
                 if (isset($params['name']) && is_file($dir . $params['name'])) {
                     unlink($dir . $params['name']);
@@ -131,7 +133,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $pagesDisplay = [];
 
             foreach ($this->getRequest()->getPost() as $id => $options) {
-                if (substr($id, 0, 6) != 'pages_') continue;
+                if (strpos($id, 'pages_') !== 0) continue;
                 $pageid = str_replace('pages_', '', $id);
                 if (isset($_FILES[$id]['name']) && is_array($_FILES[$id]['name'])) {
                     $options = array_merge($options, $_FILES[$id]['name']);
@@ -141,19 +143,24 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 if (isset($options['filter']) && is_array($options['filter'])) {
                     $options['filter'] = implode(';', $options['filter']);
                 }
+
                 $this->_session->website->setPage($pageid, $options);
                 $this->_session->website->getPage($pageid)->initForm();
 
-                if ($options['type'] != 'Episciences_Website_Navigation_Page_File' && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
+                if ($options['type'] !== 'Episciences_Website_Navigation_Page_File' && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
                     $pagesDisplay[$pageid] = true;
                     $valid = false;
                 } else {
                     $pagesDisplay[$pageid] = false;
                 }
+
+
             }
             if ($valid) {
                 //Tous les elements sont valides
                 //Enregistrement du menu
+
+
                 $this->_session->website->save();
                 //Création de la navigation du site et des ACL
                 $this->_session->website->createNavigation(REVIEW_PATH . 'config/' . 'navigation.json');
@@ -170,6 +177,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
         $this->view->pages = $this->_session->website->getPages();
         $this->view->order = $this->_session->website->getOrder();
         $this->view->pageTypes = $this->_session->website->getPageTypes(true);
+
     }
 
     /**

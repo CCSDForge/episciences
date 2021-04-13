@@ -101,6 +101,8 @@ function define_review_constants()
         define('REVIEW_FILES_PATH', REVIEW_PATH . 'files/');
         define('REVIEW_GRIDS_PATH', REVIEW_FILES_PATH . 'rating_grids/');
 
+        define('REVIEW_DOCUMENT_DIR_NAME', 'documents');
+
         define('REVIEW_GRID_NAME_DEFAULT', 'grid_0.xml');
         define('REVIEW_PATH_DEFAULT', dirname(APPLICATION_PATH) . '/data/default/files/rating_grids' . '/');
 
@@ -211,6 +213,8 @@ function defineVendorJsLibraries()
     define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
     define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
     define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
+    define('VENDOR_CHART', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js');
+    define('VENDOR_CHART_PLUGIN_DATALABELS', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js');
 }
 
 /**
@@ -224,6 +228,7 @@ function defineVendorCssLibraries()
     define('VENDOR_FONT_AWESOME', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/fontawesome.min.css");
     define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/solid.min.css");
     define('VENDOR_JQUERY_UI_THEME_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css');
+    define('VENDOR_CHART_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css');
 }
 
 /**
@@ -239,5 +244,7 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('PWD_PATH', '');
         define('FUSION_TOKEN_AUTH', '');
         define('EPISCIENCES_SOLR_LOG_PATH', '');
+        define('EPISCIENCES_API_URL', '');
+        define('EPISCIENCES_API_SECRET_KEY', '');
     }
 }
