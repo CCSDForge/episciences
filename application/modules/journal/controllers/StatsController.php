@@ -296,7 +296,7 @@ class StatsController extends Zend_Controller_Action
             try {
                 $request = $client->request('GET', $url, $gOptions);
             } catch (GuzzleException $e) {
-                error_log('SATATISTIC_MODULE: ' . $e->getMessage());
+                error_log('STATISTICS_MODULE: ' . $e->getMessage());
                 throw $e;
             }
 
@@ -311,7 +311,7 @@ class StatsController extends Zend_Controller_Action
                 return $res->getBody();
             },
             function (RequestException $e) {
-                error_log('SATATISTIC_MODULE: ' . $e->getMessage());
+                error_log('STATISTICS_MODULE: ' . $e->getMessage());
                 throw $e;
             }
         );
