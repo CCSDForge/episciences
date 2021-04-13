@@ -20,7 +20,14 @@ class Episciences_User extends Ccsd_User_Models_User
 
     /** @var array */
     protected $_aliases = [];
+
+    /**
+     * @var string
+     */
     protected $_api_password;
+    /**
+     * @var int
+     */
     protected $_is_valid = 1;
     protected $_registration_date;
     protected $_modification_date;
@@ -50,7 +57,7 @@ class Episciences_User extends Ccsd_User_Models_User
         foreach ($options as $key => $value) {
 
             //because setScreen_name() has been renamed to setScreenName()
-            if ($key == 'SCREEN_NAME') {
+            if ($key === 'SCREEN_NAME') {
                 $this->setScreenName($value);
                 continue;
             }
@@ -313,9 +320,9 @@ class Episciences_User extends Ccsd_User_Models_User
     {
         if ($this->_langueid) {
             return $this->_langueid;
-        } else {
-            return ($forceResult) ? Episciences_Review::getDefaultLanguage() : null;
         }
+
+        return ($forceResult) ? Episciences_Review::getDefaultLanguage() : null;
     }
 
     public function setLangueid($_langueid)
@@ -355,6 +362,11 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setUid($uid);
 
         $langId = ($this->getLangueid()) ?: Zend_Registry::get('Zend_Locale')->getLanguage();
+
+        if ($this->getScreenName() === '') {
+            $this->setScreenName();
+        }
+
         $data = [
             'UID' => $this->getUid(),
             'LANGUEID' => $langId,
@@ -372,11 +384,26 @@ class Episciences_User extends Ccsd_User_Models_User
         ];
 
         // Création des données locales (compte ES + rôle)
-        if (!$this->hasLocalData($this->getUid()) || !$this->hasRoles($this->getUid())) {
+
+        $hasLocalData = $this->hasLocalData($this->getUid());
+        $hasRolesCurrentUser = $this->hasRoles($this->getUid());
+
+
+        if (!$hasLocalData || !$hasRolesCurrentUser) {
 
             // L'utilisateur n'a pas de compte ES : on lui en crée un
-            if (!$this->hasLocalData($this->getUid())) {
-                if ($this->_db->insert(T_USERS, $data)) {
+            if (!$hasLocalData) {
+
+                // new account new registration date
+                $data['REGISTRATION_DATE'] = date("Y-m-d H:i:s");
+                try {
+                    $resInsert = $this->_db->insert(T_USERS, $data);
+                } catch (Exception $e) {
+                    $resInsert = false;
+                    trigger_error($e->getMessage(), E_USER_ERROR);
+                 }
+
+                if ($resInsert) {
                     $uid = $this->_db->lastInsertId();
                 } else {
                     return false;

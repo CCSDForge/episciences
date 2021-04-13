@@ -625,7 +625,12 @@ class UserDefaultController extends Zend_Controller_Action
         if ($request->isPost() && $form->isValid($request->getPost())) {
 
             $values = $form->getValues();
-            $user = new Episciences_User(array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]));
+            $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
+
+            // keep username (not sent with form)
+            $updatedUserValues['USERNAME'] = $casUserDefaults['USERNAME'];
+
+            $user = new Episciences_User($updatedUserValues);
             $subform = $form->getSubForm('ccsd');
 
             if ($subform->PHOTO->isUploaded()) {
