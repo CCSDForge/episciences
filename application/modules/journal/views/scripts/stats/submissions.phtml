@@ -1,18 +1,51 @@
+<?php
+$submissionsTooltipInfo = "Cela inclut seulement les articles soumis cette année.";
+$isYear = isset($this->year);
+$acceptedTooltipInfo = "Cela inclut les articles en cours de mise en forme et en attente de publication.";
+$publishedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.";
+$refusedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.";
+?>
 <div class="panel panel-default collapsable">
-    <div class="panel-heading"> <h2 class="panel-title"><?= $this->chart1Title ?></h2></div>
+    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart1Title ?></h2></div>
     <div class="panel-body in">
         <div class="col-md-3">
             <div style="padding-top: 10px; ">
-                <p><?= $this->translate('Sur un total de') ?>
-                    <code><?= $this->allSubmissions ?></code> <?= $this->translate('soumissions') ?>
-                </p>
+
                 <div>
-                    <ul>
-                        <li><code><?= $this->allPublications ?></code> <?= $this->translate('articles publiés') ?>
+                    <ul class="list-unstyled">
+                        <li>
+                            <?= $this->translate('Soumissions') ?>
+                            <code><?= $this->allSubmissions ?></code>
+                            <?php if ($isYear): ?>
+                                <code><i class="fas fa-info-circle" data-toggle="tooltip"
+                                         title="<?= $this->translate($submissionsTooltipInfo) ?>"></i></code>
+                            <?php endif; ?>
                         </li>
-                        <li><code><?= $this->allAcceptations ?></code> <?= $this->translate('articles acceptés') ?>
+                        <hr>
+                        <li>
+                            <?= ucfirst($this->translate('articles publiés')) ?>
+                            <code><?= $this->allPublications ?></code>
+                            <?php if ($isYear): ?>
+                                <code><i class="fas fa-info-circle" data-toggle="tooltip"
+                                         title="<?= $this->translate($publishedTooltipInfo) ?>"></i></code>
+                            <?php endif; ?>
                         </li>
-                        <li><code><?= $this->allRefusals ?></code> <?= $this->translate('articles refusés') ?></li>
+                        <li>
+                            <?= ucfirst($this->translate('articles acceptés')) ?>
+                            <code><?= $this->allAcceptations ?></code>
+                            <?php if ($isYear): ?>
+                                <code><i class="fas fa-info-circle" data-toggle="tooltip"
+                                         title="<?= $this->translate($acceptedTooltipInfo) ?>"></i></code>
+                            <?php endif; ?>
+                        </li>
+                        <li>
+                            <?= ucfirst($this->translate('articles refusés')) ?>
+                            <code><?= $this->allRefusals ?></code>
+                            <?php if ($isYear): ?>
+                                <code><i class="fas fa-info-circle" data-toggle="tooltip"
+                                         title="<?= $this->translate($refusedTooltipInfo) ?>"></i></code>
+                            <?php endif; ?>
+                        </li>
                     </ul>
 
                 </div>

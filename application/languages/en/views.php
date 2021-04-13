@@ -40,7 +40,7 @@ return [
     "Relecteur" => ["Reviewer", "Reviewers"],
 
     'article' => ['article', 'articles'],
-    'Le mot Relecteur + ce chiffre forment le pseudonyme du relecteur' => 'The word Reviewer + this number form the reviewer alias',
+    'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
 
 
     "Historique" => "History",
@@ -1704,9 +1704,15 @@ return [
     'La répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'The breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',
     'Répartition des soumissions par <code>archive</code>' => 'The breakdown of submissions by <code>repository</code>',
     "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
+    "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations." => "This feature is a work is progress and not yet available, please retry later or contact support for more information.",
     "Le nombre d'utilisateurs par <code>rôles</code>" => "Number of users by <code>roles</code>",
     "Nombre total d'utilisateurs : " => "Total number of users: ",
     "Nombre d'utilisateurs" => "Users number",
-    "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles."
+    "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles.",
+    "Cela inclut les articles en cours de mise en forme et en attente de publication." => "This includes articles that are being copy editing and awaiting publication.",
+    "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year."
+
 
 ];

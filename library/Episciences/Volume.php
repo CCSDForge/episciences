@@ -955,4 +955,29 @@ class Episciences_Volume
             return false;
         }
     }
+
+    /**
+     * @param string $separator
+     * @return string
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function formatEditors(string $separator = ', '): string
+    {
+        $screenNames = '';
+        $count = 0;
+
+        $editors = $this->getEditors();
+
+        foreach ($editors as $editor) {
+            $screenNames .= $editor->getScreenName();
+
+            if ($count < (count($editors) - 1)) {
+                $screenNames .= $separator;
+            }
+
+            ++$count;
+        }
+
+        return $screenNames;
+    }
 }

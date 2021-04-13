@@ -10,7 +10,6 @@ $this->layout()->description = $this->translate('Indicateurs de statistiques pou
     <?php $this->jQuery()->addJavascriptFile('/js/stats/index.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/common.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/submissions.js'); ?>
-    <?php $this->jQuery()->addJavascriptFile('/js/stats/users.js'); ?>
 
     <?php $this->jQuery()->addStylesheet(VENDOR_CHART_CSS); ?>
 
@@ -31,20 +30,23 @@ $this->layout()->description = $this->translate('Indicateurs de statistiques pou
             'chart1Title' => $this->chart1Title,
             'chart2Title' => $this->chart2Title,
             'chart3Title' => $this->chart3Title,
-            'chart4Title' => $this->chart4Title
-        ]) ?>
-    </div>
-
-    <h2><?= $this->translate('Utilisateurs') ?> <?= $this->yearQuery ? ' - <code>' . $this->yearQuery . '</code>' : '' ?> </h2>
-    <div class="col-md-12">
-        <?= $this->partial('stats/users.phtml', [
-            'chart5Title' => $this->chart5Title,
-            'allUsers' => $this->allUsers
+            'chart4Title' => $this->chart4Title,
+            'year' => $this->yearQuery
         ]) ?>
     </div>
 
     <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
 
+    <div class="col-md-12">
+        <?php if ($this->isAvailableUsersStats) : ?>
+            <?php $this->jQuery()->addJavascriptFile('/js/stats/users.js'); ?>
+            <h2><?= $this->translate('Utilisateurs') ?> <?= $this->yearQuery ? ' - <code>' . $this->yearQuery . '</code>' : '' ?> </h2>
+            <?= $this->partial('stats/users.phtml', [
+                'chart5Title' => $this->chart5Title,
+                'allUsers' => $this->allUsers
+            ]) ?>
+        <?php endif; ?>
+    </div>
 
     <script>
         let yearCategoriesFromView = <?= json_encode($this->yearCategoriesJs) ?>;

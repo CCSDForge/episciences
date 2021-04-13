@@ -363,8 +363,11 @@ class ReviewerController extends PaperDefaultController
         $uid = $assignment->getUId();
         if ($assignment->isTmp_user()) {
             $user = new Episciences_User_Tmp();
-            $user->find($uid);
-            $user->generateScreen_name();
+
+            if(!empty($user->find($uid))){
+                $user->generateScreen_name();
+            }
+
         } else {
             $user = new Episciences_User;
             $user->findWithCAS($uid);

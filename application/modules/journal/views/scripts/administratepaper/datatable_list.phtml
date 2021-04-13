@@ -188,7 +188,7 @@ foreach ($this->list as $paper) : ?>
                                     ?>
                                 </span>
                                 <?php if ($alias = $reviewer->getAlias($paper->getDocid())) : ?>
-                                    <a data-toggle="tooltip" title="<?= $this->translate('Le mot Relecteur + ce chiffre forment le pseudonyme du relecteur') ?>">
+                                    <a data-toggle="tooltip" title="<?= $this->translate('Relecteur <code>n</code>') ?>">
                                         <span class="label label-status-<?= $paper->getStatus() ?>"><?= $alias ?></span>
                                     </a>
                                 <?php endif; ?>

@@ -317,7 +317,7 @@ class AdministratemailController extends Zend_Controller_Action
                     }
                 } else {
                     $user = new Episciences_User_Tmp;
-                    if ($user->find($uid)) {
+                    if (!empty($user->find($uid))) {
                         $user->generateScreen_name();
                         $js_recipient = [
                             'uid' => $user->getId(),

@@ -25,9 +25,7 @@ $(function () {
         datasets: seriesFromView.submissionDelay.datasets
     }
 
-    //figure1
     createChart(context0, allPercentageOfSubmissionsStats, seriesFromView.allSubmissionsPercentage.chartType);
-    //figure2
     createChart(context1, statsByYearData, seriesFromView.submissionsByYear.chartType);
     createChart(context2, statsByRepoData, seriesFromView.submissionsByRepo.repositories.chartType);
     createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType);

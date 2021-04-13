@@ -793,17 +793,18 @@ class Episciences_PapersManager
             //fetch reviewer detail
             if ($invitation['TMP_USER']) {
                 if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
-                    $reviewer = new Episciences_User_Tmp;
-                    $reviewer->find($invitation['UID']);
-                    $reviewer->generateScreen_name();
-                    $reviewers[$invitation['UID']] = $reviewer;
+                    $reviewer = new Episciences_User_Tmp();
+
+                    if(!empty($reviewer->find($invitation['UID']))){
+                        $reviewer->generateScreen_name();
+                        $reviewers[$invitation['UID']] = $reviewer;
+                    }
+
                 }
-            } else {
-                if (!array_key_exists($invitation['UID'], $reviewers)) {
-                    $reviewer = new Episciences_Reviewer;
-                    $reviewer->findWithCAS($invitation['UID']);
-                    $reviewers[$invitation['UID']] = $reviewer;
-                }
+            } else if (!array_key_exists($invitation['UID'], $reviewers)) {
+                $reviewer = new Episciences_Reviewer;
+                $reviewer->findWithCAS($invitation['UID']);
+                $reviewers[$invitation['UID']] = $reviewer;
             }
             $reviewer = $reviewers[$invitation['UID']];
             $tmp['reviewer'] = [
@@ -828,7 +829,7 @@ class Episciences_PapersManager
             foreach ($invitations as $invitation_list) {
                 $invitation = array_shift($invitation_list);
                 //si l'invitation a expiré, on la place dans une catégorie à part
-                if ($invitation['ASSIGNMENT_STATUS'] == Episciences_User_Assignment::STATUS_PENDING && $invitation['EXPIRATION_DATE'] < date('Y-m-d')) {
+                if ($invitation['ASSIGNMENT_STATUS'] == Episciences_User_Assignment::STATUS_PENDING && self::compareToCurrentTime($invitation['EXPIRATION_DATE'])) {
                     if ((!is_array($status) && $status != Episciences_User_Assignment::STATUS_EXPIRED) ||
                         (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status))
                     ) {
@@ -974,17 +975,18 @@ class Episciences_PapersManager
             if (isset($tmp_reviewers) && !empty($tmp_reviewers)) {
                 foreach ($tmp_reviewers as $tmp_reviewer) {
                     $reviewer = new Episciences_User_Tmp;
-                    $reviewer->find($tmp_reviewer['UID']);
-                    $reviewer->generateScreen_name();
-                    $reviewers['tmp_' . $tmp_reviewer['UID']] = $reviewer;
+                    if(!empty($reviewer->find($tmp_reviewer['UID']))){
+                        $reviewer->generateScreen_name();
+                        $reviewers['tmp_' . $tmp_reviewer['UID']] = $reviewer;
+                    }
                 }
             }
 
             return $reviewers;
 
-        } else {
-            return [];
         }
+
+        return [];
     }
 
     /**
@@ -1820,13 +1822,13 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', [
-            'label' => 'CC',
-            'value' => Episciences_Review::forYourInformation()
-        ]);
+        $form->addElement('text', 'cc', ['label' => 'CC']);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC']);
+        $form->addElement('text', 'bcc', [
+            'label' => 'BCC',
+            'value' => Episciences_Review::forYourInformation()
+        ]);
 
         // from
         $form->addElement('text', 'from', [
@@ -2327,6 +2329,7 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME => !empty($paperPosition) ? $paperPosition : $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_CURRENT_YEAR => date('Y'),
                     Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL => $site . '/public/' . RVCODE . '_episciences.zip',
+                    Episciences_Mail_Tags::TAG_VOLUME_EDITORS => ($volume && $volume->formatEditors()) ? $volume->formatEditors() :  $translator->translate('Aucun', $locale)
                 ];
 
             } elseif ($name === 'askOtherEditors') { // SCREEN_NAME and FULL_NAME tags can't have a default value for Ask Other Editors template, since there are multiple recipients
@@ -2695,4 +2698,12 @@ class Episciences_PapersManager
         return $r;
     }
 
+    /**
+     * @param string $date
+     * @return bool
+     */
+    private static function compareToCurrentTime(string $date): bool
+    {
+        return strtotime($date) < time();
+    }
 }

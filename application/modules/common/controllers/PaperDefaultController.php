@@ -474,7 +474,7 @@ class PaperDefaultController extends Zend_Controller_Action
     {
         $docId = (int)$paper->getDocid();
 
-        $tags += [Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId, Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId)];
+        $tags = array_merge([Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId, Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId)], $tags);
 
         $recipients = $this->getAllEditors($paper) + $this->getAllCopyEditors($paper);
 

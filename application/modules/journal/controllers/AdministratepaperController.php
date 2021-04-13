@@ -1616,12 +1616,6 @@ class AdministratepaperController extends PaperDefaultController
 
                     $resCreateDoi = Episciences_Paper::createPaperDoi(RVID, $paper);
 
-                    if ($resCreateDoi['resUpdateDoi'] > 0) {
-                        $additionalTags = [Episciences_Mail_Tags::TAG_DOI => $resCreateDoi['doi']];
-
-                    }
-
-
                 } else {
                     $managersNotificationTemplate = Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY;
 

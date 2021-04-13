@@ -3001,6 +3001,8 @@ class Episciences_Paper
                     }
                 }
         }
+
+        $str = addslashes($str);
         return $str;
     }
 
