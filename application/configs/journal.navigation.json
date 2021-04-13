@@ -147,7 +147,7 @@
             "controller": "stats",
             "action": "index",
             "resource": "stats-index",
-            "privilege": "epiadmin,chief_editor,administrator,secretary"
+            "privilege": "epiadmin"
           },
           {
             "label": "Volumes",
