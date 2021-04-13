@@ -1,0 +1,66 @@
+{
+  "solr": {
+    "paginatorStyle": "Elastic",
+    "paginatorNumberOfResultsArray": {
+      "10": 10,
+      "30": 30,
+      "50": 50,
+      "100": 100
+    },
+    "paginatordefaultNumberOfResults": "10",
+    "returnedFields": "docid, text, title_t, abstract_t, paper_url_s, doc_url_s, revue_id_i, revue_title_t, volume_id_i, *_volume_title_t, section_id_i, *_section_title_t",
+    "defaultFilters": {
+      "0": "status_s:4"
+    }
+  },
+  "fieldMapping": {},
+  "filterMapping": {
+    "revue": "revue_id_i",
+    "volume": "volume_id_i",
+    "section": "section_id_i",
+    "author": "author_fullname_fs"
+  },
+  "sortMapping": {},
+  "facets": {
+    "0": {
+      "fieldName": "revue_title_fs",
+      "queryFieldName": "revue",
+      "displayName": "Revue",
+      "minCount": 1,
+      "hasSepInValue": true,
+      "maxReturned": 1000,
+      "translated": false,
+      "sort": "count"
+    },
+    "1": {
+      "fieldName": "volume_fs",
+      "queryFieldName": "volume",
+      "displayName": "Volume",
+      "minCount": 1,
+      "hasSepInValue": true,
+      "maxReturned": 1000,
+      "translated": true,
+      "sort": "count"
+    },
+    "2": {
+      "fieldName": "section_fs",
+      "queryFieldName": "section",
+      "displayName": "Section",
+      "minCount": 1,
+      "hasSepInValue": true,
+      "maxReturned": 1000,
+      "translated": true,
+      "sort": "count"
+    },
+    "3": {
+      "fieldName": "author_fullname_fs",
+      "queryFieldName": "author",
+      "displayName": "Auteur",
+      "minCount": 1,
+      "hasSepInValue": false,
+      "maxReturned": 1000,
+      "translated": false,
+      "sort": "count"
+    }
+  }
+}

@@ -342,7 +342,7 @@ class Episciences_User_Assignment
     public function getAssignedUser()
     {
         if ($this->isTmp_user()) {
-            $reviewer = Episciences_TmpUsersManager::find($this->getUid());
+            $reviewer = Episciences_TmpUsersManager::findById($this->getUid());
             if ($reviewer) {
                 $reviewer->generateScreen_name();
             }

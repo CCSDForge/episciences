@@ -7,47 +7,78 @@
  * + Définition de comment retrouve t on les documents
  */
 
-class Episciences_Oai_Server extends Ccsd_Oai_Server {
+class Episciences_Oai_Server extends Ccsd_Oai_Server
+{
 
-    private $_formats = array('oai_dc'=>'dc', 'tei'=>'tei');
     const LIMIT_IDENTIFIERS = 400;
     const LIMIT_RECORDS = 100;
+    private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei'];
 
-    protected function getIdentity($url) {
-        return array(
+    protected function getIdentity($url)
+    {
+        return [
             'repositoryName' => ucfirst(DOMAIN),
-            'baseURL'=>$url,
-            'protocolVersion'=>'2.0',
+            'baseURL' => $url,
+            'protocolVersion' => '2.0',
             'adminEmail' => 'contact@' . DOMAIN,
-            'earliestDatestamp'=>'2000-01-01',
-            'deletedRecord'=>'no',
-            'granularity'=>'YYYY-MM-DD',
-            'description'=>array(
-                'oai-identifier'=>array(
-                    'attributes'=>array(
-                        'xmlns'=>"http://www.openarchives.org/OAI/2.0/oai-identifier", 'xmlns:xsi'=>"http://www.w3.org/2001/XMLSchema-instance", 'xsi:schemaLocation'=>"http://www.openarchives.org/OAI/2.0/oai-identifier http://www.openarchives.org/OAI/2.0/oai-identifier.xsd"),
-                    'nodes' => array('scheme' => 'oai', 'repositoryIdentifier' => DOMAIN, 'delimiter' => ':', 'sampleIdentifier' => 'oai:' . DOMAIN . ':jdmdh:1')),
-                'eprints'=>array(
-                    'attributes'=>array(
-                        'xmlns'=>"http://www.openarchives.org/OAI/1.1/eprints", 'xmlns:xsi'=>"http://www.w3.org/2001/XMLSchema-instance", 'xsi:schemaLocation'=>"http://www.openarchives.org/OAI/1.1/eprints http://www.openarchives.org/OAI/1.1/eprints.xsd"),
-                        'nodes'=>array('content'=>array('text'=>'Episciences is an overlay journal platform'), 'metadataPolicy'=>array('text'=>'1) CC0: https://creativecommons.org/publicdomain/zero/1.0/'), 'dataPolicy'=>array('text'=>'')))
-            )
-        );
+            'earliestDatestamp' => '2000-01-01',
+            'deletedRecord' => 'no',
+            'granularity' => 'YYYY-MM-DD',
+            'description' => [
+                'oai-identifier' => [
+                    'attributes' => [
+                        'xmlns' => "http://www.openarchives.org/OAI/2.0/oai-identifier", 'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance", 'xsi:schemaLocation' => "http://www.openarchives.org/OAI/2.0/oai-identifier http://www.openarchives.org/OAI/2.0/oai-identifier.xsd"],
+                    'nodes' => ['scheme' => 'oai', 'repositoryIdentifier' => DOMAIN, 'delimiter' => ':', 'sampleIdentifier' => 'oai:' . DOMAIN . ':jdmdh:1']],
+                'eprints' => [
+                    'attributes' => [
+                        'xmlns' => "http://www.openarchives.org/OAI/1.1/eprints", 'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance", 'xsi:schemaLocation' => "http://www.openarchives.org/OAI/1.1/eprints http://www.openarchives.org/OAI/1.1/eprints.xsd"],
+                    'nodes' => ['content' => ['text' => 'Episciences is an overlay journal platform'], 'metadataPolicy' => ['text' => '1) CC0: https://creativecommons.org/publicdomain/zero/1.0/'], 'dataPolicy' => ['text' => '']]]
+            ]
+        ];
     }
 
     /*
      * retourne les formats dispo sur le serveur OAI
      * @return array code=>array('schema'=>, 'ns'=>)
      */
-    protected function getFormats() {
-        return array('oai_dc'=>array('schema'=>'http://www.openarchives.org/OAI/2.0/oai_dc.xsd', 'ns'=>'http://www.openarchives.org/OAI/2.0/oai_dc/'), 'tei'=>array('schema'=>'https://api.archives-ouvertes.fr/documents/aofr.xsd', 'ns'=>'https://hal.archives-ouvertes.fr/'));
+
+    protected function existId($identifier)
+    {
+        // identifier format -> oai:episciences.org:jdmdh:1
+        $identifier = (int)substr(strrchr($identifier, ":"), 1);
+        $paper = Episciences_PapersManager::get($identifier);
+        if (false === $paper) {
+            return false;
+        }
+        return $paper->getStatus() == Episciences_Paper::STATUS_PUBLISHED;
     }
 
     /*
      * retourne les sets dispo sur le serveur OAI
      * @return array code=>name
      */
-    protected function getSets() {
+
+    protected function existFormat($format)
+    {
+        return array_key_exists($format, $this->getFormats());
+    }
+
+    protected function getFormats()
+    {
+        return [
+            'oai_dc' => ['schema' => 'http://www.openarchives.org/OAI/2.0/oai_dc.xsd', 'ns' => 'http://www.openarchives.org/OAI/2.0/oai_dc/'],
+            'tei' => ['schema' => 'https://api.archives-ouvertes.fr/documents/aofr.xsd', 'ns' => 'https://hal.archives-ouvertes.fr/'],
+          //  'datacite' => ['schema' => 'http://schema.datacite.org/meta/kernel-4.3/metadata.xsd', 'ns' => 'http://datacite.org/schema/kernel-4']
+        ];
+    }
+
+    protected function existSet($set)
+    {
+        return array_key_exists($set, $this->getSets());
+    }
+
+    protected function getSets()
+    {
         $cacheName = 'oai-sets.phps';
         if (Episciences_Cache::exist($cacheName, 3600)) {
             $out = unserialize(Episciences_Cache::get($cacheName));
@@ -56,13 +87,14 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server {
             $out = [];
             // revues
             $sql = $db->select()
-                ->from(T_REVIEW, array('CODE', 'NAME'))
+                ->from(T_REVIEW, ['CODE', 'NAME'])
                 ->where('RVID != 0')
+                ->where('STATUS = 1')
                 ->order('CREATION DESC');
-            foreach ( $db->fetchAll($sql) as $row ) {
-                $out['journal:'.$row['CODE']] = $row['NAME'];
+            foreach ($db->fetchAll($sql) as $row) {
+                $out['journal:' . $row['CODE']] = $row['NAME'];
             }
-            if ( count($out) ) {
+            if (count($out)) {
                 $out = ['journal' => 'All ' . DOMAIN] + $out;
             }
             Episciences_Cache::save($cacheName, serialize($out));
@@ -70,111 +102,96 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server {
         return $out;
     }
 
-    protected function existId($identifier) {
+    protected function checkDateFormat($date)
+    {
+        return (new Zend_Validate_Date(['format' => 'yyyy-MM-dd']))->isValid($date);
+    }
+
+    protected function getId($identifier, $format)
+    {
         // identifier format -> oai:episciences.org:jdmdh:1
-        $identifier =(int) substr(strrchr($identifier, ":"), 1);
+        $identifier = (int)substr(strrchr($identifier, ":"), 1);
         $paper = Episciences_PapersManager::get($identifier);
-        if ( false === $paper ) {
+        if (false === $paper) {
             return false;
         }
-        return $paper->getStatus() == Episciences_Paper::STATUS_PUBLISHED;
-    }
-
-    protected function existFormat($format) {
-        return array_key_exists($format, $this->getFormats());
-    }
-
-    protected function existSet($set) {
-        return array_key_exists($set, $this->getSets());
-    }
-
-    protected function checkDateFormat($date) {
-        return (new Zend_Validate_Date(array('format' => 'yyyy-MM-dd')) )->isValid($date);
-    }
-
-    protected function getId($identifier, $format) {
-        // identifier format -> oai:episciences.org:jdmdh:1
-        $identifier =(int) substr(strrchr($identifier, ":"), 1);
-        $paper = Episciences_PapersManager::get($identifier);
-        if ( false === $paper ) {
+        if (!array_key_exists($format, $this->_formats)) {
             return false;
         }
-        if ( !array_key_exists($format, $this->_formats) ) {
-            return false;
-        }
-        return array('header'=>$paper->getOaiHeader(), 'metadata'=>$paper->get($this->_formats[$format]));
+        return ['header' => $paper->getOaiHeader(), 'metadata' => $paper->get($this->_formats[$format])];
     }
 
-    protected function getIds($method, $format, $until, $from, $set, $token) {
-        if ( !in_array($method, array('ListIdentifiers', 'ListRecords')) ) {
+    protected function getIds($method, $format, $until, $from, $set, $token)
+    {
+        if (!in_array($method, ['ListIdentifiers', 'ListRecords'])) {
             return false;
         }
         $queryString = "q=*:*";
-        $conf = array();
-        if ( $token == null ) {
+        $conf = [];
+        if ($token == null) {
             $conf['cursor'] = 0;
             $conf['format'] = $format;
             $query = '';
-            if ( $until != null || $from != null ) {
-                $query .= "&fq=publication_date_tdate:".urlencode('['.(($from == null)?"*":'"'.$from.'T00:00:00Z"')." TO ".(($until == null)?"*":'"'.$until.'T23:59:59Z"')."]");
+            if ($until != null || $from != null) {
+                $query .= "&fq=publication_date_tdate:" . urlencode('[' . (($from == null) ? "*" : '"' . $from . 'T00:00:00Z"') . " TO " . (($until == null) ? "*" : '"' . $until . 'T23:59:59Z"') . "]");
             }
-            if ( $set != null ) {
-                if ( substr($set,0,8) == 'journal:' ) {
-                    $query .= "&fq=revue_code_t:".urlencode(substr($set,8));
+            if ($set != null) {
+                if (substr($set, 0, 8) == 'journal:') {
+                    $query .= "&fq=revue_code_t:" . urlencode(substr($set, 8));
                 }
             }
             $conf['query'] = $query;
             $queryString .= $query;
             $queryString .= "&cursorMark=*";
         } else {
-            if ( !Episciences_Cache::exist('oai-token-'.md5($token).'.phps', 7200) ) {
+            if (!Episciences_Cache::exist('oai-token-' . md5($token) . '.phps', 7200)) {
                 return 'token';
             }
-            $conf = unserialize(Episciences_Cache::get('oai-token-'.md5($token).'.phps'));
+            $conf = unserialize(Episciences_Cache::get('oai-token-' . md5($token) . '.phps'));
             $format = $conf['format'];
-            $queryString .= $conf['query']."&cursorMark=".urlencode($token);
+            $queryString .= $conf['query'] . "&cursorMark=" . urlencode($token);
         }
-        if ( !array_key_exists($format, $this->_formats) ) {
+        if (!array_key_exists($format, $this->_formats)) {
             return false;
         }
         // maximum de retour
-        $queryString .= "&rows=".(( $method == "ListIdentifiers" ) ? Episciences_Oai_Server::LIMIT_IDENTIFIERS : Episciences_Oai_Server::LIMIT_RECORDS);
+        $queryString .= "&rows=" . (($method == self::OAI_VERB_LISTIDS) ? Episciences_Oai_Server::LIMIT_IDENTIFIERS : Episciences_Oai_Server::LIMIT_RECORDS);
         // orderby
         $queryString .= "&sort=docid+desc";
         $queryString .= "&fl=docid&wt=phps";
 
         $result = unserialize(Episciences_Tools::solrCurl($queryString));
         if (isset($result['response']) && is_array($result['response']) && isset($result['response']['numFound'])) {
-            if ( $result['response']['numFound'] == 0 ) {
+            if ($result['response']['numFound'] == 0) {
                 return 0;
             } else {
-                if ( isset($result['response']['docs']) && is_array($result['response']['docs']) && isset($result['nextCursorMark']) ) {
-                    $out = array();
-                    foreach ( $result['response']['docs'] as $res ) {
+                if (isset($result['response']['docs']) && is_array($result['response']['docs']) && isset($result['nextCursorMark'])) {
+                    $out = [];
+                    foreach ($result['response']['docs'] as $res) {
                         $paper = Episciences_PapersManager::get($res['docid'], false);
-                        if ( false === $paper ) {
+                        if (false === $paper) {
                             continue;
                         }
-                        if ( $method == 'ListIdentifiers' ) {
+                        if ($method == self::OAI_VERB_LISTIDS) {
                             $out[] = $paper->getOaiHeader();
                         } else {
-                            $out[] = array('header'=>$paper->getOaiHeader(), 'metadata'=>$paper->get($this->_formats[$format]));
+                            $out[] = ['header' => $paper->getOaiHeader(), 'metadata' => $paper->get($this->_formats[$format])];
                         }
                     }
                     // token
-                    if ( $result['response']['numFound'] > (( $method == "ListIdentifiers" ) ? Episciences_Oai_Server::LIMIT_IDENTIFIERS : Episciences_Oai_Server::LIMIT_RECORDS) ) {
-                        if ( $result['nextCursorMark'] == $token ) {
+                    if ($result['response']['numFound'] > (($method == self::OAI_VERB_LISTIDS) ? Episciences_Oai_Server::LIMIT_IDENTIFIERS : Episciences_Oai_Server::LIMIT_RECORDS)) {
+                        if ($result['nextCursorMark'] == $token) {
                             // c'est la fin
-                            if ( count($out) ) {
+                            if (count($out)) {
                                 $out[] = '<resumptionToken completeListSize="' . $result['response']['numFound'] . '" />';
                             } else {
                                 return 0;
                             }
                         } else {
                             // attention, Solr nous donne un autre cursor même si la prochaine requete ne remonte plus de résultat
-                            if ( $result['response']['numFound'] > ($conf['cursor']+count($out)) ) {
+                            if ($result['response']['numFound'] > ($conf['cursor'] + count($out))) {
                                 $out[] = '<resumptionToken expirationDate="' . gmdate("Y-m-d\TH:i:s\Z", time() + 7200) . '" completeListSize="' . $result['response']['numFound'] . '" cursor="' . $conf['cursor'] . '">' . $result['nextCursorMark'] . '</resumptionToken>';
-                                $conf['cursor'] += (($method == "ListIdentifiers") ? Episciences_Oai_Server::LIMIT_IDENTIFIERS : Episciences_Oai_Server::LIMIT_RECORDS);
+                                $conf['cursor'] += (($method == self::OAI_VERB_LISTIDS) ? Episciences_Oai_Server::LIMIT_IDENTIFIERS : Episciences_Oai_Server::LIMIT_RECORDS);
                                 $conf['solr'] = $queryString;
                                 Episciences_Cache::save('oai-token-' . md5($result['nextCursorMark']) . '.phps', serialize($conf));
                             } else {

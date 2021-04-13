@@ -1,73 +1,30 @@
 <div class="row">
-	<div class="col-md-5">
-		
-		<ul class="nav nav-list">
-        <?php
+    <div class="col-md-5">
 
+        <?php
+        if (empty($this->yearsArray)) {
+            echo '<div class="alert alert-info" role="alert">' . $this->translate('Aucun article pour le moment') . '</div>';
+            return;
+        }
+        ?>
+
+        <ul class="list-group">
+            <?php
             $searchParams['controller'] = 'search';
             $searchParams['action'] = 'index';
-            $searchParams['q'] = 'publication_date_year_fs:[' . $this->rangeLastYear . ' TO *]';
+            $url = $this->url($searchParams, null, true);
+            foreach ($this->yearsArray as $year => $count) {
+                $yearClean = $this->escape($year);
+                $searchParams['q'] = 'publication_date_year_fs:' . $yearClean;
+                $url = $this->url($searchParams, null, true);
 
-            $url = $this->url($searchParams, null, TRUE);
-
-            echo '<li>';
-            echo '<a href="' . $url . '">';
-            echo $this->translate('Publications à venir');
-            echo '&nbsp;';
-
-            echo ' <span class="label label-default pull-right">' . $this->yearsAfter . '</span>';
-            echo '</a>';
-            echo '</li>';
-
-
-            // uniquement pour trier les années en ordre inverse
-            foreach ($this->yearArray as $year => $count) {
-                $yearsToSort[$year] = $count;
+                echo '<li class="list-group-item">';
+                echo '<span class="label label-default pull-right">' . $this->escape($count) . '</span>';
+                printf('<a href="%s">%s</a>', $url,$yearClean);
+                echo '</li>';
             }
-            krsort($yearsToSort);
-            // uniquement pour trier les années en ordre inverse
-
-            foreach ($yearsToSort as $year => $count) {
-
-                if ($count != 0) {
-                    $endOfRange = $year + $this->rangeOffset;
-
-                    $searchParams['q'] = 'publication_date_year_fs:[' . $year . ' TO ' . $endOfRange . ']';
-
-                    $url = $this->url($searchParams, null, TRUE);
-                    echo '<li>';
-                    echo '<a href="' . $url . '">';
-                    echo $this->escape($year);
-
-                    echo $this->translate(' à ');
-
-                    if ($endOfRange > date('Y')) {
-                        echo $this->translate("aujourd'hui");
-                    } else {
-                        echo $endOfRange;
-                    }
-
-                    echo ' <span class="label label-default pull-right">' . $count . '</span>';
-                    echo '</a>';
-                    echo '</li>';
-                }
-            }
-            $searchParams['q'] = 'publication_date_year_fs:[* TO ' . $this->rangeFirstYear . ']';
-
-            $url = $this->url($searchParams, null, TRUE);
-
-            echo '<li>';
-            echo '<a href="' . $url . '">';
-            echo $this->translate('Avant');
-            echo '&nbsp;';
-            echo $this->escape($this->rangeFirstYear);
-
-            echo ' <span class="label label-default pull-right">' . $this->yearsBefore . '</span>';
-            echo '</a>';
-            echo '</li>';
-		
-		?>
+            ?>
         </ul>
-        
-	</div>
+
+    </div>
 </div>

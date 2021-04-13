@@ -1,0 +1,6 @@
+[{
+  "label" : "Accueil",
+  "controller" : "index",
+  "action" : "index",
+  "resource" : "index-index"
+}]
