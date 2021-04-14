@@ -87,7 +87,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 $options['labels'][$lang] = $reader->get($row['LABEL'], $lang);
             }
             if ($row['PARAMS'] != '') {
-                $options = array_merge($options, unserialize($row['PARAMS']));
+                $options = array_merge($options, unserialize($row['PARAMS'], ['allowed_classes' => false]));
             }
             //Création de la page
             $this->_pages[$row['PAGEID']] = new $row['TYPE_PAGE']($options);

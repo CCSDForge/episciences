@@ -39,7 +39,7 @@ class Ccsd_Website_Common
 			->where($this->_sidField . ' = ?', $this->_sid);
 		$this->_settings = $this->_db->fetchPairs($sql);
 		if (isset($this->_settings['languages'])) {
-			$this->_settings['languages'] = unserialize($this->_settings['languages']);
+			$this->_settings['languages'] = unserialize($this->_settings['languages'], ['allowed_classes' => false]);
 		}
 	}
 	
@@ -104,7 +104,7 @@ class Ccsd_Website_Common
 		$sql = $this->_db->select()->from($this->_table, 'VALUE')->where($this->_sidField . ' = ?', (int)$this->_sid)->where('SETTING = ?', "languages");
 		$str = $this->_db->fetchOne($sql);
 		if ($str) {
-			$languages = unserialize($str);
+			$languages = unserialize($str, ['allowed_classes' => false]);
 		}
 		return $languages;
 	}

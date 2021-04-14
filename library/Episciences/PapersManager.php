@@ -40,7 +40,7 @@ class Episciences_PapersManager
             if ($cached) {
                 $cachename = 'paper-' . $id . '.txt';
                 if (Episciences_Cache::exist($cachename)) {
-                    $result[$id] = unserialize(Episciences_Cache::get($cachename));
+                    $result[$id] = unserialize(Episciences_Cache::get($cachename), ['allowed_classes' => false]);
                 } else {
                     $item['withxsl'] = false;
                     $paper = new Episciences_Paper($item);

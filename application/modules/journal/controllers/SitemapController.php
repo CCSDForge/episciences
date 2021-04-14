@@ -18,7 +18,7 @@ class SitemapController extends Zend_Controller_Action
         }
         $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
         if ($result) {
-        	$result = unserialize($result);
+        	$result = unserialize($result, ['allowed_classes' => false]);
         	foreach ($result['response']['docs'] as $paper) {
         		echo "\t" . "<url>" . PHP_EOL;
         		echo "\t\t" . "<loc>" . APPLICATION_URL.'/'.$paper['docid'] . "</loc>" . PHP_EOL; 		// URL de l'article

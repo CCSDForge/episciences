@@ -305,7 +305,7 @@ class Episciences_Volume
         $query .= '&rows=1000';
 
         $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
-        $result = unserialize($result, ['allowed_classes' => []]);
+        $result = unserialize($result, ['allowed_classes' => false]);
         if ($result && array_key_exists('response', $result)) {
 
             $positions = $this->getPaperPositions();

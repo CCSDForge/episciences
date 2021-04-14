@@ -81,7 +81,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     {
         $cacheName = 'oai-sets.phps';
         if (Episciences_Cache::exist($cacheName, 3600)) {
-            $out = unserialize(Episciences_Cache::get($cacheName));
+            $out = unserialize(Episciences_Cache::get($cacheName), ['allowed_classes' => false]);
         } else {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $out = [];
@@ -147,7 +147,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             if (!Episciences_Cache::exist('oai-token-' . md5($token) . '.phps', 7200)) {
                 return 'token';
             }
-            $conf = unserialize(Episciences_Cache::get('oai-token-' . md5($token) . '.phps'));
+            $conf = unserialize(Episciences_Cache::get('oai-token-' . md5($token) . '.phps'), ['allowed_classes' => false]);
             $format = $conf['format'];
             $queryString .= $conf['query'] . "&cursorMark=" . urlencode($token);
         }
@@ -160,7 +160,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         $queryString .= "&sort=docid+desc";
         $queryString .= "&fl=docid&wt=phps";
 
-        $result = unserialize(Episciences_Tools::solrCurl($queryString));
+        $result = unserialize(Episciences_Tools::solrCurl($queryString), ['allowed_classes' => false]);
         if (isset($result['response']) && is_array($result['response']) && isset($result['response']['numFound'])) {
             if ($result['response']['numFound'] == 0) {
                 return 0;

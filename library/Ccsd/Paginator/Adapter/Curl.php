@@ -44,7 +44,7 @@ class Ccsd_Paginator_Adapter_Curl implements Zend_Paginator_Adapter_Interface
         $sortie = array();
         $parametresPages = "&rows=". $itemCountPerPage . "&start=" . $offset;
         $url = $this->_urlPartielle . $parametresPages;
-        $resultats = unserialize(Ccsd_Tools::solrCurl($url, $this->_core));
+        $resultats = unserialize(Ccsd_Tools::solrCurl($url, $this->_core), ['allowed_classes' => false]);
         if ( ! is_array($resultats) || array_key_exists("error", $resultats) ) {
             $this->_count = 0;
         } else {
@@ -57,7 +57,7 @@ class Ccsd_Paginator_Adapter_Curl implements Zend_Paginator_Adapter_Interface
     public function count ()
     {
         if ($this->_count === null) {
-            $resultats = unserialize(Ccsd_Tools::solrCurl($this->_urlPartielle, $this->_core));
+            $resultats = unserialize(Ccsd_Tools::solrCurl($this->_urlPartielle, $this->_core), ['allowed_classes' => false]);
             $this->_count = (! is_array($resultats) || array_key_exists("error", $resultats)) ? 0 : $resultats['response']['numFound'];
         }
         return $this->_count;

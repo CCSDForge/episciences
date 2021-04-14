@@ -13,7 +13,7 @@ class Episciences_Website_Navigation_Page_Rss extends Episciences_Website_Naviga
     	$sql = $db->select()->from('WEBSITE_NAVIGATION', 'PARAMS' )->where('SID = ?', RVID)->where('TYPE_PAGE = ?', __CLASS__ );
     	$settings = $db->fetchOne($sql);
     	if ($settings) {
-    		$settings = unserialize($settings);
+    		$settings = unserialize($settings, ['allowed_classes' => false]);
     		$this->setNbResults($settings['nbResults']);
     		return $this;
     	}
