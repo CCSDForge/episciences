@@ -82,9 +82,7 @@ class StatsController extends Zend_Controller_Action
 
         foreach ($yearCategories as $year) {
 
-            $totalByYear = $dashboard['submissions']['details']['submissionsByYear'][$year]['submissions'];
-
-            $nbPublications = $nbRefusals = $nbAcceptation = 0;
+            $totalByYear = $nbPublications = $nbRefusals = $nbAcceptations = 0;
 
             $submissionsByYearResponse = array_key_exists($year, $details['moreDetails']) ? $details['moreDetails'][$year] : [];
 
@@ -104,21 +102,23 @@ class StatsController extends Zend_Controller_Action
 
                     if (in_array($status, self::ACCEPTED_SUBMISSIONS, true)) {
                         $allAcceptations += $nbSubmissions['nbSubmissions'];
-                        $nbAcceptation += $nbSubmissions['nbSubmissions'];
+                        $nbAcceptations += $nbSubmissions['nbSubmissions'];
                     }
 
                     unset($status, $nbSubmissions);
                 }
 
+                $totalByYear = $nbPublications + $nbRefusals + $nbAcceptations;
+
             }
 
-            $series['submissionsByYear']['submissions'][] = $totalByYear;
-            $series['acceptationByYear']['acceptations'][] = $nbAcceptation;
+            $series['submissionsByYear']['submissions'][] = $dashboard['submissions']['details']['submissionsByYear'][$year]['submissions']; // only submissions (1st version) of the current year
+            $series['acceptationByYear']['acceptations'][] = $nbAcceptations;
             $series['refusalsByYear']['refusals'][] = $nbRefusals;
             $series['publicationsByYear']['publications'][] = $nbPublications;
 
             if ($totalByYear) {
-                $series['acceptationByYear']['percentage'][] = round($nbAcceptation / $totalByYear * 100, 2);
+                $series['acceptationByYear']['percentage'][] = round($nbAcceptations / $totalByYear * 100, 2);
                 $series['refusalsByYear']['percentage'][] = round($nbRefusals / $totalByYear * 100, 2);
                 $series['publicationsByYear']['percentage'][] = round($nbPublications / $totalByYear * 100, 2);
             }
