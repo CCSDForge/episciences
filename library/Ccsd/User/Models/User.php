@@ -42,7 +42,7 @@ class Ccsd_User_Models_User
      */
     const IMG_NAME_LARGE = 'large';
 
-
+    const IMG_NAME_INITIALS = 'initials';
     /**
      * @const string
      */
@@ -60,6 +60,8 @@ class Ccsd_User_Models_User
      */
     const IMG_PREFIX_LARGE = 'large_';
 
+
+    const IMG_PREFIX_INITIALS = 'initials_';
     /**
      * Longueur du répertoire où sont stockés les images des comptes utilisateur
      * @var int
@@ -246,6 +248,9 @@ class Ccsd_User_Models_User
                 break;
             case self::IMG_NAME_LARGE:
                 $photoPath .= self::IMG_PREFIX_LARGE . $this->getUid() . '.jpg';
+                break;
+            case self::IMG_NAME_INITIALS:
+                $photoPath .= self::IMG_PREFIX_INITIALS . $this->getUid() . '.svg';
                 break;
             default:
                 $photoPath .= self::IMG_PREFIX_NORMAL . $this->getUid() . '.jpg';
@@ -617,7 +622,8 @@ class Ccsd_User_Models_User
         $typesToRm = array(
             self::IMG_NAME_THUMB,
             self::IMG_NAME_NORMAL,
-            self::IMG_NAME_LARGE
+            self::IMG_NAME_LARGE,
+            self::IMG_NAME_INITIALS
         );
 
         foreach ($typesToRm as $type) {

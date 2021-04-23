@@ -99,7 +99,8 @@ $ratings = $paper->getRatings();
 
                                     <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
                                         <div class="reviewer">
-
+                                            <img src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])); ?>/uid/<?= $invitation['UID']; ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                                                 class="user-photo-small" alt="avatar">
 
                                             <button class="btn btn-default fas fa-ellipsis-v popover-link context-button"
                                                     role="button"

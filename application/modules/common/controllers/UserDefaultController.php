@@ -1,7 +1,9 @@
 <?php
 
+use Laravolt\Avatar\Avatar;
 use neverbehave\Hcaptcha;
 use ReCaptcha\ReCaptcha;
+
 
 class UserDefaultController extends Zend_Controller_Action
 {
@@ -830,7 +832,7 @@ class UserDefaultController extends Zend_Controller_Action
             $userMapper = new Ccsd_User_Models_UserMapper();
             $userLogins = $userMapper->findLoginByEmail($form->getValue('EMAIL'));
 
-            if($userLogins !== null){
+            if ($userLogins !== null) {
                 $userLogins = $userLogins->toArray();
             }
 
@@ -1258,18 +1260,28 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
         $uid = $this->getParam('uid', 0);
-        $size = $this->getParam('size', 'normal');
+        $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
+
         $photoPathName = false;
-        $uid = intval($uid);
+        $data = false;
+        $uid = (int)$uid;
         switch ($size) {
-            case 'thumb':
-            case 'normal':
-            case 'large':
+            case Ccsd_User_Models_User::IMG_NAME_INITIALS:
+                $screenName = $this->getParam('name');
+                $screenName = urldecode($screenName);
+                $screenName = filter_var($screenName, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+                $imageMimeType = 'image/svg+xml';
+                break;
+            case Ccsd_User_Models_User::IMG_NAME_THUMB:
+            case Ccsd_User_Models_User::IMG_NAME_NORMAL:
+            case Ccsd_User_Models_User::IMG_NAME_LARGE:
                 break;
             default:
-                $size = 'normal';
+                $size = Ccsd_User_Models_User::IMG_NAME_NORMAL;
+                $imageMimeType = 'image/jpg';
                 break;
         }
+
 
         // photo of a specific user
         if ($uid != 0) {
@@ -1285,15 +1297,77 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         if (!$photoPathName) {
-            $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
+            if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+                $avatar = new Avatar([
+                    'shape' => 'circle', 'theme' => 'colorful', 'width' => 38, 'height' => 38, 'fontSize' => 18, 'backgrounds' => [
+                        '#f44336',
+                        '#E91E63',
+                        '#9C27B0',
+                        '#673AB7',
+                        '#3F51B5',
+                        '#2196F3',
+                        '#03A9F4',
+                        '#00BCD4',
+                        '#009688',
+                        '#4CAF50',
+                        '#8BC34A',
+                        '#CDDC39',
+                        '#FFC107',
+                        '#FF9800',
+                        '#FF5722',
+                        '#FF6347',
+                        '#FF4500',
+                        '#FF7F50',
+                        '#FE1B00',
+                        '#BF3030',
+                        '#FF5E4D',
+                        '#D90115',
+                        '#F7230C',
+                        '#1E7FCB',
+                        '#689D71',
+                        '#DD985C',
+                        '#3A8EBA',
+                        '#175732',
+                        '#CC5500',
+                        '#708D23',
+                        '#048B9A',
+                        '#11aa33',
+                        '#009527',
+                        '#ff17b6',
+                        '#f89406',
+                        '#ca6d00',
+                        '#dd2222',
+                        '#0677bf',
+                        '#007cba',
+                        '#004876',
+                        '#5627a8',
+                    ]]);
+
+
+                $userPhotoPath = $user->getPhotoPath();
+
+                if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {
+                    trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
+                }
+                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
+                $data = $avatar->create($screenName)->setFontFamily('Helvetica')->toSvg();
+                file_put_contents($photoPathName, $data);
+
+
+            } else {
+                $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
+            }
         }
 
         $modifiedTime = filemtime($photoPathName);
         $size = filesize($photoPathName);
-        $data = file_get_contents($photoPathName);
+        if (!$data) {
+            $data = file_get_contents($photoPathName);
+        }
         $maxAge = 3600;
 
         $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
+
 
         $this->getResponse()
             ->setHeader('Last-Modified', $modifiedTime, true)
@@ -1301,7 +1375,7 @@ class UserDefaultController extends Zend_Controller_Action
             ->setHeader('Expires', $expires, true)
             ->setHeader('Pragma', '', true)
             ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
-            ->setHeader('Content-Type', 'image/jpg', true)
+            ->setHeader('Content-Type', $imageMimeType, true)
             ->setHeader('Content-Length', $size, true)
             ->setBody($data);
 

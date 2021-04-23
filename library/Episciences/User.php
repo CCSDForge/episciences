@@ -301,8 +301,18 @@ class Episciences_User extends Ccsd_User_Models_User
         return $res;
     }
 
+    /**
+     * @param string $_screenName
+     * @return string
+     */
+    private static function cleanScreenName(string $_screenName = ''): string
+    {
+        return str_replace('/', ' ', $_screenName);
+    }
+
     public function getScreenName()
     {
+
         return $this->_screenName;
     }
 
@@ -311,7 +321,7 @@ class Episciences_User extends Ccsd_User_Models_User
         if ($_screenName == '') {
             $_screenName = Ccsd_Tools::formatAuthor($this->getFirstname(), $this->getLastname());
         }
-
+        $_screenName = self::cleanScreenName($_screenName);
         $this->_screenName = filter_var($_screenName, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
     }
@@ -401,7 +411,7 @@ class Episciences_User extends Ccsd_User_Models_User
                 } catch (Exception $e) {
                     $resInsert = false;
                     trigger_error($e->getMessage(), E_USER_ERROR);
-                 }
+                }
 
                 if ($resInsert) {
                     $uid = $this->_db->lastInsertId();
@@ -424,6 +434,73 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
         return $this->getUid();
 
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRegistration_date()
+    {
+        return $this->_registration_date;
+    }
+
+    /**
+     * @param mixed $registrationDate
+     * @return Episciences_User
+     */
+    public function setRegistration_date($registrationDate = null): \Episciences_User
+    {
+        if (null === $registrationDate) {
+            $registrationDate = date("Y-m-d H:i:s");
+        }
+
+        $this->_registration_date = $registrationDate;
+
+        return $this;
+
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getModification_date()
+    {
+        return $this->_modification_date;
+    }
+
+    /**
+     * @param mixed $modificationDate
+     * @return Episciences_User
+     */
+    public function setModification_date($modificationDate = null): \Episciences_User
+    {
+        if (null === $modificationDate) {
+            $modificationDate = date("Y-m-d H:i:s");
+        }
+
+        $this->_modification_date = $modificationDate;
+
+        return $this;
+    }
+
+    // Renvoie la liste des revues dans lesquelles l'utilisateur a été actif
+
+    /**
+     * @return int
+     */
+    public function getIs_valid()
+    {
+        return $this->_is_valid;
+    }
+
+    /**
+     * @param int $valid
+     * @return Episciences_User
+     */
+    public function setIs_valid(int $valid = 1): \Episciences_User
+    {
+        $this->_is_valid = $valid;
+        return $this;
     }
 
     /**
@@ -576,8 +653,6 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this->hasRole(Episciences_Acl::ROLE_ROOT);
     }
 
-    // Renvoie la liste des revues dans lesquelles l'utilisateur a été actif
-
     /**
      * check if user has a given role for this review
      * @param $rolecode
@@ -587,6 +662,8 @@ class Episciences_User extends Ccsd_User_Models_User
     {
         return (is_array($this->getRoles()) && in_array($rolecode, $this->getRoles()));
     }
+
+    // Création des données locales pour un utilisateur CAS
 
     public function isChiefEditor()
     {
@@ -602,6 +679,11 @@ class Episciences_User extends Ccsd_User_Models_User
     {
         return $this->hasRole(Episciences_Acl::ROLE_ADMIN);
     }
+
+
+
+    // Renvoie la liste des utilisateurs, filtrés par mot clés (sert pour l'autocomplete)
+    // Par défaut, renvoie uniquement les utilisateurs qui n'ont pas de rôle dans la revue.
 
     public function isEditor()
     {
@@ -623,8 +705,6 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this->hasRole(Episciences_Acl::ROLE_WEBMASTER);
     }
 
-    // Création des données locales pour un utilisateur CAS
-
     public function isMember()
     {
         return $this->hasRole(Episciences_Acl::ROLE_MEMBER);
@@ -640,11 +720,6 @@ class Episciences_User extends Ccsd_User_Models_User
     {
         return $this->_hasAccountData;
     }
-
-
-
-    // Renvoie la liste des utilisateurs, filtrés par mot clés (sert pour l'autocomplete)
-    // Par défaut, renvoie uniquement les utilisateurs qui n'ont pas de rôle dans la revue.
 
     public function setHasAccountData($_hasAccountData)
     {
@@ -854,31 +929,6 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
     /**
-     * check if user has an alias for a given docid
-     * @param $docId
-     * @param bool $strict (true: only the current version, false: include other versions)
-     * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     */
-    public function hasAlias($docId, $strict = true): bool
-    {
-        $aliases = $this->getAliases();
-        $hasAlias = array_key_exists($docId, $aliases);
-
-        if (!$strict && !$hasAlias) {
-
-            foreach ($this->versionIdsProcessing($docId) as $id) {
-                if ($hasAlias = array_key_exists($id, $aliases)) {  // relecteur de l'une des versions
-                    return $hasAlias;
-                }
-            }
-
-        }
-        return $hasAlias;
-    }
-
-    /**
      * @return array
      */
     public function getAliases(): array
@@ -907,6 +957,46 @@ class Episciences_User extends Ccsd_User_Models_User
             ->where('UID = ?', $this->getUid());
 
         $this->setAliases($this->_db->fetchPairs($select));
+    }
+
+    /**
+     * @param $docId
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function versionIdsProcessing($docId): array
+    {
+        $paper = Episciences_PapersManager::get($docId, false);
+        /** @var array $versionIdsValues ['version' => 'docId'] */
+        $versionIdsValues = $paper->getVersionsIds();
+        arsort($versionIdsValues); // high to low
+        unset($versionIdsValues[Episciences_Tools::epi_array_key_first($versionIdsValues)]);
+        return array_values($versionIdsValues);
+    }
+
+    /**
+     * check if user has an alias for a given docid
+     * @param $docId
+     * @param bool $strict (true: only the current version, false: include other versions)
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function hasAlias($docId, $strict = true): bool
+    {
+        $aliases = $this->getAliases();
+        $hasAlias = array_key_exists($docId, $aliases);
+
+        if (!$strict && !$hasAlias) {
+
+            foreach ($this->versionIdsProcessing($docId) as $id) {
+                if ($hasAlias = array_key_exists($id, $aliases)) {  // relecteur de l'une des versions
+                    return $hasAlias;
+                }
+            }
+
+        }
+        return $hasAlias;
     }
 
     /**
@@ -972,87 +1062,6 @@ class Episciences_User extends Ccsd_User_Models_User
     public function setApi_password($apiPassword)
     {
         $this->_api_password = $apiPassword;
-    }
-
-    /**
-     * @return int
-     */
-    public function getIs_valid()
-    {
-        return $this->_is_valid;
-    }
-
-    /**
-     * @param int $valid
-     * @return Episciences_User
-     */
-    public function setIs_valid(int $valid = 1): \Episciences_User
-    {
-        $this->_is_valid = $valid;
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getModification_date()
-    {
-        return $this->_modification_date;
-    }
-
-    /**
-     * @param mixed $modificationDate
-     * @return Episciences_User
-     */
-    public function setModification_date($modificationDate = null): \Episciences_User
-    {
-        if (null === $modificationDate) {
-            $modificationDate = date("Y-m-d H:i:s");
-        }
-
-        $this->_modification_date = $modificationDate;
-
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getRegistration_date()
-    {
-        return $this->_registration_date;
-    }
-
-    /**
-     * @param mixed $registrationDate
-     * @return Episciences_User
-     */
-    public function setRegistration_date($registrationDate = null): \Episciences_User
-    {
-        if (null === $registrationDate) {
-            $registrationDate = date("Y-m-d H:i:s");
-        }
-
-        $this->_registration_date = $registrationDate;
-
-        return $this;
-
-    }
-
-
-    /**
-     * @param $docId
-     * @return array
-     * @throws Zend_Db_Statement_Exception
-     */
-    private function versionIdsProcessing($docId): array
-    {
-        $paper = Episciences_PapersManager::get($docId, false);
-        /** @var array $versionIdsValues ['version' => 'docId'] */
-        $versionIdsValues = $paper->getVersionsIds();
-        arsort($versionIdsValues); // high to low
-        unset($versionIdsValues[Episciences_Tools::epi_array_key_first($versionIdsValues)]);
-        return array_values($versionIdsValues);
     }
 
 }
