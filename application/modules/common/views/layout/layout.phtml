@@ -23,16 +23,12 @@ echo $this->doctype('HTML5');
     // set head title **********************
     if ($this->headTitle()->getContainer() == '' && $this->layout()->pageTitle) {
         // if there is no headtitle but a pagetitle, use it as headtitle
-        $this->headTitle($this->layout()->pageTitle);
+        $this->headTitle(RVNAME . ' - ' . $this->layout()->pageTitle);
     } elseif ($this->headTitle()->getContainer() == '' && $this->nav()->findActive($this->nav()->getContainer())) {
         // if possible, create a head title from navigation title
         $active = $this->nav()->findActive($this->nav()->getContainer());
-        $this->headTitle($this->translate($active['page']->getLabel()));
+        $this->headTitle(RVNAME . ' - ' . $this->translate($active['page']->getLabel()));
     }
-
-    // prepends default title (the journal name) as a prefix to all head titles
-    $this->headTitle()->prepend(RVNAME);
-    $this->headTitle()->setSeparator(' - ');
     ?>
     <?php echo $this->headMeta(); ?>
     <?php echo $this->headTitle(); ?>
