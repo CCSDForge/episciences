@@ -16,13 +16,26 @@ $editors = $this->editors;
         foreach ($copyEditors as $copyEditor) : ?>
             <div class="copy-editor" style="margin-bottom: 5px;">
 
-                <button class="btn btn-default fas fa-ellipsis-v popover-link context-button"
-                        data-uid="<?= $copyEditor->getUid(); ?>"
-                        data-docid="<?= $paper->getDocid(); ?>"
-                        data-id = "<?= $this->id; ?>"
-                        role="button"
-                >
-                </button>
+                <img src="/user/photo/name/<?= urlencode($this->escape($copyEditor->getScreenName())); ?>/uid/<?= $copyEditor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                     class="user-photo-small" alt="avatar">
+
+
+                <a class="btn btn-default" href="/user/view/userid/<?= $copyEditor->getUid(); ?>" target="_blank">
+                    <span data-toggle="tooltip"
+                          class="fas fa-address-card"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Voir le profil") ?>">
+                    </span>
+                </a>
+                <a class="modal-opener btn btn-default"
+                   href="/administratemail/send/recipient/<?= $copyEditor->getUid(); ?>/paper/<?= $paper->getDocid(); ?>">
+                    <span data-toggle="tooltip"
+                          class="glyphicon glyphicon-envelope"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Contacter ce préparateur de copie") ?>">
+                    </span>
+                </a>
+
 
                 <span style="margin-left: 0.5em;"><strong><?= $copyEditor->getScreenName() ?></strong></span>
 

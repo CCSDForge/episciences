@@ -27,7 +27,8 @@
     "guzzlehttp/guzzle": "<7",
     "shardj/zf1-future": "^1.19",
     "shardj/zf1-extras-future": "^1.12",
-    "geertw/ip-anonymizer": "^1.1"
+    "geertw/ip-anonymizer": "^1.1",
+    "laravolt/avatar": "<4"
   },
   "require-dev": {
     "phpunit/phpunit": "^8",
