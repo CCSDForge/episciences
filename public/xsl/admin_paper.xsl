@@ -238,11 +238,12 @@
                                         </xsl:otherwise>
                                     </xsl:choose>
                                 </xsl:attribute>
-                                <button class="btn btn-default btn-sm" style="margin-right: 5px">
-                                    <span class="fas fa-file-download" style="margin-right: 5px"/>
-                                    <xsl:value-of
-                                            select="php:function('Ccsd_Tools::translate', 'Télécharger le fichier')"/>
-                                </button>
+                                <xsl:if test="episciences/notHasHook/text() = '1'">
+                                    <button class="btn btn-default btn-sm" style="margin-right: 5px">
+                                        <span class="fas fa-file-download" style="margin-right: 5px"/>
+                                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Télécharger le fichier')"/>
+                                    </button>
+                                </xsl:if>
                             </a>
 
                             <xsl:if test="episciences/docURL != episciences/paperURL">

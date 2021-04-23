@@ -41,6 +41,9 @@ return [
 
     'article' => ['article', 'articles'],
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
+    'Télécharger' => 'Download',
+    'Taille' => 'Size',
+
 
 
     "Historique" => "History",

@@ -1098,7 +1098,7 @@ class Episciences_Tools
      * @param int $precision
      * @return string
      */
-    public static function byteConvert($bytes, $precision = 2): string
+    public static function toHumanReadable($bytes, $precision = 2): string
     {
         if ($bytes === 0) {
             return "0.00 B";
@@ -1107,7 +1107,7 @@ class Episciences_Tools
         $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
         $e = floor(log($bytes, 1024));
 
-        return round($bytes / (1024 ** $e), $precision) . $unit[$e];
+        return round($bytes / (1024 ** $e), $precision) . ' ' . $unit[$e];
     }
 
     /**
@@ -1129,7 +1129,7 @@ class Episciences_Tools
             $description .= '<br>';
             $description .= $translator->translate('Taille maximale des fichiers que vous pouvez télécharger');
             $description .= $translator->translate(' :');
-            return ($description . ' <strong>' . self::byteConvert(MAX_FILE_SIZE) . '</strong>');
+            return ($description . ' <strong>' . self::toHumanReadable(MAX_FILE_SIZE) . '</strong>');
 
         } catch (Zend_Exception $e) {
             error_log('ZEND_TRANSLATE_EXCEPTION: ' . $e->getMessage());
@@ -1257,5 +1257,17 @@ class Episciences_Tools
             case 'b':
         }
         return $val;
+    }
+
+    public static function convertToCamelCase(string $string, string $separator = '_',  bool $capitalizeFirstCharacter = false)
+    {
+
+        $str = str_replace($separator, '', ucwords($string, $separator));
+
+        if (!$capitalizeFirstCharacter) {
+            $str = lcfirst($str);
+        }
+
+        return $str;
     }
 }

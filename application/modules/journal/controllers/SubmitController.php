@@ -22,31 +22,45 @@ class SubmitController extends DefaultController
         $form = $submit::getForm($settings);
 
         if ($request->isPost()) {
+            $post = $request->getPost();
+
+            $repoId = (int)$post['search_doc']['repoId'];
+
+            $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['search_doc']['docId'], 'repoId' => $repoId]);
+
+            if (!empty($hookCleanIdentifiers)) {
+                $post['search_doc']['docId'] = $hookCleanIdentifiers['identifier'];
+
+                //Pour ce type d'archives,  le e champ de saisie de la version dans le formulaire  «search_doc» est masqué  + vide.
+                // Ce dernier est obligatoire. Pour passer la validation, on fait cela :
+                $post['search_doc']['version'] = 0;
+            }
+
 
             if ($this->isPostMaxSizeReached()) {
                 $message = $this->view->translate('Ce formulaire comporte des erreurs.');
                 $message .= ' ';
                 $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
                 $message .= ' ';
-                $message .= '<code>' . Episciences_Tools::byteConvert(MAX_FILE_SIZE) . '</code>. ';
+                $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
                 $message .= $this->view->translate('Merci de les corriger.');
                 $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
                 $this->_helper->redirector('index', 'submit');
                 return;
             }
 
-            if (array_key_exists('submitPaper', $request->getPost())) {
+            if (array_key_exists('submitPaper', $post)) {
                 if ($request->getPost('suggestEditors') && $form->getElement('suggestEditors')) {
                     /** @var Zend_Form_Element_Multi | Zend_Form_Element_Select $suggestionsElement */
                     $suggestionsElement = $form->getElement('suggestEditors');
                     $suggestionsElement->setRegisterInArrayValidator(false);
                 }
 
-                if ($form->isValid($request->getPost())) {
+                if ($form->isValid($post)) {
                     $canReplace = (boolean)$request->getPost('can_replace');  // On force le remplacement d'une ancienne version dans certains cas
                     $form_values = $form->getValues();
 
-                    foreach ($request->getPost() as $input => $value) {
+                    foreach ($post as $input => $value) {
                         if (!array_key_exists($input, $form_values)) {
                             $form_values[$input] = $value;
                         }
@@ -86,8 +100,9 @@ class SubmitController extends DefaultController
                 } else { // End isValid
 
                     $validationErrors = '<ol  type="i">';
-                    foreach ($form->getMessages() as $key => $val) {
-                        foreach ($val as $k => $v) {
+                    foreach ($form->getMessages() as $val) {
+                        foreach ($val as $v) {
+                            $v = is_array($v) ? implode(' ', array_values($v)) : $v;
                             $validationErrors .= '<li>';
                             $validationErrors .= '<code>' . $v . '</code>';
                             $validationErrors .= '</li>';
@@ -149,20 +164,25 @@ class SubmitController extends DefaultController
      */
     public function getdocAction()
     {
+        /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $params = $request->getPost();
-
-        $submit = new Episciences_Submit();
-
-        $version = (is_numeric($params['version'])) ? $params['version'] : 1;
+        $version = (isset($params['version']) && is_numeric($params['version'])) ? $params['version'] : 1;
         $isNewVersionOf = (bool)$params['isNewVersionOf']; //répondre à une demande de modif. par la soumission d'une nouvelle version
-        $respond = $submit->getDoc($params['repoId'], $params['docId'], $version, $isNewVersionOf);
+        $respond = Episciences_Submit::getDoc($params['repoId'], $params['docId'], $version, $isNewVersionOf);
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
 
         if (array_key_exists('record', $respond)) {
             // transform xml record for display, using xslt
+
             $respond['record'] = preg_replace('#xmlns="(.*)"#', '', $respond['record']);
+
+            $input = array_merge($respond, ['repoId' => $params['repoId']]);
+
+            $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', $input);
+            unset ($result['repoId']);
+            $respond = !empty($result) ? $result : $respond;
             $respond['xslt'] = Ccsd_Tools::xslt($respond['record'], APPLICATION_PUBLIC_PATH . '/xsl/full_paper.xsl');
         }
 
@@ -238,6 +258,24 @@ class SubmitController extends DefaultController
             $cEditors[$editor->getUid()] = ['uid' => $editor->getUid(), 'fullname' => $editor->getFullname()];
         }
         return $cEditors;
+
+    }
+
+    public function ajaxhashookAction()
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        if(!$request->isXmlHttpRequest() || !$request->isPost()){
+            return;
+        }
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $repoId = (int)$request->get('repoId');
+
+        echo json_encode(!empty(Episciences_Repositories::hasHook($repoId)));
 
     }
 

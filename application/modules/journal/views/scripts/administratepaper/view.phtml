@@ -50,7 +50,10 @@ $this->suggestedRevision = false;
 
 
 <?php // Bloc "Papier" ***************************************************** ?>
-<div><?php echo $paper->getXslt(); ?></div>
+<div>
+    <?= $paper->getXslt() ?>
+    <?= $this->partial('paper/paper_files.phtml', ['oPaperFiles' => $paper->getFiles(), 'hasHook' =>$paper->hasHook]) ?>
+</div>
 
 <?php // contributor section  ?>
 <?php if ($paper->getUid()): ?>

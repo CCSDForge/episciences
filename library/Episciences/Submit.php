@@ -62,7 +62,7 @@ class Episciences_Submit
             'label' => 'Identifiant du document',
             'required' => true,
             'description' => $translator->translate("Saisir l'identifiant du document") . '.',
-            'style' => 'width:auto;',
+            'style' => 'width:auto; text-align:center;',
         ]);
 
         // Champ texte : version du document
@@ -360,7 +360,7 @@ class Episciences_Submit
         $paper = Episciences_PapersManager::get($docId);
         $paperId = ($paper->getPaperid()) ? $paper->getPaperid() : $docId;
 
-        if($comment){
+        if ($comment) {
             $id = $comment->getPcid();
             $form->addElement('hidden', 'attachments_path_type_' . $id, [
                 'id' => 'attachments_path_type_' . $id,
@@ -458,6 +458,7 @@ class Episciences_Submit
     public static function getNewVersionForm($settings = null, $defaults = null)
     {
         $options = [];
+        $hasHook = array_key_exists('hasHook', $defaults) &&  $defaults['hasHook'] ? $defaults['hasHook'] : false;
         try {
             $form = new Ccsd_Form();
             $form->setName('submit_doc');
@@ -468,25 +469,34 @@ class Episciences_Submit
 
             $subform = new Ccsd_Form_SubForm();
 
-            // Champ texte : identifiant du document
-            $subform->addElement('text', 'docId', array(
+            $docIdOptions = [
                 'label' => 'Identifiant du document',
                 'disabled' => true,
                 'required' => true,
                 'placeholder' => Zend_Registry::get('Zend_Translate')->translate("Saisir l'identifiant du document"),
                 'style' => 'width:33%;',
-            ));
+            ];
+
+            if ($hasHook) {
+                unset($docIdOptions['disabled']);
+            }
+
+            // Champ texte : identifiant du document
+            $subform->addElement('text', 'docId', $docIdOptions);
 
             $subform->addElement('hidden', 'h_docId');
 
-            // Champ texte : version du document
-            $subform->addElement('text', 'version', [
-                'label' => 'Version',
-                'description' => "Veuillez indiquer la version du document (nombre uniquement).",
-                'value' => '1',
-                'required' => true,
-                'style' => 'width:33%']
-            );
+            if (!$hasHook) {
+                // Champ texte : version du document
+                $subform->addElement('text', 'version', [
+                        'label' => 'Version',
+                        'description' => "Veuillez indiquer la version du document (nombre uniquement).",
+                        'value' => '1',
+                        'required' => true,
+                        'style' => 'width:33%']
+                );
+
+            }
 
             // Récupération des repositories
             if (array_key_exists('repositories', $settings) && !empty($settings['repositories'])) {
@@ -582,7 +592,7 @@ class Episciences_Submit
             // Attached file [new version]
             $extensions = ALLOWED_EXTENSIONS;
             $implode_extensions = implode(',', $extensions);
-            $description = Episciences_Tools::buildAttachedFilesDescription($extensions,'.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
+            $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
             $form->addElement('file', 'file_new_version_comment_author', array(
                 'label' => "Lettre d'accompagnement",
                 'description' => $description,
@@ -661,7 +671,7 @@ class Episciences_Submit
             if ($defaults) {
                 //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle
                 $defaults['version'] = '';
-                $defaults['h_docId'] = $defaults['docId'];
+                $defaults['h_docId'] = !$hasHook ? $defaults['docId'] : '';
                 $defaults['h_repoId'] = $defaults['repoId'];
                 $form->setDefaults($defaults);
             }
@@ -682,9 +692,16 @@ class Episciences_Submit
      * @return array
      * @throws Zend_Exception
      */
-    public static function getDoc($repoId, $id, $version = null, $isNewVersionOf = false)
+    public static function getDoc($repoId, $id, $version = null, $isNewVersionOf = false): array
     {
         $id = trim($id);
+
+        $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $id, 'repoId' => $repoId]);
+
+        if (!empty($hookCleanIdentifiers)) {
+            $id = $hookCleanIdentifiers['identifier'];
+        }
+
         $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version);
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
         $translator = Zend_Registry::get('Zend_Translate');
@@ -786,7 +803,7 @@ class Episciences_Submit
         ];
 
         // Préparation du populate de l'article
-        $values = $this->buildValuesToPopulatePaper($data, $paperId,  $vid, $sid);
+        $values = $this->buildValuesToPopulatePaper($data, $paperId, $vid, $sid);
 
         $paper = new Episciences_Paper($values);
 
@@ -809,6 +826,17 @@ class Episciences_Submit
 
             $result['docId'] = (int)$docId;
 
+            $arrayResponse = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()]);
+
+            if (!empty($arrayResponse)) {
+                $latestVersion = array_key_exists('version', $arrayResponse['metadata']) ?
+                    $arrayResponse['metadata']['version'] :
+                    $arrayResponse['metadata']['relations']['version'][array_key_first($arrayResponse['metadata']['relations']['version'])]['index'] + 1;
+                // todo: save authors
+                $paper->setVersion($latestVersion);
+                $paper->save();
+            }
+
         } else {
             $message = '<strong>' . $translator->translate("Une erreur s'est produite pendant l'enregistrement de votre article.") . '</strong>';
             $messenger->setNamespace('error')->addMessage($message);
@@ -821,7 +849,7 @@ class Episciences_Submit
             "attachedFile" => $values['FILE_AUTHOR']
         ];
 
-        $this->saveCoverLetter($paper, $coverLetter );
+        $this->saveCoverLetter($paper, $coverLetter);
 
         $recipients = [];
 
@@ -852,10 +880,10 @@ class Episciences_Submit
 
         $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
-            //Author infos
-            /** @var Episciences_User $author */
-            $author = Episciences_Auth::getUser();
-            $aLocale = $author->getLangueid();
+        //Author infos
+        /** @var Episciences_User $author */
+        $author = Episciences_Auth::getUser();
+        $aLocale = $author->getLangueid();
 
         $commonTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
@@ -913,7 +941,7 @@ class Episciences_Submit
         // rédacteurs choisis par l'auteur, s'il y en a et selon les paramètres de la revue
         $editors = (!empty($autoAssignation) && in_array(Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation)) ? $this->findSuggestEditors($suggestEditors) : [];
 
-        if ( !empty($autoAssignation) && in_array(Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation) && $sid) { // Asignation des rédacteurs d'une section
+        if (!empty($autoAssignation) && in_array(Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation) && $sid) { // Asignation des rédacteurs d'une section
             /** @var Episciences_Section $section */
             $section = Episciences_SectionsManager::find($sid);
             $sectionEditors = $section->getEditors();
@@ -1112,10 +1140,10 @@ class Episciences_Submit
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private static function notifyManagers(Episciences_Paper $paper, array $managers, $oldDocId, $oldPaperStatus = 0, array $tags = [],  bool $canReplace = false)
+    private static function notifyManagers(Episciences_Paper $paper, array $managers, $oldDocId, $oldPaperStatus = 0, array $tags = [], bool $canReplace = false)
     {
         $translator = Zend_Registry::get('Zend_Translate');
-        $defaultTemplateKey =  Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_EDITOR_COPY; // default template
+        $defaultTemplateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_EDITOR_COPY; // default template
 
         $volume = Episciences_VolumesManager::find($paper->getVid());
         $section = Episciences_SectionsManager::find($paper->getSid());
@@ -1228,7 +1256,7 @@ class Episciences_Submit
         $translator = Zend_Registry::get('Zend_Translate');
 
         $suggestEditors = $this->getSuggestedEditorsFromPost($data);
-        $jump  = false;
+        $jump = false;
 
         // Suggested reviewers
         if (!$jump &&
@@ -1267,7 +1295,8 @@ class Episciences_Submit
      * @param null $sid
      * @return array
      */
-    private function buildValuesToPopulatePaper(array $data, $paperId = null, $vid = null,  $sid = null){
+    private function buildValuesToPopulatePaper(array $data, $paperId = null, $vid = null, $sid = null)
+    {
 
         $values = [];
         $canReplace = (boolean)Ccsd_Tools::ifsetor($data['can_replace'], false); // remplacer ou pas la version V-1
@@ -1329,15 +1358,15 @@ class Episciences_Submit
      * @param array $post
      * @return array
      */
-    private function getSuggestedEditorsFromPost(array $post) : array {
+    private function getSuggestedEditorsFromPost(array $post): array
+    {
         $suggestedEditors = Ccsd_Tools::ifsetor($post['suggestEditors'], []);
 
         if (!empty($suggestedEditors)) {
             // choisir un seul et un seul editeur
-            $suggestedEditors = (!is_array($post['suggestEditors'])) ? (array)$suggestedEditors: $suggestedEditors;
+            $suggestedEditors = (!is_array($post['suggestEditors'])) ? (array)$suggestedEditors : $suggestedEditors;
         }
 
         return $suggestedEditors;
     }
-
 }

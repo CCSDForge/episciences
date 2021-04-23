@@ -795,7 +795,7 @@ class Episciences_PapersManager
                 if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
                     $reviewer = new Episciences_User_Tmp();
 
-                    if(!empty($reviewer->find($invitation['UID']))){
+                    if (!empty($reviewer->find($invitation['UID']))) {
                         $reviewer->generateScreen_name();
                         $reviewers[$invitation['UID']] = $reviewer;
                     }
@@ -975,7 +975,7 @@ class Episciences_PapersManager
             if (isset($tmp_reviewers) && !empty($tmp_reviewers)) {
                 foreach ($tmp_reviewers as $tmp_reviewer) {
                     $reviewer = new Episciences_User_Tmp;
-                    if(!empty($reviewer->find($tmp_reviewer['UID']))){
+                    if (!empty($reviewer->find($tmp_reviewer['UID']))) {
                         $reviewer->generateScreen_name();
                         $reviewers['tmp_' . $tmp_reviewer['UID']] = $reviewer;
                     }
@@ -2329,7 +2329,7 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME => !empty($paperPosition) ? $paperPosition : $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_CURRENT_YEAR => date('Y'),
                     Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL => $site . '/public/' . RVCODE . '_episciences.zip',
-                    Episciences_Mail_Tags::TAG_VOLUME_EDITORS => ($volume && $volume->formatEditors()) ? $volume->formatEditors() :  $translator->translate('Aucun', $locale)
+                    Episciences_Mail_Tags::TAG_VOLUME_EDITORS => ($volume && $volume->formatEditors()) ? $volume->formatEditors() : $translator->translate('Aucun', $locale)
                 ];
 
             } elseif ($name === 'askOtherEditors') { // SCREEN_NAME and FULL_NAME tags can't have a default value for Ask Other Editors template, since there are multiple recipients
@@ -2408,7 +2408,7 @@ class Episciences_PapersManager
     public static function updateRecordData(int $docId)
     {
 
-        if ((int)$docId <= 0) {
+        if ($docId <= 0) {
             return false;
         }
 
@@ -2423,11 +2423,24 @@ class Episciences_PapersManager
         $repoIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier, $version);
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
         $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
-        $record = $oai->getRecord($repoIdentifier);
-        // Mise à jour des données
 
+        $record = $oai->getRecord($repoIdentifier);
+        $record = preg_replace('#xmlns="(.*)"#', '', $record);
+
+        $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', ['record' => $record, 'repoId' => $repoId]);
+
+        if (array_key_exists('record', $result)) {
+            $record = $result['record'];
+            // delete all paper files
+            Episciences_Paper_FilesManager::deleteByDocId($docId);
+            // add all files
+            Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
+        }
+
+        // Mise à jour des données
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;
+
         return $db->update(T_PAPERS, $data, $where);
     }
 

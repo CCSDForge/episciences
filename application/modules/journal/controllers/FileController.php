@@ -193,7 +193,7 @@ class FileController extends DefaultController
         if ($this->isPostMaxSizeReached()) {
             $message = $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
             $message .= ' ';
-            $message .= '<code>' . Episciences_Tools::byteConvert(MAX_FILE_SIZE) . '</code>';
+            $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>';
             $result ['status'] = 'error';
             $result ['messages'][] = $message;
         } else {

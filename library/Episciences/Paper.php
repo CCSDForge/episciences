@@ -240,6 +240,8 @@ class Episciences_Paper
      * @var null | int
      */
     private $_position;
+    private $_files;
+    public $hasHook;
 
     /**
      * Episciences_Paper constructor.
@@ -621,6 +623,7 @@ class Episciences_Paper
     public function setRepoid($repoId): self
     {
         $this->_repoId = (int)$repoId;
+        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid()));
         return $this;
     }
 
@@ -1639,6 +1642,7 @@ class Episciences_Paper
         $submitter = ($this->getSubmitter()) ? $this->getSubmitter()->getFullName() : null;
         $node->appendChild($dom->createElement('submitter', $submitter));
         $node->appendChild($dom->createElement('uid', $this->getUid()));
+        $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
 
         // fetch volume data
         if ($this->getVid()) {
@@ -2982,7 +2986,10 @@ class Episciences_Paper
 
         /** @var string[] $authors */
         $authors = $this->getMetadata('authors');
-        $this->trimAuthorsMeta($authors);
+
+        if($authors){
+            $this->trimAuthorsMeta($authors);
+        }
 
         $str = '';
         $length = count($authors);
@@ -3002,8 +3009,8 @@ class Episciences_Paper
                 }
         }
 
-        $str = addslashes($str);
-        return $str;
+        return addslashes($str);
+
     }
 
     /**
@@ -3400,5 +3407,36 @@ class Episciences_Paper
     {
         $tei = new Episciences_Paper_Tei($this);
         return $tei->generateXml();
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFiles()
+    {
+        if (!$this->_files) {
+            $this->loadFiles();
+        }
+
+        return $this->_files;
+    }
+
+    /**
+     * @param mixed $files
+     */
+    public function setFiles($files): void
+    {
+        $this->_files = $files;
+    }
+
+
+    private function loadFiles(): void
+    {
+        if (!$this->_docId || !is_numeric($this->_docId)) {
+            $this->_files = [];
+            return;
+        }
+
+        $this->_files = Episciences_Paper_FilesManager::findByDocId($this->_docId);
     }
 }

@@ -369,6 +369,8 @@ class PaperController extends PaperDefaultController
                 }
             }
         }
+
+        $this->view->hasHook = !empty(Episciences_Repositories::hasHook($paper->getRepoid()));
     }
 
     /**
@@ -1143,10 +1145,13 @@ class PaperController extends PaperDefaultController
         $repository = $paper->getRepoid();
         $defaults = null;
         if ($repository) {
+            $hasHook = !empty(Episciences_Repositories::hasHook($repository));
             $defaults = [
-                'docId' => $paper->getIdentifier(),
+                'docId' => !$hasHook ? $paper->getIdentifier() : '',
                 self::VERSION_STR => $paper->getVersion(),
-                'repoId' => $paper->getRepoid()];
+                'repoId' => $repository,
+                'hasHook' => $hasHook
+            ];
 
         }
 
@@ -1194,7 +1199,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        $paperId = ($paper->getPaperid()) ? $paper->getPaperid() : $paper->getDocid();
+        $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
         $copyEditors = [];

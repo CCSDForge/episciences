@@ -59,7 +59,7 @@ $(function () {
             $checkBoxCondition2.prop('checked', false);
         }
 
-        if ('' === version || isNaN(version)) {
+        if (!hasHook && ('' === version || isNaN(version))) {
             alert(translate("Veuillez indiquer la version du document (nombre uniquement)."));
             return;
         }

@@ -19,44 +19,13 @@
 
 <?php $this->jQuery()->addJavascriptFile('/js/submit/functions.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js'); ?>
+<?php $this->jQuery()->addJavascriptFile('/js/submit/index.js'); ?>
+
 <?php if ($this->error) : ?>
     <script type="text/javascript">error();</script>
 <?php endif; ?>
 
 <script>
-
-    $(document).ready(function() {
-
-        var examples = <?php echo $this->examples; ?>;
-        setPlaceholder();
-
-        $('#search_doc-repoId').change(function() {
-            setPlaceholder();
-
-        });
-
-        function setPlaceholder()
-        {
-            $('#search_doc-docId').attr('placeholder', translate('exemple : ')+examples[$('#search_doc-repoId').val()]);
-        }
-
-// Extracting the ID from URL
-
-        $('#search_doc-docId').change(function(){
-
-            if ($(this).val() !== ''){
-                var tab = $(this).val().split('/');
-                if(tab.length > 1){
-                    if(tab[tab.length - 1] !== ''){
-                        var str = tab[tab.length - 1];
-                        // Delete VERSION from ID
-                        var id = str.substr(0, str.length - 2);
-                        $(this).val(id);
-                    }
-                }
-            }
-
-        });
-
-    });
+    let examples = <?= $this->examples ?>;
+    let hasHook = false;
 </script>

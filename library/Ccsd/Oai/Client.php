@@ -94,11 +94,11 @@ class Ccsd_Oai_Client {
 			}
 			$record = $xpath->query('//xmlns:GetRecord/xmlns:record');
 			if ( $record->length ) {
-				return ( $this->_outputFormat == 'array') ? Ccsd_Tools::dom2array($record->item(0)) : $dom->saveXML($record->item(0));
-			} else {
-				throw new Exception("XML non valide", 0);
+				return ( $this->_outputFormat === 'array') ? Ccsd_Tools::dom2array($record->item(0)) : $dom->saveXML($record->item(0));
 			}
-		} catch (Ccsd_Error $e){
+
+            throw new Exception("XML non valide", 0);
+        } catch (Ccsd_Error $e){
 		    throw $e;
 
         } catch ( Exception $e ) {
