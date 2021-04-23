@@ -1264,6 +1264,8 @@ class UserDefaultController extends Zend_Controller_Action
 
         $photoPathName = false;
         $data = false;
+        $imageMimeType = 'image/jpg';
+
         $uid = (int)$uid;
         switch ($size) {
             case Ccsd_User_Models_User::IMG_NAME_INITIALS:
@@ -1278,7 +1280,6 @@ class UserDefaultController extends Zend_Controller_Action
                 break;
             default:
                 $size = Ccsd_User_Models_User::IMG_NAME_NORMAL;
-                $imageMimeType = 'image/jpg';
                 break;
         }
 
