@@ -98,7 +98,7 @@ if ($paper->isPublished()) {
     $this->headMeta()->prependName('DC.relation.ispartof', $journal);
 
     $doi = $paper->getDoi();
-    if ($doi !== '') {
+    if (!empty($doi)) {  // $doi !== null, $doi !== '' {
         $this->headMeta()->prependName('DC.identifier', $doi);
         $this->headMeta()->prependName('citation_doi', $doi);
     }
