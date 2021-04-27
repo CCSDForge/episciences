@@ -23,7 +23,7 @@ class StatsController extends Zend_Controller_Action
     ];
 
     public const CURRENT_RVID = RVID;
-    public const IS_AVAILABLE = false;
+    public const IS_AVAILABLE = true;
 
     public function indexAction()
     {
