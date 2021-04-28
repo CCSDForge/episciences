@@ -23,15 +23,9 @@ class StatsController extends Zend_Controller_Action
     ];
 
     public const CURRENT_RVID = RVID;
-    public const IS_AVAILABLE = false;
 
     public function indexAction()
     {
-
-        if (!self::IS_AVAILABLE) {
-            $this->view->errorMessage = "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations.";
-            return;
-        }
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();

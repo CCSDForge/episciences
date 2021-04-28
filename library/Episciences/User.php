@@ -950,13 +950,16 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * load user aliases
      */
-    public function loadAliases()
+    public function loadAliases(): void
     {
-        $select = $this->_db->select()
-            ->from(T_ALIAS, ['DOCID', 'ALIAS'])
-            ->where('UID = ?', $this->getUid());
+        $uid = $this->getUid();
 
-        $this->setAliases($this->_db->fetchPairs($select));
+        if ($uid) {
+            $select = $this->_db->select()
+                ->from(T_ALIAS, ['DOCID', 'ALIAS'])
+                ->where('UID = ?', $this->getUid());
+            $this->setAliases($this->_db->fetchPairs($select));
+        }
     }
 
     /**
