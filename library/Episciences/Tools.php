@@ -918,11 +918,11 @@ class Episciences_Tools
     {
 
         if (!isset($regEx, $variable) || !is_string($regEx) || !is_string($variable)) {
-            return array();
+            return [];
         }
 
         if (!preg_match_all($regEx, $variable, $matches)) {
-            return array();
+            return [];
         }
 
         return $matches[0];

@@ -95,7 +95,7 @@ class PaperController extends PaperDefaultController
 
         $client = new Client($clientHeaders);
         try {
-            $url = $paper->getPaperUrl() ;
+            $url = $paper->getPaperUrl();
             $res = $client->get($url);
             $mainDocumentContent = $res->getBody()->getContents();
         } catch (GuzzleHttp\Exception\RequestException $e) {
@@ -370,7 +370,14 @@ class PaperController extends PaperDefaultController
             }
         }
 
-        $this->view->hasHook = !empty(Episciences_Repositories::hasHook($paper->getRepoid()));
+        $hasHook = $paper->hasHook;
+
+        if ($paper->isTmp()) {
+            $firstPaper = Episciences_PapersManager::get($paper->getPaperid(), false);
+            $hasHook = $firstPaper->hasHook;
+        }
+
+        $this->view->hasHook = $hasHook;
     }
 
     /**
@@ -958,6 +965,7 @@ class PaperController extends PaperDefaultController
         // update xml
         $xml = $paper->getRecord();
         $tmpPaper->setRecord($xml);
+        $tmpPaper->setConcept_identifier($paper->getConcept_identifier());
 
         // save tmp version
         if ($tmpPaper->save()) {
@@ -1143,16 +1151,19 @@ class PaperController extends PaperDefaultController
 
         // fetch form default values
         $repository = $paper->getRepoid();
-        $defaults = null;
+
         if ($repository) {
-            $hasHook = !empty(Episciences_Repositories::hasHook($repository));
             $defaults = [
-                'docId' => !$hasHook ? $paper->getIdentifier() : '',
+                // Pour Zenodo, un identifiant différent par version,
+                // d’où  l’initialisation de la valeur par défaut à ''
+                'docId' => !$paper->hasHook ? $paper->getIdentifier() : '',
                 self::VERSION_STR => $paper->getVersion(),
                 'repoId' => $repository,
-                'hasHook' => $hasHook
+                'hasHook' => $paper->hasHook,
             ];
-
+        } else { // tmp version
+            $firstSubmission = Episciences_PapersManager::get($paper->getPaperid());
+            $defaults = ['hasHook' => $firstSubmission->hasHook];
         }
 
         // load form
@@ -1192,12 +1203,57 @@ class PaperController extends PaperDefaultController
         $docId = $request->getQuery(self::DOC_ID_STR);
         $paper = Episciences_PapersManager::get($docId);
 
-        if ((int)$post[self::SEARCH_DOC_STR][self::VERSION_STR] < (int)$paper->getVersion()) {
+        //tmp version
+        $hasHook = $paper->isTmp() && isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
+        $currentVersion = 1;
+
+        if ($paper->hasHook || $hasHook) {
+
+            $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post[self::SEARCH_DOC_STR]['docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId']]);
+
+            if (isset($hookCleanIdentifiers['identifier'])) {
+                $post[self::SEARCH_DOC_STR]['h_docId'] = $hookCleanIdentifiers['identifier'];
+            }
+
+            $conceptIdentifier = null;
+
+            $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $post[self::SEARCH_DOC_STR]['h_docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId']]);
+
+            if (isset($hookApiRecord['conceptrecid'])) {
+                $conceptIdentifier = $hookApiRecord['conceptrecid'];
+
+            } else {
+                $hookConceptIdentifier = Episciences_Repositories::callHook('hookConceptIdentifier', ['repoId' => $paper->getRepoid(), 'response' => $hookApiRecord]);
+                if (isset($hookConceptIdentifier['conceptIdentifier'])) {
+                    $conceptIdentifier = $hookConceptIdentifier['conceptIdentifier'];
+                }
+            }
+
+            if (!$conceptIdentifier || $conceptIdentifier !== $paper->getConcept_identifier()) {
+                $message = $this->view->translate("Vos modifications n'ont pas été prises en compte : la version du document n'est pas liée à la précédente.");
+                $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+                return;
+            }
+
+            $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $post[self::SEARCH_DOC_STR]['h_docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId'], 'response' => $hookApiRecord]);
+
+            if (isset($hookVersion['version'])) {
+                $currentVersion = (int)$hookVersion['version'];
+            }
+
+
+        } else {
+            $currentVersion = (int)$post[self::SEARCH_DOC_STR][self::VERSION_STR];
+        }
+
+        if ($currentVersion < (int)$paper->getVersion()) {
             $message = $this->view->translate("la version de l'article à mettre à jour doit être supérieure à la version précédente.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
             return;
         }
+
 
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
@@ -1217,9 +1273,9 @@ class PaperController extends PaperDefaultController
         }
 
         $newPaper->setStatus($status);
-        $newPaper->setIdentifier($post[self::SEARCH_DOC_STR]['h_docId']); // object cloned remove it
-        $newPaper->setVersion($post[self::SEARCH_DOC_STR][self::VERSION_STR]);
-        $newPaper->setRepoid($post[self::SEARCH_DOC_STR]['h_repoId']); // object cloned remove it
+        $newPaper->setIdentifier($post[self::SEARCH_DOC_STR]['h_docId']);
+        $newPaper->setVersion($currentVersion);
+        $newPaper->setRepoid($post[self::SEARCH_DOC_STR]['h_repoId']);
         $newPaper->setRecord($post['xml']);
 
         // get sure this article is a new version (paper does not already exists)
@@ -1232,6 +1288,8 @@ class PaperController extends PaperDefaultController
 
         // save new version
         if ($newPaper->save()) {
+
+            Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $newPaper->getRepoid(), 'identifier' => $newPaper->getIdentifier(), 'docId' => $newPaper->getDocid()]);
 
             // Author comment
             $author_comment = new Episciences_Comment();

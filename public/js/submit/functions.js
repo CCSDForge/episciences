@@ -47,15 +47,15 @@ $(function () {
 
         let $checkBoxCondition1 = $('#disclaimers-disclaimer1');
         let $checkBoxCondition2 = $('#disclaimers-disclaimer2');
-        let version =  $searchDocVersion.val();
+        let version = $searchDocVersion.val();
 
         // submission error: attempt to re-submit
-        if($checkBoxCondition1.is(':checked')){
+        if ($checkBoxCondition1.is(':checked')) {
             $checkBoxCondition1.prop('checked', false)
 
         }
 
-        if($checkBoxCondition2.is(':checked')){
+        if ($checkBoxCondition2.is(':checked')) {
             $checkBoxCondition2.prop('checked', false);
         }
 
@@ -185,12 +185,21 @@ $(function () {
 
     // display the document if it has been found
     function showResult(result) {
+
         let message = '';
 
         if (result['status'] === 0) {
             // document not found: display an error
             message = '<div class="panel panel-danger"><div class="panel-body">' + result['error'] + '</div></div>';
         } else {
+
+            if ('conceptIdentifier' in result) {
+                $submit_form.append('<input id = "concept_identifier" type="hidden" name="concept_identifier" value="' + result.conceptIdentifier + '">');
+            }
+
+            if ('hookVersion' in result) {
+                $searchDocVersion.val(result.hookVersion);
+            }
 
             // document found: hide search form
             $search_form.hide();

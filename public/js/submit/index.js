@@ -7,6 +7,7 @@ $(document).ready(function () {
     setPlaceholder();
 
     $searchDocRepoId.change(function () {
+        $searchDocDocId.val('');
 
         $versionBloc.show();
 
@@ -31,16 +32,19 @@ $(document).ready(function () {
 
     $searchDocDocId.change(function () {
 
-        if (isValidHttpUrl($(this).val())) {
-            let tab = $(this).val().split('/');
-            if (tab.length > 1) {
-                if (tab[tab.length - 1] !== '') {
-                    let str = tab[tab.length - 1];
-                    // Delete VERSION from ID
-                    let id = str.substr(0, str.length - 2);
-                    $(this).val(id);
-                }
-            }
+        let input = $(this).val();
+        if (isValidHttpUrl(input)) {
+
+            let url = new URL(input);
+            let identifier = url.pathname;
+
+            identifier = identifier.replace(/\/\w+\//, '')
+            identifier = identifier.replace('/', '');
+            identifier = identifier.replace(/v\d+/, '')
+
+            // Delete VERSION from IDENTIFIER
+            $(this).val(identifier);
+
         }
 
     });

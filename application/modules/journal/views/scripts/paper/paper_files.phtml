@@ -18,18 +18,18 @@
                 <?php foreach ($this->oPaperFiles as $oFile) : ?>
                     <tr>
                         <td>
-                            <a class="" href="<?= $oFile->getSelfLink() ?>"><?= $oFile->getFileName() ?></a>
+                            <a href="<?= $oFile->getSelfLink() ?>"><?= $oFile->getFileName() ?></a>
                             <br/>
-                            <small class=""> <?= $oFile->getChecksumType() ?>:<?= $oFile->getChecksum() ?>
-                                <i class="fa fa-question-circle text-muted" data-toggle="tooltip" data-placement="top"
-                                   title=<?= $this->translate("Il s'agit de l'empreinte du fichier (somme de contrôle MD5), qui peut être utilisée pour vérifier l'intégrité du fichier.") ?>></i>
+                            <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
+                                <!-- i class="fas fa-question-circle text-muted" data-toggle="tooltip" data-placement="top"
+                                   title=<?= $this->translate("Il s'agit de l'empreinte du fichier (somme de contrôle MD5), qui peut être utilisée pour vérifier l'intégrité du fichier.") ?>></i -->
                             </small>
                         </td>
                         <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
                         <td>
                     <span class="pull-right">
                         <a class="btn btn-xs btn-default" href="<?= $oFile->getSelfLink() ?>">
-                            <i class="fa fa-download"></i> <?= $this->translate('Télécharger') ?>
+                           <i class="fas fa-file-download"></i> <?= $this->translate('Télécharger le fichier') ?>
                         </a>
                     </span>
                         </td>

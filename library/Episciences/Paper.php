@@ -191,7 +191,11 @@ class Episciences_Paper
     private $_identifier;
     private $_repoId = 0;
     private $_record;
-    private $_description;
+    /**
+     * Pour vérifier si les versions (autres archives (exp Zenodo)) sont liées entre elles.
+     * @var string
+     */
+    private $_concept_identifier;
     private $_when;
     private $_submission_date;
     private $_modification_date;
@@ -445,7 +449,6 @@ class Episciences_Paper
     }
 
 
-
     /**
      * @return array
      */
@@ -484,7 +487,6 @@ class Episciences_Paper
 
         if ($this->_reviewers) {
             $reviewers = $this->_reviewers;
-            /** @var Episciences_Reviewer $reviewer */
             foreach ($reviewers as &$reviewer) {
                 $reviewer = $reviewer->toArray();
             }
@@ -494,7 +496,6 @@ class Episciences_Paper
 
         if ($this->_editors) {
             $editors = $this->_editors;
-            /** @var Episciences_Editor $editor */
             foreach ($editors as &$editor) {
                 $editor = $editor->toArray();
             }
@@ -504,6 +505,10 @@ class Episciences_Paper
 
         if (isset($this->_latestVersionId) && $this->_latestVersionId) {
             $result['latestVersionId'] = $this->_latestVersionId;
+        }
+
+        if ($this->hasHook && isset($this->_concept_identifier)) {
+            $result['concept_identifier'] = $this->getConcept_identifier();
         }
 
         return $result;
@@ -1000,12 +1005,20 @@ class Episciences_Paper
             ->where('RVID = ?', $this->getRvid())
             //->where('VID = ?', $this->getVid())
             //->where('SID = ?', $this->getSid())
-            ->where('STATUS != ?', Episciences_Paper::STATUS_DELETED)
-            ->where('IDENTIFIER = ?', $this->getIdentifier())
-            ->where('REPOID = ?', $this->getRepoid());
+            ->where('STATUS != ?', Episciences_Paper::STATUS_DELETED);
+
+        if ($this->hasHook) {
+            $sql->where('CONCEPT_IDENTIFIER = ?', $this->getConcept_identifier());
+        } else {
+            $sql->where('IDENTIFIER = ?', $this->getIdentifier());
+        }
+
         if ($this->getVersion()) {
             $sql->where('VERSION = ?', $this->getVersion());
         }
+
+        $sql->where('REPOID = ?', $this->getRepoid());
+
         // Si plusieurs version de l'article, on recupère l'article dans sa dernière version
         $sql->order('WHEN DESC');
 
@@ -2110,20 +2123,20 @@ class Episciences_Paper
     }
 
     /**
-     * @return mixed
+     * @return string | null
      */
-    public function getDescription()
+    public function getConcept_identifier(): ?string
     {
-        return $this->_description;
+        return $this->_concept_identifier;
     }
 
     /**
-     * @param $description
+     * @param string|null $conceptIdentifier
      * @return $this
      */
-    public function setDescription($description): self
+    public function setConcept_identifier(string $conceptIdentifier = null): self
     {
-        $this->_description = $description;
+        $this->_concept_identifier = $conceptIdentifier;
         return $this;
     }
 
@@ -2488,7 +2501,7 @@ class Episciences_Paper
                 return $update;
             }
 
-            if ($this->getIdentifier() !== $paper->getIdentifier()) {
+            if (!$this->hasHook && $this->getIdentifier() !== $paper->getIdentifier()) {
                 $message .= ' : ';
                 $message .= $translator->translate("l'identifiant de l'article a changé.");
 
@@ -2641,6 +2654,10 @@ class Episciences_Paper
                 $data['PUBLICATION_DATE'] = new Zend_Db_Expr('NOW()');
             }
 
+            if ($this->getConcept_identifier()) {
+                $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
+            }
+
             if ($db->insert(T_PAPERS, $data)) {
                 $this->setDocid($db->lastInsertId());
                 if (!$this->getPaperid()) {
@@ -2673,6 +2690,10 @@ class Episciences_Paper
         }
         if ($this->getPublication_date()) {
             $data['PUBLICATION_DATE'] = $this->getPublication_date();
+        }
+
+        if ($this->getConcept_identifier()) {
+            $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
         }
 
         if (!$db->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
@@ -2987,7 +3008,7 @@ class Episciences_Paper
         /** @var string[] $authors */
         $authors = $this->getMetadata('authors');
 
-        if($authors){
+        if ($authors) {
             $this->trimAuthorsMeta($authors);
         }
 
@@ -3213,7 +3234,6 @@ class Episciences_Paper
         }
         return $month;
     }
-
 
 
     /**

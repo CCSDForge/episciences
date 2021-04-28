@@ -207,19 +207,19 @@
                     </div>
                 </xsl:if>
 
-
-                <div class="small">
-                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
-                    <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
-                        <xsl:value-of select="."/>
-                        <xsl:if test="position() != last()">,</xsl:if>
-                    </xsl:for-each>
-                </div>
-
+                <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
+                        <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
+                            <xsl:value-of select="."/>
+                            <xsl:if test="position() != last()">,</xsl:if>
+                        </xsl:for-each>
+                    </div>
+                </xsl:if>
                 <br/>
 
-
                 <xsl:if test="episciences">
+                    <div id='record-loading' style="display:none"/>
                     <xsl:choose>
                         <xsl:when test="episciences/tmp/text() = '1'">
                             <xsl:variable name="docUrls"

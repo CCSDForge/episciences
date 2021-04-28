@@ -24,18 +24,13 @@ class SubmitController extends DefaultController
         if ($request->isPost()) {
             $post = $request->getPost();
 
-            $repoId = (int)$post['search_doc']['repoId'];
-
-            $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['search_doc']['docId'], 'repoId' => $repoId]);
-
-            if (!empty($hookCleanIdentifiers)) {
-                $post['search_doc']['docId'] = $hookCleanIdentifiers['identifier'];
-
-                //Pour ce type d'archives,  le e champ de saisie de la version dans le formulaire  «search_doc» est masqué  + vide.
-                // Ce dernier est obligatoire. Pour passer la validation, on fait cela :
-                $post['search_doc']['version'] = 0;
+            if(isset($post['search_doc']['repoId'])){
+                $repoId = (int)$post['search_doc']['repoId'];
+                $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['search_doc']['docId'], 'repoId' => $repoId]);
+                if (!empty($hookCleanIdentifiers)) {
+                    $post['search_doc']['docId'] = $hookCleanIdentifiers['identifier'];
+                }
             }
-
 
             if ($this->isPostMaxSizeReached()) {
                 $message = $this->view->translate('Ce formulaire comporte des erreurs.');
@@ -168,12 +163,12 @@ class SubmitController extends DefaultController
         $request = $this->getRequest();
         $params = $request->getPost();
         $version = (isset($params['version']) && is_numeric($params['version'])) ? $params['version'] : 1;
-        $isNewVersionOf = (bool)$params['isNewVersionOf']; //répondre à une demande de modif. par la soumission d'une nouvelle version
+        $isNewVersionOf = $params['isNewVersionOf']; //répondre à une demande de modif. par la soumission d'une nouvelle version
         $respond = Episciences_Submit::getDoc($params['repoId'], $params['docId'], $version, $isNewVersionOf);
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
 
-        if (array_key_exists('record', $respond)) {
+        if (!array_key_exists('error', $respond) && array_key_exists('record', $respond)) {
             // transform xml record for display, using xslt
 
             $respond['record'] = preg_replace('#xmlns="(.*)"#', '', $respond['record']);
