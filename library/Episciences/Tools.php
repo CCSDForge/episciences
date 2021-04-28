@@ -1268,22 +1268,27 @@ class Episciences_Tools
     }
     /**
      * @param $authorString
+     * @param bool $protectLatex
      * @return string
      */
-    public static function reformatOaiDcAuthor($authorString)
+    public static function reformatOaiDcAuthor($authorString, $protectLatex = false)
     {
+        $fistname = '';
+        $lastname = '';
+
         $authAsArray = explode(',', $authorString);
 
         if (!empty($authAsArray[1])) {
-            $fistname = $authAsArray[1];
-        } else {
-            $fistname = '';
+            $fistname = trim($authAsArray[1]);
         }
 
         if (!empty($authAsArray[0])) {
-            $lastname = $authAsArray[0];
-        } else {
-            $lastname = '';
+            $lastname = trim($authAsArray[0]);
+        }
+
+        if ($protectLatex) {
+            $fistname = Ccsd_Tools::protectLatex($fistname);
+            $lastname = Ccsd_Tools::protectLatex($lastname);
         }
 
         return sprintf("%s %s", $fistname, $lastname);
