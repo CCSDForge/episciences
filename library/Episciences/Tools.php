@@ -2,7 +2,7 @@
 
 class Episciences_Tools
 {
-    public static $bashColors = array(
+    public static $bashColors = [
         'red' => "\033[0;31m",
         'blue' => "\033[0;34m",
         'green' => "\033[0;32m",
@@ -18,7 +18,7 @@ class Episciences_Tools
         'yellow' => "\033[1;33m",
         'bold' => "\033[1m",
         'default' => "\033[0m"
-    );
+    ];
 
     public static $latex2utf8 = [
         //cedilla
@@ -185,20 +185,20 @@ class Episciences_Tools
         return $input;
     }
 
-    public static function search_multiarray($array, $search, $keys = array()): array
+    public static function search_multiarray($array, $search, $keys = []): array
     {
         foreach ($array as $key => $value) {
             if (is_array($value)) {
-                $sub = static::search_multiarray($value, $search, array_merge($keys, array($key)));
+                $sub = static::search_multiarray($value, $search, array_merge($keys, [$key]));
                 if (count($sub)) {
                     return $sub;
                 }
             } elseif ($value === $search) {
-                return array_merge($keys, array($key));
+                return array_merge($keys, [$key]);
             }
         }
 
-        return array();
+        return [];
     }
 
     public static function preg_array_key_exists($pattern, $array): int
@@ -214,9 +214,9 @@ class Episciences_Tools
      * @return array
      * @throws Zend_File_Transfer_Exception
      */
-    public static function uploadFiles($path, $replace = array()): array
+    public static function uploadFiles($path, $replace = []): array
     {
-        $results = array();
+        $results = [];
         $upload = new Zend_File_Transfer_Adapter_Http();
         $files = $upload->getFileInfo();
 
@@ -332,7 +332,7 @@ class Episciences_Tools
             $locale = Zend_Registry::get('lang');
         }
 
-        $translated = array();
+        $translated = [];
         foreach ($languages as $code) {
             $translated[$code] = static::getLanguageLabel($code, $locale);
         }
@@ -401,13 +401,13 @@ class Episciences_Tools
      */
     public static function readTranslation($file, $lang = null, $pattern = false): array
     {
-        $res = array();
+        $res = [];
 
         if (is_file($file)) {
 
             try {
                 /** @var Zend_Translate_Adapter $translation */
-                $translation = new Zend_Translate('array', $file, $lang, array('disableNotices' => true));
+                $translation = new Zend_Translate('array', $file, $lang, ['disableNotices' => true]);
             } catch (Zend_Translate_Exception $e) {
                 return $res;
             }
@@ -488,7 +488,7 @@ class Episciences_Tools
      */
     public static function getTranslations($path, $file = null, $pattern = false): array
     {
-        $translations = array();
+        $translations = [];
         if (is_dir($path)) {
             $langDir = opendir($path);
             while ($lang = readdir($langDir)) {
@@ -503,7 +503,7 @@ class Episciences_Tools
                     } // fetch translations for all files
                     else {
                         $dir = opendir($path . $lang);
-                        $tmp = array();
+                        $tmp = [];
                         while ($file = readdir($dir)) {
                             if ($file !== '.' && $file !== '..' && !is_dir($path . $lang . '/' . $file)) {
                                 $tmp += static::readTranslation($path . $lang . '/' . $file, $lang, $pattern);
@@ -584,11 +584,11 @@ class Episciences_Tools
         $ext = static::extension($filename);
         $mime = null;
 
-        if (in_array($ext, array('odt', 'ott', 'odp', 'otp', 'ods', 'ots', 'sxw'))) {
+        if (in_array($ext, ['odt', 'ott', 'odp', 'otp', 'ods', 'ots', 'sxw'])) {
             $mime = "application/opendocument";
-        } else if (in_array($ext, array('pptx', 'ppsx'))) {
+        } else if (in_array($ext, ['pptx', 'ppsx'])) {
             $mime = "application/vnd.ms-powerpoint";
-        } else if (in_array($ext, array('docx', 'dotx'))) {
+        } else if (in_array($ext, ['docx', 'dotx'])) {
             $mime = "application/msword";
         } else if ($ext === 'xlsx') {
             $mime = "application/vnd.ms-excel";
@@ -677,7 +677,7 @@ class Episciences_Tools
             return false;
         }
 
-        $out = array();
+        $out = [];
         $xml = new DOMDocument();
 
         set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
@@ -918,11 +918,11 @@ class Episciences_Tools
     {
 
         if (!isset($regEx, $variable) || !is_string($regEx) || !is_string($variable)) {
-            return array();
+            return [];
         }
 
         if (!preg_match_all($regEx, $variable, $matches)) {
-            return array();
+            return [];
         }
 
         return $matches[0];
@@ -1202,7 +1202,7 @@ class Episciences_Tools
         // Extract file(s) name
         $subStr = substr($identifier, (strlen($paperId) + 1));
 
-        $result = !self::isJson($subStr) ?   $result = (array)$subStr : json_decode($subStr, true);
+        $result = !self::isJson($subStr) ? $result = (array)$subStr : json_decode($subStr, true);
 
         if (empty($result)) {
             error_log('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
@@ -1258,4 +1258,35 @@ class Episciences_Tools
         }
         return $val;
     }
+    public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false)
+    {
+
+        $str = str_replace($separator, '', ucwords($string, $separator));
+
+
+        return $str;
+    }
+    /**
+     * @param $authorString
+     * @return string
+     */
+    public static function reformatOaiDcAuthor($authorString)
+    {
+        $authAsArray = explode(',', $authorString);
+
+        if (!empty($authAsArray[1])) {
+            $fistname = $authAsArray[1];
+        } else {
+            $fistname = '';
+        }
+
+        if (!empty($authAsArray[0])) {
+            $lastname = $authAsArray[0];
+        } else {
+            $lastname = '';
+        }
+
+        return sprintf("%s %s", $fistname, $lastname);
+    }
+
 }

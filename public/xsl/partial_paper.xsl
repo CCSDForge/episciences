@@ -63,7 +63,7 @@
                     <i>
                         <div>
                             <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
-                                <xsl:value-of select="."/>
+                                <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
                                 <xsl:if test="position() != last()"> and </xsl:if>
                             </xsl:for-each>
                         </div>

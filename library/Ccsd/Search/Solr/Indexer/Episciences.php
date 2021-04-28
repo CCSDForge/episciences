@@ -104,20 +104,18 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         // Récupération des infos sur les auteurs
         $authors = Ccsd_Tools::xpath($paperData['RECORD'], '//dc:creator');
         if (is_array($authors)) {
+            $author_sort = [];
             foreach ($authors as $author) {
-
-                self::cleanAuthorName($author);
-                $ndx->addField('author_fullname_s', $author);
-                $ndx->addField('author_fullname_fs', $author);
-                $author_sort[] = $this->cleanString($author);
+                $this->indexOneAuthor($author, $ndx);
+                $author_sort[] = $author;
             }
-            $ndx->addField('author_fullname_sort', substr(implode(' ', $author_sort), 0, 50));
+            $author_fullname_sort = substr(implode(' ', $author_sort), 0, 50);
+
         } elseif (is_string($authors)) {
-            $authors = self::cleanAuthorName($authors);
-            $ndx->addField('author_fullname_s', $authors);
-            $ndx->addField('author_fullname_fs', $authors);
-            $ndx->addField('author_fullname_sort', $authors);
+            $this->indexOneAuthor($authors, $ndx);
+            $author_fullname_sort = self::cleanAuthorName($authors);
         }
+        $ndx->addField('author_fullname_sort', $author_fullname_sort);
 
         // Récupération des mots-clés
         $keywords = Ccsd_Tools::xpath($paperData['RECORD'], '//dc:subject');
@@ -144,17 +142,10 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
             $publication_date = null;
         }
 
-        /*
-         * $metadata['version'] = Ccsd_Tools::xpath($data['RECORD'],
-         * '//version'); $metadata['subjects'] =
-         * Ccsd_Tools::xpath($data['RECORD'], '//dc:subject');
-         */
-
-
         $review_title = $this->cleanChars($review['NAME']);
 
         $revue_date_creation = date_format(new DateTime($review['CREATION']), "Y-m-d\Th:i:s\Z");
-        $es_doc_url = 'https://' . $review['CODE'] . '.episciences.org/' . $docId;
+        $es_doc_url = 'https://' . $review['CODE'] . '.' . DOMAIN . '/' . $docId;
         $es_pdf_url = $es_doc_url . '/pdf';
 
         $dataToIndex = [
@@ -164,10 +155,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
             'version_td' => $paperData['VERSION'],
             'doc_url_s' => Ccsd_Tools::xpath($paperData['RECORD'], '//docURL'),
             'paper_url_s' => Ccsd_Tools::xpath($paperData['RECORD'], '//paperURL'),
-            // 'title_t' 		=> self::cleanChars(Ccsd_Tools::xpath($paperData['RECORD'], '//dc:title')),
-            // 'title_sort' 	=> self::cleanChars(Ccsd_Tools::xpath($paperData['RECORD'], '//dc:title')),
-            // 'abstract_t' 	=> Ccsd_Tools::xpath($paperData['RECORD'], '//dc:description'),
-
             'submitter_id_i' => $submitter->getUid(),
             'submitter_firstname_t' => $submitter->getFirstname(),
             'submitter_lastname_t' => $submitter->getLastname(),
@@ -216,7 +203,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $dataToIndex = array_merge($dataToIndex, $titlesToIndex, $abstractsToIndex);
 
-        // Zend_Debug::dump($dataToIndex);
 
         foreach ($dataToIndex as $fieldName => $fieldValue) {
             if ($fieldValue) {
@@ -286,12 +272,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         // Facets ************************
         $ndx->addField('revue_title_fs', $paperData['RVID'] . parent::SOLR_FACET_SEPARATOR . $review_title);
 
-        /*
-         * $ndx->addField('submitter_fullname_fs',
-         * $paperData['RVID'].parent::SOLR_FACET_SEPARATOR.$review_title);
-         * $ndx->addField('es_publication_date_day_fs',
-         * $paperData['RVID'].parent::SOLR_FACET_SEPARATOR.$review_title);
-         */
         return $ndx;
     }
 
@@ -306,7 +286,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $stmt = $select->query();
         $res = $stmt->fetchAll();
-        if (count($res) == 0) {
+        if (empty($res)) {
             return null;
         }
         return $res[0];
@@ -372,7 +352,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return $this->_reviews[$rvid];
     }
 
-    // Renvoie les données d'un volume
 
     private static function cleanAuthorName($name): string
     {
@@ -381,6 +360,20 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $name = Ccsd_Tools_String::stripCtrlChars($name, '');
         $name = str_replace(' ,', '', $name);
         return trim($name);
+    }
+
+    /**
+     * @param string $authors
+     * @param Document $ndx
+     */
+    protected function indexOneAuthor(string $authors, Document $ndx): void
+    {
+        $authorsCleaned = self::cleanAuthorName($authors);
+        $ndx->addField('author_fullname_fs', $authorsCleaned);
+
+        $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($authors);
+        $authorsFormattedCleaned = self::cleanAuthorName($authorsFormatted);
+        $ndx->addField('author_fullname_s', $authorsFormattedCleaned);
     }
 
     private function cleanString($inputString): string
@@ -429,9 +422,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $inputString = str_replace($utf8NeedleArray, '', $inputString);
         $inputString = Ccsd_Tools_String::stripCtrlChars($inputString, '');
 
-        $inputString = trim($inputString);
-
-        return $inputString;
+        return trim($inputString);
     }
 
 
@@ -447,9 +438,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     {
         $outputString = html_entity_decode($inputString);
         $outputString = Ccsd_Tools_String::stripCtrlChars($outputString);
-        $outputString = trim($outputString);
-
-        return $outputString;
+        return trim($outputString);
     }
 
     private function getVolume($vid)
@@ -501,12 +490,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
             ->from('SECTION')
             ->where('SID = ?', $sid);
         $section = $this->getDb()->fetchRow($select);
-
-        // Settings ***
-        // $select = $this->getDb()->select()->from('SECTION_SETTING',
-        // array('SETTING', 'VALUE'))->where('SID = ?', $sid);
-        // $section['SETTINGS'] = $this->getDb()->fetchPairs($select);
-
         $this->_sections[$sid] = $section;
         return $section;
     }
