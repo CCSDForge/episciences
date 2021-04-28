@@ -29,7 +29,8 @@ class BrowseController extends Zend_Controller_Action
         }
 
         $facets = [];
-        $authors = Episciences_Search_Solr_Search::getFacet('author_fullname_s', $letter, $sortType, 10000);
+        $authors = Episciences_Search_Solr_Search::getFacet('author_fullname_fs', $letter, $sortType, 10000);
+
         foreach ($authors as $name => $count) {
             $facets[mb_strtolower($name)] = ['name' => $name, 'count' => $count];
         }
