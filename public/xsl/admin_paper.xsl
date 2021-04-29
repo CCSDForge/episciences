@@ -56,7 +56,7 @@
                     <span class="darkgrey">
                         <xsl:for-each select="metadata/oai_dc:dc/dc:creator[position() &lt;= 5]">
                             <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                            <xsl:if test="position() != last()"> and </xsl:if>
+                            <xsl:if test="position() != last()"> ; </xsl:if>
                         </xsl:for-each>
                         <xsl:if test="count(metadata/oai_dc:dc/dc:creator) &gt; 5">
                             <i> et al.</i>
@@ -118,7 +118,7 @@
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Auteurs : ')"/>
                             <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
                                 <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                                <xsl:if test="position() != last()"> and </xsl:if>
+                                <xsl:if test="position() != last()"> ; </xsl:if>
                             </xsl:for-each>
                         </div>
                     </i>
