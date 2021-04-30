@@ -886,7 +886,7 @@ class Episciences_PapersManager
      * @return Episciences_Reviewer[]
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getReviewers($docId, $status = null, $getCASdata = false, $vid = false)
+    public static function getReviewers($docId, $status = null, $getCASdata = false, $vid = false): array
     {
         $reviewers = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -919,7 +919,7 @@ class Episciences_PapersManager
         $result = $db->fetchAssoc($select);
 
         //recuperation des relecteurs qui n'ont pas encore de compte
-        if ((is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status)) || (!is_array($status) && $status == Episciences_User_Assignment::STATUS_PENDING)) {
+        if ((!is_array($status) && $status === Episciences_User_Assignment::STATUS_PENDING) || (is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status, true))) {
             $subquery2 = $db->select()
                 ->from(T_USER_INVITATIONS, ['AID', 'latest' => 'MAX(SENDING_DATE)'])
                 ->group('AID');
@@ -947,13 +947,11 @@ class Episciences_PapersManager
             }
 
             if (!empty($status)) {
-                $result = array_filter($result, function ($user) use ($status) {
-                    return in_array($user['STATUS'], $status);
+                $result = array_filter($result, static function ($user) use ($status) {
+                    return in_array($user['STATUS'], $status, true);
                 });
             }
 
-        } else {
-            return [];
         }
 
         // Récupération d'un tableau d'objets "Reviewer"
@@ -981,12 +979,9 @@ class Episciences_PapersManager
                     }
                 }
             }
-
-            return $reviewers;
-
         }
 
-        return [];
+        return $reviewers;
     }
 
     /**
