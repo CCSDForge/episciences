@@ -1300,7 +1300,7 @@ class UserDefaultController extends Zend_Controller_Action
         if (!$photoPathName) {
             if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
                 $avatar = new Avatar([
-                    'shape' => 'circle', 'theme' => 'colorful', 'width' => 38, 'height' => 38, 'fontSize' => 18, 'backgrounds' => [
+                    'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => [
                         '#f44336',
                         '#E91E63',
                         '#9C27B0',

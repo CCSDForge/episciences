@@ -63,8 +63,8 @@
                     <i>
                         <div>
                             <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
-                                <xsl:value-of select="."/>
-                                <xsl:if test="position() != last()"> and </xsl:if>
+                                <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                <xsl:if test="position() != last()"> ; </xsl:if>
                             </xsl:for-each>
                         </div>
 
@@ -83,15 +83,6 @@
                 </p>
 
                 <hr/>
-
-                <!--
-                <p><small><a target="_blank">
-                <xsl:attribute name="href">
-                    <xsl:value-of select="metadata/oai_dc:dc/dc:identifier" />
-                </xsl:attribute>
-                <xsl:value-of select="metadata/oai_dc:dc/dc:identifier" />
-                </a></small></p>
-                -->
 
                 <xsl:if test="episciences/id and episciences/id != 0">
                     <div class="small">

@@ -37,14 +37,15 @@ echo $this->doctype('HTML5');
     <link href="https://cas.ccsd.cnrs.fr" rel="dns-prefetch">
     <?php
     // CSS
-    $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
     $this->jQuery()->addStylesheet("/css/main.css");
     // journal's CSS
     if ($this->cssFile) {
         $this->jQuery()->addStylesheet($this->cssFile);
     }
+    $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
+
 
     // JS
     $this->jQuery()->addJavascriptFile("/js/tools.js");

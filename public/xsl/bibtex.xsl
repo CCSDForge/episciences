@@ -34,7 +34,7 @@
 		<!-- AUTHOR -->
 		<xsl:text>&#xA;  AUTHOR = {</xsl:text>
 		<xsl:for-each select="metadata/oai_dc:dc/dc:creator">
-			<xsl:value-of select="php:function('Ccsd_Tools::protectLatex', string(.))"/>
+			<xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.), 'true')"/>
 			<xsl:if test="position() != last()"> and </xsl:if>
 		</xsl:for-each>
 		<xsl:text>},</xsl:text>
