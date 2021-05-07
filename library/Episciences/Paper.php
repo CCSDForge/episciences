@@ -245,7 +245,7 @@ class Episciences_Paper
      */
     private $_position;
     private $_files;
-    public $hasHook;
+    public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
     /**
      * Episciences_Paper constructor.
@@ -3458,5 +3458,19 @@ class Episciences_Paper
         }
 
         $this->_files = Episciences_Paper_FilesManager::findByDocId($this->_docId);
+    }
+
+    /**
+     * @param string $fileName
+     * @return Episciences_Paper_File|null
+     */
+    public function getFileByName(string $fileName): ?Episciences_Paper_File
+    {
+        if (!$this->hasHook) {
+            return null;
+        }
+
+        return Episciences_Paper_FilesManager::findByName($this->_docId, $fileName);
+
     }
 }

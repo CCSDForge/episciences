@@ -25,6 +25,29 @@ class Episciences_Paper_FilesManager
     }
 
     /**
+     *
+     * @param int $docId
+     * @param string $fileName
+     * @return Episciences_Paper_File | null
+     */
+    public static function findByName(int $docId, string $fileName): ?\Episciences_Paper_File
+    {
+        $oFile = null;
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()
+            ->from(T_PAPER_FILES)
+            ->where('doc_id = ?', $docId)
+            ->where('file_name = ?', $fileName);
+        $row = $db->fetchRow($sql);
+
+        if ($row) {
+            $oFile = new Episciences_Paper_File($row);
+        }
+
+        return $oFile;
+    }
+
+    /**
      * @param int $docId
      * @return bool
      */

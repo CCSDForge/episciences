@@ -1,4 +1,9 @@
-<?php if ($this->hasHook): ?>
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$action = 'hook_files';
+?>
+<?php if ($paper->hasHook): ?>
     <div class="panel panel-default collapsable" id="paper-files">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Fichiers') ?>
@@ -15,10 +20,17 @@
                 </thead>
                 <tbody>
                 <?php /** @var  Episciences_Paper_File $oFile */ ?>
-                <?php foreach ($this->oPaperFiles as $oFile) : ?>
+                <?php foreach ($paper->getFiles() as $oFile) : ?>
+                    <?php
+                    if ($paper->isPublished()) {
+                        $href = '/' . $paper->getDocid() . "/$action/" . $oFile->getFileName();
+                    } else {
+                        $href = $oFile->getSelfLink();
+                    }
+                    ?>
                     <tr>
                         <td>
-                            <a href="<?= $oFile->getSelfLink() ?>"><?= $oFile->getFileName() ?></a>
+                            <a href="<?= $href ?>"><?= $oFile->getFileName() ?></a>
                             <br/>
                             <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
                                 <!-- i class="fas fa-question-circle text-muted" data-toggle="tooltip" data-placement="top"
@@ -28,7 +40,7 @@
                         <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
                         <td>
                     <span class="pull-right">
-                        <a class="btn btn-xs btn-default" href="<?= $oFile->getSelfLink() ?>">
+                        <a class="btn btn-xs btn-default" href="<?= $href ?>">
                            <i class="fas fa-file-download"></i> <?= $this->translate('Télécharger le fichier') ?>
                         </a>
                     </span>

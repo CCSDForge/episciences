@@ -1,11 +1,14 @@
 <?php
+
+use GuzzleHttp\Client;
+
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class FileController extends DefaultController
 {
-    const APPLICATION_OCTET_STREAM = 'application/octet-stream';
+    public const APPLICATION_OCTET_STREAM = 'application/octet-stream';
 
-    public function indexAction()
+    public function indexAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -20,7 +23,7 @@ class FileController extends DefaultController
         $this->loadFile($filepath);
     }
 
-    public function docfilesAction()
+    public function docfilesAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -50,7 +53,7 @@ class FileController extends DefaultController
     }
 
     // load an e-mail attached file
-    public function attachmentsAction()
+    public function attachmentsAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -66,7 +69,7 @@ class FileController extends DefaultController
     }
 
     // Accès à la version temporaire d'un document
-    public function tmpAction()
+    public function tmpAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -84,7 +87,7 @@ class FileController extends DefaultController
     }
 
     // Accès aux fichiers joints d'un document
-    public function paperAction()
+    public function paperAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -101,7 +104,7 @@ class FileController extends DefaultController
     }
 
     // access to a rating report attachment
-    public function reportAction()
+    public function reportAction(): void
     {
         $params = $this->getRequest()->getParams();
 
@@ -136,16 +139,15 @@ class FileController extends DefaultController
     /**
      * @param string $filepath
      * @param bool $forceDownload
-     * @return mixed
      */
-    protected function loadFile($filepath, bool $forceDownload = false)
+    protected function loadFile(string $filepath, bool $forceDownload = false): void
     {
         if (is_readable($filepath)) {
             $this->openFile($filepath, $forceDownload);
         } else {
             $message = '<strong>' . $this->view->translate("Le fichier n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            return $this->_helper->redirector('notfound', 'index');
+            $this->_helper->redirector('notfound', 'index');
         }
     }
 
@@ -154,12 +156,12 @@ class FileController extends DefaultController
      * @param string $file
      * @param bool $forceDownload
      */
-    protected function openFile(string $file, bool $forceDownload = false)
+    protected function openFile(string $file, bool $forceDownload = false): void
     {
         $contentType = Episciences_Tools::getMimeType($file);
         $downloadableFilename = '"' . basename($file) . '"';
 
-        if ($contentType == self::APPLICATION_OCTET_STREAM) {
+        if ($contentType === self::APPLICATION_OCTET_STREAM) {
             // force download because application/octet-stream would burn user eyes anyway
             $forceDownload = true;
         } else {
@@ -184,7 +186,7 @@ class FileController extends DefaultController
     /**
      *
      */
-    public function uploadAction()
+    public function uploadAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -206,7 +208,6 @@ class FileController extends DefaultController
             $paperId = (int)$request->getPost('paperId');
 
             try {
-                /** @var Zend_File_Transfer_Adapter_Http $adapter */
                 $adapter = new Zend_File_Transfer_Adapter_Http();
                 $adapter->addValidators([
                     ['FilesSize', false, MAX_FILE_SIZE],
@@ -260,7 +261,7 @@ class FileController extends DefaultController
 
     }
 
-    public function deleteAction()
+    public function deleteAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -283,6 +284,130 @@ class FileController extends DefaultController
     }
 
     /**
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Adapter_Exception
+     */
+    public function hookfilesAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $request = $this->getRequest();
+
+        if (null === $request) {
+            return;
+        }
+
+        $params = $request->getParams();
+        $docId = $params['docId'];
+        $filename = $params['filename'];
+        $extension = $params['first-extension'];
+
+        if (isset($params['latest-extension'])) {
+            $extension .= '.';
+            $extension .= $params['latest-extension'];
+        }
+
+        $file = $filename . '.' . $extension;
+
+        $paper = Episciences_PapersManager::get($docId);
+
+        // check if paper exists
+        if (!$paper || !$paper->hasHook || ($paper->getRvid() !== RVID) || ($paper->getRepoid() === 0)) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->renderScript('index/notfound.phtml');
+            return;
+        }
+
+        if ($paper->isDeleted()) {
+            $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+            $this->redirect('/');
+            return;
+        }
+
+        // update paper stats (only if user is not the contributor)
+        if (Episciences_Auth::getUid() !== $paper->getUid()) {
+            Episciences_Paper_Visits::add($paper->getDocid(), Episciences_Paper_Visits::CONSULT_TYPE_FILE);
+        }
+
+        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
+        $paperDocBackup->setPathFileName($paperDocBackup->getPath() . $file);
+        $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
+
+        /** @var Episciences_Paper_File $oFile */
+        $oFile = $paper->getFileByName($file);
+
+        if ($oFile) {
+            $url = $oFile->getSelfLink();
+            $fileSize = $oFile->getFileSize();
+        } else {
+
+            $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+            $this->redirect('/');
+            return;
+        }
+
+
+        if (MAX_FILE_SIZE < $fileSize) {
+            header('Location: ' . $url);
+            return;
+        }
+
+        $clientHeaders = [
+            'headers' =>
+                [
+                    'User-Agent' => DOMAIN,
+                    'connect_timeout' => 10,
+                    'timeout' => 20
+                ]
+        ];
+
+        $mainDocumentContent = '';
+        $client = new Client($clientHeaders);
+
+        try {
+            $response = $client->get($url);
+            $hResponse = $response->getHeaders();
+            $contentType = is_array($hResponse['Content-Type']) ? $hResponse['Content-Type'][0] : $hResponse['Content-Type'];
+            $mainDocumentContent = $response->getBody()->getContents();
+
+        } catch (GuzzleHttp\Exception\RequestException $e) {
+
+            // we failed to get content via http, try a local backup
+            if ($hasDocumentBackupFile) {
+                $mainDocumentContent = $paperDocBackup->getDocumentBackupFile();
+            }
+
+            if ($mainDocumentContent === '') {
+                // Attempt to get content via local backup failed
+                // exit with error
+                $this->view->message = $e->getMessage();
+                $this->renderScript('error/http_error.phtml');
+                return;
+            }
+
+            $contentType = Episciences_Tools::getMimeType($file);
+
+        }
+
+        if (!$hasDocumentBackupFile) {
+            $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
+        }
+
+
+        header("Content-Disposition: attachment; filename=$file");
+        header('Content-type: ' . $contentType);
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: public');
+
+
+        echo $mainDocumentContent;
+
+    }
+
+    /**
      * return storage folder
      * @param string $path
      * @param int $paperId
@@ -290,7 +415,7 @@ class FileController extends DefaultController
      * @param int $pcId
      * @return string
      */
-    private function buildStorageFolder(string $path, int $paperId, int $docId, int $pcId)
+    private function buildStorageFolder(string $path, int $paperId, int $docId, int $pcId): string
     {
         if ($path === 'tmp_attachments') {
             $folder = $paperId . '/tmp/';
@@ -313,7 +438,7 @@ class FileController extends DefaultController
      * @param int $pcId
      * @return string
      */
-    private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId)
+    private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId): string
     {
         if ($path === 'tmp_attachments') {
             $fileUrl = '/tmp_files/' . $paperId . '/' . $fileName;
@@ -326,4 +451,5 @@ class FileController extends DefaultController
         }
         return $fileUrl;
     }
+
 }

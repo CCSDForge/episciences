@@ -121,6 +121,9 @@ class Episciences_Tools
 
     ];
 
+    public const APPLICATION_OCTET_STREAM = 'application/octet-stream';
+
+
     // check if string is a valid sha1 (40 hexadecimal characters)
     public static function isSha1($string): bool
     {

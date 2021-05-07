@@ -16,3 +16,5 @@ CREATE TABLE IF NOT EXISTS `paper_files` (
     KEY `doc_id` (`doc_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 COMMIT;
+
+ALTER TABLE `paper_files` ADD UNIQUE `unique_doc_id_file_name` (`doc_id`, `file_name`);

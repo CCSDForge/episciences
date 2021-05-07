@@ -3,7 +3,7 @@
 class Episciences_Paper_DocumentBackup
 {
 
-    const DEFAULT_FILE_EXTENSION = 'pdf';
+    public const DEFAULT_FILE_EXTENSION = 'pdf';
     /**
      * @var int
      */
@@ -30,9 +30,10 @@ class Episciences_Paper_DocumentBackup
      */
     public function __construct(int $docid)
     {
-        $this->setDocid($docid);
-        $this->setPath();
-        $this->setPathFileName();
+        $this
+            ->setDocid($docid)
+            ->setPath()
+            ->setPathFileName();
 
     }
 
@@ -46,10 +47,12 @@ class Episciences_Paper_DocumentBackup
 
     /**
      * @param string $extension
+     * @return Episciences_Paper_DocumentBackup
      */
-    public function setExtension(string $extension = self::DEFAULT_FILE_EXTENSION)
+    public function setExtension(string $extension = self::DEFAULT_FILE_EXTENSION): Episciences_Paper_DocumentBackup
     {
         $this->extension = $extension;
+        return $this;
     }
 
     /**
@@ -73,7 +76,7 @@ class Episciences_Paper_DocumentBackup
     /**
      *
      */
-    protected function makeDocumentBackupPath()
+    protected function makeDocumentBackupPath(): void
     {
         $backupPath = $this->getPath();
         if (!file_exists($backupPath) && !mkdir($backupPath, 0777, true) && !is_dir($backupPath)) {
@@ -92,9 +95,15 @@ class Episciences_Paper_DocumentBackup
     /**
      *
      */
-    public function setPath()
+    public function setPath(string $path = null): \Episciences_Paper_DocumentBackup
     {
-        $this->path = REVIEW_FILES_PATH . $this->getDocid() . '/' . REVIEW_DOCUMENT_DIR_NAME . '/';
+        if (!$path) {
+            $this->path = REVIEW_FILES_PATH . $this->getDocid() . '/' . REVIEW_DOCUMENT_DIR_NAME . '/';
+        } else {
+            $this->path = $path;
+        }
+
+        return $this;
     }
 
     /**
@@ -106,11 +115,16 @@ class Episciences_Paper_DocumentBackup
     }
 
     /**
-     * @param string $fileExtension
+     * @param string|null $pathFileName
      */
-    public function setPathFileName()
+    public function setPathFileName(string $pathFileName = null): \Episciences_Paper_DocumentBackup
     {
-        $this->pathFileName = sprintf("%s%s.%s", $this->getPath(), $this->getDocid(), $this->getExtension());
+        if ($pathFileName) {
+            $this->pathFileName = $pathFileName;
+        } else {
+            $this->pathFileName = sprintf("%s%s.%s", $this->getPath(), $this->getDocid(), $this->getExtension());
+        }
+         return $this;
     }
 
     /**
@@ -123,10 +137,12 @@ class Episciences_Paper_DocumentBackup
 
     /**
      * @param int $docid
+     * @return Episciences_Paper_DocumentBackup
      */
-    public function setDocid(int $docid)
+    public function setDocid(int $docid): Episciences_Paper_DocumentBackup
     {
         $this->_docid = $docid;
+        return $this;
     }
 
     /**
