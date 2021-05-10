@@ -199,6 +199,9 @@ class Episciences_Paper
     private $_when;
     private $_submission_date;
     private $_modification_date;
+    /**
+     * @var string
+     */
     private $_publication_date;
 
     private $_settings;
@@ -3282,6 +3285,15 @@ class Episciences_Paper
             }
         }
 
+        // Contributor
+        $contributor = $this->getSubmitter();
+        if ($contributor instanceof Episciences_User) {
+            $contributorFullName = $contributor->getFullName();
+            $contributorNode = $xml->createElement('dc:contributor', $contributorFullName);
+            $root->appendChild($contributorNode);
+        }
+
+
         // ISSN (if exists)
         $oReview = Episciences_ReviewsManager::find($this->getRvid());
         $oReview->loadSettings();
@@ -3337,12 +3349,26 @@ class Episciences_Paper
         }
 
 
+        $openaireType = $xml->createElement('dc:type', 'info:eu-repo/semantics/article');
+        $root->appendChild($openaireType);
+
         $type = $xml->createElement('dc:type', 'Journal articles');
         $root->appendChild($type);
+
+        $openaireTypeVersion = $xml->createElement('dc:type', 'info:eu-repo/semantics/publishedVersion');
+        $root->appendChild($openaireTypeVersion);
+
+        $openAireAudience = $xml->createElement('dc:audience', 'Researchers');
+        $root->appendChild($openAireAudience);
+
+
 
         // description
         foreach ($this->getAllAbstracts() as $lang => $abstract) {
             $abstract = trim($abstract);
+            if ($abstract === 'International audience') {
+                continue;
+            }
             $description = $xml->createElement('dc:description', $abstract);
             if ($lang && Zend_Locale::isLocale($lang)) {
                 $description->setAttribute('xml:lang', $lang);
@@ -3352,7 +3378,9 @@ class Episciences_Paper
 
         // publication date
         if ($this->getPublication_date()) {
-            $date = $xml->createElement('dc:date', $this->getPublication_date());
+            $date = new DateTime($this->getPublication_date());
+            $publicationDate =  $date->format('Y-m-d');
+            $date = $xml->createElement('dc:date', $publicationDate);
             $root->appendChild($date);
         }
 
