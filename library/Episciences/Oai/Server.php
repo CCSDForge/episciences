@@ -73,7 +73,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     protected function getSets()
     {
         $cacheName = 'oai-sets.phps';
-        if (Episciences_Cache::exist($cacheName, 1)) {
+        if (Episciences_Cache::exist($cacheName, 7200)) {
             $out = unserialize(Episciences_Cache::get($cacheName), ['allowed_classes' => false]);
         } else {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
