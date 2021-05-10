@@ -3258,6 +3258,15 @@ class Episciences_Paper
             }
         }
 
+        // Contributor
+        $contributor = $this->getSubmitter();
+        if ($contributor instanceof Episciences_User) {
+            $contributorFullName = $contributor->getFullName();
+            $contributorNode = $xml->createElement('dc:contributor', $contributorFullName);
+            $root->appendChild($contributorNode);
+        }
+
+
         // ISSN (if exists)
         $oReview = Episciences_ReviewsManager::find($this->getRvid());
         $oReview->loadSettings();
@@ -3313,12 +3322,26 @@ class Episciences_Paper
         }
 
 
+        $openaireType = $xml->createElement('dc:type', 'info:eu-repo/semantics/article');
+        $root->appendChild($openaireType);
+
         $type = $xml->createElement('dc:type', 'Journal articles');
         $root->appendChild($type);
+
+        $openaireTypeVersion = $xml->createElement('dc:type', 'info:eu-repo/semantics/publishedVersion');
+        $root->appendChild($openaireTypeVersion);
+
+        $openAireAudience = $xml->createElement('dc:audience', 'Researchers');
+        $root->appendChild($openAireAudience);
+
+
 
         // description
         foreach ($this->getAllAbstracts() as $lang => $abstract) {
             $abstract = trim($abstract);
+            if ($abstract === 'International audience') {
+                continue;
+            }
             $description = $xml->createElement('dc:description', $abstract);
             if ($lang && Zend_Locale::isLocale($lang)) {
                 $description->setAttribute('xml:lang', $lang);
