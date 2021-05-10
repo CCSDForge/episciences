@@ -195,6 +195,9 @@ class Episciences_Paper
     private $_when;
     private $_submission_date;
     private $_modification_date;
+    /**
+     * @var string
+     */
     private $_publication_date;
 
     private $_settings;
@@ -3325,7 +3328,9 @@ class Episciences_Paper
 
         // publication date
         if ($this->getPublication_date()) {
-            $date = $xml->createElement('dc:date', $this->getPublication_date());
+            $date = new DateTime($this->getPublication_date());
+            $publicationDate =  $date->format('Y-m-d');
+            $date = $xml->createElement('dc:date', $publicationDate);
             $root->appendChild($date);
         }
 
