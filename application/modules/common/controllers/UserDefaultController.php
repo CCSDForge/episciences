@@ -1299,51 +1299,6 @@ class UserDefaultController extends Zend_Controller_Action
 
         if (!$photoPathName) {
             if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
-                $avatar = new Avatar([
-                    'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => [
-                        '#f44336',
-                        '#E91E63',
-                        '#9C27B0',
-                        '#673AB7',
-                        '#3F51B5',
-                        '#2196F3',
-                        '#03A9F4',
-                        '#00BCD4',
-                        '#009688',
-                        '#4CAF50',
-                        '#8BC34A',
-                        '#CDDC39',
-                        '#FFC107',
-                        '#FF9800',
-                        '#FF5722',
-                        '#FF6347',
-                        '#FF4500',
-                        '#FF7F50',
-                        '#FE1B00',
-                        '#BF3030',
-                        '#FF5E4D',
-                        '#D90115',
-                        '#F7230C',
-                        '#1E7FCB',
-                        '#689D71',
-                        '#DD985C',
-                        '#3A8EBA',
-                        '#175732',
-                        '#CC5500',
-                        '#708D23',
-                        '#048B9A',
-                        '#11aa33',
-                        '#009527',
-                        '#ff17b6',
-                        '#f89406',
-                        '#ca6d00',
-                        '#dd2222',
-                        '#0677bf',
-                        '#007cba',
-                        '#004876',
-                        '#5627a8',
-                    ]]);
-
 
                 $userPhotoPath = $user->getPhotoPath();
 
@@ -1351,7 +1306,7 @@ class UserDefaultController extends Zend_Controller_Action
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
                 $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
-                $data = $avatar->create($screenName)->setFontFamily('Helvetica')->toSvg();
+               $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
                 file_put_contents($photoPathName, $data);
 
 
