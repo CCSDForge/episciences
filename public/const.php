@@ -225,8 +225,8 @@ function defineVendorCssLibraries()
     define('VENDOR_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/css/bootstrap.min.css');
     define('VENDOR_BOOTSTRAP_COLORPICKER_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css');
     define('VENDOR_DATATABLES_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap.min.css');
-    define('VENDOR_FONT_AWESOME', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/fontawesome.min.css");
-    define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/solid.min.css");
+    define('VENDOR_FONT_AWESOME', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css");
+    define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css");
     define('VENDOR_JQUERY_UI_THEME_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css');
     define('VENDOR_CHART_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css');
 }
