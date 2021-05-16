@@ -5,7 +5,10 @@ use Laravolt\Avatar\Avatar;
 class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
 {
 
-
+    /**
+     * Random background colors
+     * @var string[]
+     */
     protected static $_defaultBackgroundColors = [
         '#f44336', '#E91E63', '#9C27B0', '#673AB7',
         '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
