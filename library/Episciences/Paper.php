@@ -3287,6 +3287,11 @@ class Episciences_Paper
         $identifier = $xml->createElement('dc:identifier', $oReview->getUrl() . '/' . $this->getDocid());
         $root->appendChild($identifier);
 
+        if (!empty($this->getDoi())) {
+            $identifierDoi = $xml->createElement('dc:identifier', 'info:doi:' . $this->getDoi());
+            $root->appendChild($identifierDoi);
+        }
+
         // quotation
         //  'Journal of Data Mining and Digital Humanities, Episciences.org, 2015, pp.43'
         $source = $xml->createElement('dc:source', $this->getCitation());
