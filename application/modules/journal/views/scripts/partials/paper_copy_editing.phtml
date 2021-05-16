@@ -66,7 +66,7 @@ foreach ($comments as $id => $comment) : ?>
 
         <?php endif; ?>
     </div>
-    <?php if ($replyForms[$id]) : ?>
+    <?php if (!empty($replyForms[$id])) : ?>
         <div id="replyForm_<?= $id ?>" class="replyForm small" style="margin: 20px 20px 10px 20px; display: none">
             <?php if ($isFinalVersionRequest) : ?>
                 <?= $this->partial('paper/new_version_show_result.phtml', ['form' => $replyForms[$id]]); ?>
