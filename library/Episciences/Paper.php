@@ -3321,6 +3321,8 @@ class Episciences_Paper
             }
         }
 
+        $openaireRight = $xml->createElement('dc:rights', 'info:eu-repo/semantics/openAccess');
+        $root->appendChild($openaireRight);
 
         $openaireType = $xml->createElement('dc:type', 'info:eu-repo/semantics/article');
         $root->appendChild($openaireType);
