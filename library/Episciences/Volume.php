@@ -614,9 +614,9 @@ class Episciences_Volume
 
         if ($values) {
             try {
-                $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
+                $this->_db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
             } catch (Exception $e) {
-                error_log($e->getMessage());
+                trigger_error(sprintf($e->getMessage(), E_USER_WARNING));
             }
         }
     }
@@ -695,7 +695,7 @@ class Episciences_Volume
                 $this->_db->query($sql);
             }
         } catch (Zend_Db_Adapter_Exception $exception) {
-            error_log($exception->getMessage());
+            trigger_error(sprintf($exception->getMessage(), E_USER_WARNING));
         }
     }
 
