@@ -13,6 +13,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     const LIMIT_IDENTIFIERS = 400;
     const LIMIT_RECORDS = 100;
     const SET_DRIVER = 'driver';
+    const SET_OPENAIRE = 'openaire';
     const SET_JOURNAL = 'journal';
     const SET_JOURNAL_PREFIX = 'journal:';
     private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei'];
@@ -88,6 +89,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                 $out[self::SET_JOURNAL_PREFIX . $row['CODE']] = $row['NAME'];
             }
             if (count($out)) {
+                $out[self::SET_OPENAIRE] = 'OpenAIRE';
                 $out[self::SET_DRIVER] = 'Open Access DRIVERset';
                 $out = [self::SET_JOURNAL => 'All ' . DOMAIN] + $out;
             }
@@ -129,7 +131,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             if ($until != null || $from != null) {
                 $query .= "&fq=publication_date_tdate:" . urlencode('[' . (($from == null) ? "*" : '"' . $from . 'T00:00:00Z"') . " TO " . (($until == null) ? "*" : '"' . $until . 'T23:59:59Z"') . "]");
             }
-            if (($set != null) || ($set != self::SET_DRIVER)) {
+            if (($set != null) || ($set != self::SET_DRIVER) || ($set != self::SET_OPENAIRE)) {
                 if (substr($set, 0, 8) == self::SET_JOURNAL_PREFIX) {
                     $query .= "&fq=revue_code_t:" . urlencode(substr($set, 8));
                 }
