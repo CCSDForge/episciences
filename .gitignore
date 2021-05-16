@@ -35,3 +35,6 @@ assets/node_modules/
 /scripts/archives/
 /assets/
 
+/phpcbf.phar
+/phpcs.phar
+/.php_cs.cache
