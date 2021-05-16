@@ -38,7 +38,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
      * @param $paperStatus
      * @return string
      */
-    public static function asPaperStatusSvg($stringToMakeAvatar, $paperStatus) :string
+    public static function asPaperStatusSvg($stringToMakeAvatar, $paperStatus): string
     {
 
 
@@ -48,6 +48,11 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
 
         $backgroundColor = [self::getPaperStatusColors()[(int)$paperStatus]];
 
+        try {
+            $lang = Zend_Registry::get('lang');
+        } catch (Zend_Exception $exception) {
+            $lang = 'en';
+        }
 
         $paperStatusAvatarDir = REVIEW_PUBLIC_PATH . 'paper-status';
 
@@ -58,7 +63,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
             }
         }
 
-        $paperStatusAvatarFileName = $paperStatus . '.svg';
+        $paperStatusAvatarFileName = $paperStatus . '.' . $lang . '.svg';
         $paperStatusAvatarFileNamePath = $paperStatusAvatarDir . '/' . $paperStatusAvatarFileName;
 
         if (!is_readable($paperStatusAvatarFileNamePath)) {
