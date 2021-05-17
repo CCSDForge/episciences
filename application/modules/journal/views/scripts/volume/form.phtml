@@ -100,7 +100,7 @@
                         ?>
                         <div id="paper-<?= $paperDocid; ?>" class="paper input-group">
                             <span class="label label-status-<?= $paper['status']; ?>" data-toggle="tooltip" title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper['status']))) ?>">
-                           <?= $paperOrder + 1 ?></span>
+                           <?= (int) $paperOrder + 1 ?></span>
                             [<a href="/administratepaper/view?id=<?= $paperDocid ?>"># <?= $paperDocid ?></a>]&nbsp;
                             <?= $titleStr; ?>
                         </div>

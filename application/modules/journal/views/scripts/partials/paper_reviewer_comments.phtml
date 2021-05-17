@@ -45,7 +45,7 @@ foreach ($this->comments as $id => $comment) : ?>
 
     </div>
 
-    <?php if ($this->replyForms[$id]) : ?>
+    <?php if (!empty($this->replyForms[$id])) : ?>
         <div id="replyForm_<?php echo $id ?>" class="replyForm" style="margin: 20px 20px 10px 20px; display: none"
              class="small">
             <?php echo $this->replyForms[$id]; ?>

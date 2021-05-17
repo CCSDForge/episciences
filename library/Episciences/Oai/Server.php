@@ -12,6 +12,10 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
 
     const LIMIT_IDENTIFIERS = 400;
     const LIMIT_RECORDS = 100;
+    const SET_DRIVER = 'driver';
+    const SET_OPENAIRE = 'openaire';
+    const SET_JOURNAL = 'journal';
+    const SET_JOURNAL_PREFIX = 'journal:';
     private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei'];
 
     protected function getIdentity($url)
@@ -37,11 +41,6 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         ];
     }
 
-    /*
-     * retourne les formats dispo sur le serveur OAI
-     * @return array code=>array('schema'=>, 'ns'=>)
-     */
-
     protected function existId($identifier)
     {
         // identifier format -> oai:episciences.org:jdmdh:1
@@ -52,11 +51,6 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         }
         return $paper->getStatus() == Episciences_Paper::STATUS_PUBLISHED;
     }
-
-    /*
-     * retourne les sets dispo sur le serveur OAI
-     * @return array code=>name
-     */
 
     protected function existFormat($format)
     {
@@ -80,7 +74,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     protected function getSets()
     {
         $cacheName = 'oai-sets.phps';
-        if (Episciences_Cache::exist($cacheName, 3600)) {
+        if (Episciences_Cache::exist($cacheName, 7200)) {
             $out = unserialize(Episciences_Cache::get($cacheName), ['allowed_classes' => false]);
         } else {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -92,10 +86,12 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                 ->where('STATUS = 1')
                 ->order('CREATION DESC');
             foreach ($db->fetchAll($sql) as $row) {
-                $out['journal:' . $row['CODE']] = $row['NAME'];
+                $out[self::SET_JOURNAL_PREFIX . $row['CODE']] = $row['NAME'];
             }
             if (count($out)) {
-                $out = ['journal' => 'All ' . DOMAIN] + $out;
+                $out[self::SET_OPENAIRE] = 'OpenAIRE';
+                $out[self::SET_DRIVER] = 'Open Access DRIVERset';
+                $out = [self::SET_JOURNAL => 'All ' . DOMAIN] + $out;
             }
             Episciences_Cache::save($cacheName, serialize($out));
         }
@@ -135,8 +131,8 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             if ($until != null || $from != null) {
                 $query .= "&fq=publication_date_tdate:" . urlencode('[' . (($from == null) ? "*" : '"' . $from . 'T00:00:00Z"') . " TO " . (($until == null) ? "*" : '"' . $until . 'T23:59:59Z"') . "]");
             }
-            if ($set != null) {
-                if (substr($set, 0, 8) == 'journal:') {
+            if (($set != null) || ($set != self::SET_DRIVER) || ($set != self::SET_OPENAIRE)) {
+                if (substr($set, 0, 8) == self::SET_JOURNAL_PREFIX) {
                     $query .= "&fq=revue_code_t:" . urlencode(substr($set, 8));
                 }
             }

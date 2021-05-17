@@ -19,14 +19,14 @@ foreach ($this->papers as $paper) : ?>
 
         <?php // article status code ******************************************* ?>
         <td class="text-center">
-            <a href="#"
-               data-toggle="tooltip"
-               title="<?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>">
-                        <span style="font-size: 20px"
-                              class="glyphicon glyphicon glyphicon-info-sign status-<?php echo $paper->getStatus(); ?>"></span>
-                <span
-                    style="display: none"><?php echo ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?></span>
-            </a>
+            <?php
+            $paperStatusLabel = ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus())));
+            ?>
+            <span data-toggle="tooltip"
+                  title="<?php echo $paperStatusLabel; ?>">
+                  <img src="<?php echo Episciences_View_Helper_GetAvatar::asPaperStatusSvg($paperStatusLabel, $paper->getStatus()); ?>"/>
+            </span>
+
         </td>
 
         <?php // article title ******************************************* ?>
