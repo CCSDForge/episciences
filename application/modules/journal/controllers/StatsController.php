@@ -47,7 +47,7 @@ class StatsController extends Zend_Controller_Action
             return;
         }
 
-        $dashboard = $result[Episciences_Tools::epi_array_key_first($result)];
+        $dashboard = $result[array_key_first($result)];
         $details = $dashboard['submissions']['details'];
         $yearCategories = array_keys($details['submissionsByYear']);
 
