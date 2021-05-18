@@ -24,7 +24,7 @@ class StatsController extends Zend_Controller_Action
 
     public const CURRENT_RVID = RVID;
 
-    public function indexAction()
+    public function indexAction(): void
     {
 
         /** @var Zend_Controller_Request_Http $request */
@@ -76,7 +76,9 @@ class StatsController extends Zend_Controller_Action
 
         foreach ($yearCategories as $year) {
 
-            $totalByYear = $nbPublications = $nbRefusals = $nbAcceptations = 0;
+            $totalByYear = $nbRefusals = $nbAcceptations = 0;
+
+            $nbPublications = $dashboard['submissions']['details']['submissionsByYear'][$year]['publications'];
 
             $submissionsByYearResponse = array_key_exists($year, $details['moreDetails']) ? $details['moreDetails'][$year] : [];
 
@@ -84,10 +86,7 @@ class StatsController extends Zend_Controller_Action
 
                 foreach ($values as $status => $nbSubmissions) {
 
-                    if ($status === Episciences_Paper::STATUS_PUBLISHED) {
-                        $allPublications += $nbSubmissions['nbSubmissions'];
-                        $nbPublications += $nbSubmissions['nbSubmissions'];
-                    }
+                    $allPublications += $nbPublications; // l'ensemble de la revue
 
                     if ($status === Episciences_Paper::STATUS_REFUSED) {
                         $allRefusals += $nbSubmissions['nbSubmissions'];
@@ -145,7 +144,7 @@ class StatsController extends Zend_Controller_Action
 
         if ($yearQuery) {
             $allSubmissions = $series['submissionsByYear']['submissions'][0];
-            $allPublications = $series['publicationsByYear']['publications'][0];
+            $allPublications = $series['publicationsByYear']['publications'][0]; // par année
             $allRefusals = $series['refusalsByYear']['refusals'][0];
             $allAcceptations = $series['acceptationByYear']['acceptations'][0];
 
