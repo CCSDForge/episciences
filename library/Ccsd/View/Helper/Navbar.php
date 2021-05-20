@@ -122,7 +122,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
         /** @var Zend_Controller_Request_Http $request */
         $request = Zend_Controller_Front::getInstance()->getRequest();
         ?>
-        <nav class="navbar navbar-default navbar-static-top" role="navigation" aria-label="Menu">
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation" aria-label="Menu">
             <div class="navbar-header ">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#nav-services">
                     <span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span
