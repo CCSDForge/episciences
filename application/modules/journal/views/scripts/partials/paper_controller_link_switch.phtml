@@ -7,12 +7,12 @@ $action = $request->getActionName();
 $message = '';
 
 if ($controller === 'administratepaper') {
-    $message = "Retour sur la page de l'article";
+    $message = "Aller à la page de l'article";
     $url = '/paper/view?id=' . $this->docId;
 } else {
-    $message = "Retour sur la page de la  gestion de l'article";
+    $message = "Aller à la page de gestion de l'article";
     $url = '/administratepaper/view?id=' . $this->docId;
 
 }
 ?>
-<a class="btn btn-default btn-xs pull-right" href="<?= $url; ?>" style="margin-left: 10px;"><span class="fas fa-undo-alt" style="margin-right: 5px;"></span><?= $this->translate($message); ?></a>
+<a class="btn btn-default btn-xs pull-right" href="<?= $url ?>" style="margin-left: 10px;"><i class="fas fa-link" style="margin-right: 5px;"></i><?= $this->translate($message) ?></a>

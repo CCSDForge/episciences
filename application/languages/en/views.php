@@ -337,7 +337,7 @@ return [
     "Identifiant du document" => "Document identifier",
     "Vous êtes sur le point d’abandonner le processus de publication de cet article." => "You are about to abandon the publication process of this article.",
     "Vous êtes sur le point de reprendre le processus de publication de cet article.<br><span class='alert-info'>L'auteur a bien été informé qu'il ne pourra plus reprendre le processus de publication de son article et que cette décision est définitive.</span>" => "You are about to resume the publication process of this article.<br><span class='alert-info'>The author has been informed that they will not be able to resume the publication process of the article and that this decision is final.</span>",
-    "Retour sur la page de la  gestion de l'article" => "Back to the article management page",
+    "Aller à la page de gestion de l'article" => "Go to the article management page",
     "Référence bibliographique du volume" => "Volume's bibliographical reference",
     "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the paper is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
@@ -423,7 +423,7 @@ return [
     "Accepter et passer à la préparation de copie" => "Accept and proceed to copy editing",
     'dès que possible' => 'as soon as possible',
     "Cet article n'est pas la première version de ce document, vous ne pouvez pas donc le refuser." => "This article is not the first version of this document, so you cannot reject it.",
-    "Retour sur la page de l'article" => "Back to the article page",
+    "Aller à la page de l'article" => "Go to the article page",
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
