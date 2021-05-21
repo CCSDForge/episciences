@@ -25,11 +25,46 @@ $(function () {
         datasets: seriesFromView.submissionDelay.datasets
     }
 
-    createChart(context0, allPercentageOfSubmissionsStats, seriesFromView.allSubmissionsPercentage.chartType);
-    createChart(context1, statsByYearData, seriesFromView.submissionsByYear.chartType);
-    createChart(context2, statsByRepoData, seriesFromView.submissionsByRepo.repositories.chartType);
-    createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType);
+    if(!isEmptyData(allPercentageOfSubmissionsStats.datasets[0].data)){
+        createChart(context0, allPercentageOfSubmissionsStats, seriesFromView.allSubmissionsPercentage.chartType);
+    }
+
+    if(!isEmptyData(statsByYearData.datasets[0].data)){
+        createChart(context1, statsByYearData, seriesFromView.submissionsByYear.chartType);
+    }
+
+    if(!isEmptyData(statsByRepoData.datasets[0].data)){
+        createChart(context2, statsByRepoData, seriesFromView.submissionsByRepo.repositories.chartType);
+    }
+
+    if(!isEmptyData(submissionDelay.datasets[0].data)){
+        createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType);
+    }
 });
+
+
+function isEmptyData(array){
+
+    let foundEmptyValue = 0;
+
+    if(Array.isArray(array)){
+        let length = array.length;
+
+        for (let cpt = 0; cpt < length; cpt ++){
+
+            if(array[cpt] === null || array[cpt] === 'undefined' || array[cpt] === 0 || array[cpt] === '0' ){
+                foundEmptyValue += 1;
+            }
+
+        }
+
+        return array.length === foundEmptyValue;
+
+    } else {
+        return true;
+    }
+
+}
 
 
 

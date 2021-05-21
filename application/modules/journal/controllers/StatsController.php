@@ -63,8 +63,9 @@ class StatsController extends Zend_Controller_Action
         $series = [];
         $series['delayBetweenSubmissionAndAcceptance'] = [];
         $series['delayBetweenSubmissionAndPublication'] = [];
-        $allPublications = $allRefusals = $allAcceptations = 0;
-        $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = null;
+
+        $allPublications = $allRefusals = $allAcceptations = $allOtherStatus =  0;
+        $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = $otherStatusPercentage = null;
 
         if ($yearQuery) { // for stats by year
             $yearCategories = [$yearQuery];
@@ -76,44 +77,53 @@ class StatsController extends Zend_Controller_Action
 
         foreach ($yearCategories as $year) {
 
-            $totalByYear = $nbRefusals = $nbAcceptations = 0;
+            $totalByYear = $nbRefusals = $nbAcceptations = $nbOthers = 0;
 
             $nbPublications = $dashboard['submissions']['details']['submissionsByYear'][$year]['publications'];
+            $allPublications += $nbPublications; // l'ensemble de la revue
 
+            // stats collectées par rapport à la date de modification
             $submissionsByYearResponse = array_key_exists($year, $details['moreDetails']) ? $details['moreDetails'][$year] : [];
 
             foreach ($submissionsByYearResponse as $values) {
 
                 foreach ($values as $status => $nbSubmissions) {
 
-                    $allPublications += $nbPublications; // l'ensemble de la revue
+                    if ($status === Episciences_Paper::STATUS_PUBLISHED) {
+                        continue;
+                    }
 
                     if ($status === Episciences_Paper::STATUS_REFUSED) {
                         $allRefusals += $nbSubmissions['nbSubmissions'];
                         $nbRefusals += $nbSubmissions['nbSubmissions'];
-                    }
-
-                    if (in_array($status, self::ACCEPTED_SUBMISSIONS, true)) {
+                    } elseif (in_array($status, self::ACCEPTED_SUBMISSIONS, true)) {
                         $allAcceptations += $nbSubmissions['nbSubmissions'];
                         $nbAcceptations += $nbSubmissions['nbSubmissions'];
+                    } else {  // others status (except published status)
+                        $allOtherStatus += $nbSubmissions['nbSubmissions'];
+                        $nbOthers += $nbSubmissions['nbSubmissions'];
                     }
 
                     unset($status, $nbSubmissions);
                 }
 
-                $totalByYear = $nbPublications + $nbRefusals + $nbAcceptations;
+                $totalByYear = $nbRefusals + $nbAcceptations + $nbOthers;
 
             }
+
+            $totalByYear += $nbPublications;
 
             $series['submissionsByYear']['submissions'][] = $dashboard['submissions']['details']['submissionsByYear'][$year]['submissions']; // only submissions (1st version) of the current year
             $series['acceptationByYear']['acceptations'][] = $nbAcceptations;
             $series['refusalsByYear']['refusals'][] = $nbRefusals;
             $series['publicationsByYear']['publications'][] = $nbPublications;
+            $series['otherStatusByYear']['otherStatus'][] = $nbOthers;
 
             if ($totalByYear) {
                 $series['acceptationByYear']['percentage'][] = round($nbAcceptations / $totalByYear * 100, 2);
                 $series['refusalsByYear']['percentage'][] = round($nbRefusals / $totalByYear * 100, 2);
                 $series['publicationsByYear']['percentage'][] = round($nbPublications / $totalByYear * 100, 2);
+                $series['otherStatusByYear']['percentage'][] = round($nbOthers / $totalByYear * 100, 2);
             }
 
             // submission by repo
@@ -140,48 +150,56 @@ class StatsController extends Zend_Controller_Action
 
         }
 
-        unset($totalByYear, $nbPublications, $nbRefusals, $nbPublications);
+        unset($totalByYear, $nbPublications, $nbRefusals, $nbPublications, $nbOthers);
 
         if ($yearQuery) {
             $allSubmissions = $series['submissionsByYear']['submissions'][0];
             $allPublications = $series['publicationsByYear']['publications'][0]; // par année
             $allRefusals = $series['refusalsByYear']['refusals'][0];
             $allAcceptations = $series['acceptationByYear']['acceptations'][0];
+            $allOtherStatus = $series['otherStatusByYear']['otherStatus'][0];
 
             $publicationsPercentage = $series['publicationsByYear']['percentage'][0];
             $refusalsPercentage = $series['refusalsByYear']['percentage'][0];
             $acceptationsPercentage = $series['acceptationByYear']['percentage'][0];
+            $otherStatusPercentage = $series['otherStatusByYear']['percentage'][0];
 
         } elseif ($allSubmissions) {
             $publicationsPercentage = round($allPublications / $allSubmissions * 100, 2);
             $refusalsPercentage = round($allRefusals / $allSubmissions * 100, 2);
             $acceptationsPercentage = round($allAcceptations / $allSubmissions * 100, 2);
+            $otherStatusPercentage = round($allOtherStatus / $allSubmissions * 100, 2);
         }
 
         $label1 = ucfirst($this->view->translate('soumissions'));
         $label2 = ucfirst($this->view->translate('articles publiés'));
         $label3 = ucfirst($this->view->translate('articles refusés'));
         $label4 = ucfirst($this->view->translate('articles acceptés'));
+        $label5 = ucfirst($this->view->translate('autres statuts'));
 
         // figure 1
         $this->view->chart1Title = $this->view->translate("Soumissions");
 
         $seriesJs['allSubmissionsPercentage']['datasets'][] = [
-            'data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage],
-            'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2]]
+            'data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage, $otherStatusPercentage],
+            'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]]
         ];
 
-        $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3];
+        $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3, $label5];
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
 
         //figure 2
         $this->view->chart2Title = !$yearQuery ?
-            $this->view->translate("Par <code>année</code>, la répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>") :
-            $this->view->translate("La répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>");
+            $this->view->translate("La répartition des <code>soumissions</code>par <code>année</code> et par <code>statut</code>") :
+            $this->view->translate("La répartition des <code>soumissions</code> par <code>statut</code>");
 
         $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label1, 'data' => $series['submissionsByYear']['submissions'], 'backgroundColor' => self::COLORS_CODE[1]];
         $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label2, 'data' => $series['publicationsByYear']['publications'], 'backgroundColor' => self::COLORS_CODE[4]];
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label4, 'data' => $series['acceptationByYear']['acceptations'], 'backgroundColor' => self::COLORS_CODE[5]];
         $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label3, 'data' => $series['refusalsByYear']['refusals'], 'backgroundColor' => self::COLORS_CODE[2]];
+
+        $seriesJs['submissionsByYear']['datasets'][] = ['label' => $label5, 'data' => $series['otherStatusByYear']['otherStatus'], 'backgroundColor' => self::COLORS_CODE[0]];
+
         $seriesJs['submissionsByYear']['chartType'] = self::CHART_TYPE['BAR'];
 
 
@@ -247,6 +265,7 @@ class StatsController extends Zend_Controller_Action
         $this->view->allPublications = $allPublications;
         $this->view->allRefusals = $allRefusals;
         $this->view->allAcceptations = $allAcceptations;
+        $this->view->allOtherStatus = $allOtherStatus;
 
         $this->view->publicationsPercentage = $publicationsPercentage;
         $this->view->refusalsPercentage = $refusalsPercentage;
