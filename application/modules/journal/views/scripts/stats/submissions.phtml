@@ -4,6 +4,7 @@ $isYear = isset($this->year);
 $acceptedTooltipInfo = "Cela inclut les articles en cours de mise en forme et en attente de publication.";
 $publishedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.";
 $refusedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.";
+$otherStatusTooltipInfo = "Cela inclut les autres statuts.";
 ?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading"><h2 class="panel-title"><?= $this->chart1Title ?></h2></div>
@@ -46,12 +47,21 @@ $refusedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieure
                                          title="<?= $this->translate($refusedTooltipInfo) ?>"></i></code>
                             <?php endif; ?>
                         </li>
+
+                        <li>
+                            <?= ucfirst($this->translate('autres statuts')) ?>
+                            <code><?= $this->allOtherStatus ?></code>
+                            <?php if ($isYear): ?>
+                                <code><i class="fas fa-info-circle" data-toggle="tooltip"
+                                         title="<?= $this->translate($otherStatusTooltipInfo) ?>"></i></code>
+                            <?php endif; ?>
+                        </li>
                     </ul>
 
                 </div>
             </div>
         </div>
-        <div class="col-md-offset-2 col-md-6">
+        <div class="col-md-offset-2 col-md-6" style="margin-top: 40px; ">
             <canvas id="all-submissions-percentage" style="height: auto; width: auto;"></canvas>
         </div>
     </div>

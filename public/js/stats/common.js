@@ -61,7 +61,7 @@ function createChart(context, data, type = null, title = '') {
                         labelString: ""
                     },
                     afterDataLimits(scale) { // Prevent hiding data label value when the constraints of the graph are reached.
-                       scale.max += 2
+                        scale.max += 20
                     }
                 }],
             }

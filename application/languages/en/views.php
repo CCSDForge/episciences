@@ -1704,11 +1704,12 @@ return [
     'Sur un total de' => 'Out of a total of',
     'Soumissions' => 'Submissions',
     'soumissions' => 'submissions',
+    'autres statuts' => 'other status',
     'Délai moyen en <code>jours</code> entre <code>dépôt et acceptation</code> (<code>dépôt et publication</code>)' => 'Average time in <code>days</code> between <code>submission and acceptance</code> (<code>submission and publication</code>)',
-    'Par <code>année</code>, la répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'By <code>year</code>, the breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',
+    'La répartition des <code>soumissions</code>par <code>année</code> et par <code>statut</code>' => 'Breakdown of <code>submissions</code> by <code>year</code> and <code>status</code>',
     'Répartition des soumissions par <code>année</code> et par <code>archive</code>' => 'Breakdown of submissions by <code>year</code> and <code>repository</code>',
     'Indicateurs de statistiques pour la revue' => 'Statistical indicators for the journal',
-    'La répartition des <code>soumissions</code>, <code>articles publiés</code> et <code>articles refusés</code>' => 'The breakdown of <code>submissions</code>, <code>published articles</code> and <code>refused articles</code>',
+    'La répartition des <code>soumissions</code> par <code>statut</code>' => 'The breakdown of <code>submissions</code> by <code>status</code>',
     'Répartition des soumissions par <code>archive</code>' => 'The breakdown of submissions by <code>repository</code>',
     "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
     "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations." => "This feature is a work is progress and not yet available, please retry later or contact support for more information.",
@@ -1719,7 +1720,8 @@ return [
     "Cela inclut les articles en cours de mise en forme et en attente de publication." => "This includes articles that are being copy editing and awaiting publication.",
     "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
-    "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year."
+    "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
+    "Cela inclut les autres statuts." => "This includes other status."
 
 
 ];
