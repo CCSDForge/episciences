@@ -64,7 +64,7 @@ class StatsController extends Zend_Controller_Action
         $series['delayBetweenSubmissionAndAcceptance'] = [];
         $series['delayBetweenSubmissionAndPublication'] = [];
 
-        $allPublications = $allRefusals = $allAcceptations = $allOtherStatus =  0;
+        $allPublications = $allRefusals = $allAcceptations = $allOtherStatus = 0;
         $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = $otherStatusPercentage = null;
 
         if ($yearQuery) { // for stats by year
@@ -74,10 +74,11 @@ class StatsController extends Zend_Controller_Action
         $submissionsDelay = $dashboard['submissionsDelay'];
         $publicationsDelay = $dashboard['publicationsDelay'];
         $allSubmissions = $dashboard['submissions']['value']; // all review submissions
+        $totalByYear = 0;
 
         foreach ($yearCategories as $year) {
 
-            $totalByYear = $nbRefusals = $nbAcceptations = $nbOthers = 0;
+            $nbRefusals = $nbAcceptations = $nbOthers = 0;
 
             $nbPublications = $dashboard['submissions']['details']['submissionsByYear'][$year]['publications'];
             $allPublications += $nbPublications; // l'ensemble de la revue
@@ -150,7 +151,7 @@ class StatsController extends Zend_Controller_Action
 
         }
 
-        unset($totalByYear, $nbPublications, $nbRefusals, $nbPublications, $nbOthers);
+        unset($nbPublications, $nbRefusals, $nbPublications, $nbOthers);
 
         if ($yearQuery) {
             $allSubmissions = $series['submissionsByYear']['submissions'][0];
@@ -159,10 +160,14 @@ class StatsController extends Zend_Controller_Action
             $allAcceptations = $series['acceptationByYear']['acceptations'][0];
             $allOtherStatus = $series['otherStatusByYear']['otherStatus'][0];
 
-            $publicationsPercentage = $series['publicationsByYear']['percentage'][0];
-            $refusalsPercentage = $series['refusalsByYear']['percentage'][0];
-            $acceptationsPercentage = $series['acceptationByYear']['percentage'][0];
-            $otherStatusPercentage = $series['otherStatusByYear']['percentage'][0];
+            if ($totalByYear) {
+                $publicationsPercentage = $series['publicationsByYear']['percentage'][0];
+                $refusalsPercentage = $series['refusalsByYear']['percentage'][0];
+                $acceptationsPercentage = $series['acceptationByYear']['percentage'][0];
+                $otherStatusPercentage = $series['otherStatusByYear']['percentage'][0];
+            }
+
+            unset($totalByYear);
 
         } elseif ($allSubmissions) {
             $publicationsPercentage = round($allPublications / $allSubmissions * 100, 2);
