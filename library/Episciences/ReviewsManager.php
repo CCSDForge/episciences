@@ -114,4 +114,48 @@ class Episciences_ReviewsManager
         return $review;
     }
 
+    /**
+     * Retreive a list of publishing journals
+     * @return array
+     */
+    public static function findPublishingJournals()
+    {
+
+        $jNumber = 0;
+        $journalCollection[$jNumber] = ['Number', 'Title', 'ISSN', 'EISSN', 'Address'];
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_REVIEW)->where('STATUS = 1 AND RVID IN (SELECT RVID FROM PAPERS WHERE STATUS=?)', Episciences_Paper::STATUS_PUBLISHED);
+        $select->order('NAME ASC');
+        $allJournals = $db->fetchAll($select);
+        if (!$allJournals) {
+            return $journalCollection;
+        }
+
+        foreach ($allJournals as $journal) {
+            $jNumber++;
+            $oReview = new Episciences_Review($journal);
+            $oReview->loadSettings();
+
+            $issnPrint = $oReview->getSetting(Episciences_Review::SETTING_ISSN_PRINT);
+            $issnElec = $oReview->getSetting(Episciences_Review::SETTING_ISSN);
+
+            if (!$issnPrint) {
+                $issnPrint = '';
+            } else {
+                $issnPrint = Episciences_View_Helper_FormatIssn::FormatIssn($issnPrint);
+            }
+
+            if (!$issnElec) {
+                $issnElec = '';
+            } else {
+                $issnElec = Episciences_View_Helper_FormatIssn::FormatIssn($issnElec);
+            }
+            $journalCollection[] = [$jNumber, $oReview->getName(), $issnPrint, $issnElec, $oReview->getUrl()];
+
+        }
+        return $journalCollection;
+
+    }
+
 }
