@@ -120,4 +120,53 @@ class ApiController extends Zend_Controller_Action
 
 
     }
+
+    public function journalsAction()
+    {
+        $this->_helper->layout->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $journalArray = Episciences_ReviewsManager::findPublishingJournals();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $format = $request->getParam('format', 'json');
+
+        if ($format === 'json') {
+            $headers = array_shift($journalArray);
+            foreach ($journalArray as $journalNumber => $journalRow) {
+                foreach ($journalRow as $rowNumber => $journalInfo) {
+                    $journals[$journalNumber][$rowNumber] = [$headers[$rowNumber] => $journalInfo];
+                }
+            }
+            echo Zend_Json_Encoder::encode($journals);
+            exit;
+        }
+
+        if ($format === 'csv') {
+            $filename = 'journals_' . date('Y-m-d_H-i-s') . '.csv';
+            $now = gmdate("D, d M Y H:i:s");
+            header("Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate");
+            header("Last-Modified: $now GMT");
+            header("Content-Type: application/force-download");
+            header("Content-Type: application/octet-stream");
+            header("Content-Type: application/download");
+            header("Content-Disposition: attachment;filename=$filename");
+            header("Content-Transfer-Encoding: binary");
+
+            if (count($journalArray) === 0) {
+                return null;
+            }
+
+            ob_start();
+            $df = fopen("php://output", 'w');
+
+            foreach ($journalArray as $row) {
+                fputcsv($df, $row);
+            }
+            fclose($df);
+            echo ob_get_clean();
+        }
+    }
+
 }
