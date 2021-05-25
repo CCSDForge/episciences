@@ -68,7 +68,7 @@ http://www.crossref.org/schema/4.4.2 "
                 </journal_volume>
             <?php endif; ?>
             <?php if ($this->section !== '') : ?>
-                <issue><?php echo $this->escape($this->section); ?>></issue>
+                <issue><?php echo Ccsd_Tools_String::truncate($this->escape($this->section), 29, '...'); ?></issue>
             <?php endif; ?>
         </journal_issue>
         <journal_article publication_type="full_text">
