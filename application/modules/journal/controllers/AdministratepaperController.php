@@ -3248,7 +3248,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($uid) {
             //remove rating report
-            Episciences_Rating_ReportManager::deleteByUid($uid);
+            Episciences_Rating_ReportManager::deleteByUidAndDocId($uid, $docId);
             // delete reviewer alias
             Episciences_Reviewer_AliasManager::delete($docId, $uid);
 
