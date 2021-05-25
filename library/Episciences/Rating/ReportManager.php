@@ -36,10 +36,10 @@ class Episciences_Rating_ReportManager
      * @param int $uid : reveiwer UID
      * @return int
      */
-    public static function deleteByUid(int $uid): int
+    public static function deleteByUidAndDocId(int $uid, int $docId): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return $db->delete(T_REVIEWER_REPORTS, ['UID = ?' => $uid]);
+        return $db->delete(T_REVIEWER_REPORTS, ['UID = ?' => $uid, 'DOCID = ?' => $docId]);
     }
 
 
