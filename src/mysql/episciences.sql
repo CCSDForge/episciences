@@ -1,3 +1,6 @@
+-- Generation Time: May 25, 2021 at 10:46 PM
+-- Server version: 5.6.51-log
+
 SET
 SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -11,13 +14,13 @@ time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de données : `episciences`
+-- Database: `episciences`
 --
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `AUTHORS`
+-- Table structure for table `AUTHORS`
 --
 
 CREATE TABLE `AUTHORS`
@@ -32,7 +35,7 @@ CREATE TABLE `AUTHORS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `doi_queue`
+-- Table structure for table `doi_queue`
 --
 
 CREATE TABLE `doi_queue`
@@ -47,7 +50,7 @@ CREATE TABLE `doi_queue`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `MAIL_LOG`
+-- Table structure for table `MAIL_LOG`
 --
 
 CREATE TABLE `MAIL_LOG`
@@ -60,7 +63,7 @@ CREATE TABLE `MAIL_LOG`
     `TO`      mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
     `CC`      text COLLATE utf8mb4_unicode_ci,
     `BCC`     text COLLATE utf8mb4_unicode_ci,
-    `SUBJECT` varchar(250) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `SUBJECT` varchar(250) CHARACTER SET utf8mb4      DEFAULT NULL,
     `CONTENT` mediumtext COLLATE utf8mb4_unicode_ci,
     `FILES`   mediumtext COLLATE utf8mb4_unicode_ci,
     `WHEN`    datetime                              NOT NULL
@@ -69,7 +72,7 @@ CREATE TABLE `MAIL_LOG`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `MAIL_TEMPLATE`
+-- Table structure for table `MAIL_TEMPLATE`
 --
 
 CREATE TABLE `MAIL_TEMPLATE`
@@ -86,7 +89,7 @@ CREATE TABLE `MAIL_TEMPLATE`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `NEWS`
+-- Table structure for table `NEWS`
 --
 
 CREATE TABLE `NEWS`
@@ -102,34 +105,34 @@ CREATE TABLE `NEWS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPERS`
+-- Table structure for table `PAPERS`
 --
 
 CREATE TABLE `PAPERS`
 (
-    `DOCID`             int(11) UNSIGNED NOT NULL,
-    `PAPERID`           int(11) UNSIGNED DEFAULT NULL,
-    `DOI`               varchar(250) CHARACTER SET utf8 DEFAULT NULL,
-    `RVID`              int(11) UNSIGNED NOT NULL,
-    `VID`               int(11) UNSIGNED NOT NULL DEFAULT '0',
-    `SID`               int(11) UNSIGNED NOT NULL DEFAULT '0',
-    `UID`               int(11) UNSIGNED NOT NULL,
-    `STATUS`            int(11) UNSIGNED NOT NULL DEFAULT '0',
-    `IDENTIFIER`        varchar(500) CHARACTER SET utf8 NOT NULL,
-    `VERSION`           float UNSIGNED NOT NULL DEFAULT '1',
-    `REPOID`            int(11) UNSIGNED NOT NULL,
-    `RECORD`            text CHARACTER SET utf8 NOT NULL,
-    `DESCRIPTION`       text CHARACTER SET utf8,
-    `WHEN`              datetime                        DEFAULT NULL,
-    `SUBMISSION_DATE`   datetime                        NOT NULL,
-    `MODIFICATION_DATE` datetime                        DEFAULT NULL,
-    `PUBLICATION_DATE`  datetime                        DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Conference papers';
+    `DOCID`              int(11) UNSIGNED NOT NULL,
+    `PAPERID`            int(11) UNSIGNED DEFAULT NULL,
+    `DOI`                varchar(250) CHARACTER SET utf8 DEFAULT NULL,
+    `RVID`               int(11) UNSIGNED NOT NULL,
+    `VID`                int(11) UNSIGNED NOT NULL DEFAULT '0',
+    `SID`                int(11) UNSIGNED NOT NULL DEFAULT '0',
+    `UID`                int(11) UNSIGNED NOT NULL,
+    `STATUS`             int(11) UNSIGNED NOT NULL DEFAULT '0',
+    `IDENTIFIER`         varchar(500) CHARACTER SET utf8 NOT NULL,
+    `VERSION`            float UNSIGNED NOT NULL DEFAULT '1',
+    `REPOID`             int(11) UNSIGNED NOT NULL,
+    `RECORD`             text CHARACTER SET utf8 NOT NULL,
+    `CONCEPT_IDENTIFIER` varchar(500) CHARACTER SET utf8 DEFAULT NULL COMMENT 'This identifier represents all versions',
+    `WHEN`               datetime                        DEFAULT NULL,
+    `SUBMISSION_DATE`    datetime                        NOT NULL,
+    `MODIFICATION_DATE`  datetime                        DEFAULT NULL,
+    `PUBLICATION_DATE`   datetime                        DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Journal papers';
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPER_AUTHORS`
+-- Table structure for table `PAPER_AUTHORS`
 --
 
 CREATE TABLE `PAPER_AUTHORS`
@@ -144,7 +147,7 @@ CREATE TABLE `PAPER_AUTHORS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPER_COMMENTS`
+-- Table structure for table `PAPER_COMMENTS`
 --
 
 CREATE TABLE `PAPER_COMMENTS`
@@ -164,7 +167,26 @@ CREATE TABLE `PAPER_COMMENTS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPER_LOG`
+-- Table structure for table `paper_files`
+--
+
+CREATE TABLE `paper_files`
+(
+    `id`            int(10) UNSIGNED NOT NULL,
+    `doc_id`        int(10) UNSIGNED NOT NULL,
+    `file_name`     varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `checksum`      char(32) COLLATE utf8mb4_unicode_ci     NOT NULL,
+    `checksum_type` char(10) COLLATE utf8mb4_unicode_ci     NOT NULL,
+    `self_link`     varchar(750) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `file_size`     bigint(20) UNSIGNED NOT NULL,
+    `file_type`     varchar(20) COLLATE utf8mb4_unicode_ci  NOT NULL,
+    `time_modified` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `PAPER_LOG`
 --
 
 CREATE TABLE `PAPER_LOG`
@@ -183,7 +205,7 @@ CREATE TABLE `PAPER_LOG`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPER_METADATA`
+-- Table structure for table `PAPER_METADATA`
 --
 
 CREATE TABLE `PAPER_METADATA`
@@ -200,7 +222,7 @@ CREATE TABLE `PAPER_METADATA`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPER_RATING_GRID`
+-- Table structure for table `PAPER_RATING_GRID`
 --
 
 CREATE TABLE `PAPER_RATING_GRID`
@@ -212,7 +234,7 @@ CREATE TABLE `PAPER_RATING_GRID`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPER_SETTINGS`
+-- Table structure for table `PAPER_SETTINGS`
 --
 
 CREATE TABLE `PAPER_SETTINGS`
@@ -226,7 +248,7 @@ CREATE TABLE `PAPER_SETTINGS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `PAPER_STAT`
+-- Table structure for table `PAPER_STAT`
 --
 
 CREATE TABLE `PAPER_STAT`
@@ -249,7 +271,7 @@ CREATE TABLE `PAPER_STAT`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `REMINDERS`
+-- Table structure for table `REMINDERS`
 --
 
 CREATE TABLE `REMINDERS`
@@ -265,7 +287,7 @@ CREATE TABLE `REMINDERS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `REVIEW`
+-- Table structure for table `REVIEW`
 --
 
 CREATE TABLE `REVIEW`
@@ -281,7 +303,7 @@ CREATE TABLE `REVIEW`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `REVIEWER_ALIAS`
+-- Table structure for table `REVIEWER_ALIAS`
 --
 
 CREATE TABLE `REVIEWER_ALIAS`
@@ -294,7 +316,7 @@ CREATE TABLE `REVIEWER_ALIAS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `REVIEWER_POOL`
+-- Table structure for table `REVIEWER_POOL`
 --
 
 CREATE TABLE `REVIEWER_POOL`
@@ -307,7 +329,7 @@ CREATE TABLE `REVIEWER_POOL`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `REVIEWER_REPORT`
+-- Table structure for table `REVIEWER_REPORT`
 --
 
 CREATE TABLE `REVIEWER_REPORT`
@@ -324,7 +346,7 @@ CREATE TABLE `REVIEWER_REPORT`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `REVIEW_SETTING`
+-- Table structure for table `REVIEW_SETTING`
 --
 
 CREATE TABLE `REVIEW_SETTING`
@@ -337,7 +359,7 @@ CREATE TABLE `REVIEW_SETTING`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `SECTION`
+-- Table structure for table `SECTION`
 --
 
 CREATE TABLE `SECTION`
@@ -350,7 +372,7 @@ CREATE TABLE `SECTION`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `SECTION_SETTING`
+-- Table structure for table `SECTION_SETTING`
 --
 
 CREATE TABLE `SECTION_SETTING`
@@ -363,7 +385,7 @@ CREATE TABLE `SECTION_SETTING`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `STAT_TEMP`
+-- Table structure for table `STAT_TEMP`
 --
 
 CREATE TABLE `STAT_TEMP`
@@ -379,20 +401,30 @@ CREATE TABLE `STAT_TEMP`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER`
+-- Table structure for table `USER`
 --
 
 CREATE TABLE `USER`
 (
-    `UID`         int(11) UNSIGNED NOT NULL,
-    `LANGUEID`    varchar(2) CHARACTER SET utf8   NOT NULL DEFAULT 'fr',
-    `SCREEN_NAME` varchar(250) CHARACTER SET utf8 NOT NULL
+    `UID`               int(11) UNSIGNED NOT NULL,
+    `LANGUEID`          varchar(2) CHARACTER SET utf8           NOT NULL DEFAULT 'fr',
+    `SCREEN_NAME`       varchar(250) CHARACTER SET utf8         NOT NULL,
+    `USERNAME`          varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `API_PASSWORD`      varchar(255) CHARACTER SET utf8         NOT NULL,
+    `EMAIL`             varchar(320) CHARACTER SET utf8         NOT NULL,
+    `CIV`               varchar(255) COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `LASTNAME`          varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `FIRSTNAME`         varchar(100) COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `MIDDLENAME`        varchar(100) COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `REGISTRATION_DATE` datetime                                         DEFAULT NULL,
+    `MODIFICATION_DATE` datetime                                         DEFAULT NULL,
+    `IS_VALID`          tinyint(1) NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER_ASSIGNMENT`
+-- Table structure for table `USER_ASSIGNMENT`
 --
 
 CREATE TABLE `USER_ASSIGNMENT`
@@ -413,7 +445,7 @@ CREATE TABLE `USER_ASSIGNMENT`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER_INVITATION`
+-- Table structure for table `USER_INVITATION`
 --
 
 CREATE TABLE `USER_INVITATION`
@@ -429,7 +461,7 @@ CREATE TABLE `USER_INVITATION`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER_INVITATION_ANSWER`
+-- Table structure for table `USER_INVITATION_ANSWER`
 --
 
 CREATE TABLE `USER_INVITATION_ANSWER`
@@ -442,7 +474,7 @@ CREATE TABLE `USER_INVITATION_ANSWER`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER_INVITATION_ANSWER_DETAIL`
+-- Table structure for table `USER_INVITATION_ANSWER_DETAIL`
 --
 
 CREATE TABLE `USER_INVITATION_ANSWER_DETAIL`
@@ -455,7 +487,7 @@ CREATE TABLE `USER_INVITATION_ANSWER_DETAIL`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER_MERGE`
+-- Table structure for table `USER_MERGE`
 --
 
 CREATE TABLE `USER_MERGE`
@@ -471,7 +503,7 @@ CREATE TABLE `USER_MERGE`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER_ROLES`
+-- Table structure for table `USER_ROLES`
 --
 
 CREATE TABLE `USER_ROLES`
@@ -484,7 +516,7 @@ CREATE TABLE `USER_ROLES`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `USER_TMP`
+-- Table structure for table `USER_TMP`
 --
 
 CREATE TABLE `USER_TMP`
@@ -499,20 +531,21 @@ CREATE TABLE `USER_TMP`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `VOLUME`
+-- Table structure for table `VOLUME`
 --
 
 CREATE TABLE `VOLUME`
 (
-    `VID`      int(11) UNSIGNED NOT NULL,
-    `RVID`     int(11) UNSIGNED NOT NULL,
-    `POSITION` int(11) UNSIGNED NOT NULL DEFAULT '0'
+    `VID`           int(11) UNSIGNED NOT NULL,
+    `RVID`          int(11) UNSIGNED NOT NULL,
+    `POSITION`      int(11) UNSIGNED NOT NULL DEFAULT '0',
+    `BIB_REFERENCE` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL COMMENT 'Volume''s bibliographical reference'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Journal volumes';
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `VOLUME_METADATA`
+-- Table structure for table `VOLUME_METADATA`
 --
 
 CREATE TABLE `VOLUME_METADATA`
@@ -527,7 +560,7 @@ CREATE TABLE `VOLUME_METADATA`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `VOLUME_PAPER`
+-- Table structure for table `VOLUME_PAPER`
 --
 
 CREATE TABLE `VOLUME_PAPER`
@@ -540,7 +573,7 @@ CREATE TABLE `VOLUME_PAPER`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `VOLUME_PAPER_POSITION`
+-- Table structure for table `VOLUME_PAPER_POSITION`
 --
 
 CREATE TABLE `VOLUME_PAPER_POSITION`
@@ -553,7 +586,7 @@ CREATE TABLE `VOLUME_PAPER_POSITION`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `VOLUME_PAPER_POSITION_CLONE`
+-- Table structure for table `VOLUME_PAPER_POSITION_CLONE`
 --
 
 CREATE TABLE `VOLUME_PAPER_POSITION_CLONE`
@@ -566,7 +599,7 @@ CREATE TABLE `VOLUME_PAPER_POSITION_CLONE`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `VOLUME_SETTING`
+-- Table structure for table `VOLUME_SETTING`
 --
 
 CREATE TABLE `VOLUME_SETTING`
@@ -579,7 +612,7 @@ CREATE TABLE `VOLUME_SETTING`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `WEBSITE_HEADER`
+-- Table structure for table `WEBSITE_HEADER`
 --
 
 CREATE TABLE `WEBSITE_HEADER`
@@ -601,7 +634,7 @@ CREATE TABLE `WEBSITE_HEADER`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `WEBSITE_NAVIGATION`
+-- Table structure for table `WEBSITE_NAVIGATION`
 --
 
 CREATE TABLE `WEBSITE_NAVIGATION`
@@ -620,7 +653,7 @@ CREATE TABLE `WEBSITE_NAVIGATION`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `WEBSITE_SETTINGS`
+-- Table structure for table `WEBSITE_SETTINGS`
 --
 
 CREATE TABLE `WEBSITE_SETTINGS`
@@ -633,7 +666,7 @@ CREATE TABLE `WEBSITE_SETTINGS`
 -- --------------------------------------------------------
 
 --
--- Structure de la table `WEBSITE_STYLES`
+-- Table structure for table `WEBSITE_STYLES`
 --
 
 CREATE TABLE `WEBSITE_STYLES`
@@ -644,17 +677,17 @@ CREATE TABLE `WEBSITE_STYLES`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Index pour les tables déchargées
+-- Indexes for dumped tables
 --
 
 --
--- Index pour la table `AUTHORS`
+-- Indexes for table `AUTHORS`
 --
 ALTER TABLE `AUTHORS`
     ADD PRIMARY KEY (`ID`);
 
 --
--- Index pour la table `doi_queue`
+-- Indexes for table `doi_queue`
 --
 ALTER TABLE `doi_queue`
     ADD PRIMARY KEY (`id_doi_queue`),
@@ -662,14 +695,15 @@ ALTER TABLE `doi_queue`
   ADD KEY `doi_status` (`doi_status`);
 
 --
--- Index pour la table `MAIL_LOG`
+-- Indexes for table `MAIL_LOG`
 --
 ALTER TABLE `MAIL_LOG`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `IDX_RVID` (`RVID`);
+  ADD KEY `IDX_RVID` (`RVID`),
+  ADD KEY `DOCID` (`DOCID`);
 
 --
--- Index pour la table `MAIL_TEMPLATE`
+-- Indexes for table `MAIL_TEMPLATE`
 --
 ALTER TABLE `MAIL_TEMPLATE`
     ADD PRIMARY KEY (`ID`),
@@ -678,13 +712,13 @@ ALTER TABLE `MAIL_TEMPLATE`
   ADD KEY `RVCODE` (`RVCODE`);
 
 --
--- Index pour la table `NEWS`
+-- Indexes for table `NEWS`
 --
 ALTER TABLE `NEWS`
     ADD PRIMARY KEY (`NEWSID`);
 
 --
--- Index pour la table `PAPERS`
+-- Indexes for table `PAPERS`
 --
 ALTER TABLE `PAPERS`
     ADD PRIMARY KEY (`DOCID`),
@@ -694,31 +728,45 @@ ALTER TABLE `PAPERS`
   ADD KEY `UID` (`UID`),
   ADD KEY `STATUS` (`STATUS`),
   ADD KEY `PAPERID` (`PAPERID`);
+ALTER TABLE `PAPERS`
+    ADD FULLTEXT KEY `RECORD` (`RECORD`);
 
 --
--- Index pour la table `PAPER_AUTHORS`
+-- Indexes for table `PAPER_AUTHORS`
 --
 ALTER TABLE `PAPER_AUTHORS`
     ADD PRIMARY KEY (`ID`),
   ADD KEY `PAPER_AUTHOR` (`AUTHORID`);
 
 --
--- Index pour la table `PAPER_COMMENTS`
+-- Indexes for table `PAPER_COMMENTS`
 --
 ALTER TABLE `PAPER_COMMENTS`
     ADD PRIMARY KEY (`PCID`),
-  ADD KEY `DOCID` (`DOCID`);
+  ADD KEY `DOCID` (`DOCID`),
+  ADD KEY `TYPE` (`TYPE`),
+  ADD KEY `UID` (`UID`),
+  ADD KEY `DEADLINE` (`DEADLINE`),
+  ADD KEY `WHEN` (`WHEN`);
 
 --
--- Index pour la table `PAPER_LOG`
+-- Indexes for table `paper_files`
+--
+ALTER TABLE `paper_files`
+    ADD PRIMARY KEY (`id`),
+  ADD KEY `doc_id` (`doc_id`);
+
+--
+-- Indexes for table `PAPER_LOG`
 --
 ALTER TABLE `PAPER_LOG`
     ADD PRIMARY KEY (`LOGID`),
   ADD KEY `fk_T_PAPER_MODIF_T_PAPERS_idx` (`DOCID`),
-  ADD KEY `fk_T_PAPER_MODIF_T_USER_idx` (`UID`);
+  ADD KEY `fk_T_PAPER_MODIF_T_USER_idx` (`UID`),
+  ADD KEY `PAPERID` (`PAPERID`);
 
 --
--- Index pour la table `PAPER_METADATA`
+-- Indexes for table `PAPER_METADATA`
 --
 ALTER TABLE `PAPER_METADATA`
     ADD PRIMARY KEY (`ID`),
@@ -727,44 +775,48 @@ ALTER TABLE `PAPER_METADATA`
   ADD KEY `LANG` (`LANG`);
 
 --
--- Index pour la table `PAPER_SETTINGS`
+-- Indexes for table `PAPER_SETTINGS`
 --
 ALTER TABLE `PAPER_SETTINGS`
-    ADD PRIMARY KEY (`PSID`);
+    ADD PRIMARY KEY (`PSID`),
+  ADD KEY `DOCID` (`DOCID`),
+  ADD KEY `SETTING` (`SETTING`);
 
 --
--- Index pour la table `PAPER_STAT`
+-- Indexes for table `PAPER_STAT`
 --
 ALTER TABLE `PAPER_STAT`
     ADD PRIMARY KEY (`DOCID`, `CONSULT`, `IP`, `HIT`);
 
 --
--- Index pour la table `REMINDERS`
+-- Indexes for table `REMINDERS`
 --
 ALTER TABLE `REMINDERS`
-    ADD PRIMARY KEY (`ID`);
+    ADD PRIMARY KEY (`ID`),
+  ADD KEY `RVID` (`RVID`),
+  ADD KEY `TYPE` (`TYPE`);
 
 --
--- Index pour la table `REVIEW`
+-- Indexes for table `REVIEW`
 --
 ALTER TABLE `REVIEW`
     ADD PRIMARY KEY (`RVID`),
   ADD UNIQUE KEY `U_CODE` (`CODE`);
 
 --
--- Index pour la table `REVIEWER_ALIAS`
+-- Indexes for table `REVIEWER_ALIAS`
 --
 ALTER TABLE `REVIEWER_ALIAS`
     ADD UNIQUE KEY `UNIQUE` (`UID`,`DOCID`,`ALIAS`) USING BTREE;
 
 --
--- Index pour la table `REVIEWER_POOL`
+-- Indexes for table `REVIEWER_POOL`
 --
 ALTER TABLE `REVIEWER_POOL`
     ADD PRIMARY KEY (`RVID`, `VID`, `UID`);
 
 --
--- Index pour la table `REVIEWER_REPORT`
+-- Indexes for table `REVIEWER_REPORT`
 --
 ALTER TABLE `REVIEWER_REPORT`
     ADD PRIMARY KEY (`ID`),
@@ -772,39 +824,45 @@ ALTER TABLE `REVIEWER_REPORT`
   ADD KEY `ONBEHALF_UID` (`ONBEHALF_UID`) USING BTREE;
 
 --
--- Index pour la table `REVIEW_SETTING`
+-- Indexes for table `REVIEW_SETTING`
 --
 ALTER TABLE `REVIEW_SETTING`
     ADD PRIMARY KEY (`RVID`, `SETTING`),
   ADD KEY `FK_CONFIG_idx` (`RVID`);
 
 --
--- Index pour la table `SECTION`
+-- Indexes for table `SECTION`
 --
 ALTER TABLE `SECTION`
-    ADD PRIMARY KEY (`SID`);
+    ADD PRIMARY KEY (`SID`),
+  ADD KEY `RVID` (`RVID`);
 
 --
--- Index pour la table `SECTION_SETTING`
+-- Indexes for table `SECTION_SETTING`
 --
 ALTER TABLE `SECTION_SETTING`
     ADD PRIMARY KEY (`SID`, `SETTING`);
 
 --
--- Index pour la table `STAT_TEMP`
+-- Indexes for table `STAT_TEMP`
 --
 ALTER TABLE `STAT_TEMP`
     ADD PRIMARY KEY (`VISITID`),
   ADD KEY `DOCID` (`DOCID`);
 
 --
--- Index pour la table `USER`
+-- Indexes for table `USER`
 --
 ALTER TABLE `USER`
-    ADD PRIMARY KEY (`UID`);
+    ADD PRIMARY KEY (`UID`),
+  ADD UNIQUE KEY `USERNAME` (`USERNAME`),
+  ADD KEY `LASTNAME` (`LASTNAME`),
+  ADD KEY `API_PASSWORD` (`API_PASSWORD`),
+  ADD KEY `EMAIL` (`EMAIL`(255)),
+  ADD KEY `SCREEN_NAME` (`SCREEN_NAME`);
 
 --
--- Index pour la table `USER_ASSIGNMENT`
+-- Indexes for table `USER_ASSIGNMENT`
 --
 ALTER TABLE `USER_ASSIGNMENT`
     ADD PRIMARY KEY (`ID`),
@@ -813,274 +871,285 @@ ALTER TABLE `USER_ASSIGNMENT`
   ADD KEY `UID` (`UID`),
   ADD KEY `ITEM` (`ITEM`),
   ADD KEY `INDEX_SET` (`ITEM`,`ITEMID`,`ROLEID`,`UID`,`STATUS`),
-  ADD KEY `STATUS` (`STATUS`);
+  ADD KEY `STATUS` (`STATUS`),
+  ADD KEY `RVID` (`RVID`),
+  ADD KEY `WHEN` (`WHEN`),
+  ADD KEY `INVITATION_ID` (`INVITATION_ID`);
 
 --
--- Index pour la table `USER_INVITATION`
+-- Indexes for table `USER_INVITATION`
 --
 ALTER TABLE `USER_INVITATION`
     ADD PRIMARY KEY (`ID`);
 
 --
--- Index pour la table `USER_INVITATION_ANSWER`
+-- Indexes for table `USER_INVITATION_ANSWER`
 --
 ALTER TABLE `USER_INVITATION_ANSWER`
     ADD UNIQUE KEY `UNIQUE_KEY` (`ID`,`ANSWER`);
 
 --
--- Index pour la table `USER_INVITATION_ANSWER_DETAIL`
+-- Indexes for table `USER_INVITATION_ANSWER_DETAIL`
 --
 ALTER TABLE `USER_INVITATION_ANSWER_DETAIL`
     ADD UNIQUE KEY `UNIQUE_KEY` (`ID`,`NAME`);
 
 --
--- Index pour la table `USER_MERGE`
+-- Indexes for table `USER_MERGE`
 --
 ALTER TABLE `USER_MERGE`
     ADD PRIMARY KEY (`MID`);
 
 --
--- Index pour la table `USER_ROLES`
+-- Indexes for table `USER_ROLES`
 --
 ALTER TABLE `USER_ROLES`
     ADD PRIMARY KEY (`UID`, `RVID`, `ROLEID`);
 
 --
--- Index pour la table `USER_TMP`
+-- Indexes for table `USER_TMP`
 --
 ALTER TABLE `USER_TMP`
     ADD PRIMARY KEY (`ID`);
 
 --
--- Index pour la table `VOLUME`
+-- Indexes for table `VOLUME`
 --
 ALTER TABLE `VOLUME`
     ADD PRIMARY KEY (`VID`),
   ADD KEY `FK_CONFID_idx` (`RVID`);
 
 --
--- Index pour la table `VOLUME_METADATA`
+-- Indexes for table `VOLUME_METADATA`
 --
 ALTER TABLE `VOLUME_METADATA`
     ADD PRIMARY KEY (`ID`),
   ADD KEY `VID` (`VID`);
 
 --
--- Index pour la table `VOLUME_PAPER`
+-- Indexes for table `VOLUME_PAPER`
 --
 ALTER TABLE `VOLUME_PAPER`
     ADD PRIMARY KEY (`ID`),
   ADD UNIQUE KEY `UNIQUE` (`VID`,`DOCID`) USING BTREE;
 
 --
--- Index pour la table `VOLUME_PAPER_POSITION`
+-- Indexes for table `VOLUME_PAPER_POSITION`
 --
 ALTER TABLE `VOLUME_PAPER_POSITION`
     ADD UNIQUE KEY `VID` (`VID`,`PAPERID`);
 
 --
--- Index pour la table `VOLUME_PAPER_POSITION_CLONE`
+-- Indexes for table `VOLUME_PAPER_POSITION_CLONE`
 --
 ALTER TABLE `VOLUME_PAPER_POSITION_CLONE`
     ADD UNIQUE KEY `VID` (`VID`,`DOCID`);
 
 --
--- Index pour la table `VOLUME_SETTING`
+-- Indexes for table `VOLUME_SETTING`
 --
 ALTER TABLE `VOLUME_SETTING`
     ADD PRIMARY KEY (`VID`, `SETTING`),
   ADD KEY `FK_RVID0_idx` (`VID`);
 
 --
--- Index pour la table `WEBSITE_HEADER`
+-- Indexes for table `WEBSITE_HEADER`
 --
 ALTER TABLE `WEBSITE_HEADER`
     ADD PRIMARY KEY (`LOGOID`, `RVID`);
 
 --
--- Index pour la table `WEBSITE_NAVIGATION`
+-- Indexes for table `WEBSITE_NAVIGATION`
 --
 ALTER TABLE `WEBSITE_NAVIGATION`
-    ADD PRIMARY KEY (`NAVIGATIONID`);
+    ADD PRIMARY KEY (`NAVIGATIONID`),
+  ADD KEY `SID` (`SID`),
+  ADD KEY `TYPE_PAGE` (`TYPE_PAGE`);
 
 --
--- Index pour la table `WEBSITE_SETTINGS`
+-- Indexes for table `WEBSITE_SETTINGS`
 --
 ALTER TABLE `WEBSITE_SETTINGS`
     ADD PRIMARY KEY (`SID`, `SETTING`);
 
 --
--- Index pour la table `WEBSITE_STYLES`
+-- Indexes for table `WEBSITE_STYLES`
 --
 ALTER TABLE `WEBSITE_STYLES`
     ADD PRIMARY KEY (`RVID`, `SETTING`);
 
 --
--- AUTO_INCREMENT pour les tables déchargées
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT pour la table `AUTHORS`
+-- AUTO_INCREMENT for table `AUTHORS`
 --
 ALTER TABLE `AUTHORS`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `doi_queue`
+-- AUTO_INCREMENT for table `doi_queue`
 --
 ALTER TABLE `doi_queue`
     MODIFY `id_doi_queue` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `MAIL_LOG`
+-- AUTO_INCREMENT for table `MAIL_LOG`
 --
 ALTER TABLE `MAIL_LOG`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `MAIL_TEMPLATE`
+-- AUTO_INCREMENT for table `MAIL_TEMPLATE`
 --
 ALTER TABLE `MAIL_TEMPLATE`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `NEWS`
+-- AUTO_INCREMENT for table `NEWS`
 --
 ALTER TABLE `NEWS`
     MODIFY `NEWSID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `PAPERS`
+-- AUTO_INCREMENT for table `PAPERS`
 --
 ALTER TABLE `PAPERS`
     MODIFY `DOCID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `PAPER_AUTHORS`
+-- AUTO_INCREMENT for table `PAPER_AUTHORS`
 --
 ALTER TABLE `PAPER_AUTHORS`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `PAPER_COMMENTS`
+-- AUTO_INCREMENT for table `PAPER_COMMENTS`
 --
 ALTER TABLE `PAPER_COMMENTS`
     MODIFY `PCID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `PAPER_LOG`
+-- AUTO_INCREMENT for table `paper_files`
+--
+ALTER TABLE `paper_files`
+    MODIFY `id` int (10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `PAPER_LOG`
 --
 ALTER TABLE `PAPER_LOG`
     MODIFY `LOGID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `PAPER_METADATA`
+-- AUTO_INCREMENT for table `PAPER_METADATA`
 --
 ALTER TABLE `PAPER_METADATA`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `PAPER_SETTINGS`
+-- AUTO_INCREMENT for table `PAPER_SETTINGS`
 --
 ALTER TABLE `PAPER_SETTINGS`
     MODIFY `PSID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `REMINDERS`
+-- AUTO_INCREMENT for table `REMINDERS`
 --
 ALTER TABLE `REMINDERS`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `REVIEW`
+-- AUTO_INCREMENT for table `REVIEW`
 --
 ALTER TABLE `REVIEW`
     MODIFY `RVID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `REVIEWER_REPORT`
+-- AUTO_INCREMENT for table `REVIEWER_REPORT`
 --
 ALTER TABLE `REVIEWER_REPORT`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `SECTION`
+-- AUTO_INCREMENT for table `SECTION`
 --
 ALTER TABLE `SECTION`
     MODIFY `SID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `STAT_TEMP`
+-- AUTO_INCREMENT for table `STAT_TEMP`
 --
 ALTER TABLE `STAT_TEMP`
     MODIFY `VISITID` int (10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `USER`
+-- AUTO_INCREMENT for table `USER`
 --
 ALTER TABLE `USER`
     MODIFY `UID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `USER_ASSIGNMENT`
+-- AUTO_INCREMENT for table `USER_ASSIGNMENT`
 --
 ALTER TABLE `USER_ASSIGNMENT`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `USER_INVITATION`
+-- AUTO_INCREMENT for table `USER_INVITATION`
 --
 ALTER TABLE `USER_INVITATION`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `USER_MERGE`
+-- AUTO_INCREMENT for table `USER_MERGE`
 --
 ALTER TABLE `USER_MERGE`
     MODIFY `MID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `USER_TMP`
+-- AUTO_INCREMENT for table `USER_TMP`
 --
 ALTER TABLE `USER_TMP`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `VOLUME`
+-- AUTO_INCREMENT for table `VOLUME`
 --
 ALTER TABLE `VOLUME`
     MODIFY `VID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `VOLUME_METADATA`
+-- AUTO_INCREMENT for table `VOLUME_METADATA`
 --
 ALTER TABLE `VOLUME_METADATA`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `VOLUME_PAPER`
+-- AUTO_INCREMENT for table `VOLUME_PAPER`
 --
 ALTER TABLE `VOLUME_PAPER`
     MODIFY `ID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `WEBSITE_HEADER`
+-- AUTO_INCREMENT for table `WEBSITE_HEADER`
 --
 ALTER TABLE `WEBSITE_HEADER`
     MODIFY `LOGOID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `WEBSITE_NAVIGATION`
+-- AUTO_INCREMENT for table `WEBSITE_NAVIGATION`
 --
 ALTER TABLE `WEBSITE_NAVIGATION`
     MODIFY `NAVIGATIONID` int (11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- Contraintes pour les tables déchargées
+-- Constraints for dumped tables
 --
 
 --
--- Contraintes pour la table `PAPER_AUTHORS`
+-- Constraints for table `PAPER_AUTHORS`
 --
 ALTER TABLE `PAPER_AUTHORS`
     ADD CONSTRAINT `PAPER_AUTHOR` FOREIGN KEY (`AUTHORID`) REFERENCES `AUTHORS` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION;
