@@ -100,6 +100,7 @@ function fill_datatable(controller, action, get = {}, filter_status = [], filter
         processing: true,
         serverSide: true,
         order: order,
+        searchDelay: 2000,
         searching: true,
         ajax: {
             url: url,
