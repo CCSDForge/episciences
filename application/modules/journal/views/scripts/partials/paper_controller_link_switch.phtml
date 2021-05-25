@@ -7,10 +7,10 @@ $action = $request->getActionName();
 $message = '';
 
 if ($controller === 'administratepaper') {
-    $message = "Aller à la page de l'article";
+    $message = "Aller à la page public de cet article";
     $url = '/paper/view?id=' . $this->docId;
 } else {
-    $message = "Aller à la page de gestion de l'article";
+    $message = "Aller à la page de gestion de cet article";
     $url = '/administratepaper/view?id=' . $this->docId;
 
 }
