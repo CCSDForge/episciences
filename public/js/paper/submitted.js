@@ -8,13 +8,15 @@ $(document).ready(function () {
     let $ratingStatus = $("#ratingStatus");
     let $reviewers = $("#reviewers");
     let $doi = $("#doi");
+    let $oTable;
+    let searchLength = 3;
 
     if ($(".dataTable").length && $action !== '') {
-        fill_datatable($controller, $action, getUrlParams());
+        $oTable = fill_datatable($controller, $action, getUrlParams());
         $('#submit').on('click', function () {
 
-            let filter_status  = $status.length > 0  ? $status.val()  : [''];
-            let filter_volume  = $volume.length > 0  ? $volume.val()  : [''];
+            let filter_status = $status.length > 0 ? $status.val() : [''];
+            let filter_volume = $volume.length > 0 ? $volume.val() : [''];
             let filter_section = $section.length > 0 ? $section.val() : [''];
             let filter_editors = $editors.length > 0 ? $editors.val() : [''];
             let filter_ratingStatus = $ratingStatus.length > 0 ? $ratingStatus.val() : [''];
@@ -24,9 +26,20 @@ $(document).ready(function () {
             let isFilter = checkFilterParams(filter_status, filter_volume, filter_section, filter_editors, filter_ratingStatus, filter_reviewers, filter_doi);
 
             if (isFilter) {
-                fill_datatable($controller, $action, {}, filter_status, filter_volume, filter_section, filter_editors, filter_ratingStatus, filter_reviewers, filter_doi);
+                $oTable = fill_datatable($controller, $action, {}, filter_status, filter_volume, filter_section, filter_editors, filter_ratingStatus, filter_reviewers, filter_doi);
             } else {
-                fill_datatable($controller, $action);
+                $oTable = fill_datatable($controller, $action);
+            }
+        });
+
+        $(".dataTables_filter input").unbind().bind("keyup change", function (e) {
+            // If the length is 3 or more characters, or the user pressed ENTER, search
+            if (this.value.length >= searchLength || e.keyCode === 13) {
+                $oTable.search(this.value).draw();
+            }
+            // Ensure we clear the search if they backspace far enough
+            if (this.value === "") {
+                $oTable.search("").draw();
             }
         });
 
@@ -67,24 +80,24 @@ function fill_datatable(controller, action, get = {}, filter_status = [], filter
 
     if (controller === 'administratepaper' && (action === 'list' || action === 'assigned')) {
         columnDefs.push({targets: [3, 6, 7, 8], orderable: false});
-        columnDefs.push({ className: "text-center", "targets": [0, 1, 2] });
-    } else if(controller === 'paper'){
+        columnDefs.push({className: "text-center", "targets": [0, 1, 2]});
+    } else if (controller === 'paper') {
         if (action === 'submitted') {
             columnDefs.push({targets: [3], orderable: false});
-            columnDefs.push({ className: "text-center", "targets": [4, 5] });
+            columnDefs.push({className: "text-center", "targets": [4, 5]});
         } else if (action === 'ratings') {
             columnDefs.push({targets: [0, 1, 2, 4, 5], orderable: false});
-            columnDefs.push({ className: "text-center", "targets": [6, 7] });
+            columnDefs.push({className: "text-center", "targets": [6, 7]});
         }
-    }else if(controller === 'administratemail' && action === 'history'){
-        order.push([ 3, "desc" ]);
+    } else if (controller === 'administratemail' && action === 'history') {
+        order.push([3, "desc"]);
         columnDefs.push({targets: [2], orderable: false});
-        columnDefs.push({ className: "text-center", "targets": [ 2 ] });
+        columnDefs.push({className: "text-center", "targets": [2]});
         isAutoWidth = true;
     }
 
     let oTable = $(".dataTable").DataTable({
-        fnPreDrawCallback: function(){
+        fnPreDrawCallback: function () {
             $("div[id$='_processing']").removeAttr("class");
         },
         fnDrawCallback: function () {
