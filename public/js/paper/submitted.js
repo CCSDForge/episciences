@@ -114,6 +114,7 @@ function fill_datatable(controller, action, get = {}, filter_status = [], filter
         serverSide: true,
         order: order,
         searching: true,
+        searchDelay: 1500,
         ajax: {
             url: url,
             data: data,
