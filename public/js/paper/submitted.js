@@ -34,15 +34,23 @@ $(document).ready(function () {
         });
 
         $(".dataTables_filter input").unbind().bind("keyup change", function (e) {
+
             let isNotValidKeyCode = $KeyboardNavigationKeys.indexOf(e.keyCode) !== -1;
+
             // If the length is 3 or more characters, or the user pressed ENTER, search
-            if (!isNotValidKeyCode && (this.value.length >= searchLength || e.keyCode === 13)) {
-                $oTable.search(this.value).draw();
+            if (!isNotValidKeyCode) {
+
+                if (this.value.length >= searchLength || e.keyCode === 13) {
+                    $oTable.search(this.value).draw();
+                }
+
+                // Ensure we clear the search if they backspace far enough
+                if (this.value === "") {
+                    $oTable.search("").draw();
+                }
+
             }
-            // Ensure we clear the search if they backspace far enough
-            if (this.value === "") {
-                $oTable.search("").draw();
-            }
+
         });
 
     } else {
