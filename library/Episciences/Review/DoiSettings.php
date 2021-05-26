@@ -28,13 +28,8 @@ class Episciences_Review_DoiSettings
     const SETTING_DOI_DEFAULT_DOI_FORMAT =
         self::DOI_FORMAT_REVIEW_CODE
         . '-'
-        . self::DOI_FORMAT_PAPER_VOLUME
-        . '-'
-        . self::DOI_FORMAT_PAPER_SECTION
-        . '('
-        . self::DOI_FORMAT_PAPER_ID
-        . ')'
-        . self::DOI_FORMAT_PAPER_YEAR;
+        . self::DOI_FORMAT_PAPER_ID;
+
     /**
      * @var array
      */
