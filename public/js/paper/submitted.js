@@ -10,6 +10,7 @@ $(document).ready(function () {
     let $doi = $("#doi");
     let $oTable;
     let searchLength = 3;
+    const $KeyboardNavigationKeys = [37, 39, 38, 40, 36, 33, 35, 34]; // [Turn left, Turn right, Forward, Backward, Home (start), Pitch Up, End, Pitch Down ]
 
     if ($(".dataTable").length && $action !== '') {
         $oTable = fill_datatable($controller, $action, getUrlParams());
@@ -33,8 +34,9 @@ $(document).ready(function () {
         });
 
         $(".dataTables_filter input").unbind().bind("keyup change", function (e) {
+            let isNotValidKeyCode = $KeyboardNavigationKeys.indexOf(e.keyCode) !== -1;
             // If the length is 3 or more characters, or the user pressed ENTER, search
-            if (this.value.length >= searchLength || e.keyCode === 13) {
+            if (!isNotValidKeyCode && (this.value.length >= searchLength || e.keyCode === 13)) {
                 $oTable.search(this.value).draw();
             }
             // Ensure we clear the search if they backspace far enough
