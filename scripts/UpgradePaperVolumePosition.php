@@ -7,8 +7,8 @@ require_once "JournalScript.php";
  */
 class UpgradePaperVolumePosition extends JournalScript
 {
-    const TABLE = 'VOLUME_PAPER_POSITION';
-    const CLONE = 'VOLUME_PAPER_POSITION_CLONE';
+    public const TABLE = 'VOLUME_PAPER_POSITION';
+    public const CLONE = 'VOLUME_PAPER_POSITION_CLONE';
 
     public function __construct()
     {
@@ -55,9 +55,9 @@ class UpgradePaperVolumePosition extends JournalScript
 
         unset($tmpData);
 
-        if ($result = $this->cloneTable(false)) {
+        if ($result = $this->cloneTable(self::TABLE, false, self::CLONE)) {
 
-            if ($this->existColumn('DOCID')) {
+            if ($this->existColumn('DOCID', self::CLONE)) {
                 $alterTableQuery = 'ALTER TABLE ';
                 $alterTableQuery .= self::CLONE . ' CHANGE ';
                 $alterTableQuery .= $db->quoteIdentifier('DOCID');
@@ -84,43 +84,6 @@ class UpgradePaperVolumePosition extends JournalScript
             }
         }
         return true;
-    }
-
-    /**
-     * @param $fieldName
-     * @return bool
-     */
-    public function existColumn($fieldName): bool
-    {
-        $db = $this->getDb();
-        $sql = 'SHOW COLUMNS FROM ';
-        $sql .= $db->quoteIdentifier(self::CLONE);
-        $sql .= ' LIKE ';
-        $sql .= "'$fieldName'";
-        return ($db->prepare($sql)->execute() && ($db->fetchOne($sql) === $fieldName));
-    }
-
-    /**
-     * @param bool $withData
-     * @return bool
-     */
-    public function cloneTable(bool $withData = true): bool
-    {
-        $db = $this->getDb();
-        $createQuery = 'CREATE TABLE IF NOT EXISTS ';
-        $createQuery .= $db->quoteIdentifier(self::CLONE);
-        $createQuery .= ' LIKE ';
-        $createQuery .= $db->quoteIdentifier(T_VOLUME_PAPER_POSITION);
-        $result = $db->prepare($createQuery)->execute();
-
-        if ($result && $withData) {
-            $insertQuery = 'INSERT INTO ';
-            $insertQuery .= $db->quoteIdentifier(self::CLONE);
-            $insertQuery .= ' SELECT * FROM ';
-            $insertQuery .= $db->quoteIdentifier(self::TABLE);
-            $result = $db->prepare($insertQuery)->execute();
-        }
-        return $result;
     }
 
     /**
@@ -151,20 +114,6 @@ class UpgradePaperVolumePosition extends JournalScript
         }
 
         return $tmpData;
-    }
-
-    /**
-     * @param string $oldName
-     * @param $newName
-     * @return bool
-     */
-    public function renameTable(string $oldName, $newName): bool
-    {
-        $db = $this->getDb();
-        $query = 'RENAME TABLE ';
-        $query .= $db->quoteIdentifier($oldName);
-        $query .= ' TO ' . $db->quoteIdentifier($newName);
-        return $db->prepare($query)->execute();
     }
 
     /**
