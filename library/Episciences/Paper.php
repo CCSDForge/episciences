@@ -1108,18 +1108,15 @@ class Episciences_Paper
      */
     public function getLatestVersionId(): string
     {
-        if (!$this->_latestVersionId) {
-            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $sql = $db->select()
-                ->from(T_PAPERS, 'DOCID')
-                ->where('PAPERID = ?', $this->getPaperid())
-                ->where('`WHEN` > ? ', $this->getWhen())
-                ->order('WHEN DESC');
-            $latestId = $db->fetchOne($sql);
-            $this->_latestVersionId = $latestId;
-            return $latestId;
-        }
-        return $this->_latestVersionId;
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()
+            ->from(T_PAPERS, 'DOCID')
+            ->where('PAPERID = ?', $this->getPaperid())
+            ->order('WHEN DESC');
+        $latestId = $db->fetchOne($sql);
+        $this->_latestVersionId = $latestId;
+        return $latestId;
     }
 
     /**
