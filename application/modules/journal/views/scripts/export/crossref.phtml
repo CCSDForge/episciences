@@ -48,7 +48,7 @@ http://www.crossref.org/schema/4.4.2 "
             <?php if ($issn !== '') : ?>
                 <issn media_type="electronic"><?php echo $this->escape($issn); ?></issn>
             <?php endif; ?>
-            <?php if ($journalDoi !== '') : ?>
+            <?php if ($journalDoi) : ?>
             <doi_data>
                 <doi><?php echo $this->escape($journalDoi); ?></doi>
                 <resource><?php echo $this->escape('https://' . RVCODE . '.' . DOMAIN); ?></resource>
@@ -68,7 +68,7 @@ http://www.crossref.org/schema/4.4.2 "
                 </journal_volume>
             <?php endif; ?>
             <?php if ($this->section !== '') : ?>
-                <issue><?php echo $this->escape($this->section); ?>></issue>
+                <issue><?php echo Ccsd_Tools_String::truncate($this->escape($this->section), 29, '...'); ?></issue>
             <?php endif; ?>
         </journal_issue>
         <journal_article publication_type="full_text">
@@ -81,6 +81,7 @@ http://www.crossref.org/schema/4.4.2 "
                     <?php $titleCount++; ?>
                 <?php elseif ($titleCount == 1) :?>
                     <original_language_title language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                    <?php $titleCount++; ?>
                 <?php endif; ?>
 
 

@@ -2,10 +2,11 @@
 
 require_once 'Script.php';
 
-abstract class JournalScript extends Script {
+abstract class JournalScript extends Script
+{
 
-    const PARAM_RVCODE = 'rvcode';
-    const PARAM_RVID = 'rvid';
+    public const PARAM_RVCODE = 'rvcode';
+    public const PARAM_RVID = 'rvid';
 
     private $_journals;
 
@@ -56,7 +57,7 @@ abstract class JournalScript extends Script {
             $journals = $this->getJournals();
             $journal_names = array();
             /** @var Episciences_Review $journal */
-            foreach ($journals as $i=> $journal) {
+            foreach ($journals as $i => $journal) {
                 $journal_names[$i] = $journal->getCode() . ' - ' . $journal->getName();
             }
             $rvid = $this->ask('Missing review id. Please pick one of these:', $journal_names, static::BASH_YELLOW);
@@ -82,7 +83,7 @@ abstract class JournalScript extends Script {
             } else {
                 $journal_codes = array();
                 /** @var Episciences_Review $journal */
-                foreach ($this->getJournals() as $i=> $journal) {
+                foreach ($this->getJournals() as $i => $journal) {
                     $journal_codes[$i] = $journal->getCode();
                 }
                 $rvcode = $this->ask('Missing review code. Please pick one of these:', $journal_codes, static::BASH_YELLOW);
@@ -123,13 +124,20 @@ abstract class JournalScript extends Script {
      * Clone a table
      * @param string $table : table to clone
      * @param bool $withData : populate the table
+     * @param string|null $clonedTableName
      * @return bool
      */
-    protected function cloneTable(string $table, bool $withData = true): bool
+    protected function cloneTable(string $table, bool $withData = true, string $clonedTableName = null): bool
     {
+
+        $clone = $clonedTableName;
+
         $this->displayInfo(' *** Table cloning *** ', true);
 
-        $clone = $table . '_CLONE-' . date("Y-m-d H:i:s");
+        if (!$clonedTableName) {
+            $clone = $table . '_CLONE-' . date("Y-m-d H:i:s");
+        }
+
         $db = $this->getDb();
         $createQuery = 'CREATE TABLE IF NOT EXISTS ';
         $createQuery .= $db->quoteIdentifier($clone);
@@ -164,6 +172,7 @@ abstract class JournalScript extends Script {
         $query .= ' TO ' . $db->quoteIdentifier($newName);
         return $db->prepare($query)->execute();
     }
+
 
     /**
      * @param string $fieldName

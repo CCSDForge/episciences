@@ -22,7 +22,7 @@ function createChart(context, data, type = null, title = '') {
                 align: isPieChart ? 'center' : 'end',
                 anchor: isPieChart ? 'center' : 'end',
                 font: {
-                    size: "11",
+                    size: "8",
                     weight: "bold"
                 },
                 color: '#5627a8'

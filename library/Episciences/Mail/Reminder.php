@@ -107,7 +107,7 @@ class Episciences_Mail_Reminder
     {
         $langs = Episciences_Tools::getLanguages();
         $translator = Zend_Registry::get('Zend_Translate');
-        $translations =  [];
+        $translations = [];
 
         $review = Episciences_ReviewsManager::find($this->getRvid());
         $review_filepath = realpath(APPLICATION_PATH . '/../data') . '/' . $review->getCode() . '/';
@@ -1367,23 +1367,14 @@ class Episciences_Mail_Reminder
     private function isPaperNotNeedToReminders(Episciences_Paper $paper, array $filters = []): bool
     {
 
-        // get previous versions
-        $previousVersions = $paper->getPreviousVersions();
-        $notReminders = false;
-        if (empty($previousVersions)) {
-            return in_array($paper->getStatus(), $filters) ? !$notReminders : $notReminders;
-        } else {
-            /* @var  Episciences_Paper $article
-             */
-            foreach ($previousVersions as $article) {
-                if (in_array($article->getStatus(), $filters)) {
-                    $notReminders = true;
-                    break 1;
-                }
-            }
+        $latestDocId = (int)$paper->getLatestVersionId();
 
+        if ($paper->getDocid() !== $latestDocId) {
+            return true;
         }
-        return $notReminders;
+
+        return in_array($paper->getStatus(), $filters, true);
+
     }
 
     /**

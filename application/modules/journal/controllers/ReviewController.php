@@ -7,7 +7,13 @@ class ReviewController extends Zend_Controller_Action
         $this->renderScript('index/submenu.phtml');
     }
 
-
+    /**
+     * Saves journal settings
+     * Merge settings from this controller with DOI controller settings
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Validate_Exception
+     */
     public function settingsAction()
     {
         /** @var Zend_Controller_Request_Http $request */
@@ -29,11 +35,19 @@ class ReviewController extends Zend_Controller_Action
 
             if ($form->isValid($request->getPost())) {
 
-                $review->setOptions(array_merge($form->getValues(), [
+                $reviewSettingsToSave = array_merge($form->getValues(), [
                     'rating_deadline_unit' => $request->getPost('rating_deadline_unit'),
                     'rating_deadline_min_unit' => $request->getPost('rating_deadline_min_unit'),
                     'rating_deadline_max_unit' => $request->getPost('rating_deadline_max_unit'),
-                    'invitation_deadline_unit' => $request->getPost('invitation_deadline_unit')]));
+                    'invitation_deadline_unit' => $request->getPost('invitation_deadline_unit')]);
+
+
+                if ($reviewDefaultsDoi instanceof Episciences_Review_DoiSettings) {
+                    // DOI Settings are managed in an other controller with different ACL, do not forget to merge them with new settings
+                    $reviewSettingsToSave = array_merge($reviewSettingsToSave, $reviewDefaultsDoi->__toArray());
+                }
+
+                $review->setOptions($reviewSettingsToSave);
                 if ($review->save()) {
                     $message = '<strong>' . $this->view->translate("Les modifications ont bien été enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
