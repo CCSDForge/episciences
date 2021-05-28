@@ -106,7 +106,7 @@ class PaperController extends PaperDefaultController
                 $mainDocumentContent = $paperDocBackup->getDocumentBackupFile();
             }
 
-            if ($mainDocumentContent === '') {
+            if (empty($mainDocumentContent)) {
                 // Attempt to get content via local backup failed
                 // exit with error
                 $this->view->message = $e->getMessage();
@@ -117,7 +117,7 @@ class PaperController extends PaperDefaultController
         }
 
 
-        if (!$hasDocumentBackupFile) {
+        if (!$hasDocumentBackupFile && !empty($mainDocumentContent)) {
             $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
         }
 
