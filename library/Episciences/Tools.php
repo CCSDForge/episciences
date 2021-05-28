@@ -1294,4 +1294,42 @@ class Episciences_Tools
         return sprintf("%s %s", $fistname, $lastname);
     }
 
+    /**
+     * Reset mb_internal_encoding to server selection
+     * @see https://developer.wordpress.org/reference/functions/mbstring_binary_safe_encoding/
+     */
+    public static function resetMbstringEncoding() {
+        self::mbstringBinarySafeEncoding( true );
+    }
+
+    /**
+     * Set mb_internal_encoding to safe encoding for curl
+     * mbstring.func_overload is enabled and body length is calculated incorrectly.
+     * @see https://developer.wordpress.org/reference/functions/mbstring_binary_safe_encoding/
+     * @param false $reset
+     */
+    public static function mbstringBinarySafeEncoding( $reset = false ) {
+        static $encodings  = [];
+        static $overloaded = null;
+
+        if ( is_null( $overloaded ) ) {
+            $overloaded = function_exists( 'mb_internal_encoding' ) && ( ini_get( 'mbstring.func_overload' ) & 2 );
+        }
+
+        if ( false === $overloaded ) {
+            return;
+        }
+
+        if ( ! $reset ) {
+            $encoding = mb_internal_encoding();
+            $encodings[] = $encoding;
+            mb_internal_encoding( 'ISO-8859-1' );
+        }
+
+        if ( $reset && $encodings ) {
+            $encoding = array_pop( $encodings );
+            mb_internal_encoding( $encoding );
+        }
+    }
+
 }
