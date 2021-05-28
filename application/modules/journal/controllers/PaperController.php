@@ -98,7 +98,7 @@ class PaperController extends PaperDefaultController
         try {
             $url = $paper->getPaperUrl() ;
             $res = $client->get($url);
-            $mainDocumentContent = $res->getBody()->getContents();
+            $mainDocumentContent = $res->getBody()->__toString();
         } catch (GuzzleHttp\Exception\RequestException $e) {
 
             // we failed to get content via http, try a local backup
