@@ -94,6 +94,7 @@ class PaperController extends PaperDefaultController
         ];
 
         $client = new Client($clientHeaders);
+        $mainDocumentContent = '';
         try {
             $url = $paper->getPaperUrl() ;
             $res = $client->get($url);
