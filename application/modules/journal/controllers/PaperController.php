@@ -93,6 +93,8 @@ class PaperController extends PaperDefaultController
                 ]
         ];
 
+        Episciences_Tools::mbstringBinarySafeEncoding();
+
         $client = new Client($clientHeaders);
         $mainDocumentContent = '';
         try {
@@ -116,6 +118,7 @@ class PaperController extends PaperDefaultController
 
         }
 
+        Episciences_Tools::resetMbstringEncoding();
 
         if (!$hasDocumentBackupFile && !empty($mainDocumentContent)) {
             $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
