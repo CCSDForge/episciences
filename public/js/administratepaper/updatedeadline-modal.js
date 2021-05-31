@@ -29,7 +29,7 @@ $(document).ready(function () {
 
     var tags = [{text: translate('Code de la revue'), value: review['code']},
         {text: translate('Nom de la revue'), value: review['name']},
-        {text: translate("Id de l'article"), value: paper.id},
+        {text: translate("Id de l'article"), value: paper.id.toString()},
         {text: translate("Titre de l'article"), value: paper_title},
         {text: translate('Nom complet du relecteur'), value: reviewer.full_name},
         {text: translate('E-mail du relecteur'), value: reviewer.email},
