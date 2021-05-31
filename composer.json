@@ -20,7 +20,7 @@
     "ext-zip": "*",
     "geertw/ip-anonymizer": "^1.1",
     "google/recaptcha": "~1.2",
-    "guzzlehttp/guzzle": "<7",
+    "guzzlehttp/guzzle": "^7.3",
     "html2text/html2text": "^4.3",
     "jasig/phpcas": "1.3.8",
     "laravolt/avatar": "<4",
