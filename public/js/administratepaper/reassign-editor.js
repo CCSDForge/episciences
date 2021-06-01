@@ -52,7 +52,7 @@ function set_editor(uid) {
 
     var tags = [{text: translate('Code de la revue'), value: review['code']},
         {text: translate('Nom de la revue'), value: review['name']},
-        {text: translate("Id de l'article"), value: paper.id},
+        {text: translate("Id de l'article"), value: paper.id.toString()},
         {text: translate("Url de l'article"), value: paper.url},
         {text: translate("Titre de l'article"), value: paper_title},
         {text: translate('Nom complet du destinataire'), value: user.full_name},
