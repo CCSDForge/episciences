@@ -2,6 +2,9 @@
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $status = $paper->getStatus();
+$test = '<br>';
+
+$test = $this->purifyHtml($test);
 
 $this->layout()->pageTitle = htmlspecialchars(Episciences_Tools::decodeLatex($paper->getTitle())) . ' <span class="title-part">(v' . $paper->getVersionNumber() . ')</span>';
 $this->headTitle($this->translate('Gérer un article'));
