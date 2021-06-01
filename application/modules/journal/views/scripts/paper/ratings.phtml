@@ -17,10 +17,10 @@ $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
 $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 ?>
-<table class="table table-bordered dataTable" id="papers">
+<table class="table table-bordered dataTable table-responsive-lg" id="papers" style="width: 100%;">
     <thead>
     <tr>
-        <th data-name="<?php echo $this->translate("Statut de l'article"); ?>"></th>
+        <th><?= $this->translate("Statut de l'article") ?></th>
         <th><?php echo $this->translate('Statut de ma relecture'); ?></th>
         <th><?php echo $this->translate('Attendu le'); ?></th>
         <th><?php echo $this->translate("Id"); ?></th>
