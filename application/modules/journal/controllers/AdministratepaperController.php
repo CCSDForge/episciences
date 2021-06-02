@@ -1539,7 +1539,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function acceptAction()
+    public function acceptAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -1626,7 +1626,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 }
 
-                $this->paperStatusChangedNotifyManagers($paper, $managersNotificationTemplate, $additionalTags);
+                $this->paperStatusChangedNotifyManagers($paper, $managersNotificationTemplate, Episciences_Auth::getUser(), $additionalTags);
 
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
 
@@ -1694,7 +1694,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function publishAction()
+    public function publishAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -1744,7 +1744,7 @@ class AdministratepaperController extends PaperDefaultController
                 $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING);
 
                 // Notifier les rédacteurs + préparateurs de copie de l'article + selon les pramètres de la revue: red. en chef, admins et secrétaires de red.
-                $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY);
+                $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY, Episciences_Auth::getUser());
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
 
             } else {
@@ -1875,7 +1875,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function refuseAction()
+    public function refuseAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -1909,7 +1909,7 @@ class AdministratepaperController extends PaperDefaultController
                 $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING);
 
                 // Selon les paramètres de la revue, notifier les administrateurs, rédacteurs en chefs et secrétaires de rédaction.
-                $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED_EDITORS_COPY);
+                $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED_EDITORS_COPY, Episciences_Auth::getUser());
 
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
             } else {
@@ -3585,7 +3585,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function waitingforauthorsourcesAction()
+    public function waitingforauthorsourcesAction(): void
     {
 
         $this->checkAction();
@@ -3600,7 +3600,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function checkAction()
+    private function checkAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
 
@@ -3639,7 +3639,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function applyCopyEditingAction(Zend_Controller_Request_Http $request, Episciences_Paper $paper)
+    private function applyCopyEditingAction(Zend_Controller_Request_Http $request, Episciences_Paper $paper): bool
     {
         $actionName = $request->getActionName();
         $post = $request->getPost();
@@ -3732,10 +3732,10 @@ class AdministratepaperController extends PaperDefaultController
         $this->sendMailFromModal($submitter, $paper, $subject, $message, $post, $tags);
 
         // Envoi de mails aux rédacteurs + préparateurs de copie de l'artciles + notifier les rédacteurs en chef, secrétaires de rédaction et administrateurs, si le bon paramétrage a été choisi.
-        $this->paperStatusChangedNotifyManagers($paper, $managerTemplateType, $tags, $authorAttachments);
+        $this->paperStatusChangedNotifyManagers($paper, $managerTemplateType, Episciences_Auth::getUser(), $tags, $authorAttachments);
 
         // if needed, set new status
-        if ($paper->getStatus() != $newStatus) {
+        if ($paper->getStatus() !== $newStatus) {
             $paper->setStatus($newStatus);
             $paper->save();
             // log status change
@@ -3878,7 +3878,7 @@ class AdministratepaperController extends PaperDefaultController
         $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->buildAdminPaperUrl($docId), Episciences_User_Assignment::ROLE_EDITOR);
 
         // Ici le statut de l'article n'a pas été changé, mais les notifs sont identiques.
-        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, $tags, [], false, $uidS);
+        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, null, $tags, [], false, $uidS);
 
         return true;
     }

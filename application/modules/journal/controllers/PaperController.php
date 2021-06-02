@@ -645,10 +645,15 @@ class PaperController extends PaperDefaultController
 
         // autres
         $recipients = $allEditors + $assignedCopyEditors;
-        Episciences_Review::checkReviewNotifications($recipients);
-        $CC = $paper->extractCCRecipients($recipients);
 
-        if (empty($recipients)) {
+        Episciences_Review::checkReviewNotifications($recipients);
+
+        $CC = $paper->extractCCRecipients($recipients, $requester->getUid());
+
+        if ($requester->getUid()) {
+            $recipients = [$requester->getUid() => $requester];
+
+        } elseif (empty($recipients)) {
             $arrayKeyFirstCC = Episciences_Tools::epi_array_key_first($CC);
             $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
             unset($CC[$arrayKeyFirstCC]);
@@ -2421,10 +2426,9 @@ class PaperController extends PaperDefaultController
 
         // send mail to editors - warn paper editors that the paper was removed *************************
         // En fonction des paramètres de la revue, notifier les administrateurs, rédacteurs en chef et les secrétaires de rédaction
-        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_EDITOR_COPY, $commonTags);
+        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_EDITOR_COPY, null, $commonTags);
 
         // send mail to reviewers (if any) **********************************************
-        /** @var Episciences_Reviewer $reviewer */
         foreach ($reviewers as $reviewer) {
             $rLocale = $reviewer->getLangueid();
             $rTags = [

@@ -46,8 +46,9 @@ class PaperDefaultController extends Zend_Controller_Action
      * @param bool $strict
      * @param bool $withCasData
      * @return array
+     * @throws Zend_Db_Statement_Exception
      */
-    protected function getAllEditors(Episciences_Paper $paper, $strict = false, $withCasData = true)
+    protected function getAllEditors(Episciences_Paper $paper, bool $strict = false, bool $withCasData = true): array
     {
 
         // Rédacteurs assignés
@@ -253,7 +254,7 @@ class PaperDefaultController extends Zend_Controller_Action
 
         if ($answerCommentFile) {
             $jFiles = Episciences_Tools::isJson($answerCommentFile) ? json_decode($answerCommentFile) : (array)$answerCommentFile;
-            foreach ($jFiles as $file){
+            foreach ($jFiles as $file) {
                 $attachmentsFiles[$file] = $answerComment->getFilePath();
             }
         }
@@ -261,6 +262,7 @@ class PaperDefaultController extends Zend_Controller_Action
         return Episciences_Mail_Send::sendMailFromReview($manager, $newPaper, $templateKey, $tags, null, $attachmentsFiles, $makeCopy, $CC);
 
     }
+
     /**
      * @param Episciences_Paper $paper
      * @param string $templateType
@@ -269,7 +271,7 @@ class PaperDefaultController extends Zend_Controller_Action
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    protected function paperStatusChangedNotifyReviewer(Episciences_Paper $paper, string $templateType,  array $tags = [])
+    protected function paperStatusChangedNotifyReviewer(Episciences_Paper $paper, string $templateType, array $tags = [])
     {
 
         $docId = $paper->getDocid();
@@ -312,7 +314,8 @@ class PaperDefaultController extends Zend_Controller_Action
      * @return bool
      * @throws Zend_Exception
      */
-    protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = []){
+    protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [])
+    {
         $commentatorUid = $oComment->getUid();
         $commentator = new Episciences_User();
 
@@ -334,7 +337,7 @@ class PaperDefaultController extends Zend_Controller_Action
             $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
             unset($CC[$arrayKeyFirstCC]);
         }
-        
+
         $makeCopy = true; // en fonction du type de commentaire, pour eviter de recopier le même fichier:  si une copie existe existe dèjà.
 
         $recipientTags = [
@@ -375,7 +378,7 @@ class PaperDefaultController extends Zend_Controller_Action
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
         }
 
-        if (!empty($tags)){
+        if (!empty($tags)) {
             $recipientTags += $tags;
         }
 
@@ -431,7 +434,8 @@ class PaperDefaultController extends Zend_Controller_Action
      * @param int $docId
      * @return string
      */
-    public function buildAdminPaperUrl(int $docId){
+    public function buildAdminPaperUrl(int $docId)
+    {
         $adminPaperUrl = $this->view->url(
             [
                 self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
@@ -439,14 +443,15 @@ class PaperDefaultController extends Zend_Controller_Action
                 'id' => $docId
             ]);
 
-        return  HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $adminPaperUrl;
+        return HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $adminPaperUrl;
     }
 
     /**
      * @param int $docId
      * @return string
      */
-    public function buildPublicPaperUrl(int $docId){
+    public function buildPublicPaperUrl(int $docId)
+    {
         $paperUrl = $this->view->url(
             [
                 self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
@@ -454,12 +459,13 @@ class PaperDefaultController extends Zend_Controller_Action
                 'id' => $docId
             ]);
 
-        return  HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paperUrl;
+        return HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paperUrl;
     }
 
     /**
      * @param Episciences_Paper $paper
      * @param string $templateType
+     * @param Episciences_User|null $principalRecipient : action initiator
      * @param array $tags
      * @param array $attachments
      * @param boolean $strict = true : prendre en compte le module de notifications
@@ -470,7 +476,7 @@ class PaperDefaultController extends Zend_Controller_Action
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    protected function paperStatusChangedNotifyManagers(Episciences_Paper $paper, string $templateType, array $tags = [], array $attachments = [], bool $strict = true, $ignoredRecipients = [])
+    protected function paperStatusChangedNotifyManagers(Episciences_Paper $paper, string $templateType, Episciences_User $principalRecipient = null, array $tags = [], array $attachments = [], bool $strict = true, array $ignoredRecipients = []): void
     {
         $docId = (int)$paper->getDocid();
 
@@ -480,13 +486,17 @@ class PaperDefaultController extends Zend_Controller_Action
 
         Episciences_Review::checkReviewNotifications($recipients, RVID, $strict);
 
-        foreach ($ignoredRecipients as $uid => $recep){
+        foreach ($ignoredRecipients as $uid => $recep) {
             unset($recipients[$uid]);
         }
 
-        $CC = $paper->extractCCRecipients($recipients);
+        $principalRecipientUid = (null !== $principalRecipient) ? $principalRecipient->getUid() : null;
+        $CC = $paper->extractCCRecipients($recipients, $principalRecipientUid);
 
-        if (empty($recipients)) {
+        if ($principalRecipientUid) {
+            $recipients = [$principalRecipientUid => $principalRecipient];
+
+        } elseif (empty($recipients)) {
             $arrayKeyFirstCC = Episciences_Tools::epi_array_key_first($CC);
             $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
             unset($CC[$arrayKeyFirstCC]);
@@ -504,21 +514,22 @@ class PaperDefaultController extends Zend_Controller_Action
     }
 
     /**
-     * @param string $message: message initial
+     * @param string $message : message initial
      * @param string $alert
      * @return string
      * @throws Zend_Exception
      */
-    protected function buildAlertMessage(string $message = '', string $alert = ''): string{
+    protected function buildAlertMessage(string $message = '', string $alert = ''): string
+    {
         $translator = Zend_Registry::get('Zend_Translate');
         $alert = $translator->translate($alert);
         $message .= '<div class="panel panel-danger">';
-        $message.= '<div class="panel-heading"><strong>' . $translator->translate("Êtes-vous sûr ?") . '</strong></div>';
-        $message.= '<div class="panel-body">';
-        $message.= '<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px;"></span>';
+        $message .= '<div class="panel-heading"><strong>' . $translator->translate("Êtes-vous sûr ?") . '</strong></div>';
+        $message .= '<div class="panel-body">';
+        $message .= '<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px;"></span>';
         $message .= $alert;
-        $message.= '</div>';
-        $message.= '</div>';
+        $message .= '</div>';
+        $message .= '</div>';
         return $message;
     }
 }

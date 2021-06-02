@@ -3186,19 +3186,28 @@ class Episciences_Paper
     /**
      * git#295
      * @param array $recipients
+     * @param int|null $principalRecipient
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function extractCCRecipients(&$recipients = []): array
+    public function extractCCRecipients(array &$recipients = [], int $principalRecipient = null): array
     {
         $CC = [];
-        foreach ($recipients as $uid => $recipient) {
-            if (!$this->getEditor($uid)) {
-                $CC[$uid] = $recipient;
-                unset($recipients[$uid]);
+
+        if (!$principalRecipient) {
+            foreach ($recipients as $uid => $recipient) {
+                if (!$this->getEditor($uid)) {
+                    $CC[$uid] = $recipient;
+                    unset($recipients[$uid]);
+                }
             }
+        } else {
+            $CC = $recipients;
+            unset($CC[$principalRecipient]);
         }
+
         return $CC;
+
     }
 
     /**
