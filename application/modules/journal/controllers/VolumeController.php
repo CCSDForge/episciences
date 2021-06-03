@@ -85,6 +85,7 @@ class VolumeController extends Zend_Controller_Action
         }
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
+
         $sorted_papersToBeSaved= [];
         $needsToToBeSaved = false;
 
@@ -99,7 +100,8 @@ class VolumeController extends Zend_Controller_Action
             Episciences_VolumesManager::savePaperPositionsInVolume($vid, $sorted_papersToBeSaved);
         }
 
-
+        $gaps = Episciences_Volume::findGapsInPaperOrders($sorted_papers);
+        $this->view->gapsInOrderingPapers = $gaps;
 
         $form = Episciences_VolumesManager::getForm($referer, $volume);
 
@@ -107,8 +109,6 @@ class VolumeController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
-
-                // git#301: add new input text with label (bibliographical reference)
 
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
                 $volume->saveVolumeMetadata($request->getPost());
