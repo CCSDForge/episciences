@@ -12,6 +12,7 @@ class Episciences_Volume
     const SETTING_SPECIAL_ISSUE = 'special_issue';
     const SETTING_ACCESS_CODE = 'access_code';
     const UNLABELED_VOLUME = 'Unlabeled volume';
+    const PAPER_POSITION_NEEDS_TO_BE_SAVED = 'needsToBeSaved';
     protected $_db = null;
     private $_vid;
     private $_rvid;
@@ -889,18 +890,30 @@ class Episciences_Volume
         if (!empty($positions)) {
             /** @var array $positions [paperId, position] */
             $positions = array_flip($positions);
+
+
+            $maxPosition = max($positions);
+
             /**
              * @var  $docId
-             * @var  array $paper [title, docid, status]
+             * @var  array $paper [title, docid, status, self::PAPER_POSITION_NEEDS_TO_BE_SAVED]
              */
             foreach ($paperList as $docId => $paper) {
                 /** @var Episciences_Paper $currentOPaper */
                 $currentOPaper = $papers[$docId];
                 $paperId = $currentOPaper->getPaperid();
+                $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = false;
                 if (array_key_exists($currentOPaper->getPaperId(), $positions)) {
                     $sorted_papers[$positions[$paperId]] = $paper;
                 } else {
-                    $sorted_papers[$currentOPaper->getPosition()] = $paper;
+                    if ($currentOPaper->getPosition() === null) {
+                        $maxPosition++;
+                        $paperPosition = $maxPosition;
+                        $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
+                        $sorted_papers[$paperPosition] = $paper;
+                     } else {
+                        $sorted_papers[$currentOPaper->getPosition()] = $paper;
+                    }
                 }
             }
             ksort($sorted_papers);

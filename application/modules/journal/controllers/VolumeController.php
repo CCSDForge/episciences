@@ -85,6 +85,21 @@ class VolumeController extends Zend_Controller_Action
         }
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
+        $sorted_papersToBeSaved= [];
+        $needsToToBeSaved = false;
+
+        foreach ($sorted_papers as $position => $paper) {
+            $sorted_papersToBeSaved[$position] = $paper['paperid'];
+            if ( ($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved) ) {
+                $needsToToBeSaved = true;
+            }
+        }
+
+        if (!empty($sorted_papersToBeSaved) && $needsToToBeSaved) {
+            Episciences_VolumesManager::savePaperPositionsInVolume($vid, $sorted_papersToBeSaved);
+        }
+
+
 
         $form = Episciences_VolumesManager::getForm($referer, $volume);
 
