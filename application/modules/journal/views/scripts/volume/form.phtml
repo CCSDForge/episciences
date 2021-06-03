@@ -111,7 +111,7 @@
                         $paperDocid = $paper['docid'];
                         $titleStr = $this->escape(Ccsd_Tools::truncate($title, 50));
                         ?>
-                        <div id="paper-<?= $paper['paperid'] ?>" class="paper input-group" data-attr="<?= (int)$paperOrder + 1 ?>">
+                        <div id="paper-<?= $paper['paperid'] ?>" class="paper input-group">
                             <span class="label label-status-<?= $paper['status'] ?>" data-toggle="tooltip"
                                   title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper['status']))) ?>">
                            <?= (int)$paperOrder + 1 ?></span>
