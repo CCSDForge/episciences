@@ -56,8 +56,9 @@
                            data-init="init"
                            data-callback="submit"
                            data-onclose="onclose"
-                           title="<?php echo $this->translate('Modifier une métadonnée'); ?>"><button class="btn btn-xs btn-primary edit-metadata"
-                                                                   type="button"><span
+                           title="<?php echo $this->translate('Modifier une métadonnée'); ?>"><button
+                                    class="btn btn-xs btn-primary edit-metadata"
+                                    type="button"><span
                                         class="glyphicon glyphicon-pencil"></span></button></a><button
                                 onclick="removeMetadata($(this))" data-placement="right"
                                 style="border-radius:0; height: 20px; padding-top:0; padding-bottom: 0;"
@@ -83,11 +84,23 @@
                     </button>
                 </a>
             </div>
-
         </div>
     </div>
 
+
     <?php if ($this->element->getView()->volume && $this->element->getView()->paperList) : ?>
+        <?php
+        if (!empty($this->element->getView()->gapsInOrderingPapers)) {
+            echo '<div class="alert alert-warning" role="alert">';
+            echo $this->translate('Des vides ont été détectés dans la numérotation des papiers : ');
+            echo '<ul>';
+            foreach ($this->element->getView()->gapsInOrderingPapers as $gapNumber) {
+                printf('<li><span class="label label-default">%d</span></li>', $gapNumber + 1);
+            }
+            echo '</ul>';
+            echo '</div>';
+        }
+        ?>
         <div id="papers-element" class="form-group row">
             <label class="col-md-3 control-label optional"><?php echo $this->translate('Articles'); ?></label>
             <div class="col-md-9" style="padding-top: 7px">
@@ -99,8 +112,9 @@
                         $titleStr = $this->escape(Ccsd_Tools::truncate($title, 50));
                         ?>
                         <div id="paper-<?= $paper['paperid'] ?>" class="paper input-group">
-                            <span class="label label-status-<?= $paper['status'] ?>" data-toggle="tooltip" title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper['status']))) ?>">
-                           <?= (int) $paperOrder + 1 ?></span>
+                            <span class="label label-status-<?= $paper['status'] ?>" data-toggle="tooltip"
+                                  title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper['status']))) ?>">
+                           <?= (int)$paperOrder + 1 ?></span>
                             [<a href="/administratepaper/view?id=<?= $paperDocid ?>"># <?= $paperDocid ?></a>]&nbsp;
                             <?= $titleStr ?>
                         </div>

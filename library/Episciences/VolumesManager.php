@@ -450,20 +450,20 @@ class Episciences_VolumesManager
 
         $values = [];
 
-        foreach ($paper_positions as $position => $docId) {
+        foreach ($paper_positions as $position => $paperId) {
 
-            if (!is_numeric($docId) || !is_numeric($position)) {
+            if (!is_numeric($paperId) || !is_numeric($position)) {
                 continue;
             }
 
-            $values[] = '(' . $db->quote((int)$vid) . ',' . $db->quote((int)$docId) . ',' . $db->quote($position) . ')';
+            $values[] = '(' . $db->quote((int)$vid) . ',' . $db->quote((int)$paperId) . ',' . $db->quote($position) . ')';
         }
 
         if ($values) {
             try {
                 $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
             } catch (Exception $e) {
-                error_log($e->getMessage());
+                trigger_error(sprintf($e->getMessage(), E_USER_WARNING));
             }
         }
     }

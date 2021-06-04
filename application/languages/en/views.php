@@ -542,6 +542,7 @@ return [
     "La grille par défault ne pas pu être supprimée" => "The default grid cannot be removed",
     "Cette grille n'existe pas." => "This rating grid does not exist",
     "Modifier ce volume" => "Edit this volume",
+    'Des vides ont été détectés dans la numérotation des papiers : '=> 'Gaps were detected in the numbering of the papers: ',
     "La grille a bien été supprimée." => "The grid has been successfully deleted.",
 
 
@@ -1627,7 +1628,6 @@ return [
     "Vous êtes sur le point de supprimer un rapport de relecture." => "You are about to delete a rating report.",
 
     "Relire les articles" => 'Rate articles',
-    "Progression : " => "Progression:",
     "Vous n'avez rien à relire pour le moment." => "You haven't any article to review yet.",
     "relecture non commencée" => 'pending reviewing',
     "relectures non commencées" => 'pending reviewings',
