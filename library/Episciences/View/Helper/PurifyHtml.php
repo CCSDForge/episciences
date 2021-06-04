@@ -84,13 +84,25 @@ class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
         'https' => true,
     ];
 
+    public static $AVAILABLE_OPTION_KEYS = [
+        'Cache.SerializerPath',
+        'Core.Encoding',
+        'HTML.AllowedElements',
+        'CSS.AllowedProperties',
+        'Attr.AllowedClasses',
+        'Attr.AllowedFrameTargets',
+        'HTML.AllowedAttributes',
+        'URI.AllowedSchemes',
+    ];
+
 
     /**
      * PurifyHtml constructor.
      * @param string $html
+     * @param array $options [$key => $value]
      * @return string
      */
-    public static function purifyHtml(string $html = ''): string
+    public static function purifyHtml(string $html = '', array $options = []): string
     {
 
         if (empty($html)) {
@@ -98,14 +110,27 @@ class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
         }
 
         $config = HTMLPurifier_Config::createDefault();
-        $config->set('Cache.SerializerPath',REVIEW_TMP_PATH); // default: vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache
-        $config->set('Core.Encoding', self:: $CORE_ENCODING);
-        $config->set('HTML.AllowedElements', self::$HTML_ALLOWED_ELEMENTS);
-        $config->set('CSS.AllowedProperties', self::$CSS_ALLOWED_PROPERTIES);
-        $config->set('Attr.AllowedClasses', self::$ATTR_ALLOWED_CLASSES);
-        $config->set('Attr.AllowedFrameTargets', self::$ATTR_ALLOWED_FRAME_TARGETS);
-        $config->set('HTML.AllowedAttributes', self::$HTML_ALLOWED_ATTRIBUTES);
-        $config->set('URI.AllowedSchemes', self::$URI_ALLOWED_SCHEMES);
+
+        if (empty($options)) {
+            $config->set('Cache.SerializerPath', REVIEW_TMP_PATH); // default: vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache
+            $config->set('Core.Encoding', self:: $CORE_ENCODING);
+            $config->set('HTML.AllowedElements', self::$HTML_ALLOWED_ELEMENTS);
+            $config->set('CSS.AllowedProperties', self::$CSS_ALLOWED_PROPERTIES);
+            $config->set('Attr.AllowedClasses', self::$ATTR_ALLOWED_CLASSES);
+            $config->set('Attr.AllowedFrameTargets', self::$ATTR_ALLOWED_FRAME_TARGETS);
+            $config->set('HTML.AllowedAttributes', self::$HTML_ALLOWED_ATTRIBUTES);
+            $config->set('URI.AllowedSchemes', self::$URI_ALLOWED_SCHEMES);
+        } else {
+
+            foreach ($options as $key => $value) {
+
+                if (in_array($key, self::$AVAILABLE_OPTION_KEYS, true)) {
+                    $config->set($key, $value);
+                }
+
+            }
+
+        }
 
         $purifier = new HTMLPurifier($config);
 
