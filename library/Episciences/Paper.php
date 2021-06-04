@@ -3118,9 +3118,10 @@ class Episciences_Paper
     }
 
     /**
-     * @return false|int|string
+     * get real paper position in volume. (position in VOLUME_PAPER_POSITION table  + 1)
+     * @return int
      */
-    public function getPaperPositionInVolume()
+    public function getPaperPositionInVolume(): int
     {
         $vId = $this->getVid();
 
@@ -3129,7 +3130,7 @@ class Episciences_Paper
         }
 
         $positions = $volume->getPaperPositions();
-        return array_search($this->getDocid(), $positions) + 1;
+        return (array_search($this->getPaperid(), $positions, false) + 1);
     }
 
     /**
