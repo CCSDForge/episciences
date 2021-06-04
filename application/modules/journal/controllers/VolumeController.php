@@ -86,14 +86,29 @@ class VolumeController extends Zend_Controller_Action
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
 
+        $sorted_papersToBeSaved= [];
+        $needsToToBeSaved = false;
+
+        foreach ($sorted_papers as $position => $paper) {
+            $sorted_papersToBeSaved[$position] = $paper['paperid'];
+            if ( ($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved) ) {
+                $needsToToBeSaved = true;
+            }
+        }
+
+        if (!empty($sorted_papersToBeSaved) && $needsToToBeSaved) {
+            Episciences_VolumesManager::savePaperPositionsInVolume($vid, $sorted_papersToBeSaved);
+        }
+
+        $gaps = Episciences_Volume::findGapsInPaperOrders($sorted_papers);
+        $this->view->gapsInOrderingPapers = $gaps;
+
         $form = Episciences_VolumesManager::getForm($referer, $volume);
 
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
-
-                // git#301: add new input text with label (bibliographical reference)
 
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
                 $volume->saveVolumeMetadata($request->getPost());

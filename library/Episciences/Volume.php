@@ -12,6 +12,7 @@ class Episciences_Volume
     const SETTING_SPECIAL_ISSUE = 'special_issue';
     const SETTING_ACCESS_CODE = 'access_code';
     const UNLABELED_VOLUME = 'Unlabeled volume';
+    const PAPER_POSITION_NEEDS_TO_BE_SAVED = 'needsToBeSaved';
     protected $_db = null;
     private $_vid;
     private $_rvid;
@@ -110,6 +111,18 @@ class Episciences_Volume
     {
         $this->_settings[$setting] = (string)$value;
         return $this;
+    }
+
+    /**
+     * Find gaps in the ordering of papers in volumes eg [3,[X],5,6,7]
+     * @param array $sorted_papers a sorted array of papers
+     * @return array array of gaps
+     */
+    public static function findGapsInPaperOrders(array $sorted_papers): array
+    {
+        $arrayOfMyDreams = range(0, count($sorted_papers)-1);
+        $actualArray = array_keys($sorted_papers);
+        return array_diff($arrayOfMyDreams, $actualArray);
     }
 
     /**
@@ -595,29 +608,25 @@ class Episciences_Volume
 
 
     /**
-     * Save Paper positions in a Volume
+     * Save Paper positions from a formular (with jquery sortable) in a Volume
      * @param $vid
      * @param $paper_positions
      */
     public function savePaperPositionsInVolume($vid, $paper_positions)
     {
-
-        $sql = 'INSERT INTO ' . $this->_db->quoteIdentifier(T_VOLUME_PAPER_POSITION) . ' (`VID`, `PAPERID`, `POSITION`) VALUES ';
-        $paper_positions = explode(',', $paper_positions);
-        $values = [];
-
-        foreach ($paper_positions as $position => $paper) {
-            $docid = substr($paper, 6); // WTF ??? because <input type="hidden" name="md_ui-id-1" value="">
-            if (!is_numeric($docid) || !is_numeric($position)) continue;
-            $values[] = '(' . $this->_db->quote((int)$vid) . ',' . $this->_db->quote((int)$docid) . ',' . $this->_db->quote($position) . ')';
+        // value="paper-126,paper-38"
+        $positionsFromFormular = explode(',', $paper_positions);
+        $paper_positions=[];
+        foreach ($positionsFromFormular as $position => $paper) {
+            $paperid = substr($paper, 6); // paper-126
+            if (!is_numeric($paperid) || !is_numeric($position)) {
+                continue;
+            }
+            $paper_positions[(int)$position] = (int)$paperid;
         }
 
-        if ($values) {
-            try {
-                $this->_db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
-            } catch (Exception $e) {
-                trigger_error(sprintf($e->getMessage(), E_USER_WARNING));
-            }
+        if (!empty($paper_positions)) {
+            Episciences_VolumesManager::savePaperPositionsInVolume($vid, $paper_positions);
         }
     }
 
@@ -879,29 +888,56 @@ class Episciences_Volume
                 $paperList[$docId]['title'] = $title;
             }
             $paperList[$docId]['docid'] = $docId;
+            // RT#129760
+            $paperList[$docId]['paperid'] = $p->getPaperid();
             $paperList[$docId]['status'] = $p->getStatus();
         }
+
+
 
         $positions = $this->getPaperPositions();
 
         if (!empty($positions)) {
             /** @var array $positions [paperId, position] */
             $positions = array_flip($positions);
+
+
+            $maxPosition = max($positions);
+
             /**
              * @var  $docId
-             * @var  array $paper [title, docid, status]
+             * @var  array $paper [title, docid, status, self::PAPER_POSITION_NEEDS_TO_BE_SAVED]
              */
             foreach ($paperList as $docId => $paper) {
                 /** @var Episciences_Paper $currentOPaper */
                 $currentOPaper = $papers[$docId];
                 $paperId = $currentOPaper->getPaperid();
+                $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = false;
                 if (array_key_exists($currentOPaper->getPaperId(), $positions)) {
                     $sorted_papers[$positions[$paperId]] = $paper;
                 } else {
-                    $sorted_papers[$currentOPaper->getPosition()] = $paper;
+                    if ($currentOPaper->getPosition() === null) {
+                        $maxPosition++;
+                        $paperPosition = $maxPosition;
+                        $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
+                        $sorted_papers[$paperPosition] = $paper;
+                     } else {
+                        $sorted_papers[$currentOPaper->getPosition()] = $paper;
+                    }
                 }
             }
             ksort($sorted_papers);
+        } else {
+            /*
+             *  When the whole volume (legacy or import) has never been sorted
+             *  Automagically sort
+             */
+
+            ksort($paperList);
+            foreach ($paperList as $paper) {
+                $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
+                $sorted_papers[] = $paper;
+            }
         }
 
         return $sorted_papers;
