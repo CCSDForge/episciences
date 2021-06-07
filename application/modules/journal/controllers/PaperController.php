@@ -2138,7 +2138,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function save_rating(Episciences_Rating_Report $report, Episciences_Paper $paper)
+    private function save_rating(Episciences_Rating_Report $report, Episciences_Paper $paper): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -2156,12 +2156,12 @@ class PaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
             $this->completedRatingSendNotification($report, $paper);
         } else {
-            error_log('Error: failed to save review of docid ' . $report->getDocid());
+            trigger_error('Error: failed to save review of docid ' . $report->getDocid(), E_USER_WARNING);
             $message = $this->view->translate("Votre évaluation n'a pas pu être enregistrée.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
         }
 
-        if ($paper->getEditor(Episciences_Auth::getUid()) || Episciences_Auth::isAllowedToUploadPaperReport()) {
+        if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid())) {
             $this->_helper->redirector->gotoUrl('administratepaper/view?id=' . $paper->getDocid());
         } else {
             // show the usual reviewer all his reviews

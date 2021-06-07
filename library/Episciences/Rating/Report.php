@@ -74,8 +74,11 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     }
 
     // populate rating report
-    public function populate($data)
+    public function populate($data): bool
     {
+
+        $toolBarHtmlElements = ['p', 'span', 'strong', 'em'];
+
         if (!$this->getCriteria()) {
             return false;
         }
@@ -89,7 +92,10 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
             // criterion comment
             if ($criterion->allowsComment() && array_key_exists('comment_' . $criterion->getId(), $data)) {
-                $criterion->setComment($data['comment_' . $criterion->getId()]);
+                //TinyMCE automatically encodes all entered html code
+                $content = $data['comment_' . $criterion->getId()];
+                $decodedContent = html_entity_decode($content);
+                $criterion->setComment(Episciences_View_Helper_PurifyHtml::purifyHtml($decodedContent, ['HTML.AllowedElements' => $toolBarHtmlElements]));
             }
 
             // criterion attachment
@@ -103,12 +109,16 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             }
         }
 
+        unset($criterion);
+
         // update status
         if (array_key_exists('submitRatingForm', $data)) {
             $this->setStatus(self::STATUS_WIP);
         } elseif (array_key_exists('validateRating', $data)) {
             $this->setStatus(self::STATUS_COMPLETED);
         }
+
+        return true;
 
     }
 

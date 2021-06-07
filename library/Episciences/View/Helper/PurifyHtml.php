@@ -109,11 +109,16 @@ class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
             return $html;
         }
 
+        $commonOptions = [
+            'Core.Encoding' => self:: $CORE_ENCODING, // default: vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache
+            'Cache.SerializerPath' => REVIEW_TMP_PATH
+        ];
+
         $config = HTMLPurifier_Config::createDefault();
 
+        $options = array_merge($commonOptions, $options);
+
         if (empty($options)) {
-            $config->set('Cache.SerializerPath', REVIEW_TMP_PATH); // default: vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache
-            $config->set('Core.Encoding', self:: $CORE_ENCODING);
             $config->set('HTML.AllowedElements', self::$HTML_ALLOWED_ELEMENTS);
             $config->set('CSS.AllowedProperties', self::$CSS_ALLOWED_PROPERTIES);
             $config->set('Attr.AllowedClasses', self::$ATTR_ALLOWED_CLASSES);
