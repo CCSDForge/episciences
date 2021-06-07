@@ -108,7 +108,7 @@
                     </xsl:choose>
                 </div>
 
-                <xsl:if test="episciences/docURL != episciences/paperURL">
+                <xsl:if test="episciences/notHasHook/text() = '1' and (episciences/docURL != episciences/paperURL)">
                     <div class="small">
                         <a target="_blank">
                             <xsl:attribute name="href">
