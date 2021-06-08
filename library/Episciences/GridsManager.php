@@ -149,9 +149,9 @@ class Episciences_GridsManager
     /**
      * Returns criterion form defaults
      * @param Episciences_Rating_Criterion $criterion
-     * @return mixed
+     * @return array
      */
-    public static function getCriterionFormDefaults($criterion)
+    public static function getCriterionFormDefaults(Episciences_Rating_Criterion $criterion): array
     {
 
         $defaults['coef'] = $criterion->getCoefficient();
@@ -162,7 +162,8 @@ class Episciences_GridsManager
         $defaults['options'] = $criterion->getOptions();
 
         $criterionVisibility = $criterion->getVisibility();
-        if ($criterionVisibility == '') {
+
+        if ($criterionVisibility === '') {
             $criterionVisibility = 'editors';
         }
 
@@ -196,7 +197,7 @@ class Episciences_GridsManager
             if ($custom) {
                 $defaults['quantitative_rating_type'] = 1;
             } else {
-                $defaults['quantitative_rating_type'] = (count($defaults['options']) == 11) ? 0 : 2;
+                $defaults['quantitative_rating_type'] = (count($defaults['options']) === 11) ? 0 : 2;
             }
         } // qualitative rating
         elseif ( (!is_null($criterion->getOptions())) && count($criterion->getOptions()) > 1 ) {
@@ -220,7 +221,7 @@ class Episciences_GridsManager
      */
     public static function getCriterionForm($defaults = null)
     {
-        $form = new Ccsd_Form;
+        $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
 
         $lang = ['class' => 'Episciences_Tools', 'method' => 'getLanguages'];
@@ -311,11 +312,10 @@ class Episciences_GridsManager
         $form->addElement('hidden', 'openul', [
             'decorators' => [[
                 'decorator' => 'HtmlTag',
-                'options' => ['tag' => 'ul', 'class' => 'sortable', 'openOnly' => true]]]]);
+                'options' => ['tag' => 'ul', 'class' => 'sortable', 'style' => 'list-style-type: none;', 'openOnly' => true]]]]);
         $optionsGroup[] = 'openul';
 
         // custom rating
-
 
         if (is_array($defaults['options']) && (count($defaults['options']))) {
             $max = count($defaults['options']) - 1;

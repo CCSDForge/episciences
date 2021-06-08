@@ -404,6 +404,7 @@ class GridController extends Zend_Controller_Action
         $this->view->headMeta()->appendHttpEquiv('robots', 'noindex, nofollow');
         $this->view->jQuery()->addJavascriptFile('/js/grid/form.js');
 
+        /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $params = $request->getParams();
 
