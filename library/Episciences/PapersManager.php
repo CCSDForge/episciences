@@ -2193,7 +2193,14 @@ class Episciences_PapersManager
     public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors)
     {
         $templates = [];
+
+        $languages = Episciences_Tools::getLanguages();
+
         $locale = $contributor->getLangueid(true);
+
+        if (!array_key_exists($locale, $languages)) {
+            $locale = key($languages);
+        }
 
         $mail = new Episciences_Mail('UTF-8');
         $mail->setDocid($paper->getDocid());
