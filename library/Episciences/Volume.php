@@ -380,9 +380,9 @@ class Episciences_Volume
             $tmp = $this->_db->fetchPairs($select);
             reset($tmp); // Remet le pointeur interne de tableau au début
             if (key($tmp) == 1) {
-                foreach ($tmp as $position => $docid) {
+                foreach ($tmp as $position => $paperId) {
                     $i = $position - 1;
-                    $positions[$i] = $docid;
+                    $positions[$i] = $paperId;
                 }
             } else {
                 $positions = $tmp;
