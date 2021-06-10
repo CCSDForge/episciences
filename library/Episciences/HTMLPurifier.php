@@ -1,7 +1,6 @@
 <?php
 
-
-class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
+class Episciences_HTMLPurifier extends HTMLPurifier
 {
 
     public static $CORE_ENCODING = 'UTF-8';
@@ -84,25 +83,13 @@ class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
         'https' => true,
     ];
 
-    public static $AVAILABLE_OPTION_KEYS = [
-        'Cache.SerializerPath',
-        'Core.Encoding',
-        'HTML.AllowedElements',
-        'CSS.AllowedProperties',
-        'Attr.AllowedClasses',
-        'Attr.AllowedFrameTargets',
-        'HTML.AllowedAttributes',
-        'URI.AllowedSchemes',
-    ];
-
-
     /**
-     * PurifyHtml constructor.
+     * Filters an HTML snippet/document to be XSS-free and standards-compliant.
      * @param string $html
      * @param array $options [$key => $value]
      * @return string
      */
-    public static function purifyHtml(string $html = '', array $options = []): string
+    public function purifyHtml(string $html = '', array $options = []): string
     {
 
         if (empty($html)) {
@@ -115,6 +102,7 @@ class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
         ];
 
         $config = HTMLPurifier_Config::createDefault();
+        $availableOptionKeys = array_keys($config->def->info);
 
         $options = array_merge($commonOptions, $options);
 
@@ -129,7 +117,7 @@ class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
 
             foreach ($options as $key => $value) {
 
-                if (in_array($key, self::$AVAILABLE_OPTION_KEYS, true)) {
+                if (in_array($key, $availableOptionKeys, true)) {
                     $config->set($key, $value);
                 }
 
@@ -137,10 +125,7 @@ class Episciences_View_Helper_PurifyHtml extends Zend_View_Helper_Abstract
 
         }
 
-        $purifier = new HTMLPurifier($config);
-
-        return $purifier->purify($html, $config);
+        return $this->purify($html, $config);
 
     }
-
 }

@@ -77,7 +77,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     public function populate($data): bool
     {
 
-        $toolBarHtmlElements = ['p', 'span', 'strong', 'em'];
+        $toolBarHtmlElements = ['p', 'span', 'strong', 'em', 'li', 'ol', 'ul'];
 
         if (!$this->getCriteria()) {
             return false;
@@ -92,10 +92,12 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
             // criterion comment
             if ($criterion->allowsComment() && array_key_exists('comment_' . $criterion->getId(), $data)) {
+                $htmlPurifier = new Episciences_HTMLPurifier();
                 //TinyMCE automatically encodes all entered html code
                 $content = $data['comment_' . $criterion->getId()];
                 $decodedContent = html_entity_decode($content);
-                $criterion->setComment(Episciences_View_Helper_PurifyHtml::purifyHtml($decodedContent, ['HTML.AllowedElements' => $toolBarHtmlElements]));
+                //HTML encoding is done in Episciences_Rating_Report::toXML function
+                $criterion->setComment($htmlPurifier->purifyHtml($decodedContent, ['HTML.AllowedElements' => $toolBarHtmlElements]));
             }
 
             // criterion attachment
@@ -410,10 +412,13 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         return $this->_uid;
     }
 
-    public function getOnbehalf_uid(){
+    public function getOnbehalf_uid()
+    {
         return $this->_onbehalf_uid;
     }
-    public function setOnbehalf_uid($onbehalf_uid){
+
+    public function setOnbehalf_uid($onbehalf_uid)
+    {
         $this->_onbehalf_uid = $onbehalf_uid;
     }
 
