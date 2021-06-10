@@ -22,6 +22,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     private $_max_score = 10;    // highest possible score
     private $_status = self::STATUS_PENDING;
     private $_rvid;
+    public const HTML_AllOWED_ELEMENTS = ['p', 'span', 'strong', 'em', 'li', 'ol', 'ul'];
 
     // find a rating report, for a given docid and uid
     public static function find($docid, $uid)
@@ -77,8 +78,6 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     public function populate($data): bool
     {
 
-        $toolBarHtmlElements = ['p', 'span', 'strong', 'em', 'li', 'ol', 'ul'];
-
         if (!$this->getCriteria()) {
             return false;
         }
@@ -97,7 +96,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
                 $content = $data['comment_' . $criterion->getId()];
                 $decodedContent = html_entity_decode($content);
                 //HTML encoding is done in Episciences_Rating_Report::toXML function
-                $criterion->setComment($htmlPurifier->purifyHtml($decodedContent, ['HTML.AllowedElements' => $toolBarHtmlElements]));
+                $criterion->setComment($htmlPurifier->purifyHtml($decodedContent, self::HTML_AllOWED_ELEMENTS));
             }
 
             // criterion attachment
@@ -207,8 +206,12 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         $this->setPath($path);
     }
 
-    // load rating report from xml file
-    public function loadXML($filepath)
+    /**
+     * Load rating report from xml file
+     * @param $filepath
+     * @return bool
+     */
+    public function loadXML($filepath): bool
     {
         parent::loadXML($filepath);
 
@@ -236,7 +239,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             // load attached file path
             if ($criterion->allowsAttachment()) {
                 $file = $xpath->query('.//tei:ref[@type="attachment"]', $node);
-                if ($file->length != 0) {
+                if ($file->length !== 0) {
                     $criterion->setAttachment($file->item(0)->nodeValue);
                 }
             }
@@ -244,8 +247,10 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             // load comment
             if ($criterion->allowsComment()) {
                 $comment = $xpath->query('.//tei:ab[@type="comment"]', $node);
-                if ($comment->length != 0) {
-                    $criterion->setComment($comment->item(0)->nodeValue);
+
+                if ($comment->length !== 0) {
+                    $htmlPurifier = new Episciences_HTMLPurifier();
+                    $criterion->setComment($htmlPurifier->purifyHtml($comment->item(0)->nodeValue, self::HTML_AllOWED_ELEMENTS));
                 }
             }
 
@@ -253,7 +258,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             if ($criterion->allowsNote()) {
 
                 $list = $xpath->query('.//tei:list[@style="options"]', $node);
-                if ($list->length != 0) {
+                if ($list->length !== 0) {
                     $criterion->setNote($list->item(0)->getAttribute('select'));
                 }
             }
