@@ -1,6 +1,7 @@
 <?php
+require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
-class PaperDefaultController extends Zend_Controller_Action
+class PaperDefaultController extends DefaultController
 {
     const MSG_PAPER_DOES_NOT_EXIST = "Le document demande n’existe pas.";
     const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";

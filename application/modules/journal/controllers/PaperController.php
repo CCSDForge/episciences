@@ -31,32 +31,7 @@ class PaperController extends PaperDefaultController
 
         $pdf_name = $paper->getIdentifier() . '.pdf';
 
-
-        /* *
-         * Requesting the PDF of an unpublished version
-         * -> Redirects to the published version
-         * (eg in case of access with a previous Docid or access by a paperId)
-         * But if there's no published version and the user is not logged in
-         * -> Redirect to Auth
-         */
-
-        if (
-            !$paper->isPublished() &&
-            !Episciences_Auth::isEditor() &&                                          // nor editor
-            !Episciences_Auth::isSecretary() &&                                       // nor editorial secretary or user is not chief editor or // nor admin
-            !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
-            $paper->getUid() !== Episciences_Auth::getUid()
-        ) {
-            $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $id = Episciences_PapersManager::getPublishedPaperId($paperId);
-            if ($id !== 0) {
-                $paper = Episciences_PapersManager::get($id); // published version
-            } else if (!Episciences_Auth::isLogged()) {
-                $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
-            }
-
-            $this->redirectsIfHaveNotEnoughPermissions($paper);
-        }
+       $this->RequestingUnpublishedFile($paper);
 
         if ($paper->isDeleted()) {
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
@@ -3047,25 +3022,6 @@ class PaperController extends PaperDefaultController
 
         }
         return true;
-    }
-
-    /**
-     * return an error if user is logged in but does not have not enough permissions
-     * @throws Zend_Db_Statement_Exception
-     */
-    private function redirectsIfHaveNotEnoughPermissions(Episciences_Paper $paper): void
-    {
-
-        if (
-            !Episciences_Auth::isEditor() &&            // nor editor
-            !Episciences_Auth::isSecretary() &&        // nor editorial secretary or user is not chief editor or // nor admin
-            !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
-            $paper->getUid() !== Episciences_Auth::getUid()) {
-
-            $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->redirect('/');
-        }
     }
 
 }
