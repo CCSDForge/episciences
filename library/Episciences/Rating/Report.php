@@ -22,7 +22,13 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     private $_max_score = 10;    // highest possible score
     private $_status = self::STATUS_PENDING;
     private $_rvid;
-    public const HTML_AllOWED_ELEMENTS = ['p', 'span', 'strong', 'em', 'li', 'ol', 'ul'];
+
+    public const HTML_AllOWED_HTML = [
+        'HTML.AllowedElements' => [
+            'p', 'span', 'strong', 'em', 'li', 'ol', 'ul'
+        ],
+        'HTML.AllowedAttributes' => ['p.style']
+    ];
 
     // find a rating report, for a given docid and uid
     public static function find($docid, $uid)
@@ -91,12 +97,12 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
             // criterion comment
             if ($criterion->allowsComment() && array_key_exists('comment_' . $criterion->getId(), $data)) {
-                $htmlPurifier = new Episciences_HTMLPurifier();
+                $htmlPurifier = new Episciences_HTMLPurifier(self::HTML_AllOWED_HTML);
                 //TinyMCE automatically encodes all entered html code
                 $content = $data['comment_' . $criterion->getId()];
                 $decodedContent = html_entity_decode($content);
                 //HTML encoding is done in Episciences_Rating_Report::toXML function
-                $criterion->setComment($htmlPurifier->purifyHtml($decodedContent, self::HTML_AllOWED_ELEMENTS));
+                $criterion->setComment($htmlPurifier->purifyHtml($decodedContent));
             }
 
             // criterion attachment
@@ -249,8 +255,8 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
                 $comment = $xpath->query('.//tei:ab[@type="comment"]', $node);
 
                 if ($comment->length !== 0) {
-                    $htmlPurifier = new Episciences_HTMLPurifier();
-                    $criterion->setComment($htmlPurifier->purifyHtml($comment->item(0)->nodeValue, self::HTML_AllOWED_ELEMENTS));
+                    $htmlPurifier = new Episciences_HTMLPurifier(self::HTML_AllOWED_HTML);
+                    $criterion->setComment($htmlPurifier->purifyHtml($comment->item(0)->nodeValue));
                 }
             }
 

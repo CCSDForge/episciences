@@ -83,49 +83,65 @@ class Episciences_HTMLPurifier extends HTMLPurifier
         'https' => true,
     ];
 
+
+    public function __construct(array $options = [])
+    {
+
+        $commonOptions = [
+            'Core.Encoding' => self:: $CORE_ENCODING,
+            'Cache.SerializerPath' =>'/tmp/HTMLPurifier/DefinitionCache'
+        ];
+
+        $defaultOptions = [
+            'HTML.AllowedElements' => self::$HTML_ALLOWED_ELEMENTS,
+            'CSS.AllowedProperties' => self::$CSS_ALLOWED_PROPERTIES,
+            'Attr.AllowedClasses' => self::$ATTR_ALLOWED_CLASSES,
+            'Attr.AllowedFrameTargets' => self::$ATTR_ALLOWED_FRAME_TARGETS,
+            'HTML.AllowedAttributes' => self::$HTML_ALLOWED_ATTRIBUTES,
+            'URI.AllowedSchemes' => self::$URI_ALLOWED_SCHEMES
+        ];
+
+        if (empty($options)) {
+            $options = array_merge($commonOptions, $defaultOptions);
+        } else {
+            $options = array_merge($commonOptions, $options);
+        }
+
+        // HTMLPurifier utilise un cache interne pour les structures qu'il analyse et vide le cache dans des fichiers sur le disque.
+        // La chose étrange est le chemin par défaut (vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache) si vous n'en configurez pas un.
+        $cacheDirectory = $options['Cache.SerializerPath']; // Pour stocker les définitions sérialisées.
+
+        if (!file_exists($cacheDirectory) && !mkdir($cacheDirectory, 0777, true) && !is_dir($cacheDirectory)) {
+            trigger_error(sprintf('HTML purifier directory "%s" can not be created', $cacheDirectory), E_USER_ERROR);
+        }
+
+        $config = HTMLPurifier_Config::createDefault();
+        $availableOptionKeys = array_keys($config->def->info);
+
+        foreach ($options as $key => $value) {
+
+            if (in_array($key, $availableOptionKeys, true)) {
+                $config->set($key, $value);
+            }
+
+        }
+
+        parent::__construct($config);
+    }
+
     /**
      * Filters an HTML snippet/document to be XSS-free and standards-compliant.
      * @param string $html
-     * @param array $options [$key => $value]
      * @return string
      */
-    public function purifyHtml(string $html = '', array $options = []): string
+    public function purifyHtml(string $html = ''): string
     {
 
         if (empty($html)) {
             return $html;
         }
 
-        $commonOptions = [
-            'Core.Encoding' => self:: $CORE_ENCODING, // default: vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache
-            'Cache.SerializerPath' => REVIEW_TMP_PATH
-        ];
-
-        $config = HTMLPurifier_Config::createDefault();
-        $availableOptionKeys = array_keys($config->def->info);
-
-        $options = array_merge($commonOptions, $options);
-
-        if (empty($options)) {
-            $config->set('HTML.AllowedElements', self::$HTML_ALLOWED_ELEMENTS);
-            $config->set('CSS.AllowedProperties', self::$CSS_ALLOWED_PROPERTIES);
-            $config->set('Attr.AllowedClasses', self::$ATTR_ALLOWED_CLASSES);
-            $config->set('Attr.AllowedFrameTargets', self::$ATTR_ALLOWED_FRAME_TARGETS);
-            $config->set('HTML.AllowedAttributes', self::$HTML_ALLOWED_ATTRIBUTES);
-            $config->set('URI.AllowedSchemes', self::$URI_ALLOWED_SCHEMES);
-        } else {
-
-            foreach ($options as $key => $value) {
-
-                if (in_array($key, $availableOptionKeys, true)) {
-                    $config->set($key, $value);
-                }
-
-            }
-
-        }
-
-        return $this->purify($html, $config);
+        return $this->purify($html, $this->config);
 
     }
 }
