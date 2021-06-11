@@ -1,6 +1,7 @@
 <?php
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
@@ -11,9 +12,9 @@ class PaperController extends PaperDefaultController
 {
     /**
      *  display paper pdf
-     *
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws GuzzleException
      */
     public function pdfAction(): void
     {
@@ -39,32 +40,23 @@ class PaperController extends PaperDefaultController
          * -> Redirect to Auth
          */
 
-        if (!$paper->isPublished()) {
+        if (
+            !$paper->isPublished() &&
+            !Episciences_Auth::isEditor() &&                                          // nor editor
+            !Episciences_Auth::isSecretary() &&                                       // nor editorial secretary or user is not chief editor or // nor admin
+            !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
+            $paper->getUid() !== Episciences_Auth::getUid()
+        ) {
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
             if ($id !== 0) {
-                $paper = Episciences_PapersManager::get($id);
+                $paper = Episciences_PapersManager::get($id); // published version
             } else if (!Episciences_Auth::isLogged()) {
-                /**
-                 *Prevent anon trying to access a non published doc
-                 * because this version has not been endorsed by the journal
-                 */
                 $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
-            } elseif (!$paper->isPublished() &&     // paper is not published yet,
-                !Episciences_Auth::isEditor() &&    // nor editor
-                !Episciences_Auth::isSecretary() && //  user is not editorial secretary or nor chief editor or nor admin
-                !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
-                $paper->getUid() !== Episciences_Auth::getUid()) {
-
-                // return an error if user is logged in but does not have not enough permissions
-
-                $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-                $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-                $this->redirect('/');
-                return;
             }
-        }
 
+            $this->redirectsIfHaveNotEnoughPermissions($paper);
+        }
 
         if ($paper->isDeleted()) {
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
@@ -158,31 +150,24 @@ class PaperController extends PaperDefaultController
         }
 
         // redirect to login if user is not logged in and paper is not published
-        if (!$paper->isPublished() && !Episciences_Auth::isLogged()) {
+        if (
+            !$paper->isPublished() && // current paper is not published yet
+            !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
+            $paper->getUid() !== Episciences_Auth::getUid()
+        ) {
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
+
             if ($id !== 0) {
                 // redirection vers la version publiée
                 $this->redirect('/' . $id);
-            } else {
+            } elseif (!Episciences_Auth::isLogged()) {
                 // redirection vers la page d'authentification
                 $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
             }
-        }
 
-        // return an error if user is logged in but does not have not enough permissions
-        if (!$paper->isPublished() &&                   // paper is not published yet,
-            !Episciences_Auth::isChiefEditor() &&      // user is not chief editor
-            !Episciences_Auth::isAdministrator() &&     // nor admin
-            !Episciences_Auth::isEditor() &&    // nor editor
-            !Episciences_Auth::isSecretary() &&   // nor editorial secretary
-            !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
-            $paper->getUid() !== Episciences_Auth::getUid()) {
+            $this->redirectsIfHaveNotEnoughPermissions($paper);
 
-            $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->redirect('/');
-            return;
         }
 
         if ($paper->isDeleted()) {
@@ -3063,5 +3048,25 @@ class PaperController extends PaperDefaultController
         }
         return true;
     }
+
+    /**
+     * return an error if user is logged in but does not have not enough permissions
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function redirectsIfHaveNotEnoughPermissions(Episciences_Paper $paper): void
+    {
+
+        if (
+            !Episciences_Auth::isEditor() &&            // nor editor
+            !Episciences_Auth::isSecretary() &&        // nor editorial secretary or user is not chief editor or // nor admin
+            !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
+            $paper->getUid() !== Episciences_Auth::getUid()) {
+
+            $message = $this->view->translate("Vous n'avez pas accès à cet article.");
+            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
+            $this->redirect('/');
+        }
+    }
+
 }
 
