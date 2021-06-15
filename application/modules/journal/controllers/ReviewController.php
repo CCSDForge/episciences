@@ -23,10 +23,6 @@ class ReviewController extends Zend_Controller_Action
         $reviewDefaults = $review->getSettings();
         $reviewDefaultsDoi = $review->getDoiSettings();
 
-        if ($reviewDefaultsDoi instanceof Episciences_Review_Doi) {
-            $reviewDefaults = array_merge($reviewDefaults, $reviewDefaultsDoi->__toArray());
-        }
-
         $defaults = ($request->isPost() && array_key_exists('submit', $request->getPost())) ? $request->getPost() : $reviewDefaults;
 
         $form = $review->settingsForm();
