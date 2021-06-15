@@ -3,6 +3,8 @@
 /**
  * Class Episciences_Review_Doi
  * DOI settings of a Journal|Review
+ * @deprecated
+ * @see Episciences_Review_DoiSettings
  */
 class Episciences_Review_Doi
 {
