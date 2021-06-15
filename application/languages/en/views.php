@@ -252,12 +252,12 @@ return [
     'Journal code' => 'Journal code',
     "Volume de l'article" => "Volume of the paper",
     "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
-    "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]"=>'Volume of the paper (numbers only) [Replacement char for spaces]',
+    "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the paper (numbers only) [Replacement char for spaces]',
     "Volume de l'article (Référence bibliographique du volume)" => "Volume of the paper (Bibliographical reference of the volume)",
     "Numéro de l'article dans un volume (ordre)" => 'Paper number inside a volume (order)',
     "Section de l'article" => 'Section of the paper',
     "Section de l'article (seulement les nombres)" => 'Section of the paper (numbers only)',
-    "Section de l'article (seulement les nombres) [Caractère de remplacement des espaces]"=>'Section of the paper (numbers only) [Replacement char for spaces]',
+    "Section de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Section of the paper (numbers only) [Replacement char for spaces]',
     "Numéro de l'article (Identifiant pérenne)" => 'Paper number (permanent identifier)',
     "Année de publication" => 'Year of publication',
     "Mois de publication" => 'Month of publication',
@@ -545,7 +545,7 @@ return [
     "La grille par défault ne pas pu être supprimée" => "The default grid cannot be removed",
     "Cette grille n'existe pas." => "This rating grid does not exist",
     "Modifier ce volume" => "Edit this volume",
-    'Des vides ont été détectés dans la numérotation des papiers : '=> 'Gaps were detected in the numbering of the papers: ',
+    'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the papers: ',
     "La grille a bien été supprimée." => "The grid has been successfully deleted.",
 
 
@@ -1195,7 +1195,7 @@ return [
     'Mot de passe actuel' => 'Current password',
     'Le mot de passe que vous allez remplacer' => "The password you're about to change",
     'Nouveau mot de passe' => 'New password',
-    " (Vous n'avez pas encore validé ce compte par le courriel de validation)"=>" (You haven't yet validated this account with the validation e-mail)",
+    " (Vous n'avez pas encore validé ce compte par le courriel de validation)" => " (You haven't yet validated this account with the validation e-mail)",
     '7 caractères minimum pour votre nouveau mot de passe' => 'Your new password should be at least 7 characters long',
     'Confirmez le mot de passe' => 'Confirm your password',
     'Confirmez votre nouveau mot de passe' => 'Confirm your new password',
@@ -1692,6 +1692,7 @@ return [
     'Support technique' => 'Technical support',
     'Mentions légales' => 'Legal mentions',
     'Vie privée' => 'Privacy',
+    'Remerciements' => 'Acknowledgements',
 
     //stats
     'Dépôt-Acceptation' => 'Submission-Acceptance',
