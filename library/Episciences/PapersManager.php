@@ -1984,7 +1984,7 @@ class Episciences_PapersManager
      * @return bool|Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      */
-    public static function get($docId, $withxsl = true)
+    public static function get($docId, bool $withxsl = true)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 

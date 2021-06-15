@@ -31,7 +31,8 @@
     "solarium/solarium": "<5.0",
     "symfony/polyfill-php73": "*",
     "symfony/polyfill-php74": "*",
-    "symfony/polyfill-mbstring": "*"
+    "symfony/polyfill-mbstring": "*",
+    "ezyang/htmlpurifier": "^4.13"
   },
   "require-dev": {
     "phpunit/phpunit": "^8",

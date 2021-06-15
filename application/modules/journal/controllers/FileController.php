@@ -1,6 +1,7 @@
 <?php
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
@@ -286,6 +287,7 @@ class FileController extends DefaultController
     /**
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws GuzzleException
      */
     public function hookfilesAction(): void
     {
@@ -318,6 +320,8 @@ class FileController extends DefaultController
             $this->renderScript('index/notfound.phtml');
             return;
         }
+
+        $this->redirectsIfHaveNotEnoughPermissions($paper);
 
         if ($paper->isDeleted()) {
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");

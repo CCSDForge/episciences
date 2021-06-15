@@ -871,7 +871,6 @@ class Episciences_Volume
     /**
      * Returns a list of sorted papers for current volume
      * @return array
-     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Select_Exception
      */
     public function getSortedPapersFromVolume(): array
@@ -915,15 +914,13 @@ class Episciences_Volume
                 $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = false;
                 if (array_key_exists($currentOPaper->getPaperId(), $positions)) {
                     $sorted_papers[$positions[$paperId]] = $paper;
-                } else {
-                    if ($currentOPaper->getPosition() === null) {
-                        $maxPosition++;
-                        $paperPosition = $maxPosition;
-                        $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
-                        $sorted_papers[$paperPosition] = $paper;
-                     } else {
-                        $sorted_papers[$currentOPaper->getPosition()] = $paper;
-                    }
+                } else if ($currentOPaper->getPosition() === null) {
+                    $maxPosition++;
+                    $paperPosition = $maxPosition;
+                    $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
+                    $sorted_papers[$paperPosition] = $paper;
+                 } else {
+                    $sorted_papers[$currentOPaper->getPosition()] = $paper;
                 }
             }
             ksort($sorted_papers);
