@@ -10,8 +10,15 @@ class Episciences_Review_DoiSettings
     const DOI_FORMAT_REVIEW_CODE = '%R%';
     const DOI_FORMAT_PAPER_VOLUME = '%V%';
     const DOI_FORMAT_PAPER_SECTION = '%S%';
+
     const DOI_FORMAT_PAPER_VOLUME_INT = '%V_INT%';
+    const DOI_FORMAT_PAPER_VOLUME_INT_REPLACEMENT_CHAR = '%V_INT[-]%';
+
+    const DOI_FORMAT_PAPER_VOLUME_BIB_REF = '%V_BIB_REF%';
+
     const DOI_FORMAT_PAPER_SECTION_INT = '%S_INT%';
+    const DOI_FORMAT_PAPER_SECTION_INT_REPLACEMENT_CHAR = '%S_INT[-]%';
+
     const DOI_FORMAT_PAPER_VOLUME_ORDER = '%VP%';
     const DOI_FORMAT_PAPER_ID = '%P%';
     const DOI_FORMAT_PAPER_YEAR = '%Y%';
@@ -84,19 +91,6 @@ class Episciences_Review_DoiSettings
     }
 
     /**
-     * @param string $tag
-     * @param string $charUsedToReplace
-     * @return string|string[]|null
-     */
-    private static function keepOnlyIntegersInTag(string $tag, string $charUsedToReplace = '.')
-    {
-        $strToReturn = trim($tag);
-        $strToReturn = preg_replace('/\D+/', $charUsedToReplace, $strToReturn);
-        $strToReturn = trim($strToReturn, $charUsedToReplace);
-        return trim($strToReturn, '.');
-    }
-
-    /**
      * Episciences_Review_DoiSettings to Array
      * @return array
      */
@@ -129,8 +123,11 @@ class Episciences_Review_DoiSettings
 
 
         $volume = '';
+        $volumeInt = '';
+        $sectionInt = '';
         $paperPosition = '';
         $section = '';
+        $refBibVolume = '';
 
         if ($paper->getVid()) {
             /* @var $oVolume Episciences_Volume */
@@ -138,6 +135,7 @@ class Episciences_Review_DoiSettings
             if ($oVolume) {
                 $volume = $oVolume->getName('en', true);
                 $paperPosition = $paper->getPosition();
+                $refBibVolume = $oVolume->getBib_reference();
             }
         }
 
@@ -152,14 +150,38 @@ class Episciences_Review_DoiSettings
             }
         }
 
-        $volumeInt = self::keepOnlyIntegersInTag($volume);
-        $sectionInt = self::keepOnlyIntegersInTag($section);
-
         $template['%%'] = '%';
+
+        $doiFormat = $this->getDoiFormat();
+        $doi = $doiFormat;
+
+        if ($volume !== '') {
+            $hasVolumeReplacementChar = preg_match("/.*(%V_INT\[(.)\]%).*/", $doiFormat, $matchesVolumeReplacementChar);
+            if ($hasVolumeReplacementChar) {
+                $replacementChar = $matchesVolumeReplacementChar[2];
+                $volumeIntWithChar = self::keepOnlyIntegersInTag($volume, $replacementChar);
+                $doi = preg_replace("/%V_INT\[.\]%/", $volumeIntWithChar, $doiFormat);
+            } else {
+                $volumeInt = self::keepOnlyIntegersInTag($volume);
+            }
+        }
+
+        if ($section !== '') {
+            $hasSectionReplacementChar = preg_match("/(.*)(%S_INT\[(.)\]%)/", $doiFormat, $matchesSectionReplacementChar);
+            if ($hasSectionReplacementChar) {
+                $replacementChar = $matchesSectionReplacementChar[2];
+                $sectionIntWithChar = self::keepOnlyIntegersInTag($section, $replacementChar);
+                $doi = preg_replace("/%S_INT\[.\]%/", $sectionIntWithChar, $doiFormat);
+            } else {
+                $sectionInt = self::keepOnlyIntegersInTag($section);
+            }
+        }
+
 
         $template[self::DOI_FORMAT_REVIEW_CODE] = RVCODE;
         $template[self::DOI_FORMAT_PAPER_VOLUME] = $volume;
         $template[self::DOI_FORMAT_PAPER_VOLUME_INT] = $volumeInt;
+        $template[self::DOI_FORMAT_PAPER_VOLUME_BIB_REF] = $refBibVolume;
         $template[self::DOI_FORMAT_PAPER_VOLUME_ORDER] = $paperPosition;
         $template[self::DOI_FORMAT_PAPER_SECTION] = $section;
         $template[self::DOI_FORMAT_PAPER_SECTION_INT] = $sectionInt;
@@ -171,33 +193,16 @@ class Episciences_Review_DoiSettings
         $search = array_keys($template);
         $replace = array_values($template);
 
-        $doi = str_replace(' ', '', $this->getDoiFormat());
+
         $doi = str_replace($search, $replace, $doi);
         $doi = str_replace(' ', '', $doi);
         $doi = str_replace('..', '.', $doi);
         $doi = str_replace('--', '-', $doi);
 
-
         // DOI spec: DOI is case insensitive
-        return  $this->getDoiPrefix() . '/' . strtolower($doi);
+        return $this->getDoiPrefix() . '/' . strtolower($doi);
 
 
-    }
-
-    /**
-     * @return string
-     */
-    public function getDoiFormat(): string
-    {
-        return $this->_doiFormat;
-    }
-
-    /**
-     * @param string $doiFormat
-     */
-    public function setDoiFormat(string $doiFormat)
-    {
-        $this->_doiFormat = $doiFormat;
     }
 
     /**
@@ -216,6 +221,34 @@ class Episciences_Review_DoiSettings
         $this->_doiPrefix = $doiPrefix;
     }
 
+    /**
+     * @param string $tag
+     * @param string $charUsedToReplace
+     * @return string|string[]|null
+     */
+    private static function keepOnlyIntegersInTag(string $tag, string $charUsedToReplace = '.')
+    {
+        $strToReturn = trim($tag);
+        $strToReturn = preg_replace('/\D+/', $charUsedToReplace, $strToReturn);
+        $strToReturn = trim($strToReturn, $charUsedToReplace);
+        return trim($strToReturn, '.');
+    }
+
+    /**
+     * @return string
+     */
+    public function getDoiFormat(): string
+    {
+        return $this->_doiFormat;
+    }
+
+    /**
+     * @param string $doiFormat
+     */
+    public function setDoiFormat(string $doiFormat)
+    {
+        $this->_doiFormat = $doiFormat;
+    }
 
     /**
      * @return string

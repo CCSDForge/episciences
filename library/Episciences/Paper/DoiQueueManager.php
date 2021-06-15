@@ -92,15 +92,18 @@ class Episciences_Paper_DoiQueueManager
 
     /**
      * @param int $rvid
+     * @param $paperStatus
+     * @param $doiQueueStatus
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public static function findDoisToRequest(int $rvid)
+    public static function findDoisByStatus($rvid, $paperStatus, $doiQueueStatus): array
     {
+
         $result = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = $db->query("SELECT * FROM `doi_queue` DQ, `PAPERS` P WHERE P.RVID = ? AND P.DOI !='' AND P.PAPERID = DQ.paperid AND P.STATUS = ?  AND DQ.doi_status = ? ORDER BY P.PAPERID",
-            [$rvid, Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_ASSIGNED]);
+        $query = $db->query("SELECT * FROM ". T_DOI_QUEUE . " DQ, `PAPERS` P WHERE P.RVID = ? AND P.DOI !='' AND P.PAPERID = DQ.paperid AND P.STATUS = ?  AND DQ.doi_status = ? ORDER BY P.PAPERID",
+            [$rvid, $paperStatus, $doiQueueStatus]);
 
         foreach ($query->fetchAll() as $k => $row) {
             $p = new Episciences_Paper($row);
@@ -108,7 +111,7 @@ class Episciences_Paper_DoiQueueManager
             $result[$k]['paper'] = $p;
             $result[$k]['doiq'] = $q;
         }
-
         return $result;
     }
+
 }
