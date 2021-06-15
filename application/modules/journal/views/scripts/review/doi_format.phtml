@@ -1,5 +1,7 @@
 <?php
+
 /**
+ * @deprecated
  * Template form for DOI format
  */
 $name = $this->element->getName();
@@ -34,25 +36,25 @@ $name = $this->element->getName();
 
 <div class="col-md-6">
     <dl class="dl-horizontal">
-        <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_REVIEW_CODE ?></code></dt>
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_REVIEW_CODE ?></code></dt>
         <dd><?php echo $this->translate('Code de la revue') ?>&nbsp;<em>(<?php echo mb_strtoupper(RVCODE); ?>)</em></dd>
 
-        <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_PAPER_VOLUME ?></code></dt>
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME ?></code></dt>
         <dd><?php echo $this->translate("Volume de l'article") ?></dd>
 
-        <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_PAPER_VOLUME_ORDER ?></code></dt>
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_ORDER ?></code></dt>
         <dd><?php echo $this->translate("Numéro de l'article dans un volume (ordre)") ?></dd>
 
-        <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_PAPER_SECTION ?></code></dt>
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION ?></code></dt>
         <dd><?php echo $this->translate("Section de l'article") ?></dd>
 
-        <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_PAPER_ID ?></code></dt>
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_ID ?></code></dt>
         <dd><?php echo $this->translate("Numéro de l'article (Identifiant pérenne)") ?></dd>
 
-        <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_PAPER_YEAR ?></code></dt>
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR ?></code></dt>
         <dd><?php echo $this->translate('Année de publication') ?>&nbsp;<em>(<?php echo date('Y'); ?>)</em></dd>
 
-        <dt><code><?php echo Episciences_Review_Doi::DOI_FORMAT_PAPER_MONTH ?></code></dt>
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_MONTH ?></code></dt>
         <dd><?php echo $this->translate('Mois de publication') ?>&nbsp;<em>(<?php echo date('m'); ?>)</em></dd>
 
         <dt><code>%%</code></dt>
