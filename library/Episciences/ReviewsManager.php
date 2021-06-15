@@ -82,7 +82,8 @@ class Episciences_ReviewsManager
      * @param int $id
      * @return bool|Episciences_Review
      */
-    public static function findByRvid(int $id) {
+    public static function findByRvid(int $id)
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = $db->select()->from(T_REVIEW)->where('RVID = ?', $id);
@@ -101,7 +102,8 @@ class Episciences_ReviewsManager
      * @param string $rvcode
      * @return bool|Episciences_Review
      */
-    public static function findByRvcode(string $rvcode) {
+    public static function findByRvcode(string $rvcode)
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_REVIEW)->where('CODE = ?', $rvcode);
 
@@ -113,6 +115,27 @@ class Episciences_ReviewsManager
         }
         return $review;
     }
+
+
+    /**
+     * OpenAIRE Metrics
+     * @param string $creationDateBoundary
+     * @return int
+     */
+    public static function findActiveJournalsWithAtLeastOneSubmission($creationDateBoundary = '1970-01-01 00:00:00')
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->from(T_REVIEW, [new Zend_Db_Expr("COUNT(DISTINCT(" . T_REVIEW . ".RVID)) AS NbActiveJournals")])
+            ->from(T_PAPERS, null)
+            ->where(T_REVIEW . '.STATUS = 2')
+            ->where(T_REVIEW . '.CREATION >= ?', $creationDateBoundary);
+
+        return (int)$db->fetchOne($select);
+    }
+
 
     /**
      * Retreive a list of publishing journals

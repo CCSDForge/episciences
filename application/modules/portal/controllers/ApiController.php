@@ -61,43 +61,80 @@ class ApiController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
-
-        $serviceUnavailable = 'Service Unavailable';
+        $countOfServiceUnavailable = 0;
 
         // current year all time users
         try {
             $nbOfSubmissionsCurrentYear = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', '1970-01-01 00:00:00');
         } catch (Zend_Db_Statement_Exception $e) {
-            $nbOfSubmissionsCurrentYear = $serviceUnavailable;
+            $countOfServiceUnavailable++;
         }
 
         // current year, current year users
         try {
             $nbOfSubmissionsCurrentYearNewUsers = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', '');
         } catch (Zend_Db_Statement_Exception $e) {
-            $nbOfSubmissionsCurrentYearNewUsers = $serviceUnavailable;
+            $countOfServiceUnavailable++;
         }
 
         // current year, users accounts created from 2021
         try {
             $nbOfSubmissionsNexusUsers = Episciences_PapersManager::getSubmittedPapersCountAfterDate('', '2021-01-01 00:00:00');
         } catch (Zend_Db_Statement_Exception $e) {
-            $nbOfSubmissionsNexusUsers = $serviceUnavailable;
+            $countOfServiceUnavailable++;
+        }
+
+
+        // Count of Users for the current year, at the time of request
+        try {
+            $nbOfUsers = Episciences_User_UserMapper::getUserCountAfterDate('1970-01-01 00:00:00');
+        } catch (Zend_Db_Statement_Exception $e) {
+            $countOfServiceUnavailable++;
+        }
+
+        // Count of Users for the current year, only user accounts created in the current year, at the time of request
+        try {
+            $nbOfNexusUsersCreatedCurrentYear = Episciences_User_UserMapper::getUserCountAfterDate('');
+        } catch (Zend_Db_Statement_Exception $e) {
+            $countOfServiceUnavailable++;
+        }
+
+        // Count of Users user accounts created since 2021-01-01 00:00:00, at the time of request
+        try {
+            $nbOfNexusUsers = Episciences_User_UserMapper::getUserCountAfterDate('2021-01-01 00:00:00');
+        } catch (Zend_Db_Statement_Exception $e) {
+            $countOfServiceUnavailable++;
         }
 
         if ($nbOfSubmissionsCurrentYear === false) {
-            $nbOfSubmissionsCurrentYear = $serviceUnavailable;
+            $countOfServiceUnavailable++;
         }
 
         if ($nbOfSubmissionsCurrentYearNewUsers === false) {
-            $nbOfSubmissionsCurrentYearNewUsers = $serviceUnavailable;
+            $countOfServiceUnavailable++;
         }
 
         if ($nbOfSubmissionsNexusUsers === false) {
-            $nbOfSubmissionsNexusUsers = $serviceUnavailable;
+            $countOfServiceUnavailable++;
         }
 
-        if (($nbOfSubmissionsCurrentYearNewUsers === $serviceUnavailable) && ($nbOfSubmissionsCurrentYear === $serviceUnavailable) && ($nbOfSubmissionsNexusUsers === $serviceUnavailable)) {
+        if ($nbOfUsers === false) {
+            $countOfServiceUnavailable++;
+        }
+
+        if ($nbOfNexusUsersCreatedCurrentYear === false) {
+            $countOfServiceUnavailable++;
+        }
+
+        if ($nbOfNexusUsers === false) {
+            $countOfServiceUnavailable++;
+        }
+
+        $nbOfActiveJournals = Episciences_ReviewsManager::findActiveJournalsWithAtLeastOneSubmission();
+        $nbOfActiveNexusJournals = Episciences_ReviewsManager::findActiveJournalsWithAtLeastOneSubmission('2021-01-01 00:00:00');
+
+
+        if ($countOfServiceUnavailable > 0) {
             $timeOut = 1800;
             header('HTTP/1.0 503 Service Unavailable');
             header('Retry-After: ' . $timeOut);
@@ -117,8 +154,26 @@ class ApiController extends Zend_Controller_Action
         echo PHP_EOL . '# HELP episciences_nexususer_submissions_total Count of submissions for the current year, from user accounts created since 2021-01-01 00:00:00, at the time of request';
         echo PHP_EOL . '# TYPE episciences_nexususer_submissions_total counter';
         printf(PHP_EOL . 'episciences_nexususer_submissions_total %s', $nbOfSubmissionsNexusUsers);
-
-
+        echo PHP_EOL;
+        echo PHP_EOL . '# HELP episciences_journals_total Count of Journals, at the time of request';
+        echo PHP_EOL . '# TYPE episciences_journals_total counter';
+        printf(PHP_EOL . 'episciences_journals_total %d', $nbOfActiveJournals);
+        echo PHP_EOL;
+        echo PHP_EOL . '# HELP episciences_nexusjournals_total Count of Journals created since 2021-01-01 00:00:00, at the time of request';
+        echo PHP_EOL . '# TYPE episciences_nexusjournals_total counter';
+        printf(PHP_EOL . 'episciences_nexusjournals_total %d', $nbOfActiveNexusJournals);
+        echo PHP_EOL;
+        echo PHP_EOL . '# HELP episciences_users_total Count of Users for the current year, at the time of request';
+        echo PHP_EOL . '# TYPE episciences_users_total counter';
+        printf(PHP_EOL . 'episciences_users_total %d', $nbOfUsers);
+        echo PHP_EOL;
+        echo PHP_EOL . '# HELP episciences_newusers_total Count of Users for the current year, only user accounts created in the current year, at the time of request';
+        echo PHP_EOL . '# TYPE episciences_newusers_total counter';
+        printf(PHP_EOL . 'episciences_newusers_total %d', $nbOfNexusUsersCreatedCurrentYear);
+        echo PHP_EOL;
+        echo PHP_EOL . '# HELP episciences_nexususers_total Count of Users user accounts created since 2021-01-01 00:00:00, at the time of request';
+        echo PHP_EOL . '# TYPE episciences_nexususers_total counter';
+        printf(PHP_EOL . 'episciences_nexususers_total %d', $nbOfNexusUsers);
     }
 
     public function journalsAction()
