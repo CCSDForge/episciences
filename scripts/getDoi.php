@@ -105,13 +105,6 @@ class getDoi extends JournalScript
         }
 
 
-        if ($this->getParam('check')) {
-            $response = $this->getDoiStatus();
-            echo $this->readCrossrefStatusResponse($response->getBody());
-            exit;
-        }
-
-
         if ($this->getParam('rvid')) {
             $review = Episciences_ReviewsManager::findByRvid($this->getParam('rvid'));
             $review->loadSettings();
@@ -139,6 +132,33 @@ class getDoi extends JournalScript
                 exit;
             }
 
+            if ($this->getParam('check')) {
+
+                $collectionOfDois = Episciences_Paper_DoiQueueManager::findDoisByStatus($review->getRvid(), Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_REQUESTED);
+                foreach ($collectionOfDois as $doiData) {
+
+                    $this->setPaper($doiData['paper']);
+                    $this->setDoiQueue($doiData['doiq']);
+
+                    $response = $this->RequestCrossrefDoiStatus();
+                    $status = $this->readCrossrefStatusResponse($response->getBody());
+
+
+
+                    $episciences_Paper_DoiQueue = $this->getDoiQueue();
+                    if (((int)$status > 0) && ($episciences_Paper_DoiQueue->getDoi_status() !== Episciences_Paper_DoiQueue::STATUS_PUBLIC)) {
+                        $episciences_Paper_DoiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
+                        echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' Setting status to: ' . Episciences_Paper_DoiQueue::STATUS_PUBLIC;
+                        if (Episciences_Paper_DoiQueueManager::update($episciences_Paper_DoiQueue)) {
+                            echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' DOI status is now: ' . Episciences_Paper_DoiQueue::STATUS_PUBLIC . PHP_EOL;
+                        }
+                    } else {
+                        echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' DOI status is: ' . $episciences_Paper_DoiQueue->getDoi_status() . PHP_EOL;
+                    }
+                }
+                exit;
+            }
+
         }
 
 
@@ -153,7 +173,9 @@ class getDoi extends JournalScript
             $confirmation = $this->ask('Please confirm sending to production API (Data charges may apply)', ['Yes', 'No', '¯\_(ツ)_/¯'], self::BASH_RED);
             if ($confirmation == 1) {
                 die(PHP_EOL . 'Process canceled: nothing was sent.' . PHP_EOL);
-            } elseif ($confirmation == 2) {
+            }
+
+            if ($confirmation == 2) {
                 $this->displayHelp();
                 exit;
             }
@@ -165,90 +187,6 @@ class getDoi extends JournalScript
         echo PHP_EOL . 'API Answered: ' . $response->getBody() . PHP_EOL;
 
 
-    }
-
-    /**
-     * @return ResponseInterface
-     * @throws GuzzleException
-     * https://doi.crossref.org/servlet/submissionDownload?usr=_username_&pwd=_password_&doi_batch_id=_doi batch id_&file_name=filename&type=_submission type_
-     */
-    private
-    function getDoiStatus(): ResponseInterface
-    {
-
-        if ($this->isDryRun()) {
-            $apiUrl = DOI_TESTAPI_QUERY;
-        } else {
-            $apiUrl = DOI_API_QUERY;
-        }
-
-
-        $client = new Client();
-        return $client->request('GET', $apiUrl,
-            [
-                'query' => ['usr' => DOI_LOGIN,
-                    'pwd' => DOI_PASSWORD,
-                    'file_name' => $this->getMetadataFileName(),
-                    'type' => 'result'
-                ]
-            ]
-
-        );
-    }
-
-    /**
-     * @return bool
-     */
-    public
-    function isDryRun(): bool
-    {
-        return $this->_dryRun;
-    }
-
-    /**
-     * @param bool $dryRun
-     */
-    public
-    function setDryRun(bool $dryRun)
-    {
-        $this->_dryRun = $dryRun;
-    }
-
-    /**
-     * @return string
-     */
-    private
-    function getMetadataFileName(): string
-    {
-        return $this->getPaper()->getPaperid() . '.xml';
-    }
-
-    /**
-     * @return Episciences_Paper
-     */
-    public
-    function getPaper(): Episciences_Paper
-    {
-        return $this->_paper;
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     */
-    public
-    function setPaper($paper)
-    {
-        $this->_paper = $paper;
-    }
-
-    /**
-     * @param $response
-     * @return string
-     */
-    private function readCrossrefStatusResponse($response)
-    {
-        $doi_batch_diagnostic = simplexml_load_string($response);
-        return (string)$doi_batch_diagnostic->record_diagnostic['status'];
     }
 
     /**
@@ -319,7 +257,7 @@ class getDoi extends JournalScript
      */
     private function requestDois()
     {
-        $res = Episciences_Paper_DoiQueueManager::findDoisToRequest($this->getParam('rvid'));
+        $res = Episciences_Paper_DoiQueueManager::findDoisByStatus($this->getParam('rvid'), Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_ASSIGNED);
 
 
         $countOfPapers = count($res);
@@ -352,6 +290,42 @@ class getDoi extends JournalScript
             echo PHP_EOL . 'API Answered: ' . $response->getBody() . PHP_EOL;
 
         }
+    }
+
+    /**
+     * @return bool
+     */
+    public
+    function isDryRun(): bool
+    {
+        return $this->_dryRun;
+    }
+
+    /**
+     * @param bool $dryRun
+     */
+    public
+    function setDryRun(bool $dryRun)
+    {
+        $this->_dryRun = $dryRun;
+    }
+
+    /**
+     * @return Episciences_Paper
+     */
+    public
+    function getPaper(): Episciences_Paper
+    {
+        return $this->_paper;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     */
+    public
+    function setPaper($paper)
+    {
+        $this->_paper = $paper;
     }
 
     /**
@@ -429,6 +403,15 @@ class getDoi extends JournalScript
     }
 
     /**
+     * @return string
+     */
+    private
+    function getMetadataFileName(): string
+    {
+        return $this->getPaper()->getPaperid() . '.xml';
+    }
+
+    /**
      * @return ResponseInterface
      * @throws GuzzleException
      */
@@ -491,6 +474,46 @@ class getDoi extends JournalScript
     function setDoiQueue($doiQueue)
     {
         $this->_doiQueue = $doiQueue;
+    }
+
+    /**
+     * @return ResponseInterface
+     * @throws GuzzleException
+     * https://doi.crossref.org/servlet/submissionDownload?usr=_username_&pwd=_password_&doi_batch_id=_doi batch id_&file_name=filename&type=_submission type_
+     */
+    private
+    function RequestCrossrefDoiStatus(): ResponseInterface
+    {
+
+        if ($this->isDryRun()) {
+            $apiUrl = DOI_TESTAPI_QUERY;
+        } else {
+            $apiUrl = DOI_API_QUERY;
+        }
+
+
+        $client = new Client();
+        return $client->request('GET', $apiUrl,
+            [
+                'query' => [
+                    'usr' => DOI_LOGIN,
+                    'pwd' => DOI_PASSWORD,
+                    'file_name' => $this->getMetadataFileName(),
+                    'type' => 'result'
+                ]
+            ]
+
+        );
+    }
+
+    /**
+     * @param $response
+     * @return string
+     */
+    private function readCrossrefStatusResponse($response)
+    {
+        $doi_batch_diagnostic = simplexml_load_string($response);
+        return (string)$doi_batch_diagnostic->batch_data->success_count;
     }
 
 

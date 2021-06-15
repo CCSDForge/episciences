@@ -306,8 +306,12 @@ class Episciences_Paper
         $doiSettings = Episciences_Review_DoiSettingsManager::findByJournal($rvid);
         $doi = $doiSettings->createDoiWithTemplate($paper);
 
+        if ($doi == '') {
+            return ['doi' => $doi, 'resUpdateDoi' => 0, 'resUpdateDoiQueue' => 0];
+        }
 
         $resUpdateDoi = Episciences_PapersManager::updateDoi($doi, $paper->getPaperid());
+
         if ($resUpdateDoi === 0) {
             return ['doi' => $doi, 'resUpdateDoi' => 0, 'resUpdateDoiQueue' => 0];
         }
@@ -3379,7 +3383,6 @@ class Episciences_Paper
         $root->appendChild($openAireAudience);
 
 
-
         // description
         foreach ($this->getAllAbstracts() as $lang => $abstract) {
             $abstract = trim($abstract);
@@ -3396,7 +3399,7 @@ class Episciences_Paper
         // publication date
         if ($this->getPublication_date()) {
             $date = new DateTime($this->getPublication_date());
-            $publicationDate =  $date->format('Y-m-d');
+            $publicationDate = $date->format('Y-m-d');
             $date = $xml->createElement('dc:date', $publicationDate);
             $root->appendChild($date);
         }
