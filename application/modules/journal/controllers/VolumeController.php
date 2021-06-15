@@ -92,9 +92,6 @@ class VolumeController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
-
-                // git#301: add new input text with label (bibliographical reference)
-
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
                 $volume->saveVolumeMetadata($request->getPost());
 
