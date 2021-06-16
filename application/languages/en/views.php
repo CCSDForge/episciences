@@ -144,7 +144,7 @@ return [
     "Suivi des relectures" => 'Reviewing monitoring',
     "Délai avant expiration d'une invitation" => "Delay before invitation expires",
     "Permettre aux auteurs de choisir le volume" => 'Contributors can choose the volume',
-    "Permettre aux auteurs de resoumettre un artcile dèjà refusé (nouvelle version)" => "Contributors can submit a previously denied article again (new version)",
+    "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)" => "Contributors can submit a previously denied article again (new version)",
     // Choix de la section
     "Choix de section" => "Section choice",
     "L'auteur ne peut pas choisir la section" => "The contributor can't choose a section",
