@@ -289,7 +289,7 @@ class FileController extends DefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws GuzzleException
      */
-    public function hookfilesAction(): void
+    public function oafilesAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
