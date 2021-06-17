@@ -1,71 +1,70 @@
 <?php
 
-//Messages d'erreurs
-define('MSG_ERROR', 'danger');
-define('MSG_WARNING', 'warning');
-define('MSG_SUCCESS', 'success');
-define('MSG_INFO', 'info');
-
 class Ccsd_View_Helper_DisplayFlashMessages extends Zend_View_Helper_Abstract
 {
-	public function DisplayFlashMessages($namespace = '', $autoclose=true)
-	{
-		$result = array();
-	    $flashMessenger = Zend_Controller_Action_HelperBroker::getStaticHelper('FlashMessenger');
+    //Messages d'erreurs
+    public const MSG_ERROR = 'danger';
+    public const MSG_WARNING = 'warning';
+    public const MSG_SUCCESS = 'success';
+    public const MSG_INFO = 'info';
 
-	    if ($namespace == '') {
-	    	$namespace = array(MSG_ERROR, MSG_SUCCESS, MSG_WARNING, MSG_INFO);
-	    } else {
-	    	$namespace = array($namespace);
-	    }
+    public function DisplayFlashMessages(string $namespace = '', bool $autoclose = true): string
+    {
+        $result =  [];
+        $flashMessenger = Zend_Controller_Action_HelperBroker::getStaticHelper('FlashMessenger');
 
-	    foreach ($namespace as $ns) {
-		    $resultNamespace = array();
-	    	if ($flashMessenger->setNamespace($ns)->hasMessages() ||
-				$flashMessenger->setNamespace($ns)->hasCurrentMessages()) {
+        if ($namespace == '') {
+            $namespace = array(self::MSG_ERROR, self::MSG_SUCCESS, self::MSG_WARNING, self::MSG_INFO);
+        } else {
+            $namespace = array($namespace);
+        }
 
-			    if ($ns == MSG_ERROR || $ns == MSG_SUCCESS || $ns == MSG_WARNING || $ns == MSG_INFO) {
-			        $class = 'alert-' . $ns;
-			    } else {
-			        $class = 'alert-' . MSG_INFO;
-			    }
+        foreach ($namespace as $ns) {
+            $resultNamespace = array();
+            if ($flashMessenger->setNamespace($ns)->hasMessages() ||
+                $flashMessenger->setNamespace($ns)->hasCurrentMessages()) {
 
-			    $resultNamespace[] = '<div class="alert '.$class.' fade">';
-			    $resultNamespace[] = '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+                if ($ns == self::MSG_ERROR || $ns == self::MSG_SUCCESS || $ns == self::MSG_WARNING || $ns == self::MSG_INFO) {
+                    $class = 'alert-' . $ns;
+                } else {
+                    $class = 'alert-' . self::MSG_INFO;
+                }
 
-			    $messages = array_merge($flashMessenger->getCurrentMessages(), $flashMessenger->getMessages());
+                $resultNamespace[] = '<div class="alert ' . $class . ' fade">';
+                $resultNamespace[] = '<button type="button" class="close" data-dismiss="alert">&times;</button>';
 
-				foreach ($messages as $message) {
-					if (is_array($message) && !array_key_exists('plural', $message)) {
-						$resultNamespace[] = "<div>" . call_user_func_array(array(&$this->view, 'translate'), $message) . "</div>";
-					} else {
-						$resultNamespace[] = "<div>" . $this->view->translate($message) . "</div>";
-					}
-			    }
+                $messages = array_merge($flashMessenger->getCurrentMessages(), $flashMessenger->getMessages());
 
-			    $resultNamespace[] = '</div>';
-			    $result[] = implode(PHP_EOL, $resultNamespace);
+                foreach ($messages as $message) {
+                    if (is_array($message) && !array_key_exists('plural', $message)) {
+                        $resultNamespace[] = "<div>" . call_user_func_array(array(&$this->view, 'translate'), $message) . "</div>";
+                    } else {
+                        $resultNamespace[] = "<div>" . $this->view->translate($message) . "</div>";
+                    }
+                }
 
-			    $flashMessenger->clearCurrentMessages();
-			}
-	    }
+                $resultNamespace[] = '</div>';
+                $result[] = implode(PHP_EOL, $resultNamespace);
 
-	    if ($result) {
+                $flashMessenger->clearCurrentMessages();
+            }
+        }
 
-	    	$result[] = '<script language="Javascript">';
-	    	$result[] = '$(function() {';
-	    	$result[] = 'if ($(".alert").length) {';
-    		$result[] = 	'$(".alert").addClass("in");';
-	    	if ($autoclose) {
-	    		$result[] = 'setTimeout(function() {$(".alert:not(.alert-fixed)").alert("close");},10000);';
-	    	}$result[] = '}';
-	    	$result[] = '});';
-    		$result[] = '</script>';
-	    }
+        if ($result) {
 
-	    $message = implode(PHP_EOL, $result);
+            $result[] = '<script language="Javascript">';
+            $result[] = '$(function() {';
+            $result[] = 'if ($(".alert").length) {';
+            $result[] = '$(".alert").addClass("in");';
+            if ($autoclose) {
+                $result[] = 'setTimeout(function() {$(".alert:not(.alert-fixed)").alert("close");},10000);';
+            }
+            $result[] = '}';
+            $result[] = '});';
+            $result[] = '</script>';
+        }
 
-	    return $message;
+        return implode(PHP_EOL, $result);
 
     }
 }
