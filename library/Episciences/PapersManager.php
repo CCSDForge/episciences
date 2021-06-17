@@ -2282,10 +2282,13 @@ class Episciences_PapersManager
                 'id' => $paper->getDocid()
             ]);
 
-        $tags = array_merge($mail->getTags(), [
+        $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
             Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $contributor->getUsername(),
             Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName(),
+        ];
+
+        $tags = array_merge($mail->getTags(), [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
@@ -2299,8 +2302,6 @@ class Episciences_PapersManager
 
         foreach ($templates as $name => &$template) {
 
-            $addTags = [];
-
             if ($name === 'waitingAuthorFormatting') {
                 $paperSubmissionDate = date('Y-m-d', strtotime($paper->getSubmission_date())); // Current version
                 $doi = $paper->getDoi();
@@ -2312,7 +2313,7 @@ class Episciences_PapersManager
                 $paperPosition = $paper->getPaperPositionInVolume(); // position of paper in volume
                 $acceptanceDate = $paper->getAcceptanceDate();
 
-                $addTags = [
+                $addTags = array_merge($defaultTags, [
                     Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => $dateHelper::Date($paperSubmissionDate, $locale),
                     Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE_ISO => $paperSubmissionDate,
                     Episciences_Mail_Tags::TAG_LAST_REVISION_DATE_ISO => $lastRevisionDateIso,
@@ -2332,7 +2333,7 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_CURRENT_YEAR => date('Y'),
                     Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL => $site . '/public/' . RVCODE . '_episciences.zip',
                     Episciences_Mail_Tags::TAG_VOLUME_EDITORS => ($volume && $volume->formatEditors()) ? $volume->formatEditors() : $translator->translate('Aucun', $locale)
-                ];
+                ]);
 
             } elseif ($name === 'askOtherEditors') { // SCREEN_NAME and FULL_NAME tags can't have a default value for Ask Other Editors template, since there are multiple recipients
                 $addTags = [
@@ -2341,11 +2342,11 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME
                 ];
 
+            } else {
+                $addTags = $defaultTags;
             }
 
-            foreach ($addTags as $key => $value) {
-                $tags[$key] = $value;
-            }
+            $tags = array_merge($tags, $addTags);
 
             $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
             $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);

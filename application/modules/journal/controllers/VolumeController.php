@@ -109,7 +109,6 @@ class VolumeController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
-
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
                 $volume->saveVolumeMetadata($request->getPost());
 

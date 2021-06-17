@@ -130,7 +130,7 @@ class Episciences_ReviewsManager
         $select = $db->select()
             ->from(T_REVIEW, [new Zend_Db_Expr("COUNT(DISTINCT(" . T_REVIEW . ".RVID)) AS NbActiveJournals")])
             ->from(T_PAPERS, null)
-            ->where(T_REVIEW . '.STATUS = 2')
+            ->where(T_REVIEW . '.STATUS = 1')
             ->where(T_REVIEW . '.CREATION >= ?', $creationDateBoundary);
 
         return (int)$db->fetchOne($select);
