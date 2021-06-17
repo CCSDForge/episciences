@@ -1051,7 +1051,7 @@ class Episciences_Review
 
         // possibilité de soumettre une nouvelle version d'un article refusé
         $form->addElement('checkbox', self::SETTING_CAN_RESUBMIT_REFUSED_PAPER, [
-                'label' => "Permettre aux auteurs de resoumettre un artcile dèjà refusé (nouvelle version)",
+                'label' => "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
