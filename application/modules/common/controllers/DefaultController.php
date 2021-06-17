@@ -65,7 +65,7 @@ class DefaultController extends Zend_Controller_Action
             $paper->getUid() !== Episciences_Auth::getUid()) {
 
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
             $this->redirect('/');
         }
     }
