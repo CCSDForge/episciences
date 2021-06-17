@@ -189,7 +189,13 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php endif; ?>
 
 <?php // versions *****************************************************
-if (Episciences_Auth::isLogged()) {
+if (
+        Episciences_Auth::isLogged() &&
+    (
+        array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) || // nor reviewer
+        $paper->getUid() === Episciences_Auth::getUid()
+    )
+) {
     echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]);
 }
 ?>
