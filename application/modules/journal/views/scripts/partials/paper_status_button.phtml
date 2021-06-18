@@ -18,6 +18,7 @@ $copyEditingNotStarted = !$paper->copyEditingProcessStarted();
 $isInRevision = in_array($status, [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION]);
 $isNotTheFirstVersion = empty($paper->getPreviousVersions());
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
+$askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 // **** CHIEF EDITORS, administrator and secretary (git #235) : can do whatever they want *****************************
 if (Episciences_Auth::isSecretary()) : ?>
     <div class="btn-group">
@@ -88,6 +89,13 @@ if (Episciences_Auth::isSecretary()) : ?>
                 <li>
                     <a href="#" data-toggle="modal"
                        data-target=".ready-to-publish-modal"><?php echo $this->translate($validFinalVersionMsg); ?>
+                    </a>
+                </li>
+
+                <?php // Préparation de copie: redemander la mise en forme à l'auteur ?>
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".waiting-for-author-formatting-modal"><?php echo $this->translate($askFinalVersionAgainMsg); ?>
                     </a>
                 </li>
 
@@ -198,6 +206,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <li>
                     <a href="#" data-toggle="modal"
                        data-target=".ready-to-publish-modal"><?php echo $this->translate($validFinalVersionMsg); ?>
+                    </a>
+                </li>
+
+                <?php // Préparation de copie: redemander la mise en forme à l'auteur ?>
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".waiting-for-author-formatting-modal"><?php echo $this->translate($askFinalVersionAgainMsg); ?>
                     </a>
                 </li>
 
@@ -356,6 +371,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php // Préparation de copie: prêt à publier ?>
 
             <a href="#" data-toggle="modal" class="btn btn-primary btn-sm" data-target=".ready-to-publish-modal"><?php echo $this->translate($validFinalVersionMsg); ?></a>
+
+            <?php // Préparation de copie: redemander la mise en forme à l'auteur ?>
+            <li>
+                <a href="#" data-toggle="modal"
+                   data-target=".waiting-for-author-formatting-modal"><?php echo $this->translate($askFinalVersionAgainMsg); ?>
+                </a>
+            </li>
 
         <?php else: ?>
             <a href="#" class="btn btn-default btn-sm disabled" role="button" aria-disabled="true"><?= $this->translate("Vous ne pouvez pas changer le statut de l'article : temporairement indisponible."); ?></a>
