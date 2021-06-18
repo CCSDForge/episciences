@@ -415,6 +415,7 @@ return [
     "Demander à l'auteur ses sources (À mettre en forme par la revue)" => 'Ask the author for the sources (copy editing by the journal)',
     "Redemander à l'auteur ses sources (À mettre en forme par la revue)" => "Ask for the author's sources again (To be formatted by the journal)",
     "Demander la version finale (À mettre en forme par l’auteur)" => 'Ask for the final version (copy editing by the author)',
+    "Demander à nouveau la version finale à l'auteur" => "ask the author for the final version again",
     "Mise en forme revue terminée, demander la version finale" => "Copy editing by the journal completed, ask for the final version",
     "Accepter comme version finale" => "Accept as final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES] => "Copy ed.: waiting for author's sources",
