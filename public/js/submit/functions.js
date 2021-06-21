@@ -36,10 +36,12 @@ $(function () {
     });
 
     $firstDisclaimersDisclaimer.on('change', function () {
+        console.log('Ok-first');
         activateDeactivateSubmitButton();
     });
 
     $secondDisclaimersDisclaimer.on('change', function () {
+        console.log('Ok-second');
         activateDeactivateSubmitButton();
     });
 
@@ -198,7 +200,9 @@ $(function () {
             // document already exists in episciences
             if (result['status'] === 2) {
                 if ('newVerErrors' in result) {
+
                     let newVersionErrors = JSON.parse(result['newVerErrors']);
+                    console.log(newVersionErrors);
                     $submit_form.append('<input type="hidden" name="can_replace" value="' + newVersionErrors.canReplace + '">');
                     if (newVersionErrors.canReplace) {
                         $submit_form.append('<input id = "old_docid" type="hidden" name="old_docid" value="' + newVersionErrors.oldDocId + '">');
@@ -327,8 +331,8 @@ $(function () {
     function isCompulsoryBoxesAreChecked() {
 
         return !(
-            ($sectionsElement.find('label').hasClass('required') && $sections.val() === '0') ||
-            ($suggestEditorsElement.find('label').hasClass('required') && !$suggest_editors.val()) ||
+            (($sectionsElement.is(':visible') && $sectionsElement.find('label').hasClass('required') && $sections.val() === '0')) ||
+            (($suggestEditorsElement.is(':visible') && $suggestEditorsElement.find('label').hasClass('required') && !$suggest_editors.val())) ||
             (!$firstDisclaimersDisclaimer.is(':checked')) ||
             (!$secondDisclaimersDisclaimer.is(':checked'))
         );
