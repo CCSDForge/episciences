@@ -31,6 +31,14 @@ class Episciences_Review_DoiSettingsManager
 
             ]]);
 
+        $form->addElement('select', Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE, [
+            'label' => "Assignation automatique des DOI",
+            'style' => 'width: auto;',
+            'multioptions' => [
+                'true' => "Automatique",
+                'false' => "Manuel"
+            ]]);
+
 
         $tooltipMsg = $translator->translate("Préfixe pour l'assignation de DOI");
         $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
@@ -55,6 +63,7 @@ class Episciences_Review_DoiSettingsManager
 
         // display group : DOI
         $form->addDisplayGroup([
+            Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE,
             Episciences_Review_DoiSettings::SETTING_DOI_REGISTRATION_AGENCY,
             Episciences_Review_DoiSettings::SETTING_DOI_PREFIX,
             Episciences_Review_DoiSettings::SETTING_DOI_FORMAT

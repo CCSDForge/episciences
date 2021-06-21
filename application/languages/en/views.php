@@ -1674,6 +1674,7 @@ return [
     /**
      * DOI
      */
+    'Assignation automatique des DOI' => 'Auto Assign DOIs',
     'not-assigned' => 'Not assigned',
     'assigned' => 'Assigned',
     'requested' => 'Requested',

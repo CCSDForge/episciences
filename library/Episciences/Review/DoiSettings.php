@@ -23,9 +23,17 @@ class Episciences_Review_DoiSettings
     const DOI_FORMAT_PAPER_ID = '%P%';
     const DOI_FORMAT_PAPER_YEAR = '%Y%';
     const DOI_FORMAT_PAPER_MONTH = '%M%';
+
+
+    const DOI_ASSIGN_MODE_AUTO = 'automatic';
+    const DOI_ASSIGN_MODE_MANUAL = 'manual';
+
+    const DOI_DEFAULT_ASSIGN_MODE = self::DOI_ASSIGN_MODE_AUTO;
+
     const SETTING_DOI_PREFIX = 'doiPrefix';
     const SETTING_DOI_FORMAT = 'doiFormat';
     const SETTING_DOI_REGISTRATION_AGENCY = 'doiRegistrationAgency';
+    const SETTING_DOI_ASSIGN_MODE = 'doiAssignMode';
 
     const SETTING_DOI_DEFAULT_REGISTRATION_AGENCY = 'crossref';
     const SETTING_DOI_DEFAULT_PREFIX = ''; // test prefix
@@ -40,9 +48,11 @@ class Episciences_Review_DoiSettings
     /**
      * @var array
      */
-    protected static $_doiSettings = [self::SETTING_DOI_PREFIX,
+    protected static $_doiSettings = [
+        self::SETTING_DOI_PREFIX,
         self::SETTING_DOI_FORMAT,
-        self::SETTING_DOI_REGISTRATION_AGENCY];
+        self::SETTING_DOI_REGISTRATION_AGENCY,
+        self::SETTING_DOI_ASSIGN_MODE];
 
 
     /**
@@ -57,6 +67,9 @@ class Episciences_Review_DoiSettings
      * @var string
      */
     protected $_doiRegistrationAgency = self::SETTING_DOI_DEFAULT_REGISTRATION_AGENCY;
+
+
+    protected $_autoAssignDoi = self::SETTING_DOI_ASSIGN_MODE;
 
 
     public function __construct($options = [])
@@ -264,6 +277,22 @@ class Episciences_Review_DoiSettings
     public function setDoiRegistrationAgency(string $doiRegistrationAgency)
     {
         $this->_doiRegistrationAgency = $doiRegistrationAgency;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAutoAssignDoi(): string
+    {
+        return $this->_autoAssignDoi;
+    }
+
+    /**
+     * @param string $autoAssignDoi
+     */
+    public function setAutoAssignDoi(string $autoAssignDoi = self::DOI_ASSIGN_MODE_AUTO): void
+    {
+        $this->_autoAssignDoi = $autoAssignDoi;
     }
 
 
