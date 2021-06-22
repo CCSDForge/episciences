@@ -1,9 +1,13 @@
 $(document).ready(function () {
+    let $doiStatusLoader = $('#doi-status-loader');
     $('#requestNewDoi').each(function () {
         var $this = $(this);
         $this.on("click", function () {
             var docid = $(this).data('docid');
-            $('#doi-status').html(getLoader());
+            let isError = false;
+
+            $doiStatusLoader.html(getLoader());
+            $doiStatusLoader.show();
             $.post(
                 '/administratepaper/ajaxrequestnewdoi',
                 {
@@ -19,21 +23,30 @@ $(document).ready(function () {
                         $("#doi-action").remove();
                         $("#doi-status").prepend('<div class="alert alert-success alert-dismissible" role="alert">' + objData.feedback + '</div>');
                     } else {
-                        $("#doi-status").prepend('<div class="alert alert-danger alert-dismissible" role="alert">' + objData.error_message + '</div>');
+                        isError = true;
                     }
                     if (objData.doi_status !== 'Error') {
                         $("#doi-status").html(objData.doi_status);
                         $("#requestNewDoi").remove();
                         $("#doi-action").remove();
                         $("#doi-status").prepend('<div class="alert alert-success alert-dismissible" role="alert">' + objData.feedback + '</div>');
+
                     } else {
+                        isError = true;
+                    }
+
+                    if (isError) {
+                        $doiStatusLoader.hide();
                         $("#doi-status").prepend('<div class="alert alert-danger alert-dismissible" role="alert">' + objData.error_message + '</div>');
 
                     }
+
                 },
                 'text'
             ).done(function () {
-                location.reload();
+                if (!isError) {
+                    location.reload();
+                }
             });
         });
     });

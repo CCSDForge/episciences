@@ -14,8 +14,9 @@
         } else {
             echo '<span id="doi-status" class="doi-status"></span>';
         }
-
-
+         ?>
+        <div id="doi-status-loader" style="display: none;"></div>
+        <?php
         if ($this->paperDoi) {
             echo '<span id="doi-link" class="doi-link">' . $this->DoiAsLink($this->paperDoi) . '</span>';
             $doiActionText = $this->translate('Mettre à jour le DOI');
