@@ -23,6 +23,7 @@
     "docx",
     "pdf",
     "txt",
+    "md",
     "html",
     "css",
     "odt",
@@ -41,7 +42,6 @@
     "dtx",
     "lbx",
     "sty"
-
   ],
   "allowed_mimes_types": [
     "image/png",
