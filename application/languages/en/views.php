@@ -249,6 +249,8 @@ return [
     "Agence d'enregistrement pour les DOI" => "DOI registration agency",
     'Préfixe DOI' => 'DOI prefix',
     'Format du DOI' => 'DOI format',
+    'Automatique' => 'Automatic',
+    'Manuel' => 'Manual',
     'Journal code' => 'Journal code',
     "Volume de l'article" => "Volume of the paper",
     "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
