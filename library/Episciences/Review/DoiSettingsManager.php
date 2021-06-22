@@ -13,7 +13,6 @@ class Episciences_Review_DoiSettingsManager
     public static function getSettingsForm()
     {
 
-        /** @var Ccsd_Form $form */
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
         $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
@@ -29,6 +28,14 @@ class Episciences_Review_DoiSettingsManager
                 'crossref' => "Crossref",
                 'datacite' => "DataCite"
 
+            ]]);
+
+        $form->addElement('select', Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE, [
+            'label' => "Assignation automatique des DOI",
+            'style' => 'width: auto;',
+            'multioptions' => [
+                Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO => "Automatique",
+                Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_MANUAL => "Manuel"
             ]]);
 
 
@@ -55,6 +62,7 @@ class Episciences_Review_DoiSettingsManager
 
         // display group : DOI
         $form->addDisplayGroup([
+            Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE,
             Episciences_Review_DoiSettings::SETTING_DOI_REGISTRATION_AGENCY,
             Episciences_Review_DoiSettings::SETTING_DOI_PREFIX,
             Episciences_Review_DoiSettings::SETTING_DOI_FORMAT
@@ -63,10 +71,9 @@ class Episciences_Review_DoiSettingsManager
 
         // submit button
         $form->setActions(true)->createSubmitButton('submit', [
-                'label' => 'Enregistrer les paramètres',
-                'class' => 'btn btn-primary'
-            ]
-        );
+            'label' => 'Enregistrer les paramètres',
+            'class' => 'btn btn-primary'
+        ]);
         return $form;
     }
 
@@ -111,17 +118,18 @@ class Episciences_Review_DoiSettingsManager
     public static function findByJournal(int $rvid)
     {
         // review configuration
-        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ' . $rvid);
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()
+            ->select()
+            ->from(T_REVIEW_SETTINGS)
+            ->where('RVID = ' . $rvid);
 
         $journalDoiSettings = [];
         foreach (Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select) as $row) {
-            if (in_array($row['SETTING'], Episciences_Review_DoiSettings::getDoiSettings(), false)) {
+            if (in_array($row['SETTING'], Episciences_Review_DoiSettings::getDoiSettings())) {
                 $journalDoiSettings[$row['SETTING']] = $row['VALUE'];
             }
         }
 
         return new Episciences_Review_DoiSettings($journalDoiSettings);
-
     }
-
 }

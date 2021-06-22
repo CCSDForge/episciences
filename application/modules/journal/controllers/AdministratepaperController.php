@@ -1614,7 +1614,10 @@ class AdministratepaperController extends PaperDefaultController
                         Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => HTTP . '://' . $_SERVER['SERVER_NAME'] . '/website/public',
                     ];
 
-                    $resCreateDoi = Episciences_Paper::createPaperDoi(RVID, $paper);
+                    if ($journal->getDoiSettings()->getDoiAssignMode() == Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
+                        Episciences_Paper::createPaperDoi(RVID, $paper);
+                    }
+
 
                 } else {
                     $managersNotificationTemplate = Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY;
