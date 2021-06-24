@@ -21,8 +21,10 @@ $previousRatings = $this->previousRatings;
 
 
 <?php // paper ************************************************************** ?>
-<?php echo $this->paper->getXslt(); ?>
-
+<div>
+    <?= $this->paper->getXslt() ?>
+    <?= $this->partial('paper/paper_files.phtml', ['paper' => $this->paper]) ?>
+</div>
 
 <?php // author's comments and cover letter ************************************************************************* ?>
 <?php if (Episciences_Auth::isLogged() &&
