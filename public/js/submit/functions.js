@@ -148,11 +148,12 @@ $(function () {
         let version = $('#' + subform + '-version').val();
 
         let $newVersionOf = $('#' + subform + '-newVersionOf');
-        let isNewVersionOf = 0;
+
+        let latestObsoleteDocId = null;
 
         // S'agit-il d'une nouvelle version d'un document
-        if ($newVersionOf.val()) {
-            isNewVersionOf = 1;
+        if ($newVersionOf.length) {
+            latestObsoleteDocId = $newVersionOf.val();
         }
 
         if (!id) {
@@ -173,7 +174,7 @@ $(function () {
         let request = $.ajax({
             type: "POST",
             url: "/submit/getdoc/",
-            data: {docId: id, repoId: repoId, version: version, isNewVersionOf: isNewVersionOf}
+            data: {docId: id, repoId: repoId, version: version, latestObsoleteDocId: latestObsoleteDocId}
         });
 
         request.done(function (xml) {

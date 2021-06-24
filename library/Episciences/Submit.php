@@ -696,12 +696,13 @@ class Episciences_Submit
      * @param $repoId
      * @param $id
      * @param null $version
-     * @param $isNewVersionOf
+     * @param null $latestObsoleteDocId
      * @return array
      * @throws Zend_Exception
      */
-    public static function getDoc($repoId, $id, $version = null, $isNewVersionOf = null): array
+    public static function getDoc($repoId, $id, $version = null, $latestObsoleteDocId = null): array
     {
+        $isNewVersionOf = !empty($latestObsoleteDocId);
         $result = [];
         $id = trim($id);
 
@@ -785,7 +786,7 @@ class Episciences_Submit
             } else {
 
                 if ($isNewVersionOf) {
-                    $oldPaper = Episciences_PapersManager::get($isNewVersionOf, false);
+                    $oldPaper = Episciences_PapersManager::get($latestObsoleteDocId, false);
                     $hookHasDoiInfoRepresentsAllVersions = Episciences_Repositories::callHook('hookHasDoiInfoRepresentsAllVersions', ['repoId' => $repoId, 'record' => $result['record'], 'conceptIdentifier' => $oldPaper->getConcept_identifier()]);
                     if (array_key_exists('hasDoiInfoRepresentsAllVersions', $hookHasDoiInfoRepresentsAllVersions) && !$hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) {
                         $error = 'hookUnboundVersions: ';

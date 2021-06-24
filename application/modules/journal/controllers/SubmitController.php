@@ -163,8 +163,8 @@ class SubmitController extends DefaultController
         $request = $this->getRequest();
         $params = $request->getPost();
         $version = (isset($params['version']) && is_numeric($params['version'])) ? $params['version'] : 1;
-        $isNewVersionOf = $params['isNewVersionOf']; //répondre à une demande de modif. par la soumission d'une nouvelle version
-        $respond = Episciences_Submit::getDoc($params['repoId'], $params['docId'], $version, $isNewVersionOf);
+        $latestObsoleteDocId = $params['latestObsoleteDocId']; //répondre à une demande de modif. par la soumission d'une nouvelle version
+        $respond = Episciences_Submit::getDoc($params['repoId'], $params['docId'], $version, $latestObsoleteDocId);
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
 
