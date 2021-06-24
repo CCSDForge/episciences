@@ -156,6 +156,7 @@ function define_table_constants()
     define('T_VOLUME_PAPER_POSITION', 'VOLUME_PAPER_POSITION');
     define('T_VOLUME_SETTINGS', 'VOLUME_SETTING');
     define('VISITS_TEMP', 'STAT_TEMP');
+    define('T_PAPER_FILES', 'paper_files');
 }
 
 /**
@@ -229,6 +230,7 @@ function defineVendorCssLibraries()
     define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css");
     define('VENDOR_JQUERY_UI_THEME_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css');
     define('VENDOR_CHART_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css');
+    define('VENDOR_COOKIE_CONSENT_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css');
 }
 
 /**

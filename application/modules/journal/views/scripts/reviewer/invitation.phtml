@@ -19,7 +19,12 @@
     <?php endif; ?>
 
     <p><?php echo $this->translate('Vous avez été invité à relire cet article : '); ?></p>
-    <?php echo $this->paper->getXslt(); ?>
+
+    <div>
+        <?= $this->paper->getXslt() ?>
+        <?= $this->partial('paper/paper_files.phtml', ['paper' => $this->paper]) ?>
+    </div>
+
 
     <?php // Author comments?>
     <?php echo $this->render('partials/paper_author_comments_bloc.phtml'); ?>

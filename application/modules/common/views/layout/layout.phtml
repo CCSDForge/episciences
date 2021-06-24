@@ -47,6 +47,7 @@ echo $this->doctype('HTML5');
     $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
+    $this->jQuery()->addStylesheet(VENDOR_COOKIE_CONSENT_CSS);
 
 
     // JS
@@ -63,8 +64,6 @@ echo $this->doctype('HTML5');
     ?>
     <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
     <script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['$$','$$']]}});</script>
-    <link rel="stylesheet" type="text/css"
-          href="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css"/>
 </head>
 
 <body>

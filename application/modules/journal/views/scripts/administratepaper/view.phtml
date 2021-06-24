@@ -2,7 +2,6 @@
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $status = $paper->getStatus();
-
 $this->layout()->pageTitle = htmlspecialchars(Episciences_Tools::decodeLatex($paper->getTitle())) . ' <span class="title-part">(v' . $paper->getVersionNumber() . ')</span>';
 $this->headTitle($this->translate('Gérer un article'));
 $this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle() . ' (v' . $paper->getVersionNumber() . ')');
@@ -50,7 +49,10 @@ $this->suggestedRevision = false;
 
 
 <?php // Bloc "Papier" ***************************************************** ?>
-<div><?php echo $paper->getXslt(); ?></div>
+<div>
+    <?= $paper->getXslt() ?>
+    <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
+</div>
 
 <?php // contributor section  ?>
 <?php if ($paper->getUid()): ?>

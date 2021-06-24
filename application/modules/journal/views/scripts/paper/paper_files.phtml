@@ -1,0 +1,54 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$action = 'oafiles';
+?>
+<?php if ($paper->hasHook): ?>
+    <div class="panel panel-default collapsable" id="paper-files">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Fichiers') ?>
+                <!-- small class=""> ()</small-->
+            </h2>
+        </div>
+        <div class="panel-body in">
+            <table class="table table-striped">
+                <thead>
+                <tr class="">
+                    <th> <?= $this->translate('Nom') ?></th>
+                    <th> <?= $this->translate('Taille') ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php /** @var  Episciences_Paper_File $oFile */ ?>
+                <?php foreach ($paper->getFiles() as $oFile) : ?>
+                    <?php
+                    if ($paper->isPublished()) {
+                        $href = '/' . $paper->getDocid() . "/$action/" . $oFile->getFileName();
+                    } else {
+                        $href = $oFile->getSelfLink();
+                    }
+                    ?>
+                    <tr>
+                        <td>
+                            <a href="<?= $href ?>"><?= $oFile->getFileName() ?></a>
+                            <br/>
+                            <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
+                                <!-- i class="fas fa-question-circle text-muted" data-toggle="tooltip" data-placement="top"
+                                   title=<?= $this->translate("Il s'agit de l'empreinte du fichier (somme de contrôle MD5), qui peut être utilisée pour vérifier l'intégrité du fichier.") ?>></i -->
+                            </small>
+                        </td>
+                        <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
+                        <td>
+                    <span class="pull-right">
+                        <a class="btn btn-xs btn-default" href="<?= $href ?>">
+                           <i class="fas fa-file-download"></i> <?= $this->translate('Télécharger le fichier') ?>
+                        </a>
+                    </span>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>

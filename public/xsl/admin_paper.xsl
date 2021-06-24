@@ -207,19 +207,19 @@
                     </div>
                 </xsl:if>
 
-
-                <div class="small">
-                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
-                    <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
-                        <xsl:value-of select="."/>
-                        <xsl:if test="position() != last()">,</xsl:if>
-                    </xsl:for-each>
-                </div>
-
+                <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
+                        <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
+                            <xsl:value-of select="."/>
+                            <xsl:if test="position() != last()">,</xsl:if>
+                        </xsl:for-each>
+                    </div>
+                </xsl:if>
                 <br/>
 
-
                 <xsl:if test="episciences">
+                    <div id='record-loading' style="display:none"/>
                     <xsl:choose>
                         <xsl:when test="episciences/tmp/text() = '1'">
                             <xsl:variable name="docUrls"
@@ -238,11 +238,12 @@
                                         </xsl:otherwise>
                                     </xsl:choose>
                                 </xsl:attribute>
-                                <button class="btn btn-default btn-sm" style="margin-right: 5px">
-                                    <span class="fas fa-file-download" style="margin-right: 5px"/>
-                                    <xsl:value-of
-                                            select="php:function('Ccsd_Tools::translate', 'Télécharger le fichier')"/>
-                                </button>
+                                <xsl:if test="episciences/notHasHook/text() = '1'">
+                                    <button class="btn btn-default btn-sm" style="margin-right: 5px">
+                                        <span class="fas fa-file-download" style="margin-right: 5px"/>
+                                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Télécharger le fichier')"/>
+                                    </button>
+                                </xsl:if>
                             </a>
 
                             <xsl:if test="episciences/docURL != episciences/paperURL">

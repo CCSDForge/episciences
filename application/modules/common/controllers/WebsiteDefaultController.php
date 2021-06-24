@@ -30,7 +30,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $common->save($form->getValues());
             unset($this->_session->website);
             Zend_Registry::set('languages', $form->getValue('languages'));
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage("Les modifications ont bien été enregistrées.");
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
             $this->redirect('/website/common');
         }
         $this->view->form = $form;
@@ -44,7 +44,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
         $styles = new Episciences_Website_Style();
         if ($this->getRequest()->isPost() && $styles->getForm()->isValid($this->getRequest()->getParams())) {
             $styles->save($styles->getForm()->getValues());
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage("Les modifications ont bien été enregistrées.");
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
         }
         $styles->populate();
         $this->view->form = $styles->getForm();
@@ -60,7 +60,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $isValid = $header->isValid($this->getRequest()->getPost(), $_FILES);
             if (true === $isValid) { //Formulaire valide
                 $header->save($this->getRequest()->getPost(), $_FILES);
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage("Les modifications ont bien été enregistrées.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
             } else {
                 $this->view->errors = $isValid;
                 $header->setHeader($this->getRequest()->getPost(), $_FILES);
@@ -105,7 +105,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             } else if (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] != '') {
                 //Ajout d'un fichier
                 copy($_FILES['file']['tmp_name'], $dir . Ccsd_File::renameFile($_FILES['file']['name'], $dir));
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage("Le fichier a été déposé.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Le fichier a été déposé.");
             }
         }
 
@@ -167,10 +167,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 if (is_file(REVIEW_PATH . 'config/' . 'acl.ini')) {
                     unlink(REVIEW_PATH . 'config/' . 'acl.ini');
                 }
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage("Les modifications ont bien été enregistrées.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect('/website/menu');
             } else {
-                $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Erreur de saisie");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur de saisie");
             }
             $this->view->pagesDisplay = $pagesDisplay;
         }
@@ -247,10 +247,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
         if ($this->getRequest()->isPost()) {
             if ($form->isValid($this->getRequest()->getParams())) {
                 $news->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
-                $this->_helper->FlashMessenger->setNamespace(MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect('/website/news');
             } else {
-                $this->_helper->FlashMessenger->setNamespace(MSG_ERROR)->addMessage("Erreur dans la saisie");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur dans la saisie");
                 $this->view->errors = $this->getRequest()->getParams();
             }
         }

@@ -496,6 +496,8 @@ class Episciences_CommentsManager
     public static function getCopyEditingReplyForms($comments, Episciences_Paper $paper)
     {
 
+        //
+
         $forms = [];
 
         if (!$comments || !$paper) {
@@ -511,7 +513,15 @@ class Episciences_CommentsManager
             if (in_array($commentType, self::$_copyEditingFinalVersionRequest)) {// load form
 
                 // fetch form default values
-                $defaults = $paper->getRepoid() ? ['docId' => $paper->getIdentifier(), 'version' => $paper->getVersion(), 'repoId' => $paper->getRepoid()] : [];
+                $defaults = [
+                    // Pour Zenodo, un identifiant différent par version,
+                    // d’où  l’initialisation de la valeur par défaut à ''
+                    'docId' => !$paper->hasHook ? $paper->getIdentifier() : '',
+                    'version' => $paper->getVersion(),
+                    'repoId' => $paper->getRepoid(),
+                    'hasHook' => $paper->hasHook,
+                ];
+
                 // load form
                 $form = Episciences_Submit::getNewVersionForm(['newVersionOf' => $paper->getDocid(), 'commentType' => $comment['TYPE']], $defaults);
                 $form->addElement('hidden', 'copyEditingNewVersion'); // distinguer la nouvelle version suite à une demande de révision de celle de travail éditorial

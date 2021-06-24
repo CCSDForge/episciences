@@ -151,7 +151,10 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 
 
 <?php // paper ************************************************************************* ?>
-<?php echo $paper->getXslt(); ?>
+<div>
+    <?= $paper->getXslt() ?>
+    <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
+</div>
 
 <?php if ($isAllowed): ?>
     <?php // paper status ?>
@@ -355,3 +358,6 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
+<script>
+    let hasHook = <?= json_encode($this->hasHook) ?>;
+</script>

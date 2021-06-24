@@ -18,6 +18,8 @@ class Episciences_Repositories
     const REPO_EXAMPLE = 'example';
     const REPO_TYPE = 'type';
 
+    public const REPO_DOI_PREFIX = null;
+
 
     private static $_repositories = [
         [
@@ -53,6 +55,18 @@ class Episciences_Repositories
             self::REPO_DOCURL => 'http://persistent-identifier.org/?identifier=urn:nbn:nl:ui:18-%%ID',
             self::REPO_PAPERURL => 'https://repository.cwi.nl/noauth/directaccess.php?publnr=%%ID',
             self::REPO_TYPE => self::TYPE_PAPERS
+        ],
+
+        [
+            // example https://zenodo.org/oai2d?verb=GetRecord&identifier=oai:zenodo.org:3752641&metadataPrefix=oai_dc
+            self::REPO_LABEL => 'Zenodo',
+            self::REPO_EXAMPLE => '123456 / (DOI)10.5281/zenodo.123456' ,
+            self::REPO_BASEURL => 'https://zenodo.org/oai2d',
+            self::REPO_IDENTIFIER => 'oai:zenodo.org:%%ID',
+            self::REPO_DOCURL => 'https://zenodo.org/record/%%ID',
+            self::REPO_PAPERURL => 'https://zenodo.org/record/files/%%ID',
+            self::REPO_DOI_PREFIX => '10.5281',
+            self::REPO_TYPE => self::TYPE_DATA
         ],
     ];
 
@@ -102,5 +116,52 @@ class Episciences_Repositories
         return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::$_repositories[$repoId][self::REPO_PAPERURL]);
     }
 
+    public static function getRepoDoiPrefix($repoId)
+    {
+        return Ccsd_Tools::ifsetor(self::$_repositories[$repoId][self::REPO_DOI_PREFIX], self::REPO_DOI_PREFIX);
+    }
+
+    /**
+     * @param int $repoId
+     * @return string
+     */
+    public static function hasHook(int $repoId): string
+    {
+
+         $className = self::makeHookClassNameByRepoId($repoId);
+        if (!class_exists($className)) {
+            $className = '';
+        }
+        return $className;
+    }
+
+    /**
+     * @param int $repoId
+     * @return string
+     */
+    private static function makeHookClassNameByRepoId(int $repoId): string
+    {
+        return __CLASS__ . '_' . self::getLabel($repoId) . '_Hooks';
+    }
+
+    /**
+     * @param string $hookName
+     * @param array $hookParams
+     * @return array
+     */
+    public static function callHook(string $hookName, array $hookParams): array
+    {
+        $className = '';
+
+        if (array_key_exists('repoId', $hookParams)) {
+            $className = self::hasHook((int)$hookParams['repoId']);
+        }
+
+        if ($className !== '') {
+            return $className::$hookName($hookParams);
+        }
+
+        return [];
+    }
 }
 

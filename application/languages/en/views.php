@@ -41,6 +41,9 @@ return [
 
     'article' => ['article', 'articles'],
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
+    'Télécharger' => 'Download',
+    'Taille' => 'Size',
+
 
 
     "Historique" => "History",
@@ -1310,6 +1313,10 @@ return [
     "Cette version" => "This version",
     "du document existe déjà dans la revue." => "of the document already exists in journal.",
     "Réessayer avec une autre version" => "Try again with another version",
+    // new repositories (exp. Zenodo)
+    "Vous ne pouvez pas soumettre ce document car les fichiers ne seront pas mis à la disposition du public et le partage ne sera possible qu'avec l'approbation du déposant du fichier." => "You can not submit this document as the files will not be made publicly available and sharing will be made possible only by the approval of depositor of the original file.",
+    "Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version." => "You can not submit this document, please check that this is a new version. ",
+    "Vos modifications n'ont pas été prises en compte : la version du document n'est pas liée à la précédente." => 'Your changes have not been taken into account: the document version is not bound to the previous one.',
 
     /**
      * Reviewer invitation

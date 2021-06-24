@@ -795,7 +795,7 @@ class Episciences_PapersManager
                 if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
                     $reviewer = new Episciences_User_Tmp();
 
-                    if(!empty($reviewer->find($invitation['UID']))){
+                    if (!empty($reviewer->find($invitation['UID']))) {
                         $reviewer->generateScreen_name();
                         $reviewers[$invitation['UID']] = $reviewer;
                     }
@@ -973,7 +973,7 @@ class Episciences_PapersManager
             if (isset($tmp_reviewers) && !empty($tmp_reviewers)) {
                 foreach ($tmp_reviewers as $tmp_reviewer) {
                     $reviewer = new Episciences_User_Tmp;
-                    if(!empty($reviewer->find($tmp_reviewer['UID']))){
+                    if (!empty($reviewer->find($tmp_reviewer['UID']))) {
                         $reviewer->generateScreen_name();
                         $reviewers['tmp_' . $tmp_reviewer['UID']] = $reviewer;
                     }
@@ -1984,7 +1984,7 @@ class Episciences_PapersManager
      * @return bool|Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      */
-    public static function get($docId, $withxsl = true)
+    public static function get($docId, bool $withxsl = true)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2411,7 +2411,7 @@ class Episciences_PapersManager
     public static function updateRecordData(int $docId)
     {
 
-        if ((int)$docId <= 0) {
+        if ($docId <= 0) {
             return false;
         }
 
@@ -2426,11 +2426,24 @@ class Episciences_PapersManager
         $repoIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier, $version);
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
         $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
-        $record = $oai->getRecord($repoIdentifier);
-        // Mise à jour des données
 
+        $record = $oai->getRecord($repoIdentifier);
+        $record = preg_replace('#xmlns="(.*)"#', '', $record);
+
+        $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', ['record' => $record, 'repoId' => $repoId]);
+
+        if (array_key_exists('record', $result)) {
+            $record = $result['record'];
+            // delete all paper files
+            Episciences_Paper_FilesManager::deleteByDocId($docId);
+            // add all files
+            Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
+        }
+
+        // Mise à jour des données
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;
+
         return $db->update(T_PAPERS, $data, $where);
     }
 

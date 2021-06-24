@@ -75,6 +75,8 @@ class Ccsd_Error extends Exception
             case 'arXivVersionDoesNotExist' :
                 $message = "This document version does not exist in the open archive, please check the document version.";
                 break;
+            case 'hookIsNotOpenAccessRight':
+            case 'hookUnboundVersions':
             case 'docUnderEmbargo' :
                 $message = $explode[1];
                 break;
