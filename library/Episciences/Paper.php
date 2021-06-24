@@ -765,15 +765,17 @@ class Episciences_Paper
 
     /**
      * fetch average rating (calculated from all completed rating reports)
+     * @param int $precision
      * @return bool|float|null
+     * @throws Zend_Db_Statement_Exception
      */
-    public function getAverageRating()
+    public function getAverageRating(int $precision = 0)
     {
         $ratings = $this->getRatings();
         if (empty($ratings)) {
             return false;
         }
-        return Episciences_Rating_Manager::getAverageRating($ratings);
+        return Episciences_Rating_Manager::getAverageRating($ratings, $precision);
     }
 
     /**

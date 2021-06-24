@@ -56,7 +56,7 @@ class Episciences_Rating_Manager
      * @param Episciences_Rating_Report[] $ratings
      * @return float|null
      */
-    public static function getAverageRating($ratings)
+    public static function getAverageRating($ratings, int $precision = 0)
     {
         if (!$ratings) {
             return null;
@@ -72,7 +72,7 @@ class Episciences_Rating_Manager
             }
         }
 
-        return ($nbRatings) ? round($total / $nbRatings) : null;
+        return ($nbRatings) ? round($total / $nbRatings, $precision) : null;
     }
 
     /**

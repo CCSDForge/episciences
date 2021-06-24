@@ -78,6 +78,6 @@ $paper = $this->paper;
 <?php if (Episciences_Auth::isEditor() && count($paper->getRatings()) > 1 && $paper->getAverageRating()) : ?>
     <div style="margin-top: 20px; font-size: 16px" class="text-center darkgrey"><strong>
             <?php echo $this->translate('Note moyenne') ?> :
-            <?php echo $paper->getAverageRating() . '/' . $report->getMax_score(); ?>
+            <?php echo $paper->getAverageRating(1) . '/' . $report->getMax_score(); ?>
         </strong></div>
 <?php endif; ?>
