@@ -331,7 +331,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     public function getScore()
     {
         if (!isset($this->_score)) {
-            $this->calculateScore();
+            $this->calculateScore(1);
         }
         return $this->_score;
     }
