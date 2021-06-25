@@ -17,8 +17,9 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     protected function _initDb(): \Zend_Db_Adapter_Abstract
     {
+        $dbDriverOption1002Const = $this->getOption('resources')['db']['driver_options']['1002']; // see application.ini
         Zend_Db_Table::setDefaultAdapter($this->getPluginResource('db')->getDbAdapter());
-        Zend_Db_Table_Abstract::getDefaultAdapter()->getConnection()->exec("SET NAMES 'utf8mb4'");
+        Zend_Db_Table_Abstract::getDefaultAdapter()->getConnection()->exec($dbDriverOption1002Const);
         return Zend_Db_Table_Abstract::getDefaultAdapter();
     }
 
