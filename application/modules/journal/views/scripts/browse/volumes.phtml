@@ -34,11 +34,11 @@
 
                     <?php for ($i = 1; $i <= $nbpages; $i++) : ?>
                         <li<?php if ($this->page == $i) echo ' class="active"' ?>><a
-                                href="<?php echo '/'.$controller.'/'.$action; ?>/page/<?php echo $i; ?>"><?php echo $i; ?></a></li>
+                                href="<?php echo '/'.$controller . '/'. $action; ?>/page/<?php echo $i; ?>"><?php echo $i; ?></a></li>
                     <?php endfor; ?>
 
                     <?php if ($this->page < $this->total) : ?>
-                        <li><a href="/browse/volumes/page/<?php echo $this->page + 1; ?>" aria-label="Next"><span
+                        <li><a href="<?= '/'. $controller . '/' . $action ?>/page/<?php echo $this->page + 1; ?>" aria-label="Next"><span
                                     aria-hidden="true">&raquo;</span></a></li>
                     <?php else: ?>
                         <li class="disabled"><span aria-hidden="true">&raquo;</span></li>
