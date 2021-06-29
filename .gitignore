@@ -16,6 +16,8 @@
 
 # Private configs
 /config/pwd.json
+# Mappings of Episicences journals Id HAL referential Ids
+/config/halJournalMappings.json
 
 # composer
 /composer.lock
@@ -38,3 +40,4 @@ assets/node_modules/
 /phpcbf.phar
 /phpcs.phar
 /.php_cs.cache
+
