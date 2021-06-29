@@ -172,7 +172,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         $sql .= ' ON DUPLICATE KEY UPDATE ONBEHALF_UID = :onbehalf_uid, STATUS = :status, UPDATE_DATE = :updateDate';
 
         $query = $db->prepare($sql);
-        $query->execute([
+        return $query->execute([
             'id' => $this->getId(),
             'uid' => $this->getUid(),
             'onbehalf_uid' => $this->getOnbehalf_uid(),
@@ -181,8 +181,6 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             'creationDate' => ($forceDate && !empty($this->getCreation_date())) ? $this->getCreation_date() : date("Y-m-d H:i:s"),
             'updateDate' => ($forceDate) ? $this->getUpdate_date() : date("Y-m-d H:i:s")
         ]);
-
-        return true;
     }
 
     public function setPath($path)
