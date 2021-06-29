@@ -257,9 +257,12 @@ class ReviewerController extends PaperDefaultController
             $report->setDocid($paper->getDocid());
             $report->setUid(Episciences_Auth::getUid());
             $report->loadXML($grid);
-            $report->save();
+            if (!$report->save()) {
+                trigger_error(sprintf('Saving Report for paperId %s and UID %s', $paper->getDocid(), Episciences_Auth::getUid()), E_USER_ERROR);
+            }
+
         } else {
-            error_log('GRID_NOT_EXISTS_FAILED_TO_CREATE_RATING_REPORT_REVIEWER_UID_' . $user->getUid() . '_DOCID_' . $paper->getDocid());
+            trigger_error('GRID_NOT_EXISTS_FAILED_TO_CREATE_RATING_REPORT_REVIEWER_UID_' . $user->getUid() . '_DOCID_' . $paper->getDocid(), E_USER_ERROR);
         }
 
         // log reviewer assignment to paper
