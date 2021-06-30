@@ -1125,6 +1125,11 @@ class Episciences_Paper
         return ($this->getStatus() === self::STATUS_ABANDONED);
     }
 
+    public function isRevisionRequested(): bool
+    {
+        return in_array($this->getStatus(), [self::STATUS_WAITING_FOR_MINOR_REVISION, self::STATUS_WAITING_FOR_MAJOR_REVISION], true);
+    }
+
     /**
      * @return string
      */
