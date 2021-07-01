@@ -220,6 +220,19 @@
                         </a><br/>
                     <?php endif; ?>
 
+                    <?php // new version requested, not need reviewing anymore ?>
+                    <?php $count = Episciences_Reviewer_ReviewingsManager::countByStatus($this->reviewings, Episciences_Reviewer_Reviewing::STATUS_NOT_NEED_REVIEWING); ?>
+                    <?php if ($count) : ?>
+                        <a href="<?= $this->url([
+                            'controller' => 'paper',
+                            'action' => 'ratings',
+                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_NOT_NEED_REVIEWING
+                        ])
+                        ?>"><strong><?= $count ?></strong>
+                            <?= $this->translate(($count === 1) ? 'relecture obsolète <span class="badge alert-info" style="margin-right: 5px;">nouvelle version demandée </spna>' : 'relectures obsolètes <span class="badge alert-info" style="margin-right: 5px;">nouvelles version demandées </span>') ?>
+                        </a><br/>
+                    <?php endif; ?>
+
                     <?php // Toutes les relectures ********************************************************************* ?>
                     <?php $count = count($this->reviewings); ?>
                     <?php if ($count) : ?>

@@ -1061,7 +1061,7 @@ class Episciences_Paper
      */
     public function canBeReviewed(): bool
     {
-        return ($this->isEditable() && !$this->isAccepted());
+        return ($this->isEditable() && !$this->isAccepted() && !$this->isRevisionRequested());
     }
 
     /**

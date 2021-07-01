@@ -9,6 +9,7 @@ class Episciences_Reviewer_Reviewing
     const STATUS_UNANSWERED = 3;    // unanswered reviewing invitation
     const STATUS_OBSOLETE = 4;      // reviweing invitation is obsolete (article doed not need reviewing anymore)
     const STATUS_DECLINED = 5;      // declined reviewing invitation
+    public const STATUS_NOT_NEED_REVIEWING = 6; // new version requested, not need reviewing anymore
 
     /**
      * reviewing status
@@ -48,7 +49,8 @@ class Episciences_Reviewer_Reviewing
         self::STATUS_COMPLETE => 'relecture terminée',
         self::STATUS_UNANSWERED => 'invitation en attente',
         self::STATUS_OBSOLETE => 'invitation obsolète',
-        self::STATUS_DECLINED => "invitation déclinée"
+        self::STATUS_DECLINED => "invitation déclinée",
+        self::STATUS_NOT_NEED_REVIEWING => 'relecture obsolète'
     );
 
     // reviewing status color codes
@@ -128,14 +130,21 @@ class Episciences_Reviewer_Reviewing
         $result = null;
 
         if ($this->hasRating()) {
-            $report = $this->getRating();
-            if ($report->isCompleted()) {
-                $result = self::STATUS_COMPLETE;
-            } elseif ($report->isInProgress()) {
-                $result = self::STATUS_WIP;
-            } elseif ($report->isPending()) {
-                $result = self::STATUS_PENDING;
+
+            if (!$this->getPaper()->canBeReviewed()) {
+                $result = self::STATUS_NOT_NEED_REVIEWING;
+
+            } else {
+                $report = $this->getRating();
+                if ($report->isCompleted()) {
+                    $result = self::STATUS_COMPLETE;
+                } elseif ($report->isInProgress()) {
+                    $result = self::STATUS_WIP;
+                } elseif ($report->isPending()) {
+                    $result = self::STATUS_PENDING;
+                }
             }
+
         } else {
             $status = self::STATUS_UNANSWERED;
             $assignment = $this->getAssignment();
