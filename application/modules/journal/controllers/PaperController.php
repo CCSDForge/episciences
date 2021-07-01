@@ -1638,6 +1638,14 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        // Check paper status
+        $paperStatus = $this->checkPaperStatus($paper);
+
+        if (!empty($paperStatus) && !array_key_exists('displayNotice', $paperStatus)) {
+            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($paperStatus['message']);
+            $this->_helper->redirector->gotoUrl($paperStatus['url']);
+        }
+
         // access denied
         $accessToRating = $this->checkAccessToRating($paper, $reviewer_uid);
 
@@ -1649,13 +1657,7 @@ class PaperController extends PaperDefaultController
             }
         }
 
-        // Check paper status
-        $paperStatus = $this->checkPaperStatus($paper);
 
-        if (!empty($paperStatus) && !array_key_exists('displayNotice', $paperStatus)) {
-            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($paperStatus['message']);
-            $this->_helper->redirector->gotoUrl($paperStatus['url']);
-        }
 
         $this->view->paper = $paper;
 
@@ -1731,8 +1733,9 @@ class PaperController extends PaperDefaultController
 
     /**
      * @param Episciences_Paper $paper
-     * @param int $reviewerUid
+     * @param int|null $reviewerUid
      * @return array
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     private function checkAccessToRating(Episciences_Paper $paper, int $reviewerUid = null): array
@@ -1743,7 +1746,7 @@ class PaperController extends PaperDefaultController
         $isReviewer = array_key_exists(Episciences_Auth::getUid(), $reviewers) || ($reviewerUid && $paper->getReviewer($reviewerUid));
 
         if (!$isReviewer || $reviewerUid === Episciences_Auth::getUid()) { // Not reviewer or add rating
-            if ($paper->getEditor(Episciences_Auth::getUid()) || Episciences_Auth:: isAllowedToUploadPaperReport()) {
+            if (Episciences_Auth:: isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid())) {
                 $invitations = $paper->getInvitations();
                 // Une invitation à relire cet article est en cours  .
                 if (array_key_exists(Episciences_Auth::getUid(), $invitations)) {
@@ -1763,11 +1766,6 @@ class PaperController extends PaperDefaultController
                 // Pas d'invitaion en cours => il peut relire cet article
                 $accessResult['canReviewing'] = true;
 
-            } elseif ($paper->getStatus() == Episciences_Paper::STATUS_ACCEPTED) {
-                $message = $translator->translate("Cet article a déjà été publié, il n'est plus nécessaire de le relire.");
-                $url = '/administratepaper/view?id=' . $paper->getDocid();
-                $accessResult['message'] = $message;
-                $accessResult['url'] = $url;
             } else {
                 $message = $translator->translate("Vous avez été redirigé, car vous n'êtes pas relecteur pour cet article.");
                 $url = '/';
@@ -1788,7 +1786,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Exception
      */
 
-    private function checkPaperStatus(Episciences_Paper &$paper)
+    private function checkPaperStatus(Episciences_Paper &$paper): array
     {
 
         $translator = Zend_Registry::get('Zend_Translate');
@@ -1799,30 +1797,21 @@ class PaperController extends PaperDefaultController
         if ($paper->isDeleted()) {
             $result['message'] = $translator->translate("Le document demandé a été supprimé par son auteur.");
             $result['url'] = '/';
-        }
-
-        // paper has been accepted
-        if ($paper->isAccepted()) {
+        } elseif ($paper->isAccepted()) { // paper has been accepted
             $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
-        }
-
-        // paper has been published
-        if ($paper->isPublished()) {
+        } elseif ($paper->isPublished()) {  // paper has been published
             $result['message'] = $translator->translate("Cet article a déjà été publié, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
-        }
-
-        // paper has been refused
-        if ($paper->isRefused()) {
+        } elseif ($paper->isRefused()) {  // paper has been refused
             $result['message'] = $translator->translate("Cet article a été refusé, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
-        }
-
-        // paper is obsolete: display a notice
-        if ($paper->isObsolete()) {
+        } elseif ($paper->isObsolete()) { // paper is obsolete: display a notice
             $paper->getLatestVersionId();
             $result['displayNotice'] = true;
+        } elseif ($paper->isRevisionRequested()) { // new version requested
+            $result['message'] = $translator->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
+            $result['url'] = $url;
         }
 
         return $result;

@@ -1061,7 +1061,7 @@ class Episciences_Paper
      */
     public function canBeReviewed(): bool
     {
-        return ($this->isEditable() && !$this->isAccepted());
+        return ($this->isEditable() && !$this->isAccepted() && !$this->isRevisionRequested());
     }
 
     /**
@@ -1123,6 +1123,11 @@ class Episciences_Paper
     public function isAbandoned(): bool
     {
         return ($this->getStatus() === self::STATUS_ABANDONED);
+    }
+
+    public function isRevisionRequested(): bool
+    {
+        return in_array($this->getStatus(), [self::STATUS_WAITING_FOR_MINOR_REVISION, self::STATUS_WAITING_FOR_MAJOR_REVISION], true);
     }
 
     /**
