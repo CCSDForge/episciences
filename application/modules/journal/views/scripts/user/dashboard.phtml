@@ -229,7 +229,10 @@
                             'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_NOT_NEED_REVIEWING
                         ])
                         ?>"><strong><?= $count ?></strong>
-                            <?= $this->translate(($count === 1) ? 'relecture obsolète <span class="badge alert-info" style="margin-right: 5px;">nouvelle version demandée </spna>' : 'relectures obsolètes <span class="badge alert-info" style="margin-right: 5px;">nouvelles version demandées </span>') ?>
+                            <?= ($count === 1) ?
+                                $this->translate('relecture obsolète') . '<span class="badge alert-info" style="margin-left: 5px;">' . $this->translate('nouvelle version demandée') . '</span>' :
+                                $this->translate('relectures obsolètes') .'<span class="badge alert-info" style="margin-left: 5px;">' . $this->translate('nouvelles versions demandées') . '</span>'
+                            ?>
                         </a><br/>
                     <?php endif; ?>
 
