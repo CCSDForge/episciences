@@ -93,7 +93,7 @@ return [
 
     "Modifier la relecture" => "Edit the reviewing",
 
-    'Le relecteur et vous-même pourrez modifier la relecture' => 'The reviewer and yourself will be able to edit the reviewing',
+    'Permettre au relecteur de modifier son évaluation' => 'Allow the reviewer to modify his rating',
     'Autoriser la modification de la relecture' => 'Allow to edit the reviewing',
 
     "Contacter un relecteur" => "Contact a reviewer",

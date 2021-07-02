@@ -334,7 +334,7 @@ function getReviewerMenu(button) {
         content += '<li>';
         content += '<a href="/administratepaper/refreshrating/id/' + docid + '/reviewer_uid/' + uid + '"  ';
         content += 'data-callback="submit"';
-        content += 'title="' + translate("Le relecteur et vous-même pourrez modifier la relecture") + '">';
+        content += 'title="' + translate("Permettre au relecteur de modifier son évaluation") + '">';
         content += '<span class="glyphicon glyphicon-refresh" style="margin-right: 5px"></span> ' + translate('Autoriser la modification de la relecture') + '</a></li>';
 
     }
