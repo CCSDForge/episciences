@@ -251,8 +251,7 @@ function getReviewerMenu(button) {
     let tmp = $(button).data('tmp');
     let status = $(button).data('status');
     let rating = $(button).data('rating');
-    let isMyPaper = JSON.parse($(button).data('is_my_paper'));
-    let isEditable = JSON.parse($(button).data('is_editable'));
+    let canBeReviewed = JSON.parse($(button).data('can_be_reviewed'));
 
     // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
     if (openedPopover && openedPopover === uid) {
@@ -284,7 +283,7 @@ function getReviewerMenu(button) {
     content += '</a>';
     content += '</li>';
 
-    if (status === 'expired') {
+    if (canBeReviewed && status === 'expired') {
 
         let href = '#';
 
@@ -295,7 +294,7 @@ function getReviewerMenu(button) {
         content += '<span class="glyphicon glyphicon-repeat" style="margin-right: 5px"></span> ' + translate('Réinviter ce relecteur') + '</a></li>';
     }
 
-    if (isEditable && (status === 'active' || status === 'pending')) {
+    if (canBeReviewed && rating !== 2 && (status === 'active' || status === 'pending')) {
 
         content += '<li>';
         content += '<a class="modal-opener" href="/administratepaper/updatedeadline/aid/' + aid + '" ';
@@ -321,7 +320,7 @@ function getReviewerMenu(button) {
         content += '<span class="glyphicon glyphicon-remove" style="margin-right: 5px"></span> ' + translate('Retirer ce relecteur') + '</a></li>';
     }
 
-    if (isEditable && (status === 'active' || status === 'uninvited') && (rating === 0 || rating === 1)) {
+    if (canBeReviewed && (status === 'active' || status === 'uninvited') && (rating === 0 || rating === 1)) {
 
         content += '<li>';
         content += '<a href="/paper/rating?id=' + docid + '&reviewer_uid=' + uid + '&byUid=' + byUid + '"  ';
@@ -330,7 +329,7 @@ function getReviewerMenu(button) {
         content += '<span class="glyphicon glyphicon-edit" style="margin-right: 5px"></span> ' + translate('Télécharger le rapport du relecteur') + '</a></li>';
 
     }
-    if (!isMyPaper && isEditable && (status === 'active' || status === 'uninvited') && rating === 2) {
+    if (canBeReviewed && (status === 'active' || status === 'uninvited') && rating === 2) {
         content += '<li>';
         content += '<a href="/administratepaper/refreshrating/id/' + docid + '/reviewer_uid/' + uid + '"  ';
         content += 'data-callback="submit"';

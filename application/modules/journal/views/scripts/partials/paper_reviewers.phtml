@@ -104,16 +104,15 @@ $ratings = $paper->getRatings();
 
                                             <button class="btn btn-default fas fa-ellipsis-v popover-link context-button"
                                                     role="button"
-                                                    data-paper_status="<?php echo $paper->getStatus(); ?>"
-                                                    data-is_my_paper="<?php echo json_encode(Episciences_Auth::getUid() === $paper->getUid()); ?>"
-                                                    data-is_editable="<?= json_encode($paper->isEditable()) ?>"
-                                                    data-docid="<?php echo $invitation['DOCID']; ?>"
-                                                    data-status="<?php echo $status; ?>"
-                                                    data-rating="<?php echo (array_key_exists('rating', $invitation['reviewer'])) ? $invitation['reviewer']['rating']['status'] : 0 ?>"
-                                                    data-uid="<?php echo $invitation['UID']; ?>"
-                                                    data-by_uid="<?php echo Episciences_Auth::getUid(); ?>"
-                                                    data-aid="<?php echo $invitation['ASSIGNMENT_ID']; ?>"
-                                                    data-tmp="<?php echo $invitation['TMP_USER']; ?>">
+                                                    data-paper_status="<?= $paper->getStatus() ?>"
+                                                    data-can_be_reviewed="<?= json_encode($paper->canBeReviewed()) ?>"
+                                                    data-docid="<?= $paper->getDocid() ?>"
+                                                    data-status="<?= $status ?>"
+                                                    data-rating="<?= (array_key_exists('rating', $invitation['reviewer'])) ? $invitation['reviewer']['rating']['status'] : 0 ?>"
+                                                    data-uid="<?= $invitation['UID'] ?>"
+                                                    data-by_uid="<?= Episciences_Auth::getUid() ?>"
+                                                    data-aid="<?= $invitation['ASSIGNMENT_ID'] ?>"
+                                                    data-tmp="<?= $invitation['TMP_USER'] ?>">
                                             </button>
 
 
