@@ -204,6 +204,7 @@ $ratings = $paper->getRatings();
 
     <?php if (
             $paper->isEditable() &&
+            !$paper->isRevisionRequested() &&
             !$paper->isAccepted() &&
             !$paper->copyEditingProcessStarted() &&
             !$paper->isReadyToPublish() &&
