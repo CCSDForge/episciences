@@ -114,6 +114,7 @@ function define_review_constants()
         define('VOLUME_LANG_PATH', REVIEW_LANG_PATH . 'volumes/');
         define('SECTION_LANG_PATH', REVIEW_LANG_PATH . 'sections/');
         define('CACHE_PATH', REVIEW_PATH . "tmp/");
+        define('CACHE_PATH_METADATA', dirname(APPLICATION_PATH) . '/cache/');
 
     }
 }
