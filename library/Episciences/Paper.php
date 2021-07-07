@@ -1,10 +1,32 @@
 <?php
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * Class Episciences_Paper
  */
 class Episciences_Paper
 {
+    /**
+     * Expire OAI Headers after 1 month
+     */
+    public const CACHE_EXPIRE_OAI_HEADER = 3600 * 24 * 31;
+
+    /**
+     * Expire metadata of UNpublished articles after 1 hour
+     */
+    const CACHE_EXPIRE_METADATA_UNPUBLISHED = 3600;
+
+    /**
+     * Expire metadata of published articles after 1 week
+     */
+    public const CACHE_EXPIRE_METADATA_PUBLISHED = 3600 * 24 * 7;
+
+    /**
+     *
+     */
+    public const CACHE_CLASS_NAMESPACE = 'paper';
+
     const STATUS_SUBMITTED = 0;
     // reviewers have been assigned, but did not start their reports
     const STATUS_OK_FOR_REVIEWING = 1;
@@ -249,6 +271,8 @@ class Episciences_Paper
     private $_position;
     private $_files;
     public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
+
+    public static $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats'];
 
     /**
      * Episciences_Paper constructor.
@@ -1756,18 +1780,26 @@ class Episciences_Paper
      */
     public function getOaiHeader(): string
     {
-        $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
-        $root = $xml->createElement('header');
-        $root->appendChild($xml->createElement('identifier', $this->getOaiIdentifier()));
-        $root->appendChild($xml->createElement('datestamp', substr($this->getPublication_date(), 0, 10)));
-        // set : journal ET journal:revue
-        $root->appendChild($xml->createElement('setSpec', 'journal'));
-        $root->appendChild($xml->createElement('setSpec', 'journal:' . Episciences_Review::getData($this->getRvid())['CODE']));
-        $xml->appendChild($root);
-        $xml->formatOutput = true;
-        $xml->substituteEntities = true;
-        $xml->preserveWhiteSpace = false;
-        return $xml->saveXML($xml->documentElement);
+        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+        $cacheName = $this->getDocid() . '-' . __FUNCTION__;
+
+        return $cache->get($cacheName, function (ItemInterface $item)  {
+            $item->expiresAfter(self::CACHE_EXPIRE_OAI_HEADER);
+
+            $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
+            $root = $xml->createElement('header');
+            $root->appendChild($xml->createElement('identifier', $this->getOaiIdentifier()));
+            $root->appendChild($xml->createElement('datestamp', substr($this->getPublication_date(), 0, 10)));
+            // set : journal ET journal:revue
+            $root->appendChild($xml->createElement('setSpec', 'journal'));
+            $root->appendChild($xml->createElement('setSpec', 'journal:' . Episciences_Review::getData($this->getRvid())['CODE']));
+            $xml->appendChild($root);
+            $xml->formatOutput = true;
+            $xml->substituteEntities = true;
+            $xml->preserveWhiteSpace = false;
+            return $xml->saveXML($xml->documentElement);
+         });
+
     }
 
     /**
@@ -1784,17 +1816,29 @@ class Episciences_Paper
      * @param string $format
      * @return string|false
      */
-    public function get($format = 'tei')
+    public function get(string $format = 'tei')
     {
+
         $format = strtolower(trim($format));
-        $validFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats'];
-        if (!in_array($format, $validFormats)) {
+
+        if (!self::isValidMetadataFormat($format)) {
             return false;
         }
 
         $method = 'get' . ucfirst($format);
         if (method_exists($this, $method)) {
-            return $this->$method();
+            $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+            $cacheName = $this->getDocid() . '-' . $format;
+            return $cache->get($cacheName, function (ItemInterface $item) use ($method) {
+                if ($this->isPublished()) {
+                    $expireAfterSec = self::CACHE_EXPIRE_METADATA_PUBLISHED;
+                } else {
+                    $expireAfterSec = self::CACHE_EXPIRE_METADATA_UNPUBLISHED;
+                }
+
+                $item->expiresAfter($expireAfterSec);
+                return $this->$method();
+            });
         }
 
         return false;
@@ -2545,7 +2589,6 @@ class Episciences_Paper
 
         } catch (Exception $e) {
             $translator = Zend_Registry::get('Zend_Translate');
-            //$message = $e->getMessage();
             $message = $translator->translate("Une erreur interne s'est produite, veuillez recommencer.");
             $update['message'] = $message;
             return $update;
@@ -3528,4 +3571,14 @@ class Episciences_Paper
         return Episciences_Paper_FilesManager::findByName($this->_docId, $fileName);
 
     }
+
+    /**
+     * @param string $format
+     * @return bool
+     */
+    public static function isValidMetadataFormat (string $format) :bool
+    {
+        return in_array($format, self::$validMetadataFormats);
+    }
+
 }
