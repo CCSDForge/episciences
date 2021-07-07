@@ -9,19 +9,18 @@ class IndexController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender(true);
     }
 
-	public function indexAction()
-	{
+    public function indexAction()
+    {
         return new Episciences_Oai_Server($this->getRequest());
-	}
-	
-	public function xslAction()
-	{
-		header('Content-Type: text/xml; charset=UTF-8');
-		ob_clean();
-		flush();
-		echo Episciences_Oai_Server::getXsl();
-		exit;
-	}
-	
+    }
+
+    public function xslAction()
+    {
+        header('Content-Type: text/xml; charset=UTF-8');
+        ob_clean();
+        flush();
+        echo Episciences_Oai_Server::getXsl();
+    }
+
 }
 
