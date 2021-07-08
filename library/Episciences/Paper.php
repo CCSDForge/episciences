@@ -1,4 +1,5 @@
 <?php
+
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -1782,9 +1783,10 @@ class Episciences_Paper
     {
         $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
         $cacheName = $this->getDocid() . '-' . __FUNCTION__;
+        $oaiHeaderItem = $cache->getItem($cacheName);
+        $oaiHeaderItem->expiresAfter(self::CACHE_EXPIRE_OAI_HEADER);
 
-        return $cache->get($cacheName, function (ItemInterface $item)  {
-            $item->expiresAfter(self::CACHE_EXPIRE_OAI_HEADER);
+        if (!$oaiHeaderItem->isHit()) {
 
             $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
             $root = $xml->createElement('header');
@@ -1797,8 +1799,15 @@ class Episciences_Paper
             $xml->formatOutput = true;
             $xml->substituteEntities = true;
             $xml->preserveWhiteSpace = false;
-            return $xml->saveXML($xml->documentElement);
-         });
+            $oaiHeaderXml = $xml->saveXML($xml->documentElement);
+
+            $oaiHeaderItem->set($oaiHeaderXml);
+            $cache->save($oaiHeaderItem);
+        } else {
+            $oaiHeaderXml = $oaiHeaderItem->get();
+        }
+
+        return $oaiHeaderXml;
 
     }
 
@@ -1818,30 +1827,36 @@ class Episciences_Paper
      */
     public function get(string $format = 'tei')
     {
-
         $format = strtolower(trim($format));
+        $method = 'get' . ucfirst($format);
 
-        if (!self::isValidMetadataFormat($format)) {
+        if ((!self::isValidMetadataFormat($format)) || (!method_exists($this, $method))) {
             return false;
         }
 
-        $method = 'get' . ucfirst($format);
-        if (method_exists($this, $method)) {
-            $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-            $cacheName = $this->getDocid() . '-' . $format;
-            return $cache->get($cacheName, function (ItemInterface $item) use ($method) {
-                if ($this->isPublished()) {
-                    $expireAfterSec = self::CACHE_EXPIRE_METADATA_PUBLISHED;
-                } else {
-                    $expireAfterSec = self::CACHE_EXPIRE_METADATA_UNPUBLISHED;
-                }
+        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+        $cacheName = $this->getDocid() . '-' . $method;
+        $metadataCache = $cache->getItem($cacheName);
 
-                $item->expiresAfter($expireAfterSec);
-                return $this->$method();
-            });
+        if ($this->isPublished()) {
+            $expireAfterSec = self::CACHE_EXPIRE_METADATA_PUBLISHED;
+        } else {
+            $expireAfterSec = self::CACHE_EXPIRE_METADATA_UNPUBLISHED;
         }
 
-        return false;
+        $metadataCache->expiresAfter($expireAfterSec);
+
+        if (!$metadataCache->isHit()) {
+            $getOutput = $this->$method();
+            $metadataCache->set($getOutput);
+            $cache->save($metadataCache);
+        } else {
+            $getOutput = $metadataCache->get();
+        }
+
+        return $getOutput;
+
+
     }
 
     /**
@@ -3576,7 +3591,7 @@ class Episciences_Paper
      * @param string $format
      * @return bool
      */
-    public static function isValidMetadataFormat (string $format) :bool
+    public static function isValidMetadataFormat(string $format): bool
     {
         return in_array($format, self::$validMetadataFormats);
     }
