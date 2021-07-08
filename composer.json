@@ -32,6 +32,7 @@
     "symfony/polyfill-php73": "*",
     "symfony/polyfill-php74": "*",
     "symfony/polyfill-mbstring": "*",
+    "symfony/cache": "^5.3",
     "ezyang/htmlpurifier": "^4.13"
   },
   "require-dev": {
