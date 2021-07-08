@@ -1237,7 +1237,7 @@ class Episciences_Tools
         $availableUnits = ['b', 'k', 'm', 'g', 't', 'p', 'e'];
 
         $humanReadableVal = trim($humanReadableVal);
-        $unit = ($humanReadableVal !== '') ? strtolower($humanReadableVal{strlen($humanReadableVal) - 1}) : 'b';
+        $unit = ($humanReadableVal !== '') ? strtolower($humanReadableVal[strlen($humanReadableVal) - 1]) : 'b';
         $val = (int)$humanReadableVal;
 
         if (!in_array($unit, $availableUnits, true)) {
