@@ -133,9 +133,9 @@ foreach ($this->list as $paper) : ?>
                                         $msg = ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($status))) . ' ';
                                         $msg .= $this->translate('le') . ' ';
                                         $msg .= $this->Date($reviewing->getUpdateDate());
-                                    } elseif ($status === Episciences_Reviewer_Reviewing::STATUS_WIP) {
+                                    } elseif ($status === Episciences_Reviewer_Reviewing::STATUS_WIP || $status === Episciences_Reviewer_Reviewing::STATUS_NOT_NEED_REVIEWING) {
                                         // Le relecteur a commencé sa relecture, mais ne l'a pas terminée
-                                        $msg = ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($status))) . '. ';
+                                        $msg =  ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($status))) . '. ';
                                         $msg .= ucfirst($this->translate('dernière action :')) . ' ';
                                         $msg .= $this->Date($reviewing->getUpdateDate());
                                     } elseif ($status === Episciences_Reviewer_Reviewing::STATUS_PENDING) {

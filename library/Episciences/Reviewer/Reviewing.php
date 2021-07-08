@@ -130,19 +130,15 @@ class Episciences_Reviewer_Reviewing
         $result = null;
 
         if ($this->hasRating()) {
-
-            if (!$this->getPaper()->canBeReviewed()) {
+            $report = $this->getRating();
+            if (!$report->isCompleted() && !$this->getPaper()->canBeReviewed()) {
                 $result = self::STATUS_NOT_NEED_REVIEWING;
-
-            } else {
-                $report = $this->getRating();
-                if ($report->isCompleted()) {
-                    $result = self::STATUS_COMPLETE;
-                } elseif ($report->isInProgress()) {
-                    $result = self::STATUS_WIP;
-                } elseif ($report->isPending()) {
-                    $result = self::STATUS_PENDING;
-                }
+            } else if ($report->isCompleted()) {
+                $result = self::STATUS_COMPLETE;
+            } elseif ($report->isInProgress()) {
+                $result = self::STATUS_WIP;
+            } elseif ($report->isPending()) {
+                $result = self::STATUS_PENDING;
             }
 
         } else {
