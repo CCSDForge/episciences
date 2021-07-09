@@ -1710,6 +1710,10 @@ return [
     'Remerciements' => 'Acknowledgements',
 
     //stats
+    "toutes les soumissions" => "all submissions",
+    "le nombre d'articles acceptés" => "the number of accepted articles",
+    "En un coup d'oeil" => "At a glance",
+    "Taux d'acceptation" => "Acceptance rate",
     'Dépôt-Acceptation' => 'Submission-Acceptance',
     'Dépôt-Publication' => 'Submission-Publication',
     'Statistiques' => 'Statistics',
