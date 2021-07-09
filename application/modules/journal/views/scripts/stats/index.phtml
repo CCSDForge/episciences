@@ -13,8 +13,6 @@ $this->layout()->description = $this->translate('Indicateurs de statistiques pou
 
     <?php $this->jQuery()->addStylesheet(VENDOR_CHART_CSS); ?>
 
-    <h2><?= $this->translate('Soumissions') ?> <?= $this->yearQuery ? ' - <code>' . $this->yearQuery . '</code>' : '' ?></h2>
-
     <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
 
     <div class="col-md-12">

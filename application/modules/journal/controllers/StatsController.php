@@ -183,7 +183,7 @@ class StatsController extends Zend_Controller_Action
         $label5 = ucfirst($this->view->translate('autres statuts'));
 
         // figure 1
-        $this->view->chart1Title = $this->view->translate("Soumissions");
+        $this->view->chart1Title = $this->view->translate("En un coup d'oeil");
 
         $seriesJs['allSubmissionsPercentage']['datasets'][] = [
             'data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage, $otherStatusPercentage],
