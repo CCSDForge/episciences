@@ -5,7 +5,7 @@ $acceptedTooltipInfo = "Cela inclut les articles en cours de mise en forme et en
 $publishedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.";
 $refusedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.";
 $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
-$acceptanceRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ', S' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles acceptés") . ' ]</em>' ;
+$acceptanceRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles acceptés") . ', S' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ' ]</em>' ;
 $acceptanceRate = round((($this->allAcceptations + $this->allPublications)/ $this->allSubmissions) * 100, 2);
 ?>
 <div class="panel panel-default collapsable">
@@ -72,21 +72,21 @@ $acceptanceRate = round((($this->allAcceptations + $this->allPublications)/ $thi
 
 <div class="panel panel-default collapsable">
     <div class="panel-heading"><h2 class="panel-title"><?= $this->chart2Title ?></h2></div>
-    <div class="panel-body">
+    <div class="panel-body in">
         <canvas id="submissions-by-year-chart" style="height: auto; width: auto;"></canvas>
     </div>
 </div>
 
 <div class="panel panel-default collapsable">
     <div class="panel-heading"><h2 class="panel-title"><?= $this->chart3Title ?></h2></div>
-    <div class="panel-body">
+    <div class="panel-body in">
         <canvas id="submissions-by-repo-chart" style="height: auto; width: auto;"></canvas>
     </div>
 </div>
 
 <div class="panel panel-default collapsable">
-    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart4Title ?></h2></div>
-    <div class="panel-body">
+    <div class="panel-heading in"><h2 class="panel-title"><?= $this->chart4Title ?></h2></div>
+    <div class="panel-body in">
         <canvas id="submissions-delay-chart" style="height: auto; width: auto;"></canvas>
     </div>
 </div>
