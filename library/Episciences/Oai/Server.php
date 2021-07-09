@@ -76,11 +76,11 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
 
     protected function getSets()
     {
-
         $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = __FUNCTION__;
-        return $cache->get($cacheName, function (ItemInterface $item) {
-            $item->expiresAfter(self::OAI_TOKEN_EXPIRATION_TIME);
+        $sets = $cache->getItem(__FUNCTION__);
+        $sets->expiresAfter(3600 * 24);
+
+        if (!$sets->isHit()) {
 
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $out = [];
@@ -99,10 +99,12 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                 $out = [self::SET_JOURNAL => 'All ' . DOMAIN] + $out;
             }
 
-            return $out;
-
-        });
-
+            $sets->set($out);
+            $cache->save($sets);
+        } else {
+            $out = $sets->get();
+        }
+        return $out;
     }
 
     protected function checkDateFormat($date)
