@@ -1782,6 +1782,9 @@ class Episciences_PapersManager
     public static function getRevisionForm($default, $type = 'minor', Episciences_Review $review = null)
     {
 
+        $minDate = date('Y-m-d');
+        $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
+
         $isChecked = ($type === 'major') ? 1 : 0;
 
         if (null !== $review) { // git #123 : Ne jamais réassigner automatiquement les relecteurs, que ce soit pour des demandes de modif mineures ou majeures
@@ -1845,6 +1848,8 @@ class Episciences_PapersManager
             'class' => 'form-control',
             'pattern' => '[A-Za-z]{3}',
             'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle'),
+            'attr-mindate' => $minDate,
+            'attr-maxdate' => $maxDate
         ]);
 
         $form->addElement('text', $type . '-revision-subject', [

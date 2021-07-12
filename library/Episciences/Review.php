@@ -101,6 +101,10 @@ class Episciences_Review
     const SETTING_CONTACT_TECH_SUPPORT_EMAIL = 'contactTechSupportEmail';
     const SETTING_ISSN_PRINT = 'ISSN_PRINT';
     const SETTING_JOURNAL_DOI = 'journalAssignedDoi';
+
+    #git 303
+    public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
+
     /** @var int */
     public static $_currentReviewId = null;
     protected $_db = null;
