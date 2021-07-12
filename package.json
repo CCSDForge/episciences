@@ -1,12 +1,14 @@
 {
   "devDependencies": {
     "@symfony/webpack-encore": "^1.5.0",
-    "compass-mixins": "^0.12.10",
     "resolve-url-loader": "^4.0.0",
     "sass": "^1.35.2",
     "sass-loader": "^12.0.0",
     "ts-loader": "^9.0.0",
     "typescript": "^4.3.5",
     "webpack-notifier": "^1.6.0"
+  },
+  "dependencies": {
+    "compass-mixins": "^0.12.10"
   }
 }
