@@ -1,6 +1,6 @@
 // compass
 //@import "compass/reset";
-@import "compass/css3";
+@import "../node_modules/compass-mixins/lib/compass/css3";
 
 // variables (available colors)
 @import "abstracts/variables";
