@@ -1306,9 +1306,9 @@ class Episciences_Paper
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $sql = $db->select()
                 ->distinct()
-                ->from(T_PAPERS, ['DOCID', 'VERSION', 'SUBMISSION_DATE'])
+                ->from(T_PAPERS, ['DOCID', 'VERSION', 'WHEN'])
                 ->where('PAPERID = ?', $this->getPaperid())
-                ->order('SUBMISSION_DATE ASC');
+                ->order('WHEN ASC');
 
             $sqlResult = $db->fetchAssoc($sql);
 
