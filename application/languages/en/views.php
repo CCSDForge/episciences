@@ -432,7 +432,7 @@ return [
     "Accepter et passer à la préparation de copie" => "Accept and proceed to copy editing",
     'dès que possible' => 'as soon as possible',
     "Cet article n'est pas la première version de ce document, vous ne pouvez pas donc le refuser." => "This article is not the first version of this document, so you cannot reject it.",
-    "Aller à la page public de cet article" => "Go to the public page for this article",
+    "Aller à la page publique de cet article" => "Go to the public page for this article",
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
