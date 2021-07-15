@@ -298,7 +298,7 @@ class ReviewerController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_PAPER_URL =>  $paper_url //Lien vers la page de relecture de l'article
         ];
 
-        Episciences_Mail_Send::sendMailFromReview($user, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY, array_merge($commonTags, $reviewerTags));
+        Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY, array_merge($commonTags, $reviewerTags), $paper);
 
         //  > editors + admins + secretaries + chief editors notifications
         $recipients = $paper->getEditors(true, true);
@@ -330,8 +330,8 @@ class ReviewerController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_RATING_DEADLINE => $this->view->Date($newAssignment->getDeadline(), $locale),
             ];
 
-            Episciences_Mail_Send::sendMailFromReview($recipient, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY,
-                array_merge($commonTags, $editorsTags), null, [], false, $CC
+            Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY, array_merge($commonTags, $editorsTags),
+                $paper, null, [], false, $CC
             );
             //reset $CC
             $CC = [];
@@ -416,7 +416,7 @@ class ReviewerController extends PaperDefaultController
 
         $reviewerTags = $commonTags + [Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true)];
 
-        Episciences_Mail_Send::sendMailFromReview($user, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY, $reviewerTags);
+        Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY, $reviewerTags, $paper);
 
         //  > editors + admins + secretaries + chief editors notifications
         $recipients = $paper->getEditors(true, true);
@@ -447,8 +447,8 @@ class ReviewerController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url // paper management page url
             ];
 
-            Episciences_Mail_Send::sendMailFromReview($recipient, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY,
-                $recipientTags, null, [], false, $CC);
+            Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY, $recipientTags,
+                $paper, null, [], false, $CC);
             //Reset $CC
             $CC = [];
 

@@ -2265,7 +2265,7 @@ class AdministratepaperController extends PaperDefaultController
                         Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $aLocale)
                     ], $commonTags);
 
-                Episciences_Mail_Send::sendMailFromReview($author, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY, $authorTags);
+                Episciences_Mail_Send::sendMailFromReview($author, Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY, $authorTags, $paper);
 
                 // informer les rédacteurs, autres corrceteurs, administrateurs, secrétaires de rédaction et rédcateurs en chefs
                 Episciences_Submit::addIfNotExists($this->getAllCopyEditors($paper), $recipients);
@@ -2285,8 +2285,8 @@ class AdministratepaperController extends PaperDefaultController
                         ], $commonTags);
 
                     Episciences_Mail_Send::sendMailFromReview(
-                        $recipient, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY,
-                        $recipientTags, null, [], false, $CC
+                        $recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY, $recipientTags,
+                        $paper, null, [], false, $CC
                     );
                     //reset $CC
                     $CC = [];
@@ -2353,7 +2353,7 @@ class AdministratepaperController extends PaperDefaultController
 
             ];
 
-            Episciences_Mail_Send::sendMailFromReview($assignedUser, $paper, $templateType, $tags);
+            Episciences_Mail_Send::sendMailFromReview($assignedUser, $templateType, $tags, $paper);
         }
         return $removed;
     }
@@ -2415,7 +2415,7 @@ class AdministratepaperController extends PaperDefaultController
 
             ];
 
-            Episciences_Mail_Send::sendMailFromReview($assignedUser, $paper, $templateType, $tags);
+            Episciences_Mail_Send::sendMailFromReview($assignedUser, $templateType, $tags, $paper);
         }
         return $added;
     }

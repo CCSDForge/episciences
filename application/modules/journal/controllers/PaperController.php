@@ -409,8 +409,8 @@ class PaperController extends PaperDefaultController
 
             return
                 Episciences_Mail_Send::sendMailFromReview(
-                    $reviewer, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY,
-                    $reviewerTags, Episciences_Auth::getUid(), $attachmentsFiles, true
+                    $reviewer, Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY, $reviewerTags,
+                    $paper, Episciences_Auth::getUid(), $attachmentsFiles, true
                 ) &&
                 $this->newCommentNotifyManager($paper, $oAnswer, $reviewerTags);
         }
@@ -632,7 +632,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_PAPER_URL => $adminPaperUrl
             ];
 
-            Episciences_Mail_Send::sendMailFromReview($recipient, $paper, $templateEditorType, $adminTags, null, $attachmentsMail, false, $CC);
+            Episciences_Mail_Send::sendMailFromReview($recipient, $templateEditorType, $adminTags, $paper, null, $attachmentsMail, false, $CC);
             //reset $CC
             $CC = [];
         }
@@ -676,7 +676,7 @@ class PaperController extends PaperDefaultController
             $tags = array_merge($additionalTags, $tags);
         }
 
-        return Episciences_Mail_Send::sendMailFromReview($contributor, $paper, $templateType, $tags, $senderUid, $attachments);
+        return Episciences_Mail_Send::sendMailFromReview($contributor, $templateType, $tags, $paper, $senderUid, $attachments);
     }
 
     /**
@@ -769,7 +769,7 @@ class PaperController extends PaperDefaultController
                     Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url
                 ];
 
-                Episciences_Mail_Send::sendMailFromReview($recipient, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER, $tags, Episciences_Auth::getUid());
+                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER, $tags, $paper, Episciences_Auth::getUid());
             }
 
             if ($type !== Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
@@ -1881,9 +1881,9 @@ class PaperController extends PaperDefaultController
         return
             (
                 Episciences_Mail_Send::sendMailFromReview(
-                    $contributor, $paper,
-                    Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY,
-                    $contributorTags, Episciences_Auth::getUid(), $attachmentFiles, true
+                    $contributor, Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY,
+                    $contributorTags,
+                    $paper, Episciences_Auth::getUid(), $attachmentFiles, true
                 ) &&
                 $this->newCommentNotifyManager($paper, $oComment, $contributorTags)
             );
@@ -2185,7 +2185,7 @@ class PaperController extends PaperDefaultController
                     Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url
                 ];
 
-            Episciences_Mail_Send::sendMailFromReview($user, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_REVIEWER_COPY, $reviewerTags, Episciences_Auth::getUid());
+            Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_REVIEWER_COPY, $reviewerTags, $paper, Episciences_Auth::getUid());
 
             // send mail to editors + notify chief editors, administrators and secretaries *********************
             $recipients = $paper->getEditors(true, true);
@@ -2241,7 +2241,7 @@ class PaperController extends PaperDefaultController
                     $attachments[$fileName] = $path;
                 }
 
-                Episciences_Mail_Send::sendMailFromReview($recipient, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, Episciences_Auth::getUid(), $attachments, false, $CC);
+                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, $paper, Episciences_Auth::getUid(), $attachments, false, $CC);
                 // reset CC
                 $CC = [];
             }
@@ -2390,7 +2390,7 @@ class PaperController extends PaperDefaultController
 
         // send mail to contributor - successful removal ***********************************
 
-        Episciences_Mail_Send::sendMailFromReview($contributor, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_AUTHOR_COPY, $authorTags);
+        Episciences_Mail_Send::sendMailFromReview($contributor, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_AUTHOR_COPY, $authorTags, $paper);
 
         // send mail to editors - warn paper editors that the paper was removed *************************
         // En fonction des paramètres de la revue, notifier les administrateurs, rédacteurs en chef et les secrétaires de rédaction
@@ -2405,7 +2405,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $rLocale)
             ];
 
-            Episciences_Mail_Send::sendMailFromReview($reviewer, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY, $commonTags + $rTags);
+            Episciences_Mail_Send::sendMailFromReview($reviewer, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY, $commonTags + $rTags, $paper);
         }
 
         // redirect *******************************
@@ -2629,7 +2629,7 @@ class PaperController extends PaperDefaultController
         $paperUrl = $this->view->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $docId]);
         $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
         $tags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl;
-        return Episciences_Mail_Send::sendMailFromReview($recipient, $paper, $templateType, $tags, null, [], false, $CC);
+        return Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $tags, $paper, null, [], false, $CC);
     }
 
     /**
@@ -2799,7 +2799,7 @@ class PaperController extends PaperDefaultController
                     ];
 
                     // Envoi de mail au relecteur
-                    Episciences_Mail_Send::sendMailFromReview($user, $paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL, $tags);
+                    Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL, $tags, $paper);
                 }
             }
         }
