@@ -10,12 +10,7 @@ Encore
     // directory where compiled assets will be stored
     .setOutputPath('public/build/')
     // public path used by the web server to access the output path
-<<<<<<< HEAD
     .setPublicPath('/public/build')
-=======
-    .setPublicPath('./')
-    .setManifestKeyPrefix('./')
->>>>>>> Installing Encore in non Symfony Applications. See https://symfony.com/doc/current/frontend/encore/installation.html
     .configureFilenames({
         js: '[name].js',
         css: '[name].css'
