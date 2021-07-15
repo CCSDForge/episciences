@@ -173,7 +173,7 @@ class Episciences_Mail_Send
      * @param int|null $authUid
      * @param array $attachmentsFiles ['key' => file name, 'value' => 'file path']
      * @param bool $makeACopy : si true faire une copie, car le path != REVIEW_FILES_PATH . 'attachments/'
-     * @param array $CC: cc recipients
+     * @param array $CC : cc recipients
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
@@ -190,7 +190,10 @@ class Episciences_Mail_Send
         $template->setLocale($locale);
 
         $mail = new Episciences_Mail(self::ENCODING_TYPE);
-        $mail->setDocid($paper->getDocid());
+
+        if ($paper) {
+            $mail->setDocid($paper->getDocid());
+        }
 
         foreach ($tags as $tag => $value) {
             if (!array_key_exists($tag, $mail->getTags())) {
@@ -200,8 +203,8 @@ class Episciences_Mail_Send
         $mail->setFromReview();
         $mail->setTo($recipient);
         /** @var Episciences_User $ccRep */
-        if(!empty($CC)){
-            foreach ($CC as $ccRep){
+        if (!empty($CC)) {
+            foreach ($CC as $ccRep) {
                 $mail->addCc($ccRep->getEmail(), $ccRep->getFullName());
             }
         }
@@ -214,14 +217,14 @@ class Episciences_Mail_Send
             $attachmentPath = REVIEW_FILES_PATH . 'attachments/';
             foreach ($attachmentsFiles as $fileName => $filePath) {
                 if (file_exists($filePath . $fileName)) {
-                        if(!$makeACopy) {
-                            $mail->addAttachedFile($attachmentPath . $fileName);
-                        } else {
-                            $newName = Episciences_Tools::filenameRotate($attachmentPath, $fileName);
-                            if (copy($filePath . $fileName, $attachmentPath . $newName)) {
-                                $mail->addAttachedFile($attachmentPath . $newName);
-                            }
+                    if (!$makeACopy) {
+                        $mail->addAttachedFile($attachmentPath . $fileName);
+                    } else {
+                        $newName = Episciences_Tools::filenameRotate($attachmentPath, $fileName);
+                        if (copy($filePath . $fileName, $attachmentPath . $newName)) {
+                            $mail->addAttachedFile($attachmentPath . $newName);
                         }
+                    }
                 }
             }
         }
@@ -231,8 +234,10 @@ class Episciences_Mail_Send
             return false;
         }
 
-        $paper->log(Episciences_Paper_Logger::CODE_MAIL_SENT, $authUid, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
-
+        if ($paper) {
+            $paper->log(Episciences_Paper_Logger::CODE_MAIL_SENT, $authUid, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
+        }
+        
         return true;
     }
 }
