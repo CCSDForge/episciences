@@ -938,7 +938,7 @@ class Episciences_Submit
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale)
             ];
 
-        Episciences_Mail_Send::sendMailFromReview($author, $paper, $authorTemplateKy, $authorTags);
+        Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper);
 
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
         Episciences_Review::checkReviewNotifications($recipients);
@@ -1261,7 +1261,7 @@ class Episciences_Submit
                 }
             }
 
-            Episciences_Mail_Send::sendMailFromReview($recipient, $paper, $templateKey, $adminTags);
+            Episciences_Mail_Send::sendMailFromReview($recipient, $templateKey, $adminTags, $paper);
         }
     }
 

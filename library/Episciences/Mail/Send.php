@@ -167,9 +167,9 @@ class Episciences_Mail_Send
 
     /**
      * @param Episciences_User $recipient
-     * @param Episciences_Paper $paper
      * @param string $templateType
      * @param array $tags
+     * @param Episciences_Paper|null $paper
      * @param int|null $authUid
      * @param array $attachmentsFiles ['key' => file name, 'value' => 'file path']
      * @param bool $makeACopy : si true faire une copie, car le path != REVIEW_FILES_PATH . 'attachments/'
@@ -179,7 +179,7 @@ class Episciences_Mail_Send
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    public static function sendMailFromReview(Episciences_User $recipient, Episciences_Paper $paper, string $templateType, array $tags = [], int $authUid = null, array $attachmentsFiles = [], bool $makeACopy = false, array $CC = []): bool
+    public static function sendMailFromReview(Episciences_User $recipient, string $templateType, array $tags = [], Episciences_Paper $paper = null, int $authUid = null, array $attachmentsFiles = [], bool $makeACopy = false, array $CC = []): bool
     {
 
         $template = new Episciences_Mail_Template();

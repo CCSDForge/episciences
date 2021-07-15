@@ -260,7 +260,7 @@ class PaperDefaultController extends DefaultController
             }
         }
 
-        return Episciences_Mail_Send::sendMailFromReview($manager, $newPaper, $templateKey, $tags, null, $attachmentsFiles, $makeCopy, $CC);
+        return Episciences_Mail_Send::sendMailFromReview($manager, $templateKey, $tags, $newPaper, null, $attachmentsFiles, $makeCopy, $CC);
 
     }
 
@@ -301,7 +301,7 @@ class PaperDefaultController extends DefaultController
             $tags[Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME] = $reviewer->getScreenName();
             $tags[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME] = $reviewer->getUsername();
 
-            Episciences_Mail_Send::sendMailFromReview($reviewer, $paper, $templateType, $tags);
+            Episciences_Mail_Send::sendMailFromReview($reviewer, $templateType, $tags, $paper);
         }
     }
 
@@ -398,7 +398,7 @@ class PaperDefaultController extends DefaultController
 
             try {
                 Episciences_Mail_Send::sendMailFromReview(
-                    $recipient, $paper, $templateType, $recipientTags, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC
+                    $recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC
                 );
                 ++$nbNotifications;
                 $makeCopy = false;
@@ -508,7 +508,7 @@ class PaperDefaultController extends DefaultController
             $tags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $tags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
             $tags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale);
-            Episciences_Mail_Send::sendMailFromReview($recipient, $paper, $templateType, $tags, null, $attachments, false, $CC);
+            Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $tags, $paper, null, $attachments, false, $CC);
             //reset $CC
             $CC = [];
         }
