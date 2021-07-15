@@ -33,7 +33,6 @@ assets/node_modules/
 
 /node_modules/
 /scripts/archives/
-/assets/
 
 /phpcbf.phar
 /phpcs.phar
