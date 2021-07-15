@@ -355,7 +355,7 @@ class UserDefaultController extends Zend_Controller_Action
      * if user is logged in, but not an admin, he can't create a new account
      * if user is not logged in, this is a classic account creation (account is not validated, and a mail is sent)
      */
-    public function createAction()
+    public function createAction(): void
     {
         if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) {
             $isAllowedToAddUserAccounts = true;
@@ -522,27 +522,28 @@ class UserDefaultController extends Zend_Controller_Action
                     return;
                 }
 
-
-                // mail
-                $template = new Episciences_Mail_Template();
-                $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION);
-                $template->loadTranslations();
-                $template->setLocale($user->getLangueid());
-
-                $mail = new Episciences_Mail('UTF-8');
                 $url = $this->view->url([
                     'controller' => 'user',
                     'action' => 'activate',
                     'token' => $userToken->getToken()], null, true);
+
                 $tokenUrl = APPLICATION_URL . $url;
-                $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, RVCODE);
-                $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, RVNAME);
-                $mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $tokenUrl);
-                $mail->setFromReview();
-                $mail->setTo($user);
-                $mail->setSubject($template->getSubject());
-                $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
-                $mail->writeMail();
+
+                $tags = [
+                    Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+                    Episciences_Mail_Tags::TAG_REVIEW_NAME => RVNAME,
+                    Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK => $tokenUrl
+
+                ];
+
+                try {   // send mail
+                    Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
+
+                } catch (Zend_Exception $e) {
+
+                    trigger_error($e->getMessage(), E_USER_ERROR);
+
+                }
 
             }
 
