@@ -5,6 +5,7 @@ class Episciences_UsersManager
     /**
      * fetch review user list
      * @return array
+     * @throws Zend_Db_Statement_Exception
      */
     public static function getAllUsers()
     {
@@ -85,11 +86,12 @@ class Episciences_UsersManager
     /**
      * fetch a list of all review users (users who have at least one role attached to the review)
      * @return array
+     * @throws Zend_Db_Statement_Exception
      */
-    public static function getLocalUsers()
+    public static function getLocalUsers(): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $users = array();
+        $users = [];
 
         $select = $db->select()->distinct()->from(T_USER_ROLES, 'UID')->where('RVID = ?', RVID);
         $result = $db->fetchCol($select);
@@ -97,7 +99,7 @@ class Episciences_UsersManager
         foreach ($result as $uid) {
 
             $oUser = new Episciences_User();
-            if (!$oUser->find($uid)) {
+            if (!$oUser->find($uid) || !$oUser->getIs_valid()) {
                 continue;
             }
 
