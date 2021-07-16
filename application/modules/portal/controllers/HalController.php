@@ -25,6 +25,8 @@ class HalController extends Zend_Controller_Action
             return;
         }
 
+        $journalMappings = Episciences_Review::getHalJournalMappings(true);
+
         $reviews = [];
 
         foreach ($papers as $paper) {
@@ -40,26 +42,36 @@ class HalController extends Zend_Controller_Action
                 }
             }
 
-            $preprintId = $paper->getIdentifier();
+            $documentIdentifier = $paper->getIdentifier();
 
-            $journalRef['preprintVersion'] = $paper->getVersion();
+            if (array_key_exists($paper->getRvid(), $journalMappings)) {
+                $journalRef['halJournalId'] = $journalMappings[$paper->getRvid()];
+            }
+
+            $journalRef['docJournalId'] = $paper->getRvid();
+
+
+            $journalRef['docJournalName'] = $reviews[$paper->getRvid()]->getName();
+
+
+            $journalRef['docVersion'] = $paper->getVersion();
 
             if ($paper->getDoi() !== '') {
-                $journalRef['doi'] = $paper->getDoi();
+                $journalRef['docDoi'] = $paper->getDoi();
             }
 
-            $journalRef['journalName'] = $reviews[$paper->getRvid()]->getName();
+
             if ($paper->getVid() !== 0) {
-                $journalRef['volumeName'] = ($translator->isTranslated('volume_' . $paper->getVid() . '_title', false, $locale)) ? $translator->translate('volume_' . $paper->getVid() . '_title', $locale) : '';
+                $journalRef['docVolumeName'] = ($translator->isTranslated('volume_' . $paper->getVid() . '_title', false, $locale)) ? $translator->translate('volume_' . $paper->getVid() . '_title', $locale) : '';
             }
             if ($paper->getSid() !== 0) {
-                $journalRef['sectionName'] = ($translator->isTranslated('section_' . $paper->getSid() . '_title', false, $locale)) ? $translator->translate('section_' . $paper->getSid() . '_title', $locale) : '';
+                $journalRef['docSectionName'] = ($translator->isTranslated('section_' . $paper->getSid() . '_title', false, $locale)) ? $translator->translate('section_' . $paper->getSid() . '_title', $locale) : '';
             }
 
-            $journalRef['publicationDate'] = $paper->getPublication_date();
-            $journalRef['lastUpdate'] = $paper->getModification_date();
+            $journalRef['docPublicationDate'] = $paper->getPublication_date();
+            $journalRef['docLastUpdate'] = $paper->getModification_date();
 
-            $output['publishedPapers'][$preprintId] = $journalRef;
+            $output['publishedDocuments'][$documentIdentifier] = $journalRef;
 
         }
 
