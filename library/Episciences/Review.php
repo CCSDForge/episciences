@@ -846,7 +846,7 @@ class Episciences_Review
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_CONTACT_TECH_SUPPORT,self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_CONTACT_TECH_SUPPORT, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -2062,4 +2062,34 @@ class Episciences_Review
             unset($options['title']);
         }
     }
+
+    /**
+     * A mapping between Episciences and HAL journal IDs
+     * @param bool $keysAreEpisciencesJournalIds
+     * @return array
+     */
+    public static function getHalJournalMappings(bool $keysAreEpisciencesJournalIds = true): array
+    {
+        $mappingsArray = [];
+        $mappingsArrayMapped = [];
+        $mappings = file_get_contents(APPLICATION_PATH . '/../config/halJournalMappings.json');
+        if ($mappings) {
+            $mappingsArray = json_decode($mappings, true);
+        }
+
+        if ($mappingsArray === null) {
+            $mappingsArray = [];
+        }
+
+        if (($keysAreEpisciencesJournalIds) && !(empty($mappingsArray))) {
+            foreach ($mappingsArray as $journal) {
+                $mappingsArrayMapped[$journal['episciencesJournalId']] = $journal['halReferentialId'];
+            }
+            $mappingsArray = $mappingsArrayMapped;
+        }
+
+        return $mappingsArray;
+    }
+
+
 }
