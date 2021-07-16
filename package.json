@@ -4,8 +4,8 @@
     "compass-mixins": "^0.12.10",
     "resolve-url-loader": "^4.0.0",
     "sass": "^1.35.2",
-    "sass-loader": "^12.0.0",
-    "ts-loader": "^9.0.0",
+    "sass-loader": "^12.1.0",
+    "ts-loader": "^9.2.3",
     "typescript": "^4.3.5",
     "webpack-notifier": "^1.6.0"
   }
