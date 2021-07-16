@@ -183,7 +183,7 @@ class UpdatePapers extends JournalScript
                     $file_path = $this->ask("Please enter the file path: ");
                 }
                 // check that file is CSV
-                while (strtolower(pathinfo($file_path, PATHINFO_EXTENSION)) != 'csv') {
+                while (strtolower(pathinfo($file_path, PATHINFO_EXTENSION)) !== 'csv') {
                     $file_path = $this->ask("This is not a CSV file. Please try again:");
                 }
 
@@ -234,7 +234,7 @@ class UpdatePapers extends JournalScript
         $this->getProgressBar()->start();
 
         // check that this is a CSV file
-        while (strtolower(pathinfo($path, PATHINFO_EXTENSION)) != 'csv') {
+        while (strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'csv') {
             $path = $this->ask("This is not a CSV file. Please try again:");
         }
         $this->displayInfo("*** Processing CSV file");
@@ -257,7 +257,7 @@ class UpdatePapers extends JournalScript
             $line++;
 
             // pass first line
-            if (strtolower($data[0]) == 'identifier') {
+            if (strtolower($data[0]) === 'identifier') {
                 continue;
             }
 
@@ -274,7 +274,7 @@ class UpdatePapers extends JournalScript
                 'editors'       =>  $this->get_col($data, static::COL_EDITORS),
                 'doi'           =>  $this->get_col($data, static::COL_DOI),
                 'docid'         =>  $this->get_col($data, static::COL_DOCID),
-                'rvid'          =>  ($this->get_col($data, static::COL_RVID)) ? $this->get_col($data, static::COL_RVID) : $this->getParam('rvid'),
+                'rvid'          => ($this->get_col($data, static::COL_RVID)) ?: $this->getParam('rvid'),
                 'submission_date' =>$this->get_col($data, static::COL_SUBMISSION_DATE),
             ];
 
