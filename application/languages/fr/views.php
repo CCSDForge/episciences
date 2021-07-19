@@ -230,7 +230,8 @@ return [
      */
 
     'help_versions_link' => 'https://doc.episciences.org/ufaqs/comment-sont-numerotees-les-versions-dun-document/',
-    'help_versions_text' => 'À propos des numéros de versions'
+    'help_versions_text' => 'À propos des numéros de versions',
 
-
+    #datasets
+    'software' => 'logiciel'
 ];

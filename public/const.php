@@ -158,6 +158,7 @@ function define_table_constants()
     define('T_VOLUME_SETTINGS', 'VOLUME_SETTING');
     define('VISITS_TEMP', 'STAT_TEMP');
     define('T_PAPER_FILES', 'paper_files');
+    define('T_PAPER_DATASETS', 'paper_datasets');
 }
 
 /**

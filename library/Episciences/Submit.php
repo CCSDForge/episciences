@@ -1,5 +1,8 @@
 <?php
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+
 class Episciences_Submit
 {
     protected $_db = null;
@@ -879,6 +882,11 @@ class Episciences_Submit
             Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()]);
 
 
+            if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
+                self::datasetsProcessing($paper->getDocid());
+            }
+
+
         } else {
             $message = '<strong>' . $translator->translate("Une erreur s'est produite pendant l'enregistrement de votre article.") . '</strong>';
             $messenger->setNamespace('error')->addMessage($message);
@@ -1414,5 +1422,58 @@ class Episciences_Submit
         }
 
         return $suggestedEditors;
+    }
+
+    /**
+     * @param int $docId
+     */
+
+    public static function datasetsProcessing(int $docId): void
+    {
+        $cHeaders = [
+            'headers' => ['Content-type' => 'application/json']
+        ];
+
+        try {
+            $paper = Episciences_PapersManager::get($docId, false);
+
+            $client = new Client($cHeaders);
+
+            if (Episciences_Repositories::getLabel($paper->getRepoid()) === 'Hal') {
+                $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhId_s,researchData_s&version_i:' . $paper->getversion();
+                $response = $client->get($url);
+                $result = json_decode($response->getBody()->getContents(), true);
+                $allDatasets = $result['response']['docs'][0];
+
+                $data = [];
+                $tmpData = [];
+
+                /** @var array $datastes */
+                foreach ($allDatasets as $key => $datasets) {
+                    $tmpData['doc_id'] = $docId;
+                    $tmpData['code'] = $key;
+                    $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$key];
+                    $tmpData['source_id'] = $paper->getRepoid();
+
+                    foreach ($datasets as $value) {
+
+                        $tmpData['value'] = $value;
+                        $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$key] . $value;
+                        $data[] = $tmpData;
+                    }
+
+                    $tmpData = [];
+
+                }
+
+                Episciences_Paper_DatasetsManager::insert($data);
+                unset($tmpData, $data);
+            }
+
+
+        } catch (Zend_Db_Statement_Exception | GuzzleException  $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+
+        }
     }
 }
