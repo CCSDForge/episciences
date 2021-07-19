@@ -1,0 +1,33 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$datasets = $paper->getDatasets()
+?>
+
+<?php if (!empty($datasets)) : ?>
+
+    <div class="panel panel-default collapsable" id="paper-files">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Donnée liées') ?></h2>
+        </div>
+        <div class="panel-body in">
+            <table class="table table-striped">
+                <tbody>
+                <?php /** @var  Episciences_Paper_Dataset $oDataset */ ?>
+                <?php foreach ($paper->getDatasets() as $oDataset) : ?>
+                    <?php $href = $oDataset->getLink(); ?>
+                    <tr>
+                        <td>
+                            <a href="<?= $href ?>"><?= $oDataset->getValue() ?></a>
+                            <br/>
+                            <small class="label label-default"> <?= strtoupper($this->translate($oDataset->getName())) ?></small>
+                        </td>
+                        <td></td>
+                        <td><span class="pull-right"><a data-toggle="tooltip" data-placement="top" title="<?= $this->translate('Voir') ?>" href="<?= $href ?>"><em class="fas fa-eye"></em></a></span></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>

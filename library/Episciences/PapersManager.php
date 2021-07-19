@@ -2445,6 +2445,11 @@ class Episciences_PapersManager
             Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
         }
 
+        // delete all paper datasets
+        Episciences_Paper_DatasetsManager::deleteByDocId($docId);
+        // add all datasets
+        Episciences_Submit::datasetsProcessing($docId);
+
         // Mise à jour des données
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;

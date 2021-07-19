@@ -270,6 +270,7 @@ class Episciences_Paper
      */
     private $_position;
     private $_files;
+    private $_datasets;
     public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
     public static $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats'];
@@ -3621,6 +3622,44 @@ class Episciences_Paper
         return in_array($format, self::$validMetadataFormats);
     }
 
+    /**
+     * @return mixed
+     */
+    public function getDatasets()
+    {
+        if (!$this->_datasets) {
+            $this->loadDatasets();
+        }
+
+        return $this->_datasets;
+    }
+
+    /**
+     * @param $datasets
+     */
+    public function setDatasets($datasets): void
+    {
+        $this->_datasets = $datasets;
+    }
+
+
+    private function loadDatasets(): void
+    {
+        if (!$this->_docId || !is_numeric($this->_docId)) {
+            $this->_datasets = [];
+            return;
+        }
+
+        $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
+    }
+
+
+    public function getDatasetByValue(string $value): ?Episciences_Paper_Dataset
+    {
+
+        return Episciences_Paper_DatasetsManager::findByValue($this->_docId, $value);
+
+    }
 
     /**
      * Datacite export format

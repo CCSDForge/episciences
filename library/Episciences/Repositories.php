@@ -1,5 +1,7 @@
 <?php
 
+use GuzzleHttp\Exception\GuzzleException;
+
 /**
  * Class Episciences_Repositories
  * List repositories available as submit sources
@@ -17,6 +19,7 @@ class Episciences_Repositories
     const REPO_BASEURL = 'baseurl';
     const REPO_EXAMPLE = 'example';
     const REPO_TYPE = 'type';
+    const REPO_API_URL = '';
 
     public const REPO_DOI_PREFIX = null;
 
@@ -35,7 +38,8 @@ class Episciences_Repositories
             self::REPO_EXAMPLE => 'hal-01234567',
             self::REPO_DOCURL => 'https://hal.archives-ouvertes.fr/%%IDv%%VERSION',
             self::REPO_PAPERURL => 'https://hal.archives-ouvertes.fr/%%IDv%%VERSION/document',
-            self::REPO_TYPE => self::TYPE_PAPERS
+            self::REPO_TYPE => self::TYPE_PAPERS,
+            self::REPO_API_URL => 'https://api.archives-ouvertes.fr'
         ],
         [
             // identifier example: 1511.01076
@@ -60,7 +64,7 @@ class Episciences_Repositories
         [
             // example https://zenodo.org/oai2d?verb=GetRecord&identifier=oai:zenodo.org:3752641&metadataPrefix=oai_dc
             self::REPO_LABEL => 'Zenodo',
-            self::REPO_EXAMPLE => '123456 / (DOI)10.5281/zenodo.123456' ,
+            self::REPO_EXAMPLE => '123456 / (DOI)10.5281/zenodo.123456',
             self::REPO_BASEURL => 'https://zenodo.org/oai2d',
             self::REPO_IDENTIFIER => 'oai:zenodo.org:%%ID',
             self::REPO_DOCURL => 'https://zenodo.org/record/%%ID',
@@ -105,6 +109,11 @@ class Episciences_Repositories
         return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::$_repositories[$repoId][self::REPO_DOCURL]);
     }
 
+    public static function getApiUrl($repoId)
+    {
+        return self::$_repositories[$repoId][self::REPO_API_URL];
+    }
+
     /**
      * @param $repoId
      * @param $identifier
@@ -128,7 +137,7 @@ class Episciences_Repositories
     public static function hasHook(int $repoId): string
     {
 
-         $className = self::makeHookClassNameByRepoId($repoId);
+        $className = self::makeHookClassNameByRepoId($repoId);
         if (!class_exists($className)) {
             $className = '';
         }
