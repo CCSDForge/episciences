@@ -205,13 +205,24 @@
                 </xsl:choose>
 
 
-                <xsl:if test="episciences/submission_date and episciences/submission_date != ''">
-                    <div class="small">
-                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Déposé le : ')"/>
-                        <xsl:value-of
-                                select="php:function('Episciences_View_Helper_Date::Date', string(episciences/submission_date))"/>
-                    </div>
-                </xsl:if>
+
+                <xsl:choose>
+                    <xsl:when test="episciences/submission_date and episciences/submission_date != '' and episciences/submission_date &gt;= episciences/publication_date">
+                        <div class="small">
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Déposé le : ')"/>
+                            <xsl:value-of
+                                    select="php:function('Episciences_View_Helper_Date::Date', string(episciences/submission_date))"/>
+                        </div>
+
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <div class="small">
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Importé le : ')"/>
+                            <xsl:value-of
+                                    select="php:function('Episciences_View_Helper_Date::Date', string(episciences/submission_date))"/>
+                        </div>
+                    </xsl:otherwise>
+                </xsl:choose>
 
 
                 <div class="small">
