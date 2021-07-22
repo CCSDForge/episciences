@@ -319,6 +319,8 @@ class Episciences_Volume
 
         $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
         $result = unserialize($result, ['allowed_classes' => false]);
+
+
         if ($result && array_key_exists('response', $result)) {
 
             $positions = $this->getPaperPositions();
@@ -330,8 +332,8 @@ class Episciences_Volume
             if (is_array($positions) && !empty($positions)) {
                 $positions = array_flip($positions);
                 foreach ($papers as $paper) {
-                    if (array_key_exists($paper['docid'], $positions)) {
-                        $sorted_papers[$positions[$paper['docid']]] = $paper;
+                    if (array_key_exists($paper['paperid'], $positions)) {
+                        $sorted_papers[$positions[$paper['paperid']]] = $paper;
                     } else {
                         $unsorted_papers[] = $paper;
                     }
