@@ -1152,6 +1152,11 @@ class Episciences_Submit
 
         $available = Episciences_Tools::extractPattern('/' . $availPattern . '/', $record);
 
+        if ($available == null) {
+            // HAL bug: HAL may reply with an empty dcterms:available element
+            $available[0] = date('Y-m-d');
+        }
+
         return Episciences_Tools::extractPattern('/' . $datePattern . '/', $available[0])[0];
     }
 
