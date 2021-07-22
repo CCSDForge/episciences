@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+
+## 1.0.13 - 2021-07-23
+### Fixed
+- [46](https://github.com/CCSDForge/episciences/issues/46): Paper order within a volume is broken
+
+### Added
+New field in solr schema: paperid
+
 ## 1.0.12 - 2021-07-15
 
 ### Added
