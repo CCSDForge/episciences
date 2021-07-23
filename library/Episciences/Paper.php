@@ -2299,7 +2299,7 @@ class Episciences_Paper
     /**
      * Save other volumes
      */
-    public function saveOtherVolumes()
+    public function saveOtherVolumes(): void
     {
         Episciences_Volume_PapersManager::updatePaperVolumes($this->getDocid(), $this->getOtherVolumes());
     }

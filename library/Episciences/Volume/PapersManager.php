@@ -27,7 +27,7 @@ class Episciences_Volume_PapersManager
         return $volume_papers;
     }
 
-    public static function updatePaperVolumes($docid, array $paper_volumes)
+    public static function updatePaperVolumes($docid, array $paper_volumes): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
