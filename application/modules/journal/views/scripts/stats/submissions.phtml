@@ -5,8 +5,6 @@ $acceptedTooltipInfo = "Cela inclut les articles en cours de mise en forme et en
 $publishedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.";
 $refusedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.";
 $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
-$acceptanceRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles acceptés") . ', S' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ' ]</em>' ;
-$acceptanceRate = round((($this->allAcceptations + $this->allPublications)/ $this->allSubmissions) * 100, 2);
 ?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading"><h2 class="panel-title"><?= $this->chart1Title ?><?= $this->year ? ' - <code>' . $this->year . '</code>' : '' ?></h2></div>
@@ -23,12 +21,20 @@ $acceptanceRate = round((($this->allAcceptations + $this->allPublications)/ $thi
                                 <em class="fas fa-info-circle" data-toggle="tooltip" title="<?= $this->translate($submissionsTooltipInfo) ?>"></em>
                             <?php endif; ?>
                         </li>
-                        <li>
-                            <?= $this->translate("Taux d'acceptation") ?>
-                            <code style="font-size: 105%;"><?= $acceptanceRate ?></code><em class="fas fa-percent fa-sm" style="margin-left: 5px;"></em>
-                            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($acceptanceRateTooltipInfo) ?>"></em>
 
-                        </li>
+                        <?php if (!$isYear): ?>
+                            <?php
+                            $acceptanceRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles acceptés") . ', S' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ' ]</em>';
+                            $acceptanceRate = round((($this->allAcceptations + $this->allPublications) / $this->allSubmissions) * 100, 2);
+                            ?>
+                            <li>
+                                <?= $this->translate("Taux d'acceptation") ?>
+                                <code style="font-size: 105%;"><?= $acceptanceRate ?></code><em class="fas fa-percent fa-sm" style="margin-left: 5px;"></em>
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($acceptanceRateTooltipInfo) ?>"></em>
+
+                            </li>
+                        <?php endif; ?>
+
                         <hr>
                         <li>
                             <?= ucfirst($this->translate('articles publiés')) ?>
