@@ -325,6 +325,9 @@
 		<field name="docid" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
 		<!-- Identifiant unique de chaque document ======================================================= -->
 
+		<!-- Permanent id across all document versions ; links to multiple docids -->
+		<field name="paperid" type="int" indexed="true" stored="true" multiValued="false" />
+
 		<!-- Identifiant du document au sein de l'archive dont il est issu ======================================================= -->
 		<field name="identifier_s" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
 		<!-- Identifiant du document au sein de l'archive dont il est issu ======================================================= -->

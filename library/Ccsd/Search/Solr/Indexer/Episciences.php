@@ -38,45 +38,10 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
      * @param int $docId
      * @param Document $ndx
      * @return bool|mixed
-     * @throws Zend_Date_Exception
      * @throws Zend_Db_Statement_Exception
      */
     protected function addMetadataToDoc(int $docId, Document $ndx)
     {
-
-        /*
-        'submitter'			=>	array(
-                'uid' 		=>	$submitter->getUid(),
-                'firstname'	=>	$submitter->getFirstname(),
-                'lastname'	=>	$submitter->getLastname(),
-                'mail'		=>	$submitter->getEmail()),
-                'version'			=>	$this->getVersion(),
-                'submission_date'	=>	$this->getSubmission_date(),
-                'publication_date'	=>	$this->getPublication_date(),
-                'title'				=>	$this->getTitle(),
-                'description'		=>	$this->getMetadata('description'),
-                'authors'			=>	$this->getMetadata('authors'),
-                'subjects'			=>	$this->getMetadata('subjects'),
-                'pdf_url'			=>	APPLICATION_URL.'/'.$this->getDocid().'/pdf',
-                'doc_url'			=>	APPLICATION_URL.'/'.$this->getDocid(),
-                'citation'			=>	$this->getCitation(),
-                'review_issn'		=>	$review->getSetting('ISSN'),
-                'review_title'		=>	$review->getName(),
-                'volume_name'		=>	$volume_name,
-                'section_name'		=>	$section_name,
-        */
-
-        // TODO : Ajouter dans le schéma :
-
-        // submitter_uid_i
-        // submitter_firstname_s
-        // submitter_lastname_s
-        // submitter_email_s
-        // keywords
-        // citation
-        // es_doc_url_s
-        // es_doc_url_t
-        // revue_issn_s
 
         // Suffixes (conventions)
         // _t : text (correspondance approximative : insensible à la casse, aux accents)
@@ -150,6 +115,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $dataToIndex = [
             'docid' => $docId,
+            'paperid' => $paperData['PAPERID'],
             'language_s' => Ccsd_Tools::xpath($paperData['RECORD'], '//dc:language'),
             'identifier_s' => $paperData['IDENTIFIER'],
             'version_td' => $paperData['VERSION'],
