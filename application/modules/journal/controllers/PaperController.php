@@ -851,6 +851,7 @@ class PaperController extends PaperDefaultController
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
         $paper = Episciences_PapersManager::get($docId, false);
+        $paper->loadOtherVolumes();
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
@@ -935,6 +936,11 @@ class PaperController extends PaperDefaultController
 
         // save tmp version
         if ($tmpPaper->save()) {
+
+            if($tmpPaper->getOtherVolumes()){
+                $tmpPaper->saveOtherVolumes();
+            }
+
             // log tmp version submission
             $tmpPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [self::STATUS => Episciences_Paper::STATUS_SUBMITTED]);
         } else {
@@ -1169,6 +1175,8 @@ class PaperController extends PaperDefaultController
         $docId = $request->getQuery(self::DOC_ID_STR);
         $paper = Episciences_PapersManager::get($docId);
 
+        $paper->loadOtherVolumes(); // github #48
+
         //tmp version
         $hasHook = $paper->isTmp() && isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
         $currentVersion = 1;
@@ -1228,6 +1236,7 @@ class PaperController extends PaperDefaultController
 
         // new version init
         $newPaper = clone($paper);
+
         $newPaper->setDocid(null);
         $newPaper->setPaperid($paperId); // object cloned remove it
 
@@ -1254,6 +1263,10 @@ class PaperController extends PaperDefaultController
 
         // save new version
         if ($newPaper->save()) {
+
+            if($newPaper->getOtherVolumes()){ // github #48
+                $newPaper->saveOtherVolumes();
+            }
 
             Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $newPaper->getRepoid(), 'identifier' => $newPaper->getIdentifier(), 'docId' => $newPaper->getDocid()]);
 
