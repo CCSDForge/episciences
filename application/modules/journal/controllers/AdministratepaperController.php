@@ -739,14 +739,13 @@ class AdministratepaperController extends PaperDefaultController
         if (Episciences_Auth::isSecretary()) {
             return true;
         } // check if editors have sufficient permission for accessing paper or changing its status
-        else {
-            $redirection = $this->buildRedirectionMessage($review, $paper);
-            $params = array_key_exists('params', $redirection) ? $redirection['params'] : [];
 
-            if (!empty($redirection) && array_key_exists('message', $redirection)) {
-                $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($redirection['message']);
-                $this->_helper->redirector->gotoUrl($this->_helper->url(self::ACTION_ASSIGNED, self::ADMINISTRATE_PAPER_CONTROLLER, null, $params));
-            }
+        $redirection = $this->buildRedirectionMessage($review, $paper);
+        $params = array_key_exists('params', $redirection) ? $redirection['params'] : [];
+
+        if (!empty($redirection) && array_key_exists('message', $redirection)) {
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($redirection['message']);
+            $this->_helper->redirector->gotoUrl($this->_helper->url(self::ACTION_ASSIGNED, self::ADMINISTRATE_PAPER_CONTROLLER, null, $params));
         }
 
         return empty($redirection);
