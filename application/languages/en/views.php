@@ -284,6 +284,7 @@ return [
     "Auteurs : " => 'Authors: ',
     "Auteur : " => 'Author: ',
     "Déposé le : " => 'Submitted on: ',
+    'déposée le :' => 'submitted on:',
     "Proposé le" => 'Submitted on',
     "Proposé le : " => 'Submitted on: ',
     "Proposé par" => 'Submitted by',

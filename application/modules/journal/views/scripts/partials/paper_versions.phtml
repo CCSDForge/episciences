@@ -8,6 +8,8 @@
 $request = Zend_Controller_Front::getInstance()->getRequest();
 $controller = $request->getControllerName();
 $action = $request->getActionName();
+/** @var Episciences_Paper $paper */
+$currentPaper = $this->paper;
 ?>
 <div id="versions" class="panel panel-default collapsable">
     <div class="panel-heading">
@@ -15,16 +17,19 @@ $action = $request->getActionName();
     </div>
     <div class="panel-body in" style="overflow: visible">
         <ol class="list-unstyled">
-            <?php foreach ($this->versions as $v => $docid) : ?>
+            <?php /** @var Episciences_Paper $paper */ ?>
+            <?php foreach ($this->versions as $v => $paper) : ?>
+
+                <?php $docid = $paper->getDocid(); ?>
                 <li>
-                    <?php if ($this->paper->getDocid() !== $docid) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docid ?>"><?php endif; ?>
-                        <?= $this->translate("Version") ?>&nbsp;<?= $v ?>
-                        <?php if ($this->paper->getDocid() !== $docid) : ?></a><?php endif; ?>
+                    <?php if ($currentPaper->getDocid() !== $docid) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docid ?>"><?php endif; ?>
+                        <?= $this->translate("Version") ?>&nbsp;<?= $v ?> <span class="label label-status-0 pull-right"><?= $this->translate('déposée le :') . ' ' . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
+                        <?php if ($currentPaper->getDocid() !== $docid) : ?></a><?php endif; ?>
                 </li>
             <?php endforeach; ?>
             <li>
                 <a class="pull-right" target="_blank" href="<?= $this->translate('help_versions_link') ?>">
-                    <i class="glyphicon glyphicon-question-sign"></i>&nbsp;<?= $this->translate('help_versions_text') ?>
+                    <em class="glyphicon glyphicon-question-sign"></em>&nbsp;<?= $this->translate('help_versions_text') ?>
                 </a>
             </li>
         </ol>
