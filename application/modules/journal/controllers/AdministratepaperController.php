@@ -703,7 +703,13 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->isMonitoringRefused = Episciences_EditorsManager::isMonitoringRefused(Episciences_Auth::getUid(), $paper->getDocid());
 
         // other versions block
-        $this->view->versions = array_reverse($paper->getVersionsIds(), true);
+        $versions = [];
+
+        foreach ($paper->getVersionsIds() as $version => $docId){
+            $versions[$version] = Episciences_PapersManager::get($docId, false);
+        }
+
+        $this->view->versions = array_reverse($versions, true);
 
         // history block
         $this->view->logs = $paper->getHistory();

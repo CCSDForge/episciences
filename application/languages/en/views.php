@@ -285,7 +285,8 @@ return [
     "Auteurs : " => 'Authors: ',
     "Auteur : " => 'Author: ',
     "Déposé le : " => 'Submitted on: ',
-    "Importé le : " => 'Imported on: ',
+ 'déposée le :' => 'submitted on:',
+ "Importé le : " => 'Imported on: ',
     "Proposé le" => 'Submitted on',
     "Proposé le : " => 'Submitted on: ',
     "Proposé par" => 'Submitted by',
@@ -1235,7 +1236,6 @@ return [
     "Proposer dans la rubrique :" => "Submit in the section :",
     "Hors volume" => "No volume",
     "Hors volume (s)" => "No volume (s)",
-
     "Hors rubrique" => "No section",
     "Tableau de bord" => "Dashboard",
     "Soumettre" => "Submit",
