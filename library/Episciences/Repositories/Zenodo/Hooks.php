@@ -1,7 +1,7 @@
 <?php
 
 use GuzzleHttp\Client;
-use function GuzzleHttp\json_decode as json_decodeAlias;
+use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_HooksInterface
 {
@@ -86,6 +86,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
+     * @throws GuzzleException
      */
     public static function hookApiRecords(array $hookParams): array
     {
@@ -106,7 +107,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             trigger_error($e->getMessage(), E_USER_ERROR);
         }
 
-        return json_decodeAlias($response->getBody()->getContents(), true);
+        return json_decode($response->getBody()->getContents(), true);
     }
 
     /**
