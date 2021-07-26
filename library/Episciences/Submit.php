@@ -882,7 +882,9 @@ class Episciences_Submit
 
             $result['docId'] = (int)$docId;
 
-            Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()]);
+            $response = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()]);
+
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid(), 'response' =>$response]);
 
 
             if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
