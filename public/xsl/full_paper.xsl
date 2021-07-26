@@ -224,18 +224,16 @@
                     </xsl:otherwise>
                 </xsl:choose>
 
-
-                <div class="small">
-                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
-                    <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
-                        <xsl:value-of select="."/>
-                        <xsl:if test="position() != last()">,</xsl:if>
-                    </xsl:for-each>
-                </div>
-
+                <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
+                        <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
+                            <xsl:value-of select="."/>
+                            <xsl:if test="position() != last()">,</xsl:if>
+                        </xsl:for-each>
+                    </div>
+                </xsl:if>
                 <br/>
-
-
                 <xsl:if test="(episciences/status = 0) and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = 0)">
                     <a>
                         <xsl:attribute name="href">
