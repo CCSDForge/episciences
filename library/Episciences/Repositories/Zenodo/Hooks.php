@@ -26,6 +26,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      *  Extract the "files" metadata and save it in the database
      * @param array $hookParams
      * @return array
+     * @throws GuzzleException
      */
     public static function hookFilesProcessing(array $hookParams): array
     {
@@ -113,6 +114,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams ['identifier' => '1234', 'response' => []]
      * @return array
+     * @throws GuzzleException
      */
     public static function hookVersion(array $hookParams): array
     {
@@ -195,6 +197,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      * Retourne l'identifiant unique qui lie les différentes  versions
      * @param array $hookParams
      * @return array
+     * @throws GuzzleException
      */
 
     public static function hookConceptIdentifier(array $hookParams): array
@@ -211,6 +214,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         return ['conceptIdentifier' => $conceptIdentifier];
     }
 
+    /**
+     * @param array $hookParams
+     * @return array
+     * @throws GuzzleException
+     */
     private static function checkResponse(array $hookParams): array
     {
         $response = [];
@@ -221,6 +229,67 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         return $response;
+
+    }
+
+    /**
+     * @param array $hookParams
+     * @return array
+     * @throws GuzzleException
+     */
+    public static function hookGetLinkedIdentifiers(array $hookParams): array
+    {
+        $response = self::checkResponse($hookParams);
+
+        $relatedIdentifiers = [];
+        $alternateIdentifiers = [];
+
+        if (!empty($response)) {
+
+            if (array_key_exists('related_identifiers', $response['metadata'])) {
+                $relatedIdentifiers = $response['metadata']['related_identifiers'];
+            }
+
+            if (array_key_exists('alternate_identifiers', $response['metadata'])) {
+                $alternateIdentifiers = $response['metadata']['alternate_identifiers'];
+            }
+
+        }
+
+        return array_merge($relatedIdentifiers, $alternateIdentifiers);
+    }
+
+    /**
+     * @param array $hookParams
+     * @return array
+     * @throws GuzzleException
+     */
+
+    public static function hookLinkedDataProcessing(array $hookParams): array
+    {
+        $linkedIdentifiers = self::hookGetLinkedIdentifiers($hookParams);
+
+        $data = [];
+        $tmpData = [];
+
+        /** @var array $datastes */
+        foreach ($linkedIdentifiers as $linkedIdentifier) {
+            $tmpData['doc_id'] = $hookParams['docId'];
+            $tmpData['value'] = $linkedIdentifier['identifier'];
+            $tmpData['code'] = array_key_exists('resource_type', $linkedIdentifier) ? $linkedIdentifier['resource_type'] : 'undefined';
+            $tmpData['name'] = $linkedIdentifier['scheme'];
+            $tmpData['link'] = $linkedIdentifier['scheme'] !== 'url' ? Episciences_Paper_Dataset::$_datasetsLink[$linkedIdentifier['scheme']] . $linkedIdentifier['identifier'] : $linkedIdentifier['identifier'];
+            $tmpData['source_id'] = $hookParams['repoId'];
+
+            $data[] = $tmpData;
+            $tmpData = [];
+        }
+
+        unset($tmpData);
+
+        Episciences_Paper_DatasetsManager::insert($data);
+
+        return self::checkResponse($hookParams);
 
     }
 

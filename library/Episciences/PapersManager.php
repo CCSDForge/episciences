@@ -2447,8 +2447,16 @@ class Episciences_PapersManager
 
         // delete all paper datasets
         Episciences_Paper_DatasetsManager::deleteByDocId($docId);
-        // add all datasets
-        Episciences_Submit::datasetsProcessing($docId);
+
+        if (Episciences_Repositories::hasHook($repoId)) {
+            // add all linked data if has hook
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
+
+        } else {
+            // add all datasets for Hal repository
+            Episciences_Submit::datasetsProcessing($docId);
+
+        }
 
         // Mise à jour des données
         $data['RECORD'] = $record;

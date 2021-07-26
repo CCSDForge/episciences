@@ -38,12 +38,13 @@ class Episciences_Paper_Dataset
     public static $_datasetsLabel = [
 
         'researchData_s' => 'doi',
-        'swhId_s' => 'software'
-
+        'swhId_s' => 'software',
+        'url' => 'link'
     ];
 
     public static $_datasetsLink = [
         'researchData_s' => 'https://doi.org/',
+        'doi' => 'https://doi.org/',
         'swhId_s' => 'https://archive.softwareheritage.org/'
     ];
 
@@ -140,7 +141,9 @@ class Episciences_Paper_Dataset
      */
     public function setCode(string $code): self
     {
+
         $this->_code = $code;
+
         return $this;
     }
 
