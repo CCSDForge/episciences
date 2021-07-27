@@ -170,7 +170,14 @@ class PaperController extends PaperDefaultController
         $this->view->file_count = Episciences_Paper_Visits::count($docId, 'file');
 
         // other versions block
-        $this->view->versions = array_reverse($paper->getVersionsIds(), true);
+        $versions = [];
+
+        foreach ($paper->getVersionsIds() as $version => $docId){
+            $versions[$version] = Episciences_PapersManager::get($docId, false);
+        }
+
+        $this->view->versions = array_reverse($versions, true);
+
 
         // ratings **************************************************
         $review = Episciences_ReviewsManager::find(RVID);
