@@ -42,6 +42,7 @@ New field in solr schema: paperid
 
 ### Fixed
 - [38](https://github.com/CCSDForge/episciences/issues/38): article versions may be listed in wrong order for some articles
+- Reviewer report: if the article is under review, access to its already completed report is broken
 
 #### Rating grids
 - Reviewing grids rating status were sometimes not mentioned in the grid list on article's management page
