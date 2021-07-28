@@ -16,10 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 
+## 1.0.14 - 2021-07-28
+### Fixed
+- Reviewer report: if the article is under review, access to its already completed report is broken
+- [48](https://github.com/CCSDForge/episciences/issues/48): Assigned secondary volume is lost on article update
+
 ## 1.0.13 - 2021-07-23
 ### Fixed
 - [46](https://github.com/CCSDForge/episciences/issues/46): Paper order within a volume is broken
-- [48](https://github.com/CCSDForge/episciences/issues/48): Assigned secondary volume is lost on article update 
 
 ### Added
 New field in solr schema: paperid
