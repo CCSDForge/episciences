@@ -336,7 +336,7 @@ class UpdatePapers extends JournalScript
         $paper->setOptions($params);
 
         // load paper metadata
-        $metadata = Episciences_Submit::getDoc($paper->getRepoid(), $paper->getIdentifier(), $paper->getVersion());
+        $metadata = Episciences_Submit::getDoc($paper->getRepoid(), $paper->getIdentifier(), $paper->getVersion(), null, false);
         if (!$metadata || $metadata['status'] == 0) {
             throw new Zend_Exception("metadata not found for: " . $paper->getRepoid() . ' - ' . $paper->getIdentifier() . ' - v' . $paper->getVersion());
         }
