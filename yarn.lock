@@ -5915,9 +5915,9 @@ fsevents@~2.3.2:
     "@symfony/webpack-encore": ^1.5.0
     compass-mixins: ^0.12.10
     resolve-url-loader: ^4.0.0
-    sass: ^1.35.2
+    sass: ^1.36.0
     sass-loader: ^12.1.0
-    ts-loader: ^9.2.3
+    ts-loader: ^9.2.4
     typescript: ^4.3.5
     webpack-notifier: ^1.13.0
   languageName: unknown
@@ -5975,14 +5975,14 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"sass@npm:^1.35.2":
-  version: 1.35.2
-  resolution: "sass@npm:1.35.2"
+"sass@npm:^1.36.0":
+  version: 1.36.0
+  resolution: "sass@npm:1.36.0"
   dependencies:
     chokidar: ">=3.0.0 <4.0.0"
   bin:
     sass: sass.js
-  checksum: d102e3fd6e6aa1a61f9c765fb31ff701d78ef05cf256ebb9ed80994c86638dcc8cc71832df1a1f71edce427cf823449c2fc43618b29ad51a8ca5bf93349ccaf4
+  checksum: e72aa7d49d7a65f37253b5b762925e260c7aaed06f404876fd11e5b2ac0a8d13995f7fae6e02f8098f53d3046150f8aaf3faaaf248216e313622252cbc4b46b7
   languageName: node
   linkType: hard
 
@@ -6593,9 +6593,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"ts-loader@npm:^9.2.3":
-  version: 9.2.3
-  resolution: "ts-loader@npm:9.2.3"
+"ts-loader@npm:^9.2.4":
+  version: 9.2.4
+  resolution: "ts-loader@npm:9.2.4"
   dependencies:
     chalk: ^4.1.0
     enhanced-resolve: ^5.0.0
@@ -6604,7 +6604,7 @@ fsevents@~2.3.2:
   peerDependencies:
     typescript: "*"
     webpack: ^5.0.0
-  checksum: 10727f5b0e773e2e28196c7e527646690324b99d4e44fac1e12d685b39fbe3530a04e71de396b1c572c462cb3318d6884deca7d091f47173a625b26cda7e28b0
+  checksum: 10c63a2bb27d03846108c18826459dcbe68fab695ff1d01b6ccd86e335ab72939e1034fe8d6168c39e92e6d6ce68cf70ce6a574db79ccdcdf794dee814770d54
   languageName: node
   linkType: hard
 
