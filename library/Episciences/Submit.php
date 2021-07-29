@@ -697,6 +697,7 @@ class Episciences_Submit
      * @param $id
      * @param null $version
      * @param null $latestObsoleteDocId
+     * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
      * @return array
      * @throws Zend_Exception
      */
