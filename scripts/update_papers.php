@@ -398,13 +398,13 @@ class UpdatePapers extends JournalScript
         foreach ($params as $param => $value) {
             // display params
             $message = $param . ': ';
-            $message .= ($value) ? $value : 'null';
+            $message .= ($value) ?: 'null';
             $this->displayTrace($message, false);
 
             // if update, merge input params and existing paper params
             if ($update) {
                 // if input param is not null, do not overwrite with paper param
-                if (!is_null($value) && $value != '') {
+                if ($value !== '' && !is_null($value)) {
                     continue;
                 }
 
@@ -412,7 +412,13 @@ class UpdatePapers extends JournalScript
                 $method = 'get' . ucfirst(strtolower($param));
                 if (method_exists($paper, $method)) {
                     $params[$param] = $paper->$method();
-                    $this->displayTrace($params[$param] . ' param has been set to: ' . $paper->$method());
+                    if (is_array($params[$param])) {
+                        foreach ($params[$param] as $paramValueKey => $paramValue) {
+                            $this->displayTrace($paramValueKey . ' param has been set with: ' . $paramValue);
+                        }
+                    } else {
+                        $this->displayTrace($params[$param] . ' param has been set with: ' . $method);
+                    }
                 }
             }
         }
@@ -567,7 +573,7 @@ class UpdatePapers extends JournalScript
     private function getDefaultUid($method = 'oldest')
     {
         // fetch chief editors
-        $chiefRedactors =  Episciences_Review::getChiefEditors();
+        $chiefRedactors = Episciences_Review::getChiefEditors();
 
         // remove root uid
         if (array_key_exists(1, $chiefRedactors)) {
