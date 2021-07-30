@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+## Unreleased
+Fix bug: TinyMCE is removing elements like <script>:
+- Enable TinyMCE 'FullPage' plugin (Fullpage exposes <head>, <body> and various meta tags in source code view)
 
 ## 1.0.14 - 2021-07-28
 ### Fixed
