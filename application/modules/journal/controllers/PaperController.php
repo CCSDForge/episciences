@@ -1614,7 +1614,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function ratingAction()
+    public function ratingAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -1635,7 +1635,6 @@ class PaperController extends PaperDefaultController
         }
 
         $paper = Episciences_PapersManager::get($docId);
-        $uid = $paper->getUid();
 
         // paper not found
         if (!$paper) {
@@ -1644,6 +1643,8 @@ class PaperController extends PaperDefaultController
             $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
             return;
         }
+
+        $uid = $paper->getUid();
 
         if ($uid === $reviewer_uid || $uid === Episciences_Auth::getUid()) { // Relecture de son propre article
             error_log('ACL: UID ' . Episciences_Auth::getUid() . ' tried to review his own article ' . $docId);
@@ -1672,9 +1673,7 @@ class PaperController extends PaperDefaultController
         if (!array_key_exists('canReviewing', $accessToRating)) {
             $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($accessToRating['message']);
             $this->_helper->redirector->gotoUrl($accessToRating['url']);
-            if (array_key_exists('isReturn', $accessToRating) && $accessToRating['isReturn']) {
-                return;
-            }
+            return;
         }
 
 
@@ -1735,7 +1734,10 @@ class PaperController extends PaperDefaultController
          * mais pas encore validée et c'est, ce dernier, qui va la complèter.
          *
          **/
-        if ($onBehalf = !($report->getUid() === Episciences_Auth::getUid())) {
+
+        $isOwner = ($report->getUid() === Episciences_Auth::getUid());
+
+        if ($onBehalf = !$isOwner) {
             $report->setOnbehalf_uid(Episciences_Auth::getUid());
         } else {
             $report->setOnbehalf_uid(null);
@@ -1778,7 +1780,6 @@ class PaperController extends PaperDefaultController
                         $url = '/reviewer/invitation/id/' . $invitations[Episciences_Auth::getUid()][0]['INVITATION_ID'];
                         $accessResult['message'] = $message;
                         $accessResult['url'] = $url;
-                        $accessResult['return'] = true;
                         return $accessResult;
                     }
                 }
@@ -1829,9 +1830,6 @@ class PaperController extends PaperDefaultController
         } elseif ($paper->isObsolete()) { // paper is obsolete: display a notice
             $paper->getLatestVersionId();
             $result['displayNotice'] = true;
-        } elseif ($paper->isRevisionRequested()) { // new version requested
-            $result['message'] = $translator->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
-            $result['url'] = $url;
         }
 
         return $result;
@@ -2077,9 +2075,17 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Form_Exception
      * @throws Zend_Mail_Exception
      */
-    private function ratingProcessing(Zend_Controller_Request_Http $request, Episciences_Paper $paper, Episciences_Rating_Report $report)
+    private function ratingProcessing(Zend_Controller_Request_Http $request, Episciences_Paper $paper, Episciences_Rating_Report $report): void
     {
         if ($paper->isEditable() && !$report->isCompleted()) {
+
+            if($paper->isRevisionRequested()){
+                $message = $this->view->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
+                $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+                return;
+            }
+
             $rating_form = Episciences_Rating_Manager::getRatingForm($report);
             if ($rating_form) {
                 $this->view->rating_form = $rating_form;

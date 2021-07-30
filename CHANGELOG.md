@@ -15,11 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+Fix bug: 'script' tag in TinyMCE is removing
+
+## 1.0.14 - 2021-07-28
+### Fixed
+- Reviewer report: if the article is under review, access to its already completed report is broken
+- [48](https://github.com/CCSDForge/episciences/issues/48): Assigned secondary volume is lost on article update
 
 ## 1.0.13 - 2021-07-23
 ### Fixed
 - [46](https://github.com/CCSDForge/episciences/issues/46): Paper order within a volume is broken
-- [48](https://github.com/CCSDForge/episciences/issues/48): Assigned secondary volume is lost on article update 
 
 ### Added
 New field in solr schema: paperid
@@ -42,6 +48,7 @@ New field in solr schema: paperid
 
 ### Fixed
 - [38](https://github.com/CCSDForge/episciences/issues/38): article versions may be listed in wrong order for some articles
+- Reviewer report: if the article is under review, access to its already completed report is broken
 
 #### Rating grids
 - Reviewing grids rating status were sometimes not mentioned in the grid list on article's management page
