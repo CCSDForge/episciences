@@ -666,7 +666,6 @@ class AdministratepaperController extends PaperDefaultController
 
         // paper status change form
         if (Episciences_Auth::isAllowedToManagePaper()) {
-            //$this->view->tmp = $paper->isTmp();
             $this->view->other_editors = $all_editors;
             $this->view->acceptanceForm = Episciences_PapersManager::getAcceptanceForm($templates['accept']);
             $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
