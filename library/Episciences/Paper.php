@@ -272,6 +272,8 @@ class Episciences_Paper
     private $_position;
     private $_files;
     private $_datasets;
+    /** @var string  */
+    private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
     public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
     public static $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats'];
@@ -2715,7 +2717,8 @@ class Episciences_Paper
                 'RECORD' => $this->getRecord(),
                 'WHEN' => new Zend_Db_Expr('NOW()'),
                 'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
-                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()')
+                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
+                'FLAG' => $this->getFlag()
             ];
 
             if ($this->getPublication_date()) {
@@ -2753,7 +2756,8 @@ class Episciences_Paper
             'REPOID' => $this->getRepoid(),
             'RECORD' => $this->getRecord(),
             'SUBMISSION_DATE' => $this->getSubmission_date(),
-            'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()')
+            'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
+            'FLAG' => $this->getFlag()
         ];
         if ($this->getIdentifier()) {
             $data['IDENTIFIER'] = $this->getIdentifier();
@@ -3634,6 +3638,24 @@ class Episciences_Paper
 
         return Episciences_Paper_DatasetsManager::findByValue($this->_docId, $value);
 
+    }
+
+    /**
+     * @return string
+     */
+    public function getFlag(): string
+    {
+        return $this->_flag;
+    }
+
+    /**
+     * @param string $flag
+     * @return $this
+     */
+    public function setFlag(string $flag): \Episciences_Paper
+    {
+        $this->_flag = $flag;
+        return $this;
     }
 
 }
