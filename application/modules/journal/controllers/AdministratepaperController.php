@@ -557,6 +557,7 @@ class AdministratepaperController extends PaperDefaultController
                 if ($editor_comment_form->isValid($request->getPost()) && $this->save_editor_comment($paper)) {
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                    $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
                 } else {
                     $message = $this->view->translate("Votre commentaire n'a pas pu être envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
@@ -665,7 +666,6 @@ class AdministratepaperController extends PaperDefaultController
 
         // paper status change form
         if (Episciences_Auth::isAllowedToManagePaper()) {
-            //$this->view->tmp = $paper->isTmp();
             $this->view->other_editors = $all_editors;
             $this->view->acceptanceForm = Episciences_PapersManager::getAcceptanceForm($templates['accept']);
             $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
