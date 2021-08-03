@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 Fix bug: 'script' tag in TinyMCE is removing
+Fix bug: when entering a comment and saving it, the text also remains in the comment box leaving the impression that the comment did not go through.
 
 ## 1.0.14 - 2021-07-28
 ### Fixed
