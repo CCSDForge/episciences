@@ -2303,11 +2303,12 @@ class Episciences_Paper
     }
 
     /**
+     * @param bool $force
      * @return array
      */
-    public function getOtherVolumes(): array
+    public function getOtherVolumes(bool $force = false): array
     {
-        if (!is_array($this->_otherVolumes)) {
+        if ($force || !is_array($this->_otherVolumes )) {
             $this->loadOtherVolumes();
         }
         return $this->_otherVolumes;

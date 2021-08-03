@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Published documents metadata : Submission Date: Add a different label for imported documents because for these documents submission date may be >= publication date. It only happens with imported documents previously published on another platform.
 - New script to import volumes with a CSV file
 
+### Fixed
+- Fixed bug: 'script' tag in TinyMCE is removing
+- Fixed bug: [56](https://github.com/CCSDForge/episciences/issues/56): when entering a comment and saving it, the text also remains in the comment box leaving the impression that the comment did not go through.
+- Fixed bug: [48](https://github.com/CCSDForge/episciences/issues/48): moving the article to other volumes, creates an entry in the 'History' + improvements.
+- Fixed bug: 'script' tag in TinyMCE is removed
+
 ## 1.0.14 - 2021-07-28
 ### Fixed
 - Reviewer report: if the article is under review, access to its already completed report is broken

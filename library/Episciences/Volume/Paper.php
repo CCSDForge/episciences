@@ -77,4 +77,17 @@ class Episciences_Volume_Paper
         }
     }
 
+
+    public function toArray(): array
+    {
+        return [
+
+            'id' => $this->getId(),
+            'vid' => $this->getVid(),
+            'docid' => $this->getDocid()
+
+        ];
+
+    }
+
 }
