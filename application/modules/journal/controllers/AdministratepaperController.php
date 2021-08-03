@@ -2471,6 +2471,7 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * save paper secondary volumes
+     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
     public function saveothervolumesAction()
@@ -2503,6 +2504,16 @@ class AdministratepaperController extends PaperDefaultController
 
             $paper->setOtherVolumes($paper_volumes);
             $paper->saveOtherVolumes();
+            $oOVolumes = $paper->getOtherVolumes(true);
+            $oVolumes= [];
+
+            /** @var Episciences_Volume_Paper $oOVolume */
+
+            foreach ($oOVolumes as $oOVolume) {
+                $oVolumes [] = $oOVolume->toArray();
+            }
+
+            $paper->log(Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION, Episciences_Auth::getUid(), ['vids' => $oVolumes]);
 
             if ($paper->isPublished()) {
                 $resOfIndexing = $paper->indexUpdatePaper();

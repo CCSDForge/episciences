@@ -69,6 +69,7 @@ return [
     Episciences_Paper_Logger::CODE_MAIL_SENT => "Envoi d'un e-mail",
     Episciences_Paper_Logger::CODE_REMINDER_SENT => "Envoi d'une relance",
     Episciences_Paper_Logger::CODE_VOLUME_SELECTION => "Déplacé dans un volume",
+    Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION => "Déplacé dans un volume (s) secondaire(s)",
     Episciences_Paper_Logger::CODE_SECTION_SELECTION => "Déplacé dans une rubrique",
     Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST => 'Demande de modifications mineures',
     Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST => 'Demande de modifications majeures',

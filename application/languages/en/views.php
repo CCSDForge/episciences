@@ -1232,6 +1232,8 @@ return [
     "Proposer pour le volume :" => "Submit in the volume :",
     "Proposer dans la rubrique :" => "Submit in the section :",
     "Hors volume" => "No volume",
+    "Hors volume (s)" => "No volume (s)",
+
     "Hors rubrique" => "No section",
     "Tableau de bord" => "Dashboard",
     "Soumettre" => "Submit",
