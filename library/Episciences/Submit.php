@@ -439,8 +439,8 @@ class Episciences_Submit
             $result['docId'] = $db->lastInsertId();
 
             // Les versions précédentes deviennent obsolètes
-            $values = array('STATUS' => Episciences_Paper::STATUS_OBSOLETE);
-            $where = array('DOCID != ?' => $result['docId'], 'PAPERID = ?' => $paperId);
+            $values = ['STATUS' => Episciences_Paper::STATUS_OBSOLETE];
+            $where = ['DOCID != ?' => $result['docId'], 'PAPERID = ?' => $paperId];
             $db->update(T_PAPERS, $values, $where);
 
         } else {
@@ -512,12 +512,12 @@ class Episciences_Submit
             }
 
             // Select: repositories
-            $subform->addElement('select', 'repoId', array(
+            $subform->addElement('select', 'repoId', [
                 'label' => 'Archive',
                 'disabled' => true,
                 'multiOptions' => $options,
                 'style' => 'width:33%;',
-            ));
+            ]);
 
             $subform->addElement('hidden', 'h_repoId');
 
@@ -554,28 +554,28 @@ class Episciences_Submit
             }
 
             // Bouton : Rechercher
-            $subform->addElement('button', 'getPaper', array(
+            $subform->addElement('button', 'getPaper', [
                 'label' => 'Rechercher',
                 'class' => 'btn btn-default',
                 'style' => 'width:33%',
-                'decorators' => array(
-                    array('ViewHelper', array('class' => 'form-control input-sm')),
-                    array('HtmlTag', array('tag' => 'div', 'class' => "col-md-9 col-md-offset-3"))
-                )
-            ));
+                'decorators' => [
+                    ['ViewHelper', ['class' => 'form-control input-sm']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => "col-md-9 col-md-offset-3"]]
+                ]
+            ]);
 
             $form->addSubForm($subform, 'search_doc');
-            $form->getSubForm('search_doc')->setDecorators(array(
+            $form->getSubForm('search_doc')->setDecorators([
                 'FormElements',
-                array(array('wrapper2' => 'HtmlTag'), array('tag' => 'div', 'class' => 'panel-body')),
-                array(array('wrapper1' => 'HtmlTag'), array('tag' => 'div', 'class' => 'panel panel-default', 'id' => 'searchForm')),
-            ));
+                [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
+                [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'id' => 'searchForm']],
+            ]);
 
 
             // Formulaire de soumission du document
-            $group = array();
+            $group = [];
             $xml = new Zend_Form_Element_Hidden('xml');
-            $xml->setDecorators(array('ViewHelper'));
+            $xml->setDecorators(['ViewHelper']);
             $form->addElement($xml);
             $group[] = 'xml';
 
@@ -602,80 +602,80 @@ class Episciences_Submit
             $extensions = ALLOWED_EXTENSIONS;
             $implode_extensions = implode(',', $extensions);
             $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
-            $form->addElement('file', 'file_new_version_comment_author', array(
+            $form->addElement('file', 'file_new_version_comment_author', [
                 'label' => "Lettre d'accompagnement",
                 'description' => $description,
                 'valueDisabled' => true,
                 'maxFileSize' => MAX_FILE_SIZE,
-                'validators' => array(
-                    'Count' => array(false, 1),
-                    'Extension' => array(false, $implode_extensions),
-                    'Size' => array(false, MAX_FILE_SIZE)
-                )
-            ));
+                'validators' => [
+                    'Count' => [false, 1],
+                    'Extension' => [false, $implode_extensions],
+                    'Size' => [false, MAX_FILE_SIZE]
+                ]
+            ]);
             $group[] = 'file_new_version_comment_author';
 
 
-            $form->addElement('checkbox', 'disclaimer1', array(
+            $form->addElement('checkbox', 'disclaimer1', [
                 'required' => true,
                 'uncheckedValue' => null,
                 'label' => "Je certifie être l'auteur de cet article, ou être mandaté par l'un des auteurs",
                 'belongsTo' => "disclaimers",
-                'decorators' => array(
+                'decorators' => [
                     'ViewHelper',
-                    array('Label', array('placement' => 'APPEND')),
-                    array('HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3')),
-                    array('Errors', array('placement' => 'APPEND'))
-                )
-            ));
+                    ['Label', ['placement' => 'APPEND']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+                    ['Errors', ['placement' => 'APPEND']]
+                ]
+            ]);
             $group[] = 'disclaimer1';
 
 
-            $form->addElement('checkbox', 'disclaimer2', array(
+            $form->addElement('checkbox', 'disclaimer2', [
                 'required' => true,
                 'uncheckedValue' => null,
                 'label' => "Je certifie ne pas avoir publié/soumis cet article ailleurs",
                 'belongsTo' => "disclaimers",
-                'decorators' => array(
+                'decorators' => [
                     'ViewHelper',
-                    array('Label', array('placement' => 'APPEND')),
-                    array('HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3')),
-                    array('Errors', array('placement' => 'APPEND'))
-                )
-            ));
+                    ['Label', ['placement' => 'APPEND']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+                    ['Errors', ['placement' => 'APPEND']]
+                ]
+            ]);
             $group[] = 'disclaimer2';
 
 
-            $form->addElement('button', 'submitPaper', array(
+            $form->addElement('button', 'submitPaper', [
                 'type' => 'submit',
                 'label' => 'Proposer cet article',
                 'disabled' => true,
                 'aria-disabled' => true,
                 'class' => 'btn btn-primary',
-                'decorators' => array(
-                    array('ViewHelper', array('class' => 'form-control input-sm')),
-                    array('HtmlTag', array('tag' => 'div', 'class' => "col-md-3  col-md-offset-3", 'style' => 'margin-top: 20px; margin-bottom: 20px'))
-                )
-            ));
+                'decorators' => [
+                    ['ViewHelper', ['class' => 'form-control input-sm']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => "col-md-3  col-md-offset-3", 'style' => 'margin-top: 20px; margin-bottom: 20px']]
+                ]
+            ]);
             $group[] = 'submitPaper';
 
 
-            $form->addElement('button', 'searchAgain', array(
+            $form->addElement('button', 'searchAgain', [
                 'label' => 'Annuler',
                 'class' => 'btn btn-default',
-                'decorators' => array(
-                    array('ViewHelper', array('class' => 'form-control input-sm')),
-                    array('HtmlTag', array('tag' => 'div', 'class' => "col-md-3", 'style' => 'margin-top: 20px; margin-bottom: 20px'))
-                )
-            ));
+                'decorators' => [
+                    ['ViewHelper', ['class' => 'form-control input-sm']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => "col-md-3", 'style' => 'margin-top: 20px; margin-bottom: 20px']]
+                ]
+            ]);
             $group[] = 'searchAgain';
 
             $form->addDisplayGroup($group, 'submitDoc');
-            $form->getDisplayGroup('submitDoc')->setDecorators(array(
+            $form->getDisplayGroup('submitDoc')->setDecorators([
                 'FormElements',
-                array(array('wrapper2' => 'HtmlTag'), array('tag' => 'div', 'class' => 'panel-body')),
-                array(array('wrapper1' => 'HtmlTag'), array('tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm'))
-            ));
+                [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
+                [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
+            ]);
 
             if (isset($defaults['version'], $defaults['docId'], $defaults['repoId'])) {
                 //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle
@@ -697,10 +697,11 @@ class Episciences_Submit
      * @param $id
      * @param null $version
      * @param null $latestObsoleteDocId
+     * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
      * @return array
      * @throws Zend_Exception
      */
-    public static function getDoc($repoId, $id, $version = null, $latestObsoleteDocId = null): array
+    public static function getDoc($repoId, $id, $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true): array
     {
         $isNewVersionOf = !empty($latestObsoleteDocId);
         $result = [];
@@ -756,7 +757,9 @@ class Episciences_Submit
 
             if ($result['status'] === 2) {
                 $paper = Episciences_PapersManager::get($docId);
-                $result['newVerErrors'] = $paper->manageNewVersionErrors(['version' => $version, 'isNewVersionOf' => $isNewVersionOf]);
+                if ($manageNewVersionErrors) {
+                    $result['newVerErrors'] = $paper->manageNewVersionErrors(['version' => $version, 'isNewVersionOf' => $isNewVersionOf]);
+                }
             }
 
             //Bloquer la soumission dans hal d'une notice vide :git #109
@@ -915,10 +918,10 @@ class Episciences_Submit
         // Préparation du lien vers l'article
         $view = Zend_Layout::getMvcInstance()->getView();
 
-        $paperUrl = $view->url(array(
+        $paperUrl = $view->url([
             'controller' => 'paper',
             'action' => 'view',
-            'id' => $paper->getDocid()));
+            'id' => $paper->getDocid()]);
 
         $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
@@ -1151,6 +1154,11 @@ class Episciences_Submit
         $availPattern = '<dcterms:available>' . $datePattern . '<\/dcterms:available>';
 
         $available = Episciences_Tools::extractPattern('/' . $availPattern . '/', $record);
+
+        if ($available == null) {
+            // HAL bug: HAL may reply with an empty dcterms:available element
+            $available[0] = date('Y-m-d');
+        }
 
         return Episciences_Tools::extractPattern('/' . $datePattern . '/', $available[0])[0];
     }

@@ -1,5 +1,7 @@
 <?php 
-
+/**
+ * @deprecated
+ */
 class Episciences_Import
 {
     protected $_repoid;

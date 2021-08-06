@@ -1,5 +1,7 @@
-<?php 
-
+<?php
+/**
+ * @deprecated
+ */
 class Import extends Episciences_Paper
 {
     protected $_repoid;

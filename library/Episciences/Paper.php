@@ -1037,8 +1037,6 @@ class Episciences_Paper
         $sql = $db->select()
             ->from(T_PAPERS, ['DOCID'])
             ->where('RVID = ?', $this->getRvid())
-            //->where('VID = ?', $this->getVid())
-            //->where('SID = ?', $this->getSid())
             ->where('STATUS != ?', Episciences_Paper::STATUS_DELETED);
 
         if ($this->hasHook) {
@@ -2341,7 +2339,6 @@ class Episciences_Paper
      */
     public function manageNewVersionErrors(array $options = []): string
     {
-
         $id = $this->getDocid();
 
         if ($this->isObsolete()) {
@@ -2349,6 +2346,7 @@ class Episciences_Paper
             $versionIds = $this->getVersionsIds();
             $id = $versionIds[array_key_last($versionIds)];
         }
+
 
         $canReplace = false;
         $docId = $this->getDocid();
@@ -2394,6 +2392,7 @@ class Episciences_Paper
                 )
             )
         ) {
+
             $review = Episciences_ReviewsManager::find(RVID);
             $question = $translator->translate('Souhaitez-vous remplacer la version précédente ?');
             $result['message'] = $warning;
@@ -2471,6 +2470,8 @@ class Episciences_Paper
                 array_key_exists('version', $options) &&
                 $options['version'] <= $this->getVersion()
             ) {
+
+
                 $selfMsg = $translator->translate('Cette version');
                 $selfMsg .= ' [<strong>v' . $this->getVersion() . '</strong>] ';
                 $selfMsg .= $translator->translate('du document existe déjà dans la revue.');
@@ -2489,6 +2490,7 @@ class Episciences_Paper
             $result['oldPaperStatus'] = (int)$status;
 
         } else { // Pas de détails sur le statut de l'article, si on est pas l'auteur de ce dernier
+
             $result['message'] = $span . $translator->translate('Erreur') . $translator->translate(': ') . $submitted;
         }
 
