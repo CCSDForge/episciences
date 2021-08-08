@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed bug: [56](https://github.com/CCSDForge/episciences/issues/56): when entering a comment and saving it, the text also remains in the comment box leaving the impression that the comment did not go through.
 - Fixed bug: [48](https://github.com/CCSDForge/episciences/issues/48): moving the article to other volumes, creates an entry in the 'History' + improvements.
 - Fixed bug: 'script' tag in TinyMCE is removed
+- The script in charge of updating the consultation statistics has stopped working since the end of May [RT#133526]
 
 ## 1.0.14 - 2021-07-28
 ### Fixed
