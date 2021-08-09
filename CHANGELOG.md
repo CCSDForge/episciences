@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+Add 'FLAG' attribute to Episciences::Paper class
+Alter table PAPERS: add new field 'TAG
+New script to update papers table
 
 ## 1.0.15 - 2021-08-30
 
