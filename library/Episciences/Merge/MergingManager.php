@@ -74,8 +74,6 @@ class Episciences_Merge_MergingManager
      */
     public static function applyMerge(string $token = ''): array
     {
-        $mergerUid = null;
-        $keeperUid = null;
 
         if (!is_string($token) || empty($token)) {
             $message = 'Parameter missing or incorrect : token';
