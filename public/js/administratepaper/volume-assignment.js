@@ -57,24 +57,19 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
                             let vid = $('#master_volume_select').val();
                             $(button).popover('destroy');
 
-                            // refresh master volume display or refresh all master volumes display
-
                             if (!isPartial) { // not partial
-                                $.ajax({
-                                    url: "/administratepaper/refreshmastervolume",
-                                    type: "POST",
-                                    data: {vid: vid, docId: docid, from: 'view'},
-                                    success: function (result) {
-                                        let container = $('#master_volume_name_' + docid);
-                                        $(container).hide();
-                                        $(container).html(result);
-                                        $(container).fadeIn();
-                                    }
-                                });
+
+                                // refresh master volume
+                                refreshVolumes({vid: vid, docId: docid, from: 'view'}, 'master',  $('#master_volume_name_' + docid) );
+
+                                // refresh secondary volumes
+                                refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
+
                                 // refresh paper history
                                 refreshPaperHistory(docid);
 
-                            } else {
+                            } else { // refresh all master volumes display
+
                                 let url = '/administratepaper/refreshallmastervolumes';
                                 let jData = {docid: docid, vid: vid, old_vid: oldVid, from: 'list'};
                                 let refreshPositionsRequest = ajaxRequest(url, jData);
@@ -82,10 +77,10 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
                                 refreshPositionsRequest.done(function (result) {
                                     let jResult = result !== '' ? JSON.parse(result) : {};
                                     $.each(jResult, function (index, value) {
-                                        let container = $('#master_volume_name_' + index);
-                                        $(container).hide();
-                                        $(container).html(value);
-                                        $(container).fadeIn();
+                                        let $container = $('#master_volume_name_' + index);
+                                        $container.hide();
+                                        $container.html(value);
+                                        $container.fadeIn();
                                     });
                                 });
                             }
@@ -151,22 +146,14 @@ function getOtherVolumesForm(button, docid, partial) {
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,
                     success: function (result) {
-                        if (result == 1) {
+                        if (result === '1') {
                             // Destruction du popup
                             $(button).popover('destroy');
-                            let container = $('#other_volumes_list_' + docid);
 
                             // refresh secondary volumes display
-                            $.ajax({
-                                url: "/administratepaper/refreshothervolumes",
-                                type: "POST",
-                                data: {docid: docid},
-                                success: function (result) {
-                                    $(container).hide();
-                                    $(container).html(result);
-                                    $(container).fadeIn();
-                                }
-                            });
+                            refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
+                            // refresh paper history
+                            refreshPaperHistory(docid);
                         }
                     }
                 });
@@ -179,3 +166,33 @@ function getOtherVolumesForm(button, docid, partial) {
 function closeResult() {
     $('button').popover('destroy');
 }
+
+/**
+ * refresh volumes
+ * @param $jsonData
+ * @param volumeType
+ * @param $container
+ * @returns {*}
+ */
+function refreshVolumes($jsonData, volumeType = 'master', $container = null) {
+
+    let url = '/administratepaper/refreshmastervolume';
+
+    if (volumeType === 'others') { // seconder volumes
+        url = '/administratepaper/refreshothervolumes';
+    }
+
+    let request = ajaxRequest(url, $jsonData);
+
+    if ($container) {
+        request.done(function (result) {
+            $container.hide();
+            $container.html(result);
+            $container.fadeIn();
+        });
+    }
+
+    return request;
+}
+
+
