@@ -811,6 +811,10 @@ class Episciences_Tools
         return $result;
     }
 
+    /**
+     * @param $datestring
+     * @return mixed|string|null
+     */
     public static function getValidSQLDateTime($datestring)
     {
         $result = null;

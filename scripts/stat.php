@@ -34,6 +34,11 @@ if ($opts->date) {
     $date = date('Y-m-d', strtotime('-1 day'));
 }
 
+// Autoloader
+require_once('Zend/Loader/Autoloader.php');
+$autoloader = Zend_Loader_Autoloader::getInstance();
+$autoloader->setFallbackAutoloader(true);
+
 $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
 if ($debug) {

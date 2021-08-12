@@ -16,6 +16,8 @@
 
 # Private configs
 /config/pwd.json
+# Mappings of Episicences journals Id HAL referential Ids
+/config/halJournalMappings.json
 
 # composer
 /composer.lock
