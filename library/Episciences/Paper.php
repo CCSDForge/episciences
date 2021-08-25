@@ -19,9 +19,9 @@ class Episciences_Paper
     const CACHE_EXPIRE_METADATA_UNPUBLISHED = 3600;
 
     /**
-     * Expire metadata of published articles after 1 week
+     * Expire metadata of published articles after 1 month
      */
-    public const CACHE_EXPIRE_METADATA_PUBLISHED = 3600 * 24 * 7;
+    public const CACHE_EXPIRE_METADATA_PUBLISHED = 3600 * 24 * 31;
 
     /**
      *
@@ -1822,6 +1822,7 @@ class Episciences_Paper
      * fetch article in given format
      * @param string $format
      * @return string|false
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function get(string $format = 'tei')
     {

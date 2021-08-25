@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Do not display the search bar on the portal (no content available)
 - Remove the possibility to create an account on the portal (RT #133571) (no feature available)
 
+### Changed
+- Expire metadata of published articles after 1 month (1 week before)
+
 ## 1.0.14 - 2021-07-28
 ### Fixed
 - Reviewer report: if the article is under review, access to its already completed report is broken
