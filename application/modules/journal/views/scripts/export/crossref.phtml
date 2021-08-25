@@ -126,6 +126,10 @@ http://www.crossref.org/schema/4.4.2 "
                     <?php
                     foreach ($abstracts as $lang => $abstract) {
 
+                        if (('International audience' === $abstract) || (preg_match("/^Comment:/", $abstract))) {
+                            continue;
+                        }
+
                         if ($lang && Zend_Locale::isLocale($lang)) {
                             $langId = ' xml:lang="' . $lang . '"';
                         } else {
