@@ -20,12 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New API: JSON Feed of published articles hosted by HAL and their metadata (Call /hal/bibfeed on portal hostname)
 - Published documents metadata : Submission Date: Add a different label for imported documents because for these documents submission date may be >= publication date. It only happens with imported documents previously published on another platform.
 - New script to import volumes with a CSV file
+- OAI-PMH: Adding Datacite metadata format to OAI-PMH repository
 
 ### Fixed
 - Fixed bug: [56](https://github.com/CCSDForge/episciences/issues/56): when entering a comment and saving it, the text also remains in the comment box leaving the impression that the comment did not go through.
 - Fixed bug: [48](https://github.com/CCSDForge/episciences/issues/48): moving the article to other volumes, creates an entry in the 'History' + improvements.
 - Fixed bug: 'script' tag in TinyMCE is removed
 - The script in charge of updating the consultation statistics has stopped working since the end of May [RT#133526]
+- OAI-PMH: Return a real earliestDatestamp with Identify response
+- Export formats:  use Variables instead of Constants for journal URLs
 
 ### Removed
 - Do not display the search bar on the portal (no content available)
