@@ -163,18 +163,19 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                                 trigger_error('Failed rendering ' . $this->_userRenderScript, E_USER_WARNING);
                             }
                         } else { ?>
-                            <a class="btn btn-default navbar-btn"
-                               href="/user/create">
-                                <i class="fas fa-plus"></i>&nbsp;<?php echo $view->translate('Créer un compte'); ?>
-                            </a>
+
+                            <?php if (defined('RVCODE') && RVCODE !== 'portal'): ?>
+
+                                <a class="btn btn-default navbar-btn"
+                                   href="/user/create"> <i class="fas fa-plus"></i>&nbsp;<?= $view->translate('Créer un compte') ?>
+                                </a>
+
+                            <?php endif; ?>
+
                             &nbsp;
-                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;"
-                                  action="/user/login"
-                                  id="form-login" method="post">
-                                <input type="hidden" name="forward-controller"
-                                       value="<?php echo $request->getControllerName(); ?>"/>
-                                <input type="hidden" name="forward-action"
-                                       value="<?php echo $request->getActionName(); ?>"/>
+                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;" action="/user/login" id="form-login" method="post">
+                                <input type="hidden" name="forward-controller" value="<?php echo $request->getControllerName(); ?>"/>
+                                <input type="hidden" name="forward-action" value="<?php echo $request->getActionName(); ?>"/>
                                 <?php
                                 $forwardParams = $request->getParams();
                                 unset($forwardParams['controller'], $forwardParams['action'], $forwardParams['module'], $forwardParams['submit'], $forwardParams['submit_advanced']);
@@ -193,13 +194,9 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
 
                                     <button class="btn btn-small btn-primary" type="button"
-                                            onclick="$('#form-login').submit();" accesskey="l">
-                                        <i class="fas fa-sign-in-alt"></i>
-                                        &nbsp;<?php echo $view->translate('Connexion'); ?></button>
-                                    <button class="btn btn-small btn-primary dropdown-toggle" data-toggle="dropdown"
-                                            type="button">
-                                        <span class="caret"
-                                              style=""></span>
+                                            onclick="$('#form-login').submit();" accesskey="l"> <i class="fas fa-sign-in-alt"></i> &nbsp;<?php echo $view->translate('Connexion'); ?></button>
+                                    <button class="btn btn-small btn-primary dropdown-toggle" data-toggle="dropdown" type="button">
+                                        <span class="caret" style=""></span>
                                     </button>
 
                                     <ul class="dropdown-menu pull-right">

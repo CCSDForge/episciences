@@ -15,13 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+- Do not display the search bar on the portal
+- Remove the possibility to create an account on the portal (RT #133571)
 ### Added
 - New API: JSON Feed of published articles hosted by HAL and their metadata (Call /hal/bibfeed on portal hostname)
 - Published documents metadata : Submission Date: Add a different label for imported documents because for these documents submission date may be >= publication date. It only happens with imported documents previously published on another platform.
 - New script to import volumes with a CSV file
 
 ### Fixed
-- Fixed bug: 'script' tag in TinyMCE is removing
 - Fixed bug: [56](https://github.com/CCSDForge/episciences/issues/56): when entering a comment and saving it, the text also remains in the comment box leaving the impression that the comment did not go through.
 - Fixed bug: [48](https://github.com/CCSDForge/episciences/issues/48): moving the article to other volumes, creates an entry in the 'History' + improvements.
 - Fixed bug: 'script' tag in TinyMCE is removed
