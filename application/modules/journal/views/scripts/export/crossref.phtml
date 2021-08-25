@@ -133,7 +133,7 @@ http://www.crossref.org/schema/4.4.2 "
                         }
 
                         echo '<jats:p' . $langId . '>';
-                        echo $this->escape($abstract);
+                        echo $this->escape(trim($abstract));
                         echo '</jats:p>';
                     }
                     ?>
