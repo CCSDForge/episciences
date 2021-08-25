@@ -1,7 +1,6 @@
 <?php
 
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * Class Episciences_Paper
@@ -16,7 +15,7 @@ class Episciences_Paper
     /**
      * Expire metadata of UNpublished articles after 1 hour
      */
-    const CACHE_EXPIRE_METADATA_UNPUBLISHED = 3600;
+    public const CACHE_EXPIRE_METADATA_UNPUBLISHED = 3600;
 
     /**
      * Expire metadata of published articles after 1 month
@@ -478,6 +477,28 @@ class Episciences_Paper
     {
         $this->_rvId = (int)$id;
         return $this;
+    }
+
+    /**
+     * @param string $format
+     * @return string
+     */
+    public static function getEarliestPublicationDate(string $format = 'Y-m-d'): string
+    {
+        $earliestPublicationDate = Episciences_PapersManager::getEarliestPublicationDate();
+
+        if ($earliestPublicationDate === '') {
+            // silly default
+            $earliestPublicationDate = '1970-01-01 00:00:00';
+        }
+
+        try {
+            $earliestPublicationDateObj = new DateTime($earliestPublicationDate);
+            $earliestPublicationDateFormatted = $earliestPublicationDateObj->format($format);
+        } catch (Exception $exception) {
+            $earliestPublicationDateFormatted = '1970-01-01';
+        }
+        return $earliestPublicationDateFormatted;
     }
 
 
@@ -2309,7 +2330,7 @@ class Episciences_Paper
      */
     public function getOtherVolumes(bool $force = false): array
     {
-        if ($force || !is_array($this->_otherVolumes )) {
+        if ($force || !is_array($this->_otherVolumes)) {
             $this->loadOtherVolumes();
         }
         return $this->_otherVolumes;
@@ -3598,6 +3619,65 @@ class Episciences_Paper
     public static function isValidMetadataFormat(string $format): bool
     {
         return in_array($format, self::$validMetadataFormats);
+    }
+
+
+    /**
+     * Datacite export format
+     * @return string
+     * @throws Zend_Exception
+     */
+    public function getDatacite(): string
+    {
+        $volume = '';
+        $section = '';
+
+        if ($this->getVid()) {
+            /* @var $oVolume Episciences_Volume */
+            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            if ($oVolume) {
+                $volume = $oVolume->getName('en', true);
+            }
+        }
+
+        if ($this->getSid()) {
+            /* @var $oSection Episciences_Section */
+            $oSection = Episciences_SectionsManager::find($this->getSid());
+            if ($oSection) {
+                $section = $oSection->getName('en', true);
+            }
+        }
+
+        // Récupération des infos de la revue
+        $journal = Episciences_ReviewsManager::find($this->getRvid());
+        $journal->loadSettings();
+
+        // Create new DOI if none exist
+        if ($this->getDoi() !== '') {
+            $doi = $this->getDoi();
+        }
+
+        $paperLanguage = $this->getMetadata('language');
+
+        if (empty($paperLanguage)) {
+            $paperLanguage = 'eng';
+            // TODO temporary fix see https://gitlab.ccsd.cnrs.fr/ccsd/episciences/issues/215
+            // this attribute is required by the datacite schema
+            //arxiv doesnt have it, we need to fix this by asking the author additional information
+        }
+
+        $view = new Zend_View();
+        $view->addScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/export/');
+
+        return $view->partial('datacite.phtml', [
+            'volume' => $volume,
+            'section' => $section,
+            'journal' => $journal,
+            'paper' => $this,
+            'doi' => $doi,
+            'paperLanguage' => $paperLanguage
+        ]);
+
     }
 
 }

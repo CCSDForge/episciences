@@ -2722,4 +2722,31 @@ class Episciences_PapersManager
     {
         return strtotime($date) < time();
     }
+
+    /**
+     * @return string
+     */
+    public static function getEarliestPublicationDate()
+    {
+        define ('EPD', 'earliestPublicationDate');
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->from(T_PAPERS, [new Zend_Db_Expr("MIN(PUBLICATION_DATE) AS " . EPD)])
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+
+        try {
+            $result = $select->query()->fetch();
+        } catch (Zend_Db_Statement_Exception $exception) {
+            $result = '';
+        }
+
+        if (!$result) {
+            $result[EPD] = '';
+        }
+
+        return $result[EPD];
+    }
+
 }

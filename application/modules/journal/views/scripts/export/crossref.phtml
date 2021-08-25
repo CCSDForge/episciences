@@ -15,7 +15,7 @@ $publicationYear = new DateTime($paper->getPublication_date());
 
 /** @var $journal Episciences_Review */
 $journal = $this->journal;
-
+$journalUrl = $journal->getUrl();
 $journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
 
 
@@ -51,7 +51,7 @@ http://www.crossref.org/schema/4.4.2 "
             <?php if ($journalDoi) : ?>
             <doi_data>
                 <doi><?php echo $this->escape($journalDoi); ?></doi>
-                <resource><?php echo $this->escape('https://' . RVCODE . '.' . DOMAIN); ?></resource>
+                <resource><?php echo $this->escape($journalUrl); ?></resource>
             </doi_data>
             <?php endif; ?>
         </journal_metadata>
@@ -171,7 +171,7 @@ http://www.crossref.org/schema/4.4.2 "
 
             <doi_data>
                 <doi><?php echo htmlentities($this->doi, ENT_XML1); ?></doi>
-                <resource><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?></resource>
+                <resource><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></resource>
             </doi_data>
 
         </journal_article>
