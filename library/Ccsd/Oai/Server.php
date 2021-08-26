@@ -391,7 +391,7 @@ abstract class Ccsd_Oai_Server
                 if ($format === 'xml-tei' || $format === 'tei') {
                     $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:tei', 'http://www.tei-c.org/ns/1.0');
                 }
-                if ($format === 'datacite') {
+                if ($format === 'oai_openaire') {
                     $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
                 }
                 $data = $this->_xml->createDocumentFragment();
@@ -551,7 +551,7 @@ abstract class Ccsd_Oai_Server
                         if ($format === 'xml-tei' || $format === 'tei') {
                             $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:tei', 'http://www.tei-c.org/ns/1.0');
                         }
-                        if ($format === 'datacite') {
+                        if ($format === 'oai_openaire') {
                             $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
                         }
                         $data = $this->_xml->createDocumentFragment();
