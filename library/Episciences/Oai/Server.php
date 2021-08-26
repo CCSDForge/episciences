@@ -13,7 +13,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     public const SET_JOURNAL = 'journal';
     public const SET_JOURNAL_PREFIX = 'journal:';
     public const OAI_TOKEN_EXPIRATION_TIME = 7200;
-    private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei', 'datacite' => 'datacite'];
+    private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei', 'oai_openaire' => 'datacite'];
 
 
     /**
@@ -83,7 +83,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         return [
             'oai_dc' => ['schema' => 'https://www.openarchives.org/OAI/2.0/oai_dc.xsd', 'ns' => 'http://www.openarchives.org/OAI/2.0/oai_dc/'],
             'tei' => ['schema' => 'https://api.archives-ouvertes.fr/documents/aofr.xsd', 'ns' => 'https://hal.archives-ouvertes.fr/'],
-            'datacite' => ['schema' => 'https://schema.datacite.org/meta/kernel-4.4/metadata.xsd', 'ns' => 'http://datacite.org/schema/kernel-4']
+            'oai_openaire' => ['schema' => 'https://schema.datacite.org/meta/kernel-4.4/metadata.xsd', 'ns' => 'http://datacite.org/schema/kernel-4']
         ];
     }
 
