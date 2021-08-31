@@ -51,6 +51,7 @@ return [
     "Erreur" => "Error",
     "Tous" => 'All',
     "Tout" => 'All',
+    'Toutes'=>'All',
     "Précédente" => 'Previous',
     "Suivante" => 'Next',
     "résultat" => ["result", "results"],
