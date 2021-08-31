@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 
+## 1.0.15.1 - 2021-08-31
+### Fixed
+- Fixed issue: [62](https://github.com/CCSDForge/episciences/issues/62): String not localized
+
 ## 1.0.15 - 2021-08-30
 
 ### Added
