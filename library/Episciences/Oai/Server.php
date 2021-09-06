@@ -1,7 +1,6 @@
 <?php
 
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-use Symfony\Contracts\Cache\ItemInterface;
 
 class Episciences_Oai_Server extends Ccsd_Oai_Server
 {
@@ -14,7 +13,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     public const SET_JOURNAL = 'journal';
     public const SET_JOURNAL_PREFIX = 'journal:';
     public const OAI_TOKEN_EXPIRATION_TIME = 7200;
-    private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei'];
+    private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei', 'oai_openaire' => 'datacite'];
 
 
     /**
@@ -23,12 +22,14 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
      */
     protected function getIdentity($url): array
     {
+        $earliestPublicationDate = Episciences_Paper::getEarliestPublicationDate();
+
         return [
             'repositoryName' => ucfirst(DOMAIN),
             'baseURL' => $url,
             'protocolVersion' => '2.0',
             'adminEmail' => 'contact@' . DOMAIN,
-            'earliestDatestamp' => '2000-01-01',
+            'earliestDatestamp' => $earliestPublicationDate,
             'deletedRecord' => 'no',
             'granularity' => 'YYYY-MM-DD',
             'description' => [
@@ -44,36 +45,61 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         ];
     }
 
+    /**
+     * @param int $identifier
+     * @return bool
+     */
     protected function existId($identifier)
     {
         // identifier format -> oai:episciences.org:jdmdh:1
         $identifier = (int)substr(strrchr($identifier, ":"), 1);
-        $paper = Episciences_PapersManager::get($identifier);
+
+        try {
+            $paper = Episciences_PapersManager::get($identifier);
+        } catch (Zend_Db_Statement_Exception $exception) {
+            $paper = false;
+        }
+
         if (false === $paper) {
             return false;
         }
-        return $paper->getStatus() == Episciences_Paper::STATUS_PUBLISHED;
+        return $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED;
     }
 
-    protected function existFormat($format)
+    /**
+     * @param string $format
+     * @return bool
+     */
+    protected function existFormat($format): bool
     {
         return array_key_exists($format, $this->getFormats());
     }
 
+    /**
+     * @return string[][]
+     */
     protected function getFormats()
     {
         return [
-            'oai_dc' => ['schema' => 'http://www.openarchives.org/OAI/2.0/oai_dc.xsd', 'ns' => 'http://www.openarchives.org/OAI/2.0/oai_dc/'],
+            'oai_dc' => ['schema' => 'https://www.openarchives.org/OAI/2.0/oai_dc.xsd', 'ns' => 'http://www.openarchives.org/OAI/2.0/oai_dc/'],
             'tei' => ['schema' => 'https://api.archives-ouvertes.fr/documents/aofr.xsd', 'ns' => 'https://hal.archives-ouvertes.fr/'],
-            //  'datacite' => ['schema' => 'http://schema.datacite.org/meta/kernel-4.3/metadata.xsd', 'ns' => 'http://datacite.org/schema/kernel-4']
+            'oai_openaire' => ['schema' => 'https://schema.datacite.org/meta/kernel-4.4/metadata.xsd', 'ns' => 'http://datacite.org/schema/kernel-4']
         ];
     }
 
+    /**
+     * @param string $set
+     * @return bool
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     protected function existSet($set)
     {
         return array_key_exists($set, $this->getSets());
     }
 
+    /**
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     protected function getSets()
     {
         $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
@@ -107,11 +133,22 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         return $out;
     }
 
-    protected function checkDateFormat($date)
+    /**
+     * @param string $date
+     * @return bool
+     */
+    protected function checkDateFormat($date): bool
     {
         return (new Zend_Validate_Date(['format' => 'yyyy-MM-dd']))->isValid($date);
     }
 
+    /**
+     * @param int $identifier
+     * @param string $format
+     * @return array|false
+     * @throws Zend_Db_Statement_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     protected function getId($identifier, $format)
     {
         // identifier format -> oai:episciences.org:jdmdh:1
@@ -134,7 +171,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
      * @param string $set
      * @param string $token
      * @return array|false|int|string
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|\Psr\Cache\InvalidArgumentException
      */
     protected function getIds($method, $format, $until, $from, $set, $token)
     {
@@ -147,7 +184,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             $conf['cursor'] = 0;
             $conf['format'] = $format;
             $query = '';
-            if ($until != null || $from != null) {
+            if ($until !== null || $from !== null) {
                 $query .= "&fq=publication_date_tdate:" . urlencode('[' . (($from == null) ? "*" : '"' . $from . 'T00:00:00Z"') . " TO " . (($until == null) ? "*" : '"' . $until . 'T23:59:59Z"') . "]");
             }
             if ((($set !== null) || ($set !== self::SET_DRIVER) || ($set !== self::SET_OPENAIRE)) && strpos($set, self::SET_JOURNAL_PREFIX) === 0) {
@@ -207,6 +244,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                         $out[] = '<resumptionToken expirationDate="' . gmdate("Y-m-d\TH:i:s\Z", time() + self::OAI_TOKEN_EXPIRATION_TIME) . '" completeListSize="' . $result['response']['numFound'] . '" cursor="' . $conf['cursor'] . '">' . $result['nextCursorMark'] . '</resumptionToken>';
                         $conf['cursor'] += (($method === self::OAI_VERB_LISTIDS) ? self::LIMIT_IDENTIFIERS : self::LIMIT_RECORDS);
                         $conf['solr'] = $queryString;
+
                         Episciences_Cache::save('oai-token-' . md5($result['nextCursorMark']) . '.phps', serialize($conf));
                     } else {
                         $out[] = '<resumptionToken completeListSize="' . $result['response']['numFound'] . '" />';

@@ -15,7 +15,7 @@ $publicationYear = new DateTime($paper->getPublication_date());
 
 /** @var $journal Episciences_Review */
 $journal = $this->journal;
-
+$journalUrl = $journal->getUrl();
 
 if (defined('RVISSN')) {
     $issn = $this->FormatIssn(RVISSN);
@@ -24,6 +24,7 @@ if (defined('RVISSN')) {
 }
 
 $seriesInformation['journalName'] = $journal->getName();
+
 
 if ($this->volume != '') {
     $seriesInformation['volume'] = $this->volume;
@@ -43,8 +44,12 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
 ?>
 <resource <?php echo $schemInfo; ?>>
     <?php if($this->doi != ''): ?>
-    <identifier identifierType="DOI"><?php echo htmlentities($this->doi, ENT_XML1); ?></identifier>
+        <identifier identifierType="DOI"><?php echo htmlentities($this->doi, ENT_XML1); ?></identifier>
+    <?php else: ?>
+        <identifier identifierType="URL"><?php echo $journalUrl . '/' . $paper->getDocid(); ?></identifier>
     <?php endif;?>
+
+
     <creators>
         <?php
         if (is_array($authors)) {
@@ -117,7 +122,7 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
     <dates>
         <date dateType="Submitted"><?php echo $dateSubmitted->format('c'); ?></date>
         <date dateType="Updated"><?php echo $dateUpdated->format('c'); ?></date>
-        <date dateType="Issued"><?php echo $dateIssued->format('c'); ?></date>
+        <date dateType="Issued"><?php echo $dateIssued->format('Y-m-d'); ?></date>
     </dates>
 
 
@@ -125,10 +130,11 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
 
     <resourceType resourceTypeGeneral="Text">Journal article</resourceType>
 
+    <?php if($this->doi != ''): ?>
     <alternateIdentifiers>
-        <alternateIdentifier
-                alternateIdentifierType="URL"><?php echo APPLICATION_URL . '/' . $paper->getDocid(); ?></alternateIdentifier>
+        <alternateIdentifier alternateIdentifierType="URL"><?php echo $journalUrl . '/' . $paper->getDocid(); ?></alternateIdentifier>
     </alternateIdentifiers>
+    <?php endif; ?>
 
     <relatedIdentifiers>
 
@@ -159,8 +165,9 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
         <?php if ($abstracts): ?>
             <?php
             foreach ($abstracts as $lang => $abstract) {
+                $abstract = trim($abstract);
 
-                if (('International audience' == $abstract) || (preg_match("/^Comment:/", $abstract))) {
+                if (('International audience' === $abstract) || (preg_match("/^Comment:/", $abstract))) {
                     $descriptionType = 'Other';
                 } else {
                     $descriptionType = 'Abstract';

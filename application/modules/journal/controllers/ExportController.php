@@ -113,31 +113,7 @@ class ExportController extends Zend_Controller_Action
      */
     protected function xmlExport($format = ''): bool
     {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-        /** @var Zend_Controller_Request_Http $request */
-
-        $request = $this->getRequest();
-        $docId = $request->getParam('id');
-
-        if (!is_numeric($docId)) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
-            $this->renderScript('index/notfound.phtml');
-            echo $this->getResponse()->getBody();
-            exit;
-        }
-
-        /** @var Episciences_Paper $paper */
-        $paper = Episciences_PapersManager::get($docId);
-
-        if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
-            $this->renderScript('index/notfound.phtml');
-            echo $this->getResponse()->getBody();
-            exit;
-        }
-
-        $this->redirectIfNotPublished($request, $paper);
+        $paper = $this->getPaperToExport();
 
 
         $volume = '';
@@ -215,16 +191,16 @@ class ExportController extends Zend_Controller_Action
         $loadResult = $dom->loadXML($output);
 
         $dom->encoding = 'utf-8';
-        $dom->version = '1.0';
+        $dom->xmlVersion = '1.0';
 
         if ($loadResult) {
             $output = $dom->saveXML();
             echo $output;
             return true;
-        } else {
-            echo '<error>Error loading XML source. Please report to Journal Support.</error>';
-            return false;
         }
+
+        echo '<error>Error loading XML source. Please report to Journal Support.</error>';
+        return false;
     }
 
     /**
@@ -252,32 +228,7 @@ class ExportController extends Zend_Controller_Action
 
     public function teiAction()
     {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        /** @var Zend_Controller_Request_Http $request */
-
-        $request = $this->getRequest();
-        $docId = $request->getParam('id');
-
-        if (!is_numeric($docId)) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
-            $this->renderScript('index/notfound.phtml');
-            echo $this->getResponse()->getBody();
-            exit;
-        }
-
-        /** @var Episciences_Paper $paper */
-        $paper = Episciences_PapersManager::get($docId);
-
-        if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
-            $this->renderScript('index/notfound.phtml');
-            echo $this->getResponse()->getBody();
-            exit;
-        }
-
-        $this->redirectIfNotPublished($request, $paper);
+        $paper = $this->getPaperToExport();
 
         $export = $this->exportTo($paper, 'tei');
 
@@ -295,9 +246,25 @@ class ExportController extends Zend_Controller_Action
      */
     public function dcAction()
     {
+        $paper = $this->getPaperToExport();
+
+        $export = $this->exportTo($paper, 'dc');
+
+        if ($export) {
+            echo $export;
+        }
+
+        exit;
+    }
+
+    /**
+     * @return Episciences_Paper|void
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function getPaperToExport()
+    {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
-
         /** @var Zend_Controller_Request_Http $request */
 
         $request = $this->getRequest();
@@ -321,14 +288,7 @@ class ExportController extends Zend_Controller_Action
         }
 
         $this->redirectIfNotPublished($request, $paper);
-
-        $export = $this->exportTo($paper, 'dc');
-
-        if ($export) {
-            echo $export;
-        }
-
-        exit;
+        return $paper;
     }
 
 }
