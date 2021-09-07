@@ -8,7 +8,7 @@
 $request = Zend_Controller_Front::getInstance()->getRequest();
 $controller = $request->getControllerName();
 $action = $request->getActionName();
-/** @var Episciences_Paper $paper */
+/** @var Episciences_Paper $currentPaper */
 $currentPaper = $this->paper;
 ?>
 <div id="versions" class="panel panel-default collapsable">
@@ -23,7 +23,8 @@ $currentPaper = $this->paper;
                 <?php $docid = $paper->getDocid(); ?>
                 <li>
                     <?php if ($currentPaper->getDocid() !== $docid) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docid ?>"><?php endif; ?>
-                        <?= $this->translate("Version") ?>&nbsp;<?= $v ?> <span class="label label-status-0 pull-right"><?= $this->translate('déposée le :') . ' ' . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
+                        <?php $sourceMsg = ($paper->getFlag() !== 'imported') ? $this->translate('Déposée le : ') : $this->translate('Importée le : ')?>
+                        <?= $this->translate("Version") ?>&nbsp;<?= $v ?> <span class="label label-status-0 pull-right"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
                         <?php if ($currentPaper->getDocid() !== $docid) : ?></a><?php endif; ?>
                 </li>
             <?php endforeach; ?>
