@@ -1711,7 +1711,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('submitter', $submitter));
         $node->appendChild($dom->createElement('uid', $this->getUid()));
         $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
-
+        $node->appendChild($dom->createElement('isImported', $this->isPublished() && $this->getSubmission_date() >= $this->getPublication_date()));
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
