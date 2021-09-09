@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 
+## Unreleased
+### Changed
+- Switch to paperIds as Episciences public PIDs for export formats and OAI-PMH. The switch from the docIds to paperIds was incomplete. One unique paperId is assigned to each version of a document. Each version of a document has a different unique docid.
+
 ## 1.0.15.1 - 2021-08-31
 ### Fixed
 - Fixed issue: [62](https://github.com/CCSDForge/episciences/issues/62): String not localized

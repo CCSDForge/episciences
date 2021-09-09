@@ -341,7 +341,7 @@ class Episciences_Paper_Tei
         $ref = $xml->createElement('ref');
         $ref->setAttribute('type', 'file');
 
-        $ref->setAttribute('target', $this->getReview()->getUrl() . '/' . $this->getPaper()->getDocid() . '/pdf');
+        $ref->setAttribute('target', $this->getReview()->getUrl() . '/' . $this->getPaper()->getPaperid() . '/pdf');
         $edition->appendChild($ref);
         $es->appendChild($edition);
 
@@ -370,11 +370,11 @@ class Episciences_Paper_Tei
         $ps = $xml->createElement('publicationStmt');
         $ps->appendChild($xml->createElement('distributor', 'CCSD'));
 
-        $id = $xml->createElement('idno', $this->getReview()->getCode() . ':' . $this->getPaper()->getDocid());
+        $id = $xml->createElement('idno', $this->getReview()->getCode() . ':' . $this->getPaper()->getPaperid());
         $id->setAttribute('type', 'id');
         $ps->appendChild($id);
 
-        $id = $xml->createElement('idno', $this->getReview()->getUrl() . '/' . $this->getPaper()->getDocid());
+        $id = $xml->createElement('idno', $this->getReview()->getUrl() . '/' . $this->getPaper()->getPaperid());
         $id->setAttribute('type', 'url');
         $ps->appendChild($id);
 
