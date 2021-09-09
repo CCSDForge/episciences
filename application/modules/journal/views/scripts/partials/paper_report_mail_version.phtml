@@ -13,7 +13,7 @@
             <?php endif; ?>
             <div style="margin-left: 5px;">
                 <?php if (is_numeric($criterion->getNote())) : ?>
-                    <strong><?= $this->translate('Votre avis'); ?></strong>
+                    <strong><?= $this->translate('Votre avis') ?></strong>
                     <div>
                         <?php
                         // if criterion has a coef, or selected option has no label
@@ -32,13 +32,13 @@
                 <?php endif; ?>
                 <?php if ($criterion->getComment()) : ?>
                     <strong><?= $this->translate('Commentaire'); ?></strong>
-                    <div><?php echo $criterion->getComment(); ?></div>
+                    <div  style="text-align: justify;"><?php echo $criterion->getComment(); ?></div>
                 <?php endif; ?>
                 <?php if ($criterion->hasAttachment()) :
                     ?><strong><?= $this->translate('Fichier'); ?></strong>
                     <div>
-                        <a href="<?= HTTP . '://' . $_SERVER['HTTP_HOST'] . '/' . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment(); ?>" target="_blank">
-                            <?= $this->translate('Télécharger le fichier', $this->locale); ?>
+                        <a href="<?= HTTP . '://' . $_SERVER['HTTP_HOST'] . '/' . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment() ?>" target="_blank">
+                            <?= $this->translate('Télécharger le fichier', $this->locale) ?>
                         </a>
                     </div>
                 <?php endif; ?>
