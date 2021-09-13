@@ -40,10 +40,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        // update paper stats (only if user is not the contributor)
-        if (Episciences_Auth::getUid() !== $paper->getUid()) {
-            Episciences_Paper_Visits::add($paper->getDocid(), Episciences_Paper_Visits::CONSULT_TYPE_FILE);
-        }
+        $this->updatePaperStats($paper, Episciences_Paper_Visits::CONSULT_TYPE_FILE);
 
         $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
         $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
@@ -152,10 +149,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        // update paper stats (only if user is not the contributor)
-        if (Episciences_Auth::getUid() !== $paper->getUid()) {
-            Episciences_Paper_Visits::add($docId);
-        }
+        $this->updatePaperStats($paper);
 
         // if paper is obsolete, display a warning
         if ($paper->isObsolete()) {
@@ -3038,6 +3032,21 @@ class PaperController extends PaperDefaultController
         }
         return true;
     }
+
+    /**
+     * * Update paper stats
+     * @param Episciences_Paper $paper
+     * @param string $consultType
+     * @throws Zend_Db_Adapter_Exception
+     */
+    private function updatePaperStats(Episciences_Paper $paper, string $consultType = Episciences_Paper_Visits::CONSULT_TYPE_NOTICE): void
+    {
+        // Only paper is published and user is not the contributor
+        if ($paper->isPublished() && Episciences_Auth::getUid() !== $paper->getUid()) {
+            Episciences_Paper_Visits::add($paper->getDocid(), $consultType);
+        }
+
+}
 
 }
 
