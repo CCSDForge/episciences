@@ -218,19 +218,56 @@ class Episciences_UsersManager
      * @param int $oldUid : l'UID à supprimer
      * @param int $newUid : Nouvel UID
      * @return int: le nombre de lignes affectées
-     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
 
-    public static function updateRolesUid(int $oldUid = 0, int $newUid = 0)
+    public static function updateRolesUid(int $oldUid = 0, int $newUid = 0): int
     {
 
-        if ($oldUid == 0 || $newUid == 0) {
+        if ($oldUid === 0 || $newUid === 0) {
             return 0;
         }
+
+        $values = [];
+        $insert = null;
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $data['UID'] = $newUid;
-        $where['UID = ?'] = $oldUid;
-        return $db->update(T_USER_ROLES, $data, $where);
+
+        $mergerObject = new Episciences_User();
+        $mergerObject->find($oldUid);
+        $mergerRoles = $mergerObject->getAllRoles();
+
+        foreach ($mergerRoles as $rvId => $roles) {
+
+            foreach ($roles as $roleId) {
+                $values[] = '(' . $newUid . ',' . $rvId . ',' . $db->quote($roleId) . ')';
+            }
+        }
+
+        // update keeper roles
+        if(!empty($values)){
+
+            // delete merger roles
+            $where['UID = ?'] = $oldUid;
+            $db->delete(T_USER_ROLES, $where);
+
+            $sql = 'INSERT INTO ';
+            $sql .= $db->quoteIdentifier(T_USER_ROLES);
+            $sql .= ' (`UID`, `RVID`, `ROLEID`) VALUES ';
+            $sql .= implode(',', $values);
+            $sql .= ' ON DUPLICATE KEY UPDATE ROLEID = VALUES(ROLEID)';
+
+            $insert = $db->prepare($sql);
+
+            try {
+                $insert->execute();
+            } catch (Exception $e) {
+                $insert = null;
+                trigger_error($e->getMessage(), E_USER_ERROR);
+            }
+        }
+
+        return ($insert) ? $insert->rowCount() : 0;
     }
 
 

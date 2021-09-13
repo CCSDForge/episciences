@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - Fixed issue: [64](https://github.com/CCSDForge/episciences/issues/64): Layout of mails with reviewers' comments
+- Improvement of the process of accounts merging
  
 ### Changed
 - Improvements for displaying when a document has been imported. E.g. for journals coming to the platform with previous content 

@@ -9,7 +9,7 @@ class ApiController extends Zend_Controller_Action
      * Action : Fusionner deux comptes
      * exp. https://www.episciences.org/api/merge/merger/100/keeper/200 (1ere requête )
      *  see https://wiki.ccsd.cnrs.fr/wikis/ccsd/index.php/Fusion_de_comptes
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|Zend_Db_Select_Exception
      */
     public function mergeAction()
     {
