@@ -46,7 +46,7 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
     <?php if($this->doi != ''): ?>
         <identifier identifierType="DOI"><?php echo htmlentities($this->doi, ENT_XML1); ?></identifier>
     <?php else: ?>
-        <identifier identifierType="URL"><?php echo $journalUrl . '/' . $paper->getDocid(); ?></identifier>
+        <identifier identifierType="URL"><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></identifier>
     <?php endif;?>
 
 
@@ -132,7 +132,7 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
 
     <?php if($this->doi != ''): ?>
     <alternateIdentifiers>
-        <alternateIdentifier alternateIdentifierType="URL"><?php echo $journalUrl . '/' . $paper->getDocid(); ?></alternateIdentifier>
+        <alternateIdentifier alternateIdentifierType="URL"><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></alternateIdentifier>
     </alternateIdentifiers>
     <?php endif; ?>
 

@@ -20,6 +20,19 @@ Add 'FLAG' attribute to Episciences::Paper class
 Alter table PAPERS: add new field 'TAG
 New script to update papers table
 
+## Unreleased
+### Fixed
+- Fixed issue: [64](https://github.com/CCSDForge/episciences/issues/64): Layout of mails with reviewers' comments
+- Improvement of the process of accounts merging
+ 
+### Changed
+- Improvements for displaying when a document has been imported. E.g. for journals coming to the platform with previous content 
+- Switch to paperIds as Episciences public PIDs for export formats and OAI-PMH. The switch from the docIds to paperIds was incomplete. One unique paperId is assigned to each version of a document. Each version of a document has a different unique docid.
+
+## 1.0.15.1 - 2021-08-31
+### Fixed
+- Fixed issue: [62](https://github.com/CCSDForge/episciences/issues/62): String not localized
+
 ## 1.0.15 - 2021-08-30
 
 ### Added
