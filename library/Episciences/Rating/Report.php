@@ -53,15 +53,19 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         return ($row) ? new Episciences_Rating_Report($row) : false;
     }
 
-    // find rating reports for a given reviewer uid
-    public static function findByUid($uid)
+    /**
+     * Find rating reports for a given reviewer uid
+     * @param $uid
+     * @return array
+     */
+    public static function findByUid($uid): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()->from(T_REVIEWER_REPORTS)->where('UID = ?', $uid);
 
-        $reports = array();
+        $reports = [];
         foreach ($db->fetchAll($sql) as $row) {
-            $reports[] = new Episciences_Rating_Report($row);
+            $reports[$row['DOCID']] = new Episciences_Rating_Report($row);
         }
         return $reports;
 

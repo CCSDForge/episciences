@@ -1711,7 +1711,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('submitter', $submitter));
         $node->appendChild($dom->createElement('uid', $this->getUid()));
         $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
-
+        $node->appendChild($dom->createElement('isImported', $this->isPublished() && $this->getSubmission_date() >= $this->getPublication_date()));
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
@@ -1801,7 +1801,7 @@ class Episciences_Paper
     public function getOaiHeader(): string
     {
         $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = $this->getDocid() . '-' . __FUNCTION__;
+        $cacheName = $this->getPaperid() . '-' . __FUNCTION__;
         $oaiHeaderItem = $cache->getItem($cacheName);
         $oaiHeaderItem->expiresAfter(self::CACHE_EXPIRE_OAI_HEADER);
 
@@ -1836,7 +1836,7 @@ class Episciences_Paper
      */
     public function getOaiIdentifier(): string
     {
-        return 'oai:' . DOMAIN . ':' . Episciences_Review::getData($this->getRvid())['CODE'] . ':' . $this->getDocid();
+        return 'oai:' . DOMAIN . ':' . Episciences_Review::getData($this->getRvid())['CODE'] . ':' . $this->getPaperid();
     }
 
     /**
@@ -1855,7 +1855,7 @@ class Episciences_Paper
         }
 
         $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = $this->getDocid() . '-' . $method;
+        $cacheName = $this->getPaperid() . '-' . $method;
         $metadataCache = $cache->getItem($cacheName);
 
         if ($this->isPublished()) {
@@ -3530,7 +3530,7 @@ class Episciences_Paper
             }
         }
 
-        $citation = $review->getCode() . ':' . $this->getDocid() . ' - ' . $review->getName() . ', ';
+        $citation = $review->getCode() . ':' . $this->getPaperid() . ' - ' . $review->getName() . ', ';
         $citation .= date('Y-m-d', strtotime($this->getPublication_date()));
         if ($this->getVid()) {
             $volume = Episciences_VolumesManager::find($this->getVid());

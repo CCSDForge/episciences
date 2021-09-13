@@ -2218,16 +2218,18 @@ class Episciences_PapersManager
                 if (!$reviewer) {
                     continue;
                 }
-                $ratings_string .= '<p style="border-bottom: 1px solid #999">'
-                    . ucfirst($translator->translate('reviewer', $locale))
-                    . ' ' . $reviewer->getAlias($paper->getDocid()) . '</p>';
+                $ratings_string .= '<p style="border-bottom: 1px solid #999">';
+                $ratings_string .= ucfirst($translator->translate('reviewer', $locale));
+                $ratings_string .=  ' ' . $reviewer->getAlias($paper->getDocid());
+                $ratings_string .=  '</p>';
+
                 $partial = new Zend_View();
                 $partial->locale = $locale;
                 $partial->report = $rating;
                 $partial->docid = $paper->getDocid();
                 $partial->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts');
                 $ratings_string .= $partial->render('partials/paper_report_mail_version.phtml');
-                $ratings_string = str_replace(chr(13) . chr(10), '', $ratings_string);
+                $ratings_string = str_replace(array(chr(13), chr(10)), '', $ratings_string);
             }
         }
 

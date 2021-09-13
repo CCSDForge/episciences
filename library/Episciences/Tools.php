@@ -1020,25 +1020,26 @@ class Episciences_Tools
     }
 
     /**
-     * Compare les deux tableaux + Calcule la différence entre eux
+     * Compare les deux tableaux + Calcule l'intersection et la différence entre eux
      * @param array $tab1
      * @param array $tab2
      * @return array
      */
-    public static function checkArrayEquality(array $tab1, array $tab2)
+    public static function checkArrayEquality(array $tab1, array $tab2): array
     {
 
-        $result = ['equality' => false, 'arrayDiff' => []];
+        $result = ['equality' => false, 'arrayDiff' => [], 'arrayIntersect' => []];
 
         $arrayIntersectTab1 = array_intersect($tab1, $tab2);
         $arrayIntersectTab2 = array_intersect($tab2, $tab1);
 
         if ($tab1 === $arrayIntersectTab1 && $tab2 === $arrayIntersectTab2) { //$tab1 === $tab2
             $result['equality'] = true;
-        } else {
-            $result['arrayDiff'][0] = array_diff($tab1, $arrayIntersectTab1);
-            $result['arrayDiff'][1] = array_diff($tab2, $arrayIntersectTab2);
         }
+
+        $result['arrayDiff'][0] = array_diff($tab1, $arrayIntersectTab1);
+        $result['arrayDiff'][1] = array_diff($tab2, $arrayIntersectTab2);
+        $result['arrayIntersect'] = $arrayIntersectTab1;
 
         return $result;
     }
