@@ -145,9 +145,9 @@ class Episciences_Reviewer extends Episciences_User
         $row = $this->_db->fetchRow($sql);
         if ($row) {
             return new Episciences_Rating_Report($row);
-        } else {
-            return false;
         }
+
+        return false;
 
     }
 

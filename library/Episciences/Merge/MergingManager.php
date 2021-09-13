@@ -3,20 +3,19 @@
 class Episciences_Merge_MergingManager
 {
 
-    const TABLE = T_USER_MERGE;
-    const TOKEN_LENGTH = 40;
-    const SUCCESS = 'The merge has been successfully applied';
-    const FAILED = 'Failed to merge';
-    const HTTP_SUCCESS_STATUS = 200;
-    const HTTP_ERROR_SERVER = 500;
-    const HTTP_UNAUTHORIZED = 401;
-    const MERGER_NOT_EXIST = 1;
-    const KEEPER_MERGER_EXIST = 2;
-    const KEEPER_NOT_EXIST = 3;
-    const FORBIDDEN_UID = 4;
-    const IDENTICAL_KEEPER_AND_MERGER = 5;
-    const DUPLICATE_ENTRY = 23000;
-    const RENAMED_GRID = 'renamed_grid';
+    public const TABLE = T_USER_MERGE;
+    public const TOKEN_LENGTH = 40;
+    public const SUCCESS = 'The merge has been successfully applied';
+    public const FAILED = 'Failed to merge';
+    public const HTTP_SUCCESS_STATUS = 200;
+    public const HTTP_ERROR_SERVER = 500;
+    public const HTTP_UNAUTHORIZED = 401;
+    public const MERGER_NOT_EXIST = 1;
+    public const KEEPER_MERGER_EXIST = 2;
+    public const KEEPER_NOT_EXIST = 3;
+    public const FORBIDDEN_UID = 4;
+    public const IDENTICAL_KEEPER_AND_MERGER = 5;
+    public const RENAMED_GRID = 'renamed_grid';
 
     /**
      * Fusionne deux comptes
@@ -25,7 +24,7 @@ class Episciences_Merge_MergingManager
      * @param string $token
      * @param bool $doMerge
      * @return array
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|Zend_Db_Select_Exception
      */
     public static function mergeAccounts(int $merger = 0, int $keeper = 0, string $token = '', bool $doMerge = false): array
     {
@@ -70,7 +69,7 @@ class Episciences_Merge_MergingManager
      * Applique la fusion de deux comptes
      * @param string $token
      * @return array
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|Zend_Db_Select_Exception
      */
     public static function applyMerge(string $token = ''): array
     {
@@ -151,15 +150,7 @@ class Episciences_Merge_MergingManager
             $affected_rows['USER_ROLES'] += $rowNb;
             $rowTotal += $rowNb;
         } catch (Exception $e) {
-            if ((int)$e->getCode() === self::DUPLICATE_ENTRY) {
-                // On supprimer la ligne qui pose problème
-                $rowNb = self::deleteDuplicateRow(T_USER_ROLES, $mergerUid);
-                $affected_rows['USER_ROLES'] += $rowNb;
-                $rowTotal += $rowNb;
-                $exception['delete_in_' . T_USER_ROLES] = 'UID = ' . $mergerUid;
-            } else {
-                $exception[] = self::showException($e);
-            }
+            $exception[] = self::showException($e);
         }
 
         try { //REVIEWER_ALIAS
@@ -168,17 +159,7 @@ class Episciences_Merge_MergingManager
             $rowTotal += $rowNb;
 
         } catch (Exception $e) {
-            if ((int)$e->getCode() === self::DUPLICATE_ENTRY) {
-                // On supprime la ligne qui pose problème
-                $rowNb = self::deleteDuplicateRow(T_ALIAS, $mergerUid);
-                $affected_rows['REVIEWER_ALIAS'] += $rowNb;
-                $rowTotal += $rowNb;
-                $exception['delete_in_' . T_ALIAS] = 'UID = ' . $mergerUid;
-
-            } else {
-                $exception[] = self::showException($e);
-            }
-
+            $exception[] = self::showException($e);
         }
 
         try {//REVIEWER_POOL
@@ -187,15 +168,7 @@ class Episciences_Merge_MergingManager
             $rowTotal += $rowNb;
 
         } catch (Exception $e) {
-            if ((int)$e->getCode() === self::DUPLICATE_ENTRY) {
-                // On supprime la ligne qui pose problème
-                $rowNb = self::deleteDuplicateRow(T_REVIEWER_POOL, $mergerUid);
-                $affected_rows['REVIEWER_POOL'] += $rowNb;
-                $rowTotal += $rowNb;
-                $exception['delete_in_' . T_REVIEWER_POOL] = 'UID = ' . $mergerUid;
-            } else {
-                $exception[] = self::showException($e);
-            }
+            $exception[] = self::showException($e);
         }
 
         try {//REVIEWER_REPORT table
@@ -204,18 +177,9 @@ class Episciences_Merge_MergingManager
             $rowTotal += $rowNb;
 
         } catch (Exception $e) {
-            if ((int)$e->getCode() === self::DUPLICATE_ENTRY) {
-                // On supprime la ligne qui pose problème
-                $rowNb = self::deleteDuplicateRow(T_REVIEWER_REPORTS, $mergerUid);
-                $affected_rows['REVIEWER_REPORT'] += $rowNb;
-                $rowTotal += $rowNb;
-                $exception['delete_in_' . T_REVIEWER_REPORTS] = 'UID = ' . $mergerUid;
-
-            } else {
-                $exception[] = self::showException($e);
-            }
-
+            $exception[] = self::showException($e);
         }
+
         try {// PAPER_LOG table
             $rowNb = Episciences_Paper_Logger::updateUid($mergerUid, $keeperUid);
             $affected_rows['PAPER_LOG'] += $rowNb;
@@ -289,26 +253,12 @@ class Episciences_Merge_MergingManager
     }
 
     /**
-     * Supprimer une ligne dans la base
-     * @param $table_name
-     * @param $key
-     * @return int
-     */
-
-    static function deleteDuplicateRow($table_name, $key): int
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $where['UID = ?'] = (int)$key;
-        return $db->delete($table_name, $where);
-    }
-
-    /**
      * affiche les détails de l'exception
      * @param Exception $e
      * @return array
      */
 
-    static function showException(Exception $e): array
+    public static function showException(Exception $e): array
     {
         $result = self::FAILED;
         return ['result' => $result, 'exception' => [
@@ -322,13 +272,14 @@ class Episciences_Merge_MergingManager
      * @return bool
      */
 
-    public static function updateMergingData(int $mergerId = 0, array $detail = null)
+    public static function updateMergingData(int $mergerId = 0, array $detail = []): bool
     {
 
         try {
-            if ($mergerId <= 0 || null === $detail || !is_array($detail)) {
+            if ($mergerId <= 0) {
                 return false;
             }
+
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $data['DETAIL'] = Zend_Json_Encoder::encode($detail);
             $data['DATE'] = new Zend_Db_Expr('NOW()');
@@ -425,13 +376,13 @@ class Episciences_Merge_MergingManager
      * @return bool|string
      */
 
-    public static function backupMergingData(string $token = '', int $merger_uid = 0, int $keeper_uid = 0, array $detail = null)
+    public static function backupMergingData(string $token = '', int $merger_uid = 0, int $keeper_uid = 0, array $detail = [])
     {
         try {
             if (empty($token) || !is_string($token) || $keeper_uid <= 0 || $merger_uid <= 0) {
                 return false;
             }
-            if (null !== $detail && is_array($detail)) {
+            if (!empty($detail)) {
                 $data['DETAIL'] = Zend_Json_Encoder::encode($detail);
             }
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -458,82 +409,72 @@ class Episciences_Merge_MergingManager
 
         $result = [self::RENAMED_GRID => false, 'logs' => []];
 
-        $keeperReviewer = new Episciences_Reviewer();
-        $mergerReviewer = new Episciences_Reviewer();
+        $mergerReports = Episciences_Rating_Report::findByUid($merger);
+        $keeperReports = Episciences_Rating_Report::findByUid($keeper);
 
-        if (!$keeperReviewer->hasLocalData($keeper)) {
-            $keeperReviewer->findWithCAS($keeper);
+        if (!empty($keeperReports) || !empty($mergerReports)) {
 
-        } else {
-            $keeperReviewer->find($keeper);
-        }
+            $keeperDocIds = array_keys($keeperReports);
+            $mergerDocIds = array_keys($mergerReports);
 
-        $mergerReviewer->find($merger);
-
-        if (!$keeperReviewer->getUid()) {
-            $message = 'APPLICATION PANIC: failed to find user UID = ' . $keeper;
-            error_log($message);
-            $result['logs'] = $message;
-            return $result;
-        }
-
-        if (!$mergerReviewer->getUid()) {
-            $message = 'APPLICATION PANIC: failed to find reviewer UID = ' . $merger;
-            error_log($message);
-            $result['logs'] = $message;
-            return $result;
-        }
-
-        try {
-            $keeperPapers = $keeperReviewer->getAssignedPapers(['is' => ['rvid' => RVID]]);
-
-        } catch (Exception $e) {
-            $message = 'APPLICATION PANIC: failed to get assigned papers for reviewer UID = ' . $keeper;
-            error_log($message);
-            return $result;
-        }
-
-        try {
-            $mergerPapers = $mergerReviewer->getAssignedPapers(['is' => ['rvid' => RVID]]);
-
-        } catch (Exception $e) {
-            $message = 'APPLICATION PANIC: failed to get assigned papers for reviewer UID = ' . $merger;
-            error_log($message);
-            return $result;
-        }
+            $arrayEquality = Episciences_Tools::checkArrayEquality($keeperDocIds, $mergerDocIds);
 
 
-        $keeperPapersKeys = array_keys($keeperPapers);
-        $mergerPapersKeys = array_keys($mergerPapers);
+            if (!empty($arrayEquality['arrayIntersect'])) {// Documents assignés deux fois avec 2 UID(s) diff.
 
-        $arrayEquality = Episciences_Tools::checkArrayEquality($keeperPapersKeys, $mergerPapersKeys);
+                foreach ($arrayEquality['arrayIntersect'] as $docId) {
 
-        if ($arrayEquality['equality'] && !empty($mergerPapersKeys)) {// Documents relus deux fois avec 2 UID(s) diff.
+                    $reportsPath = self::getReportsPath($docId);
 
-            foreach ($mergerPapersKeys as $docId) {
+                    $mergerPath = $reportsPath . $merger;
+                    $keeperPath = $reportsPath . $keeper;
 
-                $reportsPath = REVIEW_FILES_PATH . $docId . '/reports/';
-                $mergerPath = $reportsPath . $merger . '/';
+                    $mergerReport = $mergerReports[$docId];
+                    $keeperReport = $keeperReports[$docId];
 
-                $newPath = $reportsPath . 'merger_' . $merger . '_keeper_' . $keeper . '_' . date("Y-m-d") . '_' . date("H:i:s") . '.save/';
-                $renaming = self::applyRenaming($mergerPath, $newPath);
-                $result[self::RENAMED_GRID][$docId] = $renaming[self::RENAMED_GRID];
-                $result['logs'][$docId] = $renaming['logs'];
+                    $newPath = $reportsPath . 'merger_' . $merger . '_keeper_' . $keeper . '_' . date("Y-m-d") . '_' . date("H:i:s");
+
+                    if ($mergerReport->getStatus() > $keeperReport->getStatus()) {
+
+                        $newPath .= '.keeper.save';
+
+                        $tmpRenaming = self::applyRenaming($keeperPath, $newPath); // save keeper report
+                        $renaming = self::applyRenaming($mergerPath, $keeperPath);
+                        $renaming['logs'] = $tmpRenaming['logs'] . ', ' . $renaming['logs'];
+                        $renaming[self::RENAMED_GRID] = $tmpRenaming[self::RENAMED_GRID] && ', ' . $renaming[self::RENAMED_GRID];
+
+                    } else {
+                        $newPath .= '.merger.save';
+                        $renaming = self::applyRenaming($mergerPath, $newPath); // save merger report
+                    }
+
+
+                    $result[self::RENAMED_GRID][$docId] = $renaming[self::RENAMED_GRID];
+                    $result['logs'][$docId] = $renaming['logs'];
+
+                }
+
             }
 
-        } elseif (!empty($arrayEquality['arrayDiff'][1])) { // Documents relus avec l'UID merger (pas avec l'UID keeper)
+            if (!empty($arrayEquality['arrayDiff'][1])) {
+                foreach ($arrayEquality['arrayDiff'][1] as $docId) { // Documents assignés à l'UID merger (pas à l'UID keeper)
 
-            foreach ($arrayEquality[1] as $docId) {
+                    $reportsPath = self::getReportsPath($docId);
 
-                $reportsPath = REVIEW_FILES_PATH . $docId . '/reports/';
-                $mergerPath = $reportsPath . $merger . '/';
-                $keeperPath = $reportsPath . $merger . '/';
-                $renaming = self::applyRenaming($mergerPath, $keeperPath);
-                $result[self::RENAMED_GRID][$docId] = $renaming[self::RENAMED_GRID];
-                $result['logs'][$docId] = $renaming['logs'];
+                    $mergerPath = $reportsPath . $merger;
+                    $keeperPath = $reportsPath . $merger;
+
+                    $renaming = self::applyRenaming($mergerPath, $keeperPath);
+                    $result[self::RENAMED_GRID][$docId] = $renaming[self::RENAMED_GRID];
+                    $result['logs'][$docId] = $renaming['logs'];
+
+                }
+
             }
+
+
         } else {
-            $result['logs'] = 'No grid(s) found for this reviewer_uid = ' . $merger;
+            $result['logs'] = 'No grid(s) found for the couple (merger, keeper): ( ' . $merger . ', ' . $keeper . ' )';
         }
 
         return $result;
@@ -564,6 +505,21 @@ class Episciences_Merge_MergingManager
 
         }
         return $result;
+    }
+
+    /**
+     * @param int $docId
+     * @return string
+     * @throws Zend_Db_Statement_Exception
+     */
+    private static function getReportsPath(int $docId): string
+    {
+        $paper = Episciences_PapersManager::get($docId, false);
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+
+        // not use report->getPath : (RVCODE == portal)
+        return realpath(APPLICATION_PATH . '/../data') . '/' . $review->getCode() . '/files/' . $docId . '/reports/';
+
     }
 
 }
