@@ -15,8 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-
-## Unreleased
+## 1.0.16 - 2021-09-13
 ### Fixed
 - Fixed issue: [64](https://github.com/CCSDForge/episciences/issues/64): Layout of mails with reviewers' comments
 - Improvement of the process of accounts merging
