@@ -216,6 +216,13 @@
                     </xsl:otherwise>
                 </xsl:choose>
 
+                <xsl:if test="episciences/acceptance_date/text()">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Accepté le : ')"/>
+                        <xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(episciences/acceptance_date))"/>
+                    </div>
+                </xsl:if>
+
                 <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
