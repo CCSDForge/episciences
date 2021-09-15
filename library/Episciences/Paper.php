@@ -1712,6 +1712,8 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('uid', $this->getUid()));
         $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
         $node->appendChild($dom->createElement('isImported', $this->isPublished() && $this->getSubmission_date() >= $this->getPublication_date()));
+        $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
+
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
@@ -3256,20 +3258,21 @@ class Episciences_Paper
     }
 
     /**
+     * get acceptance date form paper log
      * @return string|null
      */
-    public function getAcceptanceDate()
+    public function getAcceptanceDate(): ?string
     {
         $date = null;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $this->loadHistoryQuery($db, [Episciences_Paper_Logger::CODE_STATUS]);
-        $detail = null;
         $logs = $db->fetchAll($sql);
 
         foreach ($logs as $value) {
             /** @var stdClass $detail */
-            $detail = json_decode($value['DETAIL']);
-            if ($detail->status === self::STATUS_ACCEPTED) {
+            $detail = json_decode($value['DETAIL'], true);
+
+            if (isset($detail['status']) && $detail['status'] === self::STATUS_ACCEPTED) {
                 $date = $value['DATE'];
                 break;
             }
