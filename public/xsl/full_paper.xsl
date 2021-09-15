@@ -231,7 +231,9 @@
                         </xsl:for-each>
                     </div>
                 </xsl:if>
+
                 <br/>
+
                 <xsl:if test="(episciences/status = 0) and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = 0)">
                     <a>
                         <xsl:attribute name="href">

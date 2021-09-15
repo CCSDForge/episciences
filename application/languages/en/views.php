@@ -295,6 +295,7 @@ return [
     "par" => 'by',
     "Publié le : " => 'Published on: ',
     "Refusé le : " => 'Refused on: ',
+    'Accepté le : ' => 'Accepted on: ',
     'Mots-clés : ' => 'Keywords: ',
     'Rubrique : ' => 'Section: ',
     'Volumes & rubriques' => 'Volumes & sections',
