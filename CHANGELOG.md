@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - Update paper stats only if paper is published and user is not the contributor
+- Add new document metadata: acceptance date
+- Do not display the document meta. 'keywords' if its value is empty
 
 ## 1.0.16 - 2021-09-13
 ### Fixed
