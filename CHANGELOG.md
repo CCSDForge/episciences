@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update paper stats only if paper is published and user is not the contributor
 - Add new document metadata: acceptance date
 - Do not display the document meta. 'keywords' if its value is empty
-
+- Report score rounding (RT#135523): propagate the fix (git#389)
+- Edit a template via a get request: fix Application error : SQLSTATE[HY093]: Invalid parameter number
 ## 1.0.16 - 2021-09-13
 ### Fixed
 - Fixed issue: [64](https://github.com/CCSDForge/episciences/issues/64): Layout of mails with reviewers' comments
