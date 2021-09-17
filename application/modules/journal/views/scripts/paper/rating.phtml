@@ -144,9 +144,9 @@ $previousRatings = $this->previousRatings;
                         <div class="panel-heading" data-parent="#accordion" data-toggle="collapse"
                              data-target="#current-rating">
                             <h4 class="panel-title">
-                                <?php if ($this->report->getScore()) : ?>
-                                    <strong><?php echo $this->report->getScore() . '/' . $this->report->getMax_score(); ?></strong><?php endif; ?>
-
+                                <?php $score = $this->report->getScore(); ?>
+                                <?php if ($score && is_numeric($score)) : ?>
+                                    <strong><?= round(($this->report->getScore() / $this->report->getMax_score()), 1) ?></strong><?php endif; ?>
                                 <?php
 
                                 echo '(' . $this->translate('round') . ' ' . (count($previousRatings) + 1) . ')';
@@ -175,11 +175,12 @@ $previousRatings = $this->previousRatings;
                             <div class="panel-heading" data-parent="#accordion" data-toggle="collapse"
                                  data-target="#previous-rating-<?php echo $id ?>">
                                 <h4 class="panel-title grey">
-                                    <?php if ($report->getScore()) : ?>
-                                        <strong><?= $report->getScore() . '/' . $report->getMax_score(); ?></strong>
+                                    <?php $rScore = $report->getScore(); ?>
+                                    <?php if ($rScore && is_numeric($rScore)) : ?>
+                                        <strong><?= round(($rScore / $report->getMax_score()), 1) ?></strong>
                                     <?php endif; ?>
-                                    (<?= $this->translate('round') . ' ' . $count;
-                                    $count--; ?>)
+                                    (<?= $this->translate('round') . ' ' . $count ?>
+                                    <?php $count--; ?>)
                                     <?php $when = !empty($report->getUpdate_date()) ? $report->getUpdate_date() : $report->getCreation_date(); ?>
                                     <span class="grey pull-right"><?= $this->Date($when); ?>
                                         <span class="glyphicon glyphicon-chevron-down" style="margin-left: 5px;"></span>

@@ -57,7 +57,7 @@ $paper = $this->paper;
                             ?>
                         </strong>
                         <?php if (Episciences_Auth::isEditor() && is_numeric($report->getScore())) : ?>
-                            : <?php echo $report->getScore() . '/' . $report->getMax_score(); ?>
+                            : <?= round(($report->getScore() / $report->getMax_score()), 1) ?>
                         <?php endif; ?>
                         <span class="grey pull-right"><?php echo $this->Date($report->getUpdate_date()); ?>
                             <span class="glyphicon glyphicon-chevron-down" style="margin-left: 5px;"></span>

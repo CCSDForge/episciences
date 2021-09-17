@@ -18,7 +18,7 @@
                         <?php
                         // if criterion has a coef, or selected option has no label
                         if ($criterion->hasCoefficient() || !$criterion->getOptionLabel($criterion->getNote(), $this->locale)) {
-                            echo $criterion->getNote() . '/' . $criterion->getMaxNote();
+                            echo round(($criterion->getNote() / $criterion->getMaxNote()), 1);
                         }
                         // if selected option has a label
                         if ($criterion->getOptionLabel($criterion->getNote(), $this->locale)) {
