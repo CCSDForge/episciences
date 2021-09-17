@@ -3269,10 +3269,10 @@ class Episciences_Paper
         $logs = $db->fetchAll($sql);
 
         foreach ($logs as $value) {
-            /** @var stdClass $detail */
+
             $detail = json_decode($value['DETAIL'], true);
 
-            if (isset($detail['status']) && $detail['status'] === self::STATUS_ACCEPTED) {
+            if (isset($detail['status']) && (int)$detail['status'] === self::STATUS_ACCEPTED) {
                 $date = $value['DATE'];
                 break;
             }
