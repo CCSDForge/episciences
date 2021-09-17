@@ -59,7 +59,7 @@ class AdministratemailController extends Zend_Controller_Action
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public function edittemplateAction()
+    public function edittemplateAction(): void
     {
         $this->_helper->layout->disableLayout();
 
@@ -67,11 +67,13 @@ class AdministratemailController extends Zend_Controller_Action
             $this->_helper->redirector->gotoUrl('/error/deny');
         }
 
-
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        // $id = $request->getQuery('id');
-        // $ajax = $request->getPost('ajax');
+
+        if(!$request->isXmlHttpRequest()){
+            $this->_helper->redirector->gotoUrl('/error/deny');
+        }
+
         $params = $request->getPost();
         $id = $params['id'];
 
