@@ -1812,7 +1812,7 @@ class PaperController extends PaperDefaultController
         if ($paper->isDeleted()) {
             $result['message'] = $translator->translate("Le document demandé a été supprimé par son auteur.");
             $result['url'] = '/';
-        } elseif ($paper->isAccepted()) { // paper has been accepted
+        } elseif ($paper->isAccepted() || $paper->copyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
             $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
         } elseif ($paper->isPublished()) {  // paper has been published
