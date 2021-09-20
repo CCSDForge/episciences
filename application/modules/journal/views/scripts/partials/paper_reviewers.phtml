@@ -60,7 +60,7 @@ $ratings = $paper->getRatings();
                         continue;
                     } ?>
                     <div class="panel panel-warning">
-                        <div class="panel-heading" data-target="#<?php echo $status; ?>-invitations"
+                        <div class="panel-heading" data-target="#<?= $status ?>-invitations"
                              data-toggle="collapse" data-parent="#invitations">
                             <h4 class="panel-title">
                                 <?php
@@ -84,9 +84,17 @@ $ratings = $paper->getRatings();
                                     case Episciences_Reviewer::STATUS_UNINVITED:
                                         $title .= (count($invitations) > 1) ? $this->translate('rapports de relecture supplémentaires') : $this->translate('rapport de relecture supplémentaire');
                                         break;
+                                    case Episciences_Reviewer::STATUS_INACTIVE: // when a paper is obsolete, reviewers are disabled
+                                        $title .= (count($invitations) > 1) ? $this->translate('invitations obsolètes') : $this->translate('invitation obsolète');
+                                        $title .= '&nbsp';
+                                        $title .= '<i data-toggle="tooltip" title="';
+                                        $title.= $this->translate("Lorsqu'un article est obsolète, les relecteurs sont désactivés") .'" class="fas fa-info-circle pull-right"></i>';
+                                        break;
+                                    default:
+                                        $title .= 'Undefined invitation status';
                                 }
                                 ?>
-                                <?php echo $title; ?>
+                                <?= $title ?>
                             </h4>
                         </div>
                         <div id="<?php echo $status ?>-invitations"

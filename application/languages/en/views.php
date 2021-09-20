@@ -1648,6 +1648,7 @@ return [
     "rapports de relecture supplémentaires" => "additional ratings reports",
     "rapport de relecture supplémentaire" => "additional rating report",
     "Vous êtes sur le point de supprimer un rapport de relecture." => "You are about to delete a rating report.",
+    "Lorsqu'un article est obsolète, les relecteurs sont désactivés" => 'When a paper is obsolete, reviewers are disabled',
 
     "Relire les articles" => 'Rate articles',
     "Vous n'avez rien à relire pour le moment." => "You haven't any article to review yet.",

@@ -5,12 +5,13 @@
  */
 class Episciences_Reviewer extends Episciences_User
 {
-    const STATUS_PENDING = 'pending';
-    const STATUS_ACTIVE = 'active';
-    const STATUS_DECLINED = 'declined';
-    const STATUS_CANCELLED = 'cancelled';
-    const STATUS_EXPIRED = 'expired';
-    const STATUS_UNINVITED = 'uninvited';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_DECLINED = 'declined';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_EXPIRED = 'expired';
+    public const STATUS_UNINVITED = 'uninvited';
+    public const STATUS_INACTIVE = 'inactive';
 
     protected $_when;
     protected $_status;
