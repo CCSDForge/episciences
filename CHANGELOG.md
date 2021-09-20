@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New script to update papers table
 - Update paper stats only if paper is published and user is not the contributor
 - Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene in the copy editing process if this one has already been started
+- Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers are disabled) 
 ### Added
 - Add new document metadata: acceptance date
 
