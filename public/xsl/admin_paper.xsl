@@ -45,8 +45,6 @@
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        <!--xsl:variable name="pIdentifier" select="php:function('Ccsd_Tools::translate', 'Identifiant permanent')"/-->
-        <!--xsl:variable name="dIdentifier" select="php:function('Ccsd_Tools::translate', 'Identifiant du document')"/-->
 
         <div class="panel panel-default collapsable" style="margin-top: 20px">
 
@@ -66,12 +64,7 @@
 
                     <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($title))"/>
 
-                    <!--
-                    <xsl:if test="episciences/version">
-                        (v<xsl:value-of select="episciences/version" /><xsl:if test="episciences/tmp = 1"> - <xsl:value-of select="php:function('Ccsd_Tools::translate', 'version temporaire')" /></xsl:if>)
-                    </xsl:if>
-                     -->
-                    <xsl:if test="episciences/doi and episciences/doi != ''">
+                       <xsl:if test="episciences/doi and episciences/doi != ''">
                         -
                         <a rel="noopener" target="_blank">
                             <xsl:attribute name="href">
@@ -83,16 +76,8 @@
                 </h2>
 
                 <xsl:if test="episciences/paperId and episciences/paperId != 0">
-                    <!--<xsl:value-of select="$pIdentifier"/> -> -->
                     <xsl:value-of select="episciences/review_code"/>:<xsl:value-of select="episciences/paperId"/> -
                 </xsl:if>
-
-                <!--
-                <xsl:if test="episciences/id and episciences/id != 0 and episciences/id != episciences/paperId">
-                    <xsl:value-of select="$dIdentifier"/> ->
-                    <xsl:value-of select="episciences/review_code"/>:<xsl:value-of select="episciences/id"/> -
-                </xsl:if>
-                -->
 
                 <xsl:value-of select="episciences/review"/>
                 <xsl:if test="episciences/status = 16 and episciences/publication_date">,
@@ -129,15 +114,6 @@
                 </p>
 
                 <hr/>
-
-                <!--
-                <p><small><a target="_blank">
-                <xsl:attribute name="href">
-                    <xsl:value-of select="metadata/oai_dc:dc/dc:identifier" />
-                </xsl:attribute>
-                <xsl:value-of select="metadata/oai_dc:dc/dc:identifier" />
-                </a></small></p>
-                -->
 
                 <xsl:if test="episciences/doi and episciences/doi != ''">
                     <div class="paper-doi small">
@@ -188,15 +164,15 @@
                                     select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/>
                         </div>
                     </xsl:when>
-                    <!--
-                      <xsl:when test="episciences/status = 5">
-                          <div class="small">
-                              <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Refusé le : ')" />
-                              <xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(header/volume))" />
-                          </div>
-                    </xsl:when>
-                    -->
+
                 </xsl:choose>
+
+                <xsl:if test="episciences/acceptance_date/text()">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Accepté le : ')"/>
+                        <xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(episciences/acceptance_date))"/>
+                    </div>
+                </xsl:if>
 
                 <xsl:choose>
                     <xsl:when test="episciences/submission_date and episciences/submission_date != '' and episciences/isImported/text() = '1'">
@@ -216,12 +192,6 @@
                     </xsl:otherwise>
                 </xsl:choose>
 
-                <xsl:if test="episciences/acceptance_date/text()">
-                    <div class="small">
-                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Accepté le : ')"/>
-                        <xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(episciences/acceptance_date))"/>
-                    </div>
-                </xsl:if>
 
                 <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
                     <div class="small">
@@ -312,7 +282,7 @@
                         </a>
                     </xsl:if>
 
-                    <!-- Abondonner (reprendre) le processus de publication-->
+                    <!-- Abandon/resume publication process -->
                     <xsl:apply-imports/>
 
                 </xsl:if>
