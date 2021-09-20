@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+- Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene in the copy editing process if this one has already been started
 ### Added
 - Add new document metadata: acceptance date
 
