@@ -2,42 +2,47 @@
 
 class Ccsd_Oai_Error extends ErrorException {
 
-	public function __construct($code, $argument='', $value='') {
+    /**
+     * @param $code
+     * @param string $argument
+     * @param string $value
+     */
+    public function __construct($code, $argument='', $value='') {
 		$this->code = $code;
 		switch ($code) {
 			case 'badRequestMethod' :
-				$this->message = "The request method '".$argument."' is unknown.";
+				$this->message = sprintf("The request method '%s' is unknown.", $argument);
 				$this->code = "badVerb";
 				break;
 			case 'badVerb' :
-				$this->message = "The verb '".$argument."' provided in the request is illegal.";
+				$this->message = sprintf("The verb '%s' provided in the request is illegal.", $argument);
 				break;
 			case 'noVerb' :
 				$this->message = "The request does not provide any verb.";
 				$this->code = "badVerb";
 				break;
 			case 'badArgument' :
-				$this->message = "The argument '".$argument."' (value='".$value."') included in the request is not valid.";
+				$this->message = sprintf("The argument '%s' (value='%s') included in the request is not valid.", $argument, $value);
 				break;
 			case 'badGranularity' :
-				$this->message = "The value '".$value."' of the argument '".$argument."' is not valid.";
+				$this->message = sprintf("The value '%s' of the argument '%s' is not valid.", $value, $argument);
 				$this->code = 'badArgument';
 				break;
 			case 'badResumptionToken' :
-				$this->message = "The resumptionToken '".$value."' does not exist or has already expired.";
+				$this->message = sprintf("The resumptionToken '%s' does not exist or has already expired.", $argument);
 				break;
 			case 'cannotDisseminateFormat' :
-				$this->message = "The metadata format '".$value."' given by '".$argument."' is not supported by this repository.";
+				$this->message = sprintf("The metadata format '%s' given by '%s' is not supported by this repository.", $value, $argument);
 				break;
 			case 'exclusiveArgument' :
 				$this->message = 'The usage of resumptionToken as an argument allows no other arguments.';
 				$this->code = 'badArgument';
 				break;
 			case 'idDoesNotExist' :
-				$this->message = "The value '".$value."' of the identifier is illegal for this repository.";
+				$this->message = sprintf("The value '%s' of the identifier is illegal for this repository.", $value);
 				break;
 			case 'missingArgument' :
-				$this->message = "The required argument '".$argument."' is missing in the request.";
+				$this->message = sprintf("The required argument '%s' is missing in the request.", $argument);
 				$this->code = 'badArgument';
 				break;
 			case 'noRecordsMatch' :
@@ -58,7 +63,7 @@ class Ccsd_Oai_Error extends ErrorException {
 				$this->code = 'badVerb';
 				break;
 			default:
-				$this->message = "Unknown error: code: '".$code."', argument: '".$argument."', value: '".$value."'";
+				$this->message = sprintf("Unknown error: code: '%s', argument: '%s', value: '%s'", $code, $argument, $value);
 				$this->code = 'badArgument';
 				break;
 		}
