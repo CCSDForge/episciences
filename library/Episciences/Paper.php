@@ -1714,7 +1714,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('submitter', $submitter));
         $node->appendChild($dom->createElement('uid', $this->getUid()));
         $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
-        $node->appendChild($dom->createElement('isImported', $this->isPublished() && $this->getSubmission_date() >= $this->getPublication_date()));
+        $node->appendChild($dom->createElement('isImported', $this->isImported()));
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
 
         // fetch volume data
@@ -3742,6 +3742,14 @@ class Episciences_Paper
     {
         $this->_flag = $flag;
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isImported(): bool
+    {
+        return ($this->getFlag() === 'imported');
     }
 
 }
