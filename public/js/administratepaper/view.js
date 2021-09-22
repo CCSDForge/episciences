@@ -455,27 +455,24 @@ function updateMetaData(button, docId) {
     });
 }
 
-function getDoiForm(button, docid) {
-    // Configuration du popup
-    let placement = 'bottom';
-
+/**
+ * get form
+ * @param button
+ * @param docId
+ * @param placement, default : 'bottom'
+ * @param url, default, '/administratepaper/doiform'
+ */
+function getCommunForm(button, docId, url = '/administratepaper/doiform', placement = 'bottom', ) {
     // Destruction des anciens popups
     $('button').popover('destroy');
 
     // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
-    if (openedPopover && openedPopover == docid) {
+    if (openedPopover && openedPopover == docId) {
         openedPopover = null;
         return false;
     } else {
-        openedPopover = docid;
+        openedPopover = docId;
     }
-
-    // Récupération du formulaire
-    let request = $.ajax({
-        type: "POST",
-        url: "/administratepaper/doiform",
-        data: {docid: docid}
-    });
 
     $(button).popover({
         'placement': placement,
@@ -484,12 +481,61 @@ function getDoiForm(button, docid) {
         'content': getLoader()
     }).popover('show');
 
-    request.done(function (result) {
+    // Récupération du formulaire
+    return ajaxRequest(url, {docid: docId});
+}
 
+function getPublicationDateForm(button, docId, placement = 'bottom', action = 'doiform' ) {
+
+    let request = getCommunForm(button, docId, '/administratepaper/publicationdateform' );
+
+    request.done(function (result) {
         // Destruction du popup de chargement
         $(button).popover('destroy');
         openedPopover = null;
+        // Affichage du formulaire dans le popover
+        $(button).popover({
+            'placement': placement,
+            'container': 'body',
+            'html': true,
+            'content': result
+        }).popover('show');
 
+        $('form[action^="/administratepaper/savepublicationdate"]').on('submit', function () {
+            let $publicationDate = $("#publication-date");
+            // Traitement AJAX du formulaire
+            let sRequest = ajaxRequest('/administratepaper/savepublicationdate', $(this).serialize() + "&docid=" + docId, 'POST', 'json');
+            sRequest.done(function (response) {
+                // Destruction du popup
+                $(button).popover('destroy');
+
+                if (response) {
+                    $publicationDate.html(response);
+                } else {
+                    alert(translate("Veuillez indiquer une date valide !"));
+                }
+
+            });
+            return false;
+        });
+    });
+
+
+}
+
+/**
+ *
+ * @param button
+ * @param docId
+ * @param placement
+ * @param url
+ */
+function getDoiForm(button, docId, placement = 'bottom', url = '/administratepaper/doiform') {
+    let request = getCommunForm(button, docId);
+    request.done(function (result) {
+        // Destruction du popup de chargement
+        $(button).popover('destroy');
+        openedPopover = null;
         // Affichage du formulaire dans le popover
         $(button).popover({
             'placement': placement,
@@ -499,27 +545,20 @@ function getDoiForm(button, docid) {
         }).popover('show');
 
         $('form[action^="/administratepaper/savedoi"]').on('submit', function () {
-
             let doiContainer = $(button).closest('.paper-doi-value');
             //var editorsContainer = $(button).closest('tr').find('.editors');
-
             // Traitement AJAX du formulaire
-            $.ajax({
-                url: '/administratepaper/savedoi',
-                type: 'POST',
-                datatype: 'json',
-                data: $(this).serialize() + "&docid=" + docid,
-                success: function (result) {
+            let sRequest = ajaxRequest('/administratepaper/savedoi', $(this).serialize() + "&docid=" + docid, 'POST', 'json');
+            sRequest.done(function (response) {
+                // Destruction du popup
+                $(button).popover('destroy');
+                $(doiContainer).hide();
+                $(doiContainer).html(response);
+                $(doiContainer).fadeIn();
+                location.reload(); //prise en charge des changements
 
-                    // Destruction du popup
-                    $(button).popover('destroy');
-
-                    $(doiContainer).hide();
-                    $(doiContainer).html(result);
-                    $(doiContainer).fadeIn();
-                    location.reload(); //prise en charge des changements
-                }
             });
+
             return false;
         });
     });

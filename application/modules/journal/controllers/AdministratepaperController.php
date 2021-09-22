@@ -3998,6 +3998,79 @@ class AdministratepaperController extends PaperDefaultController
             echo json_encode($result);
         }
     }
+
+    /**
+     *  edit publication date form (ajax)
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    public function publicationdateformAction()
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getPost('docid');
+        if (!$docId) {
+            return false;
+        }
+
+        $paper = Episciences_PapersManager::get($docId);
+        $this->view->docId = $paper->getDocid();
+        $this->view->publicationDate = date('Y-m-d', strtotime($paper->getPublication_date()));
+        $this->view->acceptanceDate = date('Y-m-d', strtotime($paper->getAcceptanceDate()));
+
+        $this->_helper->layout->disableLayout();
+        $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-publication-date-form.phtml');
+        return true;
+
+    }
+
+    /**
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    public function savepublicationdateAction()
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
+
+        $paper = Episciences_PapersManager::get($docId);
+
+        if (!$paper) {
+            echo false;
+            return;
+        }
+
+        if ($request->isPost() && $request->isXmlHttpRequest()) {
+
+            $newPublicationDate = $request->getPost('publication-date-value-' . $docId);
+
+            // it's a date ?
+            if (
+                Episciences_Auth::isSecretary() &&
+                (DateTime::createFromFormat('Y-m-d', $newPublicationDate) !== false) &&
+                ($newPublicationDate <= date('Y-m-d') && $newPublicationDate >= date('Y-m-d', strtotime($paper->getAcceptanceDate())))
+            ) {
+                {
+
+                    if( $newPublicationDate !== date('Y-m-d', strtotime($paper->getPublication_date()))){
+                        $paper->setPublication_date($newPublicationDate);
+                        $paper->save();
+                    }
+
+                    echo $newPublicationDate;
+                }
+
+            }
+        }
+    }
 }
 
 
