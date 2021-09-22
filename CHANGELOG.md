@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update paper stats only if paper is published and user is not the contributor
 - Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene in the copy editing process if this one has already been started
 - Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers are disabled) 
+- Linked data: links to related resources extracted from the archive
+- Version block: indicate the date of submission/import of the different versions of the document
+- Addition of the "acceptance rate" indicator [(A/S)x100 with A a number of accepted articles and S a number of submissions] on the statistics page
+- Accounts merge: bug fixes and stability improvements
 ### Added
 - Add new document metadata: acceptance date
 
