@@ -181,6 +181,9 @@ return [
     "Merci de penser à bien joindre les fichiers pour l'auteur ou ajouter un lien vers un site de téléchargement des fichiers." => "Please remember to attach the required files for the author or add a link to a download site.",
     "OK, continuer sans fichier(s) joint(s)." => "OK, continue without attachment(s).",
 
-    "Cette adresse est inconnue et n'est peut-être pas valide."=> 'This address is unknown by the journal and might not be valid.'
+    "Cette adresse est inconnue et n'est peut-être pas valide."=> 'This address is unknown by the journal and might not be valid.',
+
+    // edit publication date
+    'Veuillez indiquer une date valide !' => 'Please enter a valid date!'
 
 ];

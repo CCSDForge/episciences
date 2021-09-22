@@ -1,0 +1,17 @@
+<?php
+$id = 'publication-date-value-' . $this->docId;
+?>
+<div style="width: 400px">
+    <form action="/administratepaper/savepublicationdate" id="publication-date-form-<?= $this->docId ?>" style="height : 34px;">
+
+        <div class="pull-right" style="padding-left : 10px;">
+            <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+        </div>
+
+        <div class="input-group">
+            <span class="input-group-addon"><?= $this->translate('Date de publication') ?></span>
+            <input type="date" id="<?= $id ?>" class="form-control" name="<?= $id ?>" min="<?= $this->acceptanceDate ?>" max="<?= date('Y-m-d') ?>" value="<?= $this->publicationDate ?>"/>
+        </div>
+
+    </form>
+</div>

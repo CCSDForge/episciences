@@ -160,8 +160,16 @@
                     <xsl:when test="episciences/status = 16 and episciences/publication_date">
                         <div class="small">
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Publié le : ')"/>
-                            <xsl:value-of
-                                    select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/>
+                            <span id="publication-date"><xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/></span>
+                            <xsl:if test="episciences/isImported = ''" >
+                                <button id="publication-date-action" class="btn btn-default btn-xs popover-link edit-publication-date" style="margin-left: 5px">
+                                    <xsl:attribute name="onclick">
+                                        <xsl:value-of select="concat('getPublicationDateForm(this, ', episciences/id,')')"/>
+                                    </xsl:attribute>
+                                    <span class="fas fa-calendar" style="margin-right: 5px"/>
+                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Modifier')"/>
+                                </button>
+                            </xsl:if>
                         </div>
                     </xsl:when>
 
