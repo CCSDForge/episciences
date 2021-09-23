@@ -53,8 +53,9 @@ class Episciences_Paper_Logger
     const CODE_EDITOR_COMMENT=  "editor_comment";
     const CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR = "paper_comment_form_reviewer_to_contributor";
     const CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER = "paper_comment_form_contributor_to_reviewer";
-    //Mise ç our de l'article
     const CODE_PAPER_UPDATED = "paper_updated";
+    // https://github.com/CCSDForge/episciences/issues/50
+    public const CODE_ALTER_PUBLICATION_DATE = "paper_alter_publication_date";
 
     const CODE_DOI_ASSIGNED = 'doi_assigned';
 
@@ -108,7 +109,8 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => self::VIOLET,
         self::CODE_PAPER_UPDATED => self::WARNING,
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => self::VIOLET,
-        self::CODE_DOI_ASSIGNED => self::INFO
+        self::CODE_DOI_ASSIGNED => self::INFO,
+        self::CODE_ALTER_PUBLICATION_DATE => self::WARNING
     ];
 
     public static $_label = [

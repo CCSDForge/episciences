@@ -511,6 +511,8 @@ function getPublicationDateForm(button, docId, placement = 'bottom', action = 'd
 
                 if (response) {
                     $publicationDate.html(response);
+                    refreshPaperHistory(docId);
+                    console.log(docId);
                 } else {
                     alert(translate("Veuillez indiquer une date valide !"));
                 }

@@ -994,6 +994,8 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_ANSWER] => 'Copy editing: final version submitted, awaiting validation',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST] => 'Copy editing: the formatted version is accepted, waiting for the final version',
     Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Update',
+    Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'New publication date',
+
     "Date d'assignation" => "Assignation date",
     "Date de désassignation" => "De-assignment date",
     "Assigné par" => "Assigned by",

@@ -4026,10 +4026,8 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
      */
     public function savepublicationdateAction()
     {
@@ -4050,19 +4048,21 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost() && $request->isXmlHttpRequest()) {
 
+            $oldDate = $paper->getPublication_date();
+
             $newPublicationDate = $request->getPost('publication-date-value-' . $docId);
 
-            // it's a date ?
             if (
                 Episciences_Auth::isSecretary() &&
-                (DateTime::createFromFormat('Y-m-d', $newPublicationDate) !== false) &&
+                (DateTime::createFromFormat('Y-m-d', $newPublicationDate) !== false) && // it's a date ?
                 ($newPublicationDate <= date('Y-m-d') && $newPublicationDate >= date('Y-m-d', strtotime($paper->getAcceptanceDate())))
             ) {
                 {
-
-                    if( $newPublicationDate !== date('Y-m-d', strtotime($paper->getPublication_date()))){
+                    if( $newPublicationDate !== date('Y-m-d', strtotime($oldDate))){
                         $paper->setPublication_date($newPublicationDate);
                         $paper->save();
+                        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => $oldDate, 'newDate' => $newPublicationDate];
+                        $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
                     }
 
                     echo $newPublicationDate;
