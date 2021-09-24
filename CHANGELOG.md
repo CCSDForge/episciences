@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version block: indicate the date of submission/import of the different versions of the document
 - Addition of the "acceptance rate" indicator [(A/S)x100 with A a number of accepted articles and S a number of submissions] on the statistics page
 - Accounts merge: bug fixes and stability improvements
+- Changing the publication date of a paper when published: [50](https://github.com/CCSDForge/episciences/issues/50)
 ### Added
 - Add new document metadata: acceptance date
 
