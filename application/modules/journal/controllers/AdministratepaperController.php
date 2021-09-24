@@ -4058,9 +4058,19 @@ class AdministratepaperController extends PaperDefaultController
                 ($newPublicationDate <= date('Y-m-d') && $newPublicationDate >= date('Y-m-d', strtotime($paper->getAcceptanceDate())))
             ) {
                 {
-                    if( $newPublicationDate !== date('Y-m-d', strtotime($oldDate))){
+                    if ($newPublicationDate !== date('Y-m-d', strtotime($oldDate))) {
                         $paper->setPublication_date($newPublicationDate);
                         $paper->save();
+                        $resOfIndexing = $paper->indexUpdatePaper();
+
+                        if (!$resOfIndexing) {
+                            try {
+                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                            } catch (Exception $e) {
+                                trigger_error($e->getMessage(), E_USER_ERROR);
+                            }
+                        }
+
                         $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => $oldDate, 'newDate' => $newPublicationDate];
                         $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
                     }
