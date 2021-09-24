@@ -4015,6 +4015,11 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $paper = Episciences_PapersManager::get($docId);
+
+        if($paper->isImported()){
+            return false;
+        }
+
         $this->view->docId = $paper->getDocid();
         $this->view->publicationDate = date('Y-m-d', strtotime($paper->getPublication_date()));
         $this->view->acceptanceDate = date('Y-m-d', strtotime($paper->getAcceptanceDate()));
@@ -4041,7 +4046,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId);
 
-        if (!$paper) {
+        if (!$paper || $paper->isImported()) {
             echo false;
             return;
         }
