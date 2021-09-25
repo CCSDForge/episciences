@@ -8,7 +8,7 @@ class Episciences_User_Tmp extends Episciences_User
     private $_id;
     private $_lang;
 
-    public function find($id, $key = null) : array
+    public function find($id, $key = null): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -19,7 +19,8 @@ class Episciences_User_Tmp extends Episciences_User
             $sql->where('MD5(EMAIL) = ? ', $key);
         }
 
-        $data = $db->fetchRow($sql);
+        $data = (array)$db->fetchRow($sql);
+        
         if ($data) {
             $this->setOptions($data);
         }
