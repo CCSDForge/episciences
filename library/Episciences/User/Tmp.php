@@ -19,13 +19,13 @@ class Episciences_User_Tmp extends Episciences_User
             $sql->where('MD5(EMAIL) = ? ', $key);
         }
 
-        $data = (array)$db->fetchRow($sql);
-        
+        $data = $db->fetchRow($sql);
+
         if ($data) {
             $this->setOptions($data);
         }
 
-        return $data;
+        return (array)$data;
     }
 
     public function save($forceInsert = false)
