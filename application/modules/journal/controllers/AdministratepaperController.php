@@ -4031,8 +4031,10 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public function savepublicationdateAction()
     {
@@ -4063,9 +4065,13 @@ class AdministratepaperController extends PaperDefaultController
                 ($newPublicationDate <= date('Y-m-d') && $newPublicationDate >= date('Y-m-d', strtotime($paper->getAcceptanceDate())))
             ) {
                 {
+                    $local = Episciences_Tools::getLocale();
+                    $localDate = Episciences_View_Helper_Date::Date($newPublicationDate, $local);
+
                     if ($newPublicationDate !== date('Y-m-d', strtotime($oldDate))) {
                         $paper->setPublication_date($newPublicationDate);
                         $paper->save();
+
                         $resOfIndexing = $paper->indexUpdatePaper();
 
                         if (!$resOfIndexing) {
@@ -4076,11 +4082,11 @@ class AdministratepaperController extends PaperDefaultController
                             }
                         }
 
-                        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => $oldDate, 'newDate' => $newPublicationDate];
+                        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' =>  Episciences_View_Helper_Date::Date($oldDate, $local), 'newDate' => $localDate];
                         $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
                     }
 
-                    echo $newPublicationDate;
+                    echo $localDate;
                 }
 
             }
