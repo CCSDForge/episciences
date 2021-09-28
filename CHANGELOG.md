@@ -15,18 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## 1.0.17 - 2021-09-28
-- Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene when the document is in the copy editing process if this one has already been started
-- Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers are disabled) 
+## 1.0.17.1 - 2021-09-28
 ### Added
 - Add new document metadata: "Accepted" date
 
 ### Fixed
+- Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene when the document is in the copy editing process if this one has already been started
+- Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers are disabled)
 - Update paper stats only if paper is published and user is not the contributor
 - Do not display the document meta. 'keywords' if its value is empty
 - Report score rounding (RT#135523): propagate the fix (git#389)
 - Edit a template via a get request: fix Application error : SQLSTATE[HY093]: Invalid parameter number
 - OAI-PMH: fix badResumptionToken value for error message
+- Fixed bug in account merge module
 
 ## 1.0.16 - 2021-09-13
 ### Fixed
