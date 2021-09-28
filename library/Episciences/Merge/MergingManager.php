@@ -462,7 +462,7 @@ class Episciences_Merge_MergingManager
                     $reportsPath = self::getReportsPath($docId);
 
                     $mergerPath = $reportsPath . $merger;
-                    $keeperPath = $reportsPath . $merger;
+                    $keeperPath = $reportsPath . $keeper;
 
                     $renaming = self::applyRenaming($mergerPath, $keeperPath);
                     $result[self::RENAMED_GRID][$docId] = $renaming[self::RENAMED_GRID];
