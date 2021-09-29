@@ -19,23 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add 'FLAG' attribute to Episciences::Paper class
 - Alter table PAPERS: add new field 'TAG
 - New script to update papers table
-- Update paper stats only if paper is published and user is not the contributor
-- Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene in the copy editing process if this one has already been started
-- Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers are disabled) 
 - Linked data: links to related resources extracted from the archive
 - Version block: indicate the date of submission/import of the different versions of the document
 - Addition of the "acceptance rate" indicator [(A/S)x100 with A a number of accepted articles and S a number of submissions] on the statistics page
-- Accounts merge: bug fixes and stability improvements
 - Changing the publication date of a paper when published: [50](https://github.com/CCSDForge/episciences/issues/50)
+
+## 1.0.17.1 - 2021-09-28
 ### Added
-- Add new document metadata: acceptance date
+- Add new document metadata: "Accepted" date
 
 ### Fixed
+- Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene when the document is in the copy editing process if this one has already been started
+- Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers are disabled)
 - Update paper stats only if paper is published and user is not the contributor
 - Do not display the document meta. 'keywords' if its value is empty
 - Report score rounding (RT#135523): propagate the fix (git#389)
 - Edit a template via a get request: fix Application error : SQLSTATE[HY093]: Invalid parameter number
 - OAI-PMH: fix badResumptionToken value for error message
+- Fixed bug in account merge module
 
 ## 1.0.16 - 2021-09-13
 ### Fixed
