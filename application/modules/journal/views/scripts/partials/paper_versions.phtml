@@ -23,7 +23,7 @@ $currentPaper = $this->paper;
                 <?php $docid = $paper->getDocid(); ?>
                 <li>
                     <?php if ($currentPaper->getDocid() !== $docid) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docid ?>"><?php endif; ?>
-                        <?php $sourceMsg = (!$paper->isImported()) ? $this->translate('Déposée le : ') : $this->translate('Importée le : ') ?>
+                        <?php $sourceMsg = (!$paper->isImported()) ? $this->translate('Soumise le : ') : $this->translate('Importée le : ') ?>
                         <?= $this->translate("Version") ?>&nbsp;<?= $v ?> <span class="label label-status-0 pull-right"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
                         <?php if ($currentPaper->getDocid() !== $docid) : ?></a><?php endif; ?>
                 </li>

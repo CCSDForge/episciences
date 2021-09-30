@@ -4,7 +4,7 @@
         <?php if ($value['MESSAGE'] || $value['FILE']) : ?>
             <?php $margin = ($key == $first) ? '0' : '20px'; ?>
             <div style="margin-top: <?php echo $margin; ?>" class="small">
-            <strong><?php echo $this->translate('Déposé le : ') . $this->Date($value['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
+            <strong><?php echo $this->translate('Soumis le : ') . $this->Date($value['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
                 : </strong>
             [<?php echo ($value['UID'] == Episciences_Auth::getUid()) ? $this->translate('vous') : $value['SCREEN_NAME']; ?>
             ]
