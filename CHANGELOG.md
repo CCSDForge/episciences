@@ -15,14 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.18 - 2021-09-30
+### Added
 - Add 'FLAG' attribute to Episciences::Paper class
-- Alter table PAPERS: add new field 'TAG
-- New script to update papers table
-- Linked data: links to related resources extracted from the archive
+- Alter table PAPERS: add new field to identify imported articles, to ignore them from journal statistics and report them as 'imported' and not submitted
+- New script to update papers table to report imported article
+- Linked data: links to related resources are extracted from the open archives and displayed on the article's page
 - Version block: indicate the date of submission/import of the different versions of the document
 - Addition of the "acceptance rate" indicator [(A/S)x100 with A a number of accepted articles and S a number of submissions] on the statistics page
-- Changing the publication date of a paper when published: [50](https://github.com/CCSDForge/episciences/issues/50)
+- Changing the publication date of a paper already published: [50](https://github.com/CCSDForge/episciences/issues/50)
 
 ## 1.0.17.1 - 2021-09-28
 ### Added
