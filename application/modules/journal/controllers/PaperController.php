@@ -23,7 +23,7 @@ class PaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
 
         // check if paper exists
-        if (!$paper || $paper->getRvid() !== RVID || $paper->getRepoid() === 0) {
+        if (!$paper || $paper->hasHook || $paper->getRvid() !== RVID || $paper->getRepoid() === 0) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             return;
@@ -124,7 +124,7 @@ class PaperController extends PaperDefaultController
 
         $loggedUid = Episciences_Auth::getUid();
 
-        if ($this->hasPermissions($paper)) {
+        if ($this->isRestrictedAccess($paper)) {
 
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
