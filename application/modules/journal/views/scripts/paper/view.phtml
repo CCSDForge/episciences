@@ -3,20 +3,34 @@
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $status = $paper->getStatus();
+$isSecretary = Episciences_Auth::isSecretary();
+$loggedUid = Episciences_Auth::getUid();
+$isConflictDetected = $this->isConflictDetected;
+
 $isAllowed = Episciences_Auth::isLogged() &&
     (
-        Episciences_Auth::isSecretary() ||
-        Episciences_Auth::isEditor() ||
-        Episciences_Auth::isReviewer() ||
-        Episciences_Auth::getUid() == $paper->getUid()
+        $isSecretary ||
+            (
+                !$isConflictDetected &&
+                (
+                        Episciences_Auth::isEditor() ||
+                        Episciences_Auth::isReviewer() ||
+                        $loggedUid === $paper->getUid()
+                )
+            )
     );
 
 $isAllowedToAnswerNewVersion = Episciences_Auth::isLogged() &&
     (
-        Episciences_Auth::isSecretary() ||
-        $paper->getEditor(Episciences_Auth::getUid()) ||
-        Episciences_Auth::getUid() == $paper->getUid()
+            !$isConflictDetected &&
+                (
+                        $isSecretary ||
+                        $paper->getEditor($loggedUid) ||
+                        $loggedUid === $paper->getUid()
+                )
     );
+
+
 
 $language = ($paper->getMetadata('language') != null) ? $paper->getMetadata('language') : 'en';
 
@@ -131,7 +145,15 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 
 ?>
 
-<?php if (Episciences_Auth::isLogged() && (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid()))): ?>
+<?php if (
+        Episciences_Auth::isLogged() &&
+        (
+                $isSecretary ||
+                $paper->getEditor($loggedUid) ||
+                $paper->getCopyEditor($loggedUid) ||
+                (!$this->review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor())
+        )
+): ?>
     <?= $this->partial('partials/paper_controller_link_switch.phtml', ['docId' => $paper->getDocid()]); ?>
 <?php endif; ?>
 
@@ -167,7 +189,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
             <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
             <p>
                 <strong><?= $statusMsg; ?></strong><span
-                        class="label label-status-<?= $status; ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))); ?></span>
+                        class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
             </p>
         </div>
     </div>
@@ -196,8 +218,8 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 if (
         Episciences_Auth::isLogged() &&
     (
-        array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) || // nor reviewer
-        $paper->getUid() === Episciences_Auth::getUid()
+        array_key_exists($loggedUid, $paper->getReviewers()) || // nor reviewer
+        $paper->getUid() === $loggedUid
     )
 ) {
     echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]);

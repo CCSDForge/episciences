@@ -30,7 +30,7 @@ $this->suggestedRevision = false;
 </style>
 
 
-<?= $this->partial('partials/paper_controller_link_switch.phtml', ['docId' => $paper->getDocid()]); ?>
+<?= $this->partial('partials/paper_controller_link_switch.phtml', ['docId' => $paper->getDocid()]) ?>
 
 <?php if ($paper->isObsolete()) : ?>
     <div class="alert alert-info" style="margin-top: 20px">

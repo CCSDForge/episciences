@@ -12,9 +12,10 @@ class PaperController extends PaperDefaultController
 {
     /**
      *  display paper pdf
+     * @throws GuzzleException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
-     * @throws GuzzleException
+     * @throws Zend_Exception
      */
     public function pdfAction(): void
     {
@@ -31,7 +32,7 @@ class PaperController extends PaperDefaultController
 
         $pdf_name = $paper->getIdentifier() . '.pdf';
 
-       $this->RequestingUnpublishedFile($paper);
+       $this->requestingAnUnpublishedFile($paper);
 
         if ($paper->isDeleted()) {
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
@@ -121,20 +122,18 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        // redirect to login if user is not logged in and paper is not published
-        if (
-            !$paper->isPublished() && // current paper is not published yet
-            !array_key_exists(Episciences_Auth::getUid(), $paper->getReviewers()) && // nor reviewer
-            $paper->getUid() !== Episciences_Auth::getUid()
-        ) {
+        $loggedUid = Episciences_Auth::getUid();
+
+        if ($this->hasPermissions($paper)) {
+
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
 
             if ($id !== 0) {
-                // redirection vers la version publiée
+                // redirect to published version
                 $this->redirect('/' . $id);
             } elseif (!Episciences_Auth::isLogged()) {
-                // redirection vers la page d'authentification
+                // redirect to login if user is not logged in
                 $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
             }
 
@@ -181,6 +180,18 @@ class PaperController extends PaperDefaultController
             $paper->loadRatings();
             $this->view->reports = $paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED, Episciences_Auth::getUser());
         }
+
+        // COI
+
+        $isConflictDetected =
+            !Episciences_Auth::isSecretary() &&
+            $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
+            (
+                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
+                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
+            );
+
+        $this->view->isConflictDetected = $isConflictDetected;
 
         // reviewers comments **************************************************
         // fetch reviewers comments

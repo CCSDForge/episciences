@@ -30,7 +30,8 @@ class Episciences_PapersManager
 
         $select = self::getListQuery($settings, $isFilterInfos, $isLimit);
 
-        $list = $db->fetchAssoc($select, $cached);
+        $all = $db->fetchAll($select, $cached); // the first column not contains unique values, that's why we use fetchAll
+        $list = self::fromSequentialArrayToAssoc($all);
 
         $result = [];
 
@@ -103,9 +104,12 @@ class Episciences_PapersManager
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = (!$isCount) ?
-            $db->select()->from(T_PAPERS) :
-            $db->select()->from(T_PAPERS, [new Zend_Db_Expr("COUNT('DOCID')")]);
+
+        $papersQuery = $db->select()->from(['papers' => T_PAPERS])->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id' );
+
+        $countQuery = $db->select()->from($papersQuery, [new Zend_Db_Expr("COUNT('DOCID')")]);
+
+        $select = (!$isCount) ? $papersQuery : $countQuery;
 
         //Filters
         $select = self::applyFilters($select, $settings, $isFilterInfos);
@@ -1160,7 +1164,6 @@ class Episciences_PapersManager
         if (empty($users)) {
             return false;
         }
-
         $currentUsers = [];
 
         $options = []; // editors options
@@ -1987,20 +1990,23 @@ class Episciences_PapersManager
      * @param $docId
      * @param bool $withxsl
      * @return bool|Episciences_Paper
-     * @throws Zend_Db_Statement_Exception
      */
     public static function get($docId, bool $withxsl = true)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = $db->select()
-            ->from(T_PAPERS)
-            ->where('DOCID = ?', $docId);
+            ->from(['papers' => T_PAPERS])
+            ->where('DOCID = ?', $docId)
+            ->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id' );
 
-        $data = $select->query()->fetch();
+        $data = self::fromSequentialArrayToAssoc($select->query()->fetchAll());
+
         if (!$data) {
             return false;
         }
+
+        $data = $data[$docId];
         return new Episciences_Paper(array_merge($data, ['withxsl' => $withxsl]));
 
     }
@@ -2767,6 +2773,46 @@ class Episciences_PapersManager
         }
 
         return $result[EPD];
+    }
+
+    /**
+     * @param array $array
+     * @return array
+     */
+    private static function fromSequentialArrayToAssoc(array $array): array
+    {
+
+        $list = [];
+        $currentDocId = null;
+        $allConflicts = [];
+
+        foreach ($array as $arrayVals){
+
+            if($currentDocId !== $arrayVals['DOCID'] ) {
+                $currentDocId = $arrayVals['DOCID'];
+                $allConflicts = []; // Collect all conflicts by docId
+            }
+
+            $currentOtherVals = [];
+            $currentConflictVals = [];
+            foreach ($arrayVals as $key => $val){
+
+                if (in_array($key, Episciences_Paper_Conflict::TABLE_COLONES, true)) {
+                    $currentConflictVals[$key] = $val;
+                } else {
+                    $currentOtherVals[$key] = $val;
+                }
+
+            }
+
+            $allConflicts[] = $currentConflictVals;
+
+            $list[$currentDocId] = $currentOtherVals;
+            $list[$currentDocId]['conflicts'] = $allConflicts;
+
+        }
+
+        return $list;
     }
 
 }

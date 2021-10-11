@@ -1,0 +1,39 @@
+<?php
+$log = $this->log;
+$conflictDetail = $log['detail']['conflict'];
+?>
+<table class="log-details">
+    <tr>
+        <td class="td-label"><?= $this->translate("Rapporté le") ?></td>
+        <td class="small"><?= $this->Date($log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+    </tr>
+    <tr>
+        <td class="td-label"><?= ucfirst($this->translate('par')) ?></td>
+        <td class="small">
+            <?= $this->user['fullname'] ?>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="td-label"><?= $this->translate('Id permanent') ?></td>
+        <td class="small">
+            <?= $conflictDetail['paperId'] ?>
+        </td>
+    </tr>
+
+    <?php if (!empty($conflictDetail['message'])) : ?>
+        <tr>
+            <td class="td-label"><?= $this->translate('Détails') ?></td>
+            <td class="small"><?= Episciences_Tools::formatText(htmlspecialchars_decode($conflictDetail['message'])) ?></td>
+        </tr>
+    <?php endif; ?>
+</table>
+
+
+
+
+
+
+
+
+

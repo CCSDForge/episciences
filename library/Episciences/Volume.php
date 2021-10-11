@@ -129,6 +129,7 @@ class Episciences_Volume
      * Renvoie les rédacteurs assignés au volume
      * @param bool $active
      * @return mixed
+     * @throws Zend_Db_Statement_Exception
      */
     public function getEditors($active = true)
     {
@@ -151,8 +152,9 @@ class Episciences_Volume
 
     /**
      * @param bool $active
+     * @throws Zend_Db_Statement_Exception
      */
-    public function loadEditors($active = true)
+    public function loadEditors(bool $active = true): void
     {
         $select = $this->loadVolumeAssignmentsForRoleQuery(Episciences_User_Assignment::ROLE_EDITOR);
 

@@ -43,7 +43,8 @@ return [
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
     'Télécharger' => 'Download',
     'Taille' => 'Size',
-
+    'Id permanent' => 'Permanent Id',
+    'Id document' => 'Document Id',
 
 
     "Historique" => "History",
@@ -51,7 +52,7 @@ return [
     "Erreur" => "Error",
     "Tous" => 'All',
     "Tout" => 'All',
-    'Toutes'=>'All',
+    'Toutes' => 'All',
     "Précédente" => 'Previous',
     "Suivante" => 'Next',
     "résultat" => ["result", "results"],
@@ -985,6 +986,7 @@ return [
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Clarification request (reviewer to contributor)",
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Clarification answer (contributor to reviewer)",
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
+    Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
 
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_REQUEST] => "request for clarification",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_ANSWER] => "response for clarification",
@@ -1749,6 +1751,26 @@ return [
     "Cela inclut les autres statuts." => "This includes other status.",
     // datasets
     'Données liées' => 'Linked data',
-    'Voir' => 'View'
-
+    'Voir' => 'View',
+    //COI
+    "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",
+    "Activer/Désactiver le mode CI" => "Enable/Disable COI",
+    "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles à un éditeur tant qu'il n'a pas déclaré l'absence de tout conflit d'intérêts" => "This mode will have the following effects: all non-public information about a submission is not accessible to an editor until he/she has declared the absence of any conflict of interest",
+    "Vous avez été redirigé, car vous ne pouvez pas gérer un article pour lequel vous auriez un conflit d'intérêt" => "You've been redirected, because you cannot allowed to handle an article for which you have a conflict of interest",
+    "Vous avez été redirigé, car vous devez confirmer votre volonté d'accéder aux informations confidentielles liées à cette soumission" => "You've been redirected, because you must confirm your willingness to access confidential information related to this submission",
+    "Conflit d'intérêt" => 'Conflit of interest',
+    "Merci de confirmer l'accès aux informations confidentielles à propos de cette soumission" => 'Please confirm your will to access confidential information about this submission',
+    "Oui : accéder aux informations confidentielles" => 'Yes: access confidential information',
+    "Non : déclarer un conflit d'intérêt" => 'No: declare conflict or interest',
+    'Décider plus tard' => 'Decide later',
+    "Continuer et accéder aux informations confidentielles. Vous n'avez pas de conflit d'intérêt à déclarer.
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Continue and access confidential information. You do not have a conflict of interest to declare. Your action will be recorded in the submission event log.',
+    "Ne pas accéder aux informations confidentielles. Les informations sur cette soumission resteront masquées pour vous.
+                            Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt. Le commentaire sera visible par les gestionnaires de l'article.
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Do not access confidential information. Information about this submission will remain hidden from you.
+                            You may add an optional comment to explain the nature of your conflict of interest. The comment will be visible to the managers of the article.
+                            Your action will be recorded in the submission event log',
+    "Vous pouvez décider plus tard, aucune action ne sera enregistrée." => 'You can decide later, no action will be recorded',
+    'Commentaire facultatif' => 'Optional comments',
+    "Rapporté le" => "Reported on"
 ];

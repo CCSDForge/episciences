@@ -6,12 +6,18 @@ $action = $request->getActionName();
 $isSecretary = Episciences_Auth::isSecretary();
 $loggedUid = Episciences_Auth::getUid();
 $isDevelopEnv = APPLICATION_ENV === 'development';
-
+$isCoiEnabled = $this->isCoiEnabled;
 ?>
 <?php /** @var Episciences_Paper $paper */
 foreach ($this->list as $paper) : ?>
 
     <?php
+
+    $isConflictDetected = !$isSecretary && $isCoiEnabled &&
+        (
+                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
+                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
+        );
 
     $isAllowed = (
         ($isSecretary || $paper->getEditor($loggedUid)) &&
@@ -35,7 +41,7 @@ foreach ($this->list as $paper) : ?>
         <td class="text-center"><?php echo $paper->getDocid(); ?></td>
         <?php // article status icon ******************************************* ?>
         <td class="text-center">
-            <?php if ($paper->getUid() !== $loggedUid) : ?>
+            <?php if (!$isConflictDetected) : ?>
             <?php
             $paperStatusLabel = ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus())));
             ?>
@@ -95,12 +101,13 @@ foreach ($this->list as $paper) : ?>
             ?>
         </td>
         <?php // article reviewers ***************************************** ?>
-        <td <?php if ($paper->getUid() === $loggedUid) {
-            echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate("Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même") . '"';
+        <td <?php if ($isConflictDetected || $paper->getUid() === $loggedUid ) {
+            $message = $isConflictDetected ? "Vous ne pouvez pas voir le statut d' un article pour lequel vous auriez un conflit d'intérêt" : "Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même";
+            echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate($message) . '"';
         } ?>>
             <?php // echo $this->partial('partials/paper_reviewers.phtml', array('article'=>$paper, 'isPartial'=>true)); ?>
             <?php // user can't see reviewers for his own submissions ?>
-            <?php if ($paper->getUid() !== $loggedUid) : ?>
+            <?php if (!$isConflictDetected && $paper->getUid() !== $loggedUid ) : ?>
                 <?php
                 $reviewers = $paper->getReviewers();
                 $ratings = $paper->getRatings();

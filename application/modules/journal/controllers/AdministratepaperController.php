@@ -34,7 +34,7 @@ class AdministratepaperController extends PaperDefaultController
      * Liste tous les articles
      * @throws Zend_Exception
      */
-    public function listAction()
+    public function listAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -135,6 +135,7 @@ class AdministratepaperController extends PaperDefaultController
                     'list' => $papers,
                     'volumes' => $volumes,
                     'sections' => $sections,
+                    'isCoiEnabled' => $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED)
                 ]) :
                 '';
 
@@ -290,6 +291,7 @@ class AdministratepaperController extends PaperDefaultController
                     'list' => $papers,
                     'volumes' => $volumes,
                     'sections' => $sections,
+                    'isCoiEnabled' => $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED)
                 ]) :
                 '';
 
@@ -472,17 +474,49 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
 
         // check if paper exists
-        if (!$paper || $paper->getRvid() != RVID) {
+        if (!$paper || $paper->getRvid() !== RVID) {
             $actionName = Episciences_Auth::isAllowedToManagePaper() ? 'list' : self::ACTION_ASSIGNED;
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage("Le document demande n’existe pas.");
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate("Le document demande n’existe pas."));
             $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/' . $actionName);
         }
 
+        $loggedUid = Episciences_Auth::getUid();
+
+        $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+
+        $isConflictDetected =
+            !Episciences_Auth::isSecretary() && $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
+            (
+                in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
+            );
+
+
         // check if user has required permissions
-        if (APPLICATION_ENV !== 'development' && Episciences_Auth::getUid() === $paper->getUid()) {
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
-            $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
+        if ($isConflictDetected || $loggedUid === $paper->getUid()) {
+
+            if ($loggedUid === $docId) {
+
+                $message = 'Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé';
+                $url = '/paper/view?id=' . $docId;
+
+            } else {
+
+                if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+                    $message = "Vous avez été redirigé, car vous devez confirmer votre volonté d'accéder aux informations confidentielles liées à cette soumission";
+
+                } else {
+                    $message = "Vous avez été redirigé, car vous ne pouvez pas gérer un article pour lequel vous auriez un conflit d'intérêt";
+                }
+
+                $url = '/coi/report?id=' . $docId;
+
+            }
+
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate($message));
+            $this->_helper->redirector->gotoUrl($url);
+
         }
+
         // get contributor details
         $contributor = new Episciences_User();
         $contributor->findWithCAS($paper->getUid());
@@ -650,8 +684,8 @@ class AdministratepaperController extends PaperDefaultController
         $all_editors = Episciences_UsersManager::getUsersWithRoles(Episciences_Acl::ROLE_EDITOR);
 
         // Echapper l'éditeur en cours
-        if (array_key_exists(Episciences_Auth::getUid(), $all_editors)) {
-            unset($all_editors[Episciences_Auth::getUid()]);
+        if (array_key_exists($loggedUid, $all_editors)) {
+            unset($all_editors[$loggedUid]);
         }
 
         // Echapper les éditeurs assignés à l'article
@@ -700,7 +734,7 @@ class AdministratepaperController extends PaperDefaultController
         // ne plus gérer l'article
         $rejections = Episciences_EditorsManager::getRejectionComments($paper->getDocid());
         $this->view->rejections = $rejections;
-        $this->view->isMonitoringRefused = Episciences_EditorsManager::isMonitoringRefused(Episciences_Auth::getUid(), $paper->getDocid());
+        $this->view->isMonitoringRefused = Episciences_EditorsManager::isMonitoringRefused($loggedUid, $paper->getDocid());
 
         // other versions block
         $versions = [];
@@ -993,6 +1027,12 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (array_key_exists(Episciences_Auth::getUid(), $oReviewers)) {
                     unset($oReviewers[Episciences_Auth::getUid()]);
+                }
+
+                //[COI] When inviting an reviewer; do not propose user that have confirmed (answer = yes) a COI in the user list
+
+                foreach ($this->usersWithReportedCoiProcessing($oPaper) as $uid => $user){
+                    unset($oReviewers[$uid]);
                 }
 
                 // **** filter reviewers list
@@ -2086,8 +2126,9 @@ class AdministratepaperController extends PaperDefaultController
      * editor assignment form
      * @return bool
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    public function editorsformAction()
+    public function editorsformAction(): bool
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -2103,8 +2144,15 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
-        // fetch all editors (chief editors included)
-        $editors = Episciences_Review::getEditors(false);
+
+        $editors = $this->getEditors($paper);
+
+        if ($vid) {
+            $volume = Episciences_VolumesManager::find($vid);
+            if ($volume) {
+                $editors = array_merge($editors, $volume->getEditors());
+            }
+        }
 
         // Exclure l'auteur de l'article
         unset($editors[$paper->getUid()]);
@@ -2113,13 +2161,6 @@ class AdministratepaperController extends PaperDefaultController
         foreach ($editors as $uid => $editor) {
             if (!$paper->getEditor($uid) && Episciences_EditorsManager::isMonitoringRefused($uid, $docId)) {
                 unset($editors[$uid]);
-            }
-        }
-
-        if ($vid) {
-            $volume = Episciences_VolumesManager::find($vid);
-            if ($volume) {
-                $editors = array_merge($editors, $volume->getEditors());
             }
         }
 
@@ -2142,8 +2183,9 @@ class AdministratepaperController extends PaperDefaultController
      * formulaire d'assigantion des CE
      * @return bool
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    public function copyeditorsformAction()
+    public function copyeditorsformAction(): bool
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -2160,10 +2202,7 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
-        $copyEditors = Episciences_Review::getCopyEditors();
-
-        // Exclure l'auteur de l'article
-        unset($copyEditors[$paper->getUid()]);
+        $copyEditors = $this->getCopyEditors($paper);
 
         if ($vId) {
             $volume = Episciences_VolumesManager::find($vId);
@@ -2171,6 +2210,9 @@ class AdministratepaperController extends PaperDefaultController
                 $copyEditors = array_merge($copyEditors, $volume->getCopyEditors());
             }
         }
+
+        // Exclure l'auteur de l'article
+        unset($copyEditors[$paper->getUid()]);
 
         if (!empty($copyEditors)) {
             $this->view->copyEditors = $copyEditors;
@@ -3214,22 +3256,6 @@ class AdministratepaperController extends PaperDefaultController
             $oInvitation->setStatus($oInvitation::STATUS_CANCELLED);
             $oInvitation->save();
         }
-
-        //log
-        /*
-        $uid = $oAssignment->getUId();
-        if ($oAssignment->isTmp_user()) {
-            $user = new Episciences_User_Tmp();
-            $user->find($uid);
-            $user->generateScreen_name();
-            $comment = $user->getScreenName() . ' (tmp_user '.$uid.") a refusé l'invitation de relecture";;
-        } else {
-            $user = new Episciences_User;
-            $user->findWithCAS($uid);
-            $comment = $user->getFullName() . ' ('.$uid.") a refusé l'invitation de relecture";;
-        }
-        Episciences_PapersManager::log($oAssignment->getItemid(), $paper->getStatus(), $comment);
-        */
 
         //update assignment  (cancel)
         $params = [

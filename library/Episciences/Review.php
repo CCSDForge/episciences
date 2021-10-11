@@ -77,6 +77,7 @@ class Episciences_Review
     const SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS = 'systemCanNotifyAdministrator';
     const SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES = 'systemCanNotifySecretaries';
     const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
+    public const SETTING_SYSTEM_IS_COI_ENABLED = 'isCoiEnabled'; //Conflict Of Interest (COI) is Disabled by default
 
     const ASSIGNMENT_EDITORS_DETAIL = [
         self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => '0',
@@ -184,7 +185,8 @@ class Episciences_Review
             self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
             self::SETTING_ENCAPSULATE_COPY_EDITORS,
-            self::SETTING_CAN_RESUBMIT_REFUSED_PAPER
+            self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
+            self::SETTING_SYSTEM_IS_COI_ENABLED
         ];
 
 
@@ -300,7 +302,7 @@ class Episciences_Review
      * @return Episciences_User[]
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getEditors($strict = true): array
+    public static function getEditors(bool $strict = true): array
     {
         if ($strict) {
             return self::getUsers(Episciences_Acl::ROLE_EDITOR);
@@ -429,7 +431,7 @@ class Episciences_Review
      * @param bool $strict = false [ne pas en tenir compte du module de notifications]
      * @throws Zend_Db_Statement_Exception
      */
-    public static function checkReviewNotifications(array &$recipients, $rvId = RVID, $strict = true)
+    public static function checkReviewNotifications(array &$recipients, $rvId = RVID, $strict = true): void
     {
         $review = Episciences_ReviewsManager::find($rvId);
         $notificationSettings = $review->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);
@@ -556,7 +558,7 @@ class Episciences_Review
 
     /**
      * Récupération d'une liste d'article de la revue, peut être filtrée par des options
-     * @param array $options
+     * @param array|null $options
      * $options['is']['key'] = value     : WHERE key = value
      * $options['isNot']['key'] = value : WHERE key != value
      * $options['limit'] = limit    : LIMIT limit
@@ -564,7 +566,7 @@ class Episciences_Review
      * @param bool $cached
      * @param bool $isFilterInfos
      * @return Episciences_Paper[]
-     * @throws Zend_Exception
+     * @throws Zend_Db_Select_Exception
      */
     public function getPapers(array $options = null, $cached = false, bool $isFilterInfos = false): array
     {
@@ -785,11 +787,9 @@ class Episciences_Review
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
-     * @throws Zend_Validate_Exception
      */
-    public function settingsForm(): \Ccsd_Form
+    public function settingsForm(): Ccsd_Form
     {
-        /** @var Ccsd_Form $form */
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
         $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
@@ -874,6 +874,9 @@ class Episciences_Review
         //Copy editing checkBox
         $form = $this->addCopyEditorForm($form);
 
+        //COI
+        $form = $this->addCoiForm($form);
+
         // display group: publication settings
         $form->addDisplayGroup([
             self::SETTING_REPOSITORIES,
@@ -931,6 +934,12 @@ class Episciences_Review
         $form->addDisplayGroup([
             self::SETTING_ENCAPSULATE_COPY_EDITORS
         ], 'copyEditors', ["legend" => "Préparation de copie"]);
+        $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
+
+        // display group : COI settings
+        $form->addDisplayGroup([
+            self::SETTING_SYSTEM_IS_COI_ENABLED
+        ], 'conflictOfInterest', ["legend" => "Conflit d'intérêts (CI)"]);
         $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
 
         // submit button
@@ -1151,11 +1160,11 @@ class Episciences_Review
 
     /**
      * @param Ccsd_Form $form
-     * @return Zend_Form
+     * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    private function AddAutomaticallyReassignSameReviewersSettingsForm(Ccsd_Form $form): \Zend_Form
+    private function AddAutomaticallyReassignSameReviewersSettingsForm(Ccsd_Form $form): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $description = $translator->translate("Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise");
@@ -1343,7 +1352,7 @@ class Episciences_Review
     // SETTERS ******************************************************************************
 
     /**
-     * @param Zend_Form
+     * @param Ccsd_Form $form
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
@@ -1399,8 +1408,33 @@ class Episciences_Review
     }
 
     /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Form_Exception
+     */
+    private function addCoiForm(Ccsd_Form $form): \Ccsd_Form
+    {
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        return $form->addElement('checkbox', self::SETTING_SYSTEM_IS_COI_ENABLED, [
+                'label' => "Activer/Désactiver le mode CI",
+                'description' => "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles à un éditeur tant qu'il n'a pas déclaré l'absence de tout conflit d'intérêts",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+    }
+
+    /**
      * Save review settings in DB
      * @return bool
+     * @throws Zend_Db_Statement_Exception
      */
     public function save(): bool
     {
@@ -1522,6 +1556,9 @@ class Episciences_Review
 
         // Resoumettre un artcile déjà refusé (nouvelle version)
         $settingsValues[self::SETTING_CAN_RESUBMIT_REFUSED_PAPER] = $this->getSetting(self::SETTING_CAN_RESUBMIT_REFUSED_PAPER);
+
+        // COI
+        $settingsValues[self::SETTING_SYSTEM_IS_COI_ENABLED] = $this->getSetting(self::SETTING_SYSTEM_IS_COI_ENABLED);
 
 
         $values = [];

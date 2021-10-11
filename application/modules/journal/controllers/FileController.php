@@ -285,9 +285,10 @@ class FileController extends DefaultController
     }
 
     /**
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Db_Adapter_Exception
      * @throws GuzzleException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public function oafilesAction(): void
     {

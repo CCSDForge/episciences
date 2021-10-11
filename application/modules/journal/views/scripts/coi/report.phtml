@@ -1,0 +1,44 @@
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+?>
+
+<script>
+    __initMCE('textarea', undefined, {
+        theme: "modern",
+        plugins: "link",
+        toolbar1: "bold italic underline link",
+        menubar: false
+    });
+</script>
+<?php
+/**
+ * @var $paper Episciences_Paper
+ */
+$paper = $this->paper;
+
+?>
+<h1><?= $this->translate("Conflit d'intérêt") ?>
+    <small><?= $this->translate("Merci de confirmer l'accès aux informations confidentielles à propos de cette soumission") ?></small>
+</h1>
+
+<div class="row">
+    <div class="col-md-7">
+        <?= $paper->getXslt() ?>
+        <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
+        <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper]) ?>
+    </div>
+
+    <div class="col-md-5">
+        <form class="form-horizontal" action="/coi/report" method="post">
+            <input type="hidden" name="id" value="<?= $paper->getDocid() ?>">
+            <?= $this->form ?>
+        </form>
+    </div>
+
+</div>
+
+
+
+

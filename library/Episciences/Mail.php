@@ -706,7 +706,7 @@ class Episciences_Mail extends Zend_Mail
      * @return array
      */
 
-    public function getHistory($docId = null, array $options = [], bool $isFilterInfos = false)
+    public function getHistory($docId = null, array $options = [], bool $isFilterInfos = false): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $this->getHistoryQuery($docId, $options, false, $isFilterInfos);
@@ -739,10 +739,12 @@ class Episciences_Mail extends Zend_Mail
      * @param bool $isFilterInfos
      * @return Zend_Db_Select
      */
-    private function getHistoryQuery($docId = null, array $options = [], bool $isCount = false, bool $isFilterInfos = false)
+    private function getHistoryQuery($docId = null, array $options = [], bool $isCount = false, bool $isFilterInfos = false): \Zend_Db_Select
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $isCoiEnabled = isset($options['isCoiEnabled']) && $options['isCoiEnabled'];
 
         $sql = (!$isCount) ?
             $db->select()->from(T_MAIL_LOG) :
@@ -751,15 +753,26 @@ class Episciences_Mail extends Zend_Mail
         $sql->where('RVID = ?', $this->getRvid());
 
         if (is_array($docId) && !empty($docId)) {
-            $sql->where('DOCID IS NULL OR DOCID IN (?)', $docId);
-        } elseif ($docId) {
-            $sql->where('DOCID IS NULL OR DOCID = ?', $docId);
-        } else {
-            $sql->where('DOCID IS NULL');
-        }
 
-        // DataTable search
-        if ($isFilterInfos && array_key_exists('search', $options)) {
+            if (!$isCoiEnabled) {
+
+                $sql->where('DOCID IS NULL OR DOCID IN (?)', $docId);
+
+            } else {
+                $sql->where('DOCID IN (?)', $docId);
+            }
+
+        } elseif ($docId) {
+
+            if ($isCoiEnabled) {
+                $sql->where('DOCID IS NULL OR DOCID = ?', $docId);
+
+            } else {
+                $sql->where('DOCID = ?', $docId);
+            }
+
+        } else {
+            (!$isCoiEnabled) ? $sql->where('DOCID IS NULL') : $sql->where('DOCID = ?', 0); // fix Empty IN clause parameter list in MySQL
             $sql = $this->dataTableMailsSearchQuery($sql, $options['search']);
         }
 
@@ -771,7 +784,7 @@ class Episciences_Mail extends Zend_Mail
      * @param String $word
      * @return Zend_Db_Select
      */
-    private function dataTableMailsSearchQuery(Zend_Db_Select $select, string $word = '')
+    private function dataTableMailsSearchQuery(Zend_Db_Select $select, string $word = ''): Zend_Db_Select
     {
         $where = "SUBJECT LIKE '%$word%' OR `TO` LIKE '%$word%' OR CC LIKE '%$word%' OR BCC LIKE '%$word%' OR CONVERT(`WHEN`, CHAR) LIKE '%$word%'";
         $select->where($where);
@@ -783,12 +796,12 @@ class Episciences_Mail extends Zend_Mail
      * @param array $docIds
      * @param array $options
      * @param bool $isFilterInfos
-     * @return string
+     * @return int
      */
-    public function getCountHistory($docIds, array $options = [], bool $isFilterInfos = false)
+    public function getCountHistory($docIds, array $options = [], bool $isFilterInfos = false): int
     {
         $select = $this->getHistoryQuery($docIds, $options, true, $isFilterInfos);
-        return Zend_Db_Table_Abstract::getDefaultAdapter()->fetchOne($select);
+        return (int)Zend_Db_Table_Abstract::getDefaultAdapter()->fetchOne($select);
     }
 
     /**

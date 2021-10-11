@@ -32,9 +32,11 @@ class Episciences_User extends Ccsd_User_Models_User
     protected $_registration_date;
     protected $_modification_date;
 
+    private $_papersNotInConflict = [];
+
     /**
      * Constructeur d'un utilisateur
-     * @param array $options
+     * @param array|null $options
      */
     public function __construct(array $options = null)
     {
@@ -908,8 +910,6 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param $docId
      * @param bool $strict (true: only the current version, false: include other versions)
      * @return string|null
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
      */
     public function getAlias($docId, $strict = true)
     {
@@ -965,7 +965,6 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @param $docId
      * @return array
-     * @throws Zend_Db_Statement_Exception
      */
     private function versionIdsProcessing($docId): array
     {
@@ -982,8 +981,6 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param $docId
      * @param bool $strict (true: only the current version, false: include other versions)
      * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
      */
     public function hasAlias($docId, $strict = true): bool
     {
@@ -1008,7 +1005,6 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param int|null $value
      * @return bool
      * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
      */
     public function createAlias($docId, int $value = null): bool
     {
@@ -1052,11 +1048,11 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getApi_password()
+    public function getApi_password(): string
     {
-        return $this->_apiPassword;
+        return $this->_api_password;
     }
 
     /**
@@ -1065,6 +1061,47 @@ class Episciences_User extends Ccsd_User_Models_User
     public function setApi_password($apiPassword)
     {
         $this->_api_password = $apiPassword;
+    }
+
+    /**
+     * @return array
+     */
+    public function getPapersNotInConflict(): array
+    {
+        if(empty($this->_papersNotInConflict)){
+            $this->loadPapersNotInConflict();
+        }
+
+        return $this->_papersNotInConflict;
+    }
+
+    /**
+     * @param array $papersNotInConflict
+     * @return Episciences_Editor
+     */
+    public function setPapersNotInConflict(array $papersNotInConflict): Episciences_User
+    {
+        $this->_papersNotInConflict = $papersNotInConflict;
+        return $this;
+    }
+
+    /**
+     * loads the papers for which a conflict has not been declared
+     */
+    public function loadPapersNotInConflict(): void
+    {
+        $result = [];
+
+        if ($uid = $this->getUid()) {
+            $oConflicts = Episciences_Paper_ConflictsManager::findByUidAndAnswer($uid, Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']); // only confirmed: no conflict (answer = 'no')
+            /** @var  $oConflict Episciences_Paper_Conflict */
+            foreach ($oConflicts as $oConflict) {
+                $paperId = $oConflict->getPaperId();
+                $result[$paperId] = Episciences_PapersManager::get($paperId, false);
+            }
+        }
+
+        $this->setPapersNotInConflict($result);
     }
 
 }

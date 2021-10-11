@@ -173,10 +173,16 @@ class VolumeController extends Zend_Controller_Action
 
     // Affiche le formulaire d'assignation de rédacteurs à un volume
     // (utilisé dans un popover en ajax)
+    /**
+     * @throws Zend_Form_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
     public function editorsformAction()
     {
         $request = $this->getRequest();
         $vid = $request->getPost('vid');
+
         if (!$vid) {
             return false;
         }
@@ -186,6 +192,7 @@ class VolumeController extends Zend_Controller_Action
         $this->view->editorsForm = Episciences_VolumesManager::getEditorsForm($currentEditors);
 
         $this->_helper->layout->disableLayout();
+        return true;
     }
 
     // Assignation de rédacteurs à un volume

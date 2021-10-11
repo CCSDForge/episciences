@@ -3,7 +3,7 @@
 class Episciences_EditorsManager
 {
     /**
-     * Renvoie la liste des relecteurs d'une revue
+     * Returns the list of editors of a journal
      * @return Episciences_User[]
      * @throws Zend_Db_Statement_Exception
      */

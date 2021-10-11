@@ -533,4 +533,86 @@ class PaperDefaultController extends DefaultController
         $message .= '</div>';
         return $message;
     }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    protected function getEditors(Episciences_Paper $paper): array
+    {
+
+        $journalSettings = Zend_Registry::get('reviewSettings');
+
+        // fetch all editors (chief editors included)
+        $editors = Episciences_Review::getEditors(false);
+
+        if (isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && $journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) {
+            foreach ($this->usersWithReportedCoiProcessing($paper, 'editor') as $uid => $user) {
+                unset($editors[$uid]);
+            }
+        }
+
+        return $editors;
+
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    protected function getCopyEditors(Episciences_Paper $paper): array
+    {
+
+        // fetch all copy editors
+        $copyEditors = Episciences_Review::getCopyEditors();
+
+        $journalSettings = Zend_Registry::get('reviewSettings');
+
+        if (isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && $journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) {
+            foreach ($this->usersWithReportedCoiProcessing($paper, 'copy_editor') as $uid => $user) {
+                unset($copyEditors[$uid]);
+            }
+        }
+
+        return $copyEditors;
+    }
+
+    /**
+     * [COI] When assigning an editors/copy editors ; propose only editors/copy Editors that have not reported a COI
+     * @param Episciences_Paper $paper
+     * @param string $role
+     * @param string $answer
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function usersWithReportedCoiProcessing(Episciences_Paper $paper, string $role = 'user', string $answer = Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ): array
+    {
+        $result = [];
+
+        if ($role === 'editor') {
+            $user = new Episciences_Editor();
+
+        } elseif ($role === 'copy_editor') {
+            $user = new Episciences_CopyEditor();
+
+        } else {
+            $user = new Episciences_User();
+
+        }
+
+        $uidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => $answer, 'paper_id' => $paper->getPaperid()]);
+
+        foreach ($uidS as $uid) {
+
+            $user->find($uid);
+            $result[$uid] = $user;
+        }
+
+        return $result;
+
+    }
 }

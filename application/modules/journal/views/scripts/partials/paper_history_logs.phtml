@@ -23,7 +23,8 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_EDITOR_COMMENT,
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION,
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR,
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER,
+    Episciences_Paper_Logger::CODE_COI_REPORTED
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
@@ -174,6 +175,12 @@ $logs_with_details = [
                     <?= $detail['newDate'] . ' > ' ?>
                     <?= $fullName ?>
                     <?php break; ?>
+
+                <?php case Episciences_Paper_Logger::CODE_COI_REPORTED: ?>
+                    <?= $this->translate(' :') ?>
+                    <?= strtoupper($this->translate($detail['conflict']['answer'])) . ' > ' ?>
+                    <?= $fullName ?>
+                <?php break; ?>
                 <?php endswitch ?>
 
             <span class="log-detail-icon glyphicon glyphicon-plus"></span>

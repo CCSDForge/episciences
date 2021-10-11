@@ -1,0 +1,50 @@
+<div class="panel panel-default" style="margin-top: 20px">
+
+
+    <div class="panel-body">
+        <button id="coi-no" type="submit" class="btn btn-success btn-block btn-md" name="coiReport" value="no"><i class="fas fa-check-square"
+                                                                                    aria-hidden="true"></i>&nbsp;<?= $this->translate("Oui : accéder aux informations confidentielles") ?>
+        </button>
+        <span id="helpBlock" class="help-block"><?= $this->translate("Continuer et accéder aux informations confidentielles. Vous n'avez pas de conflit d'intérêt à déclarer.
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission.") ?>
+                        </span>
+    </div>
+</div>
+
+<div class="panel panel-default">
+
+
+    <div class="panel-body">
+        <button id="coi-yes" type="submit" class="btn btn-warning btn-block btn-md" name="coiReport" value="yes"><i class="fas fa-ban"
+                                                                                     aria-hidden="true"></i>&nbsp;<?= $this->translate("Non : déclarer un conflit d'intérêt") ?>
+        </button>
+        <span id="helpBlock" class="help-block"><?= $this->translate("Ne pas accéder aux informations confidentielles. Les informations sur cette soumission resteront masquées pour vous.
+                            Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt. Le commentaire sera visible par les gestionnaires de l'article.
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission.") ?></span>
+        <?php foreach ($this->element->getElements() as $name => $element) : ?>
+            <?php
+
+            if ($element->getName() !== 'message') {
+                continue;
+            }
+            ?>
+        <?= $element ?>
+        <?php endforeach; ?>
+    </div>
+
+</div>
+
+<div class="panel panel-default">
+
+
+    <div class="panel-body">
+        <button id="coi-later" type="submit" class="btn btn-default btn-block btn-md" name="coiReport" value="later"><i class="fas fa-question-circle"
+                                                                                       aria-hidden="true"></i>&nbsp;<?= $this->translate("Décider plus tard") ?>
+        </button>
+        <span id="helpBlock"
+              class="help-block"><?= $this->translate("Vous pouvez décider plus tard, aucune action ne sera enregistrée.") ?></span>
+    </div>
+
+
+</div>
+
