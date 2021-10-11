@@ -1759,16 +1759,16 @@ return [
     "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles à un éditeur tant qu'il n'a pas déclaré l'absence de tout conflit d'intérêts" => "This mode will have the following effects: all non-public information about a submission is not accessible to an editor until he/she has declared the absence of any conflict of interest",
     "Vous avez été redirigé, car vous ne pouvez pas gérer un article pour lequel vous auriez un conflit d'intérêt" => "You've been redirected, because you cannot allowed to handle an article for which you have a conflict of interest",
     "Vous avez été redirigé, car vous devez confirmer votre volonté d'accéder aux informations confidentielles liées à cette soumission" => "You've been redirected, because you must confirm your willingness to access confidential information related to this submission",
-    "Conflit d'intérêt" => 'Conflit of interest',
-    "Merci de confirmer l'accès aux informations confidentielles à propos de cette soumission" => 'Please confirm your will to access confidential information about this submission',
-    "Oui : accéder aux informations confidentielles" => 'Yes: access confidential information',
-    "Non : déclarer un conflit d'intérêt" => 'No: declare conflict or interest',
+    "Conflit d'intérêt" => 'Conflict of interest',
+    "Merci de déclarer si vous avez un conflit avec cette soumission" => 'Please declare whether you have a conflict of interest with this submission',
+    "Je n'ai pas de conflit d'intérêt" => 'I do not have a conflict of interest',
+    "J'ai un conflit d'intérêt" => 'I do have a conflict of interest',
     'Décider plus tard' => 'Decide later',
-    "Continuer et accéder aux informations confidentielles. Vous n'avez pas de conflit d'intérêt à déclarer.
-                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Continue and access confidential information. You do not have a conflict of interest to declare. Your action will be recorded in the submission event log.',
-    "Ne pas accéder aux informations confidentielles. Les informations sur cette soumission resteront masquées pour vous.
+    "Continuer et accéder à la soumission. Vous n'avez pas de conflit d'intérêt à déclarer.
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Continue and access the submission. You do not have a conflict of interest to declare. Your action will be recorded in the submission event log.',
+    "Ne pas accéder à la soumission. Les informations sur cette soumission resteront masquées pour vous.
                             Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt. Le commentaire sera visible par les gestionnaires de l'article.
-                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Do not access confidential information. Information about this submission will remain hidden from you.
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Do not access the submission. Information about this submission will remain hidden from you.
                             You may add an optional comment to explain the nature of your conflict of interest. The comment will be visible to the managers of the article.
                             Your action will be recorded in the submission event log',
     "Vous pouvez décider plus tard, aucune action ne sera enregistrée." => 'You can decide later, no action will be recorded',
