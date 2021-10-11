@@ -32,7 +32,7 @@ class DefaultController extends Zend_Controller_Action
     protected function requestingAnUnpublishedFile(Episciences_Paper $paper): void
     {
 
-        if ($this->hasPermissions($paper)) {
+        if ($this->isRestrictedAccess($paper)) {
 
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
@@ -67,7 +67,7 @@ class DefaultController extends Zend_Controller_Action
     protected function redirectsIfHaveNotEnoughPermissions(Episciences_Paper $paper): void
     {
 
-        if ($this->hasPermissions($paper)){
+        if ($this->isRestrictedAccess($paper)){
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
             $this->redirect('/');
@@ -81,7 +81,7 @@ class DefaultController extends Zend_Controller_Action
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    protected function hasPermissions(Episciences_Paper $paper): bool
+    protected function isRestrictedAccess(Episciences_Paper $paper): bool
     {
         $journalSettings = Zend_Registry::get('reviewSettings');
 
@@ -99,7 +99,7 @@ class DefaultController extends Zend_Controller_Action
                 $journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] === '0'
             ) && Episciences_Auth::isCopyEditor();
 
-        return (!$isAllowToEditors || !$isAllowToCopyEditors) && !$paper->isPublished() &&
+        return !$isAllowToEditors && !$isAllowToCopyEditors && !$paper->isPublished() &&
             !Episciences_Auth::isSecretary() && // nor editorial secretary or user is not chief editor or // nor admin
             !$paper->getEditor($loggedUid) && // assigned editors
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
