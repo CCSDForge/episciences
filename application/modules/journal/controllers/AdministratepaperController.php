@@ -490,11 +490,12 @@ class AdministratepaperController extends PaperDefaultController
                 in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
             );
 
+        $isOwnSubmission = $loggedUid === $paper->getUid();
 
         // check if user has required permissions
-        if ($isConflictDetected || $loggedUid === $paper->getUid()) {
+        if ($isConflictDetected || $isOwnSubmission) {
 
-            if ($loggedUid === $docId) {
+            if ($isOwnSubmission) {
 
                 $message = 'Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé';
                 $url = '/paper/view?id=' . $docId;

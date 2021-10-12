@@ -154,7 +154,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
                 (!$this->review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor())
         )
 ): ?>
-    <?= $this->partial('partials/paper_controller_link_switch.phtml', ['docId' => $paper->getDocid()]); ?>
+    <?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $paper]) ?>
 <?php endif; ?>
 
 <?php // obsolete paper notice ****************************************************** ?>
