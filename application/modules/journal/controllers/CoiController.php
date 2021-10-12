@@ -143,7 +143,7 @@ class CoiController extends PaperDefaultController
                 Episciences_Review::checkReviewNotifications($ccRecipients);
 
                 if($paper->getEditor($loggedUid)){
-                    $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_COPY_EDITOR, null, $ccRecipients);
+                    $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_EDITOR, null, $ccRecipients);
                 }
 
                 if($paper->getCopyEditor($loggedUid)){
