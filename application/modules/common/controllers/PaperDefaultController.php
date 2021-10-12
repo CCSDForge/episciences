@@ -451,7 +451,7 @@ class PaperDefaultController extends DefaultController
      * @param int $docId
      * @return string
      */
-    public function buildPublicPaperUrl(int $docId)
+    public function buildPublicPaperUrl(int $docId): string
     {
         $paperUrl = $this->view->url(
             [
@@ -614,5 +614,86 @@ class PaperDefaultController extends DefaultController
 
         return $result;
 
+    }
+
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param array $removed
+     * @param string $paper_url
+     * @param string $userAssignment
+     * @param int|null $unassignedBy default: null [automatically: by system]
+     * @param array $cc
+     * @return array
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+    protected function unssignUser(
+        Episciences_Paper $paper,
+        array             $removed,
+        string            $paper_url = '',
+        string            $userAssignment = Episciences_User_Assignment::ROLE_EDITOR,
+        int               $unassignedBy = null,
+        array             $cc = []
+    ): array
+    {
+        $loggerType = Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT;
+        $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN;
+
+        if ($userAssignment === Episciences_Acl::ROLE_COPY_EDITOR) {
+            $loggerType = Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT;
+            $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_UNASSIGN;
+        }
+
+        $communTags = [
+            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
+            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url
+        ];
+
+        foreach ($removed as $uid) {
+
+            // fetch user details
+            $assignedUser = new Episciences_User;
+            $assignedUser->findWithCAS($uid);
+            $locale = $assignedUser->getLangueid();
+
+            // save unassignment
+            try {
+                $aid = $paper->unassign($uid, $userAssignment);
+
+            } catch (Exception $e) {
+                error_log($e . ' : UNASSIGN_USER_UID : ' . $assignedUser->getUid() . ' Paper ID : ' . $paper->getDocid());
+                continue;
+            }
+
+            // log unassignment
+            if (
+                !$paper->log($loggerType, $unassignedBy, ["aid" => $aid, "user" => $assignedUser->toArray()])
+            ) {
+                error_log('Error: failed to log ' . $loggerType . ' AID : ' . $aid . ' UID : ' . $assignedUser->getUid());
+            }
+
+
+            $tags = array_merge($communTags, [
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
+
+            ]);
+
+            if (!empty($cc)) {
+                unset($cc[$uid]);
+            }
+
+            Episciences_Mail_Send::sendMailFromReview($assignedUser, $templateType, $tags, $paper, null, [], false, $cc);
+
+
+        }
+
+        return $removed;
     }
 }

@@ -960,9 +960,7 @@ class Episciences_Paper
             $this->_editors = Episciences_PapersManager::getEditors($this->getDocid(), true, true);
         }
 
-        $isExist = array_key_exists($uid, $this->_editors);
-
-        return ($isExist) ? $this->_editors[$uid] : $isExist;
+        return array_key_exists($uid, $this->_editors) ? $this->_editors[$uid] : false;
     }
 
     /**

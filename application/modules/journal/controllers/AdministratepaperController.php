@@ -2285,12 +2285,12 @@ class AdministratepaperController extends PaperDefaultController
             //admin paper URL
             $adminPaperUrl = $this->buildAdminPaperUrl($docId);
 
-            if (!empty($removed)) {
-                $this->unssignUser($paper, $removed, $adminPaperUrl, Episciences_User_Assignment::ROLE_COPY_EDITOR);
-            }
-
             // public paperURL
             $paperUrl = $this->buildPublicPaperUrl($docId);
+
+            if (!empty($removed)) {
+                $this->unssignUser($paper, $removed, $paperUrl, Episciences_User_Assignment::ROLE_COPY_EDITOR, Episciences_Auth::getUid());
+            }
 
             if (!empty($added)) {
 
@@ -2343,67 +2343,6 @@ class AdministratepaperController extends PaperDefaultController
 
             echo Zend_Json_Encoder::encode(['result' => true]);
         }
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     * @param array $removed
-     * @param string $paper_url
-     * @param string $userAssignment
-     * @return array
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
-     */
-    private function unssignUser(Episciences_Paper $paper, array $removed, string $paper_url = '', string $userAssignment = Episciences_User_Assignment::ROLE_EDITOR)
-    {
-        $loggerType = Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT;
-        $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN;
-
-        if ($userAssignment === Episciences_Acl::ROLE_COPY_EDITOR) {
-            $loggerType = Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT;
-            $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_UNASSIGN;
-        }
-
-        foreach ($removed as $uid) {
-
-            // fetch user details
-            $assignedUser = new Episciences_User;
-            $assignedUser->findWithCAS($uid);
-            $locale = $assignedUser->getLangueid();
-
-            // save unassignment
-            try {
-                $aid = $paper->unassign($uid, $userAssignment);
-
-            } catch (Exception $e) {
-                error_log($e . ' : UNASSIGN_USER_UID : ' . $assignedUser->getUid() . ' Paper ID : ' . $paper->getDocid());
-                continue;
-            }
-
-            // log unassignment
-            if (
-            !$paper->log($loggerType, Episciences_Auth::getUid(), ["aid" => $aid, "user" => $assignedUser->toArray()])
-            ) {
-                error_log('Error: failed to log ' . $loggerType . ' AID : ' . $aid . ' UID : ' . $assignedUser->getUid());
-            }
-
-            $tags = [
-
-                Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
-                Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
-                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
-                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
-                Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url
-
-            ];
-
-            Episciences_Mail_Send::sendMailFromReview($assignedUser, $templateType, $tags, $paper);
-        }
-        return $removed;
     }
 
     /**
@@ -2731,7 +2670,7 @@ class AdministratepaperController extends PaperDefaultController
             }
 
             if (!empty($removed)) {
-                $this->unssignUser($paper, $removed, $paper_url);
+                $this->unssignUser($paper, $removed, $paper_url, Episciences_User_Assignment::ROLE_EDITOR, Episciences_Auth::getUid());
             }
 
             echo Zend_Json_Encoder::encode(['result' => true]);
@@ -3921,7 +3860,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName()
         ];
 
-        $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->buildAdminPaperUrl($docId), Episciences_User_Assignment::ROLE_EDITOR);
+        $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->buildPublicPaperUrl($docId), Episciences_User_Assignment::ROLE_EDITOR);
 
         // Ici le statut de l'article n'a pas été changé, mais les notifs sont identiques.
         $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, null, $tags, [], false, $uidS);

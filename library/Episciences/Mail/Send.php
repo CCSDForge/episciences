@@ -179,7 +179,16 @@ class Episciences_Mail_Send
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    public static function sendMailFromReview(Episciences_User $recipient, string $templateType, array $tags = [], Episciences_Paper $paper = null, int $authUid = null, array $attachmentsFiles = [], bool $makeACopy = false, array $CC = []): bool
+    public static function sendMailFromReview(
+        Episciences_User $recipient,
+        string $templateType,
+        array $tags = [],
+        Episciences_Paper $paper = null,
+        int $authUid = null,
+        array $attachmentsFiles = [],
+        bool $makeACopy = false,
+        array $CC = []
+    ): bool
     {
 
         $template = new Episciences_Mail_Template();

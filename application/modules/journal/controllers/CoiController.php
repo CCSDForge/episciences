@@ -79,6 +79,10 @@ class CoiController extends PaperDefaultController
      * @param array $post
      * @param Episciences_Paper $paper
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
      */
     private function conflictProcessing(array $post, Episciences_Paper $paper): void
     {
@@ -98,19 +102,18 @@ class CoiController extends PaperDefaultController
 
         }
 
-        $uid = Episciences_Auth::getUid();
+        $loggedUid = Episciences_Auth::getUid();
 
         $url = '/' . self::PAPER_URL_STR . $docId;
 
         if ($coiReport !== Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
 
             $conflict = new Episciences_Paper_Conflict([
-                'by' => $uid,
+                'by' => $loggedUid,
                 'paper_id' => $paper->getPaperid(),
                 'answer' => $coiReport,
                 'message' => $message
             ]);
-
 
             $latestInsertId = $conflict->save();
 
@@ -130,8 +133,22 @@ class CoiController extends PaperDefaultController
                 }
 
                 $details = ['user' => ['fullname' => Episciences_Auth::getFullName()], 'conflict' => $conflict->toArray()];
-                $paper->log(Episciences_Paper_Logger::CODE_COI_REPORTED, Episciences_Auth::getUid(), $details);
+                $paper->log(Episciences_Paper_Logger::CODE_COI_REPORTED, $loggedUid, $details);
 
+                // When an editor / copy editor is assigned, if he/she declares a COI => un-assign him/her.
+                $url = $this->buildPublicPaperUrl($docId);
+
+                // This unassignment triggers the a notification email to all editors in chief and secretaries
+                $ccRecipients = [];
+                Episciences_Review::checkReviewNotifications($ccRecipients);
+
+                if($paper->getEditor($loggedUid)){
+                    $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_COPY_EDITOR, null, $ccRecipients);
+                }
+
+                if($paper->getCopyEditor($loggedUid)){
+                    $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_COPY_EDITOR, null, $ccRecipients);
+                }
             }
 
             if ($coiReport === Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']) {

@@ -431,7 +431,7 @@ class Episciences_Review
      * @param bool $strict = false [ne pas en tenir compte du module de notifications]
      * @throws Zend_Db_Statement_Exception
      */
-    public static function checkReviewNotifications(array &$recipients, $rvId = RVID, $strict = true): void
+    public static function checkReviewNotifications(array &$recipients, $rvId = RVID, bool $strict = true): void
     {
         $review = Episciences_ReviewsManager::find($rvId);
         $notificationSettings = $review->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);
