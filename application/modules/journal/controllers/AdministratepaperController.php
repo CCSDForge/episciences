@@ -506,7 +506,7 @@ class AdministratepaperController extends PaperDefaultController
                     $message = "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission";
 
                 } else {
-                    $message = "Vous avez été redirigé, car vous ne pouvez pas gérer un article pour lequel vous auriez un conflit d'intérêt";
+                    $message = "Vous avez déclaré un conflit d'intérêts avec cette soumission.";
                 }
 
                 $url = '/coi/report?id=' . $docId;
