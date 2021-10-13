@@ -60,14 +60,6 @@ $(document).ready(function () {
             $('.popover-link').popover('destroy');
         }
     });
-
-    // jQuery sortable table bug fix
-    var fixHelperSortable = function (e, ui) {
-        ui.children().each(function () {
-            $(this).width($(this).width());
-        });
-        return ui;
-    };
 });
 
 // fetch first element of an array or an object
@@ -778,6 +770,14 @@ function isValidHttpUrl(string) {
 
     return url.protocol === "http:" || url.protocol === "https:";
 }
+
+// jQuery sortable table bug fix
+let fixHelperSortable = function (e, ui) {
+    ui.children().each(function () {
+        $(this).width($(this).width());
+    });
+    return ui;
+};
 
 
 
