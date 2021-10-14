@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
-Develop an option to handle conflict of interest (COI) [81](https://github.com/CCSDForge/episciences/issues/81):
+## 1.0.19 - 2021-10-14
+### Added
+- Develop an option to handle conflict of interest (COI) [81](https://github.com/CCSDForge/episciences/issues/81):
 - Journal settings: new setting to Enable/disable COI for journal managers: [83](https://github.com/CCSDForge/episciences/issues/83) 
 - DB table and manager for CRUD of COI Information: [84](https://github.com/CCSDForge/episciences/issues/84) 
 - For editors : Filtering 'Emails' in email history: [85](https://github.com/CCSDForge/episciences/issues/85) 
@@ -27,6 +28,8 @@ Develop an option to handle conflict of interest (COI) [81](https://github.com/C
 - Notify editors-in-chief/secretaries when an editor assigned to a paper declares a conflict with this paper: [90](https://github.com/CCSDForge/episciences/issues/90)
 - Fixed bug: redirection problem with an editor's own submission: [92](https://github.com/CCSDForge/episciences/issues/92)
 - Other improvements
+
+### Fixed
 - Editing site headers: fixed bug: drag and drop does not work. 
 
 ## 1.0.18 - 2021-09-30
