@@ -32,13 +32,15 @@ class Episciences_UsersManager
     public static function getUsersWithRoles($with = null, $without = null): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $users = array();
+        $users = [];
 
       $select = self::getUsersWithRolesQuery($with, $without);
 
         $result = $db->fetchCol($select);
 
         foreach ($result as $uid) {
+
+            $uid = (int)$uid;
 
             $oUser = new Episciences_User();
 
