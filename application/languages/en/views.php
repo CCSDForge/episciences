@@ -1227,7 +1227,7 @@ return [
      * Submit
      */
     'Merci de réessayer.' => 'Please try again.',
-
+    'Sélectionnez un éditeur :' =>'Select an editor:',
     // Erreurs de soumission d'une nouvelle version
     "Rechercher un document" => "Search a document",
     "Saisir l'identifiant du document" => "Enter the document identifier",

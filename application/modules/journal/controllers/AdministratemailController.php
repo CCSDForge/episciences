@@ -348,7 +348,7 @@ class AdministratemailController extends Zend_Controller_Action
             $js_users = [];
 
             $review = Episciences_ReviewsManager::find(RVID);
-            $users = $review->getUsers();
+            $users = $review::getUsers();
 
             if ($users) {
                 foreach ($users as $user) {

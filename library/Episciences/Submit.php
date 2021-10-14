@@ -59,6 +59,7 @@ class Episciences_Submit
             'style' => 'width:auto;',
         ]);
 
+        unset($options);
 
         // Champ texte : identifiant du document
         $subform->addElement('text', 'docId', [
@@ -141,6 +142,8 @@ class Episciences_Submit
                     $volumeElement->setRegisterInArrayValidator(false);
                     $group[] = 'volumes';
                 }
+
+                unset($options);
             }
 
             // En fonction des parametres de la revue , l'auteur pourrait choisir la section
@@ -171,6 +174,8 @@ class Episciences_Submit
                     $form->addElement('select', 'sections', $elementOptions);
                     $group[] = 'sections';
                 }
+
+                unset($options);
             }
 
             // Choix des relecteurs par l'auteur (si la revue l'autorise) ********
@@ -201,19 +206,16 @@ class Episciences_Submit
                 // Récupération et tri des valeurs du select
                 $options = [];
                 $users = Episciences_UsersManager::getUsersWithRoles([Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR]);
+
                 /* @var  $user Episciences_User */
                 foreach ($users as $uid => $user) {
                     // Liste des rédacteurs et rédacteurs en chef (on filtre root, ainsi que le compte connecté)
-                    if ($uid != Episciences_Auth::getUid() && $uid != 1) {
-                        $options[$uid] = Ccsd_Tools::formatUser($user->getLastname(), $user->getFirstname());
+                    if ($uid !== 1 && $uid !== Episciences_Auth::getUid()) {
+                        $options[$uid] = $user->getFullName();
                     }
                 }
+
                 asort($options);
-                foreach ($options as $uid => &$option) {
-                    /** @var Episciences_User $user */
-                    $user = $users[$uid];
-                    $option = $user->getFullName();
-                }
 
                 // Select
                 if ($options) {
@@ -230,14 +232,19 @@ class Episciences_Submit
                     if ($settings['canPickEditors'] == 3) {
                         $editorsElementType = 'select';
                         unset($editorsAttribs['attribs']);
+
+                        // merge array and preserve keys
+                        $options = array_replace([ '0'=> 'Sélectionnez un éditeur :'], $options);
+                        $editorsAttribs['multiOptions'] = $options;
                     }
 
                     $form->addElement($editorsElementType, 'suggestEditors', $editorsAttribs);
 
-
                 }
 
                 $group[] = 'suggestEditors';
+
+                unset($options);
             }
 
         }

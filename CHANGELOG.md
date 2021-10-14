@@ -38,7 +38,7 @@ Fixed bug: possibility to assign the article to the author himself
 - Notify editors-in-chief/secretaries when an editor assigned to a paper declares a conflict with this paper: [90](https://github.com/CCSDForge/episciences/issues/90)
 - Fixed bug: redirection problem with an editor's own submission: [92](https://github.com/CCSDForge/episciences/issues/92)
 - Other improvements
-
+- Choose one and only one editor parameter: the editors field is not pre-completed when this choice is imposed by the journal (git #392)
 ### Fixed
 - Editing site headers: fixed bug: drag and drop does not work. 
 

@@ -36,12 +36,10 @@ $(function () {
     });
 
     $firstDisclaimersDisclaimer.on('change', function () {
-        console.log('Ok-first');
         activateDeactivateSubmitButton();
     });
 
     $secondDisclaimersDisclaimer.on('change', function () {
-        console.log('Ok-second');
         activateDeactivateSubmitButton();
     });
 
@@ -212,7 +210,6 @@ $(function () {
                 if ('newVerErrors' in result) {
 
                     let newVersionErrors = JSON.parse(result['newVerErrors']);
-                    console.log(newVersionErrors);
                     $submit_form.append('<input type="hidden" name="can_replace" value="' + newVersionErrors.canReplace + '">');
                     if (newVersionErrors.canReplace) {
                         $submit_form.append('<input id = "old_docid" type="hidden" name="old_docid" value="' + newVersionErrors.oldDocId + '">');
@@ -335,14 +332,14 @@ $(function () {
     }
 
     /**
-     *check if the compulsory boxes arec checked.
+     * Check if all required fields are not completed
      * @returns {boolean}
      */
-    function isCompulsoryBoxesAreChecked() {
+    function isRequiredFieldsNotCompleted() {
 
         return !(
             (($sectionsElement.is(':visible') && $sectionsElement.find('label').hasClass('required') && $sections.val() === '0')) ||
-            (($suggestEditorsElement.is(':visible') && $suggestEditorsElement.find('label').hasClass('required') && !$suggest_editors.val())) ||
+            ($suggestEditorsElement.is(':visible') && $suggestEditorsElement.find('label').hasClass('required') && ($suggest_editors.val() === '0' || null === $suggest_editors.val())) ||
             (!$firstDisclaimersDisclaimer.is(':checked')) ||
             (!$secondDisclaimersDisclaimer.is(':checked'))
         );
@@ -352,7 +349,7 @@ $(function () {
      * Deactivate / ACTIVATE  the "Submit" button.
      */
     function activateDeactivateSubmitButton() {
-        if (isCompulsoryBoxesAreChecked()) {
+        if (isRequiredFieldsNotCompleted()) {
             $submit_button.attr('disabled', false);
             $submit_button.attr('aria-disabled', false);
         } else {
