@@ -24,7 +24,10 @@ Develop an option to handle conflict of interest (COI) [81](https://github.com/C
 - For editors: Filtering 'Reviewer information' on dashboard: [87](https://github.com/CCSDForge/episciences/issues/87) 
 - When assigning an editor/Copy editor ; do not propose editors/Copy editor that have reported a COI in the user list: [89](https://github.com/CCSDForge/episciences/issues/89) 
 - Design a Form to request user consent about access to private submission information: [88](https://github.com/CCSDForge/episciences/issues/88)
+- Notify editors-in-chief/secretaries when an editor assigned to a paper declares a conflict with this paper: [90](https://github.com/CCSDForge/episciences/issues/90)
+- Fixed bug: redirection problem with an editor's own submission: [92](https://github.com/CCSDForge/episciences/issues/92)
 - Other improvements
+- Editing site headers: fixed bug: drag and drop does not work. 
 
 ## 1.0.18 - 2021-09-30
 ### Added
