@@ -1424,7 +1424,7 @@ class Episciences_Review
         ];
 
         return $form->addElement('checkbox', self::SETTING_SYSTEM_IS_COI_ENABLED, [
-                'label' => "Activer/Désactiver le mode CI",
+                'label' => "Activer la déclaration CI",
                 'description' => "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles à un éditeur tant qu'il n'a pas déclaré l'absence de tout conflit d'intérêts",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
