@@ -3782,6 +3782,7 @@ class Episciences_Paper
     /**
      * @param int $uid
      * @return string
+     * @throws Zend_Db_Statement_Exception
      */
     public function checkConflictResponse(int $uid): string
     {
@@ -3795,7 +3796,7 @@ class Episciences_Paper
 
         }
 
-        return Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'];
+        return ($this->getCopyEditor($uid) || $this->getEditor($uid)) ? Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'] : Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'];
     }
 
 }

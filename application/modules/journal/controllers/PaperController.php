@@ -183,12 +183,14 @@ class PaperController extends PaperDefaultController
 
         // COI
 
+        $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+
         $isConflictDetected =
             !Episciences_Auth::isSecretary() &&
             $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
             (
-                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
-                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
+                $checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
+                $checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
             );
 
         $this->view->isConflictDetected = $isConflictDetected;
