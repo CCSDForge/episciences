@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+
+## 1.0.19.1 - 2021-10-15
+### Fixed
+- [COI]: fixed bug: author's does not have full access to his/her own submission
+
+### Changed
+- [COI] #83: label "Enable/Disable COI" changed to "Enable declaring COI".
+
 ## 1.0.19 - 2021-10-14
 ### Added
 - Develop an option to handle conflict of interest (COI) [81](https://github.com/CCSDForge/episciences/issues/81):
