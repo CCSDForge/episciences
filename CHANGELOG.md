@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+Fixed bug: possibility to assign the article to the author himself
 
 ## 1.0.19.1 - 2021-10-15
 ### Fixed
