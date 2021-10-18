@@ -2150,8 +2150,9 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($vid) {
             $volume = Episciences_VolumesManager::find($vid);
+
             if ($volume) {
-                $editors = array_merge($editors, $volume->getEditors());
+                $editors = array_replace($editors, $volume->getEditors());
             }
         }
 
@@ -2208,7 +2209,7 @@ class AdministratepaperController extends PaperDefaultController
         if ($vId) {
             $volume = Episciences_VolumesManager::find($vId);
             if ($volume) {
-                $copyEditors = array_merge($copyEditors, $volume->getCopyEditors());
+                $copyEditors = array_replace($copyEditors, $volume->getCopyEditors());
             }
         }
 
