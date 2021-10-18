@@ -229,13 +229,16 @@ class Episciences_Submit
                         'required' => (int)$settings['canPickEditors'] > 1
                     ];
 
-                    if ($settings['canPickEditors'] == 3) {
+                    if ((int)$settings['canPickEditors'] === 3) {
                         $editorsElementType = 'select';
                         unset($editorsAttribs['attribs']);
 
                         // merge array and preserve keys
-                        $options = array_replace([ '0'=> 'Sélectionnez un éditeur :'], $options);
+                        $options = array_replace(['0' => 'Sélectionnez un éditeur :'], $options);
                         $editorsAttribs['multiOptions'] = $options;
+                    } else {
+                        $info = "Maintenez la touche <mark>CTRL</mark> enfoncée et cliquez sur les éléments d'une liste pour les choisir. Cliquez sur tous les éléments que vous souhaitez sélectionner. Ils n'ont pas besoin d'être côte à côte. Cliquez à nouveau sur un élément pour le désélectionner. N'oubliez pas de maintenir la touche <mark>CTRL</mark> enfoncée.";
+                        $editorsAttribs['description'] = $info;
                     }
 
                     $form->addElement($editorsElementType, 'suggestEditors', $editorsAttribs);

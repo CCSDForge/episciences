@@ -1303,6 +1303,7 @@ return [
     "Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : " => "This article was previously refused in its first version, to consult it, please follow this link: ",
     "Cet article a déjà été soumis et refusé, merci de contacter le comité editorial." => "This article has already been submitted and refused, please contact the editorial committee.",
     "Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer." => "The publication process of this article is in progress, so you will not be able to replace it.",
+    "Maintenez la touche <mark>CTRL</mark> enfoncée et cliquez sur les éléments d'une liste pour les choisir. Cliquez sur tous les éléments que vous souhaitez sélectionner. Ils n'ont pas besoin d'être côte à côte. Cliquez à nouveau sur un élément pour le désélectionner. N'oubliez pas de maintenir la touche <mark>CTRL</mark> enfoncée." => "Hold the <mark>CTRL</mark> key and click the items in a list to choose them. Click all the items you want to select. They don’t have to be next to each other. Click any item again to deselect it. Remember to keep the <mark>CTRL</mark> key pressed.",
     // updatePaper function
     "Aucune modification n'a été enregistrée" => "No changes were saved",
     "la version précédente est identique." => "the previous version is identical",

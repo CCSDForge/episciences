@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
-Fixed bug: possibility to assign the article to the author himself
+- Fixed bug: possibility to assign the article to the author himself
+- Editors' choice at time of submission: informative text added. (gitlab #369)
 
 ## 1.0.19.1 - 2021-10-15
 ### Fixed
