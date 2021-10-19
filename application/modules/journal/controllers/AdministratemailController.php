@@ -281,32 +281,40 @@ class AdministratemailController extends Zend_Controller_Action
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function sendAction()
+    public function sendAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $post = $request->getPost();
+
+        $ajax = (bool)$request->getParam('ajax');
+
+        // Git #61
+        $docId = (int)$request->get('paper');
+
+        if ($ajax) {
+            $this->_helper->layout->disableLayout();
+            $to_enabled = false;
+            $button_enabled = false;
+        } else {
+            $to_enabled = true;
+            $button_enabled = true;
+        }
+
+        $form = Episciences_Mail_Send::getForm(null, $button_enabled, $to_enabled, $docId);
+
         // process form (send mail)
         if ($post && !array_key_exists('ajax', $post)) {
-            $this->sendMail($post);
-        } else {
 
-            $ajax = ($request->getParam('ajax')) ? true : false;
-            $uid = $request->getParam('recipient');
-
-            // Git #61
-            $docId = (int)$request->get('paper');
-
-            if ($ajax) {
-                $this->_helper->layout->disableLayout();
-                $to_enabled = false;
-                $button_enabled = false;
-            } else {
-                $to_enabled = true;
-                $button_enabled = true;
+            if ($this->checkRecipients($post)['isDetectedErrors']) {
+                $form->setDefaults($post);
             }
 
-            $form = Episciences_Mail_Send::getForm(null, $button_enabled, $to_enabled, $docId);
+            $this->sendMail($post);
+
+        } else {
+
+            $uid = $request->getParam('recipient');
 
             if ($uid && is_numeric($uid)) {
                 if (!$request->getParam('tmp')) {
@@ -342,65 +350,38 @@ class AdministratemailController extends Zend_Controller_Action
                 }
             }
 
-            $this->view->form = $form;
-            $this->view->ajax = $ajax;
-
-            $js_users = [];
-
-            $review = Episciences_ReviewsManager::find(RVID);
-            $users = $review::getUsers();
-
-            if ($users) {
-                foreach ($users as $user) {
-                    $js_user['uid'] = $user->getUid();
-                    $js_user['fullname'] = $user->getFullName();
-                    $js_user['username'] = $user->getUsername();
-                    $js_user['mail'] = $user->getEmail();
-                    $js_user['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
-                    $js_user['htmlLabel'] = '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
-                        . '<div class="grey">' . $user->getEmail() . '</div>';
-                    $js_users[$user->getUid()] = $js_user;
-                }
-            }
-
-            $this->view->js_users = Zend_Json::encode(array_values($js_users));
         }
+
+        $this->view->js_users = Zend_Json::encode(array_values($this->compileUsers()));
+
+        $this->view->form = $form;
+        $this->view->ajax = $ajax;
+
     }
 
     /**
      * send a mail (process mailing form)
      * TODO: move this outside of the controller ?
      * @param array $post
-     * @return bool
+     * @return void
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function sendMail(array $post)
+    private function sendMail(array $post): void
     {
+
         /** @var Zend_View $selfView */
         $selfView = $this->view;
-        $validator = new Zend_Validate_EmailAddress();
-        // set from & reply-to
-        $default_from = Episciences_Auth::getFullName() . ' <' . RVCODE . '@' . DOMAIN . '>';
-        $default_replyto = Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>';
-        $from = Ccsd_Tools::ifsetor($post['from'], $default_from);
-        $replyto = Ccsd_Tools::ifsetor($post['replyto'], $default_replyto);
 
-        // Récupération des destinataires
-        $to = (!empty(Ccsd_Tools::ifsetor($post['hidden_to']))) ? Zend_Json::decode($post['hidden_to']) : [];
-        $cc = (!empty(Ccsd_Tools::ifsetor($post['hidden_cc']))) ? Zend_Json::decode($post['hidden_cc']) : [];
-        $bcc = (!empty(Ccsd_Tools::ifsetor($post['hidden_bcc']))) ? Zend_Json::decode($post['hidden_bcc']) : [];
-
-        // récupération du contenu
-        $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
-        $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
+        $checkedRecipients = $this->checkRecipients($post);
 
         // Contrôle des erreurs
         $errors = [];
-        if (empty($to) && empty($cc) && empty($bcc)) {
+
+        if ($checkedRecipients['isDetectedErrors']) {
             $errors[] = "Veuillez saisir au moins un destinataire";
         }
 
@@ -409,9 +390,26 @@ class AdministratemailController extends Zend_Controller_Action
             foreach ($errors as $error) {
                 $message .= '<div>' . $selfView->translate($error) . '</div>';
             }
+
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
-            $this->_helper->redirector->gotoUrl('administratemail/send');
+            return;
         }
+
+        $validator = new Zend_Validate_EmailAddress();
+        // set from & reply-to
+        $default_from = Episciences_Auth::getFullName() . ' <' . RVCODE . '@' . DOMAIN . '>';
+        $default_replyto = Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>';
+        $from = Ccsd_Tools::ifsetor($post['from'], $default_from);
+        $replyto = Ccsd_Tools::ifsetor($post['replyto'], $default_replyto);
+
+        // Récupération des destinataires
+        $to = $checkedRecipients['recipients']['to'];
+        $cc = $checkedRecipients['recipients']['cc'];
+        $bcc = $checkedRecipients['recipients']['bcc'];
+
+        // récupération du contenu
+        $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
+        $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
 
         $mail = new Episciences_Mail('UTF-8');
         $mail->setSubject($subject);
@@ -520,7 +518,6 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         $this->_helper->redirector->gotoUrl('administratemail/send');
-        return true;
 
     }
 
@@ -746,6 +743,62 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         return $docIds;
+
+    }
+
+    /**
+     * @param array $post
+     * @param bool $strict
+     * @return array
+     * @throws Zend_Json_Exception
+     */
+    private function checkRecipients(array $post, bool $strict = false): array
+    {
+
+        $to = (!empty(Ccsd_Tools::ifsetor($post['hidden_to']))) ? Zend_Json::decode($post['hidden_to']) : [];
+        $cc = (!empty(Ccsd_Tools::ifsetor($post['hidden_cc']))) ? Zend_Json::decode($post['hidden_cc']) : [];
+        $bcc = (!empty(Ccsd_Tools::ifsetor($post['hidden_bcc']))) ? Zend_Json::decode($post['hidden_bcc']) : [];
+
+        return [
+            'recipients' => [
+                'to' => $to,
+                'cc' => $cc,
+                'bcc' => $bcc
+
+            ],
+
+            'isDetectedErrors' => (!$strict) ? empty($to) : (empty($to) && empty($cc) && empty($bcc))
+        ];
+
+    }
+
+    /**
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    private function compileUsers(): array
+    {
+        $compiledUsers = [];
+
+        $review = Episciences_ReviewsManager::find(RVID);
+        $users = $review::getUsers();
+
+        if ($users) {
+            foreach ($users as $user) {
+                $cUser['uid'] = $user->getUid();
+                $cUser['fullname'] = $user->getFullName();
+                $cUser['username'] = $user->getUsername();
+                $cUser['mail'] = $user->getEmail();
+                $cUser['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
+                $cUser['htmlLabel'] = '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
+                    . '<div class="grey">' . $user->getEmail() . '</div>';
+
+                $compiledUsers[$user->getUid()] = $cUser;
+            }
+        }
+
+        return $compiledUsers;
 
     }
 

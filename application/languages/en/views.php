@@ -675,7 +675,7 @@ return [
     "Rédacteurs en chef" => 'Chief Editors',
     "Secrétaires de rédaction" => "Editorial Secretaries",
     "Membres" => "Members",
-    "Votre message n'a pas pu être envoyé." => "Your mail could not be sent.",
+    "Votre message n'a pas pu être envoyé :" => "Your mail could not be sent:",
     "Veuillez saisir au moins un destinataire" => "Please select at least one recipient",
     "Fichiers joints" => "Attachments",
     "Vous n'avez pas les autorisations nécessaires pour modifier ce template" => "You don't have the required permissions to modify the template",
