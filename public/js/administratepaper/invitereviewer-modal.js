@@ -385,15 +385,19 @@ function validate_step2() {
 // type=1: known reviewer, type=2: new user
 function setInvitationValues(user, type) {
     // Selection de la langue du template
+
+    let locale = (user.locale !== siteLocale ) ? defaultLocale : user.locale;
+    console.log(locale);
+
     // Si la langue préférée de l'utilisateur n'existe pas dans les langues disponibles du site
-    var locale = user.locale;
     if (!(locale in available_languages)) {
+
         if (available_languages.length > 1 && 'en' in available_languages) {
             // Si le site propose plusieurs langues, dont l'anglais, on sélectionne l'anglais par défaut
             locale = 'en';
         } else {
             // Sinon, on sélectionne la première langue disponible
-            for (var lang in available_languages) {
+            for (let lang in available_languages) {
                 locale = lang;
                 break;
             }

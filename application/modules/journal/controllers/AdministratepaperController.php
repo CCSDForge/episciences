@@ -1139,6 +1139,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->js_templates = Zend_Json::encode($templates);
             $this->view->templates = $oTemplates;
             $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
+            $this->view->siteLocale = Episciences_Tools::getLocale();
+            $this->view->defaultLocale = Episciences_Review::DEFAULT_LANG;
             $this->view->suggestedReviewers = Episciences_ReviewersManager::getSuggestedReviewers($docId);
             $this->view->unwantedReviewers = Episciences_ReviewersManager::getUnwantedReviewers($docId);
 

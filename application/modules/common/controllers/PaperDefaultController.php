@@ -3,40 +3,40 @@ require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.p
 
 class PaperDefaultController extends DefaultController
 {
-    const MSG_PAPER_DOES_NOT_EXIST = "Le document demande n’existe pas.";
-    const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";
-    const MSG_REPORT_COMPLETED = "Votre rapport a été déjà renseigné.";
-    const ERROR = 'error';
-    const WARNING = 'warning';
-    const SUCCESS = 'success';
-    const AND_PC_ID_STR = '&pcid=';
-    const CONTROLLER = 'controller';
-    const ACTION = 'action';
-    const NEW_VERSION_TYPE = 'new_version';
-    const TMP_VERSION_TYPE = 'tmp_version';
-    const ADMINISTRATE_PAPER_CONTROLLER = 'administratepaper';
-    const PUBLIC_PAPER_CONTROLLER = 'paper';
-    const TEMPLATE_EXTENSION = '.phtml';
-    const ENCODING_TYPE = 'UTF-8';
-    const COMMENTS_STR = '/comments/';
-    const RATINGS_ACTION = 'ratings';
-    const RATING_ACTION = 'rating';
-    const PAPER_URL_STR = 'paper/view?id=';
-    const STATUS = 'status';
-    const SERVER_NAME_STR = 'SERVER_NAME';
-    const DOC_ID_STR = 'docid';
-    const VERSION_STR = 'version';
-    const COMMENT_STR = 'comment';
-    const TYPES_STR = 'types';
-    const DEADLINE_STR = 'deadline';
-    const ORDER_STR = 'order';
-    const SECTIONS_STR = 'sections';
-    const VOLUMES_STR = 'volumes';
-    const SEARCH_DOC_STR = 'search_doc';
-    const CLASS_EPI_USER_NAME = 'Episciences_User';
-    const CONTROLLER_NAME = 'paper';
+    public const MSG_PAPER_DOES_NOT_EXIST = "Le document demande n’existe pas.";
+    public const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";
+    public const MSG_REPORT_COMPLETED = "Votre rapport a été déjà renseigné.";
+    public const ERROR = 'error';
+    public const WARNING = 'warning';
+    public const SUCCESS = 'success';
+    public const AND_PC_ID_STR = '&pcid=';
+    public const CONTROLLER = 'controller';
+    public const ACTION = 'action';
+    public const NEW_VERSION_TYPE = 'new_version';
+    public const TMP_VERSION_TYPE = 'tmp_version';
+    public const ADMINISTRATE_PAPER_CONTROLLER = 'administratepaper';
+    public const PUBLIC_PAPER_CONTROLLER = 'paper';
+    public const TEMPLATE_EXTENSION = '.phtml';
+    public const ENCODING_TYPE = 'UTF-8';
+    public const COMMENTS_STR = '/comments/';
+    public const RATINGS_ACTION = 'ratings';
+    public const RATING_ACTION = 'rating';
+    public const PAPER_URL_STR = 'paper/view?id=';
+    public const STATUS = 'status';
+    public const SERVER_NAME_STR = 'SERVER_NAME';
+    public const DOC_ID_STR = 'docid';
+    public const VERSION_STR = 'version';
+    public const COMMENT_STR = 'comment';
+    public const TYPES_STR = 'types';
+    public const DEADLINE_STR = 'deadline';
+    public const ORDER_STR = 'order';
+    public const SECTIONS_STR = 'sections';
+    public const VOLUMES_STR = 'volumes';
+    public const SEARCH_DOC_STR = 'search_doc';
+    public const CLASS_EPI_USER_NAME = 'Episciences_User';
+    public const CONTROLLER_NAME = 'paper';
     // Copy editing
-    const CE_REQUEST_REPLY_ARRAY = [
+    public const CE_REQUEST_REPLY_ARRAY = [
         Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST => Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_ANSWER,
         Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST => Episciences_CommentsManager::TYPE_AUTHOR_SOURCES_DEPOSED_ANSWER
     ];
@@ -78,9 +78,8 @@ class PaperDefaultController extends DefaultController
      * @param array $tags
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
-    protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = [])
+    protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = []): void
     {
 
         $mail = new Episciences_Mail('UTF-8');
@@ -107,8 +106,8 @@ class PaperDefaultController extends DefaultController
         }
 
         // Other reciptients
-        $cc = (!empty($data['cc'])) ? explode(';', $data['cc']) : array();
-        $bcc = (!empty($data['bcc'])) ? explode(';', $data['bcc']) : array();
+        $cc = (!empty($data['cc'])) ? explode(';', $data['cc']) : [];
+        $bcc = (!empty($data['bcc'])) ? explode(';', $data['bcc']) : [];
         $this->addOtherRecipients($mail, $cc, $bcc);
         $mail->writeMail();
 
@@ -126,10 +125,10 @@ class PaperDefaultController extends DefaultController
      * @return Episciences_Mail
      */
 
-    protected function addOtherRecipients(Episciences_Mail $mail, array $cc, array $bcc)
+    protected function addOtherRecipients(Episciences_Mail $mail, array $cc, array $bcc): \Episciences_Mail
     {
         $validator = new Zend_Validate_EmailAddress();
-        if (is_array($cc) && !empty($cc)) {
+        if (!empty($cc)) {
             foreach ($cc as $recipient) {
                 $recipient = trim($recipient);
                 $recipient = Episciences_Tools::postMailValidation($recipient)['email'];
@@ -141,7 +140,7 @@ class PaperDefaultController extends DefaultController
             }
         }
 
-        if (is_array($bcc) && !empty($bcc)) {
+        if (!empty($bcc)) {
             foreach ($bcc as $recipient) {
                 $recipient = trim($recipient);
                 $recipient = Episciences_Tools::postMailValidation($recipient)['email'];
@@ -163,12 +162,12 @@ class PaperDefaultController extends DefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      */
-    protected function reassignPaperManagers(array $paperManagers, Episciences_Paper $newPaper, string $roleId = Episciences_User_Assignment::ROLE_EDITOR)
+    protected function reassignPaperManagers(array $paperManagers, Episciences_Paper $newPaper, string $roleId = Episciences_User_Assignment::ROLE_EDITOR): array
     {
         //default action  => roleId = 'editor'
         $action = Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT;
 
-        if ($roleId == Episciences_User_Assignment::ROLE_COPY_EDITOR) {
+        if ($roleId === Episciences_User_Assignment::ROLE_COPY_EDITOR) {
             $action = Episciences_Paper_Logger::CODE_COPY_EDITOR_ASSIGNMENT;
         }
 
@@ -272,7 +271,7 @@ class PaperDefaultController extends DefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    protected function paperStatusChangedNotifyReviewer(Episciences_Paper $paper, string $templateType, array $tags = [])
+    protected function paperStatusChangedNotifyReviewer(Episciences_Paper $paper, string $templateType, array $tags = []): void
     {
 
         $docId = $paper->getDocid();
@@ -292,7 +291,7 @@ class PaperDefaultController extends DefaultController
         foreach ($reviewers as $reviewer) {
             $report = $reviewer->getReport($paper->getDocid());
 
-            if ($report && $report->getStatus() == Episciences_Rating_Report::STATUS_COMPLETED) {
+            if ($report && $report->getStatus() === Episciences_Rating_Report::STATUS_COMPLETED) {
                 continue;
             }
 
@@ -315,7 +314,7 @@ class PaperDefaultController extends DefaultController
      * @return bool
      * @throws Zend_Exception
      */
-    protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [])
+    protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = []): bool
     {
         $commentatorUid = $oComment->getUid();
         $commentator = new Episciences_User();
@@ -328,7 +327,7 @@ class PaperDefaultController extends DefaultController
         }
 
         $attachmentsFiles = [];
-        $docId = (int)$paper->getDocid();
+        $docId = $paper->getDocid();
         $recipients = $this->getAllEditors($paper, false, true);
         Episciences_Review::checkReviewNotifications($recipients);
         $CC = $paper->extractCCRecipients($recipients);
@@ -386,7 +385,7 @@ class PaperDefaultController extends DefaultController
         $nbNotifications = 0; // si = count($recipients) : tous les mails sont envoyés
 
         foreach ($recipients as $uid => $recipient) { // ne pas notifier le  commentateur
-            if ($uid == $commentatorUid) {
+            if ($uid === $commentatorUid) {
                 unset($recipients[$uid]);
                 continue;
             }
@@ -402,8 +401,7 @@ class PaperDefaultController extends DefaultController
                 );
                 ++$nbNotifications;
                 $makeCopy = false;
-                // TODO à remettre si passage à PHP - V 7.1 ou sup [Zend_Mail_Exception | Zend_Session_Exception $e (incompatible php -v 7.0)]
-            } catch (Zend_Exception $e) {
+            } catch (Zend_Mail_Exception | Zend_Session_Exception $e) {
                 error_log('FAILED_TO_SEND_NEW_COMMENT_NOTIFICATION_TO_RECIPIENT_' . $uid . ' : ' . $e);
                 continue;
             }
@@ -418,8 +416,9 @@ class PaperDefaultController extends DefaultController
      * @param Episciences_Paper $paper
      * @param bool $withCasData
      * @return Episciences_CopyEditor[] || []
+     * @throws Zend_Db_Statement_Exception
      */
-    protected function getAllCopyEditors(Episciences_Paper $paper, $withCasData = true)
+    protected function getAllCopyEditors(Episciences_Paper $paper, bool $withCasData = true): array
     {
         // Préparateurs de copie
         $assignedCopyEditors = Episciences_PapersManager::getCopyEditors($paper->getDocid(), true, $withCasData);
@@ -435,7 +434,7 @@ class PaperDefaultController extends DefaultController
      * @param int $docId
      * @return string
      */
-    public function buildAdminPaperUrl(int $docId)
+    public function buildAdminPaperUrl(int $docId): string
     {
         $adminPaperUrl = $this->view->url(
             [

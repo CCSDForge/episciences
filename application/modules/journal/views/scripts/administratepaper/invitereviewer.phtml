@@ -49,6 +49,8 @@ $description .= ' - ' . $this->paper->getTitle();
 
 <script type="text/javascript">
     // Valeurs du formulaire
+    let siteLocale  = '<?= $this->siteLocale ?>';
+    let defaultLocale = '<?= $this->defaultLocale ?>';
     var contributor = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
     var editor = <?php echo Zend_Json::encode(['full_name' => Episciences_Auth::getFullName(), 'email' => Episciences_Auth::getEmail()]); ?>;
     var review = <?php if ($this->js_review) : ?><?php echo $this->js_review; ?><?php else:?>null<?php endif;?>;

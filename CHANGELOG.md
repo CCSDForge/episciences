@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
 - Make the version number more explicit when proposing a new version
 - Refactoring
+- Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
+- fixed: IDE warnings
 
 ## 1.0.19.2 - 2021-10-19
 ### Fixed

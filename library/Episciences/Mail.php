@@ -154,12 +154,12 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
-     * @param array|false|string|null $rvCode
+     * @param string $rvCode
      * @param bool $debug
      * @return bool
      * @throws Zend_Mail_Exception
      */
-    public function writeMail($rvCode = RVCODE, $debug = false)
+    public function writeMail($rvCode = RVCODE, bool $debug = false): bool
     {
 
 

@@ -2,8 +2,9 @@
 
 class Episciences_Mail_Send
 {
-    const ENCODING_TYPE = 'UTF-8';
-    const TEMPLATE_EXTENSION = '.phtml';
+    public const ENCODING_TYPE = 'UTF-8';
+    public const TEMPLATE_EXTENSION = '.phtml';
+    public const DEFAULT_LANG = 'en';
 
     /**
      * mailing form
@@ -11,12 +12,12 @@ class Episciences_Mail_Send
      * @param null $prefix
      * @param bool $button_enabled
      * @param bool $to_enabled
-     * @param null $docId
+     * @param int|null $docId
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getForm($prefix = null, $button_enabled = true, $to_enabled = true, $docId = 0)
+    public static function getForm($prefix = null, bool $button_enabled = true, bool $to_enabled = true, ?int $docId = 0): Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
 
@@ -38,7 +39,7 @@ class Episciences_Mail_Send
 
         // from
         // default from: recipient name <rvcode@episciences.org>
-        $form->addElement('text', self::getElementName($prefix, 'from'), array(
+        $form->addElement('text', self::getElementName('from', $prefix), array(
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -46,7 +47,7 @@ class Episciences_Mail_Send
 
         // reply-to
         // default reply-to: recipient name <recipient@domain.com>
-        $form->addElement('text', self::getElementName($prefix, 'reply-to'), array(
+        $form->addElement('text', self::getElementName('reply-to', $prefix), array(
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -55,7 +56,7 @@ class Episciences_Mail_Send
         $title = $translator->translate('Ajouter des destinataires');
 
         // to
-        $to_element = self::getElementName($prefix, 'to');
+        $to_element = self::getElementName('to', $prefix);
         if (!$to_enabled) {
             $form->addElement('text', $to_element, [
                 'label' => 'À',
@@ -76,11 +77,11 @@ class Episciences_Mail_Send
                 ->addDecorators($decorators);
         }
 
-        $form->addElement('hidden', self::getElementName($prefix,'hidden_to'));
+        $form->addElement('hidden', self::getElementName('hidden_to', $prefix));
 
 
         // cc
-        $cc_element = self::getElementName($prefix,'cc');
+        $cc_element = self::getElementName('cc', $prefix);
         $form->addElement('text', $cc_element, [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'class' => 'autocomplete'
@@ -94,10 +95,10 @@ class Episciences_Mail_Send
             ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
             ->addDecorators($decorators);
 
-        $form->addElement('hidden', self::getElementName($prefix,'hidden_cc'));
+        $form->addElement('hidden', self::getElementName('hidden_cc', $prefix));
 
         // bcc
-        $bcc_element = self::getElementName($prefix,'bcc');
+        $bcc_element = self::getElementName('bcc', $prefix);
         $form->addElement('text', $bcc_element, [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
             'class' => 'autocomplete'
@@ -111,17 +112,17 @@ class Episciences_Mail_Send
             ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
             ->addDecorators($decorators);
 
-        $form->addElement('hidden', self::getElementName($prefix,'hidden_bcc'));
+        $form->addElement('hidden', self::getElementName('hidden_bcc', $prefix));
 
 
         // subject
-        $form->addElement('text', self::getElementName($prefix, 'subject'), ['label' => 'Sujet', 'value' => !empty($docId) ? RVCODE . ' #' . $docId : '' ]);
+        $form->addElement('text', self::getElementName('subject', $prefix), ['label' => 'Sujet', 'value' => !empty($docId) ? RVCODE . ' #' . $docId : '']);
 
         // content
-        $form->addElement('textarea', self::getElementName($prefix, 'content'), ['label' => 'Contenu', 'class' => 'tinymce']);
+        $form->addElement('textarea', self::getElementName('content', $prefix), ['label' => 'Contenu', 'class' => 'tinymce']);
 
         // get a copy
-        $form->addElement('checkbox', self::getElementName($prefix, 'copy'), array(
+        $form->addElement('checkbox', self::getElementName('copy', $prefix), array(
             'uncheckedValue' => null,
             'label' => "Recevoir une copie de ce message",
             'decorators' => array(
@@ -132,14 +133,14 @@ class Episciences_Mail_Send
         ));
 
         // Git #61
-        if(!empty($docId)){
-            $form->addElement('hidden', self::getElementName($prefix, 'docid'), ['value' => $docId]);
+        if ($docId !== 0) {
+            $form->addElement('hidden', self::getElementName('docid', $prefix), ['value' => $docId]);
         }
 
         // submit button
         if ($button_enabled) {
 
-            $form->addElement('button', self::getElementName($prefix, 'submit'), array(
+            $form->addElement('button', self::getElementName('submit', $prefix), array(
                 'type' => 'submit',
                 'class' => 'btn btn-primary',
                 'label' => 'Envoyer'
@@ -150,12 +151,12 @@ class Episciences_Mail_Send
     }
 
     /**
-     * @param null $prefix
      * @param $name
+     * @param null $prefix
      * @return string
      */
 
-    private static function getElementName($prefix = null, $name)
+    private static function getElementName($name, $prefix = null): string
     {
         if ($prefix) {
             $name = $prefix . '-' . $name;
@@ -180,14 +181,14 @@ class Episciences_Mail_Send
      * @throws Zend_Mail_Exception
      */
     public static function sendMailFromReview(
-        Episciences_User $recipient,
-        string $templateType,
-        array $tags = [],
+        Episciences_User  $recipient,
+        string            $templateType,
+        array             $tags = [],
         Episciences_Paper $paper = null,
-        int $authUid = null,
-        array $attachmentsFiles = [],
-        bool $makeACopy = false,
-        array $CC = []
+        int               $authUid = null,
+        array             $attachmentsFiles = [],
+        bool              $makeACopy = false,
+        array             $CC = []
     ): bool
     {
 
@@ -246,7 +247,7 @@ class Episciences_Mail_Send
         if ($paper) {
             $paper->log(Episciences_Paper_Logger::CODE_MAIL_SENT, $authUid, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
         }
-        
+
         return true;
     }
 }

@@ -1251,14 +1251,13 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        /** @var Zend_Db_Select $select */
         $select = self::getAssignmentRoleQuery($docId, Episciences_Acl::ROLE_EDITOR);
 
         $result = $db->fetchAssoc($select);
 
         if ($active && !empty($result)) {
-            $result = array_filter($result, function ($user) {
-                return ($user['STATUS']) == Episciences_User_Assignment::STATUS_ACTIVE;
+            $result = array_filter($result, static function ($user) {
+                return ($user['STATUS']) === Episciences_User_Assignment::STATUS_ACTIVE;
             });
         }
 
@@ -2201,13 +2200,16 @@ class Episciences_PapersManager
      * @throws Zend_Date_Exception
      * @throws Zend_Exception
      */
-    public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors)
+    public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors): array
     {
         $templates = [];
 
         $languages = Episciences_Tools::getLanguages();
 
-        $locale = $contributor->getLangueid(true);
+        $contributorLocale = $contributor->getLangueid(true);
+
+        // see gitlab #402
+        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::DEFAULT_LANG : $contributorLocale ;
 
         if (!array_key_exists($locale, $languages)) {
             $locale = key($languages);
