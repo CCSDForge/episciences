@@ -355,6 +355,14 @@ return [
     "Référence bibliographique du volume" => "Volume's bibliographical reference",
     "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the paper is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
+    //New version
+    "Veuillez vérifier :" => "Please check:",
+    "La version du document" => "The document version",
+    "nombre uniquement" => "number only",
+    "supérieur à " => "greater than ",
+    "dernière version soumise à la revue" => "latest version submitted to the journal",
+    "Ladite nouvelle version de l' article a bien été déposée dans l'archive ouverte" => "The said new version of the article has been deposited in the open access repository",
+
 
     // Gestion des articles
     "Page de gestion des articles de la revue." => 'Here you can manage all the articles submitted to this journal.',

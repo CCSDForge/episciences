@@ -465,15 +465,18 @@ class Episciences_Submit
 
     /**
      * Retourne le formulaire permettant la soumission de la nouvelle version
+     * @param Episciences_Paper $paper
      * @param array $settings
-     * @param array $defaults
      * @return Ccsd_Form|null
+     * @throws Zend_Db_Statement_Exception
      */
-    public static function getNewVersionForm(array $settings = [], array $defaults = []): ?Ccsd_Form
+    public static function getNewVersionForm(Episciences_Paper $paper, array $settings = []): ?Ccsd_Form
     {
         $options = [];
-        $hasHook = array_key_exists('hasHook', $defaults) && $defaults['hasHook'] ? $defaults['hasHook'] : false;
+        $defaults = self::fetchNewVersionFormDefaultValues($paper);
+        $hasHook = (array_key_exists('hasHook', $defaults) && $defaults['hasHook']) ? $defaults['hasHook'] : false;
         $isNewVersionOf = array_key_exists('newVersionOf', $settings);
+
         try {
             $form = new Ccsd_Form();
             $form->setName('submit_doc');
@@ -502,23 +505,24 @@ class Episciences_Submit
             $subform->addElement('hidden', 'h_docId');
 
             if (!$hasHook) {
+
                 // Champ texte : version du document
                 $subform->addElement('text', 'version', [
                         'label' => 'Version',
-                        'description' => "Veuillez indiquer la version du document (nombre uniquement).",
-                        'value' => '1',
+                        'description' => self::buildNewVersionDescription($defaults),
+                        'value' => '',
                         'required' => true,
                         'style' => 'width:33%']
                 );
 
             }
 
-            // Récupération des repositories
+            // fetch repositories
             if (array_key_exists('repositories', $settings) && !empty($settings['repositories'])) {
                 $repositories = $settings['repositories'];
             } else {
                 $repositories = array_keys(Episciences_Repositories::getRepositories());
-                unset($repositories[0]);
+                unset($repositories[0]); // unset local repository
             }
             foreach ($repositories as $repoId) {
                 $options[$repoId] = Episciences_Repositories::getLabel($repoId);
@@ -534,39 +538,34 @@ class Episciences_Submit
 
             $subform->addElement('hidden', 'h_repoId');
 
-            // Pour gérer la recherche d'un document lors de la soumission d'une nouvelle version suite à une demande de modification
+            //To manage the search for a document when submitting a new version following a modification request
             if ($isNewVersionOf) {
                 $subform->addElement('hidden', 'newVersionOf', ['value' => $settings['newVersionOf']]);
-                // Soumission d'un nouvelle version suite à une demande de modifications de la version temporaire
-                $paper = Episciences_PapersManager::get($settings['newVersionOf']);
 
-                if (
-                    $paper->getRepoid() === 0 &&
-                    ($paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION || $paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION) &&
-                    (int)explode('/', $paper->getIdentifier())[0] === $paper->getPaperid()
-                ) {
-                    $lastPaper = Episciences_PapersManager::getLastPaper($paper->getPaperid());
+                // Submission of a new version following a request for changes to the temporary version
 
-                    $subform->addElement('hidden', 'h_hasHook', ['value' => $lastPaper->hasHook]);
+                $isTmp = $paper->getRepoid() === 0 &&
+                    (
+                        $paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION ||
+                        $paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION
+                    ) && (int)explode('/', $paper->getIdentifier())[0] === $paper->getPaperid();
 
-                    if ($lastPaper) { //  //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle (requête : demander la version définitive)
-                        if (!$hasHook) {
-                            $tmp_defaults ['docId'] = $lastPaper->getIdentifier();
-                            $tmp_defaults['version'] = '';
+                if ($isTmp) {
 
-                        } else {
-                            $tmp_defaults ['docId'] = '';
-                        }
+                    $subform->addElement('hidden', 'h_hasHook', ['value' => $defaults['hasHook']]);
 
-                        $tmp_defaults['repoId'] = $lastPaper->getRepoid();
-                        $tmp_defaults['h_repoId'] = $tmp_defaults['repoId'];
-                        $tmp_defaults['h_docId'] = $tmp_defaults['docId'];
-                        $subform->setDefaults($tmp_defaults);
-                    }
+                    //#git 259 : Leave the version field empty when submitting a new one (request: ask for the final version)
+
+                    $tmp_defaults['repoId'] = $defaults['repoId'];
+                    $tmp_defaults['h_repoId'] = $tmp_defaults['repoId'];
+                    $tmp_defaults['h_docId'] = $defaults['docId'];
+
+                    $subform->setDefaults($tmp_defaults);
+
                 }
             }
 
-            // Bouton : Rechercher
+            // search button
             $subform->addElement('button', 'getPaper', [
                 'label' => 'Rechercher',
                 'class' => 'btn btn-default',
@@ -585,7 +584,7 @@ class Episciences_Submit
             ]);
 
 
-            // Formulaire de soumission du document
+            // Submission document form
             $group = [];
             $xml = new Zend_Form_Element_Hidden('xml');
             $xml->setDecorators(['ViewHelper']);
@@ -692,6 +691,7 @@ class Episciences_Submit
 
             if (isset($defaults['version'], $defaults['docId'], $defaults['repoId'])) {
                 //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle
+                $defaults['version'] = '';
                 $defaults['h_docId'] = $defaults['docId'];
                 $defaults['h_repoId'] = $defaults['repoId'];
                 $form->setDefaults($defaults);
@@ -894,7 +894,7 @@ class Episciences_Submit
 
             $response = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()]);
 
-            Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid(), 'response' =>$response]);
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid(), 'response' => $response]);
 
 
             if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
@@ -1495,5 +1495,70 @@ class Episciences_Submit
             trigger_error($e->getMessage(), E_USER_ERROR);
 
         }
+    }
+
+    /**
+     * @param array $options
+     * @return string
+     * @throws Zend_Exception
+     */
+    private static function buildNewVersionDescription(array $options = []): string
+    {
+        $latestVersion = $options['version'] ?? 1;
+        $repoId = $options['repoId'] ?? 0;
+        $translator = Zend_Registry::get('Zend_Translate');
+        $vCodeMsg = '<code>' . $latestVersion . '</code>';
+        $description = $translator->translate('Veuillez vérifier :');
+        $description .= '<ol><li>';
+        $description .= $translator->translate('La version du document');
+        $description .= ' ( ';
+        $description .= $translator->translate('nombre uniquement');
+        $description .= ', ' . mb_strtoupper($translator->translate('supérieur à ')) . ' ';
+        $description .= $vCodeMsg;
+        $description .= $translator->translate(' :');
+        $description .= ' <mark>';
+        $description .= $translator->translate('dernière version soumise à la revue');
+        $description .= '</mark>';
+        $description .= ' )</li><li>';
+        $description .= $translator->translate("Ladite nouvelle version de l' article a bien été déposée dans l'archive ouverte");
+        $description .= ' (<mark> ' . mb_strtoupper(Episciences_Repositories::getLabel($repoId)) . ' </mark>)';
+        $description .= '</li></ol>';
+
+        return $description;
+
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private static function fetchNewVersionFormDefaultValues(Episciences_Paper $paper): array
+    {
+        $repository = $paper->getRepoid();
+        $hasHook = $paper->hasHook;
+
+        if ($repository) {
+            $defaults = [
+                'hasHook' => $hasHook,
+                'docId' => !$hasHook ? $paper->getIdentifier() : '', //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
+                'version' => $paper->getVersion(),
+                'repoId' => $repository
+            ];
+
+        } else { // tmp version
+
+            $latestSubmission = Episciences_PapersManager::getLastPaper($paper->getPaperid());
+            $hasHook = $latestSubmission->hasHook;
+            $defaults = [
+                'hasHook' => $hasHook,
+                'docId' => !$hasHook ? $latestSubmission->getIdentifier() : '',
+                'version' => $latestSubmission->getVersion(),
+                'repoId' => $latestSubmission->getRepoid()
+            ];
+        }
+
+        return $defaults;
+
     }
 }

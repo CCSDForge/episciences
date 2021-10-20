@@ -3216,7 +3216,7 @@ class Episciences_Paper
      * @param bool $isCurrentVersionIncluded
      * @return array|null
      */
-    public function getPreviousVersions(bool $isCurrentVersionIncluded = false)
+    public function getPreviousVersions(bool $isCurrentVersionIncluded = false): ?array
     {
         if (($isCurrentVersionIncluded || !isset($this->_previousVersions)) && $this->getPaperid() !== $this->getDocid()) {
 

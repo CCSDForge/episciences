@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 - Editors' choice at time of submission: informative text added. (gitlab #369)
 - Fixed mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
+- Make the version number more explicit when proposing a new version
+- Refactoring
 
 ## 1.0.19.2 - 2021-10-19
 ### Fixed

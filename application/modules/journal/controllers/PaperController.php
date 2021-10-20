@@ -32,7 +32,7 @@ class PaperController extends PaperDefaultController
 
         $pdf_name = $paper->getIdentifier() . '.pdf';
 
-       $this->requestingAnUnpublishedFile($paper);
+        $this->requestingAnUnpublishedFile($paper);
 
         if ($paper->isDeleted()) {
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
@@ -165,7 +165,7 @@ class PaperController extends PaperDefaultController
         // other versions block
         $versions = [];
 
-        foreach ($paper->getVersionsIds() as $version => $docId){
+        foreach ($paper->getVersionsIds() as $version => $docId) {
             $versions[$version] = Episciences_PapersManager::get($docId, false);
         }
 
@@ -951,7 +951,7 @@ class PaperController extends PaperDefaultController
         // save tmp version
         if ($tmpPaper->save()) {
 
-            if($tmpPaper->getOtherVolumes()){
+            if ($tmpPaper->getOtherVolumes()) {
                 $tmpPaper->saveOtherVolumes();
             }
 
@@ -1117,10 +1117,10 @@ class PaperController extends PaperDefaultController
 
     /**
      * new version form (revision request answer)
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      * @throws Zend_Json_Exception
      */
-    public function newversionAction()
+    public function newversionAction(): void
     {
         $this->_helper->layout->disableLayout();
         /** @var Zend_Controller_Request_Http $request */
@@ -1135,25 +1135,8 @@ class PaperController extends PaperDefaultController
         // fetch paper
         $paper = Episciences_PapersManager::get($oComment->getDocid());
 
-        // fetch form default values
-        $repository = $paper->getRepoid();
-
-        if ($repository) {
-            $defaults = [
-                // Pour Zenodo, un identifiant différent par version,
-                // d’où  l’initialisation de la valeur par défaut à ''
-                'docId' => !$paper->hasHook ? $paper->getIdentifier() : '',
-                self::VERSION_STR => $paper->getVersion(),
-                'repoId' => $repository,
-                'hasHook' => $paper->hasHook,
-            ];
-        } else { // tmp version
-            $firstSubmission = Episciences_PapersManager::get($paper->getPaperid());
-            $defaults = ['hasHook' => $firstSubmission->hasHook];
-        }
-
         // load form
-        $form = Episciences_Submit::getNewVersionForm(['newVersionOf' => $paper->getDocid()], $defaults);
+        $form = Episciences_Submit::getNewVersionForm($paper, ['newVersionOf' => $paper->getDocid()]);
         $form->setAction('/paper/savenewversion?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
         $this->view->form = $form;
     }
@@ -1278,7 +1261,7 @@ class PaperController extends PaperDefaultController
         // save new version
         if ($newPaper->save()) {
 
-            if($newPaper->getOtherVolumes()){ // github #48
+            if ($newPaper->getOtherVolumes()) { // github #48
                 $newPaper->saveOtherVolumes();
             }
 
@@ -1684,7 +1667,6 @@ class PaperController extends PaperDefaultController
         }
 
 
-
         $this->view->paper = $paper;
 
         // fetch journal detail
@@ -2086,7 +2068,7 @@ class PaperController extends PaperDefaultController
     {
         if ($paper->isEditable() && !$report->isCompleted()) {
 
-            if($paper->isRevisionRequested()){
+            if ($paper->isRevisionRequested()) {
                 $message = $this->view->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                 $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
@@ -3059,7 +3041,7 @@ class PaperController extends PaperDefaultController
             Episciences_Paper_Visits::add($paper->getDocid(), $consultType);
         }
 
-}
+    }
 
 }
 
