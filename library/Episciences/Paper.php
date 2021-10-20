@@ -2381,7 +2381,7 @@ class Episciences_Paper
         $canReplace = false;
         $docId = $this->getDocid();
         $translator = Zend_Registry::get('Zend_Translate');
-        $span = '<span class="fas fa-exclamation-circle">'; // A personaliser
+        $span = '<span class="fas fa-exclamation-circle">';
         $warning = $span;
         $warning .= ' ';
         $submitted = $translator->translate("Vous n'êtes pas l'auteur de cet article.");
