@@ -695,4 +695,40 @@ class PaperDefaultController extends DefaultController
 
         return $removed;
     }
+
+    /**
+     * Create rating report
+     * @param Episciences_Paper $paper
+     * @param int $reviewerUid
+     * @return Episciences_Rating_Report|null
+     */
+    protected function createRatingReport(Episciences_Paper $paper, int $reviewerUid = 0): ?Episciences_Rating_Report
+    {
+        $report = null;
+
+        if ($reviewerUid <= 0) {
+            return null;
+        }
+
+        $docId = $paper->getDocid();
+
+        $grid = $paper->getGridPath();
+
+        if ($grid) {
+
+            $report = new Episciences_Rating_Report();
+            $report->setDocid($docId);
+            $report->setUid($reviewerUid);
+            $report->loadXML($grid);
+
+            if (!$report->save()) {
+                trigger_error(sprintf('Saving Report for paperId %s and UID %s', $docId, $reviewerUid), E_USER_ERROR);
+            }
+
+        } else {
+            trigger_error('GRID_NOT_EXISTS_FAILED_TO_CREATE_RATING_REPORT_REVIEWER_UID_' . $reviewerUid . '_DOCID_' . $docId, E_USER_ERROR);
+        }
+
+        return $report;
+    }
 }

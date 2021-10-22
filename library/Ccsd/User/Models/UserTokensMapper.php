@@ -57,24 +57,31 @@ class Ccsd_User_Models_UserTokensMapper
      *
      * @param string $token
      * @param Ccsd_User_Models_UserTokens $userTokens
-     * @return null|Ccsd_User_Models_UserTokens
+     * @return array|null
      */
-    public function findByToken($token, Ccsd_User_Models_UserTokens $userTokens)
+    public function findByToken(string $token, Ccsd_User_Models_UserTokens $userTokens): ?array
     {
+        /** @var Zend_Db_Table_Rowset $result */
         $result = $this->getDbTable()->find($token);
-        if (0 == count($result)) {
+        $aResult = $result->toArray();
+
+        if (0 === count($result->toArray()[Episciences_Tools::epi_array_key_first($aResult)])) {
             return null;
         }
 
+        /** @var Zend_Db_Table_Row $row */
+
         $row = $result->current();
+        $aRow = $row->toArray();
 
-        $userTokens->setUid($row->UID)
-            ->setEmail($row->EMAIL)
-            ->setToken($row->TOKEN)
-            ->setTime_modified($row->TIME_MODIFIED)
-            ->setUsage($row->USAGE);
+        $userTokens
+            ->setUid($aRow['UID'])
+            ->setEmail($aRow['EMAIL'])
+            ->setToken($aRow['TOKEN'])
+            ->setTime_modified($aRow['TIME_MODIFIED'])
+            ->setUsage($aRow['USAGE']);
 
-        return $userTokens;
+        return $aRow; // token data
     }
 
     /**

@@ -3,7 +3,14 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 
 class ReviewerController extends PaperDefaultController
 {
-    public function invitationAction()
+    /**
+     * @throws Zend_Mail_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Session_Exception
+     */
+    public function invitationAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -61,17 +68,16 @@ class ReviewerController extends PaperDefaultController
 
         // INVITATION
         $this->view->invitation = $invitation;
-        //$review = Episciences_ReviewsManager::find(RVID);
 
         $this->view->rating_deadline = $assignment->getDeadline();
-        //$this->view->rating_deadline = $review->getSetting('rating_deadline');
+
 
         // ARTICLE A RELIRE *******************************************
         $paper = Episciences_PapersManager::get($assignment->getItemid());
         $paper->setXslt($paper->getXml(), 'partial_paper');
         $this->view->paper = $paper;
 
-        // Lettre d'accompagnemnet, git #160
+        // Cover letter, git #160
 
         $author_comments = Episciences_CommentsManager::getList(
             $paper->getDocid(),
@@ -112,9 +118,16 @@ class ReviewerController extends PaperDefaultController
 
             if ($accepted || $refused) {
 
-                if (($accepted && !$assignment->isTmp_user()) ||
-                    ($accepted && $user_form->isValid($request->getPost())) ||
-                    $refused) {
+                if (
+                    $refused ||
+                    (
+                        $accepted &&
+                        (
+                            !$assignment->isTmp_user()  ||
+                            (isset($user_form) && $user_form->isValid($request->getPost()))
+                        )
+                    )
+                ) {
 
                     $this->saveanswer($invitation, $assignment, $paper, $request->getPost());
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
@@ -136,7 +149,7 @@ class ReviewerController extends PaperDefaultController
         }
     }
 
-    private function checkPaperStatus(Episciences_Paper $paper)
+    private function checkPaperStatus(Episciences_Paper $paper): ?string
     {
         $error = null;
 
@@ -155,7 +168,17 @@ class ReviewerController extends PaperDefaultController
         return $error;
     }
 
-    private function saveanswer(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data)
+    /**
+     * @param Episciences_User_Invitation $oInvitation
+     * @param Episciences_User_Assignment $assignment
+     * @param Episciences_Paper $paper
+     * @param $data
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
+     */
+    private function saveanswer(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
     {
         if (array_key_exists('submitaccept', $data)) {
 
@@ -180,46 +203,16 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function accept(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data)
+    private function accept(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
     {
         // update user permissions
         if ($assignment->isTmp_user()) {
-            // new user (don't have an account yet) **************
-            // create new user
-            $user = new Episciences_Reviewer($data);
-            $user->setTime_registered();
-            $user->setValid(1);
-            $uid = $user->save();
-            $user->setUid($uid);
 
-            // give him reviewer permissions
-            $user->saveUserRoles($uid, array(Episciences_Acl::ROLE_REVIEWER));
-
-            // sign him in
-            Episciences_Auth::getInstance()->clearIdentity();
-            Episciences_Auth::setIdentity($user);
-            $user->setScreenName();
+            $user = $this->createNewReviewerWithoutAccountProcessing($data);
 
         } else {
-            // new reviewer (existing account) **************
-            $user = new Episciences_Reviewer();
-            $user->findWithCAS($assignment->getUId());
-            if (!$user->getScreenName()) {
-                $user->setScreenName($user->getFullName());
-                $user->save();
-            }
-            if (!$user->getLangueid()) {
-                $user->setLangueid(Episciences_Review::DEFAULT_LANG);
-                $user->save();
-            }
-            $userRoles = $user->getRoles();
-            $roles = !in_array(Episciences_Acl::ROLE_REVIEWER, $userRoles, true) ? array_merge($userRoles, array(Episciences_Acl::ROLE_REVIEWER)) : $userRoles;
-            $key = array_search(Episciences_Acl::ROLE_MEMBER, $roles, true);
-            if ($key) {
-                unset($roles[$key]);
-            }
 
-            $user->saveUserRoles($user->getUid(), $roles);
+            $user = $this->createNewReviewerWithExistingAccountProcessing($assignment->getUid());
         }
 
         // save invitation answer
@@ -250,25 +243,15 @@ class ReviewerController extends PaperDefaultController
             $user->createAlias($itemId);
         }
 
-        // create rating report
-        $grid = $paper->getGridPath();
-        if (file_exists($grid)) {
-            $report = new Episciences_Rating_Report;
-            $report->setDocid($paper->getDocid());
-            $report->setUid(Episciences_Auth::getUid());
-            $report->loadXML($grid);
-            if (!$report->save()) {
-                trigger_error(sprintf('Saving Report for paperId %s and UID %s', $paper->getDocid(), Episciences_Auth::getUid()), E_USER_ERROR);
-            }
+        $uid = $user->getUid();
 
-        } else {
-            trigger_error('GRID_NOT_EXISTS_FAILED_TO_CREATE_RATING_REPORT_REVIEWER_UID_' . $user->getUid() . '_DOCID_' . $paper->getDocid(), E_USER_ERROR);
-        }
+        // create rating report
+        $this->createRatingReport($paper, $uid);
 
         // log reviewer assignment to paper
         $paper->log(
             Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED,
-            $user->getUid(),
+            $uid,
             [
                 'invitation_answer_id' => $oInvitationAnswer->getId(),
                 'invitation_id' => $oInvitation->getId(),
@@ -279,64 +262,7 @@ class ReviewerController extends PaperDefaultController
         // update paper status
         $paper->refreshStatus();
 
-        // e-mails sending ****************************************************************************************
-        //  > thank you mail for the reviewer
-
-        $paper_url = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $paper->getDocid()]);
-        $paper_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
-        $locale = $user->getLangueid(true);
-
-        $commonTags = [
-            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-        ];
-
-        $reviewerTags = [
-            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
-            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
-            Episciences_Mail_Tags::TAG_RATING_DEADLINE => $this->view->Date($newAssignment->getDeadline(), $locale),
-            Episciences_Mail_Tags::TAG_PAPER_URL =>  $paper_url //Lien vers la page de relecture de l'article
-        ];
-
-        Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY, array_merge($commonTags, $reviewerTags), $paper);
-
-        //  > editors + admins + secretaries + chief editors notifications
-        $recipients = $paper->getEditors(true, true);
-        Episciences_Review::checkReviewNotifications($recipients);
-        $CC = $paper->extractCCRecipients($recipients);
-
-        if (empty($recipients)) {
-            $arrayKeyFirstCC = Episciences_Tools::epi_array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
-        }
-
-        $paper_url = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $paper->getDocid()]);
-        $paper_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
-
-        $editorsTags = [
-            Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url,
-            Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getFullName(),
-            Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME => $user->getScreenName()
-        ];
-
-        /** @var Episciences_User $recipient */
-        foreach ($recipients as $recipient){
-            $locale = $recipient->getLangueid(true);
-            $editorsTags += [
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE =>  $paper->getTitle($locale, true),
-                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
-                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
-                Episciences_Mail_Tags::TAG_RATING_DEADLINE => $this->view->Date($newAssignment->getDeadline(), $locale),
-            ];
-
-            Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY, array_merge($commonTags, $editorsTags),
-                $paper, null, [], false, $CC
-            );
-            //reset $CC
-            $CC = [];
-        }
-
+        $this->emailSendingProcessing($user, $paper, $newAssignment);
     }
 
     /**
@@ -349,7 +275,7 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function decline(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data)
+    private function decline(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
     {
         // save invitation answer
         $oInvitationAnswer = new Episciences_User_InvitationAnswer();
@@ -377,13 +303,14 @@ class ReviewerController extends PaperDefaultController
         }
 
         // save assignment update
-        $params = array(
+        $params = [
             'itemid' => $assignment->getItemid(),
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'status' => Episciences_User_Assignment::STATUS_DECLINED,
             'tmp_user' => $assignment->isTmp_user()
-        );
+        ];
+
         $newAssignment = Episciences_UsersManager::unassign($uid, $params)[0];
         $newAssignment->setInvitation_id($oInvitation->getId());
         $newAssignment->save();
@@ -401,22 +328,155 @@ class ReviewerController extends PaperDefaultController
                 'refusal_reason' => $data['comment']
             ]);
 
-        // e-mails sending ****************************************************************************************
-        //  > thank you mail for the reviewer
+        $this->emailSendingProcessing($user, $paper, $newAssignment, Episciences_User_InvitationAnswer::ANSWER_NO, $data);
 
+
+
+    }
+
+    /**
+     *  create new user (don't have an account yet)
+     * @param array $data
+     * @return Episciences_Reviewer
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     */
+    private function createNewReviewerWithoutAccountProcessing(array $data): Episciences_Reviewer
+    {
+        $user = new Episciences_Reviewer($data);
+        $user->setTime_registered();
+        $user->setValid(1);
+        $uid = $user->save();
+        $user->setUid($uid);
+
+        // give him reviewer permissions
+        $user->saveUserRoles($uid, [Episciences_Acl::ROLE_REVIEWER]);
+
+        // sign him in
+        Episciences_Auth::getInstance()->clearIdentity();
+        Episciences_Auth::setIdentity($user);
+        $user->setScreenName();
+
+        return $user;
+
+    }
+
+    /**
+     * Create new reviewer (existing account)
+     * @param int $uid
+     * @return Episciences_Reviewer
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    private function createNewReviewerWithExistingAccountProcessing(int $uid): Episciences_Reviewer
+    {
+        $isNecessaryToSaveUser = false;
+
+        $user = new Episciences_Reviewer();
+        $user->findWithCAS($uid);
+
+        if (!$user->getScreenName()) {
+            $isNecessaryToSaveUser = true;
+            $user->setScreenName($user->getFullName());
+        }
+
+        if (!$user->getLangueid()) {
+            $isNecessaryToSaveUser = true;
+            $user->setLangueid(Episciences_Review::DEFAULT_LANG);
+        }
+
+        if ($isNecessaryToSaveUser) {
+            $user->save();
+        }
+
+        $uid = $user->getUid();
+
+        $userRoles = $user->getRoles();
+
+        $roles = !in_array(Episciences_Acl::ROLE_REVIEWER, $userRoles, true) ? array_merge($userRoles, array(Episciences_Acl::ROLE_REVIEWER)) : $userRoles;
+        $key = array_search(Episciences_Acl::ROLE_MEMBER, $roles, true);
+
+        unset($roles[$key]);
+
+        $user->saveUserRoles($uid, $roles);
+
+        return $user;
+
+    }
+
+    /**
+     * send e-mails for reviewer and editorial committee
+     * @param Episciences_User $user
+     * @param Episciences_paper $paper
+     * @param Episciences_User_Assignment $assignment
+     * @param string $reviewerAnswer
+     * @param array $data
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function emailSendingProcessing(Episciences_User $user, Episciences_paper $paper, Episciences_User_Assignment $assignment, string $reviewerAnswer = Episciences_User_InvitationAnswer::ANSWER_YES, array $data = []): void
+    {
         $locale = $user->getLangueid(true);
+
         $docId = $paper->getDocid();
+        $reviewerUid = $user->getUid();
+
+        $ratingUrl = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
+        $ratingUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $ratingUrl;
+
+        $adminPaperUrl = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
+        $adminPaperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+
+        $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY;
+        $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY;
 
         $commonTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
-            Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $paper->formatAuthorsMetadata(),
-            Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION => $data['suggestreviewer'],
-            Episciences_Mail_Tags::TAG_REFUSAL_REASON => $data['comment']
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata()
         ];
 
-        $reviewerTags = $commonTags + [Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true)];
 
-        Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY, $reviewerTags, $paper);
+        $editorialCommitteeTags = [
+            Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getFullName(),
+            Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME => $user->getScreenName(),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $adminPaperUrl
+        ];
+
+        $reviewerTags = [Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true)];
+
+        if ($reviewerAnswer === Episciences_User_InvitationAnswer::ANSWER_NO) { // declined
+
+            $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY;
+            $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY;
+
+            if (isset($data['suggestreviewer'])) {
+                $commonTags[Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION] = $data['suggestreviewer'];
+            }
+
+            if (isset($data['comment'])) {
+                $commonTags[Episciences_Mail_Tags::TAG_REFUSAL_REASON] = $data['comment'];
+
+            }
+
+        } else {
+
+            $reviewerTags = array_merge(
+                $reviewerTags, [
+                Episciences_Mail_Tags::TAG_PAPER_URL => $ratingUrl,
+                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
+                Episciences_Mail_Tags::TAG_RATING_DEADLINE => $this->view->Date($assignment->getDeadline(), $locale)
+            ]);
+
+        }
+
+        $reviewerTags = array_merge($commonTags, $reviewerTags);
+
+        $editorialCommitteeTags = array_merge($commonTags, $editorialCommitteeTags);
+
+        Episciences_Mail_Send::sendMailFromReview($user, $reviewerTemplateType, $reviewerTags, $paper);
 
         //  > editors + admins + secretaries + chief editors notifications
         $recipients = $paper->getEditors(true, true);
@@ -429,27 +489,28 @@ class ReviewerController extends PaperDefaultController
             unset($CC[$arrayKeyFirstCC]);
         }
 
-        $paper_url = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
-        $paper_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
-        /** @var  Episciences_User $recipient */
+        /** @var Episciences_User $recipient */
         foreach ($recipients as $recipient) {
 
-            if($recipient->getUid() === $user->getUid()){
+            if ($reviewerUid === $recipient->getUid()) { // has already been notified as a reviewer
                 continue;
             }
 
             $locale = $recipient->getLangueid(true);
-            $recipientTags = $commonTags + [
-                Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getFullName(),
-                Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME => $user->getScreenName(),
+
+            if ($reviewerAnswer === Episciences_User_InvitationAnswer::ANSWER_YES) {
+                $editorialCommitteeTags [Episciences_Mail_Tags::TAG_RATING_DEADLINE] = $this->view->Date($assignment->getDeadline(), $locale);
+            }
+
+            $editorialCommitteeTags += [
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-                Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($paper->getSubmission_date(), $locale),
-                Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url // paper management page url
+                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale)
             ];
 
-            Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY, $recipientTags,
-                $paper, null, [], false, $CC);
-            //Reset $CC
+            Episciences_Mail_Send::sendMailFromReview($recipient, $editorialCommitteeTemplateType, $editorialCommitteeTags,
+                $paper, null, [], false, $CC
+            );
+            //reset $CC
             $CC = [];
 
         }

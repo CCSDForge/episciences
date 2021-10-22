@@ -11,7 +11,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     // rating is completed
     const STATUS_COMPLETED = 2;
 
-    private $_id; // db id
+    private $_rid; // db id (report Id)
     private $_path;
     private $_docid;
     private $_uid;
@@ -154,7 +154,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
      * @param bool $forceDate
      * @return bool
      */
-    public function save($path = null, $forceDate = false)
+    public function save($path = null, bool $forceDate = false): bool
     {
         // update xml
         if (!$this->toXML()) {
@@ -171,13 +171,13 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $sql = 'INSERT INTO ' . T_REVIEWER_REPORTS . ' (ID, UID, ONBEHALF_UID, DOCID, STATUS, CREATION_DATE)
-        VALUES (:id, :uid, :onbehalf_uid, :docid, :status, :creationDate)';
+        VALUES (:rid, :uid, :onbehalf_uid, :docid, :status, :creationDate)';
 
         $sql .= ' ON DUPLICATE KEY UPDATE ONBEHALF_UID = :onbehalf_uid, STATUS = :status, UPDATE_DATE = :updateDate';
 
         $query = $db->prepare($sql);
         return $query->execute([
-            'id' => $this->getId(),
+            'rid' => $this->getRid(),
             'uid' => $this->getUid(),
             'onbehalf_uid' => $this->getOnbehalf_uid(),
             'docid' => $this->getDocid(),
@@ -200,18 +200,21 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         return $this->_path;
     }
 
-    public function generatePath()
+    public function generatePath(): bool
     {
         if (!$this->getDocid() || !$this->getUid()) {
             return false;
         }
         $path = REVIEW_FILES_PATH . $this->getDocid() . '/reports/' . $this->getUid() . '/';
+
         if (!is_dir($path)) {
             $umask = umask(0); // save current umask and set it to 0
             mkdir($path, 0777, true);
             umask($umask);
         }
+
         $this->setPath($path);
+        return true;
     }
 
     /**
@@ -400,14 +403,14 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         ];
     }
 
-    public function getId()
+    public function getRid()
     {
-        return $this->_id;
+        return $this->_rid;
     }
 
-    public function setId($id)
+    public function setRid($id = null): void
     {
-        $this->_id = $id;
+        $this->_rid = $id;
     }
 
     public function getDocid()

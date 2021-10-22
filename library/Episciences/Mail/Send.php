@@ -240,7 +240,7 @@ class Episciences_Mail_Send
         }
 
         if (!$mail->writeMail()) {
-            error_log('APPLICATION WARNING: the email (id = ' . $mail->getId() . ') was not sent');
+            trigger_error('APPLICATION WARNING: the email (id = ' . $mail->getId() . ') was not sent', E_USER_WARNING);
             return false;
         }
 

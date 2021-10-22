@@ -8,7 +8,7 @@ use ReCaptcha\ReCaptcha;
 class UserDefaultController extends Zend_Controller_Action
 {
 
-    const DEFAULT_IMG_PATH = '/../public/img/user.png';
+    public const DEFAULT_IMG_PATH = '/../public/img/user.png';
 
     public function indexAction()
     {
@@ -18,8 +18,10 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * view user account
+     * @throws Zend_Db_Statement_Exception
+     * @throws Exception
      */
-    public function viewAction()
+    public function viewAction(): void
     {
         $uid = $this->getRequest()->getParam('userid');
 
@@ -31,11 +33,11 @@ class UserDefaultController extends Zend_Controller_Action
             $uid = (int)$uid;
             $epiUserData = $user->find($uid);
 
-            if (count($epiUserData) == 0) {
+            if (count($epiUserData) === 0) {
                 $this->view->message = "Utilisateur inconnu";
                 $this->view->description = "Cet utilisateur est inconnu.";
                 $this->renderScript('error/error.phtml');
-                return false;
+                return;
             }
 
             // CAS data
@@ -54,7 +56,7 @@ class UserDefaultController extends Zend_Controller_Action
             $this->view->message = "Vous n'êtes pas connecté";
             $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
             $this->renderScript('error/error.phtml');
-            return false;
+            return;
         }
 
 
@@ -79,9 +81,11 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * sign in an admin as another user
-     * @param integer $uidToSu
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Session_Exception
      */
-    public function suAction()
+    public function suAction(): void
     {
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
@@ -91,15 +95,17 @@ class UserDefaultController extends Zend_Controller_Action
         $uidToSu = $this->getRequest()->getParam('uid');
 
         // Checks if user can use su function
-        if ((RVID == 0 && !Episciences_Auth::isRoot()) || (RVID != 0 && !Episciences_Auth::isRoot() && !Episciences_Auth::isSecretary())) { // git #235
+        if ((RVID === 0 && !Episciences_Auth::isRoot()) || (RVID !== 0 && !Episciences_Auth::isRoot() && !Episciences_Auth::isSecretary())) { // git #235
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Vous n'avez pas les privilèges requis pour accéder à cette page.");
-            return $this->redirect($this->view->url(['controller' => 'user', 'action' => 'index'], null, true));
+            $this->redirect($this->view->url(['controller' => 'user', 'action' => 'index'], null, true));
+            return;
         }
 
         // Checks uid
-        if (filter_var($uidToSu, FILTER_VALIDATE_INT) == false) {
+        if (filter_var($uidToSu, FILTER_VALIDATE_INT) === false) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Cet identifiant n'est pas valide.");
-            return $this->redirect($this->view->url(['controller' => 'user', 'action' => 'list'], null, true));
+            $this->redirect($this->view->url(['controller' => 'user', 'action' => 'list'], null, true));
+            return;
         }
 
         $user = new Episciences_User();
@@ -107,7 +113,8 @@ class UserDefaultController extends Zend_Controller_Action
 
         if ($res === false) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Ce compte n'existe pas.");
-            return $this->redirect($this->view->url(['controller' => 'user', 'action' => 'list'], null, true));
+            $this->redirect($this->view->url(['controller' => 'user', 'action' => 'list'], null, true));
+            return;
         }
 
 
@@ -121,7 +128,7 @@ class UserDefaultController extends Zend_Controller_Action
         Zend_Session::regenerateId();
 
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage(Zend_Registry::get('Zend_Translate')->translate("Vous êtes connecté en tant que : ") . $user->getScreenName());
-        return $this->redirect($this->view->url(['controller' => 'user', 'action' => 'dashboard', 'lang' => Episciences_Auth::getLangueid()], null, true));
+        $this->redirect($this->view->url(['controller' => 'user', 'action' => 'dashboard', 'lang' => Episciences_Auth::getLangueid()], null, true));
     }
 
     /**
@@ -131,6 +138,7 @@ class UserDefaultController extends Zend_Controller_Action
      * - sur la page de destination envoyé en paramètre à CAS
      * - sur le compte utilisateur si pas de page de destination envoyé en
      * paramètre à CAS
+     * @throws Zend_Exception
      */
     public function loginAction()
     {
@@ -157,7 +165,7 @@ class UserDefaultController extends Zend_Controller_Action
                 // Instance singleton de Episciences_Auth
                 $auth = Episciences_Auth::getInstance();
 
-                if ($auth->hasIdentity()) {
+                if ($auth && $auth->hasIdentity()) {
                     /* @var $identity Episciences_User */
                     $identity = $auth->getIdentity();
 
@@ -186,7 +194,8 @@ class UserDefaultController extends Zend_Controller_Action
                 if ($localUser->getHasAccountData() === false) {
                     $action = $this->getRequest()->getParam('forward-action', 'edit');
                     $controller = $this->getRequest()->getParam('forward-controller', 'user');
-                    return $this->redirect($controller . '/' . $action);
+                    $this->redirect($controller . '/' . $action);
+                    return;
                 }
 
                 // controller de retour existe
@@ -217,11 +226,12 @@ class UserDefaultController extends Zend_Controller_Action
                             'controller' => $this->_request->getParam('forward-controller')
                         ], null, true);
                     }
-                    return $this->redirect($uri);
+                    $this->redirect($uri);
+                    return;
                 }
 
                 // si pas de controller défini pour le retour
-                return $this->redirect($this->view->url([
+                $this->redirect($this->view->url([
                     'controller' => 'user',
                     'action' => 'dashboard'
                 ], null, true));
@@ -704,8 +714,9 @@ class UserDefaultController extends Zend_Controller_Action
     /**
      * user account activation
      * (when activation link has been clicked)
+     * @throws Zend_Db_Adapter_Exception
      */
-    public function activateAction()
+    public function activateAction(): void
     {
         $request = $this->getRequest();
         $token = $request->getParam('token');
@@ -716,7 +727,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         // le client essaie d'utiliser un jeton prévu pour autre chose que la validation de compte,
         // ou il n'y a pas de jeton
-        if ('VALID' != $userTokens->getUsage() || null == count($tokenData)) {
+        if ( empty($tokenData) || 'VALID' !== $userTokens->getUsage()) {
             $this->view->message = "Erreur lors de l'activation du compte";
             $this->view->description = "Erreur le jeton d'activation de ce compte n'est pas valable";
             $this->renderScript('error/error.phtml');
@@ -812,10 +823,11 @@ class UserDefaultController extends Zend_Controller_Action
      * send the user an e-mail with a list of his logins
      * @throws Exception
      */
-    public function lostloginAction()
+    public function lostloginAction(): void
     {
         if (Episciences_Auth::isLogged()) {
-            return $this->redirect('/user/dashboard');
+            $this->redirect('/user/dashboard');
+            return;
         }
 
         $form = new Ccsd_User_Form_Accountlostlogin();
@@ -838,7 +850,7 @@ class UserDefaultController extends Zend_Controller_Action
             }
 
             // login non trouvé
-            if (null === $userLogins || empty($userLogins)) {
+            if (empty($userLogins)) {
                 $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_NOT_FOUND;
                 $this->view->form = $form;
                 $this->render('lostlogin');
@@ -891,8 +903,9 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * reset user password
+     * @throws Exception
      */
-    public function resetpasswordAction()
+    public function resetpasswordAction(): void
     {
         $request = $this->getRequest();
         $token = $request->getParam('token');
@@ -903,7 +916,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         // le client essaie d'utiliser un jeton prévu pour autre chose que les
         // mots de passe
-        if (0 == count($tokenData)) {
+        if (empty($tokenData)) {
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
             $this->render('resetpassword');
         }
@@ -923,16 +936,18 @@ class UserDefaultController extends Zend_Controller_Action
 
             $tokenData = $userTokensMapper->findByToken($formToken, $userTokens);
 
-            if (0 != count($tokenData)) {
+            if (!empty($tokenData)) {
 
                 $user = new Ccsd_User_Models_User();
                 $userMapper = new Ccsd_User_Models_UserMapper();
 
                 try {
-                    $user->setUid($tokenData->getUid());
+                    $user->setUid($tokenData['UID']);
                     $user->setPassword($form->getValue('PASSWORD'));
                     $user->setTime_modified();
+
                 } catch (Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_ERROR);
                 }
 
                 $userMapper->savePassword($user);
@@ -950,13 +965,15 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * Change User password
+     * @throws Exception
      */
-    public function changepasswordAction()
+    public function changepasswordAction(): void
     {
 
         // Retour de l'activation OK
         if ($this->getRequest()->getParam('change') == 'done') {
-            return $this->render('changepassword');
+            $this->render('changepassword');
+            return;
         }
 
         $form = new Ccsd_User_Form_Accountchangepassword();
@@ -975,11 +992,12 @@ class UserDefaultController extends Zend_Controller_Action
             $testPreviousPassword = $userMapper->findByUsernamePassword(Episciences_Auth::getInstance()->getIdentity()
                 ->getUsername(), $form->getValue('PREVIOUS_PASSWORD'));
 
-            if ($testPreviousPassword == null) {
+            if ($testPreviousPassword === null) {
 
                 $this->view->resultMessage = $this->view->message("Votre ancien mot de passe n'est pas correct.", 'danger');
                 $this->view->form = $form;
-                return $this->render('changepassword');
+                $this->render('changepassword');
+                return;
             }
 
             try {
@@ -989,15 +1007,15 @@ class UserDefaultController extends Zend_Controller_Action
                 $user->setTime_modified();
                 $affectedRows = $userMapper->savePassword($user);
 
-                if ($affectedRows == 1) {
+                if ($affectedRows === 1) {
                     $this->redirect('/user/logout/reason/passwordupdated/lang/' . Episciences_Auth::getLangueid());
                 } else {
                     $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
-                    return $this->render('changepassword');
+                    $this->render('changepassword');
                 }
             } catch (Exception $e) {
                 $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
-                return $this->render('changepassword');
+                $this->render('changepassword');
             }
         }
 
@@ -1010,30 +1028,34 @@ class UserDefaultController extends Zend_Controller_Action
      * fetch users list for autocomplete
      * use "term" param for searching users in database
      */
-    public function findusersAction()
+    public function findusersAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
-        $filter = $request->getParam('term');
-        $withoutRoles = ($request->getParam('type') != 'all');
-        $result = Episciences_User::filterUsers($filter, $withoutRoles);
-
         $users = [];
 
-        if ($result) {
-            foreach ($result as $key => $user) {
-                $name = $user['LASTNAME'];
-                if ($user['FIRSTNAME'] != '') {
-                    $name = $user['FIRSTNAME'] . ' ' . $name;
-                }
-                $label = $name . ' (' . mb_strtolower($user['USERNAME'], 'UTF-8') . ')' . ' <' . $user['EMAIL'] . '>';
+        if($request){
 
-                $users[$key]['uid'] = $user['UID'];
-                $users[$key]['name'] = $name;
-                $users[$key]['mail'] = $user['EMAIL'];
-                $users[$key]['label'] = $label;
+            $filter = $request->getParam('term');
+            $withoutRoles = ($request->getParam('type') !== 'all');
+            $result = Episciences_User::filterUsers($filter, $withoutRoles);
+
+            if (!empty($result)) {
+
+                foreach ($result as $key => $user) {
+                    $name = $user['LASTNAME'];
+                    if ($user['FIRSTNAME'] !== '') {
+                        $name = $user['FIRSTNAME'] . ' ' . $name;
+                    }
+                    $label = $name . ' (' . mb_strtolower($user['USERNAME'], 'UTF-8') . ')' . ' <' . $user['EMAIL'] . '>';
+
+                    $users[$key]['uid'] = $user['UID'];
+                    $users[$key]['name'] = $name;
+                    $users[$key]['mail'] = $user['EMAIL'];
+                    $users[$key]['label'] = $label;
+                }
             }
         }
 
@@ -1044,13 +1066,13 @@ class UserDefaultController extends Zend_Controller_Action
      * Retourne tous les logins associés à un email et les détails d'un compte utilisateurs par login
      * @throws Exception
      */
-    public function ajaxfindusersbymailAction()
+    public function ajaxfindusersbymailAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $request = $this->getRequest();
         $detailByLogin = [];
-        if ($request->isXmlHttpRequest()) {
+        if ($request && $request->isXmlHttpRequest()) {
             $userMapper = new Ccsd_User_Models_UserMapper();
             /** @var Zend_Db_Table_Rowset_Abstract $rowSet */
             $rowSet = $userMapper->findLoginByEmail($request->getPost('email'));
@@ -1071,39 +1093,54 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * retourne tous les utilisateurs ayant le même nom et prénom
+     * @throws Exception
      */
 
-    public function findusersbyfirstnameandnameAction()
+    public function findusersbyfirstnameandnameAction(): void
     {
         $result = [];
+
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+
         $request = $this->getRequest();
-        $firstName = $request->getPost('firstname');
-        $name = $request->getPost('name');
-        if ($request->isXmlHttprequest()) {
-            $userMapper = new Episciences_User_UserMapper();
-            /** @var Zend_Db_Table_Rowset_Abstract $rowSet */
-            $rowSet = $userMapper->findUserByFirstNameAndName($name, $firstName);
-            if ($rowSet) {
-                $result = $rowSet->toArray();
+
+        if ($request) {
+            $firstName = $request->getPost('firstname');
+
+            $name = $request->getPost('name');
+
+            if ($request->isXmlHttprequest()) {
+                $userMapper = new Episciences_User_UserMapper();
+                /** @var Zend_Db_Table_Rowset_Abstract $rowSet */
+                $rowSet = $userMapper->findUserByFirstNameAndName($name, $firstName);
+                if ($rowSet) {
+                    $result = $rowSet->toArray();
+                }
+
             }
 
         }
+
         echo json_encode($result);
     }
 
-    public function ajaxfindcasuserAction()
+    public function ajaxfindcasuserAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
         $user = null;
-        $request = $this->getRequest();
-        $uid = $request->getPost('uid');
 
-        if ($request->isXmlHttprequest()) {
-            $user = new Episciences_User();
-            $user->findWithCAS($uid);
+        $request = $this->getRequest();
+
+        if($request){
+            $uid = $request->getPost('uid');
+
+            if ($request->isXmlHttprequest()) {
+                $user = new Episciences_User();
+                $user->findWithCAS($uid);
+
+            }
 
         }
 
@@ -1112,51 +1149,57 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * user roles form
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Form_Exception
      */
-    public function rolesformAction()
+    public function rolesformAction(): void
     {
         $this->view->jQuery()->addJavascriptFile('/js/reviewer/functions.js');
 
         $request = $this->getRequest();
-        $params = $request->getPost();
-        $uid = $params['uid'];
 
-        $user = new Episciences_User();
-        $user->find($uid);
-        $userRoles = $user->getRoles();
+        if ($request) {
 
-        $acl = new Episciences_Acl();
-        $roles = $acl->getEditableRoles();
+            $params = $request->getPost();
+            $uid = $params['uid'];
 
-        $form = new Zend_Form();
-        $form->setAction('/user/saveroles');
-        $element = new Zend_Form_Element_MultiCheckbox('roles_' . $uid, ['multiOptions' => $roles]);
-        $element->setValue($userRoles);
-        $element->setSeparator('<br/>');
-        $element->removeDecorator('Label');
-        $element->addDecorator('HtmlTag', ['tag' => 'div', 'class' => "checkbox"]);
-        //$element->getDecorator('HtmlTag')->setOption('tag', 'div');
-        $form->addElement($element);
+            $user = new Episciences_User();
+            $user->find($uid);
+            $userRoles = $user->getRoles();
 
-        $button = new Zend_Form_Element_Button('updateUserRoles');
-        $button->setLabel("Valider")
-            ->setOptions(["class" => "btn btn-sm btn-primary"])
-            ->removeDecorator('DtDdWrapper')
-            ->removeDecorator('Label')
-            ->setAttrib('type', 'submit');
-        $form->addElement($button);
+            $acl = new Episciences_Acl();
+            $roles = $acl->getEditableRoles();
 
-        $button = new Zend_Form_Element_Button('cancel');
-        $button->setLabel("Annuler")
-            ->setOptions(["class" => "btn btn-sm btn-default"])
-            ->removeDecorator('DtDdWrapper')
-            ->removeDecorator('HtmlTag')
-            ->removeDecorator('Label')
-            ->setAttrib('onclick', 'closeResult()');
-        $form->addElement($button);
+            $form = new Zend_Form();
+            $form->setAction('/user/saveroles');
+            $element = new Zend_Form_Element_MultiCheckbox('roles_' . $uid, ['multiOptions' => $roles]);
+            $element->setValue($userRoles);
+            $element->setSeparator('<br/>');
+            $element->removeDecorator('Label');
+            $element->addDecorator('HtmlTag', ['tag' => 'div', 'class' => "checkbox"]);
+            //$element->getDecorator('HtmlTag')->setOption('tag', 'div');
+            $form->addElement($element);
 
-        $this->_helper->layout->disableLayout();
-        $this->view->form = $form;
+            $button = new Zend_Form_Element_Button('updateUserRoles');
+            $button->setLabel("Valider")
+                ->setOptions(["class" => "btn btn-sm btn-primary"])
+                ->removeDecorator('DtDdWrapper')
+                ->removeDecorator('Label')
+                ->setAttrib('type', 'submit');
+            $form->addElement($button);
+
+            $button = new Zend_Form_Element_Button('cancel');
+            $button->setLabel("Annuler")
+                ->setOptions(["class" => "btn btn-sm btn-default"])
+                ->removeDecorator('DtDdWrapper')
+                ->removeDecorator('HtmlTag')
+                ->removeDecorator('Label')
+                ->setAttrib('onclick', 'closeResult()');
+            $form->addElement($button);
+
+            $this->_helper->layout->disableLayout();
+            $this->view->form = $form;
+        }
     }
 
     /**

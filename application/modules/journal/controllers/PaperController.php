@@ -698,7 +698,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
      */
-    public function answerrequestAction()
+    public function answerrequestAction(): void
     {
         $this->_helper->layout->disableLayout();
         /** @var Zend_Controller_Request_Http $request */
@@ -723,7 +723,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function saveanswerAction()
+    public function saveanswerAction(): void
     {
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -821,7 +821,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public function tmpversionAction()
+    public function tmpversionAction(): void
     {
         $this->_helper->layout->disableLayout();
         /** @var Zend_Controller_Request_Http $request */
@@ -851,7 +851,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function savetmpversionAction()
+    public function savetmpversionAction(): void
     {
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -1032,7 +1032,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function reinviteReviewers($reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, Episciences_User $sender = null)
+    private function reinviteReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, Episciences_User $sender = null): void
     {
         // mail template init
         $template = new Episciences_Mail_Template();
@@ -1051,7 +1051,7 @@ class PaperController extends PaperDefaultController
         $oReview->loadSettings();
         // new deadline is today + default deadline interval (journal setting)
         $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting(Episciences_Review::SETTING_RATING_DEADLINE));
-        $sender_uid = (is_a($sender, self::CLASS_EPI_USER_NAME)) ? $sender->getUid() : 666;
+        $sender_uid = ($sender && is_a($sender, self::CLASS_EPI_USER_NAME)) ? $sender->getUid() : 666;
 
         // loop through each reviewer
         /** @var Episciences_Reviewer $reviewer */
@@ -1150,7 +1150,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function savenewversionAction()
+    public function savenewversionAction(): void
     {
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -1410,7 +1410,7 @@ class PaperController extends PaperDefaultController
      * list papers submitted by user
      * @throws Zend_Exception
      */
-    public function submittedAction()
+    public function submittedAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -1492,7 +1492,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public function ratingsAction()
+    public function ratingsAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -1637,8 +1637,7 @@ class PaperController extends PaperDefaultController
         $uid = $paper->getUid();
 
         if ($uid === $reviewer_uid || $uid === Episciences_Auth::getUid()) { // Relecture de son propre article
-            error_log('ACL: UID ' . Episciences_Auth::getUid() . ' tried to review his own article ' . $docId);
-            error_log('ACL: UID ' . Episciences_Auth::getUid() . ' tried to review his own article ' . $docId);
+            trigger_error('ACL: UID ' . Episciences_Auth::getUid() . ' tried to review his own article ' . $docId, E_USER_WARNING);
             $message = $this->view->translate("Cet article ne peut pas être relu par son auteur");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid())) {
@@ -1796,7 +1795,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Exception
      */
 
-    private function checkPaperStatus(Episciences_Paper &$paper): array
+    private function checkPaperStatus(Episciences_Paper $paper): array
     {
 
         $translator = Zend_Registry::get('Zend_Translate');
@@ -1834,7 +1833,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function save_reviewer_comment(Episciences_Paper $paper)
+    private function save_reviewer_comment(Episciences_Paper $paper): bool
     {
 
         // save comment to database ******************************************
@@ -1911,9 +1910,10 @@ class PaperController extends PaperDefaultController
     /**
      * @param Episciences_Paper $paper
      * @param int $reviewerUid
-     * @return bool|Episciences_Rating_Report|null
+     * @return Episciences_Rating_Report|null
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     private function reviewFromEditor(Episciences_Paper $paper, int $reviewerUid)
     {
@@ -1936,10 +1936,19 @@ class PaperController extends PaperDefaultController
      * @param string $message
      * @param string $type
      * @param bool $report_status
+     * @throws Zend_Exception
      */
-    private function goToUrlAdministratePaper(Episciences_Paper $paper, $message = '', $type = self::ERROR, $report_status = false)
+    private function goToUrlAdministratePaper(Episciences_Paper $paper, string $message = '', string $type = self::ERROR, bool $report_status = false): void
     {
-        $message = $this->view->translate($message);
+
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $message = trim($message);
+
+        if('' !== $message){
+            $message = $translator->translate($message);
+        }
+
         $this->_helper->FlashMessenger->setNamespace($type)->addMessage($message);
         $this->_helper->redirector('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, [
             'id' => $paper->getDocid(),
@@ -1950,13 +1959,13 @@ class PaperController extends PaperDefaultController
     /**
      * @param Episciences_Paper $paper
      * @param int $reviewerUid
-     * @return bool|Episciences_Rating_Report|null
+     * @return Episciences_Rating_Report|null
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    private function applyRating(Episciences_Paper $paper, int $reviewerUid)
+    private function applyRating(Episciences_Paper $paper, int $reviewerUid): ?Episciences_Rating_Report
     {
-        $report = null;
 
         if ($reviewerUid <= 0) {
             return null;
@@ -2020,39 +2029,9 @@ class PaperController extends PaperDefaultController
                 $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, ['status' => Episciences_Paper::STATUS_BEING_REVIEWED]);
 
             }
+
             $report = $this->createRatingReport($paper, $reviewerUid);
         }
-        return $report;
-    }
-
-    /**
-     * Creation d'un rapport de revision pour reviewerUid.
-     * Par defaut, reviewerUid = EPISCINCES_UID, ce qui permet a un autre rôle autorisé, même s'il n'est pas reviewer,
-     * d'ajouter un rapport de relecture, c-a-d réviser ce papier
-     * @param Episciences_Paper $paper
-     * @param int $reviewerUid
-     * @return Episciences_Rating_Report|null
-     */
-    private function createRatingReport(Episciences_Paper $paper, int $reviewerUid = 0)
-    {
-        $report = null;
-
-        if ($reviewerUid <= 0) {
-            return null;
-        }
-        $grid = $paper->getGridPath();
-
-        if (file_exists($grid)) {
-            $report = new Episciences_Rating_Report;
-            $report->setDocid($paper->getDocid());
-            $report->setUid($reviewerUid);
-            $report->loadXML($grid);
-            $report->save();
-
-        } else {
-            error_log(REVIEW_GRIDS_PATH . ' : ' . 'the grid is not defined');
-        }
-
         return $report;
     }
 
@@ -2143,9 +2122,9 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function completedRatingSendNotification(Episciences_Rating_Report $report, Episciences_Paper $paper)
+    private function completedRatingSendNotification(Episciences_Rating_Report $report, Episciences_Paper $paper): void
     {
-        if ($report->getUid() != Episciences_Auth::getUid() && null != $report->getOnbehalf_uid()) { // Si la relecture est faite à la place d'un reviewer
+        if (null !== $report->getOnbehalf_uid() && $report->getUid() !== Episciences_Auth::getUid()) { // Si la relecture est faite à la place d'un reviewer
             $user = new Episciences_User();
             $user->findWithCAS($report->getUid());
 
@@ -2201,7 +2180,7 @@ class PaperController extends PaperDefaultController
             /** @var Episciences_User $recipient */
             foreach ($recipients as $recipient) {
 
-                if ($report->getUid() == $recipient->getUid()) {
+                if ($report->getUid() === $recipient->getUid()) {
                     continue;
                 }
 
@@ -2251,7 +2230,7 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Rating_Report $report
      * @throws Zend_Db_Adapter_Exception
      */
-    private function logReport(Episciences_User $user, Episciences_Paper $paper, Episciences_Rating_Report $report)
+    private function logReport(Episciences_User $user, Episciences_Paper $paper, Episciences_Rating_Report $report): void
     {
         $paper->log(
             ($report->isCompleted()) ? Episciences_Paper_Logger::CODE_REVIEWING_COMPLETED : Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS,
@@ -2265,7 +2244,7 @@ class PaperController extends PaperDefaultController
      * Supprimer le fichier joint à un rapport de relecture
      * @throws Zend_Db_Statement_Exception
      */
-    public function deleteattachmentreportAction()
+    public function deleteattachmentreportAction(): void
     {
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -2321,7 +2300,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function removeAction()
+    public function removeAction(): void
     {
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -2333,7 +2312,7 @@ class PaperController extends PaperDefaultController
         $authorizedStatus = [Episciences_Paper::STATUS_SUBMITTED];
         $paper = Episciences_PapersManager::get($docId);
 
-        if (!in_array($paper->getStatus(), $authorizedStatus)) {
+        if (!in_array($paper->getStatus(), $authorizedStatus, true)) {
             $message = $this->view->translate("L'article ne peut pas être supprimé en raison de son statut.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             $this->_helper->redirector->gotoUrl('/' . $docId);
@@ -2341,7 +2320,7 @@ class PaperController extends PaperDefaultController
         }
 
         // check that user really is paper contributor
-        if (Episciences_Auth::getUid() != $paper->getUid()) {
+        if (Episciences_Auth::getUid() !== $paper->getUid()) {
             $message = $this->view->translate("L'article ne peut être supprimé que par son déposant.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             $this->_helper->redirector->gotoUrl('/' . $docId);
@@ -2412,7 +2391,7 @@ class PaperController extends PaperDefaultController
      * Retourne l'ID de l'article dans sa dernière version
      * @throws Zend_Exception
      */
-    public function ajaxgetlastpaperidAction()
+    public function ajaxgetlastpaperidAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -2429,7 +2408,7 @@ class PaperController extends PaperDefaultController
         if ($request->isXmlHttpRequest()) {
             try {
                 $paper = Episciences_PapersManager::get($docId);
-                if (!$paper || $paper->getRvid() != RVID) {
+                if (!$paper || $paper->getRvid() !== RVID) {
                     $result[self::DOC_ID_STR] = 0;
                     $lastPaper = false;
                 } else {
@@ -2457,7 +2436,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    public function continuepublicationprocessAction()
+    public function continuepublicationprocessAction(): void
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $this->_helper->layout->disableLayout();
@@ -2493,7 +2472,7 @@ class PaperController extends PaperDefaultController
                 */
                 $ignoreStatus = [Episciences_Paper::STATUS_OK_FOR_REVIEWING, Episciences_Paper::STATUS_BEING_REVIEWED];
 
-                $lastStatus = !in_array($lastStatus, $ignoreStatus) ? $lastStatus : Episciences_Paper::STATUS_SUBMITTED;
+                $lastStatus = !in_array($lastStatus, $ignoreStatus, true) ? $lastStatus : Episciences_Paper::STATUS_SUBMITTED;
 
                 // Logger l'action
                 $logAction = $paper->log(
@@ -2543,7 +2522,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function continuePublication(Episciences_Paper $paper, int $lastStatus)
+    private function continuePublication(Episciences_Paper $paper, int $lastStatus): void
     {
         $recipients = [];
         // Changer le status de l'article
@@ -2592,7 +2571,7 @@ class PaperController extends PaperDefaultController
     private function informRecipient(Episciences_User $recipient, Episciences_Paper $paper, string $templateType, int $lastStatus = 0, array $CC = []): bool
     {
 
-        if ($recipient->getUid() == $paper->getUid()) { // send mail to author
+        if ($recipient->getUid() === $paper->getUid()) { // send mail to author
             return $this->informContributor($paper, $templateType);
         }
 
@@ -2689,7 +2668,7 @@ class PaperController extends PaperDefaultController
         }
 
         // Message de confirmation
-        if ($paper->getUid() == Episciences_Auth::getUid()) {
+        if ($paper->getUid() === Episciences_Auth::getUid()) {
             $messagePanel = $translator->translate("Attention, si vous décidez de poursuivre l'abandon, il ne vous sera plus possible de soumettre cet article dans cette revue. L'abandon est définitif.");
         } else {
             $messagePanel = $translator->translate("Vous êtes sur le point d’abandonner le processus de publication de cet article.");
@@ -2708,7 +2687,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function applyAbandon(Episciences_Paper $paper, int $lastStatus)
+    private function applyAbandon(Episciences_Paper $paper, int $lastStatus): void
     {
         // with cas data
         $recipients = $this->getAllEditors($paper) + $this->getAllCopyEditors($paper);
@@ -2717,7 +2696,7 @@ class PaperController extends PaperDefaultController
             Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY :
             Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS;
 
-        $authorTemplateKey = ($paper->getUid() == Episciences_Auth::getUid()) ?
+        $authorTemplateKey = ($paper->getUid() === Episciences_Auth::getUid()) ?
             Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY :
             Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY;
 
@@ -2762,7 +2741,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function removeInvitations(Episciences_Paper $paper, array $invitationsStatus)
+    private function removeInvitations(Episciences_Paper $paper, array $invitationsStatus): void
     {
         /** @var $invitationsByStatus [] */
         $invitationsByStatus = $paper->getInvitations($invitationsStatus, true);
@@ -2778,10 +2757,12 @@ class PaperController extends PaperDefaultController
                 $assignment = Episciences_User_AssignmentsManager::findById($invitation['ASSIGNMENT_ID']);
                 /** @var Episciences_User $user */
                 $user = $assignment->getAssignedUser();
-                $locale = $user->getLangueid();
+
                 if (!$user) {
-                    error_log('Erreur: Impossible de trouver le relecteur ( UID = ' . $assignment->getUid() . ' )');
+                    trigger_error('Erreur: Impossible de trouver le relecteur ( UID = ' . $assignment->getUid() . ' )', E_USER_ERROR);
                 } else {
+
+                    $locale = $user->getLangueid();
                     $this->applyRemoving($paper, $assignment, $user);
 
                     $tags = [
@@ -2807,7 +2788,7 @@ class PaperController extends PaperDefaultController
      * @param Episciences_User $reviewer
      * @throws Zend_Db_Adapter_Exception
      */
-    private function applyRemoving(Episciences_Paper $paper, Episciences_User_Assignment $assignment, Episciences_User $reviewer)
+    private function applyRemoving(Episciences_Paper $paper, Episciences_User_Assignment $assignment, Episciences_User $reviewer): void
     {
 
         // Pour les comptes temporaires aussi
@@ -2824,7 +2805,7 @@ class PaperController extends PaperDefaultController
         /** @var Episciences_User_Invitation $invitation */
         $invitation = Episciences_User_InvitationsManager::findById($assignment->getInvitation_id());
 
-        if ($reviewingStatus != Episciences_Reviewer_Reviewing::STATUS_COMPLETE) { // On garde les relectures déjà terminées
+        if ($reviewingStatus !== Episciences_Reviewer_Reviewing::STATUS_COMPLETE) { // On garde les relectures déjà terminées
 
             //Mettre à jour l'invitati]on
             $invitation->setStatus($invitation::STATUS_CANCELLED);
@@ -2865,7 +2846,7 @@ class PaperController extends PaperDefaultController
                 $msg .= ' n\'a pas pu être enregistré pour l\'article( DOCID = ';
                 $msg .= $paper->getDocid();
                 $msg .= ' )';
-                error_log($msg);
+                trigger_error($msg, E_USER_WARNING);
             }
         }
     }
@@ -2874,7 +2855,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
      */
-    public function contactrequestAction()
+    public function contactrequestAction(): void
     {
         $this->_helper->layout->disableLayout();
         /** @var Zend_Controller_Request_Http $request */
@@ -2906,13 +2887,13 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function reassignReviewers($reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, $submissionType, Episciences_User $sender = null)
+    private function reassignReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, $submissionType, Episciences_User $sender = null): bool
     {
         // mail template init
         $template = new Episciences_Mail_Template();
-        if ($submissionType == self::NEW_VERSION_TYPE) {
+        if ($submissionType === self::NEW_VERSION_TYPE) {
             $template_key = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN;
-        } elseif ($submissionType == self::TMP_VERSION_TYPE) {
+        } elseif ($submissionType === self::TMP_VERSION_TYPE) {
             $template_key = Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN;
         } else {
             return false;
@@ -2939,7 +2920,7 @@ class PaperController extends PaperDefaultController
         $oReview->loadSettings();
         // new deadline is today + default deadline interval (journal setting)
         $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting(Episciences_Review::SETTING_RATING_DEADLINE));
-        $sender_uid = (is_a($sender, self::CLASS_EPI_USER_NAME)) ? $sender->getUid() : 666;
+        $sender_uid = ($sender && is_a($sender, self::CLASS_EPI_USER_NAME)) ? $sender->getUid() : 666;
 
         // loop through each reviewer
         /** @var Episciences_Reviewer $reviewer */
