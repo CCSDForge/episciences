@@ -39,7 +39,7 @@ $(document).ready(function () {
             let identifier = url.pathname;
 
             identifier = identifier.replace(/\/\w+\//, '')
-            identifier = identifier.replace('/', '');
+            identifier = identifier.replace(/^\//, '');
             identifier = identifier.replace(/v\d+/, '')
 
             // Delete VERSION from IDENTIFIER
