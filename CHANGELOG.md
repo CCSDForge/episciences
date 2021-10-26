@@ -15,8 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.20 - 2021-10-26
+### Fixed
 - fixed bug: inability to continue reviewing (RT#138067)
+- fixed typo ; add missing translation
 
 ## 1.0.19.2 - 2021-10-19
 ### Fixed
