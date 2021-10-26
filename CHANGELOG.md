@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
 - fixed: IDE warnings
 
+## 1.0.20 - 2021-10-26
+### Fixed
+- fixed bug: inability to continue reviewing (RT#138067)
+- fixed typo ; add missing translation
+
 ## 1.0.19.2 - 2021-10-19
 ### Fixed
 - Fixed bug: possibility to assign the article to the author himself

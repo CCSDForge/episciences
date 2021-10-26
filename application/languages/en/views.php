@@ -1444,6 +1444,7 @@ return [
     => "An invitation to review this article has been sent to this user, but she/he didn't give any answer yet",
     "Demandes de l'auteur : " => 'Author requests: ',
     "Invitation déclinée le : " => "Invitation declined on: ",
+    "Cette invitation n'existe pas !" => "This invitation does not exist!",
 
     /**
      * Website

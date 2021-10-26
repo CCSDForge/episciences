@@ -228,7 +228,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
         $xml = new Ccsd_DOMDocument();
         $xml->preserveWhiteSpace = false;
-        parent::loadXML($filepath);
+
         if (!$xml->load($filepath)) {
             return false;
         }
