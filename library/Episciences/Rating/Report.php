@@ -225,7 +225,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
         $xml = new Ccsd_DOMDocument();
         $xml->preserveWhiteSpace = false;
-        parent::loadXML($filepath);
+
         if (!$xml->load($filepath)) {
             return false;
         }
@@ -405,7 +405,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         return $this->_id;
     }
 
-    public function setId($id)
+    public function setId($id = null)
     {
         $this->_id = $id;
     }

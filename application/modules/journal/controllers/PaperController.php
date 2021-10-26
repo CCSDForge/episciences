@@ -2061,10 +2061,11 @@ class PaperController extends PaperDefaultController
         $grid = $paper->getGridPath();
 
         if (file_exists($grid)) {
-            $report = new Episciences_Rating_Report;
+            $report = new Episciences_Rating_Report();
             $report->setDocid($paper->getDocid());
             $report->setUid($reviewerUid);
             $report->loadXML($grid);
+            $report->setId(); // ids collision: (RT#138067)
             $report->save();
 
         } else {

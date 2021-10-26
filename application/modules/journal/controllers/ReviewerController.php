@@ -253,10 +253,11 @@ class ReviewerController extends PaperDefaultController
         // create rating report
         $grid = $paper->getGridPath();
         if (file_exists($grid)) {
-            $report = new Episciences_Rating_Report;
+            $report = new Episciences_Rating_Report();
             $report->setDocid($paper->getDocid());
             $report->setUid(Episciences_Auth::getUid());
             $report->loadXML($grid);
+            $report->setId(); // ids collision: (RT#138067)
             if (!$report->save()) {
                 trigger_error(sprintf('Saving Report for paperId %s and UID %s', $paper->getDocid(), Episciences_Auth::getUid()), E_USER_ERROR);
             }
