@@ -142,13 +142,18 @@ class CoiController extends PaperDefaultController
                 $ccRecipients = [];
                 Episciences_Review::checkReviewNotifications($ccRecipients);
 
-                if($paper->getEditor($loggedUid)){
-                    $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_EDITOR, null, $ccRecipients);
+                if ($coiReport === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']) {
+
+                    if ($paper->getEditor($loggedUid)) {
+                        $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_EDITOR, null, $ccRecipients);
+                    }
+
+                    if ($paper->getCopyEditor($loggedUid)) {
+                        $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_COPY_EDITOR, null, $ccRecipients);
+                    }
+
                 }
 
-                if($paper->getCopyEditor($loggedUid)){
-                    $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_COPY_EDITOR, null, $ccRecipients);
-                }
             }
 
             if ($coiReport === Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']) {
