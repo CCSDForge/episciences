@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+- Fixed bug: linked Data: conflict between DOI and SWHID: [97](https://github.com/CCSDForge/episciences/issues/97)
+
 ## 1.0.20.1 - 2021-10-28
 ### Fixed
 - Fixed bug: automatic designations of editors who answer "no" to the presence of a conflict of interest (gitlab #406)

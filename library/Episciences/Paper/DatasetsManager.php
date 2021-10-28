@@ -80,14 +80,16 @@ class Episciences_Paper_DatasetsManager
 
     /**
      * @param array $datasets
-     * @return bool
+     * @return int
      */
 
-    public static function insert(array $datasets): bool
+    public static function insert(array $datasets): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $success = false;
+
         $values = [];
+
+        $affectedRows = 0;
 
         foreach ($datasets as $dataset) {
 
@@ -95,7 +97,7 @@ class Episciences_Paper_DatasetsManager
                 $dataset = new Episciences_Paper_Dataset($dataset);
             }
 
-            $values[] = '(' . $db->quote($dataset->getDocId()) . ',' . $db->quote($dataset->getCode()) . ',' . $db->quote($dataset->getName()) . ',' . $db->quote($dataset->getValue()) . ',' . $db->quote($dataset->getLink()) . ',' . $db->quote($dataset->getSourceId())  . ')';
+            $values[] = '(' . $db->quote($dataset->getDocId()) . ',' . $db->quote($dataset->getCode()) . ',' . $db->quote($dataset->getName()) . ',' . $db->quote($dataset->getValue()) . ',' . $db->quote($dataset->getLink()) . ',' . $db->quote($dataset->getSourceId()) . ')';
         }
 
         $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS) . ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`) VALUES ';
@@ -103,14 +105,17 @@ class Episciences_Paper_DatasetsManager
         if (!empty($values)) {
             try {
                 //Prepares and executes an SQL
-                $db->query($sql . implode(', ', $values));
-                $success = true;
+                /** @var Zend_Db_Statement_Interface $result */
+                $result = $db->query($sql . implode(', ', $values));
+
+                $affectedRows = $result->rowCount();
+
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
             }
         }
 
-        return $success;
+        return $affectedRows;
 
     }
 
