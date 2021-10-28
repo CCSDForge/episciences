@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## 1.0.20.1 - 2021-10-28
+### Fixed
+- Fixed bug: automatic designations of editors who answer "no" to the presence of a conflict of interest (gitlab #406)
 
 ## 1.0.20 - 2021-10-26
 ### Fixed
