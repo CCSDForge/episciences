@@ -2417,15 +2417,15 @@ class Episciences_PapersManager
     /**
      * Update paper metadata
      * @param int $docId
-     * @return bool|int
+     * @return int
      * @throws Exception
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function updateRecordData(int $docId)
+    public static function updateRecordData(int $docId): int
     {
 
         if ($docId <= 0) {
-            return false;
+            return 0;
         }
 
         $affectedRows = 0;

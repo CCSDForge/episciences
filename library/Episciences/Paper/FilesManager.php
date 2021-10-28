@@ -80,10 +80,10 @@ class Episciences_Paper_FilesManager
 
     /**
      * @param array $files
-     * @return bool
+     * @return int
      */
 
-    public static function insert(array $files): bool
+    public static function insert(array $files): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $affectedRows = 0;
