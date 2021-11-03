@@ -694,7 +694,7 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * revision request answer form
+     * revision request answer form: answer without any modifications
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
      */
@@ -732,7 +732,7 @@ class PaperController extends PaperDefaultController
         $post = $request->getPost();
         $docId = $request->getQuery(self::DOC_ID_STR);
 
-        $message = "Votre réponse n'a pas pu être enregistrée : Merci de bien vouloir compléter les champs marqués d'un astérisque (*).";
+        $message = "Votre réponse n'a pas pu être enregistrée : merci de bien vouloir compléter les champs marqués d'un astérisque (*).";
         $nameSpace = 'error';
 
         if (!empty($post['comment']) && $request->isPost()) {

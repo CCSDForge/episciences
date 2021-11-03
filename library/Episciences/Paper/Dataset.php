@@ -35,17 +35,25 @@ class Episciences_Paper_Dataset
     /** @var DateTime */
     protected $_time = 'CURRENT_TIMESTAMP';
 
+    public const HAL_LINKED_DATA_DOI_CODE = 'researchData_s';
+    public const HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE = 'swhidId_s';
+    public const DOI_CODE = 'doi';
+    public const URL_CODE = 'url';
+    public const LINK_CODE = 'link';
+    public const SOFTWARE_CODE = 'software';
+
+
     public static $_datasetsLabel = [
 
-        'researchData_s' => 'doi',
-        'swhId_s' => 'software',
-        'url' => 'link'
+        self::HAL_LINKED_DATA_DOI_CODE =>  self::DOI_CODE,
+        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => self::SOFTWARE_CODE,
+        self::URL_CODE => self::LINK_CODE
     ];
 
     public static $_datasetsLink = [
-        'researchData_s' => 'https://doi.org/',
-        'doi' => 'https://doi.org/',
-        'swhId_s' => 'https://archive.softwareheritage.org/'
+        self::HAL_LINKED_DATA_DOI_CODE => 'https://doi.org/',
+        self::DOI_CODE => 'https://doi.org/',
+        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'https://archive.softwareheritage.org/'
     ];
 
     /**

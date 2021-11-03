@@ -2417,18 +2417,20 @@ class Episciences_PapersManager
     }
 
     /**
-     * met à jour les métadonnée
+     * Update paper metadata
      * @param int $docId
-     * @return bool|int
+     * @return int
      * @throws Exception
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function updateRecordData(int $docId)
+    public static function updateRecordData(int $docId): int
     {
 
         if ($docId <= 0) {
-            return false;
+            return 0;
         }
+
+        $affectedRows = 0;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2452,7 +2454,8 @@ class Episciences_PapersManager
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($docId);
             // add all files
-            Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
+            $hookFiles = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
+            $affectedRows += $hookFiles['affectedRows'];
         }
 
         // delete all paper datasets
@@ -2460,11 +2463,12 @@ class Episciences_PapersManager
 
         if (Episciences_Repositories::hasHook($repoId)) {
             // add all linked data if has hook
-            Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
+            $hookLikedData = Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
+            $affectedRows += $hookLikedData['affectedRows'];
 
         } else {
             // add all datasets for Hal repository
-            Episciences_Submit::datasetsProcessing($docId);
+            $affectedRows += Episciences_Submit::datasetsProcessing($docId);
 
         }
 
@@ -2472,7 +2476,9 @@ class Episciences_PapersManager
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;
 
-        return $db->update(T_PAPERS, $data, $where);
+        $affectedRows +=  $db->update(T_PAPERS, $data, $where);
+
+        return $affectedRows;
     }
 
     /**

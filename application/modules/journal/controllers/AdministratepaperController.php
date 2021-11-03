@@ -2909,44 +2909,46 @@ class AdministratepaperController extends PaperDefaultController
 
         $request = $this->getRequest();
 
-        $docId = (int)$request->getPost('docid');
+        if($request){
 
-        $result = 0;
+            $docId = (int)$request->getPost('docid');
+            $result = 0;
 
+            try {
+                $result = Episciences_PapersManager::updateRecordData($docId);
 
-        try {
-            $result = Episciences_PapersManager::updateRecordData($docId);
+                if ($result !== 0) {
+                    $message = "Les métadonnées de cet article ont bien été mises à jour.";
+                } else {
+                    $message = 'Les métadonnées de cet article sont à jour.';
+                }
 
-            if ($result != 0) {
-                $message = "Les métadonnées de cet article ont bien été mises à jour.";
-            } else {
-                $message = 'Les métadonnées de cet article sont à jour.';
-            }
-
-            // update index even if nothing changed
-            $paper = Episciences_PapersManager::get($docId);
-            if ($paper->isPublished()) {
-                $resOfIndexing = Episciences_Paper::indexPaper($docId, Ccsd_Search_Solr_Indexer::O_UPDATE);
-                if (!$resOfIndexing) {
-                    try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$docId], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
-                    } catch (Exception $e) {
-                        error_log($e->getMessage());
+                // update index even if nothing changed
+                $paper = Episciences_PapersManager::get($docId);
+                if ($paper->isPublished()) {
+                    $resOfIndexing = Episciences_Paper::indexPaper($docId, Ccsd_Search_Solr_Indexer::O_UPDATE);
+                    if (!$resOfIndexing) {
+                        try {
+                            Ccsd_Search_Solr_Indexer::addToIndexQueue([$docId], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                        } catch (Exception $e) {
+                            trigger_error($e->getMessage(), E_USER_WARNING);
+                        }
                     }
                 }
+
+            } catch (Exception $e) {
+                $message = "Une erreur interne s'est produite, veuillez recommencer.";
+                $jsonResult['error'] = $e->getMessage();
             }
 
-        } catch (Exception $e) {
-            $message = "Une erreur interne s'est produite, veuillez recommencer.";
-            $jsonResult['error'] = $e->getMessage();
+            $message = $this->view->translate($message);
+
+            $jsonResult['affectedRows'] = $result;
+            $jsonResult['message'] = $message;
+
+            echo json_encode($jsonResult);
+
         }
-
-        $message = $this->view->translate($message);
-
-        $jsonResult['affectedRows'] = $result;
-        $jsonResult['message'] = $message;
-
-        echo json_encode($jsonResult);
 
     }
 
