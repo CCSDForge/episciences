@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.20.2 - 2021-10-28
 ### Fixed
 - Fixed bug: linked Data: conflict between DOI and SWHID: [97](https://github.com/CCSDForge/episciences/issues/97)
+- Fixed: incorrect Grammar: [107](https://github.com/CCSDForge/episciences/issues/107)
 
 ## 1.0.20.1 - 2021-10-28
 ### Fixed
