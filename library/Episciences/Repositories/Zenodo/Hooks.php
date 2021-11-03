@@ -57,7 +57,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         unset($tmpData);
 
-        Episciences_Paper_FilesManager::insert($data);
+        $response['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
 
         return $response;
 
@@ -287,9 +287,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         unset($tmpData);
 
-        Episciences_Paper_DatasetsManager::insert($data);
+        $affectedRows = Episciences_Paper_DatasetsManager::insert($data);
+        $response = self::checkResponse($hookParams);
+        $response['affectedRows'] = $affectedRows;
 
-        return self::checkResponse($hookParams);
+        return $response;
 
     }
 

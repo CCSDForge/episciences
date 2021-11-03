@@ -1442,14 +1442,17 @@ class Episciences_Submit
     }
 
     /**
+     * Update paper datasets
      * @param int $docId
+     * @return int
      */
-
-    public static function datasetsProcessing(int $docId): void
+    public static function datasetsProcessing(int $docId): int
     {
         $cHeaders = [
             'headers' => ['Content-type' => 'application/json']
         ];
+
+        $affectedRows = 0;
 
         try {
             $paper = Episciences_PapersManager::get($docId, false);
@@ -1457,10 +1460,10 @@ class Episciences_Submit
             $client = new Client($cHeaders);
 
             if (Episciences_Repositories::getLabel($paper->getRepoid()) === 'Hal') {
-                $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhId_s,researchData_s&version_i:' . $paper->getversion();
+                $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhidId_s,researchData_s&version_i:' . $paper->getversion();
                 $response = $client->get($url);
                 $result = json_decode($response->getBody()->getContents(), true);
-                $allDatasets = $result['response']['docs'][0];
+                $allDatasets = $result['response']['docs'][Episciences_Tools::epi_array_key_first($result['response']['docs'])];
 
                 $data = [];
                 $tmpData = [];
@@ -1483,7 +1486,7 @@ class Episciences_Submit
 
                 }
 
-                Episciences_Paper_DatasetsManager::insert($data);
+                $affectedRows = Episciences_Paper_DatasetsManager::insert($data);
                 unset($tmpData, $data);
             }
 
@@ -1492,5 +1495,7 @@ class Episciences_Submit
             trigger_error($e->getMessage(), E_USER_ERROR);
 
         }
+
+        return $affectedRows;
     }
 }

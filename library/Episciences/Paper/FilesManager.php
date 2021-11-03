@@ -80,13 +80,13 @@ class Episciences_Paper_FilesManager
 
     /**
      * @param array $files
-     * @return bool
+     * @return int
      */
 
-    public static function insert(array $files): bool
+    public static function insert(array $files): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $success = false;
+        $affectedRows = 0;
         $values = [];
 
         foreach ($files as $file) {
@@ -103,14 +103,15 @@ class Episciences_Paper_FilesManager
         if (!empty($values)) {
             try {
                 //Prepares and executes an SQL
-                $db->query($sql . implode(', ', $values));
-                $success = true;
+                /** @var Zend_Db_Statement_Interface $result */
+                $result = $db->query($sql . implode(', ', $values));
+                $affectedRows = $result->rowCount();
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
             }
         }
 
-        return $success;
+        return $affectedRows;
 
     }
 

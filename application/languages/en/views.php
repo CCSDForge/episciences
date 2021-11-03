@@ -500,7 +500,7 @@ return [
     "Mes meilleures salutations" => "Best regards",
     "Fichier(s) joint(s)" => "Attachments",
     "Votre réponse n'a pas pu être enregistrée." => "Your answer could not be saved.",
-    "Votre réponse n'a pas pu être enregistrée : Merci de bien vouloir compléter les champs marqués d'un astérisque (*)." => "Your answer could not be saved: please note that fields marked with a star (*).",
+    "Votre réponse n'a pas pu être enregistrée : merci de bien vouloir compléter les champs marqués d'un astérisque (*)." => "Your answer could not be saved: please fill in the fields marked with a star (*).",
 
 
     // Gestion des grilles de relecture
