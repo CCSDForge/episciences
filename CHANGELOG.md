@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.21 - 2021-11-03
+### Added
+- Support new file extensions and mimetypes: RAR (with additional mimetype), GZ, DVI, EPS, PS
+
 ## 1.0.20.3 - 2021-11-03
 ### Fixed
 - Fixed: incorrect Grammar: [107](https://github.com/CCSDForge/episciences/issues/107)
