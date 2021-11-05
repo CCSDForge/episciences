@@ -1003,6 +1003,17 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => 'Copy editing: awaiting formatting by the author',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_ANSWER] => 'Copy editing: final version submitted, awaiting validation',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST] => 'Copy editing: the formatted version is accepted, waiting for the final version',
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_REQUEST]             =>  "revision request",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT]      =>  "revision request response (comment)",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION]  =>  "revision request response (temporary version)",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION]  =>  "revision request response (new version)",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION]       =>  "acceptance suggestion",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_SUGGESTION_REFUS]             =>  "refusal suggestion",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION]       =>  "revision suggestion",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_MONITORING_REFUSED]    =>  "refusal to follow up",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_COMMENT] => "editor's comment",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => "Copy editing: awaiting formatting by author",
+
     Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Update',
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'New publication date',
 

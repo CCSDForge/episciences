@@ -347,7 +347,7 @@ function step2() {
 
 // step 2 validation
 function validate_step2() {
-    var errors = [];
+    let errors = [];
 
     if (!$('#invitation-form').is(':visible')) {
         errors.push(translate('Veuillez choisir un relecteur'));
@@ -362,7 +362,16 @@ function validate_step2() {
     }
 
     if (!dateIsBetween($deadline_id.val(), $deadline_id.attr("attr-mindate"), $deadline_id.attr("attr-maxdate"))) {
-        errors.push(translate("La date limite de relecture doit être comprise entre le ") + $deadline_id.attr("attr-mindate") + ' et le ' + $deadline_id.attr("attr-maxdate"));
+
+        let betweenMsg = translate("La date limite de relecture doit être comprise entre");
+        betweenMsg += ' ';
+        betweenMsg += $deadline_id.attr("attr-mindate");
+        betweenMsg += ' ';
+        betweenMsg += translate('et');
+        betweenMsg += ' ';
+        betweenMsg += $deadline_id.attr("attr-maxdate");
+
+        errors.push(betweenMsg);
     }
 
     var body = tinymce.get('body').getContent();

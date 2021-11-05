@@ -522,8 +522,8 @@ function openModal(url, title, params, source) {
 
     // set css params
     if (params) {
-        for (var key in params) {
-            if ($('body').css(key) != 'undefined') {
+        for (let key in params) {
+            if ($('body').css(key) !== 'undefined') {
                 $modal_box.find('.modal-dialog').css(key, params[key]);
             }
         }
@@ -533,6 +533,8 @@ function openModal(url, title, params, source) {
     if (!modalStructureExists()) {
         return false;
     }
+
+    params.hidesubmit ? $modal_button.hide() : $modal_button.show();
 
     // run callback method (if there is one)
     if (params['callback']) {
@@ -603,8 +605,6 @@ function openModal(url, title, params, source) {
     $('#myModal').on('hidden.bs.modal', function () {
         // do something…
     })
-
-    return;
 }
 
 function resizeModal(width, height) {
