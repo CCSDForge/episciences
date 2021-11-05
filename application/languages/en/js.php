@@ -161,8 +161,8 @@ return [
     'Veuillez choisir un relecteur' => 'Please select a reviewer',
     'Veuillez saisir une date limite de relecture au format : AAAA-mm-jj' => 'Please select a reviewing deadline date with the following format: YYYY-mm-dd',
     "La date limite de relecture n'est pas valide" => 'The reviewing deadline date is not valid',
-    'La date limite de relecture doit être comprise entre le' => 'The reviewing deadline date should be between the ',
-    " et le " => ' and the ',
+    'La date limite de relecture doit être comprise entre' => 'The reviewing deadline date must be between',
+    'et' => 'and',
     'Veuillez saisir un message à destination du relecteur' => 'Please input a message for the reviewer',
     "Pensez à utiliser le tag %%INVITATION_URL%% pour que le relecteur puisse répondre à l'invitation" => 'You must use the tag %%INVITATION_URL%% so that the reviewer is able to answer the invitation',
 
