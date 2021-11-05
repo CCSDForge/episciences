@@ -30,10 +30,8 @@ $logs_with_details = [
 <?php foreach ($this->logs as $log) : ?>
 
     <?php if (in_array($log['ACTION'], $logs_with_details, false)) : ?>
-        <a    class="modal-opener"
-        href="/administratepaper/log?id=<?php echo $log['LOGID'] ?>"
-        data-width="50%"
-        title="<?php echo $this->translate($log['ACTION']) ?>">
+    <?php $logHref = '/administratepaper/log?id=' . $log['LOGID']; ?>
+        <a class="modal-opener" href="<?= $logHref ?>" data-width="50%" data-hidesubmit="true" title="<?= $this->translate($log['ACTION']) ?>">
     <?php endif; ?>
 
     <div
