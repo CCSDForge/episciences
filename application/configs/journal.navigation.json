@@ -39,7 +39,7 @@
         "controller": "paper",
         "action": "ratings",
         "resource": "paper-ratings",
-        "privilege": "reviewer",
+        "privilege": "member,reviewer",
         "pages": [
           {
             "label": "Toutes mes relectures",
