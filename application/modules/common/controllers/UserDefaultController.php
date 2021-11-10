@@ -364,6 +364,8 @@ class UserDefaultController extends Zend_Controller_Action
      * if logged in user is an admin, the new account is automatically validated, and no mail is sent
      * if user is logged in, but not an admin, he can't create a new account
      * if user is not logged in, this is a classic account creation (account is not validated, and a mail is sent)
+     * @throws Zend_Db_Statement_Exception
+     * @throws Exception
      */
     public function createAction(): void
     {
@@ -425,7 +427,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $selectedUserId = $request->getPost('selectedUserId');
+        $selectedUserId = (int)$request->getPost('selectedUserId');
 
         // create an episciences account from a CAS account
         if ($selectedUserId) {

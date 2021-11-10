@@ -63,17 +63,17 @@ class UserController extends UserDefaultController
         $this->view->submittedPapers = $review->getPapers($settings);
 
         // Bloc "Mes relectures"
-        if (Episciences_Auth::isReviewer() || Episciences_Auth::isAllowedToUploadPaperReport()) {
-            $reviewer = new Episciences_Reviewer();
-            $reviewer->find(Episciences_Auth::getUid());
 
-            $papers = $reviewer->getAssignedPapers(array('is' => array('rvid' => RVID)), true);
-            /** @var Episciences_Paper $paper */
-            foreach ($papers as $paper) {
-                $reviewer->getReviewing($paper->getDocid());
-            }
-            $this->view->reviewings = $reviewer->getReviewings();
+        $reviewer = new Episciences_Reviewer();
+        $reviewer->find(Episciences_Auth::getUid());
+
+        $papers = $reviewer->getAssignedPapers(array('is' => array('rvid' => RVID)), true);
+        /** @var Episciences_Paper $paper */
+        foreach ($papers as $paper) {
+            $reviewer->getReviewing($paper->getDocid());
         }
+        $this->view->reviewings = $reviewer->getReviewings();
+
 
         /*
         * Récupérer liste des articles qui m'ont été assignés pour relecture
