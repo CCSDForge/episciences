@@ -762,7 +762,7 @@ class Episciences_PapersManager
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getInvitations($docId, $status = null, $sorted = true)
+    public static function getInvitations($docId, $status = null, bool $sorted = true): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -785,6 +785,7 @@ class Episciences_PapersManager
         foreach ($source as $aid => $row) {
             $tmp = [];
             foreach ($row as $id => $invitation) {
+                $isTmpUser = false;
                 //recuperation du dernier état connu de l'invitation
                 if (empty($tmp)) {
                     $tmp = $invitation;
@@ -793,34 +794,41 @@ class Episciences_PapersManager
                 if (!empty($tmp) && $aid == $id) {
                     $tmp['ASSIGNMENT_DATE'] = $invitation['ASSIGNMENT_DATE'];
                 }
-            }
-            //fetch reviewer detail
-            if ($invitation['TMP_USER']) {
-                if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
-                    $reviewer = new Episciences_User_Tmp();
 
-                    if (!empty($reviewer->find($invitation['UID']))) {
-                        $reviewer->generateScreen_name();
-                        $reviewers[$invitation['UID']] = $reviewer;
+                //fetch reviewer detail
+                if ($invitation['TMP_USER']) {
+                    $isTmpUser = true;
+                    if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
+                        $reviewer = new Episciences_User_Tmp();
+
+                        if (!empty($reviewer->find($invitation['UID']))) {
+                            $reviewer->generateScreen_name();
+                            $reviewers[$invitation['UID']] = $reviewer;
+                        }
+
                     }
-
+                } else if (!array_key_exists($invitation['UID'], $reviewers)) {
+                    $reviewer = new Episciences_Reviewer;
+                    $reviewer->findWithCAS($invitation['UID']);
+                    $reviewers[$invitation['UID']] = $reviewer;
                 }
-            } else if (!array_key_exists($invitation['UID'], $reviewers)) {
-                $reviewer = new Episciences_Reviewer;
-                $reviewer->findWithCAS($invitation['UID']);
-                $reviewers[$invitation['UID']] = $reviewer;
-            }
-            $reviewer = $reviewers[$invitation['UID']];
-            $tmp['reviewer'] = [
-                'alias' => (is_a($reviewer, 'Episciences_Reviewer')) ? $reviewer->getAlias($docId) : null,
-                'fullname' => $reviewer->getFullName(),
-                'screenname' => $reviewer->getScreenName(),
-                'username' => $reviewer->getUsername(),
-                'email' => $reviewer->getEmail()
-            ];
 
-            $key = ($invitation['TMP_USER'] != 1) ? $invitation['UID'] : 'tmp_' . $invitation['UID'];
-            $invitations[$key][] = $tmp;
+                $reviewer = $reviewers[$invitation['UID']];
+
+                $tmp['reviewer'] = [
+                    'alias' => (is_a($reviewer, 'Episciences_Reviewer')) ? $reviewer->getAlias($docId) : null,
+                    'fullname' => $reviewer->getFullName(),
+                    'screenname' => $reviewer->getScreenName(),
+                    'username' => $reviewer->getUsername(),
+                    'email' => $reviewer->getEmail(),
+                    'hasLocalData' => !$isTmpUser ? $reviewer->hasLocalData() : false
+                ];
+
+
+                $key = !$isTmpUser ? $invitation['UID'] : 'tmp_' . $invitation['UID'];
+                $invitations[$key][] = $tmp;
+            }
+
         }
 
         if ($sorted) {

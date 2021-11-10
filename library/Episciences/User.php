@@ -508,12 +508,17 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * check if user exists in Episciences database
      *
-     * @param int $uid
+     * @param int|null $uid
      * @return boolean
      * @throws Zend_Db_Statement_Exception
      */
-    public function hasLocalData($uid): bool
+    public function hasLocalData(int $uid = null): bool
     {
+
+        if(!$uid){
+            $uid = $this->getUid();
+        }
+
         $select = $this->_db->select()
             ->from(T_USERS, ['nombre' => 'COUNT(UID)'])
             ->where('UID = ?', $uid);
