@@ -8,9 +8,7 @@ $request = Zend_Controller_Front::getInstance()->getRequest();
 $controller = $request->getControllerName();
 $action = $request->getActionName();
 $url = $request->getScheme() . '://' . $request->getHttpHost() . $request->getRequestUri();
-/** @var Episciences_Reviewer[] $reviewers */
 $reviewers = $paper->getReviewers();
-/** @var Episciences_Rating_Report[] $ratings */
 $ratings = $paper->getRatings();
 ?>
 
@@ -107,7 +105,7 @@ $ratings = $paper->getRatings();
 
                                     <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
                                         <div class="reviewer">
-                                            <img src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])); ?>/uid/<?= $invitation['UID']; ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                                            <img src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                                                  class="user-photo-small" alt="avatar">
 
                                             <button class="btn btn-default fas fa-ellipsis-v popover-link context-button"
@@ -124,10 +122,30 @@ $ratings = $paper->getRatings();
                                             </button>
 
 
-                                            <span style="margin-left: 0.5em;"><strong><?php echo $this->escape($invitation['reviewer']['fullname']) ?></strong>
-                                                <?php if ($invitation['TMP_USER']) echo '(' . $this->translate("compte temporaire") . ')'; ?>
+                                            <span style="margin-left: 0.5em;"><strong><?= $this->escape($invitation['reviewer']['fullname']) ?></strong>
+                                                <?php if ($invitation['TMP_USER']) {
+                                                    echo '(' . $this->translate("compte temporaire") . ')';
+                                                }else{
+                                                    $userTag = ' [ <mark>';
+                                                    $userTag .= ' UID';
+                                                    $userTag .= $this->translate(' :');
+                                                    $userTag .= ' ';
+                                                    $userTag .= '<code>';
+                                                    $userTag .= $invitation['UID'];
+                                                    $userTag .= '</code>';
+
+                                                    if(!$invitation['reviewer']['hasLocalData']){
+                                                        $userTag .= ' ( <small>' . strtoupper($this->translate("l'utilisateur n'a pas encore de profil")) . ' </small>)';
+                                                    }
+
+                                                    $userTag .= '</mark>';
+                                                    $userTag .= ' ]';
+
+                                                    echo $userTag;
+                                                }
+                                                ?>
                                                 <?php if ($invitation['reviewer']['alias']) : ?>
-                                                - <?php echo $this->translate('relecteur') . ' ' . $this->escape($invitation['reviewer']['alias']) ?>
+                                                    - <?php echo $this->translate('relecteur') . ' ' . $this->escape($invitation['reviewer']['alias']) ?>
                                                 <?php endif; ?>
                                                 </span>
 
