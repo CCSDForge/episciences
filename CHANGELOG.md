@@ -14,11 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
+### Fixed
 - Fixed: "Cancel" and "Submit" buttons when selecting the details of an item in an article's history: [106](https://github.com/CCSDForge/episciences/issues/106): replaced by a single "Close" button
 - Fixed:  non-localized text when setting a reviewing deadline which is too large: [112](https://github.com/CCSDForge/episciences/issues/112)
-- Reviewers invitations: identify the account with which the user has been invited.
 - Fixed: pending invitations are not displayed in the user's dashboard if they are not already a reviewer.
+### Added
+- Reviewers invitations: identify the account with which the user has been invited.
 
 ## 1.0.21 - 2021-11-03
 ### Added
