@@ -445,8 +445,16 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
             phpCAS::setFixedServiceURL($this->getServiceURL());
         }
 
+
+        try {
+           $userLanguage = Zend_Registry::get('lang');
+        } catch (Zend_Exception $exception) {
+            $userLanguage = Episciences_Translation_Plugin::LANG_EN;
+        }
+
         // force CAS authentication
         try {
+            phpCAS::setServerLoginURL(phpCAS::getServerLoginURL() . '&locale=' . $userLanguage);
             $resultOfAuth = phpCAS::forceAuthentication();
         } catch (Exception $e) {
             $resultOfAuth = false;
@@ -460,7 +468,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
                 $user = new Ccsd_User_Models_User();
             }
             /**
-             * Theses attributes must be sent by CAS server
+             * These attributes must be sent by CAS server
              */
             $user->setEmail(phpCAS::getAttribute('EMAIL'));
             $user->setUid(phpCAS::getAttribute('UID'));
