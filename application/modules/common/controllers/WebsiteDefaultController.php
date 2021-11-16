@@ -24,7 +24,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function commonAction()
     {
-        $common = new Ccsd_Website_Common(RVID, ['languages' => Episciences_Translation_Plugin::getAvalaibleLanguages()]);
+        $common = new Ccsd_Website_Common(RVID, ['languages' => Episciences_Translation_Plugin::getAvailableLanguages()]);
         $form = $common->getForm();
         if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
             $common->save($form->getValues());
