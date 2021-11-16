@@ -15,14 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
-### Fixed
-- Fixed: "Cancel" and "Submit" buttons when selecting the details of an item in an article's history: [106](https://github.com/CCSDForge/episciences/issues/106): replaced by a single "Close" button
-- Fixed:  non-localized text when setting a reviewing deadline which is too large: [112](https://github.com/CCSDForge/episciences/issues/112)
-- Fixed: pending invitations are not displayed in the user's dashboard if they are not already a reviewer.
+## 1.0.22 - 2021-11-16
 ### Added
 - Reviewers invitations: identify the account with which the user has been invited.
+- [#115](https://github.com/CCSDForge/episciences/issues/115) Set CAS UI language according to journal's language
+- [#110](https://github.com/CCSDForge/episciences/issues/110) Add missing translations
 
+### Fixed
+- Fixed: "Cancel" and "Submit" buttons when selecting the details of an item in an article's history: [106](https://github.com/CCSDForge/episciences/issues/106): replaced by a single "Close" button
+- Fixed: non-localized text when setting a reviewing deadline which is too large: [112](https://github.com/CCSDForge/episciences/issues/112)
+- Fixed: pending invitations are not displayed in the user's dashboard if they are not already a reviewer.
+- Fixed: [#107](https://github.com/CCSDForge/episciences/issues/107) Small grammar problem
+ 
 ## 1.0.21 - 2021-11-03
 ### Added
 - Support new file extensions and mimetypes: RAR (with additional mimetype), GZ, DVI, EPS, PS
