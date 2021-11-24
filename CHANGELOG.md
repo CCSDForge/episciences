@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 
+## 1.0.22.2 - 2021-11-24
+### Changed
+- Renamed logo file to prevent browser cache ; cleaned commented HTML Code
+
 ## 1.0.22.1 - 2021-11-24
 ### Changed
 - New logos and favicons
