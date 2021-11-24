@@ -131,7 +131,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
                 <div class="logo-episciences">
                     <a class="brand" href="https://www.<?php echo DOMAIN; ?>">
-                        <img src="/img/episciences_tampon_50x50.png"
+                        <img src="/img/episciences_sign_50x50.png"
                              style="border: 0;"
                              alt="Logo"/></a>
                     <?php
