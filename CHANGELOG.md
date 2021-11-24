@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+
+## 1.0.22.1 - 2021-11-24
+### Changed
+- New logos and favicons
+
 ## 1.0.22 - 2021-11-16
 ### Added
 - Reviewers invitations: identify the account with which the user has been invited.
