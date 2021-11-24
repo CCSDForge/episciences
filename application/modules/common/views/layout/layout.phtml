@@ -17,8 +17,6 @@ echo $this->doctype('HTML5');
     <?php if (APPLICATION_ENV != ENV_PROD) : ?>
         <meta name="robots" content="noindex">
     <?php endif; ?>
-
-    <link rel="icon" type="image/png" href="/img/favicon.ico"/>
     <?php
     // set head title **********************
     if ($this->headTitle()->getContainer() == '' && $this->layout()->pageTitle) {
