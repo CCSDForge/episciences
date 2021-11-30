@@ -131,9 +131,9 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
                 <div class="logo-episciences">
                     <a class="brand" href="https://www.<?php echo DOMAIN; ?>">
-                        <img src="/img/episciences_tampon_50x50.png"
+                        <img srcset="/img/episciences.svg" src="/img/episciences.png" height="45px"
                              style="border: 0;"
-                             alt="Logo"/></a>
+                             alt="Episciences overlay journals"/></a>
                     <?php
                     if ($this->_labelEnv != false) { ?>
                         <span style="margin-left: 8px;"

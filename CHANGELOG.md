@@ -15,7 +15,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+
 ## Unreleased
+- Editors' choice at time of submission: informative text added. (gitlab #369)
+- Fixed mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
+- Make the version number more explicit when proposing a new version
+- Refactoring
+- Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
+- fixed: IDE warnings
+- Dumping default data for table `MAIL_TEMPLATE`
+
+## 1.0.22.3 - 2021-11-30
+### Changed
+- New SVG logo + PNG fallback
+
+## 1.0.22.2 - 2021-11-24
+### Changed
+- Renamed logo file to prevent browser cache ; cleaned commented HTML Code
+
+## 1.0.22.1 - 2021-11-24
+### Changed
+- New logos and favicons
+
+## 1.0.22 - 2021-11-16
 ### Added
 - Reviewers invitations: identify the account with which the user has been invited.
 - [#115](https://github.com/CCSDForge/episciences/issues/115) Set CAS UI language according to journal's language
@@ -23,10 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed: "Cancel" and "Submit" buttons when selecting the details of an item in an article's history: [106](https://github.com/CCSDForge/episciences/issues/106): replaced by a single "Close" button
-- Fixed: non-localized text when setting a reviewing deadline which is too large: [112](https://github.com/CCSDForge/episciences/issues/112)
+- Fixed:  non-localized text when setting a reviewing deadline which is too large: [112](https://github.com/CCSDForge/episciences/issues/112)
+- Reviewers invitations: identify the account with which the user has been invited.
 - Fixed: pending invitations are not displayed in the user's dashboard if they are not already a reviewer.
 - Fixed: [#107](https://github.com/CCSDForge/episciences/issues/107) Small grammar problem
- 
+
 ## 1.0.21 - 2021-11-03
 ### Added
 - Support new file extensions and mimetypes: RAR (with additional mimetype), GZ, DVI, EPS, PS
@@ -43,15 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.20.1 - 2021-10-28
 ### Fixed
 - Fixed bug: automatic designations of editors who answer "no" to the presence of a conflict of interest (gitlab #406)
-
-## Unreleased
-- Editors' choice at time of submission: informative text added. (gitlab #369)
-- Fixed mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
-- Make the version number more explicit when proposing a new version
-- Refactoring
-- Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
-- fixed: IDE warnings
-- Dumping default data for table `MAIL_TEMPLATE`
 
 ## 1.0.20 - 2021-10-26
 ### Fixed
