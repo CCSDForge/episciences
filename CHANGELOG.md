@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.22.3 - 2021-11-30
+### Changed
+- New SVG logo + PNG fallback
 
 ## 1.0.22.2 - 2021-11-24
 ### Changed
