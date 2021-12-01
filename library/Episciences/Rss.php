@@ -19,7 +19,7 @@ class Episciences_Rss
 				'link' => APPLICATION_URL,
 				'charset' => 'utf-8' ,
 				'language' => Zend_Registry::get('Zend_Locale')->toString(),
-				'image' => APPLICATION_URL . '/img/logo-episciences-med.png' ,
+				'image' => APPLICATION_URL . '/img/episciences_sign_50x50.png' ,
 				'entries' => array()));
 		
 		$method = 'list' . ucfirst(strtolower($settings["action"]));
