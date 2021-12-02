@@ -150,6 +150,34 @@ class PaperController extends PaperDefaultController
 
         $this->updatePaperStats($paper);
 
+        if ($paper->hasDoi()) {
+            $headerLinks[] = sprintf('<https://%s>; rel="cite-as"', $paper->getDoi()) ;
+        }
+
+
+
+
+        $paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
+
+        $alternateContentTypes['bibtex']='application/x-bibtex';
+        $alternateContentTypes['tei']='application/xml';
+        $alternateContentTypes['dc']='application/xml';
+        $alternateContentTypes['datacite']='application/xml';
+        $alternateContentTypes['crossref']='application/xml';
+        $alternateContentTypes['pdf']='application/pdf';
+
+        foreach ($alternateContentTypes as $format => $mimeType) {
+            if ($format === 'pdf') {
+                $headerLinks[] = sprintf('<%s/%s>; rel="alternate"; type="%s"', $paperUrl, $format, $mimeType);
+            } else {
+                $headerLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"; title="%s"', $paperUrl, $format, $mimeType,strtoupper($format));
+            }
+        }
+
+
+        $this->getResponse()->setHeader('Link', implode(', ', $headerLinks));
+
+
         // if paper is obsolete, display a warning
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();
