@@ -21,7 +21,7 @@ if (file_exists(__DIR__ . "/loadHeader.php")) {
 
 /**
  *  display errors
- * @param $opts
+ * @param Zend_Console_Getopt $opts
  * @param $msg
  */
 function displayError(Zend_Console_Getopt $opts, $msg)
@@ -41,7 +41,7 @@ function displayError(Zend_Console_Getopt $opts, $msg)
  * @param bool $localDebug
  * @param bool $logInFile
  */
-function displayMessage($msg, $color = 'default', $localDebug = false, $logInFile = true)
+function displayMessage($msg, string $color = 'default', bool $localDebug = false, bool $logInFile = true)
 {
     echo $localDebug ? Episciences_Tools::$bashColors[$color] . $msg . Episciences_Tools::$bashColors['default'] . PHP_EOL : '';
 
@@ -147,7 +147,7 @@ try {
         // loop through reminders
         foreach ($remindersData as $index => $data) {
 
-            if ($data['RVID'] != $review->getRvid()) {
+            if ((int)$data['RVID'] !== $review->getRvid()) {
                 continue;
             }
 
@@ -159,7 +159,7 @@ try {
             // Sauf les relances de relecture dépendent du paramètre "rating_deadline"
             $ratingReminders = [Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE, Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE];
 
-            if (in_array($reminder->getType(), $ratingReminders)) {
+            if (in_array($reminder->getType(), $ratingReminders, false)) {
                 $reminder->setDeadline($review->getSetting('rating_deadline'));
             }
 
@@ -172,6 +172,8 @@ try {
                 unset($remindersData[$index]);
                 continue;
             }
+
+            $origin = new DateTime("now");
 
             foreach ($recipients as $recipient) {
 
@@ -188,7 +190,15 @@ try {
                 $mail->setRvid($review->getRvid());
                 $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $rvCode);
                 $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, $review->getName());
-                $mail->addTag(Episciences_Mail_Tags::TAG_REMINDER_DELAY, $reminder->getDelay());
+
+                if (isset($recipient['deadline'])) {
+
+                    $target = date_create($recipient['deadline']);
+                    $interval = $origin->diff($target, true)->format('%a'); // in days
+
+                    $mail->addTag(Episciences_Mail_Tags::TAG_REMINDER_DELAY, $interval);
+                }
+
                 foreach ($tags as $name => $value) {
                     $mail->addTag($name, $value);
                 }
