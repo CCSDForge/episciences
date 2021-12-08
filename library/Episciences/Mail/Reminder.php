@@ -1029,7 +1029,7 @@ class Episciences_Mail_Reminder
                 continue;
             }
 
-            $lang = 'en';
+            $lang = $this->_defaultLanguage;
             $fullname = 'is probably undefined';
             $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/';
 
