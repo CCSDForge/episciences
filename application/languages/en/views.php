@@ -1283,6 +1283,7 @@ return [
     "en attente de modifications majeures" => "pending major revision",
     "en attente d'éclaircissements" => "pending clarification",
     "version temporaire" => "temporary version",
+    "version temporaire acceptée" => "temporary version accepted",
     "Vous n'avez soumis aucun papier pour le moment" => "You have not submitted any paper yet",
     "Aucun article pour le moment" => "No article yet",
     "Modifier le contenu de la page" => "Edit content page",
@@ -1637,6 +1638,7 @@ return [
     "articles publiés" => 'published articles',
     "article abandonné" => "abandonned article",
     "articles abandonnés" => "abandonned articles",
+    "versions temporaires acceptées" => "accepted temporary versions",
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',

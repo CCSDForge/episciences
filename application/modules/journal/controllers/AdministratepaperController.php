@@ -486,7 +486,7 @@ class AdministratepaperController extends PaperDefaultController
         $isConflictDetected =
             !Episciences_Auth::isSecretary() && $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
             (
-                in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
+            in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
             );
 
         $isOwnSubmission = $loggedUid === $paper->getUid();
@@ -739,7 +739,7 @@ class AdministratepaperController extends PaperDefaultController
         // other versions block
         $versions = [];
 
-        foreach ($paper->getVersionsIds() as $version => $docId){
+        foreach ($paper->getVersionsIds() as $version => $docId) {
             $versions[$version] = Episciences_PapersManager::get($docId, false);
         }
 
@@ -1033,7 +1033,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 //[COI] When inviting an reviewer; do not propose user that have confirmed (answer = yes) a COI in the user list
 
-                foreach ($this->usersWithReportedCoiProcessing($oPaper) as $uid => $user){
+                foreach ($this->usersWithReportedCoiProcessing($oPaper) as $uid => $user) {
                     unset($oReviewers[$uid]);
                 }
 
@@ -1615,32 +1615,9 @@ class AdministratepaperController extends PaperDefaultController
             if ($paper->getRepoid()) {
                 // repository version
                 $status = Episciences_Paper::STATUS_ACCEPTED;
-            } else {
-                // tmp version
+            } else { // tmp version
 
-                // save comment (revision request)
-                $status = Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
-                $subject = $data['acceptancesubject'];
-                $message = $data['acceptancemessage'];
-                $comment = new Episciences_Comment([
-                    'docid' => $docId,
-                    'uid' => $doneByUid,
-                    'message' => $message,
-                    'type' => Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-                    'options' => []
-                ]);
-                $comment->save();
-
-                // log minor/major revision request
-                $paper->log(
-                    Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
-                    $doneByUid,
-                    [
-                        'id' => $comment->getPcid(),
-                        'deadline' => null,
-                        'subject' => $subject,
-                        'message' => $message
-                    ]);
+                $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED;
             }
 
             // update paper status
@@ -2389,7 +2366,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // log assignment
             if (
-            !$paper->log($loggerType, Episciences_Auth::getUid(), ["aid" => $aid, "user" => $assignedUser->toArray()])
+                !$paper->log($loggerType, Episciences_Auth::getUid(), ["aid" => $aid, "user" => $assignedUser->toArray()])
             ) {
                 error_log('Error: failed to log ' . $loggerType . ' AID : ' . $aid . ' UID : ' . $assignedUser->getUid());
             }
@@ -2496,7 +2473,7 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setOtherVolumes($paper_volumes);
             $paper->saveOtherVolumes();
             $oOVolumes = $paper->getOtherVolumes(true);
-            $oVolumes= [];
+            $oVolumes = [];
 
             /** @var Episciences_Volume_Paper $oOVolume */
 
@@ -2909,7 +2886,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $request = $this->getRequest();
 
-        if($request){
+        if ($request) {
 
             $docId = (int)$request->getPost('docid');
             $result = 0;
@@ -3988,7 +3965,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId);
 
-        if($paper->isImported()){
+        if ($paper->isImported()) {
             return false;
         }
 
@@ -4054,7 +4031,7 @@ class AdministratepaperController extends PaperDefaultController
                             }
                         }
 
-                        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' =>  Episciences_View_Helper_Date::Date($oldDate, $local), 'newDate' => $localDate];
+                        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => Episciences_View_Helper_Date::Date($oldDate, $local), 'newDate' => $localDate];
                         $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
                     }
 

@@ -11,7 +11,6 @@ $waitingAuthorSources = "Demander à l'auteur ses sources (À mettre en forme pa
 $waitingFinalVersion = "Demander la version finale (À mettre en forme par l’auteur)";
 $reviewFormattingMsg = 'Mise en forme revue terminée, demander la version finale';
 $validFinalVersionMsg = 'Accepter comme version finale';
-$suggestionInfoMsg = "Votre suggestion à déjà été enregistrée.";
 $assignedCopyEditors = $paper->getCopyEditors();
 $isAssignedCopyEditors = !empty($paper->getCopyEditors());
 $copyEditingNotStarted = !$paper->copyEditingProcessStarted();
@@ -45,7 +44,7 @@ if (Episciences_Auth::isSecretary()) : ?>
                        data-target=".major-revision-modal"><?php echo $this->translate('Demander des modifications majeures') ?></a>
                 </li>
 
-            <?php elseif ($paper->isAccepted()) : ?>
+            <?php elseif ($paper->isAccepted() || $paper->isTmpVersionAccepted()) : ?>
                 <?php // Préparation de copie: en attente des sources auteurs?>
                 <li>
                     <a href="#" data-toggle="modal"
@@ -60,7 +59,7 @@ if (Episciences_Auth::isSecretary()) : ?>
                 </li>
 
                 <!-- publish paper -->
-                <?php if ($copyEditingNotStarted) : ?>
+                <?php if ($copyEditingNotStarted && !$paper->isTmp()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".publication-modal"><?php echo $this->translate($publishMsg); ?>
