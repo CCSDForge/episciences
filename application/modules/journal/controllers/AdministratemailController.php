@@ -219,13 +219,13 @@ class AdministratemailController extends Zend_Controller_Action
                 $editor = new Episciences_Editor();
                 $editor->find(Episciences_Auth::getUid());
 
-                if ($review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS)) {
-                    $papers = $editor->getAssignedPapers();
-                    $docIds = array_keys($papers);
-
-                } elseif ($review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED)) {
+                if ($review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED)) {
                     $docIds = $this->papersNotInConflictProcessing($editor);
                     $options['isCoiEnabled'] = true;
+
+                } elseif ($review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS)) {
+                    $papers = $editor->getAssignedPapers();
+                    $docIds = array_keys($papers);
                 }
 
             } else {
