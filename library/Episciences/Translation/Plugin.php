@@ -7,8 +7,14 @@
 class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
 {
 
-    const LANG_FR = 'fr';
-    const LANG_EN = 'en';
+    public const LANG_FR = 'fr';
+    public const LANG_EN = 'en';
+
+    /**
+     * @var string[] Application languages
+     */
+    protected static $_availableLanguages = [self::LANG_EN, self::LANG_FR];
+
 
     /**
      * Essaie de trouver une langue disponible d'après :
@@ -83,7 +89,7 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
             $website = new Ccsd_Website_Common(RVID, array('sidField' => 'SID'));
             $languages = $website->getLanguages();
             if (count($languages) == 0) {
-                $languages = self::getAvalaibleLanguages();
+                $languages = self::getAvailableLanguages();
             }
             Zend_Registry::set('languages', $languages);
         }
@@ -93,16 +99,9 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
      * Retourne les langues disponibles de la plateforme
      * @return array
      */
-    public static function getAvalaibleLanguages()
+    public static function getAvailableLanguages(): array
     {
-        $languages = array();
-        $reflect = new ReflectionClass('Episciences_Translation_Plugin');
-        foreach ($reflect->getConstants() as $const => $value) {
-            if (substr($const, 0, 5) === 'LANG_') {
-                $languages[] = $value;
-            }
-        }
-        return $languages;
+        return self::$_availableLanguages;
     }
 
     /**
@@ -182,4 +181,5 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
             return null;
         }
     }
+
 }

@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
 - fixed: IDE warnings
 - Dumping default data for table `MAIL_TEMPLATE`
+- Fixed: Inconsistent REMINDER_DELAY: the displayed value is the "delay" parameter of the reminder instead of the calculated value (interval in number of days between the time the reminder was sent and the deadline.
+- Fixed: new submission: "submission date" metadata is empty: do not display it anymore.
+
 
 ## 1.0.22.3 - 2021-11-30
 ### Changed

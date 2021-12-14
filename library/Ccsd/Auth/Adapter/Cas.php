@@ -85,9 +85,9 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * Définit si PhpCAS doit démarrer les sessions : non si c'est déjà géré par
      * l'application
      *
-     * @var string
+     * @var bool
      */
-    protected $_casStartSessions;
+    protected $_casStartSessions = false;
 
     /**
      * Définit si on doit faire la validation SSL du serveur CAS
@@ -108,7 +108,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @var string
      */
-    protected $_serviceURL;
+    protected $_serviceURL = '';
 
     /**
      * Structure de l'identité d'un utilisateur
@@ -154,18 +154,18 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @return string Nom de l'hôte
      */
-    static function getCurrentHostname()
+    public static function getCurrentHostname(): string
     {
-        if ((isset($_SERVER['HTTPS'])) && ($_SERVER['HTTPS'] != '')) {
+        if ((isset($_SERVER['HTTPS'])) && ($_SERVER['HTTPS'] !== '')) {
             $scheme = 'https://';
         } else {
             $scheme = 'http://';
         }
 
-            $hostname = $scheme . $_SERVER['SERVER_NAME'];
+        $hostname = $scheme . $_SERVER['SERVER_NAME'];
 
 
-        if ((isset($_SERVER['SERVER_PORT'])) && ($_SERVER['SERVER_PORT'] != '')) {
+        if ((isset($_SERVER['SERVER_PORT'])) && ($_SERVER['SERVER_PORT'] !== '')) {
             switch ($_SERVER['SERVER_PORT']) {
                 case '443':
                 case '':
@@ -183,7 +183,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
     /**
      * @return Ccsd_User_Models_User
      */
-    public function getIdentityStructure()
+    public function getIdentityStructure(): ?Ccsd_User_Models_User
     {
         return $this->_identityStructure;
     }
@@ -193,68 +193,19 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @param $identity
      */
-    public function setIdentityStructure($identity)
+    public function setIdentityStructure($identity): void
     {
         // Par compat, on met la structure dans identity aussi
         $this->_identity = $identity;
         $this->_identityStructure = $identity;
     }
 
-    /**
-     * Nouvelle méthode d'authentification
-     * @see Zend_Auth_Adapter_Interface::authenticate()
-     */
-
-    public function authenticate2()
-    {
-
-        //initialisation du connecteur CAS
-        if (!isset($PHPCAS_CLIENT)) {
-            phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(), $this->getCasStartSessions());
-        }
-
-
-        if (defined('CAS_SERVICE_LOG_PATH')) {
-            if (CAS_SERVICE_LOG_PATH !== '') {
-                phpCAS::setDebug(CAS_SERVICE_LOG_PATH);
-            } else {
-                phpCAS::setDebug(realpath(sys_get_temp_dir()) . '/cas.log');
-            }
-        }
-
-        if ($this->getCasSslValidation() === false) {
-            // no SSL validation for the CAS server
-            phpCAS::setNoCasServerValidation();
-        } else {
-            phpCAS::setCasServerCACert($this->getCasCACert());
-        }
-        // Url de retour/service après authentification
-        if (null !== $this->getServiceURL()) {
-            phpCAS::setFixedServiceURL($this->getServiceURL());
-        }
-
-        // force CAS authentication
-        try {
-            $resultOfAuth = phpCAS::forceAuthentication();
-        } catch (Exception $e) {
-            $resultOfAuth = false;
-        }
-
-        if ($resultOfAuth) {
-            // retour des informations d'authentification
-            $uid = phpCAS::getAttribute('UID');
-            return new Zend_Auth_Result(Zend_Auth_Result::SUCCESS, $uid, []);
-        }
-
-        return new Zend_Auth_Result(Zend_Auth_Result::FAILURE, new Ccsd_User_Models_User(), ["Échec de l'authentification depuis CAS"]);
-
-    }
 
     /**
      *
      * @return string $_casVersion
      */
-    public function getCasVersion()
+    public function getCasVersion(): string
     {
         return $this->_casVersion;
     }
@@ -264,7 +215,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * @param string $_casVersion
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setCasVersion($_casVersion)
+    public function setCasVersion(string $_casVersion): Ccsd_Auth_Adapter_Cas
     {
         $this->_casVersion = $_casVersion;
         return $this;
@@ -274,7 +225,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @return string $_casHostname
      */
-    public function getCasHostname()
+    public function getCasHostname(): string
     {
         return $this->_casHostname;
     }
@@ -284,7 +235,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * @param string $_casHostname
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setCasHostname($_casHostname)
+    public function setCasHostname(string $_casHostname): Ccsd_Auth_Adapter_Cas
     {
         $this->_casHostname = $_casHostname;
         return $this;
@@ -292,21 +243,21 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
 
     /**
      *
-     * @return string $_casPort
+     * @return int $_casPort
      */
-    public function getCasPort()
+    public function getCasPort(): int
     {
         return $this->_casPort;
     }
 
     /**
      *
-     * @param string $_casPort
+     * @param int $_casPort
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setCasPort($_casPort)
+    public function setCasPort(int $_casPort): Ccsd_Auth_Adapter_Cas
     {
-        $this->_casPort = (int)$_casPort;
+        $this->_casPort = $_casPort;
         return $this;
     }
 
@@ -314,7 +265,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @return string $_casUrl
      */
-    public function getCasUrl()
+    public function getCasUrl(): string
     {
         return $this->_casUrl;
     }
@@ -324,7 +275,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * @param string $_casUrl
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setCasUrl($_casUrl)
+    public function setCasUrl(string $_casUrl): Ccsd_Auth_Adapter_Cas
     {
         $this->_casUrl = $_casUrl;
         return $this;
@@ -332,9 +283,9 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
 
     /**
      *
-     * @return string $_casStartSessions
+     * @return bool $_casStartSessions
      */
-    public function getCasStartSessions()
+    public function getCasStartSessions(): bool
     {
         return $this->_casStartSessions;
     }
@@ -344,7 +295,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * @param bool $_casStartSessions
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setCasStartSessions($_casStartSessions = false)
+    public function setCasStartSessions(bool $_casStartSessions): Ccsd_Auth_Adapter_Cas
     {
         $this->_casStartSessions = (bool)$_casStartSessions;
         return $this;
@@ -354,7 +305,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @return bool $_casSslValidation
      */
-    public function getCasSslValidation()
+    public function getCasSslValidation(): bool
     {
         return $this->_casSslValidation;
     }
@@ -364,7 +315,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * @param bool $_casSslValidation
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setCasSslValidation($_casSslValidation)
+    public function setCasSslValidation(bool $_casSslValidation): Ccsd_Auth_Adapter_Cas
     {
         $this->_casSslValidation = $_casSslValidation;
         return $this;
@@ -374,7 +325,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @return string $_casCACert
      */
-    public function getCasCACert()
+    public function getCasCACert(): string
     {
         return $this->_casCACert;
     }
@@ -384,7 +335,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * @param string $_casCACert
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setCasCACert($_casCACert)
+    public function setCasCACert(string $_casCACert): Ccsd_Auth_Adapter_Cas
     {
         $this->_casCACert = $_casCACert;
         return $this;
@@ -394,7 +345,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      *
      * @return string $_serviceURL
      */
-    public function getServiceURL()
+    public function getServiceURL(): string
     {
         return $this->_serviceURL;
     }
@@ -404,13 +355,15 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * @param string[] $params
      * @return Ccsd_Auth_Adapter_Cas
      */
-    public function setServiceURL($params = [])
+    public function setServiceURL(array $params = []): Ccsd_Auth_Adapter_Cas
     {
-        $_serviceURL = $this->buildLoginDestinationUrl($params);
+        $_serviceURL = '';
 
-        if (isset($_serviceURL)) {
-            $this->_serviceURL = $_serviceURL;
+        if (!empty($params)) {
+            $_serviceURL = $this->buildLoginDestinationUrl($params);
         }
+
+        $this->_serviceURL = $_serviceURL;
 
         return $this;
     }
@@ -419,11 +372,12 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * Authentification d'un utilisateur
      * @see Zend_Auth_Adapter_Interface::authenticate()
      */
-    public function authenticate()
+    public function authenticate(): Zend_Auth_Result
     {
 
         if (!isset($PHPCAS_CLIENT)) {
             phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(), $this->getCasStartSessions());
+
         }
 
         if (defined('CAS_SERVICE_LOG_PATH')) {
@@ -441,7 +395,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
             phpCAS::setCasServerCACert($this->getCasCACert());
         }
         // Url de retour/service après authentification
-        if (null != $this->getServiceURL()) {
+        if ('' !== $this->getServiceURL()) {
             phpCAS::setFixedServiceURL($this->getServiceURL());
         }
 
@@ -488,7 +442,6 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
      * Déconnexion de l'utilisateur, avec URL de retour/destination facultative
      *
      * @param string $urlDeDestination
-     *            URL de retour/destination
      */
     public function logout($urlDeDestination = null)
     {
@@ -497,151 +450,21 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
         }
 
         if ($this->getCasSslValidation() === false) {
-            // no SSL validation for the CAS server
             phpCAS::setNoCasServerValidation();
         } else {
             phpCAS::setCasServerCACert($this->getCasCACert());
         }
 
-        if (null == $urlDeDestination) {
+        if (!is_string($urlDeDestination)) {
             phpCAS::logout(); // logout et reste sur la page CAS
         } else {
             phpCAS::logoutWithRedirectService($urlDeDestination);
         }
     }
 
-    /**
-     *
-     * @return string $_loginAction
-     */
-    public function getLoginAction()
-    {
-        if ($this->_loginAction == null) {
-            return self::DEFAULT_LOGIN_ACTION;
-        }
-        return $this->_loginAction;
-    }
 
     /**
-     *
-     * @param string $_loginAction
-     * @return Ccsd_Auth_Adapter_Cas
-     */
-    public function setLoginAction($_loginAction)
-    {
-        $this->_loginAction = $_loginAction;
-        return $this;
-    }
-
-    /**
-     *
-     * @return string $_logoutAction
-     */
-    public function getLogoutAction()
-    {
-        if ($this->_logoutAction == null) {
-            return self::DEFAULT_LOGOUT_ACTION;
-        }
-        return $this->_logoutAction;
-    }
-
-    /**
-     *
-     * @param string $_logoutAction
-     * @return Ccsd_Auth_Adapter_Cas
-     */
-    public function setLogoutAction($_logoutAction)
-    {
-        $this->_logoutAction = $_logoutAction;
-        return $this;
-    }
-
-    /**
-     *
-     * @return string $_authController
-     */
-    public function getAuthController()
-    {
-        if ($this->_authController == null) {
-            return self::DEFAULT_AUTH_CONTROLLER;
-        }
-        return $this->_authController;
-    }
-
-    /**
-     *
-     * @param string $_authController
-     * @return Ccsd_Auth_Adapter_Cas
-     */
-    public function setAuthController($_authController)
-    {
-        $this->_authController = $_authController;
-        return $this;
-    }
-
-    /**
-     * fonction héritée de Ccsd_Auth_Adapter
-     * organise le préalable à l'authentification de l'utilisateur
-     * @param Hal_Controller_Action $controller
-     */
-    public function pre_auth($controller)
-    {
-        $halUser = new Hal_User ();
-        /** @var  $request */
-        $request = $controller->getRequest();
-        $authAdapter = new Ccsd_Auth_Adapter_Cas ();
-        $authAdapter->setIdentityStructure($halUser);
-        $authAdapter->setServiceURL($request->getParams());
-        return true;
-    }
-
-    /**
-     * fonction héritée de Ccsd_Auth_Adapter
-     * organise le postérieur à l'authentification de l'utilisateur
-     * recuperation d'attributs par exemple
-     * @param \Zend_Controller_Action $controller
-     * @param Zend_Auth_Result $authinfo
-     * @return ArrayAccess (array of attribute)
-     */
-    public function post_auth($controller, $authinfo)
-    {
-        $userMapper = new Ccsd_User_Models_UserMapper();
-        $attrs = $userMapper->find(phpCAS::getAttribute('UID'))->toArray();
-        return $attrs;
-    }
-
-    /**
-     * fonction héritée de Ccsd_Auth_Adapter
-     * organise le préalable à l'identification et instanciation de l'utilisateur
-     * Cherche le user correspondant dans l'application locale
-     * @param ArrayAccess $attrs
-     * @return string
-     */
-    public function pre_login($attrs)
-    {
-        if (isset($attrs['UID'])) {
-            $user = new \Ccsd_User_Models_User();
-            $refUser = new \Ccsd_User_Models_UserMapper();
-            $refUser->find($attrs['UID'], $user);
-            return $user;
-        } else {
-            Ccsd_Tools::panicMsg(__FILE__, __LINE__, 'Authenticated user without username Attribute...');
-            return null;
-        }
-    }
-
-    /**
-     * fonction héritée de Ccsd_Auth_Adapter
-     * organise le postérieur à l'identification et instanciation de l'utilisateur
-     * @param \Ccsd_User_Models_User $user
-     * @param array $attrs
-     */
-    public function post_login($user, $attrs)
-    {
-    }
-
-    /**
-     * @param \Ccsd_User_Models_User $loginUser
+     * @param Ccsd_User_Models_User $loginUser
      * @param ArrayAccess $array_attr
      * @return bool
      */
@@ -651,50 +474,29 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
     }
 
     /**
-     * fonction permettant de forcer la creation d'un compte utilisateur
-     * à partir des informations du fournisseur d'identité
-     * @param array $array_attr tableau d'informations fournies par le fournisseur d'identité
-     * @param boolean $forceCreate
-     * @return bool
-     */
-    public function createUserFromAdapter($array_attr, $forceCreate)
-    {
-        return false;
-    }
-
-    /**
      * @param array $params
-     * @return bool|string
+     * @return string
      */
-    private function buildLoginDestinationUrl($params = [])
+    private function buildLoginDestinationUrl(array $params = []): string
     {
-        if (empty($params)) {
-            return null;
-        }
 
         $hostname = self::getCurrentHostname();
 
-        // si defined('PREFIX_URL') de HAL, eg '/LKB/'
         $hostname = rtrim($hostname, '/');
 
         $uri = $hostname . '/user/login';
-        $forwardController = null;
-        if (array_key_exists('forward-controller', $params)) {
-            $forwardController = $params['forward-controller'];
-        }
-        $forwardAction = null;
-        if (array_key_exists('forward-action', $params)) {
-            $forwardAction = $params['forward-action'];
-        }
+
+        $forwardController = $params['forward-controller'] ?? null;
+        $forwardAction = $params['forward-action'] ?? null;
 
         // Si pas de controller ou si controller == user/logout
-        if (($forwardController == null) || (($forwardController == 'user') && ($forwardAction == 'logout'))) {
+        if (($forwardController === null) || (($forwardController === 'user') && ($forwardAction === 'logout'))) {
             // destination par défaut
             $uri .= '/forward-controller/user';
         } else {
+            $uri .= '/forward-controller/' . urlencode($forwardController);
             if ($forwardAction) {
 
-                $uri .= '/forward-controller/' . urlencode($forwardController);
                 $uri .= '/forward-action/' . urlencode($forwardAction);
 
                 // Concaténation des paramètres supplémentaires à l'uri de retour
@@ -717,10 +519,28 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
                             }
                     }
                 }
-            } else {
-                $uri .= '/forward-controller/' . urlencode($forwardController);
             }
         }
         return $uri;
+    }
+
+    public function pre_auth($controller)
+    {
+        // TODO: Implement pre_auth() method.
+    }
+
+    public function post_auth($controller, $authinfo)
+    {
+        // TODO: Implement post_auth() method.
+    }
+
+    public function pre_login($array_attr)
+    {
+        // TODO: Implement pre_login() method.
+    }
+
+    public function post_login($loginUser, $array_attr)
+    {
+        // TODO: Implement post_login() method.
     }
 }
