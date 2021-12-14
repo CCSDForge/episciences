@@ -2,7 +2,73 @@
 
 class BrowseController extends Zend_Controller_Action
 {
+    const JSON_MIMETYPE = 'application/json';
 
+
+    /**
+     * @param array $volOrSectArray
+     * @param string $type
+     * @return array
+     * @throws Zend_Exception
+     */
+    public static function volumesOrSectionsToPublicArray(array $volOrSectArray, string $type): array
+    {
+        $arrayOfVolOrSect = [];
+        $paperArray = [];
+        $formatAsArrayMappings['docid'] = 'docid';
+        $formatAsArrayMappings['paperid'] = 'paperid';
+        $formatAsArrayMappings['url'] = 'es_doc_url_s';
+        $formatAsArrayMappings['identifier'] = 'identifier_s';
+        $formatAsArrayMappings['version'] = 'version_td';
+
+
+        if ($type === Episciences_Volume::class) {
+            /**
+             * @var $volOrSectObj Episciences_Volume
+             */
+            $getId = 'getVid';
+            $status = Episciences_Volume::SETTING_STATUS;
+
+        } elseif ($type === Episciences_Section::class) {
+            /**
+             * @var $volOrSectObj Episciences_Section
+             */
+            $getId = 'getSid';
+            $status = Episciences_Section::SETTING_STATUS;
+        } else {
+            trigger_error(sprintf('Unexpected type %s at %s', $type, __FUNCTION__) , E_USER_WARNING);
+            return [];
+        }
+
+        foreach ($volOrSectArray as $kVolOrSect => $volOrSectObj) {
+
+            try {
+                $volOrSectObj->loadIndexedPapers();
+            } catch (Exception $exception) {
+                $arrayOfVolOrSect[$kVolOrSect]['papers'] = $paperArray;
+                continue;
+            }
+
+            $arrayOfVolOrSect[$kVolOrSect]['id'] = $volOrSectObj->$getId();
+            $arrayOfVolOrSect[$kVolOrSect]['position'] = $volOrSectObj->getPosition();
+            $arrayOfVolOrSect[$kVolOrSect]['name'] = $volOrSectObj->getName('', true);
+            $arrayOfVolOrSect[$kVolOrSect][$status] = $volOrSectObj->getStatus();
+            foreach ($volOrSectObj->getIndexedPapers() as $kPaper => $paper) {
+                foreach ($formatAsArrayMappings as $volKeyName => $volValue) {
+                    if (isset($paper[$volValue])) {
+                        $paperArray[$kPaper][$volKeyName] = $paper[$volValue];
+                    }
+                }
+            }
+            $arrayOfVolOrSect[$kVolOrSect]['papers'] = $paperArray;
+        }
+        return $arrayOfVolOrSect;
+    }
+
+    /**
+     * @return void
+     * @throws Zend_Config_Exception
+     */
     public function init()
     {
         $solrConfigFile = APPLICATION_PATH . '/../data/' . RVCODE . '/config/solr.json';
@@ -24,7 +90,7 @@ class BrowseController extends Zend_Controller_Action
         $letter = $this->_getParam('letter', 'all');
         $sortType = $this->_getParam('sort', 'index');
 
-        if (!in_array($letter, array_merge(['all', 'other'], range('A', 'Z')))) {
+        if (!in_array($letter, array_merge(['all', 'other'], range('A', 'Z')), true)) {
             $letter = 'all';
         }
 
@@ -97,6 +163,11 @@ class BrowseController extends Zend_Controller_Action
 
         $sections = $review->getSectionsWithPapers([$limit, $offset]);
 
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->volumesOrSectionsToJson($sections, 'Episciences_Section');
+            return;
+        }
+
         /** @var $section Episciences_Section */
         foreach ($sections as &$section) {
             $section->countIndexedPapers();
@@ -126,7 +197,11 @@ class BrowseController extends Zend_Controller_Action
         $total = count($review->getVolumesWithPapers());
         $volumes = $review->getVolumesWithPapers([$limit, $offset]);
 
-        /** @var Episciences_Volume $volume */
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->volumesOrSectionsToJson($volumes, 'Episciences_Volume');
+            return;
+        }
+
         foreach ($volumes as &$volume) {
             $volume->loadIndexedPapers();
         }
@@ -153,7 +228,11 @@ class BrowseController extends Zend_Controller_Action
         $total = count($review->getSpecialIssuesWithPapers());
         $volumes = $review->getSpecialIssuesWithPapers([$limit, $offset]);
 
-        /** @var Episciences_Volume $volume */
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->volumesOrSectionsToJson($volumes, 'Episciences_Volume');
+            return;
+        }
+
         foreach ($volumes as &$volume) {
             $volume->loadIndexedPapers();
         }
@@ -182,7 +261,13 @@ class BrowseController extends Zend_Controller_Action
         $total = count($review->getRegularIssuesWithPapers());
         $volumes = $review->getRegularIssuesWithPapers([$limit, $offset]);
 
-        /** @var Episciences_Volume $volume */
+
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->volumesOrSectionsToJson($volumes, 'Episciences_Volume');
+            return;
+        }
+
+
         foreach ($volumes as &$volume) {
             $volume->loadIndexedPapers();
         }
@@ -226,6 +311,11 @@ class BrowseController extends Zend_Controller_Action
         $review = Episciences_ReviewsManager::find(RVID);
         $volumes = $review->getCurrentIssues();
 
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->volumesOrSectionsToJson($volumes, 'Episciences_Volume');
+            return;
+        }
+
         /** @var Episciences_Volume $volume */
         foreach ($volumes as &$volume) {
             $volume->loadIndexedPapers();
@@ -234,5 +324,19 @@ class BrowseController extends Zend_Controller_Action
         $this->renderScript('browse/volumes.phtml');
     }
 
+    /**
+     * @param array $volumesOrSections
+     * @param string $objectType
+     * @return void
+     * @throws Zend_Exception
+     */
+    protected function volumesOrSectionsToJson(array $volumesOrSections, string $objectType): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        $arrayOfVolumesOrSections = self::volumesOrSectionsToPublicArray($volumesOrSections, $objectType);
+        $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
+        $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
+    }
 
 }

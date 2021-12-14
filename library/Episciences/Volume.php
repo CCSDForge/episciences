@@ -120,7 +120,7 @@ class Episciences_Volume
      */
     public static function findGapsInPaperOrders(array $sorted_papers): array
     {
-        $arrayOfMyDreams = range(0, count($sorted_papers)-1);
+        $arrayOfMyDreams = range(0, count($sorted_papers) - 1);
         $actualArray = array_keys($sorted_papers);
         return array_diff($arrayOfMyDreams, $actualArray);
     }
@@ -620,7 +620,7 @@ class Episciences_Volume
     {
         // value="paper-126,paper-38"
         $positionsFromFormular = explode(',', $paper_positions);
-        $paper_positions=[];
+        $paper_positions = [];
         foreach ($positionsFromFormular as $position => $paper) {
             $paperid = substr($paper, 6); // paper-126
             if (!is_numeric($paperid) || !is_numeric($position)) {
@@ -897,7 +897,6 @@ class Episciences_Volume
         }
 
 
-
         $positions = $this->getPaperPositions();
 
         if (!empty($positions)) {
@@ -923,7 +922,7 @@ class Episciences_Volume
                     $paperPosition = $maxPosition;
                     $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
                     $sorted_papers[$paperPosition] = $paper;
-                 } else {
+                } else {
                     $sorted_papers[$currentOPaper->getPosition()] = $paper;
                 }
             }
@@ -949,7 +948,8 @@ class Episciences_Volume
      * @return array
      * @throws Zend_Db_Select_Exception
      */
-    public function getPaperListFromVolume($excludedStatus = []) : array {
+    public function getPaperListFromVolume($excludedStatus = []): array
+    {
 
         $options['is']['rvid'] = RVID;
         $options['is']['vid'] = [$this->getVid()];
@@ -987,7 +987,7 @@ class Episciences_Volume
         $where = 'VID = ' . $this->getVid();
 
         try {
-            return ($this->_db->update(T_VOLUMES, ['BIB_REFERENCE' => $this->getBib_reference()], $where ) > 0);
+            return ($this->_db->update(T_VOLUMES, ['BIB_REFERENCE' => $this->getBib_reference()], $where) > 0);
         } catch (Zend_Db_Adapter_Exception $exception) {
             return false;
         }
@@ -1017,4 +1017,13 @@ class Episciences_Volume
 
         return $screenNames;
     }
+
+    /**
+     * @return int
+     */
+    public function getStatus(): int
+    {
+        return (int) $this->getSetting(self::SETTING_STATUS);
+    }
+
 }
