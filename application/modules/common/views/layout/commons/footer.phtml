@@ -42,10 +42,12 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                     }
                     ?>
                     <li>
-                        <i class="fas fa-balance-scale"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
+                        <i class="fas fa-balance-scale"></i>&nbsp;<a
+                                href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
                     </li>
                     <li>
-                        <i class="fas fa-cookie-bite"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
+                        <i class="fas fa-cookie-bite"></i>&nbsp;<a
+                                href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
                     </li>
                 </ul>
             </div>
@@ -63,7 +65,14 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                     <li>
                         <a href="https://www.episciences.org/page/acknowledgements"><?php echo $this->translate('Remerciements'); ?> </a>
                     </li>
-
+                    <li><small><?php
+                            $versions = Episciences_Settings::getApplicationVersion();
+                            if ($versions['gitBranch'] !== '') {
+                                printf('Episciences <a target="_blank" rel="noopener" href="%s">%s-%s</a>', Episciences_Settings::$githubChangeLogURL, $versions['gitBranch'], $versions['gitHash']);
+                            }
+                            ?>
+                        </small>
+                    </li>
                 </ul>
             </div>
 

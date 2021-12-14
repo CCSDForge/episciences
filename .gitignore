@@ -46,3 +46,4 @@ assets/node_modules/
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+/version.php

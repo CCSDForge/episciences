@@ -9,8 +9,12 @@
 class Episciences_Settings
 {
 
-    /** @var string */
-    static private $_appversion;
+    static public $githubChangeLogURL = 'https://github.com/CCSDForge/episciences/blob/main/CHANGELOG.md';
+
+    static public $githubCommitURL = 'https://github.com/CCSDForge/episciences/commit/';
+
+    /** @var array */
+    static private $_appversion = [];
 
     /**
      * Langues disponibles de l'interface
@@ -99,14 +103,30 @@ class Episciences_Settings
 
     /**
      * Return application version from application.ini or git index file
-     * @param string $format
-     * @return string
+     * @return array
      */
-    public static function getApplicationVersion(string $format = '') :string
+    public static function getApplicationVersion(): array
     {
-        if (self::$_appversion) {
+
+        if (!empty(self::$_appversion)) {
             return self::$_appversion;
         }
+
+        $gitHash = '';
+        $gitBranch = '';
+        $deployDate = '';
+
+        $versionFilename = APPLICATION_PATH . '/../version.php';
+
+        if (is_readable($versionFilename)) {
+            include($versionFilename);
+            self::$_appversion['gitHash'] = $gitHash;
+            self::$_appversion['gitBranch'] = $gitBranch;
+            self::$_appversion['deployDate'] = $deployDate;
+            return self::$_appversion;
+        }
+
+
         $file = APPLICATION_PATH . '/../application/configs/application.ini';
         $gitfile = APPLICATION_PATH . '/../.git/index';
         if (file_exists($gitfile)) {
@@ -115,17 +135,11 @@ class Episciences_Settings
 
         $timestamp = filemtime($file);
 
-        if (!$format) {
-            return (string)$timestamp;
-        }
+        self::$_appversion['gitHash'] = (string)$timestamp;
+        self::$_appversion['gitBranch'] = $gitBranch;
+        self::$_appversion['deployDate'] = date('Y-m-d', $timestamp);
 
-        $dateString = date($format, $timestamp);
-
-        if (!$dateString) {
-            $dateString = (string)$timestamp;
-        }
-
-        return $dateString;
+        return self::$_appversion;
     }
 
 

@@ -215,7 +215,7 @@
                         <a href="<?= $this->url([
                             'controller' => 'paper',
                             'action' => 'ratings',
-                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_DECLINED])?>"><strong><?= $count ?></strong>
+                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_DECLINED]) ?>"><strong><?= $count ?></strong>
                             <?= $this->translate(($count === 1) ? 'relecture declinée' : 'relectures déclinées') ?>
                         </a><br/>
                     <?php endif; ?>
@@ -231,7 +231,7 @@
                         ?>"><strong><?= $count ?></strong>
                             <?= ($count === 1) ?
                                 $this->translate('relecture obsolète') . '<span class="badge alert-info" style="margin-left: 5px;">' . $this->translate('nouvelle version demandée') . '</span>' :
-                                $this->translate('relectures obsolètes') .'<span class="badge alert-info" style="margin-left: 5px;">' . $this->translate('nouvelles versions demandées') . '</span>'
+                                $this->translate('relectures obsolètes') . '<span class="badge alert-info" style="margin-left: 5px;">' . $this->translate('nouvelles versions demandées') . '</span>'
                             ?>
                         </a><br/>
                     <?php endif; ?>
@@ -281,8 +281,8 @@
 
     <div class="panel-footer">
         <a class="btn btn-default btn-sm" href="/user/edit"><span
-                        class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?>
-            </a>
+                    class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?>
+        </a>
 
     </div>
 
@@ -291,20 +291,11 @@
 <div>
     <small>
         <?php
-
-        try {
-            $language = Zend_Registry::get('lang');
-
-        } catch (Exception $e) {
-            $language = Episciences_Translation_Plugin::LANG_EN;
-        }
-
-        if ($language === Episciences_Translation_Plugin::LANG_FR) {
-            $urlReleaseNotes = 'https://www.ccsd.cnrs.fr/category/notes-de-mise-a-jour-episciences/';
-        } else {
-            $urlReleaseNotes = 'https://www.ccsd.cnrs.fr/en/category/episciences-release-notes/';
+        $versions = Episciences_Settings::getApplicationVersion();
+        if ($versions['gitBranch'] !== '') {
+            printf('Episciences <a target="_blank" rel="noopener" href="%s">%s</a>', Episciences_Settings::$githubChangeLogURL, $versions['gitBranch']);
+            printf(' <a target="_blank" rel="noopener" href="%s%s">%s</a> - %s', Episciences_Settings::$githubCommitURL, $versions['gitHash'], $versions['gitHash'], $versions['deployDate']);
         }
         ?>
-        <a target="_blank" rel="noopener" href="<?= $urlReleaseNotes ?>"><?= DOMAIN . ' - version ' . Episciences_Settings::getApplicationVersion('Y-m-d') ?></a>
     </small>
 </div>

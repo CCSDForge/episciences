@@ -183,7 +183,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     protected function _initApplicationVersion()
     {
-        define('APPLICATION_VERSION', Episciences_Settings::getApplicationVersion());
+        define('APPLICATION_VERSION', Episciences_Settings::getApplicationVersion()['gitHash']);
     }
 
     protected function _initcheckApplicationDirectories()
