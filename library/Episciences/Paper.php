@@ -3072,7 +3072,7 @@ class Episciences_Paper
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function getInvitations($status = null, $sorted = false): array
+    public function getInvitations($status = null, bool $sorted = false): array
     {
         if (!isset($this->_invitations)) {
             $invitations = Episciences_PapersManager::getInvitations($this->getDocid(), $status, $sorted);
