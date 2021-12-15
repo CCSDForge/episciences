@@ -2788,10 +2788,9 @@ class PaperController extends PaperDefaultController
 
                 if (!$user) {
                     trigger_error('Erreur: Impossible de trouver le relecteur ( UID = ' . $assignment->getUid() . ' )', E_USER_ERROR);
-                } else {
+                } else if ($this->applyRemoving($paper, $assignment, $user)) {
 
                     $locale = $user->getLangueid();
-                    $this->applyRemoving($paper, $assignment, $user);
 
                     $tags = [
                         Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
@@ -2814,10 +2813,12 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper
      * @param Episciences_User_Assignment $assignment
      * @param Episciences_User $reviewer
+     * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    private function applyRemoving(Episciences_Paper $paper, Episciences_User_Assignment $assignment, Episciences_User $reviewer): void
+    private function applyRemoving(Episciences_Paper $paper, Episciences_User_Assignment $assignment, Episciences_User $reviewer): bool
     {
+        $isRemoved = false;
 
         // Pour les comptes temporaires aussi
         $reviewingStatus = 0;
@@ -2876,7 +2877,11 @@ class PaperController extends PaperDefaultController
                 $msg .= ' )';
                 trigger_error($msg, E_USER_WARNING);
             }
+
+            $isRemoved = true;
         }
+
+        return $isRemoved;
     }
 
     /**

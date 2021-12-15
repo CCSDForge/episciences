@@ -34,7 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: IDE warnings
 - Fixed: Inconsistent REMINDER_DELAY: the displayed value is the "delay" parameter of the reminder instead of the calculated value (interval in number of days between the time the reminder was sent and the deadline.
 - Fixed: new submission: "submission date" metadata is empty: do not display it anymore.
+- Fixed: [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
 
+### Changed
+- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
+- Fixed [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
+
+## Changed
+- Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ## 1.0.22.3 - 2021-11-30
 ### Changed
