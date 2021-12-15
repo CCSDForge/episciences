@@ -17,14 +17,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## Unreleased
+
+### Added
+- Add release version on the interface (dashboard and page footer) #116
 - Editors' choice at time of submission: informative text added. (gitlab #369)
-- Fixed mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
+- Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
+
+### Changed
 - Make the version number more explicit when proposing a new version
 - Refactoring
-- Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
-- fixed: IDE warnings
 - Dumping default data for table `MAIL_TEMPLATE`
+
+### Fixed
+- Fixed mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
+- Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
+- Fixed: IDE warnings
 - Fixed: Inconsistent REMINDER_DELAY: the displayed value is the "delay" parameter of the reminder instead of the calculated value (interval in number of days between the time the reminder was sent and the deadline.
+- Fixed: new submission: "submission date" metadata is empty: do not display it anymore.
+- Fixed: [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
+
+### Changed
+- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
+- Fixed [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
+
+## Changed
+- Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ## added
 - New article status "temporary version accepted": now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)

@@ -22,6 +22,8 @@ class Episciences_Section
     const SECTION_TRANSLATION_PREFIX = 'section_';
     const UNLABELED_SECTION = 'Unlabeled section';
 
+    const SETTING_STATUS = 'status';
+
     /**
      * Section ID
      * @var int
@@ -93,7 +95,7 @@ class Episciences_Section
         Episciences_Tools::loadTranslations($path, $file);
 
         $sid = $this->getSid();
-        $defaults['status'] = $this->getSetting('status');
+        $defaults[self::SETTING_STATUS] = $this->getStatus();
 
         foreach ($langs as $code => $lang) {
 
@@ -134,9 +136,9 @@ class Episciences_Section
 
         if (array_key_exists($setting, $settings)) {
             return $settings[$setting];
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     public function getSettings()
@@ -280,8 +282,8 @@ class Episciences_Section
         }
 
         // Récupération des paramètres de la rubrique
-        $settingsValues['SETTING'] = 'status';
-        $settingsValues['VALUE'] = $this->getSetting('status');
+        $settingsValues['SETTING'] = self::SETTING_STATUS;
+        $settingsValues['VALUE'] = $this->getStatus();
 
         // Si il s'agit d'une nouvelle rubrique
         if (!$this->getSid()) {
@@ -385,9 +387,6 @@ class Episciences_Section
         }
     }
 
-
-    // GETTERS ***************************************************
-
     /**
      * @param $titles
      * @return $this
@@ -408,9 +407,9 @@ class Episciences_Section
     {
         if ($lang) {
             return $this->_description[$lang];
-        } else {
-            return $this->_description;
         }
+
+        return $this->_description;
     }
 
     /**
@@ -505,8 +504,6 @@ class Episciences_Section
             $this->setIndexedPapers($sorted_papers);
         }
     }
-
-    // SETTERS ***************************************************
 
     /**
      * @param $indexedPapers
@@ -626,6 +623,14 @@ class Episciences_Section
     public function getNameKey()
     {
         return self::SECTION_TRANSLATION_PREFIX . $this->getSid() . '_title';
+    }
+
+    /**
+     * @return int
+     */
+    public function getStatus(): int
+    {
+        return (int) $this->getSetting(self::SETTING_STATUS);
     }
 
 }
