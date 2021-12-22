@@ -599,9 +599,12 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * edit user account
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public function editAction()
+    public function editAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -625,6 +628,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
+        $userDefaults['AFFILIATIONS'] = Episciences_Tools::implodeOrExplode($userDefaults['AFFILIATIONS'], 'implode');
 
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
         $form->setAction($this->view->url());
@@ -634,7 +638,6 @@ class UserDefaultController extends Zend_Controller_Action
         ]);
 
         $form->setDefaults($userDefaults);
-
 
         // update required
         if ($request->isPost() && $form->isValid($request->getPost())) {
@@ -668,8 +671,9 @@ class UserDefaultController extends Zend_Controller_Action
             }
 
             // Si on modifie son propre compte, on met à jour la session
-            if (Episciences_Auth::getUid() == $user->getUid()) {
-                $user->setUsername(Episciences_Auth::getUsername()); //sinon le username est supprimé de l'identité : en modification il n'est pas utilisé dans la méthode save()
+            if (Episciences_Auth::getUid() === $user->getUid()) {
+                $user->find(Episciences_Auth::getUid()); // Modification de l'affiliations: mettre à jour les infos.
+                //$user->setUsername(Episciences_Auth::getUsername()); //sinon le username est supprimé de l'identité : en modification il n'est pas utilisé dans la méthode save()
                 Episciences_Auth::setIdentity($user);
                 $localeSession = new Zend_Session_Namespace('Zend_Translate');
                 $localeSession->lang = Episciences_Auth::getLangueid();
@@ -729,7 +733,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         // le client essaie d'utiliser un jeton prévu pour autre chose que la validation de compte,
         // ou il n'y a pas de jeton
-        if ( empty($tokenData) || 'VALID' !== $userTokens->getUsage()) {
+        if (empty($tokenData) || 'VALID' !== $userTokens->getUsage()) {
             $this->view->message = "Erreur lors de l'activation du compte";
             $this->view->description = "Erreur le jeton d'activation de ce compte n'est pas valable";
             $this->renderScript('error/error.phtml');
@@ -1038,7 +1042,7 @@ class UserDefaultController extends Zend_Controller_Action
         $request = $this->getRequest();
         $users = [];
 
-        if($request){
+        if ($request) {
 
             $filter = $request->getParam('term');
             $withoutRoles = ($request->getParam('type') !== 'all');
@@ -1135,7 +1139,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         $request = $this->getRequest();
 
-        if($request){
+        if ($request) {
             $uid = $request->getPost('uid');
 
             if ($request->isXmlHttprequest()) {
@@ -1352,7 +1356,7 @@ class UserDefaultController extends Zend_Controller_Action
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
                 $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
-               $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
+                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
                 file_put_contents($photoPathName, $data);
 
 

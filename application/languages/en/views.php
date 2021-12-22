@@ -1241,6 +1241,8 @@ return [
     'Changer le mot de passe' => "Change your password",
     'Entre 2 et 100 caractères' => 'From 2 to 100 characters',
     "Vous n'avez pas les droits nécessaires pour modifier ce compte." => "You don't have the required permissions to edit this account.",
+    "Veuillez saisir votre identifiant (16 chiffres), par exemple 0000-0001- 2345-6789, si vous en avez déjà un" => "Please enter your ID (16 digits), for example 0000-0001- 2345-6789, if you already have one",
+    "Veuillez saisir le nom ou l'acronyme de votre structure" => "Please enter the name or acronym of your organization",
 
 
     /**

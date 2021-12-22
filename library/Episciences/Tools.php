@@ -1311,8 +1311,9 @@ class Episciences_Tools
      * Reset mb_internal_encoding to server selection
      * @see https://developer.wordpress.org/reference/functions/mbstring_binary_safe_encoding/
      */
-    public static function resetMbstringEncoding() {
-        self::mbstringBinarySafeEncoding( true );
+    public static function resetMbstringEncoding()
+    {
+        self::mbstringBinarySafeEncoding(true);
     }
 
     /**
@@ -1321,28 +1322,91 @@ class Episciences_Tools
      * @see https://developer.wordpress.org/reference/functions/mbstring_binary_safe_encoding/
      * @param false $reset
      */
-    public static function mbstringBinarySafeEncoding( $reset = false ) {
-        static $encodings  = [];
+    public static function mbstringBinarySafeEncoding($reset = false)
+    {
+        static $encodings = [];
         static $overloaded = null;
 
-        if ( is_null( $overloaded ) ) {
-            $overloaded = function_exists( 'mb_internal_encoding' ) && ( ini_get( 'mbstring.func_overload' ) & 2 );
+        if (is_null($overloaded)) {
+            $overloaded = function_exists('mb_internal_encoding') && (ini_get('mbstring.func_overload') & 2);
         }
 
-        if ( false === $overloaded ) {
+        if (false === $overloaded) {
             return;
         }
 
-        if ( ! $reset ) {
+        if (!$reset) {
             $encoding = mb_internal_encoding();
             $encodings[] = $encoding;
-            mb_internal_encoding( 'ISO-8859-1' );
+            mb_internal_encoding('ISO-8859-1');
         }
 
-        if ( $reset && $encodings ) {
-            $encoding = array_pop( $encodings );
-            mb_internal_encoding( $encoding );
+        if ($reset && $encodings) {
+            $encoding = array_pop($encodings);
+            mb_internal_encoding($encoding);
         }
+    }
+
+    /**
+     * @param array|null $input
+     * @param string $operationType
+     * @param string $separator
+     * @param bool $isIdentical // if $isIdentical = true, function (s) is identical to native functions
+     * @return array
+     */
+    public static function implodeOrExplode(?array $input, string $operationType = 'explode', string $separator = '#', bool $isIdentical = false): array
+    {
+        $output = [];
+
+        if ($input) {
+            foreach ($input as $index => $value) {
+
+                if ($operationType === 'explode') {
+
+                    $explodedValue = explode($separator, $value);
+
+                    if (!$isIdentical) {
+
+                        $label = trim($explodedValue[0]);
+                        $rorId = trim($explodedValue[1]);
+
+                        $rorId = self::isRorIdentifier($rorId) ? $rorId : '';
+
+                        $output[$index] = ['label' => $label, 'rorId' => $rorId];
+
+                    } else {
+
+                        $output[$index] = $explodedValue;
+                    }
+
+                } else {
+
+                    if (!$isIdentical) {
+                        $implodedValue = $value['rorId'] ? implode(' ' . $separator, $value) : $value['label'];
+                    } else {
+
+                        $implodedValue = implode($separator, $value);
+                    }
+
+                    $output[$index] = $implodedValue;
+                }
+            }
+
+        }
+
+        return $output;
+    }
+
+    /**
+     *
+     * Check if string is a valid ROR identifier (Research Organization Registry)
+     * @param $string
+     * @return bool
+     */
+    public static function isRorIdentifier($string): bool
+    {
+        $pattern = '/^((https?:\/\/)?ror\.org\/)?([A-Za-z0-9]){9}$/i';
+        return (bool)preg_match($pattern, $string);
     }
 
 }

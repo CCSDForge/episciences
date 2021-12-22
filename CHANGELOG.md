@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add release version on the interface (dashboard and page footer) #116
 - Editors' choice at time of submission: informative text added. (gitlab #369)
 - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
+- Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
 
 ### Changed
 - Make the version number more explicit when proposing a new version

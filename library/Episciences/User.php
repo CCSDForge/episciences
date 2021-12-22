@@ -34,6 +34,9 @@ class Episciences_User extends Ccsd_User_Models_User
 
     private $_papersNotInConflict = [];
 
+    protected $_orcid = null;
+    protected $_affiliations = null;
+
     /**
      * Constructeur d'un utilisateur
      * @param array|null $options
@@ -297,9 +300,11 @@ class Episciences_User extends Ccsd_User_Models_User
         $res = parent::toArray();
         $res['SCREEN_NAME'] = $this->getScreenName();
         $res['langueid'] = $this->getLangueid();
-        $res['fullname'] = ($this->getFullName()) ? $this->getFullName() : $this->getScreenName();
+        $res['fullname'] = ($this->getFullName()) ?: $this->getScreenName();
         $res['ROLES'] = $this->getAllRoles();
         $res['email'] = $this->getEmail();
+        $res['affiliations'] = $this->getAffiliations();
+        $res['orcid'] = $this->getOrcid();
         return $res;
     }
 
@@ -392,7 +397,9 @@ class Episciences_User extends Ccsd_User_Models_User
             'MIDDLENAME' => $this->getMiddlename(),
             'REGISTRATION_DATE' => $this->getRegistration_date(),
             'MODIFICATION_DATE' => $this->getModification_date(),
-            'IS_VALID' => $this->getIs_valid()
+            'IS_VALID' => $this->getIs_valid(),
+            'AFFILIATIONS' => !empty($this->getAffiliations()) ? json_encode(Episciences_Tools::implodeOrExplode($this->getAffiliations())) : null,
+            'ORCID' => $this->getOrcid()
         ];
 
         // Création des données locales (compte ES + rôle)
@@ -587,7 +594,9 @@ class Episciences_User extends Ccsd_User_Models_User
 
         $result = $select->query()->fetch(Zend_Db::FETCH_ASSOC);
 
-        if (!$result || 0 === count($result)) { // false si le user n'existe pas.
+        $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true) : $result['AFFILIATIONS'];
+
+        if (empty($result)) {
             return [];
         }
 
@@ -632,6 +641,14 @@ class Episciences_User extends Ccsd_User_Models_User
             $result['MIDDLENAME'] = $this->getMiddlename();
         }
 
+        if (!isset($result['ORCID'])) {
+            $result['ORCID'] = $this->getOrcid();
+        }
+
+        if (!isset($result['AFFILIATIONS'])) {
+            $result['AFFILIATIONS'] = $this->getAffiliations();
+        }
+
         if (!isset($result['IS_VALID'])) {
             $result['IS_VALID'] = 1;
         } else {
@@ -651,6 +668,8 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setIs_valid($result['IS_VALID']); // Episciences validation
         $this->setRegistration_date($result['REGISTRATION_DATE']);  // Episciences registration date
         $this->setModification_date($result['MODIFICATION_DATE']);  // Episciences modification date
+        $this->setAffiliations($result['AFFILIATIONS']);
+        $this->setOrcid($result['ORCID']);
 
         return $result;
     }
@@ -1069,6 +1088,42 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
     /**
+     * @return string|null
+     */
+    public function getOrcid(): ?string
+    {
+        return $this->_orcid;
+    }
+
+    /**
+     * @param string|null $orcid
+     * @return Episciences_User
+     */
+    public function setOrcid(string $orcid = null): self
+    {
+        $this->_orcid = $orcid;
+        return $this;
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getAffiliations(): ?array
+    {
+        return $this->_affiliations;
+    }
+
+    /**
+     * @param array|null $affiliations
+     * @return Episciences_User
+     */
+    public function setAffiliations(array $affiliations = null): self
+    {
+        $this->_affiliations = $affiliations;
+        return $this;
+    }
+
+    /**
      * @return array
      */
     public function getPapersNotInConflict(): array
@@ -1108,5 +1163,4 @@ class Episciences_User extends Ccsd_User_Models_User
 
         $this->setPapersNotInConflict($result);
     }
-
 }
