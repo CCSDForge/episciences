@@ -286,6 +286,8 @@ class Episciences_Mail_Sender
                 $message = $mailPath . " : ERREUR - Nombre maximum de tentatives atteint.";
             }
             $message .= " Message could not be sent. Mailer Error: {$mailer->ErrorInfo}";
+            $message .= ': Exception message: ' . $e->getMessage();
+
         }
 
         return $message;
