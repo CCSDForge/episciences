@@ -39,7 +39,7 @@ $(function () {
         },
 
         open: function () {
-            $(this).autocomplete('widget').css('z-index', 2);
+            $(this).autocomplete('widget').css('z-index', 2).css('position', 'absolute');
             return false;
         }
 
