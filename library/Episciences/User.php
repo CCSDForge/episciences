@@ -594,11 +594,11 @@ class Episciences_User extends Ccsd_User_Models_User
 
         $result = $select->query()->fetch(Zend_Db::FETCH_ASSOC);
 
-        $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true) : $result['AFFILIATIONS'];
-
         if (empty($result)) {
             return [];
         }
+
+        $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true) : $result['AFFILIATIONS'];
 
         // Si les données locales n'existent pas, on crée le Screenname à partir du nom/prénom
         if (!isset($result['SCREEN_NAME']) || ($result['SCREEN_NAME'] === '')) {
