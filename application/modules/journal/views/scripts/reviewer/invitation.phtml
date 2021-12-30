@@ -13,7 +13,6 @@
     </div>
 <?php else : ?>
 
-    <?php // $this->layout()->description = "Vous avez été invité à relire cet article : "; ?>
     <?php if (!$this->invitation->hasExpired() && !$this->invitation->isAnswered()) : ?>
         <?php $this->jQuery()->addJavascriptFile("/js/reviewer/invitation.js"); ?>
     <?php endif; ?>
@@ -56,13 +55,6 @@
                 <?php echo $this->translate("Relecture attendue avant le :"); ?>
                 <?php echo $this->Date($this->rating_deadline); ?>
                 <?php
-                /*
-                $value = explode(' ', trim($this->rating_deadline));
-                $delay_value = $value[0];
-                $delay_unit = $value[1];
-                $delay_units = array('day'=>'jour(s)', 'week'=>'semaine(s)', 'month'=>'mois');
-                echo $delay_value . ' ' . $this->translate($delay_units[$delay_unit]);
-                */
                 ?>
             </div>
 
