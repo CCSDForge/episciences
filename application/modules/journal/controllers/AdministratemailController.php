@@ -70,7 +70,7 @@ class AdministratemailController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if(!$request->isXmlHttpRequest()){
+        if (!$request->isXmlHttpRequest()) {
             $this->_helper->redirector->gotoUrl('/error/deny');
         }
 
@@ -380,15 +380,26 @@ class AdministratemailController extends Zend_Controller_Action
 
         // Contrôle des erreurs
         $errors = [];
+        $isEmptyMail = empty($post['subject']) && empty($post['body']) && empty($post['attachments']);
 
         if ($checkedRecipients['isDetectedErrors']) {
             $errors[] = "Veuillez saisir au moins un destinataire";
         }
 
-        if (!empty($errors)) {
-            $message = '<p><strong>' . $selfView->translate("Votre message n'a pas pu être envoyé.") . '</strong></p>';
-            foreach ($errors as $error) {
-                $message .= '<div>' . $selfView->translate($error) . '</div>';
+        if (!empty($errors) || $isEmptyMail) {
+
+            $message = '<p><strong>' . $selfView->translate("Votre message n'a pas pu être envoyé :") . '</strong></p>';
+
+            if (!empty($errors)) {
+
+                foreach ($errors as $error) {
+                    $message .= '<div>' . $selfView->translate($error) . '</div>';
+                }
+
+            } else {
+
+                $message .= $selfView->translate('Corps du message vide.');
+
             }
 
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
@@ -410,6 +421,10 @@ class AdministratemailController extends Zend_Controller_Action
         // récupération du contenu
         $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
         $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
+
+        if (empty($content)) {
+            $content = $selfView->translate('Corps du message vide.');
+        }
 
         $mail = new Episciences_Mail('UTF-8');
         $mail->setSubject($subject);
@@ -661,10 +676,10 @@ class AdministratemailController extends Zend_Controller_Action
         $recipient = $request->getParam('recipient');
         $type = $request->getParam('type');
         $templates = Episciences_Mail_RemindersManager::getTemplates();
-        $isExistTemplateForThisRecipient = array_key_exists($recipient, $templates[$type]) ;
+        $isExistTemplateForThisRecipient = array_key_exists($recipient, $templates[$type]);
 
-        if(!$isExistTemplateForThisRecipient){
-            error_log('reminder (type = ' . $type . ') not saved: no template defined for ' . $recipient .  'recipient');
+        if (!$isExistTemplateForThisRecipient) {
+            error_log('reminder (type = ' . $type . ') not saved: no template defined for ' . $recipient . 'recipient');
             return;
         }
 
@@ -733,10 +748,10 @@ class AdministratemailController extends Zend_Controller_Action
          * @var  $paperId int
          * @var  $paper Episciences_Paper
          */
-        foreach ($papers as $paper){
+        foreach ($papers as $paper) {
             $versionIds = $paper->getVersionsIds();
 
-            foreach ($versionIds as $docId){
+            foreach ($versionIds as $docId) {
                 $docIds[] = $docId;
             }
 
