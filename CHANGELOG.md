@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: new submission: "submission date" metadata is empty: do not display it anymore.
 - Fixed: [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
 - Fixed: RT#144246: an inactive account remains visible on the Editorial Staff members page. 
+- Fixed: [#408](https://github.com/CCSDForge/episciences/issues/408): An empty e-mail is not sent or received
+
 
 ### Changed
 - [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
