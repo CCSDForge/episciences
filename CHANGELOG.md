@@ -38,13 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: RT#144252: cleanup of attached file names
 - Fixed: RT#144246: an inactive account remains visible on the Editorial Staff members page. 
 - Fixed: [#408](https://github.com/CCSDForge/episciences/issues/408): An empty e-mail is not sent or received
-
+- Fixed [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
 
 ### Changed
 - [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
-- Fixed [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
-
-## Changed
 - Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ## 1.0.22.3 - 2021-11-30
