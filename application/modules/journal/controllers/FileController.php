@@ -219,7 +219,7 @@ class FileController extends DefaultController
                 $files = $adapter->getFileInfo();
                 foreach ($files as $info) {
 
-                    $filename = $info['name'];
+                    $filename = Ccsd_Tools::cleanFileName($info['name']);
 
                     if (!$adapter->isUploaded() || !$adapter->isValid()) {
                         $result ['status'] = 'error';
