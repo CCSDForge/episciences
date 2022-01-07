@@ -2,6 +2,7 @@
 
 class Episciences_UsersManager
 {
+    public const VALID_USER = 1;
     /**
      * fetch review user list
      * @return array
@@ -58,15 +59,22 @@ class Episciences_UsersManager
     /**
      * @param null $with
      * @param null $without
-     * @return mixed
+     * @param bool $strict  (default: true: only activated accounts)
+     * @return Zend_Db_Select
      */
 
-    public static function getUsersWithRolesQuery($with = null, $without = null){
+    public static function getUsersWithRolesQuery($with = null, $without = null, bool $strict = true): \Zend_Db_Select
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->distinct()
-            ->from(array('u' => T_USERS), 'UID')
-            ->joinUsing(T_USER_ROLES, 'UID', array())
+            ->from(array('u' => T_USERS), 'UID');
+
+        if ($strict) {
+            $select->where('IS_VALID = ?', self::VALID_USER);
+        }
+
+        $select->joinUsing(T_USER_ROLES, 'UID', array())
             ->where('RVID = ?', Episciences_Review::$_currentReviewId);
 
         if (is_array($with) && !empty($with)) {
