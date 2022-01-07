@@ -337,7 +337,6 @@ class Episciences_PapersManager
      * Retourne les papiers qui n'ont pas encore été assignés à un rédacteur
      * @param bool $excludeChiefEditors = true : un article asigné seulement à un "rédcateur en chef" est considéré comme un article sans rédacteur.
      * @return Zend_Db_Select
-     * @throws Zend_Db_Select_Exception
      */
     private static function getPapersWithoutAssignedEditorsQuery(bool $excludeChiefEditors = false): Zend_Db_Select
     {
