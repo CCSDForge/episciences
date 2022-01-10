@@ -727,7 +727,10 @@ class Episciences_Submit
         }
 
         $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId]);
-        $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
+
+        if(!empty($hookApiRecord)){
+            $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
+        }
 
         if (isset($hookVersion['version'])) {
             $version = $hookVersion['version'];
