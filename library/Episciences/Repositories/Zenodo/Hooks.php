@@ -105,7 +105,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $response = $client->get(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
 
         } catch (GuzzleHttp\Exception\RequestException $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
+            return [];
         }
 
         return json_decode($response->getBody()->getContents(), true);

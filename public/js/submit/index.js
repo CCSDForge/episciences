@@ -6,22 +6,32 @@ $(document).ready(function () {
 
     setPlaceholder();
 
-    $searchDocRepoId.change(function () {
-        $searchDocDocId.val('');
+    $(window).on('load', function () {
+        toggleVersionBloc();
+    });
 
-        $versionBloc.show();
+    $searchDocRepoId.on('change', function () {
+        toggleVersionBloc();
+    });
+
+    function toggleVersionBloc() {
+        let repoValue = $searchDocRepoId.val();
+
+        $searchDocDocId.val('');
 
         setPlaceholder();
 
-        let hasHookRequest = ajaxRequest('/submit/ajaxhashook', {repoId: $(this).val()});
-        hasHookRequest.done(function(response){
-            if(JSON.parse(response)){
+        let hasHookRequest = ajaxRequest('/submit/ajaxhashook', {repoId: repoValue});
+        hasHookRequest.done(function (response) {
+            if (JSON.parse(response)) {
                 hasHook = response;
                 $versionBloc.hide();
+            } else {
+                $versionBloc.show();
             }
         });
 
-    });
+    }
 
     function setPlaceholder() {
         $searchDocDocId.attr('placeholder', translate('exemple : ') + examples[$searchDocRepoId.val()]);
