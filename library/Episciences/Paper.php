@@ -704,6 +704,7 @@ class Episciences_Paper
     /**
      * @param $record
      * @return $this
+     * @throws Zend_Db_Statement_Exception
      */
     public function setRecord($record): self
     {
@@ -1664,7 +1665,7 @@ class Episciences_Paper
     /**
      * set article XML (record + local data)
      * @return bool
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|DOMException
      */
     public function updateXml()
     {

@@ -25,9 +25,7 @@ class Episciences_Review_DoiSettingsManager
             'label' => "Agence d'enregistrement pour les DOI",
             'style' => 'width: auto;',
             'multioptions' => [
-                'crossref' => "Crossref",
-                'datacite' => "DataCite"
-
+                'crossref' => "Crossref"
             ]]);
 
         $form->addElement('select', Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE, [
@@ -35,7 +33,8 @@ class Episciences_Review_DoiSettingsManager
             'style' => 'width: auto;',
             'multioptions' => [
                 Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO => "Automatique",
-                Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_MANUAL => "Manuel"
+                Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_MANUAL => "Manuel",
+                Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_DISABLED => "Désactivé"
             ]]);
 
 

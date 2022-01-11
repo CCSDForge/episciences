@@ -546,18 +546,11 @@ function getDoiForm(button, docId, placement = 'bottom', url = '/administratepap
         }).popover('show');
 
         $('form[action^="/administratepaper/savedoi"]').on('submit', function () {
-            let doiContainer = $(button).closest('.paper-doi-value');
-            //var editorsContainer = $(button).closest('tr').find('.editors');
-            // Traitement AJAX du formulaire
-            let sRequest = ajaxRequest('/administratepaper/savedoi', $(this).serialize() + "&docid=" + docid, 'POST', 'json');
+            let sRequest = ajaxRequest('/administratepaper/savedoi', $(this).serialize() + "&paperid=" + docId, 'POST', 'json');
             sRequest.done(function (response) {
-                // Destruction du popup
                 $(button).popover('destroy');
-                $(doiContainer).hide();
-                $(doiContainer).html(response);
-                $(doiContainer).fadeIn();
-                location.reload(); //prise en charge des changements
-
+                $("#doi-link").html(response);
+                $('div.paper-doi a ').text(response);
             });
 
             return false;
