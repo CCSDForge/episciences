@@ -2,12 +2,12 @@
 
 class Episciences_Paper_DoiQueue
 {
-    const DEFAULT_STATUS = self::STATUS_NOT_ASSIGNED;
-    const STATUS_MANUAL = 'manual';
-    const STATUS_PUBLIC = 'public';
-    const STATUS_REQUESTED = 'requested';
-    const STATUS_ASSIGNED = 'assigned';
-    const STATUS_NOT_ASSIGNED = 'not-assigned';
+    public const DEFAULT_STATUS = self::STATUS_NOT_ASSIGNED;
+    public const STATUS_MANUAL = 'manual';
+    public const STATUS_PUBLIC = 'public';
+    public const STATUS_REQUESTED = 'requested';
+    public const STATUS_ASSIGNED = 'assigned';
+    public const STATUS_NOT_ASSIGNED = 'not-assigned';
 
 
     public static $htmlStatus = [
