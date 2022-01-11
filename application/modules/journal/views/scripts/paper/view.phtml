@@ -122,7 +122,7 @@ if ($paper->isPublished()) {
             $this->headMeta()->prependName('citation_volume', $volume);
             $this->headMeta()->prependName('DC.citation.volume', $volume);
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage());
         }
     }
 
