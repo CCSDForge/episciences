@@ -954,6 +954,8 @@ class Episciences_Volume
             // RT#129760
             $paperList[$docId]['paperid'] = $p->getPaperid();
             $paperList[$docId]['status'] = $p->getStatus();
+            $paperList[$docId]['identifier'] = $p->getIdentifier();
+            $paperList[$docId]['version'] = $p->getVersion();
         }
 
 
