@@ -2,8 +2,8 @@
 
 class Episciences_SectionsManager 
 {
-	const TRANSLATION_PATH = REVIEW_LANG_PATH;
-	const TRANSLATION_FILE = 'sections.php';
+	public const TRANSLATION_PATH = REVIEW_LANG_PATH;
+	public const TRANSLATION_FILE = 'sections.php';
 
     /**
      * Renvoie la liste de toutes les rubriques d'une revue
@@ -27,8 +27,8 @@ class Episciences_SectionsManager
 	    $data = $db->fetchAll($select);
 	    
 		if ($data) {
-			foreach ($data as $options) {
-				$oSection = new Episciences_Section($options);
+			foreach ($data as $sectionOptions) {
+				$oSection = new Episciences_Section($sectionOptions);
 				$sections[$oSection->getSid()] = ($toArray) ? $oSection->toArray() : $oSection;
 			}
 		}
