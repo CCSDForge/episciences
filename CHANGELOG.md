@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editors' choice at time of submission: informative text added. (gitlab #369)
 - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
 - Fix #143 Allow to switch off manual or automatic DOI assignation (disabled mode)
+- [#37](https://github.com/CCSDForge/episciences/issues/37)
+  - On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html
+  - For now only published articles are returned, but unpublished articles will be added for authenticated and allowed users
 
 ### Changed
 - Make the version number more explicit when proposing a new version
