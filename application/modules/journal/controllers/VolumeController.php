@@ -2,6 +2,7 @@
 
 class VolumeController extends Zend_Controller_Action
 {
+    public const JSON_MIMETYPE = 'application/json';
 
     public function indexAction()
     {
@@ -86,12 +87,12 @@ class VolumeController extends Zend_Controller_Action
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
 
-        $sorted_papersToBeSaved= [];
+        $sorted_papersToBeSaved = [];
         $needsToToBeSaved = false;
 
         foreach ($sorted_papers as $position => $paper) {
             $sorted_papersToBeSaved[$position] = $paper['paperid'];
-            if ( ($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved) ) {
+            if (($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved)) {
                 $needsToToBeSaved = true;
             }
         }
@@ -296,6 +297,19 @@ class VolumeController extends Zend_Controller_Action
         }
 
         $volume->loadMetadatas();
+
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            try {
+                $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
+            } catch (Zend_Exception $exception) {
+                $arrayOfVolumesOrSections = [];
+            }
+            $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
+            $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
+            return;
+        }
 
         try {
             $volume->loadIndexedPapers();

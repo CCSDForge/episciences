@@ -126,6 +126,66 @@ class Episciences_Volume
     }
 
     /**
+     * @param array $volOrSectArray
+     * @param string $type
+     * @return array
+     * @throws Zend_Exception
+     */
+    public static function volumesOrSectionsToPublicArray(array $volOrSectArray, string $type): array
+    {
+        $arrayOfVolOrSect = [];
+        $paperArray = [];
+        $formatAsArrayMappings['docid'] = 'docid';
+        $formatAsArrayMappings['paperid'] = 'paperid';
+        $formatAsArrayMappings['url'] = 'es_doc_url_s';
+        $formatAsArrayMappings['identifier'] = 'identifier_s';
+        $formatAsArrayMappings['version'] = 'version_td';
+
+
+        if ($type === Episciences_Volume::class) {
+            /**
+             * @var $volOrSectObj Episciences_Volume
+             */
+            $getId = 'getVid';
+            $status = Episciences_Volume::SETTING_STATUS;
+
+        } elseif ($type === Episciences_Section::class) {
+            /**
+             * @var $volOrSectObj Episciences_Section
+             */
+            $getId = 'getSid';
+            $status = Episciences_Section::SETTING_STATUS;
+        } else {
+            trigger_error(sprintf('Unexpected type %s at %s', $type, __FUNCTION__), E_USER_WARNING);
+            return [];
+        }
+
+        foreach ($volOrSectArray as $kVolOrSect => $volOrSectObj) {
+
+            try {
+                $volOrSectObj->loadIndexedPapers();
+            } catch (Exception $exception) {
+                $arrayOfVolOrSect[$kVolOrSect]['papers'] = $paperArray;
+                continue;
+            }
+
+            $arrayOfVolOrSect[$kVolOrSect]['id'] = $volOrSectObj->$getId();
+            $arrayOfVolOrSect[$kVolOrSect]['position'] = $volOrSectObj->getPosition();
+            $arrayOfVolOrSect[$kVolOrSect]['name'] = $volOrSectObj->getName('', true);
+            $arrayOfVolOrSect[$kVolOrSect][$status] = $volOrSectObj->getStatus();
+            foreach ($volOrSectObj->getIndexedPapers() as $kPaper => $paper) {
+                foreach ($formatAsArrayMappings as $volKeyName => $volValue) {
+                    if (isset($paper[$volValue])) {
+                        $paperArray[$kPaper][$volKeyName] = $paper[$volValue];
+                    }
+                }
+            }
+            $arrayOfVolOrSect[$kVolOrSect]['papers'] = $paperArray;
+        }
+        return $arrayOfVolOrSect;
+    }
+
+    /**
      * Renvoie les rédacteurs assignés au volume
      * @param bool $active
      * @return mixed
@@ -1023,7 +1083,7 @@ class Episciences_Volume
      */
     public function getStatus(): int
     {
-        return (int) $this->getSetting(self::SETTING_STATUS);
+        return (int)$this->getSetting(self::SETTING_STATUS);
     }
 
 }
