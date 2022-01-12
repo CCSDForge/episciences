@@ -301,14 +301,11 @@ class VolumeController extends Zend_Controller_Action
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
-
             try {
                 $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
             } catch (Zend_Exception $exception) {
                 $arrayOfVolumesOrSections = [];
             }
-
-
             $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
             $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
             return;
