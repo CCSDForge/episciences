@@ -83,9 +83,40 @@ class VolumeController extends Zend_Controller_Action
 
         if (empty($volume)) {
             $this->_helper->redirector('add');
+            return;
         }
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
+
+
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            $arrayOfVolumesOrSections = [];
+            try {
+                $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
+                $sorted_papersForJson = [];
+
+                if (!empty($sorted_papers)) {
+                    foreach ($sorted_papers as $papersForJson) {
+                        unset($papersForJson['needsToBeSaved']);
+                        $papersForJson['statusLabel'] = $this->view->translate(Episciences_Paper::$_statusLabel[$papersForJson['status']], 'en');
+                        $sorted_papersForJson[] = $papersForJson;
+                    }
+                    // add papers to volume array
+                    $arrayOfVolumesOrSections[$volume->getVid()]['papers'] = $sorted_papersForJson;
+                }
+
+            } catch (Zend_Exception $exception) {
+                trigger_error($exception->getMessage(), E_USER_WARNING);
+                // $arrayOfVolumesOrSections default value
+            }
+
+            $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
+            $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
+            return;
+        }
+
 
         $sorted_papersToBeSaved = [];
         $needsToToBeSaved = false;
@@ -300,7 +331,6 @@ class VolumeController extends Zend_Controller_Action
         }
 
 
-
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
@@ -319,7 +349,7 @@ class VolumeController extends Zend_Controller_Action
 
 
         if ($errorMessage !== false) {
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('<strong>' . $this->view->translate($errorMessage). '</strong>');
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
             $this->redirect('/browse/volumes');
         }
 
