@@ -211,6 +211,7 @@ class SectionController extends Zend_Controller_Action
         $sid = $request->getParam('id');
         $errorMessage = false;
         $section = false;
+        $arrayOfVolumesOrSections = [];
 
         if (!$sid || !is_numeric($sid)) {
             $errorMessage = "Identifiant de la rubrique absent ou incorrect.";
@@ -225,6 +226,7 @@ class SectionController extends Zend_Controller_Action
             }
         }
 
+
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
@@ -232,10 +234,9 @@ class SectionController extends Zend_Controller_Action
                 try {
                     $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$section->getSid() => $section], 'Episciences_Section');
                 } catch (Zend_Exception $exception) {
-                    $arrayOfVolumesOrSections = [];
+                    trigger_error($exception->getMessage(), E_USER_WARNING);
+                    // $arrayOfVolumesOrSections default value
                 }
-            } else {
-                $arrayOfVolumesOrSections = [];
             }
             $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
             $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
@@ -248,8 +249,12 @@ class SectionController extends Zend_Controller_Action
             return;
         }
 
+        try {
+            $section->loadIndexedPapers();
+        } catch (Exception $exception) {
+            trigger_error($exception->getMessage(), E_USER_WARNING);
+        }
 
-        $section->loadIndexedPapers();
 
         $this->view->section = $section;
     }

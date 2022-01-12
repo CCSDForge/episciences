@@ -282,39 +282,52 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
         $vid = $request->getParam('id');
+        $errorMessage = false;
+        $volume = false;
+        $arrayOfVolumesOrSections = [];
 
         if (!$vid || !is_numeric($vid)) {
-            $message = '<strong>' . $this->view->translate("Identifiant du volume absent ou incorrect.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->redirect('/browse/volumes');
+            $errorMessage = "Identifiant du volume absent ou incorrect.";
         }
 
-        $volume = Episciences_VolumesManager::find($vid);
-        if (!$volume) {
-            $message = '<strong>' . $this->view->translate("Ce volume n'existe pas.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->redirect('/browse/volumes');
+        if (!$errorMessage) {
+            $volume = Episciences_VolumesManager::find($vid);
+            if (!$volume) {
+                $errorMessage = "Ce volume n'existe pas.";
+            } else {
+                $volume->loadMetadatas();
+            }
         }
 
-        $volume->loadMetadatas();
+
 
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
-            try {
-                $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
-            } catch (Zend_Exception $exception) {
-                $arrayOfVolumesOrSections = [];
+            if ($volume) {
+                try {
+                    $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
+                } catch (Zend_Exception $exception) {
+                    trigger_error($exception->getMessage(), E_USER_WARNING);
+                    // $arrayOfVolumesOrSections default value
+                }
             }
             $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
             $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
             return;
         }
 
+
+        if ($errorMessage !== false) {
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('<strong>' . $this->view->translate($errorMessage). '</strong>');
+            $this->redirect('/browse/volumes');
+        }
+
+
         try {
             $volume->loadIndexedPapers();
-        } catch (Exception $e) {
-            error_log($e->getMessage());
+        } catch (Exception $exception) {
+            trigger_error($exception->getMessage(), E_USER_WARNING);
         }
 
         $this->view->volume = $volume;
