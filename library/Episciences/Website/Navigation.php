@@ -82,7 +82,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         $reader = new Ccsd_Lang_Reader('menu', REVIEW_LANG_PATH, $this->_languages, true);
         foreach ($this->_db->fetchAll($sql) as $row) {
             //Récupération des infos sur la page en base
-            $options = ['languages' => $this->_languages];
+            $options = array_merge(['languages' => $this->_languages], $row);
             foreach ($this->_languages as $lang) {
                 $options['labels'][$lang] = $reader->get($row['LABEL'], $lang);
             }
@@ -91,7 +91,9 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             }
             //Création de la page
             $this->_pages[$row['PAGEID']] = new $row['TYPE_PAGE']($options);
-            $this->_pages[$row['PAGEID']]->load();
+            /** @var Episciences_Website_Navigation_Page $currentPage */
+            $currentPage = $this->_pages[$row['PAGEID']];
+            $currentPage->load();
             //Définition de l'ordre des pages
             if ($row['PAGEID'] > $this->_idx) {
                 $this->_idx = $row['PAGEID'];
