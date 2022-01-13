@@ -687,16 +687,21 @@ class Episciences_PapersManager
     }
 
     /**
-     * Vérifie l'existence d'un papier
-     * @param $docId
-     * @return mixed
-     * @throws Zend_Db_Statement_Exception
+     * @param int $docId
+     * @param int $rvid
+     * @return bool
      */
-    public static function paperExists($docId)
+    public static function paperExists(int $docId, int $rvid = 0) :bool
     {
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, '1')->where('DOCID = ?', $docId);
-        return $select->query()->fetch();
+        $select = $db->select()->from(T_PAPERS, [new Zend_Db_Expr("COUNT('DOCID')")])
+            ->where('DOCID = ?', $docId);
+
+        if ($rvid !== 0) {
+            $select->where('RVID = ?', $rvid);
+        }
+        return ( (int) $select->query()->fetchColumn() > 0 );
 
     }
 

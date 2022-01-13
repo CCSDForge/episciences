@@ -2,8 +2,8 @@
 
 class Episciences_SectionsManager 
 {
-	const TRANSLATION_PATH = REVIEW_LANG_PATH;
-	const TRANSLATION_FILE = 'sections.php';
+	public const TRANSLATION_PATH = REVIEW_LANG_PATH;
+	public const TRANSLATION_FILE = 'sections.php';
 
     /**
      * Renvoie la liste de toutes les rubriques d'une revue
@@ -27,8 +27,8 @@ class Episciences_SectionsManager
 	    $data = $db->fetchAll($select);
 	    
 		if ($data) {
-			foreach ($data as $options) {
-				$oSection = new Episciences_Section($options);
+			foreach ($data as $sectionOptions) {
+				$oSection = new Episciences_Section($sectionOptions);
 				$sections[$oSection->getSid()] = ($toArray) ? $oSection->toArray() : $oSection;
 			}
 		}
@@ -118,14 +118,10 @@ class Episciences_SectionsManager
 		->from(T_SECTIONS, 'COUNT(SID) AS results')
 		->where('RVID = ?', RVID);
 		$nbBeforeSort = $db->fetchOne($select);
-		//var_dump ($nbBeforeSort);
-		//var_dump (count($params['sorted']));
 		if ($nbBeforeSort != count($params['sorted'])) {
 			return false;
 		}
-		
-		//var_dump ($params['sorted']);
-		
+
 		// Si c'est bien le cas, on update les positions
 		foreach ($params['sorted'] as $i => $section)
 		{
@@ -141,38 +137,7 @@ class Episciences_SectionsManager
 		}
 		
 		return true;
-		
-		/*
-		var_dump ($params);
-		
-		$rvid = $params['rvid'];;
-		$id = $params['id'];
-		$id = substr($id, 8);
-		$from = $params['fromPosition'];
-		$to = $params['toPosition'];
-		 
-		$db = Zend_Db_Table_Abstract::getDefaultAdapter();
-	
-		// Update position de la rubrique déplacée
-		$db->update(T_SECTIONS, array('POSITION' => $to), array('SID = ?' => $id));
-	
-		// Update positions critères suivants
-		if ($from > $to) { // Déplace vers le bas de la liste
-			if ($db->update(
-					T_SECTIONS,
-					array('POSITION' => new Zend_DB_Expr('POSITION+1')),
-					array('RVID = ?' => $rvid, 'SID != ?' => $id, 'POSITION >= ?' => $to, 'POSITION < ?' => $from)
-			)) return true;
-		} else { // Déplace vers le haut de la liste
-			if ($db->update(
-					T_SECTIONS,
-					array('POSITION' => new Zend_DB_Expr('POSITION-1')),
-					array('RVID = ?' => $rvid, 'SID != ?' => $id, 'POSITION > ?' => $from, 'POSITION <= ?' => $to)
-			)) return true;
-		}
-	
-		return false;
-		*/
+
 	}
 
     /**

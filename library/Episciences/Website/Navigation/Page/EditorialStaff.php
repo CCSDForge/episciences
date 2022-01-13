@@ -29,9 +29,9 @@ class Episciences_Website_Navigation_Page_EditorialStaff extends Episciences_Web
      */
     public function load()
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()->from('WEBSITE_NAVIGATION', 'PARAMS')->where('SID = ?', RVID)->where('TYPE_PAGE = ?', __CLASS__);
-        $settings = $db->fetchOne($sql);
+        parent::load();
+
+        $settings = Episciences_Website_Navigation_NavigationManager::fetchByClassName(__CLASS__);
 
         if ($settings) {
             $settings = unserialize($settings, ['allowed_classes' => false]);

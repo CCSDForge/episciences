@@ -57,7 +57,8 @@ class Episciences_Paper_Logger
     // https://github.com/CCSDForge/episciences/issues/50
     public const CODE_ALTER_PUBLICATION_DATE = "paper_alter_publication_date";
 
-    const CODE_DOI_ASSIGNED = 'doi_assigned';
+    public const CODE_DOI_ASSIGNED = 'doi_assigned';
+    public const CODE_DOI_UPDATED = 'doi_updated';
 
     public const CODE_COI_REPORTED = "coi_reported";
 
@@ -112,6 +113,7 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_UPDATED => self::WARNING,
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => self::VIOLET,
         self::CODE_DOI_ASSIGNED => self::INFO,
+        self::CODE_DOI_UPDATED => self::INFO,
         self::CODE_ALTER_PUBLICATION_DATE => self::WARNING,
         self::CODE_COI_REPORTED => self::DANGER
     ];

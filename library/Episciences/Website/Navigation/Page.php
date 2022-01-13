@@ -150,5 +150,68 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
         return $this->getPageClass() === 'Episciences_Website_Navigation_Page_File';
     }
 
+    /**
+     * load privileges: 3 possible levels
+     * @return void
+     */
+    public function load()
+    {
+        parent::load();
 
+        $privileges = [];
+
+        $localNavigationFile = REVIEW_PATH . '/config/navigation.json';
+
+        if (is_file($localNavigationFile)) {
+            $navigation = json_decode(file_get_contents($localNavigationFile), true);
+
+            foreach ($navigation as $menuL1) {
+
+                $pageId = $this->getPageIdFromLabel($menuL1['label']);
+
+                if ($pageId !== $this->getPageId()) {
+
+                    if (isset($menuL1['pages'])) {
+
+                        foreach ((array)$menuL1['pages'] as $menuL2) {
+
+                            $pageId = $this->getPageIdFromLabel($menuL2['label']);
+
+                            if ($pageId !== $this->getPageId()) {
+
+                                if (isset($menuL2['pages'])) {
+
+                                    foreach ((array)$menuL2['pages'] as $menuL3) {
+
+                                        $pageId = $this->getPageIdFromLabel($menuL3['label']);
+
+                                        if ($pageId === $this->getPageId()) {
+                                            $privileges = $menuL3['privilege'] ?? '';
+                                        }
+                                    }
+                                }
+
+                            } else {
+                                $privileges = $menuL2['privilege'] ?? '';
+                            }
+
+                        }
+                    }
+
+                } else {
+                    $privileges = $menuL1['privilege'] ?? '';
+                }
+            }
+
+            if (!empty($privileges)) {
+                $this->setAcl(explode(',', $privileges));
+            }
+
+        }
+    }
+
+    private function getPageIdFromLabel(string $label): int
+    {
+        return (int)preg_replace('/\D/', '', $label);
+    }
 }

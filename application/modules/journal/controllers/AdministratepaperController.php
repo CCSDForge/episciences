@@ -156,7 +156,7 @@ class AdministratepaperController extends PaperDefaultController
             $resBack['doi'] = 'Error';
             $resBack['doi_status'] = 'Error';
             $resBack['error_message'] = 'Unauthorized access';
-            error_log('Unauthorized access to requestNewDoi by ' . Episciences_Auth::getUid());
+            trigger_error('Unauthorized access to requestNewDoi by ' . Episciences_Auth::getUid(), E_USER_WARNING);
             echo json_encode($resBack);
         }
 
@@ -187,7 +187,8 @@ class AdministratepaperController extends PaperDefaultController
         } else {
             $resBack['doi'] = 'Error';
             $resBack['error_message'] .= '&nbsp;' . $this->view->translate('Erreur lors de la creation du DOI.');
-            error_log('Error updating DOI ' . $resCreateDoi['doi'] . ' for paperId ' . $paper->getPaperid());
+            trigger_error('Error updating DOI ' . $resCreateDoi['doi'] . ' for paperId ' . $paper->getPaperid(), E_USER_WARNING);
+
         }
         if ($resCreateDoi['resUpdateDoiQueue'] > 0) {
             $resBack['doi_status'] = sprintf(Episciences_Paper_DoiQueue::getStatusHtmlTemplate(Episciences_Paper_DoiQueue::STATUS_ASSIGNED), $this->view->translate(Episciences_Paper_DoiQueue::STATUS_ASSIGNED));
@@ -195,7 +196,7 @@ class AdministratepaperController extends PaperDefaultController
         } else {
             $resBack['doi_status'] = 'Error';
             $resBack['error_message'] .= '&nbsp;' . $this->view->translate('Erreur lors de la sauvegarde du statut du DOI.');
-            error_log('Error updating Queue ' . $resCreateDoi['doi'] . ' for paperId ' . $paper->getPaperid());
+            trigger_error('Error updating Queue ' . $resCreateDoi['doi'] . ' for paperId ' . $paper->getPaperid(), E_USER_WARNING);
         }
         $resBack = array_map('trim', $resBack);
         echo json_encode($resBack);
@@ -560,9 +561,21 @@ class AdministratepaperController extends PaperDefaultController
         $doi_status = $doiQueue->getDoi_status();
 
         if ($doi_status === Episciences_Paper_DoiQueue::STATUS_NOT_ASSIGNED && $paper->getDoi()) {
-            // one DOI not auto assigned
+            // already has one DOI but not auto assigned
             $doi_status = Episciences_Paper_DoiQueue::STATUS_MANUAL;
         }
+
+        $journal = Episciences_ReviewsManager::find(RVID);
+        $journal->loadSettings();
+
+        try {
+            $journalSetting = Zend_Registry::get('reviewSettingsDoi');
+            $this->view->doiAssignMode = $journalSetting->getDoiAssignMode();
+        } catch (Exception $exception) {
+            $this->view->doiAssignMode = '';
+            trigger_error($exception->getMessage(), E_USER_WARNING);
+        }
+
         $this->view->canBeAssignedDOI = $paper->canBeAssignedDOI();
         $this->view->doiQueueStatus = $doi_status;
         $this->view->doiQueueStatusHtml = Episciences_Paper_DoiQueue::getStatusHtmlTemplate($doi_status) . '&nbsp;';
@@ -2840,6 +2853,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId);
         $this->view->doi = $paper->getDoi();
+        $this->view->docid = $paper->getDocid();
 
         $this->_helper->layout->disableLayout();
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/doiform.phtml');
@@ -2847,7 +2861,7 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * save new paper DOI
+     * Save paper DOI
      * @throws Zend_Db_Adapter_Exception
      */
     public function savedoiAction(): void
@@ -2857,26 +2871,47 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
 
-        $paper = Episciences_PapersManager::get($docId);
-        if (!$paper) {
-            echo false;
+        if (!$request->isXmlHttpRequest() && !$request->isPost()) {
             return;
         }
 
-        if ($request->isPost()) {
-
-            $doi = $request->getPost('doi');
-            $paper->setDoi($doi);
-            $paper->save();
-
-            echo $doi;
+        if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
+           echo 'Unauthorized access';
+            trigger_error(sprintf('Unauthorized access to savedoi by %s', Episciences_Auth::getUid()), E_USER_WARNING);
+            return;
         }
+
+
+        $docid = ($request->getPost('docid')) ?: $request->getParam('docid');
+        $paperId = ($request->getPost('paperid')) ?: $request->getParam('paperid');
+        $doi = $request->getPost('doi');
+
+        $doiPattern = "/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i";
+
+        if (($doi !== '') && !preg_match($doiPattern, $doi)) {
+            printf ('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
+            return;
+        }
+
+        if (!Episciences_PapersManager::paperExists($docid, RVID)) {
+            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
+            trigger_error(sprintf('Docid %s not found in RVID %s', $docid, RVID), E_USER_WARNING);
+            return;
+        }
+
+        if (0 === Episciences_PapersManager::updateDoi($doi, $paperId)) {
+            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
+            trigger_error(sprintf('Failed to update paperid %s with DOI %s', $paperId, $doi), E_USER_WARNING);
+            return;
+        }
+
+        Episciences_Paper_Logger::log($paperId, $docid, Episciences_Paper_Logger::CODE_DOI_UPDATED, Episciences_Auth::getUid(), json_encode(['DOI' => $doi]), null, RVID);
+        echo $doi;
     }
 
     /**
-     * Met à jour les métadonnées d'un artcile
+     * Met à jour les métadonnées d'un article
      */
     public function updaterecorddataAction(): void
     {
