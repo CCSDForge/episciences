@@ -33,9 +33,15 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                                 <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($acceptanceRateTooltipInfo) ?>"></em>
 
                             </li>
-                        <?php endif; ?>
 
+                        <?php else: ?>
+
+                            <hr>
+                            <em class="text-left text-info"><?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement') ?></em>
+
+                        <?php endif; ?>
                         <hr>
+
                         <li>
                             <?= ucfirst($this->translate('articles publiés')) ?>
                             <code><?= $this->allPublications ?></code>

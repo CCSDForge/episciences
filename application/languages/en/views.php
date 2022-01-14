@@ -1772,6 +1772,7 @@ return [
     "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
+    "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
     // datasets
     'Données liées' => 'Linked data',
     'Voir' => 'View',
