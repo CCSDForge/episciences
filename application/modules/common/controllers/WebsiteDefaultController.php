@@ -121,20 +121,29 @@ class WebsiteDefaultController extends Zend_Controller_Action
     /**
      * Gestion des pages du site
      */
-    public function menuAction()
+    public function menuAction(): void
     {
         if (!isset($this->_session->website)) {
             //Récupération de la navigation du portail ou d'un journal
             $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
             $this->_session->website->load();
         }
-        if ($this->getRequest()->isPost()) {
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        if ($request->isPost()) {
             $valid = true;
             $pagesDisplay = [];
 
-            foreach ($this->getRequest()->getPost() as $id => $options) {
-                if (strpos($id, 'pages_') !== 0) continue;
+            foreach ($request->getPost() as $id => $options) {
+
+                if (strpos($id, 'pages_') !== 0) {
+                    continue;
+                }
+
                 $pageid = str_replace('pages_', '', $id);
+
                 if (isset($_FILES[$id]['name']) && is_array($_FILES[$id]['name'])) {
                     $options = array_merge($options, $_FILES[$id]['name']);
                 }
@@ -153,13 +162,11 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 } else {
                     $pagesDisplay[$pageid] = false;
                 }
-
-
             }
+
             if ($valid) {
                 //Tous les elements sont valides
                 //Enregistrement du menu
-
 
                 $this->_session->website->save();
                 //Création de la navigation du site et des ACL
