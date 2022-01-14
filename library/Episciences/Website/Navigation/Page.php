@@ -158,8 +158,20 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
     {
         parent::load();
 
-        $privileges = [];
+        $privileges = $this->privilegesProcessing();
 
+        if (!empty($privileges)) {
+            $this->setAcl(explode(',', $privileges));
+        }
+    }
+
+    private function getPageIdFromLabel(string $label): int
+    {
+        return (int)preg_replace('/\D/', '', $label);
+    }
+
+    private function privilegesProcessing(): string
+    {
         $localNavigationFile = REVIEW_PATH . '/config/navigation.json';
 
         if (is_file($localNavigationFile)) {
@@ -186,32 +198,25 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
                                         $pageId = $this->getPageIdFromLabel($menuL3['label']);
 
                                         if ($pageId === $this->getPageId()) {
-                                            $privileges = $menuL3['privilege'] ?? '';
+                                            return $menuL3['privilege'] ?? '';
                                         }
                                     }
                                 }
 
                             } else {
-                                $privileges = $menuL2['privilege'] ?? '';
+                                return $menuL2['privilege'] ?? '';
                             }
 
                         }
                     }
 
                 } else {
-                    $privileges = $menuL1['privilege'] ?? '';
+                    return $menuL1['privilege'] ?? '';
                 }
             }
-
-            if (!empty($privileges)) {
-                $this->setAcl(explode(',', $privileges));
-            }
-
         }
-    }
 
-    private function getPageIdFromLabel(string $label): int
-    {
-        return (int)preg_replace('/\D/', '', $label);
+        return '';
+
     }
 }
