@@ -774,13 +774,11 @@ class UserDefaultController extends Zend_Controller_Action
                 return;
             }
 
-            $currentUserInfo = $userInfo->getRow(0)->toArray();
-
-            $user = new Episciences_User($currentUserInfo);
+            $user = new Episciences_User($userInfo->current()->toArray());
             $user->find($user->getUid()); // Récupère les données propres à Episciences
 
             // Création du token
-            $userTokenInfo = $currentUserInfo;
+            $userTokenInfo = $userInfo->current()->toArray();
             $userTokenInfo['USAGE'] = $form->getValue('USAGE');
             $userToken = new Ccsd_User_Models_UserTokens($userTokenInfo);
             $userToken->generateUserToken();
