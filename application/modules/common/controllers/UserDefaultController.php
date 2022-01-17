@@ -767,18 +767,20 @@ class UserDefaultController extends Zend_Controller_Action
             $userMapper = new Ccsd_User_Models_UserMapper();
             $userInfo = $userMapper->findByUsername($form->getValue('USERNAME'));
 
-            if ($userInfo->count() === 0) {
+            if (!$userInfo || $userInfo->count() === 0) {
                 $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_INVALID_USERNAME;
                 $this->view->form = $form;
                 $this->render('lostpassword');
                 return;
             }
 
-            $user = new Episciences_User($userInfo->current()->toArray());
+            $currentUserInfo = $userInfo->getRow(0)->toArray();
+
+            $user = new Episciences_User($currentUserInfo);
             $user->find($user->getUid()); // Récupère les données propres à Episciences
 
             // Création du token
-            $userTokenInfo = $userInfo->current()->toArray();
+            $userTokenInfo = $currentUserInfo;
             $userTokenInfo['USAGE'] = $form->getValue('USAGE');
             $userToken = new Ccsd_User_Models_UserTokens($userTokenInfo);
             $userToken->generateUserToken();

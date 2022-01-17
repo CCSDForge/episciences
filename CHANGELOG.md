@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add release version on the interface (dashboard and page footer) #116
 - Editors' choice at time of submission: informative text added. (gitlab #369)
 - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
+- added: info message for the stats.
 
 ### Changed
 - Make the version number more explicit when proposing a new version
@@ -40,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: [#408](https://github.com/CCSDForge/episciences/issues/408): An empty e-mail is not sent or received
 - Fixed [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
 - Fixed [#141](https://github.com/CCSDForge/episciences/issues/141): visibility of pages menu is wrong.
+- Fixed: application error when changing password: Zend_Db_Table_Rowset_Abstract::current() must be an instance of mixed, instance of Zend_Db_Table_Row returned.
+
 
 ### Changed
 - [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
