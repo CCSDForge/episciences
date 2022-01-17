@@ -771,7 +771,7 @@ class UserDefaultController extends Zend_Controller_Action
             $userMapper = new Ccsd_User_Models_UserMapper();
             $userInfo = $userMapper->findByUsername($form->getValue('USERNAME'));
 
-            if ($userInfo->count() === 0) {
+            if (!$userInfo || $userInfo->count() === 0) {
                 $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_INVALID_USERNAME;
                 $this->view->form = $form;
                 $this->render('lostpassword');
