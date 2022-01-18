@@ -21,9 +21,8 @@ class ExportController extends Zend_Controller_Action
 
         $docId = $request->getParam('id');
 
-        Episciences_Tools::header('HTTP/1.1 404 Not Found');
-
         if (!is_numeric($docId)) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             echo $this->getResponse()->getBody();
             exit;
@@ -33,6 +32,7 @@ class ExportController extends Zend_Controller_Action
         $paper = Episciences_PapersManager::get($docId);
 
         if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             echo $this->getResponse()->getBody();
             exit;
