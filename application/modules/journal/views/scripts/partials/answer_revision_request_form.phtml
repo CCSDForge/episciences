@@ -14,13 +14,15 @@ $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
                 <span class="caret" style="margin-left: 5px;"></span>
             </a>
             <ul class="dropdown-menu">
-                <li>
-                    <a href="/paper/contactrequest?id=<?= $this->current_demand['PCID'] ?>"
-                       title="<?= $this->translate('Contacter sans dépôt de version') ?>"
-                       class="modal-opener"
-                       data-target="#"><?= $this->translate('Contacter sans dépôt de version') ?>
-                    </a>
-                </li>
+                <?php if (Episciences_Auth::getUid() === $this->paper->getUid()): ?>
+                    <li>
+                        <a href="/paper/contactrequest?id=<?= $this->current_demand['PCID'] ?>"
+                           title="<?= $this->translate('Contacter sans dépôt de version') ?>"
+                           class="modal-opener"
+                           data-target="#"><?= $this->translate('Contacter sans dépôt de version') ?>
+                        </a>
+                    </li>
+                <?php endif; ?>
                 <li>
                     <a href="/paper/answerrequest?id=<?php echo $this->current_demand['PCID']; ?>"
                        title="<?php echo $this->translate('Répondre sans faire de modifications'); ?>"

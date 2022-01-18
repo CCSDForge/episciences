@@ -178,12 +178,13 @@ class Episciences_Comment
      * Eviter aussi  l'écrasement de l'ancien fichier lors de l'edition de ce dernier.
      * @param string $action
      * @param bool $strict
+     * @param int|null $uid
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      */
-    public function save($action = 'insert', $strict = false)
+    public function save(string $action = 'insert', bool $strict = false, int $uid = null): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $result = false;
@@ -192,7 +193,7 @@ class Episciences_Comment
 
         if ($action === 'insert') { // INSERT
 
-            if ($this->insertComment($db)) {
+            if ($this->insertComment($db, $uid)) {
                 $this->setPcid($db->lastInsertId());
                 $this->find($this->getPcid());
                 $result = true;
@@ -206,7 +207,7 @@ class Episciences_Comment
         // not log here if copy editing comment
         if (
             $result &&
-            (!$this->isCopyEditingComment() && !in_array($this->getType(), $this->_excludedCommentsTypes))
+            (!$this->isCopyEditingComment() && !in_array($this->getType(), $this->_excludedCommentsTypes, true))
         ) {
             $this->logComment();
         }
@@ -449,7 +450,7 @@ class Episciences_Comment
      * log comment
      */
 
-    public function logComment()
+    public function logComment(): void
     {
         $type = $this->getType();
         $detail = ['user' => Episciences_Auth::getUser()->toArray(), 'comment' => $this->toArray()];
@@ -531,21 +532,24 @@ class Episciences_Comment
 
     /**
      * @param Zend_Db_Adapter_Abstract $db
-     * @return int
+     * @param int|null $uid
+     * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    private function insertComment(Zend_Db_Adapter_Abstract $db)
+    private function insertComment(Zend_Db_Adapter_Abstract $db, int $uid = null): bool
     {
-        $values = array(
+        $values = [
             'PARENTID' => $this->getParentid(),
             'TYPE' => $this->getType(),
             'DOCID' => $this->getDocid(),
-            'UID' => Episciences_Auth::getUid(),
+            'UID' => !$uid ? Episciences_Auth::getUid() : $uid,
             'MESSAGE' => $this->getMessage(),
             'FILE' => $this->getFile(),
             'DEADLINE' => $this->getDeadline(),
             'OPTIONS' => ($this->hasOptions()) ? Zend_Json::encode($this->getOptions()) : null,
-            'WHEN' => new Zend_Db_Expr('NOW()'));
+            'WHEN' => new Zend_Db_Expr('NOW()')
+        ];
+
         if (!$db->insert(T_PAPER_COMMENTS, $values)) {
             return false;
         }
@@ -558,7 +562,7 @@ class Episciences_Comment
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    private function updateComment(Zend_Db_Adapter_Abstract $db)
+    private function updateComment(Zend_Db_Adapter_Abstract $db): bool
     {
         $values = array(
             'MESSAGE' => $this->getMessage(),
@@ -575,7 +579,7 @@ class Episciences_Comment
      * @param bool $strict
      * @throws Zend_File_Transfer_Exception
      */
-    private function uploadFileComment(bool $strict)
+    private function uploadFileComment(bool $strict): void
     {
         if (!$strict && !$this->_isCopyEditingComment && !empty($path = $this->getFilePath())) {
             $uploads = Episciences_Tools::uploadFiles($path);

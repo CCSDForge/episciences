@@ -9,7 +9,7 @@ class SubmitController extends DefaultController
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
      */
-    public function indexAction()
+    public function indexAction(): void
     {
 
         $submit = new Episciences_Submit();
@@ -85,7 +85,7 @@ class SubmitController extends DefaultController
                         $message = $result['message'];
                     }
 
-                    if ($result['code'] == 0) {
+                    if ($result['code'] === 0) {
                         $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
                     } else {
                         $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
