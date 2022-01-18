@@ -63,7 +63,7 @@ class VolumeController extends Zend_Controller_Action
      * Edit a volume
      * @throws Exception
      */
-    public function editAction()
+    public function editAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -89,7 +89,7 @@ class VolumeController extends Zend_Controller_Action
         $sorted_papers = $volume->getSortedPapersFromVolume();
 
 
-        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+        if ($request->getHeader('Accept') === self::JSON_MIMETYPE && $request->getActionName() === 'all') {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
             $arrayOfVolumesOrSections = [];
@@ -361,6 +361,28 @@ class VolumeController extends Zend_Controller_Action
         }
 
         $this->view->volume = $volume;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function allAction(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getFrontController()->getRequest();
+
+        if ($request->getHeader('Accept') !== self::JSON_MIMETYPE) {
+
+            $request->getParam('id') ?
+                $this->redirect('/volume/edit?id=' . $this->getRequest()->getParam('id'))
+                :
+                $this->redirect('/volume/list');
+
+            return;
+        }
+
+        $this->editAction();
+
     }
 
 

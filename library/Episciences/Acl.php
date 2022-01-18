@@ -87,7 +87,8 @@ class Episciences_Acl extends Ccsd_Acl
         'user-su',  // idem user-list (se connecter à la place d'un autre utilisateur)
         'user-view',
         'volume-index',
-        'user-photo'
+        'user-photo',
+        'volume-all'
     ];
 
     /** @var array : configurable resources : see Episciences_Review */
