@@ -380,7 +380,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         // Contrôle des erreurs
         $errors = [];
-        $isEmptyMail = empty($post['subject']) && empty($post['body']) && empty($post['attachments']);
+        $isEmptyMail = empty($post['subject']) && empty($post['content']) && empty($post['attachments']);
 
         if ($checkedRecipients['isDetectedErrors']) {
             $errors[] = "Veuillez saisir au moins un destinataire";
@@ -763,11 +763,11 @@ class AdministratemailController extends Zend_Controller_Action
 
     /**
      * @param array $post
-     * @param bool $strict
+     * @param bool $strict [default true: the main recipient ($to) is required ]
      * @return array
      * @throws Zend_Json_Exception
      */
-    private function checkRecipients(array $post, bool $strict = false): array
+    private function checkRecipients(array $post, bool $strict = true): array
     {
 
         $to = (!empty(Ccsd_Tools::ifsetor($post['hidden_to']))) ? Zend_Json::decode($post['hidden_to']) : [];
@@ -782,7 +782,7 @@ class AdministratemailController extends Zend_Controller_Action
 
             ],
 
-            'isDetectedErrors' => (!$strict) ? empty($to) : (empty($to) && empty($cc) && empty($bcc))
+            'isDetectedErrors' => $strict ? empty($to) : (empty($to) && empty($cc) && empty($bcc))
         ];
 
     }
