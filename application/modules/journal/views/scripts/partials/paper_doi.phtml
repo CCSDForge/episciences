@@ -14,7 +14,7 @@
         } else {
             echo '<span id="doi-status" class="doi-status"></span>';
         }
-         ?>
+        ?>
         <div id="doi-status-loader" style="display: none;"></div>
         <?php
         if ($this->paperDoi) {
@@ -30,18 +30,37 @@
         <?php if (($this->canBeAssignedDOI) && (Episciences_Auth::isAllowedToManageDoi())) : ?>
             <?php if ($this->doiQueueStatus === Episciences_Paper_DoiQueue::STATUS_MANUAL)  : ?>
                 <button id="doi-action" class="btn btn-default btn-sm popover-link edit-doi" style="margin-left: 5px"
-                        onclick="getDoiForm(this, <?php echo $this->docid ?>)">
+                        onclick="getDoiForm(this, <?php echo $this->paperid ?>)">
                     <span class="fas fa-edit" style="margin-right: 5px"></span><?php echo $doiActionText; ?>
                 </button>
             <?php endif; ?>
 
+
+       <?php //not assigned ?>
             <?php if ($this->doiQueueStatus === Episciences_Paper_DoiQueue::STATUS_NOT_ASSIGNED): ?>
-                <button id="requestNewDoi" data-docid="<?php echo $this->docid ?>"
-                        class="btn btn-default btn-sm popover-link" style="margin-left: 5px">
+
+            <?php // auto ?>
+                <?php if ($this->doiAssignMode !== Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_DISABLED): ?>
+                    <button id="requestNewDoi" data-docid="<?php echo $this->docid ?>"
+                            class="btn btn-default btn-sm popover-link" style="margin-left: 5px">
                 <span class="fas fa-robot"
                       style="margin-right: 5px"></span><?php echo $this->translate('Demander un DOI'); ?>
-                </button>
+                    </button>
+
+                <?php // Disabled:  manual input by journal ?>
+                <?php else : ?>
+
+
+                    <button class="btn btn-default btn-sm popover-link edit-doi" style="margin-left: 5px"
+                            onclick="getDoiForm(this, <?= $this->paperid ?>)">
+                        <span class="glyphicon glyphicon glyphicon-cog" style="margin-right: 5px"></span>
+                        <?= $this->translate($doiActionText) ?>
+                    </button>
+
+                <?php endif; ?>
             <?php endif; ?>
+
+
         <?php endif; ?>
 
     </div>

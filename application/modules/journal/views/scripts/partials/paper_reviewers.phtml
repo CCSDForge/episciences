@@ -135,7 +135,7 @@ $ratings = $paper->getRatings();
                                                     $userTag .= '</code>';
 
                                                     if(!$invitation['reviewer']['hasLocalData']){
-                                                        $userTag .= ' ( <small>' . strtoupper($this->translate("l'utilisateur n'a pas encore de profil")) . ' </small>)';
+                                                        $userTag .= ' (<small><em>' . $this->translate("l'utilisateur n'a pas encore de profil") . '</em></em></small>)';
                                                     }
 
                                                     $userTag .= '</mark>';

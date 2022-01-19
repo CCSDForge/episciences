@@ -278,7 +278,7 @@ class Episciences_Paper
     private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
     public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
-    public static $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats'];
+    public static $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats', 'json'];
 
     /**
      * Episciences_Paper constructor.
@@ -512,6 +512,7 @@ class Episciences_Paper
 
     /**
      * @return array
+     * @throws Zend_Db_Statement_Exception
      */
     public function toArray(): array
     {
@@ -567,6 +568,67 @@ class Episciences_Paper
         if (isset($this->_latestVersionId) && $this->_latestVersionId) {
             $result['latestVersionId'] = $this->_latestVersionId;
         }
+
+        if ($this->hasHook && isset($this->_concept_identifier)) {
+            $result['concept_identifier'] = $this->getConcept_identifier();
+        }
+
+        return $result;
+    }
+
+/*
+ * A paper object, as an array, with only public information
+ */
+    public function toPublicArray(): array
+    {
+
+
+        $volumeMeta = [];
+        $sectionMeta = [];
+
+        if ($this->getVid()) {
+            /* @var $oVolume Episciences_Volume */
+            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            if ($oVolume) {
+                $volumeMeta[] = $oVolume->toPublicArray();
+            }
+        }
+
+
+        if ($this->getSid()) {
+            /* @var $oSection Episciences_Section */
+            $oSection = Episciences_SectionsManager::find($this->getSid());
+            if ($oSection) {
+                $sectionMeta[] = $oSection->toPublicArray();
+            }
+        }
+
+
+        $journal = Episciences_ReviewsManager::find($this->getRvid());
+
+        $result = [];
+        $result['docId'] = $this->getDocid();
+        $result['paperId'] = $this->getPaperid();
+        $result['url'] = sprintf('%s/%s', $journal->getUrl(), $this->getPaperid());
+        $result['doi'] = $this->getDoi();
+        $result['journalName'] = $journal->getName();
+        $result['issn']= $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT);
+        $result['eissn']= $journal->getSetting(Episciences_Review::SETTING_ISSN);
+
+        $result['volume'] = $volumeMeta;
+        $result['section'] = $sectionMeta;
+        $result['repositoryName'] = Episciences_Repositories::getLabel($this->getRepoid());
+        $result['repositoryIdentifier'] = $this->getIdentifier();
+        $result['repositoryVersion'] = $this->getVersion();
+        $result['repositoryLink'] = Episciences_Repositories::getDocUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
+        $result['dateSubmitted'] = $this->getSubmission_date();
+        $result['dateAccepted'] = $this->getAcceptanceDate();
+        $result['datePublished'] = $this->getPublication_date();
+
+        $result['titles'] = $this->getMetadata('title');
+        $result['authors'] = $this->getMetadata('authors');
+        $result['abstracts'] = $this->getAbstractsCleaned();
+        $result['keywords'] = $this->getMetadata('subjects');
 
         if ($this->hasHook && isset($this->_concept_identifier)) {
             $result['concept_identifier'] = $this->getConcept_identifier();
@@ -704,6 +766,7 @@ class Episciences_Paper
     /**
      * @param $record
      * @return $this
+     * @throws Zend_Db_Statement_Exception
      */
     public function setRecord($record): self
     {
@@ -1664,7 +1727,7 @@ class Episciences_Paper
     /**
      * set article XML (record + local data)
      * @return bool
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|DOMException
      */
     public function updateXml()
     {
@@ -3563,8 +3626,41 @@ class Episciences_Paper
         if ((!$this->_metadata) || (!array_key_exists('description', $this->_metadata))) {
             return [];
         }
-
         return $this->_metadata['description'];
+    }
+
+    /**
+     * Get an array of abstracts
+     * @return array
+     */
+    private function getAbstractsCleaned()
+    {
+        $abstracts = [];
+        foreach ($this->getAllAbstracts() as $locale => $abstract) {
+            if (is_array($abstract)) {
+                $abstractLang = array_key_first($abstract);
+                $abstractText = array_shift($abstract);
+                $abstractText = $this->cleanAbstract($abstractText);
+                if ($abstractText !== 'International audience') {
+                    $abstracts[][$abstractLang] = $abstractText;
+                }
+            } else {
+                $abstract = $this->cleanAbstract($abstract);
+                if ($abstract !== 'International audience') {
+                    $abstracts[$locale] = $abstract;
+                }
+            }
+        }
+        return $abstracts;
+    }
+
+    /**
+     * @param string $abstract
+     * @return string
+     */
+    private function cleanAbstract(string $abstract): string
+    {
+        return trim(preg_replace("/\r|\n/", " ", $abstract));
     }
 
     /**
@@ -3577,6 +3673,15 @@ class Episciences_Paper
         $tei = new Episciences_Paper_Tei($this);
         return $tei->generateXml();
     }
+
+
+    private function getJson(): string
+    {
+        return json_encode($this->toPublicArray());
+
+
+    }
+
 
     /**
      * @return mixed

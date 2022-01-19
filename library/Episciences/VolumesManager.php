@@ -2,7 +2,8 @@
 
 class Episciences_VolumesManager
 {
-    const MAX_STRING_LENGTH = 255;
+    public const MAX_STRING_LENGTH = 255;
+
     /**
      * Retourne un volume
      * @param $vid

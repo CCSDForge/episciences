@@ -6,41 +6,42 @@
  */
 class Episciences_Review_DoiSettings
 {
-    const DOI_FORMAT_REVIEW_CODE = '%R%';
-    const DOI_FORMAT_PAPER_VOLUME = '%V%';
-    const DOI_FORMAT_PAPER_SECTION = '%S%';
+    public const DOI_FORMAT_REVIEW_CODE = '%R%';
+    public const DOI_FORMAT_PAPER_VOLUME = '%V%';
+    public const DOI_FORMAT_PAPER_SECTION = '%S%';
 
-    const DOI_FORMAT_PAPER_VOLUME_INT = '%V_INT%';
-    const DOI_FORMAT_PAPER_VOLUME_INT_REPLACEMENT_CHAR = '%V_INT[-]%';
+    public const DOI_FORMAT_PAPER_VOLUME_INT = '%V_INT%';
+    public const DOI_FORMAT_PAPER_VOLUME_INT_REPLACEMENT_CHAR = '%V_INT[-]%';
 
-    const DOI_FORMAT_PAPER_VOLUME_BIB_REF = '%V_BIB_REF%';
+    public const DOI_FORMAT_PAPER_VOLUME_BIB_REF = '%V_BIB_REF%';
 
-    const DOI_FORMAT_PAPER_SECTION_INT = '%S_INT%';
-    const DOI_FORMAT_PAPER_SECTION_INT_REPLACEMENT_CHAR = '%S_INT[-]%';
+    public const DOI_FORMAT_PAPER_SECTION_INT = '%S_INT%';
+    public const DOI_FORMAT_PAPER_SECTION_INT_REPLACEMENT_CHAR = '%S_INT[-]%';
 
-    const DOI_FORMAT_PAPER_VOLUME_ORDER = '%VP%';
-    const DOI_FORMAT_PAPER_ID = '%P%';
-    const DOI_FORMAT_PAPER_YEAR = '%Y%';
-    const DOI_FORMAT_PAPER_MONTH = '%M%';
-
-
-    const DOI_ASSIGN_MODE_AUTO = 'automatic';
-    const DOI_ASSIGN_MODE_MANUAL = 'manual';
+    public const DOI_FORMAT_PAPER_VOLUME_ORDER = '%VP%';
+    public const DOI_FORMAT_PAPER_ID = '%P%';
+    public const DOI_FORMAT_PAPER_YEAR = '%Y%';
+    public const DOI_FORMAT_PAPER_MONTH = '%M%';
 
 
-    const SETTING_DOI_PREFIX = 'doiPrefix';
-    const SETTING_DOI_FORMAT = 'doiFormat';
-    const SETTING_DOI_REGISTRATION_AGENCY = 'doiRegistrationAgency';
-    const SETTING_DOI_ASSIGN_MODE = 'doiAssignMode';
+    public const DOI_ASSIGN_MODE_AUTO = 'automatic';
+    public const DOI_ASSIGN_MODE_MANUAL = 'manual';
+    public const DOI_ASSIGN_MODE_DISABLED = 'disabled';
 
 
-    const DOI_DEFAULT_ASSIGN_MODE = self::DOI_ASSIGN_MODE_AUTO;
-    const SETTING_DOI_DEFAULT_REGISTRATION_AGENCY = 'crossref';
-    const SETTING_DOI_DEFAULT_PREFIX = ''; // test prefix
+    public const SETTING_DOI_PREFIX = 'doiPrefix';
+    public const SETTING_DOI_FORMAT = 'doiFormat';
+    public const SETTING_DOI_REGISTRATION_AGENCY = 'doiRegistrationAgency';
+    public const SETTING_DOI_ASSIGN_MODE = 'doiAssignMode';
+
+
+    public const DOI_DEFAULT_ASSIGN_MODE = self::DOI_ASSIGN_MODE_AUTO;
+    public const SETTING_DOI_DEFAULT_REGISTRATION_AGENCY = 'crossref';
+    public const SETTING_DOI_DEFAULT_PREFIX = ''; // test prefix
     /**
      * DOI default format
      */
-    const SETTING_DOI_DEFAULT_DOI_FORMAT =
+    public const SETTING_DOI_DEFAULT_DOI_FORMAT =
         self::DOI_FORMAT_REVIEW_CODE
         . '-'
         . self::DOI_FORMAT_PAPER_ID;
@@ -159,8 +160,6 @@ class Episciences_Review_DoiSettings
             $oSection = Episciences_SectionsManager::find($paper->getSid());
             if ($oSection) {
                 $section = $oSection->getName('en', true);
-            } else {
-                $section = '';
             }
         }
 
@@ -213,11 +212,9 @@ class Episciences_Review_DoiSettings
 
         $doi = str_replace($search, $replace, $doi);
 
-        $doi = str_replace(' ', '', $doi);
-        $doi = str_replace('..', '.', $doi);
-        $doi = str_replace('--', '-', $doi);
+        $doi = str_replace([' ', '..', '--'], ['', '.', '-'], $doi);
 
-        // DOI spec: DOI is case insensitive
+        // DOI spec: DOI is case-insensitive
         return $this->getDoiPrefix() . '/' . strtolower($doi);
     }
 

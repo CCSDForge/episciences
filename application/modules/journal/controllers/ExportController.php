@@ -7,6 +7,50 @@
 
 class ExportController extends Zend_Controller_Action
 {
+
+    /**
+     * exporte en format BIBTEX
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function jsonAction()
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        $docId = $request->getParam('id');
+
+        if (!is_numeric($docId)) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->renderScript('index/notfound.phtml');
+            echo $this->getResponse()->getBody();
+            exit;
+        }
+
+        /** @var Episciences_Paper $paper */
+        $paper = Episciences_PapersManager::get($docId);
+
+        if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->renderScript('index/notfound.phtml');
+            echo $this->getResponse()->getBody();
+            exit;
+        }
+
+        $this->redirectIfNotPublished($request, $paper);
+
+        $export = $this->exportTo($paper, 'json');
+
+        if ($export) {
+            echo $export;
+        }
+
+        exit;
+
+    }
+
     /**
      * exporte en format BIBTEX
      * @throws Zend_Db_Statement_Exception
@@ -21,9 +65,8 @@ class ExportController extends Zend_Controller_Action
 
         $docId = $request->getParam('id');
 
-        Episciences_Tools::header('HTTP/1.1 404 Not Found');
-
         if (!is_numeric($docId)) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             echo $this->getResponse()->getBody();
             exit;
@@ -33,6 +76,7 @@ class ExportController extends Zend_Controller_Action
         $paper = Episciences_PapersManager::get($docId);
 
         if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             echo $this->getResponse()->getBody();
             exit;
@@ -68,11 +112,11 @@ class ExportController extends Zend_Controller_Action
                 $this->redirect('/' . $id . '/' . $request->getActionName());
                 exit;
 
-            } else {
-                // redirection vers la page d'authentification
-                $this->redirect('/user/login/forward-controller/' . $request->getControllerName() . '/id/' . $paper->getDocid() . '/forward-action/' . $request->getActionName());
-                exit;
             }
+
+            // redirection vers la page d'authentification
+            $this->redirect('/user/login/forward-controller/' . $request->getControllerName() . '/id/' . $paper->getDocid() . '/forward-action/' . $request->getActionName());
+            exit;
         }
 
     }
@@ -84,17 +128,15 @@ class ExportController extends Zend_Controller_Action
      */
     private function exportTo(Episciences_Paper $paper, string $format)
     {
-        $header = 'Content-Type: text/xml; charset: utf-8';
-
-        if (!$paper instanceof Episciences_Paper || !is_string($format)) {
-            return false;
-        }
 
         if ($format === 'bibtex') {
-            $header = 'Content-Type: text/plain; charset: utf-8';
+            header('Content-Type: text/plain; charset: utf-8');
+        } elseif ($format === 'json') {
+            header('Content-Type: text/json; charset: utf-8');
+        } else {
+            header('Content-Type: text/xml; charset: utf-8');
         }
 
-        Episciences_Tools::header($header);
         return $paper->get($format);
     }
 

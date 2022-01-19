@@ -2,6 +2,7 @@
 
 class VolumeController extends Zend_Controller_Action
 {
+    public const JSON_MIMETYPE = 'application/json';
 
     public function indexAction()
     {
@@ -62,7 +63,7 @@ class VolumeController extends Zend_Controller_Action
      * Edit a volume
      * @throws Exception
      */
-    public function editAction()
+    public function editAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -82,16 +83,47 @@ class VolumeController extends Zend_Controller_Action
 
         if (empty($volume)) {
             $this->_helper->redirector('add');
+            return;
         }
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
 
-        $sorted_papersToBeSaved= [];
+
+        if ($request->getHeader('Accept') === self::JSON_MIMETYPE && $request->getActionName() === 'all') {
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            $arrayOfVolumesOrSections = [];
+            try {
+                $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
+                $sorted_papersForJson = [];
+
+                if (!empty($sorted_papers)) {
+                    foreach ($sorted_papers as $papersForJson) {
+                        unset($papersForJson['needsToBeSaved']);
+                        $papersForJson['statusLabel'] = $this->view->translate(Episciences_Paper::$_statusLabel[$papersForJson['status']], 'en');
+                        $sorted_papersForJson[] = $papersForJson;
+                    }
+                    // add papers to volume array
+                    $arrayOfVolumesOrSections[$volume->getVid()]['papers'] = $sorted_papersForJson;
+                }
+
+            } catch (Zend_Exception $exception) {
+                trigger_error($exception->getMessage(), E_USER_WARNING);
+                // $arrayOfVolumesOrSections default value
+            }
+
+            $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
+            $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
+            return;
+        }
+
+
+        $sorted_papersToBeSaved = [];
         $needsToToBeSaved = false;
 
         foreach ($sorted_papers as $position => $paper) {
             $sorted_papersToBeSaved[$position] = $paper['paperid'];
-            if ( ($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved) ) {
+            if (($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved)) {
                 $needsToToBeSaved = true;
             }
         }
@@ -281,29 +313,76 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
         $vid = $request->getParam('id');
+        $errorMessage = false;
+        $volume = false;
+        $arrayOfVolumesOrSections = [];
 
         if (!$vid || !is_numeric($vid)) {
-            $message = '<strong>' . $this->view->translate("Identifiant du volume absent ou incorrect.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+            $errorMessage = "Identifiant du volume absent ou incorrect.";
+        }
+
+        if (!$errorMessage) {
+            $volume = Episciences_VolumesManager::find($vid);
+            if (!$volume) {
+                $errorMessage = "Ce volume n'existe pas.";
+            } else {
+                $volume->loadMetadatas();
+            }
+        }
+
+
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            if ($volume) {
+                try {
+                    $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
+                } catch (Zend_Exception $exception) {
+                    trigger_error($exception->getMessage(), E_USER_WARNING);
+                    // $arrayOfVolumesOrSections default value
+                }
+            }
+            $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
+            $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
+            return;
+        }
+
+
+        if ($errorMessage !== false) {
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
             $this->redirect('/browse/volumes');
         }
 
-        $volume = Episciences_VolumesManager::find($vid);
-        if (!$volume) {
-            $message = '<strong>' . $this->view->translate("Ce volume n'existe pas.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->redirect('/browse/volumes');
-        }
-
-        $volume->loadMetadatas();
 
         try {
             $volume->loadIndexedPapers();
-        } catch (Exception $e) {
-            error_log($e->getMessage());
+        } catch (Exception $exception) {
+            trigger_error($exception->getMessage(), E_USER_WARNING);
         }
 
         $this->view->volume = $volume;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function allAction(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getFrontController()->getRequest();
+
+        if ($request->getHeader('Accept') !== self::JSON_MIMETYPE) {
+
+            $request->getParam('id') ?
+                $this->redirect('/volume/edit?id=' . $this->getRequest()->getParam('id'))
+                :
+                $this->redirect('/volume/list');
+
+            return;
+        }
+
+        $this->editAction();
+
     }
 
 

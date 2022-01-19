@@ -1,14 +1,18 @@
-<div style="width: 400px">
-<form action="/administratepaper/savedoi" id="doi-form-<?php echo $this->docid ?>" style="height : 34px;">
-	
-	<div class="pull-right" style="padding-left : 10px;">
-		<button type="submit" class="btn btn-primary"><?php echo $this->translate("Enregistrer"); ?></button>
-	</div>
-    
-	<div class="input-group">
-		<span class="input-group-addon"><?php echo $this->translate('DOI'); ?></span>
-		<input type="text" class="form-control" name="doi" <?php if ($this->doi) echo 'value="'.$this->doi.'"'; ?>/>
-	</div>
 
-</form>
+
+<div style="width: 400px">
+    <form action="/administratepaper/savedoi" id="doi-form-<?php echo $this->docid ?>" style="height : 34px;">
+
+        <div class="pull-right" style="padding-left : 10px;">
+            <button type="submit" class="btn btn-primary"><?php echo $this->translate("Enregistrer"); ?></button>
+        </div>
+
+        <div class="input-group">
+            <input type="hidden" name="docid" value="<?= $this->docid ?>">
+            <span class="input-group-addon">DOI</span>
+            <input type="text" class="form-control" id="doi" pattern="^10.\d{4,9}/[-._;()/:A-Za-z0-9]+$" placeholder="10.1234/56789"
+                   name="doi" <?php if ($this->doi) echo 'value="' . $this->escape($this->doi) . '"'; ?>/>
+        </div>
+
+    </form>
 </div>
