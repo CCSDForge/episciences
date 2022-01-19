@@ -382,9 +382,9 @@ class Episciences_Section
     {
         if ($lang) {
             return $this->_title[$lang];
-        } else {
-            return $this->_title;
         }
+
+        return $this->_title;
     }
 
     /**
@@ -548,6 +548,20 @@ class Episciences_Section
     }
 
     /**
+     * @return array
+     * @throws Zend_Exception
+     */
+    public function toPublicArray()
+    {
+        $result = [];
+        $result['sid'] = $this->getSid();
+        $result['title'] = $this->getName('en', true);
+        $result['description'] = $this->getDescription();
+        return $result;
+    }
+
+
+    /**
      * Définit le titre de la rubrique (dans différentes langues)
      * @return string
      */
@@ -590,12 +604,12 @@ class Episciences_Section
      * @return string|null
      * @throws Zend_Exception
      */
-    public function getName($lang = null, $forceResult = false)
+    public function getName($langSection = null, $forceResult = false)
     {
         $result = null;
         // try to fetch translation for specified language
-        if (Zend_Registry::get('Zend_Translate')->isTranslated($this->getNameKey(), $lang)) {
-            $result = Zend_Registry::get('Zend_Translate')->translate($this->getNameKey(), $lang);
+        if (Zend_Registry::get('Zend_Translate')->isTranslated($this->getNameKey(), $langSection)) {
+            $result = Zend_Registry::get('Zend_Translate')->translate($this->getNameKey(), $langSection);
         }
         if (!$result && $forceResult) {
             if (Zend_Registry::get('Zend_Translate')->isTranslated($this->getNameKey(), 'en')) {
