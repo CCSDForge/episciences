@@ -28,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
   - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
   - added: info message for the stats.
-  
+  - JSON added to the list of public export formats
+
 ### Changed
 - Make the version number more explicit when proposing a new version
 - Refactoring
@@ -43,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
 - Fixed: RT#144252: cleanup of attached file names
 - Fixed: RT#144246: an inactive account remains visible on the Editorial Staff members page. 
-- Fixed: [#408](https://github.com/CCSDForge/episciences/issues/408): An empty e-mail is not sent or received
+- Fixed: [#117](https://github.com/CCSDForge/episciences/issues/117): An empty e-mail is not sent or received
 - Fixed [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
 - Fixed [#141](https://github.com/CCSDForge/episciences/issues/141): visibility of pages menu is wrong.
 

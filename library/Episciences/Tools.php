@@ -1084,6 +1084,7 @@ class Episciences_Tools
     }
 
     /**
+     * @deprecated use php 7.4 native function array_key_first
      * @param array $arr
      * @return int|string|null
      */

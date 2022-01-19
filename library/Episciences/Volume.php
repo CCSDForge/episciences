@@ -552,6 +552,14 @@ class Episciences_Volume
         return $res;
     }
 
+    public function toPublicArray(): array
+    {
+        $res['vid'] = $this->getVid();
+        $res['name'] = $this->getName('en', true);
+        return $res;
+    }
+
+
     /**
      * @return mixed
      */
