@@ -26,7 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#37](https://github.com/CCSDForge/episciences/issues/37)
   - On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html (only published content)
   - On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
-  - added: info message for the stats.
+  - JSON added to the list of public export formats
+- added: info message for the stats.
 
 ### Changed
 - Make the version number more explicit when proposing a new version
