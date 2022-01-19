@@ -627,7 +627,7 @@ class Episciences_Paper
 
         $result['titles'] = $this->getMetadata('title');
         $result['authors'] = $this->getMetadata('authors');
-        $result['abstract'] = $this->getAbstractsCleaned();
+        $result['abstracts'] = $this->getAbstractsCleaned();
         $result['keywords'] = $this->getMetadata('subjects');
 
         if ($this->hasHook && isset($this->_concept_identifier)) {
