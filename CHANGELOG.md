@@ -16,36 +16,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 
-## Unreleased
+## 1.0.23 - 2022-01-19
 
 ### Added
-- Add release version on the interface (dashboard and page footer) #116
+- [#116](https://github.com/CCSDForge/episciences/issues/116) Release version is displayed on the interface (dashboard and page footer)
 - Editors' choice at time of submission: informative text added. (gitlab #369)
-- Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
-- Fix #143 Allow to switch off manual or automatic DOI assignation (disabled mode)
+- [#143](https://github.com/CCSDForge/episciences/issues/143) New DOI setting: Allow switching off manual or automatic DOI assignation (disabled mode)
 - [#37](https://github.com/CCSDForge/episciences/issues/37)
+  - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
   - On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html (only published content)
   - On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
   - JSON added to the list of public export formats
-- added: info message for the stats.
+- Enhanced information message for statistics
 
 ### Changed
-- Make the version number more explicit when proposing a new version
-- Refactoring
+- UI/UX: Make the version number more explicit when proposing a new version
+- Code Refactoring fixing of warning
 - Dumping default data for table `MAIL_TEMPLATE`
 
 ### Fixed
-- Fixed mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
-- Fixed: Sending emails: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
-- Fixed: IDE warnings
-- Fixed: Inconsistent REMINDER_DELAY: the displayed value is the "delay" parameter of the reminder instead of the calculated value (interval in number of days between the time the reminder was sent and the deadline.
-- Fixed: new submission: "submission date" metadata is empty: do not display it anymore.
-- Fixed: [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
-- Fixed: RT#144252: cleanup of attached file names
-- Fixed: RT#144246: an inactive account remains visible on the Editorial Staff members page. 
-- Fixed: [#117](https://github.com/CCSDForge/episciences/issues/117): An empty e-mail is not sent or received
-- Fixed [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
-- Fixed [#141](https://github.com/CCSDForge/episciences/issues/141): visibility of pages menu is wrong.
+- [#126](https://github.com/CCSDForge/episciences/issues/126) Clicking outside of the window to compose an email closes the window with no confirmation #126
+- [#117](https://github.com/CCSDForge/episciences/issues/117) Mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
+- [#149](https://github.com/CCSDForge/episciences/issues/149) Emails and default language selection: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
+- Inconsistent REMINDER_DELAY: the displayed value is the "delay" parameter of the reminder instead of the calculated value (interval in number of days between the time the reminder was sent and the deadline).
+- New submission: if the "submission date" metadata is empty: do not display it anymore.
+- [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
+- RT#144252: better cleaning of attached file names
+- RT#144246: an inactive account could still be visible on the Editorial Staff members page. 
+- [#117](https://github.com/CCSDForge/episciences/issues/117): An empty e-mail is not sent or received
+- [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
+- [#141](https://github.com/CCSDForge/episciences/issues/141): visibility of pages menu is wrong inside menu editing.
 
 ### Changed
 - [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
