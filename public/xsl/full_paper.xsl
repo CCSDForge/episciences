@@ -268,6 +268,20 @@
                                     </button>
                                 </a>
                             </xsl:if>
+
+                            <xsl:if test="episciences/isAllowedToListAssignedPapers/text() = '1'">
+
+                                <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
+                                    <xsl:attribute name="onclick">
+                                        <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
+                                    </xsl:attribute>
+                                    <span class="fas fa-sync-alt" style="margin-right: 5px"/>
+                                    <xsl:value-of
+                                            select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
+                                </button>
+
+                            </xsl:if>
+
                         </xsl:otherwise>
                     </xsl:choose>
 
