@@ -496,8 +496,6 @@ class Episciences_CommentsManager
     public static function getCopyEditingReplyForms($comments, Episciences_Paper $paper)
     {
 
-        //
-
         $forms = [];
 
         if (!$comments || !$paper) {
@@ -518,6 +516,11 @@ class Episciences_CommentsManager
                 $form->setAction('/paper/savenewversion?docid=' . $comment['DOCID'] . '&pcid=' . $comment['PCID']);
 
             } else {
+
+                if($commentUid !== Episciences_Auth::getUid()){
+                    continue;
+                }
+
                 $row = !empty( $defaultMessage  = self::buildAnswerMessage($commentUid, $commentType)) ? 6 : 5;
                 $strElement = $id . '_element';
                 $form = new Ccsd_Form();

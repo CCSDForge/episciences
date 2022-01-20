@@ -1794,6 +1794,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
         $node->appendChild($dom->createElement('isImported', $this->isImported()));
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
+        $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
 
         // fetch volume data
         if ($this->getVid()) {
@@ -2655,11 +2656,11 @@ class Episciences_Paper
      * @return array
      * @throws Zend_Exception
      */
-    public function updatePaper(array $values)
+    public function updatePaper(array $values): array
     {
         $status = $this->getStatus();
         try {
-            $update[] = null;
+            $update = [];
             $update['code'] = 0;
             $translator = Zend_Registry::get('Zend_Translate');
             $message = $translator->translate("Aucune modification n'a été enregistrée");
@@ -2694,7 +2695,7 @@ class Episciences_Paper
                 ) {
                     $submit = new Episciences_Submit();
                     $result = $submit->saveDoc($values);
-                    if ($result['code'] == 0) {
+                    if ($result['code'] === 0) {
                         $message = $result['message'];
                     } else {
                         $message = $translator->translate("La nouvelle version de votre article a bien été enregistrée.");
@@ -2777,7 +2778,7 @@ class Episciences_Paper
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public function refreshStatus()
+    public function refreshStatus(): void
     {
         // update paper status
         $status = ($this->isReviewed()) ? self::STATUS_REVIEWED : self::STATUS_BEING_REVIEWED;

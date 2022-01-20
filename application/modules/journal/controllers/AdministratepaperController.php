@@ -2911,60 +2911,6 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * Met à jour les métadonnées d'un article
-     */
-    public function updaterecorddataAction(): void
-    {
-
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        $request = $this->getRequest();
-
-        if ($request) {
-
-            $docId = (int)$request->getPost('docid');
-            $result = 0;
-
-            try {
-                $result = Episciences_PapersManager::updateRecordData($docId);
-
-                if ($result !== 0) {
-                    $message = "Les métadonnées de cet article ont bien été mises à jour.";
-                } else {
-                    $message = 'Les métadonnées de cet article sont à jour.';
-                }
-
-                // update index even if nothing changed
-                $paper = Episciences_PapersManager::get($docId);
-                if ($paper->isPublished()) {
-                    $resOfIndexing = Episciences_Paper::indexPaper($docId, Ccsd_Search_Solr_Indexer::O_UPDATE);
-                    if (!$resOfIndexing) {
-                        try {
-                            Ccsd_Search_Solr_Indexer::addToIndexQueue([$docId], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
-                        } catch (Exception $e) {
-                            trigger_error($e->getMessage(), E_USER_WARNING);
-                        }
-                    }
-                }
-
-            } catch (Exception $e) {
-                $message = "Une erreur interne s'est produite, veuillez recommencer.";
-                $jsonResult['error'] = $e->getMessage();
-            }
-
-            $message = $this->view->translate($message);
-
-            $jsonResult['affectedRows'] = $result;
-            $jsonResult['message'] = $message;
-
-            echo json_encode($jsonResult);
-
-        }
-
-    }
-
-    /**
      * unassign a reviewer
      * @return bool
      * @throws Zend_Db_Statement_Exception
