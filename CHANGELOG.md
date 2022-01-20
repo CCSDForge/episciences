@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI/UX: Make the version number more explicit when proposing a new version
 - Code Refactoring fixing of warning
 - Dumping default data for table `MAIL_TEMPLATE`
+- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
+- Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ### Fixed
 - [#126](https://github.com/CCSDForge/episciences/issues/126) Clicking outside the window to compose an email closes the window with no confirmation #126
@@ -55,10 +57,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#117](https://github.com/CCSDForge/episciences/issues/117): An empty e-mail is not sent or received
 - [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
 - [#141](https://github.com/CCSDForge/episciences/issues/141): visibility of pages menu is wrong inside menu editing.
-
-### Changed
-- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
-- Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ## 1.0.22.3 - 2021-11-30
 ### Changed
