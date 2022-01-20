@@ -38,7 +38,8 @@
     "solarium/solarium": "<5.0",
     "symfony/polyfill-mbstring": "*",
     "symfony/cache": "^5.3",
-    "ezyang/htmlpurifier": "^4.13"
+    "ezyang/htmlpurifier": "^4.13",
+    "cottagelabs/coar-notifications": "^0.9.6"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
