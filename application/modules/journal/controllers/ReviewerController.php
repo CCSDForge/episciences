@@ -102,6 +102,7 @@ class ReviewerController extends PaperDefaultController
             $refuse_form = Episciences_ReviewersManager::refuseInvitationForm();
 
             if ($assignment->isTmp_user()) {
+                $this->view->jQuery()->addJavascriptFile("/js/user/affiliations.js");
                 $tmp_user->generateScreen_name();
                 $user_form = Episciences_ReviewersManager::acceptInvitationForm();
                 $user_form->setDefaults(array(

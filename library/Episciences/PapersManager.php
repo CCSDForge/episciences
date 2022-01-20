@@ -536,6 +536,7 @@ class Episciences_PapersManager
      */
     public static function getStatusLabel($status)
     {
+        $test =  array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
         return array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
     }
 

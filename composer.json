@@ -9,7 +9,7 @@
   ],
 
   "require": {
-    "php": ">=7.2",
+    "php": "^7.4",
     "ext-json": "*",
     "ext-curl": "*",
     "ext-iconv": "*",
@@ -36,11 +36,10 @@
     "shardj/zf1-future": "1.20",
     "shardj/zf1-extras-future": "^1.12",
     "solarium/solarium": "<5.0",
-    "symfony/polyfill-php73": "*",
-    "symfony/polyfill-php74": "*",
     "symfony/polyfill-mbstring": "*",
     "symfony/cache": "^5.3",
-    "ezyang/htmlpurifier": "^4.13"
+    "ezyang/htmlpurifier": "^4.13",
+    "cottagelabs/coar-notifications": "^0.9.6"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",

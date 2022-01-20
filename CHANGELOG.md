@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+
+## added
+- New article status "temporary version accepted": now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
+- Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
 
 ## 1.0.23 - 2022-01-19
 
@@ -23,11 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editors' choice at time of submission: informative text added. (gitlab #369)
 - [#143](https://github.com/CCSDForge/episciences/issues/143) New DOI setting: Allow switching off manual or automatic DOI assignation (disabled mode)
 - [#37](https://github.com/CCSDForge/episciences/issues/37)
-  - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
-  - On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html (only published content)
-  - On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
-  - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
-  - JSON added to the list of public export formats
+- Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
+- On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html (only published content)
+- On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
+- Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
+- JSON added to the list of public export formats
 - Enhanced information message for statistics
 
 

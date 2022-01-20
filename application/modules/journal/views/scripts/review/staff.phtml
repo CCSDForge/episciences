@@ -5,43 +5,49 @@
         <?php if (count($members)) : ?>
             <h2 style="clear: both"><?php echo $this->translate(constant("Episciences_Acl::ROLE_" . mb_strtoupper($role) . "_PLURAL")) ?></h2>
             <?php foreach ($members as $member) : ?>
-                <div class="staff_member">
+                <div class="staff_member col-sm-12">
 
+                    <div class="col-sm-2">
+                        <?php if ($this->isDisplayPhotos !== 0) : ?>
+                            <img style="width: 128px"
+                                 src="/user/photo/uid/<?php echo $this->escape($member->getUid()); ?>/size/normal<?php
+                                 if (Episciences_Auth::getUid() === $member->getUid()) {
+                                     echo '?v=' . Episciences_Auth::getPhotoVersion();
+                                 } ?>"
+                                 class="user-photo-thumbnail img-responsive" alt="Photo"/>
+                        <?php endif; ?>
 
-                    <?php if ($this->isDisplayPhotos !== 0) : ?>
-                        <img style="width: 128px"
-                             src="/user/photo/uid/<?php echo $this->escape($member->getUid()); ?>/size/normal<?php
-                             if (Episciences_Auth::getUid() === $member->getUid()) {
-                                 echo '?v=' . Episciences_Auth::getPhotoVersion();
-                             } ?>"
-                             class="user-photo-thumbnail img-responsive" alt="Photo"/>
-                    <?php endif; ?>
+                    </div>
 
-                    <div class="details">
+                    <div class="details col-sm-10">
 
+                        <div>
+                            <?= $this->partial('user/user_orcid.phtml', ['orcid' => $member->getOrcid()]) ?>
 
-                        <div class="fullname">
                             <h3>
                                 <a href="/user/view/userid/<?php echo $this->escape($member->getUid()) ?>"><?php echo $this->escape($member->getScreenName()); ?></a>
                             </h3>
+                        </div>
 
+                        <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $member->getAffiliations()]) ?>
+
+                        <div class="fullname">
 
                             <?php if ((Episciences_Auth::isLogged()) && (Episciences_Auth::isAllowedToSendMail())): ?>
                                 <p>
                                     <a title="<?php echo $this->translate('Contacter') . ' ' . $this->escape($member->getScreenName()); ?>"
                                        href="/administratemail/send/recipient/<?php echo $this->escape($member->getUid()); ?>"
                                        data-width="50%" class="modal-opener">
-                                        <button class="btn btn-default btn-sm"><span
-                                                    class="glyphicon glyphicon-envelope grey"></span> <?php echo $this->translate('Contacter'); ?>
+                                        <button class="btn btn-default btn-sm" style="margin-top: 5px;"><span
+                                                    class="glyphicon glyphicon-envelope grey" ></span> <?php echo $this->translate('Contacter'); ?>
                                         </button>
                                     </a>
                                 </p>
                             <?php endif; ?>
 
-
                         </div>
 
-                        <?php if ($role == Episciences_Acl::ROLE_EDITOR && count($member->getAssignedSections())) : ?>
+                        <?php if ($role === Episciences_Acl::ROLE_EDITOR && count($member->getAssignedSections())) : ?>
                             <div class="sections">
                                 <span class="title">
                                     <?php echo $this->translate(["Rédacteur de la rubrique : ", "Rédacteur des rubriques : ", count($member->getAssignedSections())]); ?>
@@ -57,10 +63,7 @@
                                 </span>
                             </div>
                         <?php endif; ?>
-
-
                     </div>
-
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>

@@ -1247,6 +1247,8 @@ return [
     'Changer le mot de passe' => "Change your password",
     'Entre 2 et 100 caractères' => 'From 2 to 100 characters',
     "Vous n'avez pas les droits nécessaires pour modifier ce compte." => "You don't have the required permissions to edit this account.",
+    "Veuillez saisir votre identifiant (16 chiffres), par exemple 0000-0001- 2345-6789, si vous en avez déjà un" => "Please enter your ID (16 digits), for example 0000-0001- 2345-6789, if you already have one",
+    "Veuillez saisir le nom ou l'acronyme de votre structure" => "Please enter the name or acronym of your organization",
 
 
     /**
@@ -1289,6 +1291,7 @@ return [
     "en attente de modifications majeures" => "pending major revision",
     "en attente d'éclaircissements" => "pending clarification",
     "version temporaire" => "temporary version",
+    "version temporaire acceptée" => "temporary version accepted",
     "Vous n'avez soumis aucun papier pour le moment" => "You have not submitted any paper yet",
     "Aucun article pour le moment" => "No article yet",
     "Modifier le contenu de la page" => "Edit content page",
@@ -1643,6 +1646,7 @@ return [
     "articles publiés" => 'published articles',
     "article abandonné" => "abandonned article",
     "articles abandonnés" => "abandonned articles",
+    "versions temporaires acceptées" => "accepted temporary versions",
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',

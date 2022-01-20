@@ -16,7 +16,11 @@
 	                        </a>
                             </td>
 		                	<td class="text-left">
-		                	<strong><?php echo $this->escape(Episciences_Auth::getScreenName()); ?></strong><br />
+                                <?= $this->partial('user/user_orcid.phtml', ['orcid' => Episciences_Auth::getUser()->getOrcid(), 'height' => 16]) ?>
+                                <strong><?= $this->escape(Episciences_Auth::getScreenName()) ?></strong>
+                                <br>
+                                <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => Episciences_Auth::getUser()->getAffiliations(), 'height' => 16]) ?>
+                                <br />
 		                	<a href="/user/edit" class="btn btn-primary btn-xs"><?php echo $this->translate("Modifier mon profil") ?></a>
 		                	<a href="/user/changepassword" class="btn btn-primary btn-xs"><?php echo $this->translate("Modifier mon mot de passe") ?></a>
 		                </td>

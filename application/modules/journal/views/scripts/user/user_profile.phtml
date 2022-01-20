@@ -2,16 +2,19 @@
 
     <div class="col-md-2">
         <img src="/user/photo/uid/<?php echo $this->escape($this->user['uid']); ?>/size/large?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>"
-             class="user-photo-normal"/>
+             class="user-photo-normal" alt="Photo"/>
     </div>
 
     <div class="col-md-10">
         <div class="row">
-            <div class="col-md-3">
+            <div class="col-md-5">
 
                 <ul class="list-inline">
+                    <li><?= $this->partial('user/user_orcid.phtml', ['orcid' => $this->user['orcid']]) ?></li>
                     <?php if ($this->user['SCREEN_NAME']) : ?>
-                        <li><?php echo $this->escape($this->user['SCREEN_NAME']); ?></li>
+                        <li>
+                            <?= $this->escape($this->user['SCREEN_NAME']) ?>
+                        </li>
                     <?php else : ?>
 
                         <li>
@@ -32,14 +35,15 @@
 
                 </ul>
 
+                <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $this->user['affiliations']]) ?>
 
             </div>
 
-
-            <?php if (is_array($this->user['ROLES']) && array_key_exists(RVID, $this->user['ROLES']) && count($this->user['ROLES'][RVID])) : ?>
-                <?php echo $this->partial('user/roles_tags.phtml', ['roles' => $this->user['ROLES'][RVID], 'editorSections' => $this->user['editorSections']]); ?>
-            <?php endif; ?>
-
+            <div class="col-md-5">
+                <?php if (is_array($this->user['ROLES']) && array_key_exists(RVID, $this->user['ROLES']) && count($this->user['ROLES'][RVID])) : ?>
+                    <?php echo $this->partial('user/roles_tags.phtml', ['roles' => $this->user['ROLES'][RVID], 'editorSections' => $this->user['editorSections']]); ?>
+                <?php endif; ?>
+            </div>
 
         </div>
 

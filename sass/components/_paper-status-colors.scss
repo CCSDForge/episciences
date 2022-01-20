@@ -48,7 +48,8 @@ $status-colors: (
         // copy editing: ready to publish
         23 : $sage-green,
         // copy editing: author formatting deposed
-        24 : $blue-duck
+        24 : $blue-duck,
+        25 : $green
 );
 
 @each $status-code, $status-color in $status-colors {

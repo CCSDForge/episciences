@@ -72,8 +72,8 @@ $this->suggestedRevision = false;
     <div class="panel-body in">
         <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
         <p>
-            <strong><?= $statusMsg; ?></strong><span
-                    class="label label-status-<?= $status; ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))); ?></span>
+            <strong><?= $statusMsg ?></strong><span
+                    class="label label-status-<?= $status  ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
         </p>
 
         <?php if ($this->suggestions) : ?>

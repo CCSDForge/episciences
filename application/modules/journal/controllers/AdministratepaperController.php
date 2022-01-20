@@ -1628,32 +1628,9 @@ class AdministratepaperController extends PaperDefaultController
             if ($paper->getRepoid()) {
                 // repository version
                 $status = Episciences_Paper::STATUS_ACCEPTED;
-            } else {
-                // tmp version
+            } else { // tmp version
 
-                // save comment (revision request)
-                $status = Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
-                $subject = $data['acceptancesubject'];
-                $message = $data['acceptancemessage'];
-                $comment = new Episciences_Comment([
-                    'docid' => $docId,
-                    'uid' => $doneByUid,
-                    'message' => $message,
-                    'type' => Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-                    'options' => []
-                ]);
-                $comment->save();
-
-                // log minor/major revision request
-                $paper->log(
-                    Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
-                    $doneByUid,
-                    [
-                        'id' => $comment->getPcid(),
-                        'deadline' => null,
-                        'subject' => $subject,
-                        'message' => $message
-                    ]);
+                $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED;
             }
 
             // update paper status

@@ -52,6 +52,7 @@ class Episciences_Paper
     const STATUS_PUBLISHED = 16;
     // Le processus de publication peut être stoppé tant que l'article n'est pas publié
     const STATUS_ABANDONED = 17;
+    public const STATUS_TMP_VERSION_ACCEPTED = 25; // tmp version accepted
 
     //Copy editing
     const STATUS_CE_WAITING_FOR_AUTHOR_SOURCES = 18;
@@ -68,7 +69,7 @@ class Episciences_Paper
     const SETTING_SUGGESTED_EDITOR = 'suggestedEditor';
 
     // paper status
-    const STATUS_CODES = [
+    public const STATUS_CODES = [
         self::STATUS_SUBMITTED,
         self::STATUS_OK_FOR_REVIEWING,
         self::STATUS_BEING_REVIEWED,
@@ -85,7 +86,8 @@ class Episciences_Paper
         self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
         self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
         self::STATUS_CE_READY_TO_PUBLISH,
-        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED
+        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
+        self::STATUS_TMP_VERSION_ACCEPTED
     ];
 
     // Non présents dans le filtre de recherche
@@ -169,6 +171,7 @@ class Episciences_Paper
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED => 'copy ed : mise en forme par la revue terminée, en attente de la version finale',
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "copy ed : mise en forme par l'auteur terminée, en attente de la version finale",
         self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
+        self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée'
     ];
 
     public static $_noEditableStatus = [
@@ -1195,6 +1198,15 @@ class Episciences_Paper
     public function isAccepted(): bool
     {
         return ($this->getStatus() === self::STATUS_ACCEPTED);
+    }
+
+
+    /**
+     * @return bool
+     */
+    public function isTmpVersionAccepted(): bool
+    {
+        return ($this->getStatus() === self::STATUS_TMP_VERSION_ACCEPTED);
     }
 
     /**
