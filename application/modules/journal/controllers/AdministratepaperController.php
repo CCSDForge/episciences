@@ -1,6 +1,16 @@
 <?php
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
+use cottagelabs\coarNotifications\COARNotificationActor;
+use cottagelabs\coarNotifications\COARNotificationContext;
+use cottagelabs\coarNotifications\COARNotificationManager;
+use cottagelabs\coarNotifications\COARNotificationObject;
+use cottagelabs\coarNotifications\COARNotificationTarget;
+use cottagelabs\coarNotifications\COARNotificationURL;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Logger;
+
 /**
  * Class AdministratepaperController
  */
@@ -483,6 +493,81 @@ class AdministratepaperController extends PaperDefaultController
         $loggedUid = Episciences_Auth::getUid();
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+
+        $logger = new Logger('NotifyCOARLogger');
+
+        $handler = new RotatingFileHandler(APPLICATION_PATH . '/../log/NotifyCOARLogger.log',
+            0, Logger::DEBUG, true, 0664);
+        $formatter = new LineFormatter(null, null, false, true);
+        $handler->setFormatter($formatter);
+        $logger->pushHandler($handler);
+
+        $conn = ['host' => INBOX_DB_HOST,
+            'driver' => INBOX_DB_DRIVER,
+            'user' => INBOX_DB_USER,
+            'password' => INBOX_DB_PASSWORD,
+            'dbname' => INBOX_DB_NAME,
+        ];
+
+
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+
+        $coarNotificationManager = new COARNotificationManager($conn, false, $logger);
+
+
+        // Sender Episciences
+        $actor = new COARNotificationActor(
+            $journal->getUrl(),
+            $journal->getName(),
+            'Service');
+
+        $paperUrl = sprintf('%s/%s', $journal->getUrl(), $paper->getPaperid());
+
+        // Article published
+        if ($paper->getDoi() !== '') {
+            $paperPid = $paper->getDoi();
+        } else {
+            $paperPid = $paperUrl;
+        }
+
+        $object = new COARNotificationObject(
+            $paperUrl,
+            $paperPid,
+            ['Page', 'sorg:WebPage']
+        );
+
+
+        // Preprint
+        $inRepositoryUrl = Episciences_Repositories::getDocUrl($paper->getRepoid(), $paper->getIdentifier(), $paper->getVersion());
+        $inRepositoryUrlPdf = sprintf('%s/pdf', $inRepositoryUrl);
+        $inRepositoryPid = $inRepositoryUrl;
+        $url = new COARNotificationURL(
+            $inRepositoryUrlPdf,
+            'application/pdf',
+            ['Article', 'sorg:ScholarlyArticle']
+        );
+
+
+        $context = new COARNotificationContext(
+            $inRepositoryUrl,
+            $inRepositoryPid,
+            ['Announce,coar-notify:EndorsementAction'],
+            $url);
+
+        // Recipient HAL
+        $target = new COARNotificationTarget(
+            NOTIFY_TARGET_HAL_URL,
+            NOTIFY_TARGET_HAL_INBOX);
+
+
+        $notification = $coarNotificationManager->createOutboundNotification($actor, $object, $context, $target);
+        $coarNotificationManager->announceEndorsement($notification);
+
+        $coarNotificationManager->requestReview($notification);
+
+
+        $msg = $notification->getId() . " created";
+
 
         $isConflictDetected =
             !Episciences_Auth::isSecretary() && $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
@@ -2877,7 +2962,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
-           echo 'Unauthorized access';
+            echo 'Unauthorized access';
             trigger_error(sprintf('Unauthorized access to savedoi by %s', Episciences_Auth::getUid()), E_USER_WARNING);
             return;
         }
@@ -2890,18 +2975,18 @@ class AdministratepaperController extends PaperDefaultController
         $doiPattern = "/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i";
 
         if (($doi !== '') && !preg_match($doiPattern, $doi)) {
-            printf ('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
+            printf('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
             return;
         }
 
         if (!Episciences_PapersManager::paperExists($docid, RVID)) {
-            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
+            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
             trigger_error(sprintf('Docid %s not found in RVID %s', $docid, RVID), E_USER_WARNING);
             return;
         }
 
         if (0 === Episciences_PapersManager::updateDoi($doi, $paperId)) {
-            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
+            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
             trigger_error(sprintf('Failed to update paperid %s with DOI %s', $paperId, $doi), E_USER_WARNING);
             return;
         }
