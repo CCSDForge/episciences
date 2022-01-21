@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+##Fixed
+- Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
+
 
 ## 1.0.23 - 2022-01-19
 

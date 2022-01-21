@@ -215,7 +215,7 @@ class Episciences_PapersManager
      * @param array $fields
      * @return Zend_Db_Select
      */
-    public static function getVolumesQuery(array $fields = ['DOCID'])
+    public static function getVolumesQuery(array $fields = ['DOCID']): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db
