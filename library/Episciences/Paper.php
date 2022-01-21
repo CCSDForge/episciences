@@ -685,7 +685,7 @@ class Episciences_Paper
      * @param $id
      * @return $this
      */
-    public function setVid($id): self
+    public function setVid($id = 0): self
     {
         $this->_vId = (int)$id;
         return $this;
@@ -2410,7 +2410,7 @@ class Episciences_Paper
     /**
      * @param array $paper_volumes
      */
-    public function setOtherVolumes(array $paper_volumes)
+    public function setOtherVolumes(array $paper_volumes = []): void
     {
         $this->_otherVolumes = $paper_volumes;
     }
