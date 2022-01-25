@@ -1808,5 +1808,8 @@ return [
                             Your action will be recorded in the submission event log',
     "Vous pouvez décider plus tard, aucune action ne sera enregistrée." => 'You can decide later, no action will be recorded',
     'Commentaire facultatif' => 'Optional comments',
-    "Rapporté le" => "Reported on"
+    "Rapporté le" => "Reported on",
+    // ORCID
+    "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
+
 ];
