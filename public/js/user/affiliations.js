@@ -16,19 +16,23 @@ $(function () {
 
             let url = 'https://api.ror.org/organizations?query=' + term;
 
-            let ajaxReq =  ajaxRequest(url, {}, 'GET');
+            let ajaxReq = ajaxRequest(url, {}, 'GET');
 
-           ajaxReq.done(function (rorResponse) {
+            $affiliations.before(getLoader());
 
-               if( 'items' in rorResponse){
+            ajaxReq.done(function (rorResponse) {
 
-                   rorResponse.items.forEach(function (item) {
-                       availableAffiliations.push({'label': item.name + ' #' + item.id, 'identifier': item.id});
-                   });
+                $('.loader').remove();
 
-                   cache[term] = availableAffiliations;
-                   response(availableAffiliations);
-               }
+                if ('items' in rorResponse) {
+
+                    rorResponse.items.forEach(function (item) {
+                        availableAffiliations.push({'label': item.name + ' #' + item.id, 'identifier': item.id});
+                    });
+
+                    cache[term] = availableAffiliations;
+                    response(availableAffiliations);
+                }
 
             });
 
