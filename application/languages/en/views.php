@@ -695,6 +695,7 @@ return [
     "Vous n'avez pas les autorisations nécessaires pour modifier ce template" => "You don't have the required permissions to modify the template",
     "Vous n'avez pas les autorisations nécessaires pour supprimer le template personnalisé" => "You don't have the required permissions to delete customized template",
     "Corps du message vide." => 'Empty message.',
+    "Votre e-mail a bien été envoyé." => "Your e-mail has been sent.",
 
     // Relecture
     "Souhaitez-vous relire cet article ?" => "Do you want to rate this article?",
