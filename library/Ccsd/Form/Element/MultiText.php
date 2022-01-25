@@ -258,7 +258,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
      * @param Zend_Form_Decorator_Abstract $decorator
      * @param string $content
      * @return string
-     * @throws Zend_Form_Decorator_Exception
+     * @throws Zend_Form_Decorator_Exception|Zend_Form_Exception
      */
     public function renderValues ($decorator, $content = '')
     {
@@ -269,6 +269,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
                 $this->_value = $value;
                 $clone = clone $this;
                 $clone->setClone(false);
+                $clone->setAttrib('id', $this->getId() . '-' . $i); // avoid duplicate IDs
                 $decorator->indice = $i;
                 $decorator->setElement($clone);
                 $content = $decorator->render($content);
@@ -291,7 +292,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
     /**
      * @param Zend_View_Interface|null $view
      * @return string
-     * @throws Zend_Form_Decorator_Exception
+     * @throws Zend_Form_Decorator_Exception|Zend_Form_Exception
      */
     public function render(Zend_View_Interface $view = null)
     {

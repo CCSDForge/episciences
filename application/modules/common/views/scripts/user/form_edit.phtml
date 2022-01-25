@@ -1,15 +1,16 @@
 <?php $this->jQuery()->addJavascriptFile('/js/user/user.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/user/affiliations.js'); ?>
-
-    <div id="message"></div>
+    <div id="message-<?= $this->name ?>"></div> <?php // avoid duplicate IDs ?>
 <?php
+/** @var Zend_Form_Element $element */
 foreach ($this->element->getElements() as $element) {
+
     if ($element->getDecorator('HtmlTag')) {
         $element->getDecorator('HtmlTag')->setOption("class", "col-md-9 form-group");
     }
 
     echo $element;
-    if ($element->getName() == 'LANGUEID') {
+    if ($element->getName() === 'LANGUEID') {
         echo '<hr style="padding:0.5em;">';
     }
 }
