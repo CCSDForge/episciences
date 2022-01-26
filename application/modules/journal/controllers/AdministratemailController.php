@@ -310,7 +310,14 @@ class AdministratemailController extends Zend_Controller_Action
                 $form->setDefaults($post);
             }
 
-            $this->sendMail($post);
+            $result = $this->sendMail($post);
+
+            if ($result) {
+                $this->_helper->layout->disableLayout();
+                $this->_helper->viewRenderer->setNoRender();
+                echo $result;
+                return;
+            }
 
         } else {
 
@@ -363,15 +370,15 @@ class AdministratemailController extends Zend_Controller_Action
      * send a mail (process mailing form)
      * TODO: move this outside of the controller ?
      * @param array $post
-     * @return void
-     * @throws Zend_Db_Statement_Exception
+     * @return string|void
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
-    private function sendMail(array $post): void
+    private function sendMail(array $post)
     {
+
+        $isInModal = isset($post['docid']); // true: sent from the paper administration page
 
         /** @var Zend_View $selfView */
         $selfView = $this->view;
@@ -397,9 +404,11 @@ class AdministratemailController extends Zend_Controller_Action
                 }
 
             } else {
-
                 $message .= $selfView->translate('Corps du message vide.');
+            }
 
+            if ($isInModal) {
+                return $message;
             }
 
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
@@ -422,8 +431,8 @@ class AdministratemailController extends Zend_Controller_Action
         $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
         $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
 
-        if (empty($content)) {
-            $content = $selfView->translate('Corps du message vide.');
+        if (empty($content) && empty($post['attachments'])) {
+            $content = 'Empty message.';
         }
 
         $mail = new Episciences_Mail('UTF-8');
@@ -506,7 +515,9 @@ class AdministratemailController extends Zend_Controller_Action
 
         if ($mail->writeMail()) {
 
-            if (isset($post['docid'])) {
+            $message = '<strong>' . $selfView->translate("Votre e-mail a bien été envoyé.") . '</strong>';
+
+            if ($isInModal) {
                 /** @var Episciences_Paper $paper */
                 $paper = Episciences_PapersManager::get((int)$post['docid']);
                 if ($paper) {
@@ -520,16 +531,23 @@ class AdministratemailController extends Zend_Controller_Action
                         Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.mail');
                     }
                 }
+            } else {
+                $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
             }
 
-            $message = '<strong>' . $selfView->translate("Votre message a bien été envoyé.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
 
         } else {
 
             $message = '<strong>' . $selfView->translate("Une erreur interne s'est produite, veuillez recommencer.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
 
+            if(!$isInModal){
+                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            }
+
+        }
+
+        if($isInModal){
+            return $message;
         }
 
         $this->_helper->redirector->gotoUrl('administratemail/send');

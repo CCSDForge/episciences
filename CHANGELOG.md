@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
  - Make it possible to update the metadata on the article page
 
+##Fixed
+- Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
+- Improvements in emailing: see github #117.
+
 ## 1.0.23 - 2022-01-19
 
 ### Added

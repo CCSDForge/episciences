@@ -210,24 +210,21 @@ function updateModalButton(step) {
 
     //var original_callback = $('button#submit-modal').click;
     $modal_button.off('click');
-    if (step == 'addContacts') {
+    if (step === 'addContacts') {
         $modal_button.on('click', function (e) {
             e.preventDefault();
             addContacts();
         });
-    } else if (step == 'send_mail') {
+    } else if (step === 'send_mail') {
         $modal_button.on('click', function (e) {
             tinyMCE.triggerSave();
-            var form_values = $('#send_form').serialize();
+            let form_values = $('#send_form').serialize();
             $modal_body.html(getLoader());
-            $.ajax({
-                url: '/administratemail/send',
-                type: 'POST',
-                data: form_values,
-                success: function () {
-                    $modal_body.html(translate("Votre e-mail a bien été envoyé."));
-                    $modal_footer.hide();
-                }
+            let request = ajaxRequest('/administratemail/send', form_values );
+            request.done(function(result){
+                console.log(result);
+                $modal_body.html(translate(result));
+                $modal_footer.hide();
             });
         });
     }

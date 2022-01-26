@@ -1381,6 +1381,8 @@ class PaperController extends PaperDefaultController
 
             // update previous version status
             $paper->setStatus($paper::STATUS_OBSOLETE);
+            $paper->setVid();
+            $paper->setOtherVolumes();
             $paper->save();
             // log status change
             $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => Episciences_Paper::STATUS_OBSOLETE]);
