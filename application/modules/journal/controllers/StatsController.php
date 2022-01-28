@@ -11,16 +11,7 @@ class StatsController extends Zend_Controller_Action
     public const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9"];
     public const CHART_TYPE = ['BAR' => 'bar', 'PIE' => 'pie', 'BAR_H' => 'barH', 'DOUGHNUT' => 'doughnut', 'LINE' => 'line'];
 
-    public const ACCEPTED_SUBMISSIONS = [
-        Episciences_Paper::STATUS_ACCEPTED,
-        Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
-        Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
-        Episciences_Paper::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
-        Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
-        Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
-        Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
-        Episciences_Paper::STATUS_CE_READY_TO_PUBLISH
-    ];
+    public const ACCEPTED_SUBMISSIONS = Episciences_Paper::ACCEPTED_SUBMISSIONS;
 
     public const CURRENT_RVID = RVID;
 

@@ -1649,6 +1649,8 @@ return [
     "article abandonné" => "abandonned article",
     "articles abandonnés" => "abandonned articles",
     "versions temporaires acceptées" => "accepted temporary versions",
+    "article accepté, en attente de la version finale de l'auteur" => "accepted article, waiting for author's final version",
+    "articles acceptés, en attente de la version finale de l'auteur" => "accepted articles, waiting for author's final version",
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',
@@ -1811,5 +1813,9 @@ return [
     "Rapporté le" => "Reported on",
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
-
+    //review settings: final decision
+    "Permettre la demande de revision" => "Allow revision request",
+    "Article - décision finale" => "Paper - final decision",
+    "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté." => "Sometimes it is necessary to change some things on an article already accepted.",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "Accepted, waiting for author's final version",
 ];

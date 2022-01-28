@@ -49,7 +49,11 @@ $status-colors: (
         23 : $sage-green,
         // copy editing: author formatting deposed
         24 : $blue-duck,
-        25 : $green
+        25 : $green,
+        //Accepted, waiting for author's final version (minor version)
+        26 : $green,
+        // Accepted waiting for author's major version
+        27 : $green
 );
 
 @each $status-code, $status-color in $status-colors {

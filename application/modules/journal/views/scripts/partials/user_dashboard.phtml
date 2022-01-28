@@ -2,7 +2,7 @@
 $papers = $this->papers;
 $params = ['controller' => $this->controllerName, 'action' => $this->actionName];
 // Copy editing
-if (isset($this->ce) && $this != null) {
+if (isset($this->ce)) {
     $params['ce'] = $this->ce;
 }
 
@@ -11,9 +11,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_SUBMITTED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_SUBMITTED]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article sans relecteur' : 'articles sans relecteur'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article sans relecteur' : 'articles sans relecteur') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -21,9 +20,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_OK_FOR_REVIEWING]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_OK_FOR_REVIEWING]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article en attente de relecture' : 'articles en attente de relecture'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article en attente de relecture' : 'articles en attente de relecture') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -31,9 +29,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_BEING_REVIEWED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_BEING_REVIEWED]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article en cours de relecture' : 'articles en cours de relecture'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article en cours de relecture' : 'articles en cours de relecture') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -41,9 +38,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_REVIEWED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_REVIEWED]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article relu' : 'articles relus'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article relu' : 'articles relus') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -51,9 +47,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article en attente de modifications mineures' : 'articles en attente de modifications mineures'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article en attente de modifications mineures' : 'articles en attente de modifications mineures') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -61,9 +56,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article en attente de modifications majeures' : 'articles en attente de modifications majeures'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article en attente de modifications majeures' : 'articles en attente de modifications majeures') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -71,9 +65,17 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_ACCEPTED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_ACCEPTED]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article accepté' : 'articles acceptés'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article accepté' : 'articles acceptés') ?>
+    </a><br/>
+<?php endif; ?>
+
+<?php // Articles acceptés *************************************************** ?>
+<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION]); ?>
+<?php if ($count) : ?>
+    <?php $params['status'] = [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION]; ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? "article accepté, en attente de la version finale de l'auteur" : "articles acceptés, en attente de la version finale de l'auteur") ?>
     </a><br/>
 <?php endif; ?>
 
@@ -82,7 +84,7 @@ if (isset($this->ce) && $this != null) {
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED]; ?>
     <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
-        <?php echo $this->translate(($count === 1) ? 'version temporaire acceptée' : 'versions temporaires acceptées'); ?>
+        <?= $this->translate(($count === 1) ? 'version temporaire acceptée' : 'versions temporaires acceptées') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -91,9 +93,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?= $this->translate(($count == 1) ? 'article en attente des sources auteurs' : 'articles en attente des sources auteurs'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article en attente des sources auteurs' : 'articles en attente des sources auteurs') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -101,9 +102,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?= $this->translate(($count == 1) ? 'article en attente de la mise en forme par la revue' : 'articles en attente de la mise en forme par la revue'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article en attente de la mise en forme par la revue' : 'articles en attente de la mise en forme par la revue') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -111,9 +111,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?= $this->translate(($count == 1) ? 'article mis en forme par la revue, en attente de la version finale' : 'articles mis en forme par la revue, en attente de la version finale'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article mis en forme par la revue, en attente de la version finale' : 'articles mis en forme par la revue, en attente de la version finale') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -121,9 +120,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?= $this->translate(($count == 1) ? 'article en attente de la version finale' : 'articles en attente de la version finale'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article en attente de la version finale' : 'articles en attente de la version finale') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -131,9 +129,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?= $this->translate(($count == 1) ? 'article version finale en attente de validation' : 'articles version finale en attente de validation'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article version finale en attente de validation' : 'articles version finale en attente de validation') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -141,9 +138,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?= $this->translate(($count == 1) ? 'article mis en forme par l\'auteur, en attente de la version définitive' : 'articles mis en forme par l\'auteur, en attente de la version définitive'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article mis en forme par l\'auteur, en attente de la version définitive' : 'articles mis en forme par l\'auteur, en attente de la version définitive') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -151,9 +147,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_READY_TO_PUBLISH]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_CE_READY_TO_PUBLISH]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?= $this->translate(($count == 1) ? "article en attente de la publication" : "articles en attente de la publication"); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? "article en attente de la publication" : "articles en attente de la publication") ?>
     </a><br/>
 <?php endif; ?>
 
@@ -162,9 +157,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_PUBLISHED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_PUBLISHED]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article publié' : 'articles publiés'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article publié' : 'articles publiés') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -172,9 +166,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_ABANDONED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_ABANDONED]; ?>
-    <a href="<?= $this->url($params);
-    ?>"><strong><?= $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article abandonné' : 'articles abandonnés'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article abandonné' : 'articles abandonnés') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -182,9 +175,8 @@ if (isset($this->ce) && $this != null) {
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_REFUSED]); ?>
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_REFUSED]; ?>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article refusé' : 'articles refusés'); ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article refusé' : 'articles refusés') ?>
     </a><br/>
 <?php endif; ?>
 
@@ -192,10 +184,9 @@ if (isset($this->ce) && $this != null) {
 <?php if ($count) : ?>
     <?php unset($params['status']); ?>
     <br/>
-    <strong><?php echo $this->translate('Total'); ?> : </strong>
-    <a href="<?php echo $this->url($params);
-    ?>"><strong><?php echo $count; ?></strong>
-        <?php echo $this->translate(($count == 1) ? 'article' : 'articles'); ?></a><br/>
+    <strong><?= $this->translate('Total') ?> : </strong>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? 'article' : 'articles') ?></a><br/>
 <?php else : ?>
-    <?php echo $this->translate('Aucun article pour le moment.'); ?>
+    <?= $this->translate('Aucun article pour le moment.') ?>
 <?php endif; ?>

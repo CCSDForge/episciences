@@ -1857,14 +1857,19 @@ class AdministratepaperController extends PaperDefaultController
             $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
+            $isAlreadyAccepted = in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
+
             // prepare comment options
             $options = [];
             if ($deadline) {
                 $options['deadline'] = $deadline;
             }
+
             if (array_key_exists('auto_reassign', $data)) {
                 $options['reassign_reviewers'] = (bool)$data['auto_reassign'];
             }
+
+            $options['isAlreadyAccepted'] = true;
 
             // save comment (revision request)
             $comment = new Episciences_Comment([
@@ -1882,10 +1887,13 @@ class AdministratepaperController extends PaperDefaultController
             $paper->log(
                 ($type === 'major') ? Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST : Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
                 Episciences_Auth::getUid(),
-                ['id' => $comment->getPcid(),
+                [
+                    'id' => $comment->getPcid(),
                     'deadline' => $deadline,
                     'subject' => $subject,
-                    'message' => $message]);
+                    'message' => $message,
+                    'isAlreadyAccepted' => $isAlreadyAccepted
+                ]);
 
             // sends an e-mail to the author
             $tags = [
@@ -1898,7 +1906,13 @@ class AdministratepaperController extends PaperDefaultController
             $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING);
 
             // if needed, set new status
-            $status = ($type === 'major') ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
+
+            if (!$isAlreadyAccepted) {
+                $status = ($type === 'major') ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
+            } else {
+                $status = ($type === 'major') ? Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION;
+            }
+
             if ($paper->getStatus() !== $status) {
                 $paper->setStatus($status);
                 $paper->save();

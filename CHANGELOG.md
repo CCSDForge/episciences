@@ -20,10 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## added
 - New article status "temporary version accepted": now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
 - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
+- New review parameter: Allow revision request + refactoring.
+
 
 ## Changed
  - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
  - Make it possible to update the metadata on the article page
+ - Request a new version of an article that has already been accepted
 
 ##Fixed
 - Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.

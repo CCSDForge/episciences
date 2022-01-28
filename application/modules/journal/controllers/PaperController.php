@@ -1215,10 +1215,11 @@ class PaperController extends PaperDefaultController
         $requestComment = new Episciences_Comment();
         $requestComment->find($requestId);
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');
+        $isAlreadyAccepted= $requestComment->getOption('isAlreadyAccepted');
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
 
         $paper->loadOtherVolumes(); // github #48
 
@@ -1288,6 +1289,8 @@ class PaperController extends PaperDefaultController
         if (isset($post['copyEditingNewVersion'])) {
             $copyEditors = $paper->getCopyEditors(true, true);
             $status = Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
+        } elseif ($isAlreadyAccepted) {
+            $status = Episciences_Paper::STATUS_ACCEPTED;
         } else {
             $status = ($reassignReviewers && $reviewers) ? $newPaper::STATUS_OK_FOR_REVIEWING : $newPaper::STATUS_SUBMITTED;
         }
@@ -1362,7 +1365,6 @@ class PaperController extends PaperDefaultController
 
             // unassign editors from previous version
             if ($editors) {
-                /** @var Episciences_Editor $editor */
                 foreach ($editors as $editor) {
                     $aid = $paper->unassign($editor->getUid(), Episciences_User_Assignment::ROLE_EDITOR);
                     // log editor unassignment
@@ -1441,8 +1443,14 @@ class PaperController extends PaperDefaultController
                 }
             }
 
+            $newPaperStatusDetails = [self::STATUS => $status];
+
+            if ($isAlreadyAccepted) {
+                $newPaperStatusDetails['isAlreadyAccepted'] = $isAlreadyAccepted;
+            }
+
             // log new version submission
-            $newPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [self::STATUS => $status]);
+            $newPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), $newPaperStatusDetails);
 
             // success message
             $message = $this->view->translate("La nouvelle version de votre article a bien été enregistrée.");

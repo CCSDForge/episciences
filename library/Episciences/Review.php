@@ -7,79 +7,79 @@
 class Episciences_Review
 {
 
-    const STATUS_NOTVALID = 0;
-    const STATUS_VALID = 1;
-    const STATUS_REFUSED = 2;
-    const DEFAULT_INVITATION_DEADLINE = '1 month';
-    const DEFAULT_RATING_DEADLINE = '2 month';
-    const DEFAULT_RATING_DEADLINE_MIN = '2 month';
-    const DEFAULT_RATING_DEADLINE_MAX = '6 month';
+    public const STATUS_NOTVALID = 0;
+    public const STATUS_VALID = 1;
+    public const STATUS_REFUSED = 2;
+    public const DEFAULT_INVITATION_DEADLINE = '1 month';
+    public const DEFAULT_RATING_DEADLINE = '2 month';
+    public const DEFAULT_RATING_DEADLINE_MIN = '2 month';
+    public const DEFAULT_RATING_DEADLINE_MAX = '6 month';
 
-    const ASSIGNMENT_EDITORS_MODE = ['predefined' => '0', 'default' => '1', 'advanced' => '2'];
+    public const ASSIGNMENT_EDITORS_MODE = ['predefined' => '0', 'default' => '1', 'advanced' => '2'];
 
-    const DEFAULT_LANG = 'en';
+    public const DEFAULT_LANG = 'en';
 
-    const SETTING_INVITATION_DEADLINE = 'invitation_deadline';
-    const SETTING_INVITATION_DEADLINE_UNIT = 'invitation_deadline_unit';
-    const SETTING_RATING_DEADLINE = 'rating_deadline';
-    const SETTING_RATING_DEADLINE_UNIT = 'rating_deadline_unit';
-    const SETTING_RATING_DEADLINE_MIN = 'rating_deadline_min';
-    const SETTING_RATING_DEADLINE_MIN_UNIT = 'rating_deadline_min_unit';
-    const SETTING_RATING_DEADLINE_MAX = 'rating_deadline_max';
-    const SETTING_RATING_DEADLINE_MAX_UNIT = 'rating_deadline_max_unit';
-    const SETTING_DESCRIPTION = 'description';
-    const SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS = 'canSpecifyUnwantedReviewers';
-    const SETTING_CAN_SUGGEST_EDITOR = 'canSuggestEditor';
-    const SETTING_CAN_PICK_EDITOR = 'canPickEditors';
-    const SETTING_CAN_ANSWER_WITH_TMP_VERSION = 'canAnswerWithTmpVersion';
-    const SETTING_MAX_EDITORS = 'max_editors';
-    const SETTING_CAN_CHOOSE_VOLUME = 'canChooseVolume';
+    public const SETTING_INVITATION_DEADLINE = 'invitation_deadline';
+    public const SETTING_INVITATION_DEADLINE_UNIT = 'invitation_deadline_unit';
+    public const SETTING_RATING_DEADLINE = 'rating_deadline';
+    public const SETTING_RATING_DEADLINE_UNIT = 'rating_deadline_unit';
+    public const SETTING_RATING_DEADLINE_MIN = 'rating_deadline_min';
+    public const SETTING_RATING_DEADLINE_MIN_UNIT = 'rating_deadline_min_unit';
+    public const SETTING_RATING_DEADLINE_MAX = 'rating_deadline_max';
+    public const SETTING_RATING_DEADLINE_MAX_UNIT = 'rating_deadline_max_unit';
+    public const SETTING_DESCRIPTION = 'description';
+    public const SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS = 'canSpecifyUnwantedReviewers';
+    public const SETTING_CAN_SUGGEST_EDITOR = 'canSuggestEditor';
+    public const SETTING_CAN_PICK_EDITOR = 'canPickEditors';
+    public const SETTING_CAN_ANSWER_WITH_TMP_VERSION = 'canAnswerWithTmpVersion';
+    public const SETTING_MAX_EDITORS = 'max_editors';
+    public const SETTING_CAN_CHOOSE_VOLUME = 'canChooseVolume';
     // git 168
-    const SETTING_CAN_PICK_SECTION = 'canPickSEction';
-    const SETTING_CAN_SUGGEST_REVIEWERS = 'canSuggestReviewers';
-    const SETTING_REVIEWERS_CAN_COMMENT_ARTICLES = 'reviewersCanCommentArticles';
-    const SETTING_REQUIRED_REVIEWERS = 'requiredReviewers';
-    const SETTING_ENCAPSULATE_EDITORS = 'encapsulateEditors';
-    const SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'canAbandonContinuePublicationProcess';
+    public const SETTING_CAN_PICK_SECTION = 'canPickSEction';
+    public const SETTING_CAN_SUGGEST_REVIEWERS = 'canSuggestReviewers';
+    public const SETTING_REVIEWERS_CAN_COMMENT_ARTICLES = 'reviewersCanCommentArticles';
+    public const SETTING_REQUIRED_REVIEWERS = 'requiredReviewers';
+    public const SETTING_ENCAPSULATE_EDITORS = 'encapsulateEditors';
+    public const SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'canAbandonContinuePublicationProcess';
     // git #155
-    const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
+    public const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
-    const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
-    const SETTING_EDITORS_CAN_ACCEPT_PAPERS = 'editorsCanAcceptPapers';
-    const SETTING_EDITORS_CAN_REJECT_PAPERS = 'editorsCanRejectPapers';
-    const SETTING_EDITORS_CAN_PUBLISH_PAPERS = 'editorsCanPublishPapers';
-    const SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS = 'editorsCanAskPaperRevisions';
-    const SETTING_EDITORS_CAN_EDIT_TEMPLATES = 'editorsCanEditTemplates';
-    const SETTING_EDITORS_CAN_ASSIGN_REVIEWERS = 'editorsCanAssignReviewers';
-    const SETTING_EDITORS_CAN_ASSIGN_EDITORS = 'editorsCanAssignEditors';
-    const SETTING_SHOW_RATINGS = 'showRatings';
-    const SETTING_DOMAINS = 'domains';
-    const SETTING_ISSN = 'ISSN';
-    const SETTING_REPOSITORIES = 'repositories';
-    const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
-    const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
-    const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
+    public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
+    public const SETTING_EDITORS_CAN_ACCEPT_PAPERS = 'editorsCanAcceptPapers';
+    public const SETTING_EDITORS_CAN_REJECT_PAPERS = 'editorsCanRejectPapers';
+    public const SETTING_EDITORS_CAN_PUBLISH_PAPERS = 'editorsCanPublishPapers';
+    public const SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS = 'editorsCanAskPaperRevisions';
+    public const SETTING_EDITORS_CAN_EDIT_TEMPLATES = 'editorsCanEditTemplates';
+    public const SETTING_EDITORS_CAN_ASSIGN_REVIEWERS = 'editorsCanAssignReviewers';
+    public const SETTING_EDITORS_CAN_ASSIGN_EDITORS = 'editorsCanAssignEditors';
+    public const SETTING_SHOW_RATINGS = 'showRatings';
+    public const SETTING_DOMAINS = 'domains';
+    public const SETTING_ISSN = 'ISSN';
+    public const SETTING_REPOSITORIES = 'repositories';
+    public const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
+    public const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
+    public const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
     //Assignation automatique de rédacteurs
-    const SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT = 'systemAutoEditorsAssignment';
+    public const SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT = 'systemAutoEditorsAssignment';
     //Paramétrage avancé
-    const SETTING_EDITORS_ASSIGNMENT_DETAILS = 'editorsAssignmentDetails';
+    public const SETTING_EDITORS_ASSIGNMENT_DETAILS = 'editorsAssignmentDetails';
     //Details de l'assignation de rédacteurs
-    const SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS = 'systemCanAssignChiefEditors';
-    const SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS = 'systemCanAssignSuggestEditors';
-    const SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS = 'systemCanAssignSectionEditors';
-    const SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS = 'systemCanAssignOnlySpecialVolumeEditors';
-    const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
+    public const SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS = 'systemCanAssignChiefEditors';
+    public const SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS = 'systemCanAssignSuggestEditors';
+    public const SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS = 'systemCanAssignSectionEditors';
+    public const SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS = 'systemCanAssignOnlySpecialVolumeEditors';
+    public const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
     const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
 
 
     // Notifications
-    const SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS = 'systemCanNotifyChiefEditors';
-    const SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS = 'systemCanNotifyAdministrator';
-    const SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES = 'systemCanNotifySecretaries';
-    const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
+    public const SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS = 'systemCanNotifyChiefEditors';
+    public const SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS = 'systemCanNotifyAdministrator';
+    public const SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES = 'systemCanNotifySecretaries';
+    public const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
     public const SETTING_SYSTEM_IS_COI_ENABLED = 'isCoiEnabled'; //Conflict Of Interest (COI) is Disabled by default
 
-    const ASSIGNMENT_EDITORS_DETAIL = [
+    public const ASSIGNMENT_EDITORS_DETAIL = [
         self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => '0',
         self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS => '1',
         self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS => '2',
@@ -89,22 +89,24 @@ class Episciences_Review
         self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES => '6'
     ];
 
-    const ENABLED = '1';
-    const DISABLED = '0';
+    public const ENABLED = '1';
+    public const DISABLED = '0';
 
     // Automatically reassign the same reviewers
-    const SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION = 'NewVersionAutomaticallyReassignSameReviewers';
-    const MAJOR_REVISION_ASSIGN_REVIEWERS = 'majorRevisionAssignReviewers';
-    const MINOR_REVISION_ASSIGN_REVIEWERS = 'minorRevisionAssignReviewers';
-    const SETTING_CONTACT_JOURNAL = 'contactJournal';
-    const SETTING_CONTACT_JOURNAL_EMAIL = 'contactJournalEmail';
-    const SETTING_CONTACT_TECH_SUPPORT = 'contactTechSupport';
-    const SETTING_CONTACT_TECH_SUPPORT_EMAIL = 'contactTechSupportEmail';
-    const SETTING_ISSN_PRINT = 'ISSN_PRINT';
-    const SETTING_JOURNAL_DOI = 'journalAssignedDoi';
+    public const SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION = 'NewVersionAutomaticallyReassignSameReviewers';
+    public const MAJOR_REVISION_ASSIGN_REVIEWERS = 'majorRevisionAssignReviewers';
+    public const MINOR_REVISION_ASSIGN_REVIEWERS = 'minorRevisionAssignReviewers';
+    public const SETTING_CONTACT_JOURNAL = 'contactJournal';
+    public const SETTING_CONTACT_JOURNAL_EMAIL = 'contactJournalEmail';
+    public const SETTING_CONTACT_TECH_SUPPORT = 'contactTechSupport';
+    public const SETTING_CONTACT_TECH_SUPPORT_EMAIL = 'contactTechSupportEmail';
+    public const SETTING_ISSN_PRINT = 'ISSN_PRINT';
+    public const SETTING_JOURNAL_DOI = 'journalAssignedDoi';
 
     #git 303
     public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
+
+    public const SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION = 'paperFinaDecisionAllowRevision';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -186,7 +188,8 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
             self::SETTING_ENCAPSULATE_COPY_EDITORS,
             self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
-            self::SETTING_SYSTEM_IS_COI_ENABLED
+            self::SETTING_SYSTEM_IS_COI_ENABLED,
+            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION
         ];
 
 
@@ -217,9 +220,7 @@ class Episciences_Review
 
         $doiSet = new Episciences_Review_DoiSettings($options);
 
-        if ($doiSet instanceof Episciences_Review_DoiSettings) {
-            $this->setDoiSettings($doiSet);
-        }
+        $this->setDoiSettings($doiSet);
 
         foreach ($options as $key => $value) {
             $method = 'set' . ucfirst(strtolower($key));
@@ -473,7 +474,7 @@ class Episciences_Review
     /**
      * load review settings from database
      */
-    public function loadSettings()
+    public function loadSettings(): void
     {
         // review configuration
         $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ' . $this->_rvid);
@@ -745,7 +746,7 @@ class Episciences_Review
      * @param bool $toArray
      * @return array
      */
-    public function getSections(array $options = null, $toArray = false): array
+    public function getSections(array $options = null, bool $toArray = false): array
     {
         $options['where'] = 'RVID = ' . $this->getRvid();
         return Episciences_SectionsManager::getList($options, $toArray);
@@ -877,6 +878,10 @@ class Episciences_Review
         //COI
         $form = $this->addCoiForm($form);
 
+        // Paper - Final Decision : allow revision request after acception
+
+        $form = $this->addFinalDecisionForm($form);
+
         // display group: publication settings
         $form->addDisplayGroup([
             self::SETTING_REPOSITORIES,
@@ -940,7 +945,13 @@ class Episciences_Review
         $form->addDisplayGroup([
             self::SETTING_SYSTEM_IS_COI_ENABLED
         ], 'conflictOfInterest', ["legend" => "Conflit d'intérêts (CI)"]);
-        $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
+        $form->getDisplayGroup('conflictOfInterest')->removeDecorator('DtDdWrapper');
+
+        // display group : Final decisions
+        $form->addDisplayGroup([
+            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION
+        ], 'finalDecisions', ["legend" => "Article - décision finale"]);
+        $form->getDisplayGroup('finalDecisions')->removeDecorator('DtDdWrapper');
 
         // submit button
         $form->setActions(true)->createSubmitButton('submit', [
@@ -953,11 +964,12 @@ class Episciences_Review
     }
 
     /**
-     * @param $form
-     * @return mixed
+     * @param Ccsd_Form $form
+     * @return Ccsd_form
      * @throws Zend_Exception
+     * @throws Zend_Form_Exception
      */
-    private function addRepositoriesSettingsForm($form)
+    private function addRepositoriesSettingsForm(Ccsd_Form $form): \Ccsd_form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         // enabled repositories
@@ -1347,10 +1359,6 @@ class Episciences_Review
         return $form;
     }
 
-
-
-    // SETTERS ******************************************************************************
-
     /**
      * @param Ccsd_Form $form
      * @return Ccsd_Form
@@ -1385,10 +1393,10 @@ class Episciences_Review
 
     /**
      * @param Ccsd_Form $form
-     * @return Zend_Form
+     * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    private function addCopyEditorForm(Ccsd_Form $form): \Zend_Form
+    private function addCopyEditorForm(Ccsd_Form $form): \Ccsd_Form
     {
 
         $checkboxDecorators = [
@@ -1426,6 +1434,29 @@ class Episciences_Review
         return $form->addElement('checkbox', self::SETTING_SYSTEM_IS_COI_ENABLED, [
                 'label' => "Activer la déclaration CI",
                 'description' => "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles à un éditeur tant qu'il n'a pas déclaré l'absence de tout conflit d'intérêts",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Form_Exception
+     */
+    private function addFinalDecisionForm(Ccsd_Form $form): \Ccsd_Form
+    {
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        return $form->addElement('checkbox', self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, [
+                'label' => "Permettre la demande de revision",
+                'description' => "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté.",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
@@ -1534,9 +1565,7 @@ class Episciences_Review
 
         $doiSettings = $this->getDoiSettings();
 
-        if ($doiSettings instanceof Episciences_Review_DoiSettings) {
-            $settingsValues = array_merge($settingsValues, $doiSettings->__toArray());
-        }
+        $settingsValues = array_merge($settingsValues, $doiSettings->__toArray());
 
         // Assignation auto de relecteurs
         $settingsValues[self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION] = $this->getSetting(self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION);
@@ -1560,9 +1589,10 @@ class Episciences_Review
         // COI
         $settingsValues[self::SETTING_SYSTEM_IS_COI_ENABLED] = $this->getSetting(self::SETTING_SYSTEM_IS_COI_ENABLED);
 
+        // Article - final decision
+        $settingsValues[self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] = $this->getSetting(self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
 
         $values = [];
-
 
         // Enregistrement des paramètres
         foreach ($settingsValues as $setting => $value) {
@@ -1620,7 +1650,7 @@ class Episciences_Review
     /**
      * @param Episciences_Review_DoiSettings $doiSettings
      */
-    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings)
+    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings): void
     {
         $this->_doiSettings = $doiSettings;
     }
@@ -1629,7 +1659,7 @@ class Episciences_Review
      * @param array $settingsValues
      * @throws Zend_Db_Statement_Exception
      */
-    private function initAutoAssignation(array &$settingsValues = [])
+    private function initAutoAssignation(array &$settingsValues = []): void
     {
         $autoAssignation = $this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
 
@@ -1654,9 +1684,9 @@ class Episciences_Review
     /**
      * delete settings
      */
-    public function deleteSettings()
+    public function deleteSettings(): int
     {
-        $this->_db->delete(T_REVIEW_SETTINGS, 'RVID = ' . $this->_rvid . ' AND SETTING != "domains"');
+        return $this->_db->delete(T_REVIEW_SETTINGS, 'RVID = ' . $this->_rvid . ' AND SETTING != "domains"');
     }
 
     /**
@@ -1991,6 +2021,7 @@ class Episciences_Review
      * @deprecated see suggestions : git #182
      * Initialisation de parametres d'assignation automatique de rédacteurs
      * @return array
+     * @throws Zend_Db_Statement_Exception
      */
     private function editorsAssignationDetailsInit(): array
     {
@@ -2019,18 +2050,16 @@ class Episciences_Review
      * @param array $settingsValues
      * @throws Zend_Db_Statement_Exception
      */
-    private function applyDefaultAssignation(string $setting, array &$settingsValues)
+    private function applyDefaultAssignation(string $setting, array &$settingsValues): void
     {
         if (!empty(self::getChiefEditors())) {// toutes les options sont désactivées sauf l'assignation des rédacteurs en chef
             $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
-        } else { // toutes les options sont désactivées sauf la notification des administrateurs
-            if (!empty(self::getAdministrators())) {
-                $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
-            } elseif (!empty(self::getSecretaries())) {// toutes les options sont désactivées sauf la notification des secrétaires de rédaction
-                $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
-            } else { // AUCUN
-                $settingsValues[$setting] = self::DISABLED;
-            }
+        } else if (!empty(self::getAdministrators())) {
+            $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
+        } elseif (!empty(self::getSecretaries())) {// toutes les options sont désactivées sauf la notification des secrétaires de rédaction
+            $settingsValues[$setting] = ($setting === self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES) ? $settingsValues[$setting] = self::ENABLED : $settingsValues[$setting] = self::DISABLED;
+        } else { // AUCUN
+            $settingsValues[$setting] = self::DISABLED;
         }
     }
 
@@ -2039,7 +2068,7 @@ class Episciences_Review
      * @param string $setting
      * @param array $settingsValues
      */
-    private function applyPredefinedAssignation(string $setting, array &$settingsValues)
+    private function applyPredefinedAssignation(string $setting, array &$settingsValues): void
     {
         if ($setting === self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS) {
             $settingsValues[$setting] = (int)$this->getSetting(self::SETTING_CAN_PICK_EDITOR) > 0 ? self::ENABLED : self::DISABLED;
@@ -2078,7 +2107,7 @@ class Episciences_Review
      * @param string $title
      * @deprecated
      */
-    private function disable(array &$options, string $title = "")
+    private function disable(array &$options, string $title = ""): void
     {
 
         $options['disabled'] = true;
@@ -2090,7 +2119,7 @@ class Episciences_Review
      * @param array $options
      * @deprecated
      */
-    private function enable(array &$options)
+    private function enable(array &$options): void
     {
         if (array_key_exists('disabled', $options)) {
             unset($options['disabled']);
