@@ -44,11 +44,11 @@ if (Episciences_Auth::isSecretary()) : ?>
                        data-target=".major-revision-modal"><?php echo $this->translate('Demander des modifications majeures') ?></a>
                 </li>
 
-            <?php elseif ($paper->isAccepted() || $paper->isTmpVersionAccepted()) : ?>
+            <?php elseif ($paper->isAccepted()) : ?>
                 <?php // ask minor revision  ?>
                 <?php if($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) : ?>
                     <li>
-                        <a href="#" data-toggle="modal" data-target=".minor-revision-modal"><?php echo $this->translate('Demander des modifications mineures') ?></a>
+                        <a href="#" data-toggle="modal" data-target=".minor-revision-modal"><?php echo $this->translate("Demander la version finale à l'auteur") ?></a>
                     </li>
                 <?php endif; ?>
 

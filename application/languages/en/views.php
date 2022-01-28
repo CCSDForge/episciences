@@ -1818,4 +1818,5 @@ return [
     "Article - décision finale" => "Paper - final decision",
     "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté." => "Sometimes it is necessary to change some things on an article already accepted.",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "Accepted, waiting for author's final version",
+    "Demander la version finale à l'auteur" => "Ask author's final version"
 ];

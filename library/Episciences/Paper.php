@@ -1277,7 +1277,8 @@ class Episciences_Paper
             self::STATUS_WAITING_FOR_MINOR_REVISION,
             self::STATUS_WAITING_FOR_MAJOR_REVISION,
             self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
-            self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION
+            self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+            self::STATUS_TMP_VERSION_ACCEPTED
         ];
 
         return in_array($this->getStatus(), $selectedStatus, true);

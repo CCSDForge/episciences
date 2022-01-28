@@ -1629,8 +1629,47 @@ class AdministratepaperController extends PaperDefaultController
                 // repository version
                 $status = Episciences_Paper::STATUS_ACCEPTED;
             } else { // tmp version
-
                 $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED;
+                // save comment
+                $subject = $data['acceptancesubject'];
+                $message = $data['acceptancemessage'];
+
+                $deadline = $data['minor-revisiondeadline'] ?: null;
+
+                $isAlreadyAccepted = $journal->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
+                    in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
+
+                // prepare comment options
+                $options = [];
+
+                if ($deadline) {
+                    $options['deadline'] = $deadline;
+                }
+
+                $options['isAlreadyAccepted'] = true;
+
+                $comment = new Episciences_Comment([
+                    'docid' => $docId,
+                    'uid' => $doneByUid,
+                    'message' => $message,
+                    'type' => Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+                    'deadline' => $deadline,
+                    'options' => $options
+                ]);
+
+                $comment->save();
+
+                // log minor revision request
+                $paper->log(
+                    Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
+                    $doneByUid,
+                    [
+                        'id' => $comment->getPcid(),
+                        'deadline' => $deadline,
+                        'subject' => $subject,
+                        'message' => $message,
+                        'isAlreadyAccepted' => $isAlreadyAccepted
+                    ]);
             }
 
             // update paper status
@@ -1656,7 +1695,7 @@ class AdministratepaperController extends PaperDefaultController
                         Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => HTTP . '://' . $_SERVER['SERVER_NAME'] . '/website/public',
                     ];
 
-                    if ($journal->getDoiSettings()->getDoiAssignMode() == Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
+                    if ($journal->getDoiSettings()->getDoiAssignMode() === Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
                         Episciences_Paper::createPaperDoi(RVID, $paper);
                     }
 
@@ -1857,7 +1896,8 @@ class AdministratepaperController extends PaperDefaultController
             $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
-            $isAlreadyAccepted = in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
+            $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
+                in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
 
             // prepare comment options
             $options = [];
@@ -1869,7 +1909,7 @@ class AdministratepaperController extends PaperDefaultController
                 $options['reassign_reviewers'] = (bool)$data['auto_reassign'];
             }
 
-            $options['isAlreadyAccepted'] = true;
+            $options['isAlreadyAccepted'] = $isAlreadyAccepted;
 
             // save comment (revision request)
             $comment = new Episciences_Comment([
