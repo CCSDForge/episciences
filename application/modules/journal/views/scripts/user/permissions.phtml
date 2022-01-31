@@ -6,26 +6,26 @@ $noTAllowedClass = 'fas fa-toggle-off text-danger';
 ?>
 <div class="table-responsive">
     <table class="table table-striped">
-        <caption style="font-weight: bold;font-size: 120%;margin:1em;"><?= $this->translate($description); ?></caption>
+        <caption style="font-weight: bold;font-size: 120%;margin:1em;"><?= $this->translate($description) ?></caption>
         <thead>
         <tr>
-            <th  scope="col"><?= $this->translate('Action'); ?></th>
+            <th  scope="col"><?= $this->translate('Action') ?></th>
             <?php foreach ($this->roles as $role): ?>
-                <th scope="col" class="role-<?= $role ?> text-center"><?= $this->translate($role); ?></th>
+                <th scope="col" class="role-<?= $role ?> text-center"><?= $this->translate($role) ?></th>
             <?php endforeach; ?>
         </tr>
         </thead>
         <tbody>
         <?php foreach ($this->resources as $resource): ?>
             <tr>
-                <td><strong><?= $this->translate($resource); ?></strong></td>
+                <td><strong><?= $this->translate($resource) ?></strong></td>
                 <?php foreach ($this->roles as $index => $role): ?>
                     <td class="text-center">
                         <?php $isAllowed = $this->permissions[$resource][$role]; ?>
                         <?php if (is_bool($isAllowed)): ?>
-                            <em class="<?= $isAllowed ? $allowedClass : $noTAllowedClass; ?>"></em>
+                            <em class="<?= $isAllowed ? $allowedClass : $noTAllowedClass ?>"></em>
                         <?php elseif (is_string($isAllowed)): ?>
-                            <em class="text-warning" data-toggle="tooltip" title="<?= $this->translate('Paramétrable par la revue'); ?>"> <?= $this->translate($isAllowed); ?></em>
+                            <em class="text-warning" data-toggle="tooltip" title="<?= $this->translate('Paramétrable par la revue') ?>"> <?= $this->translate($isAllowed) ?></em>
                         <?php endif; ?>
                     </td>
                 <?php endforeach; ?>

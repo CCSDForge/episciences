@@ -141,7 +141,7 @@ return [
     "administratepaper-refreshrating" => "Autoriser la modification de la relecture",
     "administratepaper-refuse" => "Rejeter un article",
     "administratepaper-reviewformattingdeposed" => "Préparation de copie : mise en forme par la revue",
-    "administratepaper-revision" => "Demander une nouvelle vesrion",
+    "administratepaper-revision" => "Demander une nouvelle version",
     "administratepaper-saveeditors" => "Assigner des rédacteurs à l'article",
     "administratepaper-savecopyeditors" => "Assigner des préparateurs de copie à l'article",
     "administratepaper-savemastervolume" => "Affecter un article à un volume principal",

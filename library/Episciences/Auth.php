@@ -95,6 +95,11 @@ class Episciences_Auth extends Ccsd_Auth
         return self::isLogged();
     }
 
+    public static function isAuthor(int $rvId = RVID): bool
+    {
+        return self::is(Episciences_Acl::ROLE_AUTHOR, $rvId);
+    }
+
     public static function getScreenName()
     {
         return self::getInstance()->getIdentity()->getScreenName();

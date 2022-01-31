@@ -11,9 +11,8 @@ class Episciences_User extends Ccsd_User_Models_User
     protected $_hasAccountData;
 
     protected $_roles = null;
-    protected $_role;
-    protected $_db = null;
 
+    protected $_db = null;
 
     /** @var string */
     protected $_screenName;
@@ -232,7 +231,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * Chargement des informations spécifiques d'un utilisateurs (données
      * spécifiques application + roles)
      */
-    public function load()
+    public function load(): void
     {
         $this->getRoles();
     }
@@ -242,7 +241,7 @@ class Episciences_User extends Ccsd_User_Models_User
      *
      * @return array
      */
-    public function getRoles()
+    public function getRoles(): ?array
     {
         if ($this->_roles === null) {
             $this->_roles = $this->loadRoles();
@@ -265,7 +264,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * Récupération des rôles
      */
-    public function loadRoles()
+    public function loadRoles(): array
     {
         $roles = [];
 
@@ -736,6 +735,11 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this->hasRole(Episciences_Acl::ROLE_MEMBER);
     }
 
+    public function isAuthor(): bool
+    {
+        return $this->hasRole(Episciences_Acl::ROLE_AUTHOR);
+    }
+
     public function getReviews()
     {
         $reviewIds = array_keys($this->getAllRoles());
@@ -891,8 +895,9 @@ class Episciences_User extends Ccsd_User_Models_User
         return $form;
     }
 
-    public function saveUserRoles($uid, $roles)
+    public function saveUserRoles($uid, $roles): bool
     {
+        $uid = (int)$uid;
         // Reset des rôles de l'utilisateur
         $acl = new Episciences_Acl();
         $editableRoles = $acl->getEditableRoles();
@@ -910,15 +915,13 @@ class Episciences_User extends Ccsd_User_Models_User
             }
 
             // Enregistrement des nouveaux rôles
-            if (!empty($roles)) {
-                $sql = 'INSERT IGNORE INTO ' . T_USER_ROLES . ' (UID, RVID, ROLEID) VALUES ' . implode(',', $values);
-                $this->_db->query($sql);
-            }
+            $sql = 'INSERT IGNORE INTO ' . T_USER_ROLES . ' (UID, RVID, ROLEID) VALUES ' . implode(',', $values);
+            $this->_db->query($sql);
 
             // Si on update les rôles de son propre compte, il faut mettre à jour la session
-            if (PHP_SAPI != 'cli') {
+            if (PHP_SAPI !== 'cli') {
                 $user = Episciences_Auth::getInstance()->getIdentity();
-                if ($uid == Episciences_Auth::getUid()) {
+                if ($uid === Episciences_Auth::getUid()) {
                     $userRoles[RVID] = $roles;
                     $user->setRoles($userRoles);
                     Episciences_Auth::setIdentity($user);
@@ -1162,5 +1165,34 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         $this->setPapersNotInConflict($result);
+    }
+
+    /**
+     * @param string $role
+     * @return Episciences_User
+     */
+    public function addRole(string $role): \Episciences_User
+    {
+        $selfRoles = $this->getRoles();
+        $currentRoles = [];
+
+        if (!in_array($role, $selfRoles, true)) { // 'reviewer'
+            $currentRoles = array_merge($selfRoles, (array)$role);
+        }
+
+        if (count($currentRoles) > 1) {
+            $key = array_search(Episciences_Acl::ROLE_MEMBER, $currentRoles, true);
+            unset($currentRoles[$key]);
+        }
+
+        if (!empty($currentRoles)) {
+            $this->saveUserRoles($this->getUid(), $currentRoles);
+            $userRoles[RVID] = $currentRoles;
+        } else {
+            $userRoles[RVID] = $selfRoles;
+        }
+        $this->setRoles($userRoles);
+
+        return $this;
     }
 }

@@ -12,7 +12,7 @@ class UserController extends UserDefaultController
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Exception
      */
-    public function dashboardAction()
+    public function dashboardAction(): void
     {
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -24,7 +24,7 @@ class UserController extends UserDefaultController
 
         // Bloc "Gérer la revue"
         if (Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$review->getSetting('encapsulateEditors'))) {
-            $settings = array('isNot' => array('status' => array(Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED)));
+            $settings = ['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]];
             $this->view->allPapers = $review->getPapers($settings);
         }
 
@@ -33,10 +33,10 @@ class UserController extends UserDefaultController
             $editor = new Episciences_Editor(Episciences_Auth::getUser()->toArray());
             /** Episciences_Editor $editor */
             try {
-                $editor->loadAssignedPapers(array('isNot' => array('status' => array(Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED))));
+                $editor->loadAssignedPapers(['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]]);
                 $assignedPapers = $editor->getAssignedPapers();
             } catch (Zend_Exception $e) {
-                error_log('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_EDITOR_' . $editor->getUid() . ' : ' . $e);
+                trigger_error('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_EDITOR_' . $editor->getUid() . ' : ' . $e, E_USER_WARNING);
                 $assignedPapers = [];
             }
 
@@ -49,7 +49,7 @@ class UserController extends UserDefaultController
         try {
             $assignedPapersToCopyEditing = $copyEditor->getAssignedPapers();
         } catch (Zend_Exception $e) {
-            error_log('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_COPYEDITOR_' . $copyEditor->getUid() . ' : ' . $e);
+            trigger_error('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_COPYEDITOR_' . $copyEditor->getUid() . ' : ' . $e, E_USER_WARNING);
             $assignedPapersToCopyEditing = [];
 
         }
@@ -57,9 +57,10 @@ class UserController extends UserDefaultController
         $this->view->assignedPapersToCopyEditing = $assignedPapersToCopyEditing;
 
         // Bloc "Mes articles"
-        $settings = array(
-            'is' => array('uid' => Episciences_Auth::getUid()),
-            'isNot' => array('status' => array(Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED)));
+        $settings = [
+            'is' => ['uid' => Episciences_Auth::getUid()],
+            'isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]
+        ];
         $this->view->submittedPapers = $review->getPapers($settings);
 
         // Bloc "Mes relectures"
@@ -67,7 +68,7 @@ class UserController extends UserDefaultController
         $reviewer = new Episciences_Reviewer();
         $reviewer->find(Episciences_Auth::getUid());
 
-        $papers = $reviewer->getAssignedPapers(array('is' => array('rvid' => RVID)), true);
+        $papers = $reviewer->getAssignedPapers(['is' => ['rvid' => RVID]], true);
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
             $reviewer->getReviewing($paper->getDocid());
@@ -88,9 +89,8 @@ class UserController extends UserDefaultController
      * décrit les différents niveaux de permission des utilisateurs ['exclut le rôle "root(epiadmin)" et ses resources
      * @throws Zend_Controller_Exception
      */
-    public function permissionsAction()
+    public function permissionsAction(): void
     {
-
         // Personalisation des menus : ignorer l'affichage des pages personnalisées et les répertoires
         $ignoredControllerName = ['page', 'folder'];
 
@@ -101,7 +101,7 @@ class UserController extends UserDefaultController
         /** @var array $resources */
         $roles = $aclFromPlugin->getRolesCodes();
         // unset root
-        unset($roles[Episciences_Acl::ROLE_ROOT]);
+        unset($roles[Episciences_Acl::ROLE_ROOT], $roles[Episciences_Acl::ROLE_GUEST]); // github #166
         $resources = $aclFromPlugin->getResources();
         $permissions = [];
 
@@ -114,7 +114,7 @@ class UserController extends UserDefaultController
             // Aussi, les resources à ne pas afficher
             $explodedResource = explode('-', $resource);
 
-            if (in_array($explodedResource[0], $ignoredControllerName)) {
+            if (in_array($explodedResource[0], $ignoredControllerName, true)) {
                 unset($resources[array_search($resource, $resources, true)]);
                 continue;
             }
