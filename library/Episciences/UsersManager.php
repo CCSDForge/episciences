@@ -248,8 +248,11 @@ class Episciences_UsersManager
         $mergerRoles = $mergerObject->getAllRoles();
 
         foreach ($mergerRoles as $rvId => $roles) {
-
+            $count = count($roles);
             foreach ($roles as $roleId) {
+                if($count > 1 && $roleId === Episciences_Acl::ROLE_MEMBER){
+                    continue;
+                }
                 $values[] = '(' . $newUid . ',' . $rvId . ',' . $db->quote($roleId) . ')';
             }
         }
