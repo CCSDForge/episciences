@@ -583,6 +583,7 @@ class Episciences_User extends Ccsd_User_Models_User
      *
      * @param int $uid
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function find($uid): array
@@ -597,7 +598,10 @@ class Episciences_User extends Ccsd_User_Models_User
             return [];
         }
 
-        $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true) : $result['AFFILIATIONS'];
+        if(isset($result['AFFILIATIONS'])){
+            $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true, 512, JSON_THROW_ON_ERROR) : $result['AFFILIATIONS'];
+        }
+
 
         // Si les données locales n'existent pas, on crée le Screenname à partir du nom/prénom
         if (!isset($result['SCREEN_NAME']) || ($result['SCREEN_NAME'] === '')) {

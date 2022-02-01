@@ -146,17 +146,21 @@ abstract class JournalScript extends Script
 
         $this->displayTrace($createQuery, true);
 
-        $result = $db->prepare($createQuery)->execute();
+        if (!$this->isDebug()) {
+            $result = $db->prepare($createQuery)->execute();
 
-        if ($result && $withData) {
-            $insertQuery = 'INSERT INTO ';
-            $insertQuery .= $db->quoteIdentifier($clone);
-            $insertQuery .= ' SELECT * FROM ';
-            $insertQuery .= $db->quoteIdentifier($table);
-            $result = $db->prepare($insertQuery)->execute();
+            if ($result && $withData) {
+                $insertQuery = 'INSERT INTO ';
+                $insertQuery .= $db->quoteIdentifier($clone);
+                $insertQuery .= ' SELECT * FROM ';
+                $insertQuery .= $db->quoteIdentifier($table);
+                $result = $db->prepare($insertQuery)->execute();
+            }
+
+            return $result;
         }
 
-        return $result;
+        return true;
     }
 
     /**

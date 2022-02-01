@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
 - New review parameter: Allow revision request + refactoring.
 - 'Author' role
+- Script to clean the "USER_ROLES" table
 
 
 ## Changed
