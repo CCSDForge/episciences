@@ -9,9 +9,9 @@
 class Episciences_Settings
 {
 
-    static public $githubChangeLogURL = 'https://github.com/CCSDForge/episciences/blob/main/CHANGELOG.md';
+    static public string $githubChangeLogURL = 'https://github.com/CCSDForge/episciences/blob/main/CHANGELOG.md';
 
-    static public $githubCommitURL = 'https://github.com/CCSDForge/episciences/commit/';
+    static public string $githubCommitURL = 'https://github.com/CCSDForge/episciences/commit/';
 
     /** @var array */
     static private $_appversion = [];
@@ -20,7 +20,10 @@ class Episciences_Settings
      * Langues disponibles de l'interface
      * @var array
      */
-    static private $_languages = ['fr', 'en'];
+    static private array $_languages = ['fr', 'en'];
+
+    public const MIME_LD_JSON = 'application/ld+json';
+
 
     /**
      * Récupération des langues de l'archive Episciences

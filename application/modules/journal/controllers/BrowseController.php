@@ -1,4 +1,5 @@
 <?php
+use Episciences\Notify\Headers;
 
 class BrowseController extends Zend_Controller_Action
 {
@@ -11,15 +12,12 @@ class BrowseController extends Zend_Controller_Action
      */
     public function init()
     {
-        $headerLinks[] = sprintf('Link: <%s>; rel="http://www.w3.org/ns/ldp#inbox"', INBOX_URL);
-        header(implode(', ', $headerLinks));
+        Headers::addInboxAutodiscoveryHeader();
 
-        if ($this->getFrontController()->getRequest()->getHeader('Accept') === 'application/ld+json') {
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
-            $ldJson['@context'] = "http://www.w3.org/ns/ldp";
-            $ldJson['inbox'] = INBOX_URL;
-            echo json_encode($ldJson);
+            echo Headers::addInboxAutodiscoveryLDN();
             exit;
         }
 
