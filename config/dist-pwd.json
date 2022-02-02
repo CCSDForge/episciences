@@ -103,6 +103,7 @@
     "URL": "https://hal.example.org/"
   },
   "INBOX": {
+    "URL": "https://inbox.example.org/",
     "DB_HOST": "db.example.org",
     "DB_DRIVER":"pdo_mysql",
     "DB_NAME": "inbox",
