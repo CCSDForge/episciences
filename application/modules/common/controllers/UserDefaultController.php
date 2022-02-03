@@ -1082,7 +1082,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $rowsetArray = $rowSet->toArray();
                 foreach ($rowsetArray as $array) {
                     $login = $array['USERNAME'];
-                    $resRowset = $userMapper->findByUsernameOrUID($login);
+                    $resRowset = $userMapper->findByUsernameOrUID($login, false);
                     if ($resRowset) {
                         $detailByLogin[$login] = $resRowset->toArray()[0];
                     }

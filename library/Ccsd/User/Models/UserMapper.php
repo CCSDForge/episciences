@@ -245,15 +245,21 @@ class Ccsd_User_Models_UserMapper {
 
 
     /**
-     * Trouve un utilisateur avec un compte actif, par son login ou UID, sinon renvoi
+     * Trouve un utilisateur avec un compte actif ou pas, par son login ou UID, sinon renvoi
      * null
      *
      * @param string|int $info
+     * @param bool $strict [true: active accounts only]
      * @return Zend_Db_Table_Rowset_Abstract
      * @throws Exception
      */
-    public function findByUsernameOrUID($info) {
-        $select = $this->getDbTable()->select()->where('USERNAME = ? OR UID = ?', $info)->where('VALID= ?', 1);
+    public function findByUsernameOrUID($info, bool $strict = true): ?\Zend_Db_Table_Rowset_Abstract
+    {
+        $select = $this->getDbTable()->select()->where('USERNAME = ? OR UID = ?', $info);
+
+        if ($strict) {
+            $select->where('VALID = ?', 1);
+        }
 
         $select->from($this->getDbTable(), ['UID',
             'USERNAME',
@@ -267,7 +273,7 @@ class Ccsd_User_Models_UserMapper {
 
         $rows = $this->getDbTable()->fetchAll($select);
 
-        if (count($rows) == 0) {
+        if (count($rows) === 0) {
             return null;
         }
         return $rows;
