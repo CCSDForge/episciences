@@ -781,6 +781,11 @@ class Episciences_PapersManager
         //prepare array
         $source = [];
         foreach ($data as $row) {
+
+            if (array_key_exists($row['ASSIGNMENT_ID'], $source)) { // remove duplicated invitations
+                continue;
+            }
+
             $source[$row['INVITATION_AID']][$row['ASSIGNMENT_ID']] = $row;
         }
 
@@ -812,7 +817,7 @@ class Episciences_PapersManager
 
                     }
                 } else if (!array_key_exists($invitation['UID'], $reviewers)) {
-                    $reviewer = new Episciences_Reviewer;
+                    $reviewer = new Episciences_Reviewer();
                     $reviewer->findWithCAS($invitation['UID']);
                     $reviewers[$invitation['UID']] = $reviewer;
                 }
@@ -820,12 +825,13 @@ class Episciences_PapersManager
                 $reviewer = $reviewers[$invitation['UID']];
 
                 $tmp['reviewer'] = [
-                    'alias' => (is_a($reviewer, 'Episciences_Reviewer')) ? $reviewer->getAlias($docId) : null,
+                    'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
                     'fullname' => $reviewer->getFullName(),
                     'screenname' => $reviewer->getScreenName(),
                     'username' => $reviewer->getUsername(),
                     'email' => $reviewer->getEmail(),
-                    'hasLocalData' => !$isTmpUser ? $reviewer->hasLocalData() : false
+                    'hasRoles' => !$isTmpUser ? $reviewer->hasRoles($reviewer->getUid()) : false,
+                    'isCasUserValid' => (bool)$reviewer->getValid()
                 ];
 
 
