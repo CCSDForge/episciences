@@ -1090,7 +1090,7 @@ class UserDefaultController extends Zend_Controller_Action
             }
         }
 
-        echo json_encode($detailByLogin);
+        echo json_encode($detailByLogin, JSON_THROW_ON_ERROR);
     }
 
     /**

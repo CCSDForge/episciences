@@ -206,10 +206,10 @@ class Ccsd_User_Models_UserMapper {
     /**
      * Cherche des logins à partir d'une adresse mail
      * @param string $email
-     * @return NULL Zend_Db_Table_Rowset_Abstract
+     * @return NULL Zend_Db_Table_Rowset
      * @throws Exception
      */
-    public function findLoginByEmail($email) {
+    public function findLoginByEmail(string $email) :?Zend_Db_Table_Rowset {
         $select = $this->getDbTable()->select()->where('EMAIL = ?', $email)->order(array(
             'VALID DESC',
             'USERNAME ASC'

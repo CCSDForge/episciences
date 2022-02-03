@@ -3514,6 +3514,7 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * Affiche tous les comptes qui ont le même prénom et nom
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function displayccsdusersAction(): void
@@ -3529,19 +3530,19 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isXmlHttpRequest()) {
 
+            $isSearchWithMail = (boolean)$request->getPost('is_search_with_mail');
             $docId = $request->getPost('paper_id');
             $paper = Episciences_PapersManager::get($docId);
 
             if (!$paper) {
                 $trace['error'] = $this->view->translate('Une erreur est survenue.');
             } else {
-                $post = json_decode($request->getPost('post'), true);
-                $isSearchWithMail = (boolean)$request->getPost('is_search_with_mail');
+                $post = json_decode($request->getPost('post'), true, 512, JSON_THROW_ON_ERROR);
                 $user_lang = $request->getPost('user_lang');
                 $local_users = Episciences_UsersManager::getLocalUsers();
                 // liste des utilisateurs à ignorer
                 $ignoreList = $request->getPost('ignore_list');
-                $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList) : [];
+                $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList, false, 512, JSON_THROW_ON_ERROR) : [];
                 /** @var stdClass $value */
                 foreach ($post as $value) {
                     $user = new Episciences_User((array)$value);
