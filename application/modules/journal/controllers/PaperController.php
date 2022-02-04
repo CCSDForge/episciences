@@ -2246,7 +2246,7 @@ class PaperController extends PaperDefaultController
                     $attachments[$fileName] = $path;
                 }
 
-                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, $paper, Episciences_Auth::getUid(), $attachments, false, $CC);
+                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, $paper, Episciences_Auth::getUid(), $attachments, true, $CC);
                 // reset CC
                 $CC = [];
             }
