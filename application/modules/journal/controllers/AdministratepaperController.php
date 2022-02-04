@@ -725,6 +725,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->authorFormattingRequestForm = Episciences_PapersManager::getWaitingForAuthorFormatting($templates['waitingAuthorFormatting']);
             $this->view->reviewFormattingDeposedForm = Episciences_PapersManager::getReviewFormattingDeposedForm($templates['reviewFormattingDeposed']);
             $this->view->ceAcceptFinalVersionForm = Episciences_PapersManager::getCeAcceptFinalVersionForm($templates['ceAcceptFinalVersion']);
+            $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersion']);
 
             if (!empty($all_editors)) {
                 $this->view->askOtherEditorsForm = Episciences_PapersManager::getAskOtherEditorsForm($templates['askOtherEditors'], $all_editors, $paper);
@@ -737,6 +738,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->authorFormattingRequestForm = Episciences_PapersManager::getWaitingForAuthorFormatting($templates['waitingAuthorFormatting']);
             $this->view->reviewFormattingDeposedForm = Episciences_PapersManager::getReviewFormattingDeposedForm($templates['reviewFormattingDeposed']);
             $this->view->ceAcceptFinalVersionForm = Episciences_PapersManager::getCeAcceptFinalVersionForm($templates['ceAcceptFinalVersion']);
+            $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersionForm']);
         }
 
         $suggestionsStatusForm = $this->getSuggestStatusForm($docId);
@@ -1636,9 +1638,6 @@ class AdministratepaperController extends PaperDefaultController
 
                 $deadline = $data['minor-revisiondeadline'] ?: null;
 
-                $isAlreadyAccepted = $journal->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
-                    in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
-
                 // prepare comment options
                 $options = [];
 
@@ -1668,7 +1667,7 @@ class AdministratepaperController extends PaperDefaultController
                         'deadline' => $deadline,
                         'subject' => $subject,
                         'message' => $message,
-                        'isAlreadyAccepted' => $isAlreadyAccepted
+                        'isAlreadyAccepted' => true
                     ]);
             }
 

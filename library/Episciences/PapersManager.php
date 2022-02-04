@@ -1786,11 +1786,13 @@ class Episciences_PapersManager
      * @param $default
      * @param string $type
      * @param Episciences_Review|null $review
+     * @param bool $withAutoReassignment
      * @return Ccsd_Form
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null): \Ccsd_Form
+    public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null, bool $withAutoReassignment = true): \Ccsd_Form
     {
 
         $minDate = date('Y-m-d');
@@ -1872,19 +1874,22 @@ class Episciences_PapersManager
             'class' => 'full_mce',
             'value' => $default['body']]);
 
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND', 'class' => $isChecked ? "alert-danger" : "alert-info"]],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-        $form->addElement('checkbox', 'auto_reassign', [
-            'id' => 'auto_reassign' . $type,
-            'label' => "Réassigner les relecteurs à la nouvelle version de l'article",
-            'value' => $isChecked,
-            'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-            'decorators' => $checkboxDecorators]);
+        if ($withAutoReassignment) {
+            $checkboxDecorators = [
+                'ViewHelper',
+                'Description',
+                ['Label', ['placement' => 'APPEND', 'class' => $isChecked ? "alert-danger" : "alert-info"]],
+                ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+                ['Errors', ['placement' => 'APPEND']]
+            ];
+            $form->addElement('checkbox', 'auto_reassign', [
+                'id' => 'auto_reassign' . $type,
+                'label' => "Réassigner les relecteurs à la nouvelle version de l'article",
+                'value' => $isChecked,
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]);
+
+        }
 
         return $form;
     }
@@ -2260,7 +2265,8 @@ class Episciences_PapersManager
             'publish' => Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_AUTHOR_COPY,
             'refuse' => Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED,
             'minorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
-            'majorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST
+            'majorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST,
+            'acceptedAskAuthorFinalVersion' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
         ];
 
         // accept paper (or request final version)
@@ -2680,6 +2686,18 @@ class Episciences_PapersManager
         $form->setAttrib('id', 'waiting-for-author-formatting-form');
         $form->setAction('/administratepaper/waitingforauthorformatting/id/' . $default['id']);
         return $form;
+    }
+
+    /**
+     * @param array $default
+     * @return Zend_Form
+     * @throws Zend_Form_Exception
+     * @throws Zend_Exception
+     */
+    public static function getAcceptedAskAuthorFinalVersionForm (array $default): \Zend_Form
+    {
+        return self::getRevisionForm($default, 'minor', null, false);
+
     }
 
     /**

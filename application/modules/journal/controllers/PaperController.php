@@ -986,7 +986,7 @@ class PaperController extends PaperDefaultController
 
 
         if ($isAlreadyAccepted && !$isAssignedReviewers) {
-            $status = Episciences_Paper::STATUS_ACCEPTED;
+            $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION;
         } else {
             $status = $isAssignedReviewers ? $tmpPaper::STATUS_OK_FOR_REVIEWING : $tmpPaper::STATUS_SUBMITTED;
         }
@@ -1310,7 +1310,7 @@ class PaperController extends PaperDefaultController
             $copyEditors = $paper->getCopyEditors(true, true);
             $status = Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
         } elseif ($isAlreadyAccepted && !$isAssignedReviewers) {
-            $status = Episciences_Paper::STATUS_ACCEPTED;
+            $status = Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING;
         } else {
             $status = $isAssignedReviewers ? $newPaper::STATUS_OK_FOR_REVIEWING : $newPaper::STATUS_SUBMITTED;
         }

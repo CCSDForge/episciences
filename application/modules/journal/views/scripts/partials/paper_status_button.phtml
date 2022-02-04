@@ -6,7 +6,8 @@ $status = $paper->getStatus();
 $changeStatusMsg = "Changer le statut de l'article";
 $publishMsg = "Publier l'article";
 $refusedMsg = "Refuser l'article";
-$acceptMsg = !$this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) ? "Accepter et passer à la préparation de copie" : 'Accepter';
+$acceptMsg = !$this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) ? "Accepter et passer à la préparation de copie" : "Accepter l'article";
+$acceptedAskAuthorFinalVersion = "Demander la version finale à l'auteur";
 $waitingAuthorSources = "Demander à l'auteur ses sources (À mettre en forme par la revue)";
 $waitingFinalVersion = "Demander la version finale (À mettre en forme par l’auteur)";
 $reviewFormattingMsg = 'Mise en forme revue terminée, demander la version finale';
@@ -45,10 +46,10 @@ if (Episciences_Auth::isSecretary()) : ?>
                 </li>
 
             <?php elseif ($paper->isAccepted()) : ?>
-                <?php // ask minor revision  ?>
+                <?php // Ask author's final version  ?>
                 <?php if($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) : ?>
                     <li>
-                        <a href="#" data-toggle="modal" data-target=".minor-revision-modal"><?php echo $this->translate("Demander la version finale à l'auteur") ?></a>
+                        <a href="#" data-toggle="modal" data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
                     </li>
                 <?php endif; ?>
 
@@ -155,10 +156,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
             <?php if ($paper->isAccepted()) : ?>
 
-                <?php // ask minor revision  ?>
+                <?php // ask author's final version  ?>
                 <?php if($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) : ?>
                     <li>
-                        <a href="#" data-toggle="modal" data-target=".minor-revision-modal"><?php echo $this->translate('Demander des modifications mineures') ?></a>
+                        <a href="#" data-toggle="modal" data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
                     </li>
                 <?php endif; ?>
 
@@ -353,10 +354,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
             </button>
             <ul class="status-menu dropdown-menu" role="menu">
-                <?php // ask minor revision  ?>
+                <?php // ask author's final version  ?>
                 <?php if($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) : ?>
                     <li>
-                        <a href="#" data-toggle="modal" data-target=".minor-revision-modal"><?php echo $this->translate('Demander des modifications mineures') ?></a>
+                        <a href="#" data-toggle="modal" data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
                     </li>
                 <?php endif; ?>
 
@@ -461,21 +462,21 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         </div>
     <?php endif; ?>
 
-    <?php // *** minor revision request form ********** ?>
-    <div class="modal fade minor-revision-modal" tabindex="-1" role="dialog" aria-labelledby="minor-revision-modal"
+    <?php // accepted article: ask author's final version  ?>
+    <div class="modal fade accepted-ask-author-final-version-modal" tabindex="-1" role="dialog" aria-labelledby="accepted-ask-author-final-version-modal"
          aria-hidden="true">
         <div class="modal-dialog" style="width: 50%">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title"><?php echo $this->translate("Demander des modifications mineures"); ?></h4>
+                    <h4 class="modal-title"><?= $this->translate("Demander la version final à l'auteur") ?></h4>
                 </div>
-                <div class="modal-body"><?php echo $this->minorRevisionForm; ?></div>
+                <div class="modal-body"><?= $this->acceptedAskAuthorFinalVersionForm ?></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default"
-                            data-dismiss="modal"><?php echo $this->translate('Annuler'); ?></button>
+                            data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
                     <button type="button" id="submit-modal-minor-revision"
-                            class="btn btn-primary submit-modal"><?php echo $this->translate('Valider'); ?></button>
+                            class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
                 </div>
             </div>
         </div>

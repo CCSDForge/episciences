@@ -66,6 +66,8 @@ class Episciences_Paper
 
     public const STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION = 26;
     public const STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 27;
+    public const STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING = 28; // waiting to be edited by the Journal
+    public const STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION = 29; // after author's modification
     // paper settings
     public const SETTING_UNWANTED_REVIEWER = 'unwantedReviewer';
     public const SETTING_SUGGESTED_REVIEWER = 'suggestedReviewer';
@@ -178,7 +180,9 @@ class Episciences_Paper
         self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
         self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée',
         self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION => "Accepté, en attente de la version finale de l'auteur",
-        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'Accepté, en attente de modifications majeures'
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'Accepté, en attente de modifications majeures',
+        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING => 'Accepté, en attente de la mise en forme par la revue',
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "Version temporaire acceptée après modification de l'auteur"
     ];
     public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
@@ -202,17 +206,19 @@ class Episciences_Paper
     ];
 
     public const ACCEPTED_SUBMISSIONS = [
-        Episciences_Paper::STATUS_ACCEPTED,
-        Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
-        Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
-        Episciences_Paper::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
-        Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
-        Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
-        Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
-        Episciences_Paper::STATUS_CE_READY_TO_PUBLISH,
-        Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
-        Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
-        Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED
+        self::STATUS_ACCEPTED,
+        self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
+        self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
+        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
+        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
+        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
+        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
+        self::STATUS_CE_READY_TO_PUBLISH,
+        self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+        self::STATUS_TMP_VERSION_ACCEPTED,
+        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING,
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION
     ];
 
     /**
@@ -1151,7 +1157,7 @@ class Episciences_Paper
         $sql = $db->select()
             ->from(T_PAPERS, ['DOCID'])
             ->where('RVID = ?', $this->getRvid())
-            ->where('STATUS != ?', Episciences_Paper::STATUS_DELETED);
+            ->where('STATUS != ?', self::STATUS_DELETED);
 
         if ($this->hasHook) {
             $sql->where('CONCEPT_IDENTIFIER = ?', $this->getConcept_identifier());

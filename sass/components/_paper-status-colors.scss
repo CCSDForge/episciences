@@ -53,7 +53,11 @@ $status-colors: (
         //Accepted, waiting for author's final version (minor version)
         26 : $green,
         // Accepted waiting for author's major version
-        27 : $green
+        27 : $green,
+        // Accepted, waiting to be edited by the Journal
+        28 : $green,
+        // tmp version accepted, after author's modification
+        29 : $green
 );
 
 @each $status-code, $status-color in $status-colors {
