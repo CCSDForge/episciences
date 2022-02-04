@@ -1086,7 +1086,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $rowsetArray = $rowSet->toArray();
                 foreach ($rowsetArray as $array) {
                     $login = $array['USERNAME'];
-                    $resRowset = $userMapper->findByUsernameOrUID($login);
+                    $resRowset = $userMapper->findByUsernameOrUID($login, false);
                     if ($resRowset) {
                         $detailByLogin[$login] = $resRowset->toArray()[0];
                     }
@@ -1094,7 +1094,7 @@ class UserDefaultController extends Zend_Controller_Action
             }
         }
 
-        echo json_encode($detailByLogin);
+        echo json_encode($detailByLogin, JSON_THROW_ON_ERROR);
     }
 
     /**

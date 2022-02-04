@@ -1,28 +1,28 @@
-var $reviewer_type;
-var $autocomplete;
-var $tmp_user_form;
-var $deadline_id;
-var $email;
-var $invite_this_reviewer_btn;
-var $alert_existlogin;
-var $firstName;
-var $lastName;
-var $homonym_users;
-var userIndex;
-var values;
-var $new_user_button;
-var $new_user;
-var $required_tmp_user;
-var $known_reviewers_body;
-var clicks;
-var $reviewerGuideline;
-var $user_lang;
-var $lastname_element;
-var $firstname_element;
-var $user_lang_element;
-var canReplaceClass = false; // Le retour au choix des relecteurs n'impacte pas l'apparence du botton "inviter ce relecteur"
+let $reviewer_type;
+let $autocomplete;
+let $tmp_user_form;
+let $deadline_id;
+let $email;
+let $invite_this_reviewer_btn;
+let $alert_existlogin;
+let $firstName;
+let $lastName;
+let $homonym_users;
+let userIndex;
+let values;
+let $new_user_button;
+let $new_user;
+let $required_tmp_user;
+let $known_reviewers_body;
+let clicks;
+let $reviewerGuideline;
+let $user_lang;
+let $lastname_element;
+let $firstname_element;
+let $user_lang_element;
+let canReplaceClass = false; // Le retour au choix des relecteurs n'impacte pas l'apparence du botton "inviter ce relecteur"
 
-var $loading_container;
+let $loading_container;
 
 $(document).ready(function () {
 
@@ -56,7 +56,7 @@ $(document).ready(function () {
     if (!uid) {
         step1();
     } else {
-        var reviewer = allJsReviewers[uid];
+        let reviewer = allJsReviewers[uid];
         reviewer.id = uid;
         $('#step-2 .panel-title').html(translate('Réinviter ce relecteur'));
         setInvitationValues(reviewer, reviewer.type);
@@ -71,12 +71,12 @@ $(document).ready(function () {
     });
 
     // autocomplete init (existing user selection)
-    var cache = {};
+    let cache = {};
 
     $autocomplete.autocomplete({
         html: true,
         source: function (request, response) {
-            var term = request.term;
+            let term = request.term;
             if (term in cache) {
                 response(cache[term]);
                 return;
@@ -105,7 +105,7 @@ $(document).ready(function () {
     // Vérification de l'adresse mail
     $email.on('input propertychange', function () { // onpropertychange : IE < 9
 
-        var withoutSpaces = $.trim($email.val());
+        let withoutSpaces = $.trim($email.val());
         $email.val(withoutSpaces);
 
         resetStep1();
@@ -122,7 +122,7 @@ $(document).ready(function () {
             $invite_this_reviewer_btn.prop('disabled', true);
             findUserByMail($email.val()).done(function (result) {
                 values = Object.values(result);
-                var keys = Object.keys(result);
+                let keys = Object.keys(result);
                 checkDuplicateUser(values, keys);
                 $invite_this_reviewer_btn.prop('disabled', false);
                 $loading_container.hide();
@@ -154,8 +154,8 @@ $(document).ready(function () {
     // Bouton "inviter ce relecteur...": Affichage des homonymes (clicks = 1) ou passer à l'écran 2 d'invitation (clicks = 2)
 
     clicks = 0;
-    var timer = 100;
-    var delay = 1;
+    let timer = 100;
+    let delay = 1;
     $invite_this_reviewer_btn
         .on("click", function () {
             timer = setTimeout(function () {
@@ -185,12 +185,12 @@ $(document).ready(function () {
 
     // Modification de la deadline de relecture
     $deadline_id.change(function () {
-        var deadline = $(this).val();
+        let deadline = $(this).val();
 
         if (isISOdate(deadline) &&
             isValidDate(deadline) &&
             dateIsBetween(deadline, $(this).attr("attr-mindate"), $(this).attr("attr-maxdate"))) {
-            var msg = tinymce.get('body').getContent();
+            let msg = tinymce.get('body').getContent();
             msg = msg.replace(/<span class="rating_deadline">(.*?)<\/span>/, '<span class="rating_deadline">' + getLocaleDate(deadline, {language: locale, country: locale}) + '</span>');
             tinymce.get('body').setContent(msg);
         }
@@ -199,8 +199,8 @@ $(document).ready(function () {
 
 // send reviewer invitation
 function submit() {
-    var url = $('#invitation-form').url();
-    var docid = url.param('docid');
+    let url = $('#invitation-form').url();
+    let docid = url.param('docid');
 
     if (validate_step2()) {
 
@@ -214,7 +214,7 @@ function submit() {
             success: function () {
 
                 // refresh reviewers list
-                var reviewers_container = $('#reviewers');
+                let reviewers_container = $('#reviewers');
                 reviewers_container.hide();
                 reviewers_container.html(getLoader());
                 reviewers_container.fadeIn();
@@ -230,7 +230,7 @@ function submit() {
                 });
 
                 // refresh paper history
-                var logs_container = $('#history .panel-body');
+                let logs_container = $('#history .panel-body');
                 logs_container.hide();
                 logs_container.html(getLoader());
                 logs_container.fadeIn();
@@ -316,15 +316,15 @@ function step1() {
 
 // step 1 validation (new user)
 function validate_step1() {
-    var email = $email.val();
-    var firstname = $('#firstname').val();
-    var lastname = $('#lastname').val();
-    var lang = $('#user_lang').val();
+    let email = $email.val();
+    let firstname = $('#firstname').val();
+    let lastname = $('#lastname').val();
+    let lang = $('#user_lang').val();
 
-    var full_name = (firstname) ? firstname : '';
+    let full_name = (firstname) ? firstname : '';
     full_name += (lastname) ? ' ' + lastname : '';
 
-    var user = {
+    let user = {
         id: null,
         email: email,
         full_name: full_name,
@@ -374,7 +374,7 @@ function validate_step2() {
         errors.push(betweenMsg);
     }
 
-    var body = tinymce.get('body').getContent();
+    let body = tinymce.get('body').getContent();
     if (!body) {
         errors.push(translate('Veuillez saisir un message à destination du relecteur'));
     }
@@ -416,22 +416,22 @@ function setInvitationValues(user, type) {
     user.invitation_type = type;
     $('#reviewer').val(JSON.stringify(user));
 
-    var tpl = templates[type];
-    var recipient = user.full_name + ' <' + user.email + '>';
-    var subject = replaceTags(tpl.subject[locale], user, locale);
-    var body = replaceTags(tpl.body[locale], user, locale);
+    let tpl = templates[type];
+    let recipient = user.full_name + ' <' + user.email + '>';
+    let subject = replaceTags(tpl.subject[locale], user, locale);
+    let body = replaceTags(tpl.body[locale], user, locale);
 
 
     $('#recipient').val(recipient);
     $('#subject').val(subject);
     //$('#body').val(body);
 
-    var paper_title;
+    let paper_title;
     if ($.type(paper.title) == 'object') {
         if (paper.title[locale]) {
             paper_title = paper.title[locale];
         }
-        else for (var i in paper.title) {
+        else for (let i in paper.title) {
             paper_title = paper.title[i];
             break;
         }
@@ -439,7 +439,7 @@ function setInvitationValues(user, type) {
         paper_title = paper.title;
     }
 
-    var tags = [{text: translate("Délai de réponse à l'invitation"), value: translateInvitationDeadline(review['invitation_deadline'], locale)},
+    let tags = [{text: translate("Délai de réponse à l'invitation"), value: translateInvitationDeadline(review['invitation_deadline'], locale)},
         {text: translate("URL de réponse à l'invitation"), value: '%%INVITATION_URL%%'},
         {text: translate('Code de la revue'), value: review['code']},
         {text: translate('Nom de la revue'), value: review['name']},
@@ -476,7 +476,7 @@ function setInvitationValues(user, type) {
     }
 
 
-    var options = {
+    let options = {
         init_instance_callback: function (editor) {
             editor.setContent(nl2br(body));
         },
@@ -505,7 +505,7 @@ function replaceTags(string, reviewer, locale) {
     if ($.type(paper.title) == 'object') {
         if (paper.title[locale]) {
             paper_title = paper.title[locale];
-        } else for (var i in paper.title) {
+        } else for (let i in paper.title) {
             paper_title = paper.title[i];
             break;
         }
@@ -533,9 +533,9 @@ function replaceTags(string, reviewer, locale) {
 }
 
 function show_errors(errors) {
-    var html = '<div style="padding-left: 15px">';
+    let html = '<div style="padding-left: 15px">';
     html += '<div style="margin-bottom: 5px; color: red"><strong>' + translate('Erreurs :') + '</strong></div>';
-    for (var i in errors) {
+    for (let i in errors) {
         html += '<div style="margin-left: 10px; color: red"> * ' + errors[i] + '</div>';
     }
     html += '</div>';
@@ -550,8 +550,8 @@ function show_errors(errors) {
 function reviewers_init(self_users) {
     $('.dataTable.hover tr').each(function () {
         $(this).click(function () {
-            var uid = $(this).attr('id').match(/(\d+)$/)[1];
-            var reviewer = self_users[uid];
+            let uid = $(this).attr('id').match(/(\d+)$/)[1];
+            let reviewer = self_users[uid];
             reviewer.id = uid;
             setInvitationValues(reviewer, 1);
             step2();
@@ -593,10 +593,10 @@ function dt_init(self_id, self_reviewers) {
  * @returns {{email: *, full_name: string, locale: (*|jQuery), firstname: *, lastname: *, user_name: *}}
  */
 function createUser(oUser) {
-    var firstname = oUser.FIRSTNAME;
-    var lastname = oUser.LASTNAME;
-    var lang = $('#user_lang').val();
-    var full_name = (firstname) ? firstname : '';
+    let firstname = oUser.FIRSTNAME;
+    let lastname = oUser.LASTNAME;
+    let lang = $('#user_lang').val();
+    let full_name = (firstname) ? firstname : '';
     full_name += (lastname) ? ' ' + lastname : '';
     return {
         email: oUser.EMAIL,
@@ -663,8 +663,8 @@ function checkHomonyms(values) {
                 $loading_container.hide();
                 $invite_this_reviewer_btn.prop('disabled', false);
             } else {
-                var ajax_data = {post: JSON.stringify(result), user_lang: $('#user_lang').val(), paper_id: paper.id, ignore_list: JSON.stringify(ignore_list)};
-                var request = displayCcsdUsers(ajax_data);
+                let ajax_data = {post: JSON.stringify(result), user_lang: $('#user_lang').val(), paper_id: paper.id, ignore_list: JSON.stringify(ignore_list)};
+                let request = displayCcsdUsers(ajax_data);
 
                 request.done(function (response) {
                     displayHomonymUsers(response);
@@ -694,7 +694,7 @@ function checkHomonyms(values) {
  */
 
 function validateTmpFormInvitation() {
-    var errors = [];
+    let errors = [];
     if (!$email.val() || !isEmail($email.val())) {
         errors.push(translate('Veuillez entrer une adresse e-mail valide'));
     }
@@ -734,10 +734,10 @@ function replaceClass(element, old_name, new_name) {
  * @param keys
  */
 function checkDuplicateUser(data, keys) {
-    var existe_users = false;
-    var html = '';
-    var json_values = JSON.stringify(data);
-    var ajax_data = {post: json_values, user_lang: $('#user_lang').val(), paper_id: paper.id, ignore_list: JSON.stringify(ignore_list), is_search_with_mail: true};
+    let existe_users = false;
+    let html = '';
+    let json_values = JSON.stringify(data);
+    let ajax_data = {post: json_values, user_lang: $('#user_lang').val(), paper_id: paper.id, ignore_list: JSON.stringify(ignore_list), is_search_with_mail: true};
 
     // Alert doublon
     $alert_existlogin.empty();
@@ -745,7 +745,7 @@ function checkDuplicateUser(data, keys) {
     canReplaceClass = true;
 
     if (keys.length > 0) {
-        var request = displayCcsdUsers(ajax_data);
+        let request = displayCcsdUsers(ajax_data);
         existe_users = true;
         request.done(function (response) {
             html += response;
@@ -803,7 +803,7 @@ function showElements() {
 
 function ajaxAlertFail() {
     $email.val('');
-    var error = new Error();
+    let error = new Error();
     alert(translate("Une erreur interne s'est produite, veuillez recommencer."));
     console.log(error.stack);
     $loading_container.hide();

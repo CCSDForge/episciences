@@ -134,8 +134,15 @@ $ratings = $paper->getRatings();
                                                     $userTag .= $invitation['UID'];
                                                     $userTag .= '</code>';
 
-                                                    if(!$invitation['reviewer']['hasLocalData']){
-                                                        $userTag .= ' (<small><em>' . $this->translate("l'utilisateur n'a pas encore de profil") . '</em></em></small>)';
+                                                    if (isset($invitation['reviewer']['hasRoles']) && !$invitation['reviewer']['hasRoles']) {
+                                                        $userTag .= ' (<small><em>';
+                                                        $userTag .= $this->translate("cet utilisateur n'a pas encore de profil");
+                                                        if (isset($invitation['reviewer']['isCasUserValid']) && !$invitation['reviewer']['isCasUserValid']) {
+                                                            $userTag .= ', ';
+                                                            $userTag .= $this->translate("son compte n'a pas encore été activé");
+                                                        }
+
+                                                        $userTag .= '</em></em></small>)';
                                                     }
 
                                                     $userTag .= '</mark>';

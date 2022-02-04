@@ -2931,7 +2931,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
-           echo 'Unauthorized access';
+            echo 'Unauthorized access';
             trigger_error(sprintf('Unauthorized access to savedoi by %s', Episciences_Auth::getUid()), E_USER_WARNING);
             return;
         }
@@ -2944,18 +2944,18 @@ class AdministratepaperController extends PaperDefaultController
         $doiPattern = "/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i";
 
         if (($doi !== '') && !preg_match($doiPattern, $doi)) {
-            printf ('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
+            printf('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
             return;
         }
 
         if (!Episciences_PapersManager::paperExists($docid, RVID)) {
-            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
+            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
             trigger_error(sprintf('Docid %s not found in RVID %s', $docid, RVID), E_USER_WARNING);
             return;
         }
 
         if (0 === Episciences_PapersManager::updateDoi($doi, $paperId)) {
-            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
+            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
             trigger_error(sprintf('Failed to update paperid %s with DOI %s', $paperId, $doi), E_USER_WARNING);
             return;
         }
@@ -3491,6 +3491,7 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * Affiche tous les comptes qui ont le même prénom et nom
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function displayccsdusersAction(): void
@@ -3505,28 +3506,31 @@ class AdministratepaperController extends PaperDefaultController
         $request = $this->getRequest();
 
         if ($request->isXmlHttpRequest()) {
-
+            $isOwner = false;
+            $isSearchWithMail = (boolean)$request->getPost('is_search_with_mail');
             $docId = $request->getPost('paper_id');
             $paper = Episciences_PapersManager::get($docId);
 
             if (!$paper) {
                 $trace['error'] = $this->view->translate('Une erreur est survenue.');
             } else {
-                $post = json_decode($request->getPost('post'), true);
-                $isSearchWithMail = (boolean)$request->getPost('is_search_with_mail');
+                $post = json_decode($request->getPost('post'), true, 512, JSON_THROW_ON_ERROR);
                 $user_lang = $request->getPost('user_lang');
                 $local_users = Episciences_UsersManager::getLocalUsers();
                 // liste des utilisateurs à ignorer
                 $ignoreList = $request->getPost('ignore_list');
-                $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList) : [];
+                $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList, false, 512, JSON_THROW_ON_ERROR) : [];
                 /** @var stdClass $value */
                 foreach ($post as $value) {
                     $user = new Episciences_User((array)$value);
                     $uid = $user->getUid();
 
-                    if (in_array($user->getEmail(), IGNORE_REVIEWERS_EMAIL_VALUES, true)) {
+                    $isOwner = ($uid === $paper->getUid());
+
+                    if ($isOwner || in_array($user->getEmail(), IGNORE_REVIEWERS_EMAIL_VALUES, true)) {
                         $ignoreReviewers[] = $uid;
                     }
+
                     // Utilisateurs Episciences
                     if (array_key_exists($uid, $local_users)) {
                         $users_stats[$uid]['is_epi_user'] = true;
@@ -3552,21 +3556,28 @@ class AdministratepaperController extends PaperDefaultController
                 }
 
                 if (empty($users)) {
-                    $message = $this->view->translate('Une invitation de relecture a été envoyée à cet utilisateur');
-                    if (!$isSearchWithMail) {
-                        $message .= '(';
-                        $message .= $this->view->translate('même nom et même prénom');
-                        $message .= ').';
-                        $message .= ('<br>');
-                        $message .= ' ';
-                        $message .= $this->view->translate("Si votre relecteur n'est pas celui détecté par le système");
-                        $message .= ', ';
-                        $message .= $this->view->translate("continuez avec le nouvel utilisateur que vous venez de saisir.");
-                    } else {
 
-                        $message .= ', ';
-                        $message .= $this->view->translate("ou bien vous n'avez pas les autorisations nécessaires.");
+                    if (!$isOwner) {
+                        $message = $this->view->translate('Une invitation de relecture a été envoyée à cet utilisateur');
+
+                        if (!$isSearchWithMail) {
+                            $message .= '(';
+                            $message .= $this->view->translate('même nom et même prénom');
+                            $message .= ').';
+                            $message .= ('<br>');
+                            $message .= ' ';
+                            $message .= $this->view->translate("Si votre relecteur n'est pas celui détecté par le système");
+                            $message .= ', ';
+                            $message .= $this->view->translate("continuez avec le nouvel utilisateur que vous venez de saisir.");
+                        } else {
+                            $message .= ', ';
+                            $message .= $this->view->translate("ou bien vous n'avez pas les autorisations nécessaires.");
+                        }
+
+                    } else {
+                        $message = $this->view->translate('Cet article ne peut pas être relu par son auteur');
                     }
+
                     $trace['message'] = $message;
                 }
 

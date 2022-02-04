@@ -9,7 +9,7 @@
   ],
 
   "require": {
-    "php": "^7.4",
+    "php": ">=7.3",
     "ext-json": "*",
     "ext-curl": "*",
     "ext-iconv": "*",
