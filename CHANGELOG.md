@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
 - Fixed: not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
 - Fixed: the attachments to the rating report are not available [RT#145473]
+- Fixed: answer revision request: in some situations, the "Submit" button remains inactive.
 
 ## 1.0.23 - 2022-01-19
 

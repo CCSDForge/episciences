@@ -779,5 +779,20 @@ let fixHelperSortable = function (e, ui) {
     return ui;
 };
 
+function disableModalSubmitButton(){
+
+    if($modal_button.length > 0){
+        $modal_button.prop('disabled', true);
+    }
+}
+
+function enableModalSubmitButton(){
+
+    if($modal_button.length > 0){
+        $modal_button.prop('disabled', false);
+    }
+}
+
+
 
 
