@@ -1070,6 +1070,7 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function ajaxfindusersbymailAction(): void
     {
+        $result = '';
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $request = $this->getRequest();
@@ -1082,7 +1083,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $rowsetArray = $rowSet->toArray();
                 foreach ($rowsetArray as $array) {
                     $login = $array['USERNAME'];
-                    $resRowset = $userMapper->findByUsernameOrUID($login);
+                    $resRowset = $userMapper->findByUsernameOrUID($login, false);
                     if ($resRowset) {
                         $detailByLogin[$login] = $resRowset->toArray()[0];
                     }
@@ -1090,7 +1091,15 @@ class UserDefaultController extends Zend_Controller_Action
             }
         }
 
-        echo json_encode($detailByLogin);
+        try {
+            $result = json_encode($detailByLogin, JSON_THROW_ON_ERROR);
+
+        }catch (Exception $e){
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        echo $result;
+
     }
 
     /**
