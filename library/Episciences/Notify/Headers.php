@@ -1,7 +1,9 @@
 <?php
+
 namespace Episciences\Notify;
 
-trait Headers {
+trait Headers
+{
 
 
     /**
@@ -9,13 +11,14 @@ trait Headers {
      */
     public static function addInboxAutodiscoveryHeader(): void
     {
-        header(self::getInboxHeaderString());
+        header(self::getInboxHeaderString('Link: '));
     }
 
     /**
      * @return false|string
      */
-    public static function addInboxAutodiscoveryLDN() {
+    public static function addInboxAutodiscoveryLDN()
+    {
         $ldJson['@context'] = "http://www.w3.org/ns/ldp";
         $ldJson['inbox'] = INBOX_URL;
         return json_encode($ldJson);
@@ -24,9 +27,9 @@ trait Headers {
     /**
      * @return string
      */
-    public static function getInboxHeaderString(): string
+    public static function getInboxHeaderString($headerString = ''): string
     {
-        return sprintf('Link: <%s>; rel="http://www.w3.org/ns/ldp#inbox"', INBOX_URL);
+        return sprintf('%s<%s>; rel="http://www.w3.org/ns/ldp#inbox"', $headerString, INBOX_URL);
     }
 
 
