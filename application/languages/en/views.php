@@ -452,7 +452,8 @@ return [
     'dès que possible' => 'as soon as possible',
     "Cet article n'est pas la première version de ce document, vous ne pouvez pas donc le refuser." => "This article is not the first version of this document, so you cannot reject it.",
     "Aller à la page publique de cet article" => "Go to the public page for this article",
-    "l'utilisateur n'a pas encore de profil" => "the user has no profile yet",
+    "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
+    "son compte n'a pas encore été activé" => 'his account is not active yet',
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
@@ -1649,6 +1650,8 @@ return [
     "article abandonné" => "abandonned article",
     "articles abandonnés" => "abandonned articles",
     "versions temporaires acceptées" => "accepted temporary versions",
+    "article accepté, en attente de la version finale de l'auteur" => "accepted article, waiting for author's final version",
+    "articles acceptés, en attente de la version finale de l'auteur" => "accepted articles, waiting for author's final version",
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',
@@ -1811,5 +1814,10 @@ return [
     "Rapporté le" => "Reported on",
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
-
+    //review settings: final decision
+    "Permettre la demande de revision" => "Allow revision request",
+    "Article - décision finale" => "Paper - final decision",
+    "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté." => "Sometimes it is necessary to change some things on an article already accepted.",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "Accepted, waiting for author's final version",
+    "Demander la version finale à l'auteur" => "Ask author's final version"
 ];

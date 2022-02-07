@@ -5,34 +5,35 @@ class Episciences_Acl extends Ccsd_Acl
     /**
      * Liste des rôles de l'application
      */
-    const ROLE_ROOT = 'epiadmin';
+    public const ROLE_ROOT = 'epiadmin';
 
-    const ROLE_CHIEF_EDITOR = 'chief_editor';        // rédacteur en chef
-    const ROLE_ADMIN = 'administrator';    // administrateur
-    const ROLE_EDITOR = 'editor';            // rédacteur
-    const ROLE_GUEST_EDITOR = 'guest_editor';            // rédacteur invité
-    const ROLE_SECRETARY = 'secretary';
-    const ROLE_WEBMASTER = 'webmaster';
-    const ROLE_REVIEWER = 'reviewer';
-    const ROLE_MEMBER = 'member';
-    const ROLE_GUEST = 'guest';
+    public const ROLE_CHIEF_EDITOR = 'chief_editor';           // rédacteur en chef
+    public const ROLE_ADMIN = 'administrator';                 // administrateur
+    public const ROLE_EDITOR = 'editor';                       // rédacteur
+    public const ROLE_GUEST_EDITOR = 'guest_editor';           // rédacteur invité
+    public const ROLE_SECRETARY = 'secretary';
+    public const ROLE_WEBMASTER = 'webmaster';
+    public const ROLE_REVIEWER = 'reviewer';
+    public const ROLE_AUTHOR = 'author';
+    public const ROLE_MEMBER = 'member';
+    public const ROLE_GUEST = 'guest';
     // Git 90
-    const ROLE_COPY_EDITOR = 'copyeditor'; // CE
+    public const ROLE_COPY_EDITOR = 'copyeditor'; // CE
 
-    const ROLE_CHIEF_EDITOR_PLURAL = 'chief_editors';
-    const ROLE_ADMINISTRATOR_PLURAL = 'administrators';
-    const ROLE_EDITOR_PLURAL = 'editors';
-    const ROLE_GUEST_EDITOR_PLURAL = 'guest_editors';
-    const ROLE_SECRETARY_PLURAL = 'secretaries';
-    const ROLE_WEBMASTER_PLURAL = 'webmasters';
-    const ROLE_REVIEWER_PLURAL = 'reviewers';
-    const ROLE_MEMBER_PLURAL = 'members';
-    const ROLE_GUEST_PLURAL = 'guests';
-    const CONFIGURABLE_RESOURCE = true; // configurable by review
-    const NOT_CONFIGURABLE_RESOURCE = false; //  public resource but restricted to certain roles
+    public const ROLE_CHIEF_EDITOR_PLURAL = 'chief_editors';
+    public const ROLE_ADMINISTRATOR_PLURAL = 'administrators';
+    public const ROLE_EDITOR_PLURAL = 'editors';
+    public const ROLE_GUEST_EDITOR_PLURAL = 'guest_editors';
+    public const ROLE_SECRETARY_PLURAL = 'secretaries';
+    public const ROLE_WEBMASTER_PLURAL = 'webmasters';
+    public const ROLE_REVIEWER_PLURAL = 'reviewers';
+    public const ROLE_MEMBER_PLURAL = 'members';
+    public const ROLE_GUEST_PLURAL = 'guests';
+    public const CONFIGURABLE_RESOURCE = true; // configurable by review
+    public const NOT_CONFIGURABLE_RESOURCE = false; //  public resource but restricted to certain roles
 
     /** @var array : see Episciences_User::Permissions */
-    const TYPE_OF_RESOURCES_NOT_TO_BE_DISPLAYED = [
+    public const TYPE_OF_RESOURCES_NOT_TO_BE_DISPLAYED = [
         'import-index', // start root actions
         'administratepaper-updatehal', // end of root actions
         'api-merge', // ----- start portal actions
@@ -88,11 +89,12 @@ class Episciences_Acl extends Ccsd_Acl
         'user-view',
         'volume-index',
         'user-photo',
-        'volume-all'
+        'volume-all',
+        'doi-settings' // only root
     ];
 
-    /** @var array : configurable resources : see Episciences_Review */
-    const CONFIGURABLE_RESOURCES = [
+    /** @var bool[][] */
+    public const CONFIGURABLE_RESOURCES = [ // configurable resources : see Episciences_Review
         self::ROLE_CHIEF_EDITOR => [
             'administratepaper-suggeststatus' => self::NOT_CONFIGURABLE_RESOURCE,
             'administratepaper-saverefusedmonitoring' => self::NOT_CONFIGURABLE_RESOURCE,
@@ -164,11 +166,17 @@ class Episciences_Acl extends Ccsd_Acl
         ]
     ];
 
-    public function __construct($file = null)
+    /**
+     * @throws Zend_Config_Exception
+     */
+    public function __construct()
     {
+        parent::__construct();
+
         $this->_roles = [
             self::ROLE_GUEST => null,
             self::ROLE_MEMBER => self::ROLE_GUEST,
+            self::ROLE_AUTHOR => self::ROLE_MEMBER,
             self::ROLE_REVIEWER => self::ROLE_MEMBER,
             self::ROLE_COPY_EDITOR => self::ROLE_MEMBER,
             self::ROLE_GUEST_EDITOR => self::ROLE_REVIEWER,
@@ -179,14 +187,13 @@ class Episciences_Acl extends Ccsd_Acl
             self::ROLE_CHIEF_EDITOR => self::ROLE_ADMIN,
             self::ROLE_ROOT => self::ROLE_CHIEF_EDITOR
         ];
-        // parent::__construct($file);
 
         //Ressources à rajouter dans les ACL
         $config = new Zend_Config_Ini(APPLICATION_PATH . '/configs/acl.ini');
         $this->_defaultAcl = $config->toArray();
     }
 
-    public static function getCode($rightid)
+    public static function getCode($rightid): void
     {
         //return self::$_rolesCodes[$rightid];
     }
@@ -205,24 +212,19 @@ class Episciences_Acl extends Ccsd_Acl
         $acl = new Episciences_Acl();
         $roles = $acl->getRolesCodes();
 
-        if (PHP_SAPI == 'cli') {
+        if (PHP_SAPI === 'cli') {
             return $roles;
         }
 
+
         if (!Episciences_Auth::isRoot()) {
-            unset($roles[$acl::ROLE_ROOT]);
+            unset($roles[$acl::ROLE_ROOT], $roles[$acl::ROLE_AUTHOR]);
         }
+
         if (!Episciences_Auth::isSecretary()) { // git #235
-            unset($roles[$acl::ROLE_CHIEF_EDITOR]);
-            unset($roles[$acl::ROLE_ADMIN]);
-            unset($roles[$acl::ROLE_EDITOR]);
-            unset($roles[$acl::ROLE_GUEST_EDITOR]);
-            unset($roles[$acl::ROLE_WEBMASTER]);
-            unset($roles[$acl::ROLE_SECRETARY]);
-            unset($roles[$acl::ROLE_COPY_EDITOR]);
+            unset($roles[$acl::ROLE_CHIEF_EDITOR], $roles[$acl::ROLE_ADMIN], $roles[$acl::ROLE_EDITOR], $roles[$acl::ROLE_GUEST_EDITOR], $roles[$acl::ROLE_WEBMASTER], $roles[$acl::ROLE_SECRETARY], $roles[$acl::ROLE_COPY_EDITOR]);
         }
-        unset($roles[$acl::ROLE_GUEST]);
-        unset($roles[$acl::ROLE_MEMBER]);
+        unset($roles[$acl::ROLE_GUEST], $roles[$acl::ROLE_MEMBER]);
 
         return $roles;
     }

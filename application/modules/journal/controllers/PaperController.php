@@ -913,6 +913,7 @@ class PaperController extends PaperDefaultController
         $requestComment = new Episciences_Comment;
         $requestComment->find($requestId);
 
+        $isAlreadyAccepted = $requestComment->getOption('isAlreadyAccepted');
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');
 
         // admin can submit tmp version
@@ -971,14 +972,25 @@ class PaperController extends PaperDefaultController
         $paper->setStatus($paper::STATUS_OBSOLETE);
         $paper->save();
         // log status change
-        $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => Episciences_Paper::STATUS_OBSOLETE]);
+        $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => $paper->getStatus()]);
 
 
         // tmp version init
         $tmpPaper = clone($paper);
         $tmpPaper->setDocid(null);
         $tmpPaper->setPaperid($paperId);
-        $status = ($reassignReviewers && $reviewers) ? $tmpPaper::STATUS_OK_FOR_REVIEWING : $tmpPaper::STATUS_SUBMITTED;
+
+        $isAssignedReviewers = $reassignReviewers && $reviewers;
+
+        $status = $isAssignedReviewers ? $tmpPaper::STATUS_OK_FOR_REVIEWING : $tmpPaper::STATUS_SUBMITTED;
+
+
+        if ($isAlreadyAccepted && !$isAssignedReviewers) {
+            $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION;
+        } else {
+            $status = $isAssignedReviewers ? $tmpPaper::STATUS_OK_FOR_REVIEWING : $tmpPaper::STATUS_SUBMITTED;
+        }
+
         $tmpPaper->setStatus($status);
         $tmpPaper->setIdentifier($paperId . '/' . $answerComment->getFile());
         $tmpPaper->setVersion((float)$paper->getVersion() + 0.01);
@@ -995,8 +1007,14 @@ class PaperController extends PaperDefaultController
                 $tmpPaper->saveOtherVolumes();
             }
 
+            $tmpPaperStatusDetails = [self::STATUS => $status];
+
+            if ($isAlreadyAccepted) {
+                $tmpPaperStatusDetails['isAlreadyAccepted'] = $isAlreadyAccepted;
+            }
+
             // log tmp version submission
-            $tmpPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [self::STATUS => Episciences_Paper::STATUS_SUBMITTED]);
+            $tmpPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), $tmpPaperStatusDetails);
         } else {
             $message = $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
@@ -1215,10 +1233,11 @@ class PaperController extends PaperDefaultController
         $requestComment = new Episciences_Comment();
         $requestComment->find($requestId);
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');
+        $isAlreadyAccepted= $requestComment->getOption('isAlreadyAccepted');
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
 
         $paper->loadOtherVolumes(); // github #48
 
@@ -1285,11 +1304,15 @@ class PaperController extends PaperDefaultController
         $newPaper->setDocid(null);
         $newPaper->setPaperid($paperId); // object cloned remove it
 
+        $isAssignedReviewers = $reassignReviewers && $reviewers;
+
         if (isset($post['copyEditingNewVersion'])) {
             $copyEditors = $paper->getCopyEditors(true, true);
             $status = Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
+        } elseif ($isAlreadyAccepted && !$isAssignedReviewers) {
+            $status = Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING;
         } else {
-            $status = ($reassignReviewers && $reviewers) ? $newPaper::STATUS_OK_FOR_REVIEWING : $newPaper::STATUS_SUBMITTED;
+            $status = $isAssignedReviewers ? $newPaper::STATUS_OK_FOR_REVIEWING : $newPaper::STATUS_SUBMITTED;
         }
 
         $newPaper->setStatus($status);
@@ -1362,7 +1385,6 @@ class PaperController extends PaperDefaultController
 
             // unassign editors from previous version
             if ($editors) {
-                /** @var Episciences_Editor $editor */
                 foreach ($editors as $editor) {
                     $aid = $paper->unassign($editor->getUid(), Episciences_User_Assignment::ROLE_EDITOR);
                     // log editor unassignment
@@ -1385,7 +1407,7 @@ class PaperController extends PaperDefaultController
             $paper->setOtherVolumes();
             $paper->save();
             // log status change
-            $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => Episciences_Paper::STATUS_OBSOLETE]);
+            $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => $paper->getStatus()]);
 
             // reassign reviewers to new version (nouvelle version -> demande de modifications)
             if ($reviewers && $reassignReviewers) {
@@ -1441,8 +1463,14 @@ class PaperController extends PaperDefaultController
                 }
             }
 
+            $newPaperStatusDetails = [self::STATUS => $status];
+
+            if ($isAlreadyAccepted) {
+                $newPaperStatusDetails['isAlreadyAccepted'] = $isAlreadyAccepted;
+            }
+
             // log new version submission
-            $newPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [self::STATUS => $status]);
+            $newPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), $newPaperStatusDetails);
 
             // success message
             $message = $this->view->translate("La nouvelle version de votre article a bien été enregistrée.");
@@ -2269,7 +2297,7 @@ class PaperController extends PaperDefaultController
                     $attachments[$fileName] = $path;
                 }
 
-                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, $paper, Episciences_Auth::getUid(), $attachments, false, $CC);
+                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, $paper, Episciences_Auth::getUid(), $attachments, true, $CC);
                 // reset CC
                 $CC = [];
             }

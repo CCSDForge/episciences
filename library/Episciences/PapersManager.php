@@ -3,13 +3,13 @@
 class Episciences_PapersManager
 {
 
-    const NONE_FILTER = '0';
-    const WITH_FILTER = '-1';
+    public const NONE_FILTER = '0';
+    public const WITH_FILTER = '-1';
 
     /**
      * @return array
      */
-    public static function getFiltersParams()
+    public static function getFiltersParams(): array
     {
         $params = Zend_Controller_Front::getInstance()->getRequest()->getParams();
         Episciences_Tools::filter_multiarray($params);
@@ -24,7 +24,7 @@ class Episciences_PapersManager
      * @return array
      * @throws Zend_Db_Select_Exception
      */
-    public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true)
+    public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -187,27 +187,19 @@ class Episciences_PapersManager
      * @param bool $includeSecondaryVolume
      * @return Zend_Db_Select
      */
-    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false)
+    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false): \Zend_Db_Select
     {
         // Filtrage par volume secondaire : inclure l'article s'il appartient à un volume primaire(git#72)
         $select1 = self::getVolumesQuery();
-        if (is_array($value)) {
-            $select1->where(" st.VID IN (?)", $value);
 
-            if ($includeSecondaryVolume) {
-                $select1->orWhere("vpt.VID IN (?)", $value);
-            }
+        $select1->where(" st.VID IN (?)", $value);
 
-        } else {
-            $select1->where("st.VID = ?", $value);
-
-            if ($includeSecondaryVolume) {
-                $select1->orWhere("vpt.VID = ?", $value);
-            }
-
+        if ($includeSecondaryVolume) {
+            $select1->orWhere("vpt.VID IN (?)", $value);
         }
 
         $select->where("DOCID IN (?)", $select1);
+
         return $select;
     }
 
@@ -405,7 +397,7 @@ class Episciences_PapersManager
      * @param array $values
      * @return Zend_Db_Select
      */
-    private static function applyDOIFilter(Zend_Db_Select $select, array $values)
+    private static function applyDOIFilter(Zend_Db_Select $select, array $values): \Zend_Db_Select
     {
 
         foreach ($values as $value) {
@@ -449,11 +441,11 @@ class Episciences_PapersManager
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = [])
+    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = []): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        if ((int)$word != 0) {
+        if ((int)$word !== 0) {
 
             // Colonne Id permanent et Id document
             $where = 'CONVERT(PAPERID, CHAR) LIKE ? OR CONVERT(DOCID, CHAR) LIKE ? ';
@@ -547,7 +539,7 @@ class Episciences_PapersManager
      * @param string $method_name
      * @return string
      */
-    private static function makeCondition(array $array, string $word = '', string $method_name = '')
+    private static function makeCondition(array $array, string $word = '', string $method_name = ''): string
     {
         //Echapper les métacaractères dans les Expressions Régulières
         $metacharacters = '^ \. [ ] $ ( ) * + ? | { } \\';
@@ -576,10 +568,10 @@ class Episciences_PapersManager
     /**
      * @param array $settings
      * @param bool $isFilterInfos = true : Filtrage additionnel depuis le champ de recherche "rechercher". voir /administratepaper/list
-     * @return string
+     * @return int
      * @throws Zend_Db_Select_Exception
      */
-    public static function getCount(array $settings = [], bool $isFilterInfos = false)
+    public static function getCount(array $settings = [], bool $isFilterInfos = false): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -593,7 +585,7 @@ class Episciences_PapersManager
 
         $select = self::getFilterQuery($settings, true, $isFilterInfos);
 
-        return $db->fetchOne($select);
+        return (int)$db->fetchOne($select);
     }
 
     /**
@@ -615,10 +607,8 @@ class Episciences_PapersManager
                 if (in_array($oPaper->getStatus(), $status)) {
                     $count++;
                 }
-            } else {
-                if ($oPaper->getStatus() == $status) {
-                    $count++;
-                }
+            } else if ($oPaper->getStatus() == $status) {
+                $count++;
             }
         }
 
@@ -629,7 +619,7 @@ class Episciences_PapersManager
      * Renvoie un tableau de papiers triés par la clé passée en paramètres
      * @param $list
      * @param $key
-     * @return bool
+     * @return false|mixed
      */
     public static function sortBy($list, $key)
     {
@@ -648,7 +638,7 @@ class Episciences_PapersManager
 
         Episciences_Tools::multi_ksort($result);
 
-        if ($key == 'STATUS') {
+        if ($key === 'STATUS') {
             uksort($result, 'self::statusCmp');
         }
 
@@ -782,6 +772,11 @@ class Episciences_PapersManager
         //prepare array
         $source = [];
         foreach ($data as $row) {
+
+            if (array_key_exists($row['ASSIGNMENT_ID'], $source)) { // remove duplicated invitations
+                continue;
+            }
+
             $source[$row['INVITATION_AID']][$row['ASSIGNMENT_ID']] = $row;
         }
 
@@ -813,7 +808,7 @@ class Episciences_PapersManager
 
                     }
                 } else if (!array_key_exists($invitation['UID'], $reviewers)) {
-                    $reviewer = new Episciences_Reviewer;
+                    $reviewer = new Episciences_Reviewer();
                     $reviewer->findWithCAS($invitation['UID']);
                     $reviewers[$invitation['UID']] = $reviewer;
                 }
@@ -821,12 +816,13 @@ class Episciences_PapersManager
                 $reviewer = $reviewers[$invitation['UID']];
 
                 $tmp['reviewer'] = [
-                    'alias' => (is_a($reviewer, 'Episciences_Reviewer')) ? $reviewer->getAlias($docId) : null,
+                    'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
                     'fullname' => $reviewer->getFullName(),
                     'screenname' => $reviewer->getScreenName(),
                     'username' => $reviewer->getUsername(),
                     'email' => $reviewer->getEmail(),
-                    'hasLocalData' => !$isTmpUser ? $reviewer->hasLocalData() : false
+                    'hasRoles' => !$isTmpUser ? $reviewer->hasRoles($reviewer->getUid()) : false,
+                    'isCasUserValid' => (bool)$reviewer->getValid()
                 ];
 
 
@@ -1790,11 +1786,13 @@ class Episciences_PapersManager
      * @param $default
      * @param string $type
      * @param Episciences_Review|null $review
+     * @param bool $withAutoReassignment
      * @return Ccsd_Form
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getRevisionForm($default, $type = 'minor', Episciences_Review $review = null)
+    public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null, bool $withAutoReassignment = true): \Ccsd_Form
     {
 
         $minDate = date('Y-m-d');
@@ -1876,19 +1874,22 @@ class Episciences_PapersManager
             'class' => 'full_mce',
             'value' => $default['body']]);
 
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND', 'class' => $isChecked ? "alert-danger" : "alert-info"]],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-        $form->addElement('checkbox', 'auto_reassign', [
-            'id' => 'auto_reassign' . $type,
-            'label' => "Réassigner les relecteurs à la nouvelle version de l'article",
-            'value' => $isChecked,
-            'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-            'decorators' => $checkboxDecorators]);
+        if ($withAutoReassignment) {
+            $checkboxDecorators = [
+                'ViewHelper',
+                'Description',
+                ['Label', ['placement' => 'APPEND', 'class' => $isChecked ? "alert-danger" : "alert-info"]],
+                ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+                ['Errors', ['placement' => 'APPEND']]
+            ];
+            $form->addElement('checkbox', 'auto_reassign', [
+                'id' => 'auto_reassign' . $type,
+                'label' => "Réassigner les relecteurs à la nouvelle version de l'article",
+                'value' => $isChecked,
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]);
+
+        }
 
         return $form;
     }
@@ -2264,7 +2265,8 @@ class Episciences_PapersManager
             'publish' => Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_AUTHOR_COPY,
             'refuse' => Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED,
             'minorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
-            'majorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST
+            'majorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST,
+            'acceptedAskAuthorFinalVersion' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
         ];
 
         // accept paper (or request final version)
@@ -2684,6 +2686,18 @@ class Episciences_PapersManager
         $form->setAttrib('id', 'waiting-for-author-formatting-form');
         $form->setAction('/administratepaper/waitingforauthorformatting/id/' . $default['id']);
         return $form;
+    }
+
+    /**
+     * @param array $default
+     * @return Zend_Form
+     * @throws Zend_Form_Exception
+     * @throws Zend_Exception
+     */
+    public static function getAcceptedAskAuthorFinalVersionForm (array $default): \Zend_Form
+    {
+        return self::getRevisionForm($default, 'minor', null, false);
+
     }
 
     /**

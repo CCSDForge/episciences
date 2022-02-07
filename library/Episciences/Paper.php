@@ -27,46 +27,51 @@ class Episciences_Paper
      */
     public const CACHE_CLASS_NAMESPACE = 'paper';
 
-    const STATUS_SUBMITTED = 0;
+    public const STATUS_SUBMITTED = 0;
     // reviewers have been assigned, but did not start their reports
-    const STATUS_OK_FOR_REVIEWING = 1;
+   public const STATUS_OK_FOR_REVIEWING = 1;
     // rating has begun (at least one reviewer has starter working on his rating report)
-    const STATUS_BEING_REVIEWED = 2;
+    public const STATUS_BEING_REVIEWED = 2;
     // rating is finished (all reviewers)
-    const STATUS_REVIEWED = 3;
-    const STATUS_ACCEPTED = 4;
-    const STATUS_REFUSED = 5;
-    const STATUS_OBSOLETE = 6;
-    const STATUS_WAITING_FOR_MINOR_REVISION = 7;
-    const STATUS_WAITING_FOR_MAJOR_REVISION = 15;
-    const STATUS_TMP_VERSION = 9;
-    const STATUS_NO_REVISION = 10;
-    const STATUS_NEW_VERSION = 11;
-    const STATUS_WAITING_FOR_COMMENTS = 8;
+    public const STATUS_REVIEWED = 3;
+    public const STATUS_ACCEPTED = 4;
+    public const STATUS_REFUSED = 5;
+    public const STATUS_OBSOLETE = 6;
+    public const STATUS_WAITING_FOR_MINOR_REVISION = 7;
+    public const STATUS_WAITING_FOR_MAJOR_REVISION = 15;
+    public const STATUS_TMP_VERSION = 9;
+    public const STATUS_NO_REVISION = 10;
+    public const STATUS_NEW_VERSION = 11;
+    public const STATUS_WAITING_FOR_COMMENTS = 8;
     // paper removed by contributor (before publication)
-    const STATUS_DELETED = 12;
+    public const STATUS_DELETED = 12;
     // paper removed by editorial board (after publication)
-    const STATUS_REMOVED = 13;
+    public const STATUS_REMOVED = 13;
     // reviewers have been invited, but no one has accepted yet
-    const STATUS_REVIEWERS_INVITED = 14;
-    const STATUS_PUBLISHED = 16;
+    public const STATUS_REVIEWERS_INVITED = 14;
+    public const STATUS_PUBLISHED = 16;
     // Le processus de publication peut être stoppé tant que l'article n'est pas publié
-    const STATUS_ABANDONED = 17;
+    public const STATUS_ABANDONED = 17;
     public const STATUS_TMP_VERSION_ACCEPTED = 25; // tmp version accepted
 
     //Copy editing
-    const STATUS_CE_WAITING_FOR_AUTHOR_SOURCES = 18;
-    const STATUS_CE_AUTHOR_SOURCES_DEPOSED = 19;
-    const STATUS_CE_REVIEW_FORMATTING_DEPOSED = 20;
-    const STATUS_CE_WAITING_AUTHOR_FINAL_VERSION = 21;
+    public const STATUS_CE_WAITING_FOR_AUTHOR_SOURCES = 18;
+    public const STATUS_CE_AUTHOR_SOURCES_DEPOSED = 19;
+    public const STATUS_CE_REVIEW_FORMATTING_DEPOSED = 20;
+    public const STATUS_CE_WAITING_AUTHOR_FINAL_VERSION = 21;
     // version finale déposée en attente de validation
-    const STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED = 22;
-    const STATUS_CE_READY_TO_PUBLISH = 23;
-    const STATUS_CE_AUTHOR_FORMATTING_DEPOSED = 24; // la mise en forme par l'auteur a été validée
+    public const STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED = 22;
+    public const STATUS_CE_READY_TO_PUBLISH = 23;
+    public const STATUS_CE_AUTHOR_FORMATTING_DEPOSED = 24; // la mise en forme par l'auteur a été validée
+
+    public const STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION = 26;
+    public const STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 27;
+    public const STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING = 28; // waiting to be edited by the Journal
+    public const STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION = 29; // after author's modification
     // paper settings
-    const SETTING_UNWANTED_REVIEWER = 'unwantedReviewer';
-    const SETTING_SUGGESTED_REVIEWER = 'suggestedReviewer';
-    const SETTING_SUGGESTED_EDITOR = 'suggestedEditor';
+    public const SETTING_UNWANTED_REVIEWER = 'unwantedReviewer';
+    public const SETTING_SUGGESTED_REVIEWER = 'suggestedReviewer';
+    public const SETTING_SUGGESTED_EDITOR = 'suggestedEditor';
 
     // paper status
     public const STATUS_CODES = [
@@ -87,12 +92,14 @@ class Episciences_Paper
         self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
         self::STATUS_CE_READY_TO_PUBLISH,
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
-        self::STATUS_TMP_VERSION_ACCEPTED
+        self::STATUS_TMP_VERSION_ACCEPTED,
+        self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION
     ];
 
     // Non présents dans le filtre de recherche
 
-    const OTHER_STATUS_CODE = [
+    public const OTHER_STATUS_CODE = [
         self::STATUS_OBSOLETE,
         self::STATUS_TMP_VERSION,
         self::STATUS_NO_REVISION,
@@ -102,7 +109,7 @@ class Episciences_Paper
     ];
 
     // exclude from a list of sorted papers for current volume
-    const DO_NOT_SORT_THIS_KIND_OF_PAPERS = [
+    public const DO_NOT_SORT_THIS_KIND_OF_PAPERS = [
         self::STATUS_DELETED,
         self::STATUS_ABANDONED,
         self::STATUS_REMOVED,
@@ -112,10 +119,10 @@ class Episciences_Paper
     /**
      * @const string DOI prefix
      */
-    const DOI_ORG_PREFIX = 'https://doi.org/';
+    public const DOI_ORG_PREFIX = 'https://doi.org/';
 
     // status priorities
-    public static $_statusPriority = [
+    public static array $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
         self::STATUS_BEING_REVIEWED => 1,
         self::STATUS_REVIEWED => 2,
@@ -131,7 +138,7 @@ class Episciences_Paper
     ];
 
     // status order (for sorting)
-    public static $_statusOrder = [
+    public static array $_statusOrder = [
         self::STATUS_SUBMITTED => 0,
         self::STATUS_OK_FOR_REVIEWING => 1,
         self::STATUS_BEING_REVIEWED => 2,
@@ -147,7 +154,7 @@ class Episciences_Paper
         self::STATUS_PUBLISHED => 11,
     ];
 
-    public static $_statusLabel = [
+    public static array $_statusLabel = [
         self::STATUS_SUBMITTED => 'soumis',
         self::STATUS_OK_FOR_REVIEWING => 'en attente de relecture',
         self::STATUS_BEING_REVIEWED => 'en cours de relecture',
@@ -171,10 +178,13 @@ class Episciences_Paper
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED => 'copy ed : mise en forme par la revue terminée, en attente de la version finale',
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "copy ed : mise en forme par l'auteur terminée, en attente de la version finale",
         self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
-        self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée'
+        self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée',
+        self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION => "Accepté, en attente de la version finale de l'auteur",
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'Accepté, en attente de modifications majeures',
+        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING => 'Accepté, en attente de la mise en forme par la revue',
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "Version temporaire acceptée après modification de l'auteur"
     ];
-
-    public static $_noEditableStatus = [
+    public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
         self::STATUS_REFUSED,
         self::STATUS_REMOVED,
@@ -183,7 +193,7 @@ class Episciences_Paper
         self::STATUS_ABANDONED
     ];
 
-    public static $_canBeAssignedDOI = [
+    public static array $_canBeAssignedDOI = [
         self::STATUS_ACCEPTED,
         self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
         self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
@@ -193,6 +203,22 @@ class Episciences_Paper
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
         self::STATUS_CE_READY_TO_PUBLISH,
         self::STATUS_PUBLISHED,
+    ];
+
+    public const ACCEPTED_SUBMISSIONS = [
+        self::STATUS_ACCEPTED,
+        self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
+        self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
+        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
+        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
+        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
+        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
+        self::STATUS_CE_READY_TO_PUBLISH,
+        self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+        self::STATUS_TMP_VERSION_ACCEPTED,
+        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING,
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION
     ];
 
     /**
@@ -281,7 +307,7 @@ class Episciences_Paper
     private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
     public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
-    public static $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats', 'json'];
+    public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats', 'json'];
 
     /**
      * Episciences_Paper constructor.
@@ -298,6 +324,7 @@ class Episciences_Paper
      * set paper options
      * @param array $options
      * @return $this
+     * @throws Zend_Db_Statement_Exception
      */
     public function setOptions(array $options): self
     {
@@ -1130,7 +1157,7 @@ class Episciences_Paper
         $sql = $db->select()
             ->from(T_PAPERS, ['DOCID'])
             ->where('RVID = ?', $this->getRvid())
-            ->where('STATUS != ?', Episciences_Paper::STATUS_DELETED);
+            ->where('STATUS != ?', self::STATUS_DELETED);
 
         if ($this->hasHook) {
             $sql->where('CONCEPT_IDENTIFIER = ?', $this->getConcept_identifier());
@@ -1252,7 +1279,15 @@ class Episciences_Paper
 
     public function isRevisionRequested(): bool
     {
-        return in_array($this->getStatus(), [self::STATUS_WAITING_FOR_MINOR_REVISION, self::STATUS_WAITING_FOR_MAJOR_REVISION], true);
+        $selectedStatus = [
+            self::STATUS_WAITING_FOR_MINOR_REVISION,
+            self::STATUS_WAITING_FOR_MAJOR_REVISION,
+            self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+            self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+            self::STATUS_TMP_VERSION_ACCEPTED
+        ];
+
+        return in_array($this->getStatus(), $selectedStatus, true);
     }
 
     /**
@@ -1468,7 +1503,7 @@ class Episciences_Paper
      * @return Episciences_CopyEditor[]
      * @throws Zend_Db_Statement_Exception
      */
-    public function getCopyEditors($active = true, $getCASdata = false)
+    public function getCopyEditors(bool $active = true, bool $getCASdata = false): array
     {
         if (empty($this->_copyEditors) || $getCASdata) {
             $copyEditors = Episciences_PapersManager::getCopyEditors($this->getDocid(), $active, $getCASdata);
@@ -3356,7 +3391,11 @@ class Episciences_Paper
 
             $detail = json_decode($value['DETAIL'], true);
 
-            if (isset($detail['status']) && (int)$detail['status'] === self::STATUS_ACCEPTED) {
+            if (
+                isset($detail['status']) &&
+                (int)$detail['status'] === self::STATUS_ACCEPTED &&
+                !isset($detail['isAlreadyAccepted'])
+            ) {
                 $date = $value['DATE'];
                 break;
             }

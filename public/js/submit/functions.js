@@ -21,7 +21,7 @@ $(function () {
 
 
     // if it is a modal, disable submit button
-    $submit_modal.prop('disabled', true);
+    disableModalSubmitButton();
 
     // dropdown menu css styling (volume selection)
     $volumes.find('option:first').css('font-weight', 'bold');
@@ -164,7 +164,7 @@ $(function () {
         $submit_form.fadeOut('fast');
 
         $result_container.html('<div class="panel panel-default"><div class="panel-body">' + getLoader() + '</div></div>');
-        if ($result_container.css('display') == 'none') {
+        if ($result_container.css('display') === 'none') {
             $result_container.fadeIn();
         }
         scrollTo($result_container, $('#modal-box'));
@@ -257,7 +257,7 @@ $(function () {
                 $("#form_required").show();
                 $submit_form.fadeIn();
                 // if it is a modal, re-enable submit button
-                $submit_modal.prop('disabled', false);
+                enableModalSubmitButton();
                 $('.modal-footer').hide();
                 applyAction(['specialIssueAccessCode-element', 'volumes-element', 'sections-element', 'suggestEditors-element'], 'display');
             }
@@ -295,7 +295,7 @@ $(function () {
         $submit_button.prop('disabled', true);
 
         // if it is a modal, disable submission button
-        $submit_modal.prop('disabled', true);
+        disableModalSubmitButton();
     }
 
     /**

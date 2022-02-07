@@ -904,6 +904,9 @@ class Episciences_Submit
                 self::datasetsProcessing($paper->getDocid());
             }
 
+            /** @var Episciences_User $user */
+            $user = Episciences_Auth::getUser();
+            $user->addRole(Episciences_Acl::ROLE_AUTHOR);
 
         } else {
             $message = '<strong>' . $translator->translate("Une erreur s'est produite pendant l'enregistrement de votre article.") . '</strong>';

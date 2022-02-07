@@ -725,6 +725,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->authorFormattingRequestForm = Episciences_PapersManager::getWaitingForAuthorFormatting($templates['waitingAuthorFormatting']);
             $this->view->reviewFormattingDeposedForm = Episciences_PapersManager::getReviewFormattingDeposedForm($templates['reviewFormattingDeposed']);
             $this->view->ceAcceptFinalVersionForm = Episciences_PapersManager::getCeAcceptFinalVersionForm($templates['ceAcceptFinalVersion']);
+            $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersion']);
 
             if (!empty($all_editors)) {
                 $this->view->askOtherEditorsForm = Episciences_PapersManager::getAskOtherEditorsForm($templates['askOtherEditors'], $all_editors, $paper);
@@ -737,6 +738,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->authorFormattingRequestForm = Episciences_PapersManager::getWaitingForAuthorFormatting($templates['waitingAuthorFormatting']);
             $this->view->reviewFormattingDeposedForm = Episciences_PapersManager::getReviewFormattingDeposedForm($templates['reviewFormattingDeposed']);
             $this->view->ceAcceptFinalVersionForm = Episciences_PapersManager::getCeAcceptFinalVersionForm($templates['ceAcceptFinalVersion']);
+            $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersionForm']);
         }
 
         $suggestionsStatusForm = $this->getSuggestStatusForm($docId);
@@ -1629,8 +1631,44 @@ class AdministratepaperController extends PaperDefaultController
                 // repository version
                 $status = Episciences_Paper::STATUS_ACCEPTED;
             } else { // tmp version
-
                 $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED;
+                // save comment
+                $subject = $data['acceptancesubject'];
+                $message = $data['acceptancemessage'];
+
+                $deadline = $data['minor-revisiondeadline'] ?: null;
+
+                // prepare comment options
+                $options = [];
+
+                if ($deadline) {
+                    $options['deadline'] = $deadline;
+                }
+
+                $options['isAlreadyAccepted'] = true;
+
+                $comment = new Episciences_Comment([
+                    'docid' => $docId,
+                    'uid' => $doneByUid,
+                    'message' => $message,
+                    'type' => Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+                    'deadline' => $deadline,
+                    'options' => $options
+                ]);
+
+                $comment->save();
+
+                // log minor revision request
+                $paper->log(
+                    Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
+                    $doneByUid,
+                    [
+                        'id' => $comment->getPcid(),
+                        'deadline' => $deadline,
+                        'subject' => $subject,
+                        'message' => $message,
+                        'isAlreadyAccepted' => true
+                    ]);
             }
 
             // update paper status
@@ -1656,7 +1694,7 @@ class AdministratepaperController extends PaperDefaultController
                         Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => HTTP . '://' . $_SERVER['SERVER_NAME'] . '/website/public',
                     ];
 
-                    if ($journal->getDoiSettings()->getDoiAssignMode() == Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
+                    if ($journal->getDoiSettings()->getDoiAssignMode() === Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
                         Episciences_Paper::createPaperDoi(RVID, $paper);
                     }
 
@@ -1857,14 +1895,20 @@ class AdministratepaperController extends PaperDefaultController
             $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
+            $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
+                in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
+
             // prepare comment options
             $options = [];
             if ($deadline) {
                 $options['deadline'] = $deadline;
             }
+
             if (array_key_exists('auto_reassign', $data)) {
                 $options['reassign_reviewers'] = (bool)$data['auto_reassign'];
             }
+
+            $options['isAlreadyAccepted'] = $isAlreadyAccepted;
 
             // save comment (revision request)
             $comment = new Episciences_Comment([
@@ -1882,10 +1926,13 @@ class AdministratepaperController extends PaperDefaultController
             $paper->log(
                 ($type === 'major') ? Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST : Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
                 Episciences_Auth::getUid(),
-                ['id' => $comment->getPcid(),
+                [
+                    'id' => $comment->getPcid(),
                     'deadline' => $deadline,
                     'subject' => $subject,
-                    'message' => $message]);
+                    'message' => $message,
+                    'isAlreadyAccepted' => $isAlreadyAccepted
+                ]);
 
             // sends an e-mail to the author
             $tags = [
@@ -1898,7 +1945,13 @@ class AdministratepaperController extends PaperDefaultController
             $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING);
 
             // if needed, set new status
-            $status = ($type === 'major') ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
+
+            if (!$isAlreadyAccepted) {
+                $status = ($type === 'major') ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
+            } else {
+                $status = ($type === 'major') ? Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION;
+            }
+
             if ($paper->getStatus() !== $status) {
                 $paper->setStatus($status);
                 $paper->save();
@@ -2877,7 +2930,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
-           echo 'Unauthorized access';
+            echo 'Unauthorized access';
             trigger_error(sprintf('Unauthorized access to savedoi by %s', Episciences_Auth::getUid()), E_USER_WARNING);
             return;
         }
@@ -2890,18 +2943,18 @@ class AdministratepaperController extends PaperDefaultController
         $doiPattern = "/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i";
 
         if (($doi !== '') && !preg_match($doiPattern, $doi)) {
-            printf ('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
+            printf('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
             return;
         }
 
         if (!Episciences_PapersManager::paperExists($docid, RVID)) {
-            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
+            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
             trigger_error(sprintf('Docid %s not found in RVID %s', $docid, RVID), E_USER_WARNING);
             return;
         }
 
         if (0 === Episciences_PapersManager::updateDoi($doi, $paperId)) {
-            printf ('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
+            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
             trigger_error(sprintf('Failed to update paperid %s with DOI %s', $paperId, $doi), E_USER_WARNING);
             return;
         }
@@ -3437,6 +3490,7 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * Affiche tous les comptes qui ont le même prénom et nom
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function displayccsdusersAction(): void
@@ -3451,28 +3505,46 @@ class AdministratepaperController extends PaperDefaultController
         $request = $this->getRequest();
 
         if ($request->isXmlHttpRequest()) {
-
+            $isOwner = false;
+            $isSearchWithMail = (boolean)$request->getPost('is_search_with_mail');
             $docId = $request->getPost('paper_id');
             $paper = Episciences_PapersManager::get($docId);
 
             if (!$paper) {
                 $trace['error'] = $this->view->translate('Une erreur est survenue.');
             } else {
-                $post = json_decode($request->getPost('post'), true);
-                $isSearchWithMail = (boolean)$request->getPost('is_search_with_mail');
+
+                try {
+
+                    $post = json_decode($request->getPost('post'), true, 512, JSON_THROW_ON_ERROR);
+
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                }
+
                 $user_lang = $request->getPost('user_lang');
                 $local_users = Episciences_UsersManager::getLocalUsers();
                 // liste des utilisateurs à ignorer
                 $ignoreList = $request->getPost('ignore_list');
-                $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList) : [];
+
+                try {
+                    $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList, false, 512, JSON_THROW_ON_ERROR) : [];
+
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                }
+
                 /** @var stdClass $value */
                 foreach ($post as $value) {
                     $user = new Episciences_User((array)$value);
                     $uid = $user->getUid();
 
-                    if (in_array($user->getEmail(), IGNORE_REVIEWERS_EMAIL_VALUES, true)) {
+                    $isOwner = ($uid === $paper->getUid());
+
+                    if ($isOwner || in_array($user->getEmail(), IGNORE_REVIEWERS_EMAIL_VALUES, true)) {
                         $ignoreReviewers[] = $uid;
                     }
+
                     // Utilisateurs Episciences
                     if (array_key_exists($uid, $local_users)) {
                         $users_stats[$uid]['is_epi_user'] = true;
@@ -3498,21 +3570,28 @@ class AdministratepaperController extends PaperDefaultController
                 }
 
                 if (empty($users)) {
-                    $message = $this->view->translate('Une invitation de relecture a été envoyée à cet utilisateur');
-                    if (!$isSearchWithMail) {
-                        $message .= '(';
-                        $message .= $this->view->translate('même nom et même prénom');
-                        $message .= ').';
-                        $message .= ('<br>');
-                        $message .= ' ';
-                        $message .= $this->view->translate("Si votre relecteur n'est pas celui détecté par le système");
-                        $message .= ', ';
-                        $message .= $this->view->translate("continuez avec le nouvel utilisateur que vous venez de saisir.");
-                    } else {
 
-                        $message .= ', ';
-                        $message .= $this->view->translate("ou bien vous n'avez pas les autorisations nécessaires.");
+                    if (!$isOwner) {
+                        $message = $this->view->translate('Une invitation de relecture a été envoyée à cet utilisateur');
+
+                        if (!$isSearchWithMail) {
+                            $message .= '(';
+                            $message .= $this->view->translate('même nom et même prénom');
+                            $message .= ').';
+                            $message .= ('<br>');
+                            $message .= ' ';
+                            $message .= $this->view->translate("Si votre relecteur n'est pas celui détecté par le système");
+                            $message .= ', ';
+                            $message .= $this->view->translate("continuez avec le nouvel utilisateur que vous venez de saisir.");
+                        } else {
+                            $message .= ', ';
+                            $message .= $this->view->translate("ou bien vous n'avez pas les autorisations nécessaires.");
+                        }
+
+                    } else {
+                        $message = $this->view->translate('Cet article ne peut pas être relu par son auteur');
                     }
+
                     $trace['message'] = $message;
                 }
 

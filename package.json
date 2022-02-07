@@ -1,12 +1,13 @@
 {
   "devDependencies": {
-    "@symfony/webpack-encore": "^1.6.1",
+    "@symfony/webpack-encore": "^1.8.1",
     "compass-mixins": "^0.12.10",
-    "resolve-url-loader": "^4.0.0",
-    "sass": "^1.39.0",
-    "sass-loader": "^12.1.0",
-    "ts-loader": "^9.2.5",
-    "typescript": "^4.4.2",
-    "webpack-notifier": "^1.13.0"
-  }
+    "resolve-url-loader": "^5.0.0",
+    "sass": "^1.49.0",
+    "sass-loader": "^12.4.0",
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.5.5",
+    "webpack-notifier": "^1.15.0"
+  },
+  "packageManager": "yarn@3.1.1"
 }

@@ -351,7 +351,7 @@ class ReviewerController extends PaperDefaultController
         $user->setUid($uid);
 
         // give him reviewer permissions
-        $user->saveUserRoles($uid, [Episciences_Acl::ROLE_REVIEWER]);
+        $user->addRole(Episciences_Acl::ROLE_REVIEWER);
 
         // sign him in
         Episciences_Auth::getInstance()->clearIdentity();
@@ -391,19 +391,8 @@ class ReviewerController extends PaperDefaultController
             $user->save();
         }
 
-        $uid = $user->getUid();
-
-        $userRoles = $user->getRoles();
-
-        $roles = !in_array(Episciences_Acl::ROLE_REVIEWER, $userRoles, true) ? array_merge($userRoles, array(Episciences_Acl::ROLE_REVIEWER)) : $userRoles;
-        $key = array_search(Episciences_Acl::ROLE_MEMBER, $roles, true);
-
-        unset($roles[$key]);
-
-        $user->saveUserRoles($uid, $roles);
-
+        $user->addRole(Episciences_Acl::ROLE_REVIEWER);
         return $user;
-
     }
 
     /**

@@ -20,14 +20,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## added
 - New article status "temporary version accepted": now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
 - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
+- New review parameter: Allow revision request + refactoring.
+- 'Author' role
+- Script to clean the "USER_ROLES" table
+
 
 ## Changed
  - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
  - Make it possible to update the metadata on the article page
+ - Request a new version of an article that has already been accepted
+ - [#166] (https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action   
 
 ##Fixed
 - Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
 - Improvements in emailing: see github #117.
+- Multiple roles: ignore the "member" role when merging two accounts.
+- Fixed: undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
+- Fixed: not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
+- Fixed: the attachments to the rating report are not available [RT#145473]
+- Fixed: answer revision request: in some situations, the "Submit" button remains inactive.
 
 ## 1.0.23 - 2022-01-19
 
