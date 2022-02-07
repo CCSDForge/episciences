@@ -1070,6 +1070,7 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function ajaxfindusersbymailAction(): void
     {
+        $result = '';
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $request = $this->getRequest();
@@ -1090,7 +1091,15 @@ class UserDefaultController extends Zend_Controller_Action
             }
         }
 
-        echo json_encode($detailByLogin, JSON_THROW_ON_ERROR);
+        try {
+            $result = json_encode($detailByLogin, JSON_THROW_ON_ERROR);
+
+        }catch (Exception $e){
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        echo $result;
+
     }
 
     /**

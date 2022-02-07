@@ -3537,12 +3537,27 @@ class AdministratepaperController extends PaperDefaultController
             if (!$paper) {
                 $trace['error'] = $this->view->translate('Une erreur est survenue.');
             } else {
-                $post = json_decode($request->getPost('post'), true, 512, JSON_THROW_ON_ERROR);
+
+                try {
+
+                    $post = json_decode($request->getPost('post'), true, 512, JSON_THROW_ON_ERROR);
+
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                }
+
                 $user_lang = $request->getPost('user_lang');
                 $local_users = Episciences_UsersManager::getLocalUsers();
                 // liste des utilisateurs à ignorer
                 $ignoreList = $request->getPost('ignore_list');
-                $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList, false, 512, JSON_THROW_ON_ERROR) : [];
+
+                try {
+                    $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList, false, 512, JSON_THROW_ON_ERROR) : [];
+
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                }
+
                 /** @var stdClass $value */
                 foreach ($post as $value) {
                     $user = new Episciences_User((array)$value);
