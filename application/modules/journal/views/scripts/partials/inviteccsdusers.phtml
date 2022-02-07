@@ -54,18 +54,18 @@ $message = '';
         <br>
         <table class="table dataTable hover" id="ccsd_user_invitation">
             <thead>
-            <th><?=  $this->translate('Prénom') ?></th>
-            <th><?=  $this->translate('Nom') ?></th>
-            <th><?=  $this->translate('Identifiant') ?></th>
-            <th><?=  $this->translate('Courriel') ?></th>
-            <th><?=  $this->translate('Langue') ?></th>
-            <th><?=  $this->translate('Invitation(s)') ?></th>
-            <th><?=  $this->translate('Relecture(s)') ?></th>
+            <th><?= $this->translate('Prénom') ?></th>
+            <th><?= $this->translate('Nom') ?></th>
+            <th><?= $this->translate('Identifiant') ?></th>
+            <th><?= $this->translate('Courriel') ?></th>
+            <th><?= $this->translate('Langue') ?></th>
+            <th><?= $this->translate('Invitation(s)') ?></th>
+            <th><?= $this->translate('Relecture(s)') ?></th>
             <th>
                 <span class="glyphicon glyphicon-info-sign"
                       data-toggle="tooltip"
                       data-placement="top"
-                      title="<?=  $this->translate('Utilisateur de Episciences ?') ?>"
+                      title="<?= $this->translate('Utilisateur de Episciences ?') ?>"
                       style="padding-right: 10px;"
                 >
                 </span>
@@ -73,6 +73,7 @@ $message = '';
             </thead>
             <tbody>
             <?php /** @var Episciences_User $user */
+
             foreach ($users as $user) : ?>
                 <?php
                 $ccsdUsers[$user->getUid()] = [
@@ -85,18 +86,18 @@ $message = '';
                 ];
                 ?>
                 <tr
-                        id="ccsduser_<?=  $user->getUid() ?>"
+                        id="ccsduser_<?= $user->getUid() ?>"
                         data-toggle="tooltip"
                         data-placement="top"
-                        title="<?=  $this->translate('Inviter ce relecteur') . '...' ?>"
+                        title="<?= $this->translate('Inviter ce relecteur') . '...' ?>"
                 >
-                    <td><?=  $user->getFirstname() ?></td>
-                    <td><?=  $user->getLastname() ?></td>
-                    <td><?=  $user->getUsername() ?></td>
-                    <td><?=  $user->getEmail() ?></td>
-                    <td><?=  ucfirst(Zend_Locale::getTranslation($user->getLangueid(), 'language', Episciences_Tools::getLocale())) ?></td>
-                    <td class="text-center"><?=  $this->users_stat[$user->getUid()]['invitations_nbr'] ?></td>
-                    <td class="text-center"><?=  $this->users_stat[$user->getUid()]['reviewing_complete_nbr'] ?></td>
+                    <td><?= $user->getFirstname() ?></td>
+                    <td><?= $user->getLastname() ?></td>
+                    <td><?= $user->getUsername() ?></td>
+                    <td><?= $user->getEmail() ?></td>
+                    <td><?= ucfirst(Zend_Locale::getTranslation($user->getLangueid(), 'language', Episciences_Tools::getLocale())) ?></td>
+                    <td class="text-center"><?= $this->users_stat[$user->getUid()]['invitations_nbr'] ?></td>
+                    <td class="text-center"><?= $this->users_stat[$user->getUid()]['reviewing_complete_nbr'] ?></td>
                     <td>
                         <?php if ($this->users_stat[$user->getUid()]['is_epi_user']): ?>
                             <span class="glyphicon glyphicon-ok-sign text-success"></span>
@@ -107,22 +108,30 @@ $message = '';
                     </td>
                 </tr>
             <?php endforeach; ?>
+            <?php
+
+            try {
+                $jsonCcsdUsres = json_encode($ccsdUsers, JSON_THROW_ON_ERROR);
+            } catch (Exception $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+            }
+            ?>
             </tbody>
         </table>
     </div>
 
     <script>
 
-        let ccsd_users = <?=  json_encode($ccsdUsers, JSON_THROW_ON_ERROR) ?>;
+        let ccsd_users = <?= $jsonCcsdUsres ?>;
 
         <?php if($this->is_search_with_mail) : ?>
-        let  is_search_with_mail = <?=  $this->is_search_with_mail ?>
+        let is_search_with_mail = <?=  $this->is_search_with_mail ?>
         <?php endif; ?>
 
-            $(document).ready(function () {
-                $('[data-toggle="tooltip"]').tooltip();
-                dt_init('ccsd_user_invitation', ccsd_users);
-            });
+        $(document).ready(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+            dt_init('ccsd_user_invitation', ccsd_users);
+        });
 
     </script>
 
