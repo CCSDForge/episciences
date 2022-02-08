@@ -781,14 +781,14 @@ let fixHelperSortable = function (e, ui) {
 
 function disableModalSubmitButton(){
 
-    if($modal_button.length > 0){
+    if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
         $modal_button.prop('disabled', true);
     }
 }
 
 function enableModalSubmitButton(){
 
-    if($modal_button.length > 0){
+    if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
         $modal_button.prop('disabled', false);
     }
 }
