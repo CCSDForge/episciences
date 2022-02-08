@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: the attachments to the rating report are not available [RT#145473]
 - Fixed: answer revision request: in some situations, the "Submit" button remains inactive.
 
+## 1.0.24.1 - 2022-02-08
+# Fixed
+- A bug in the reminders code triggered emails with unusable HTTP links
+
 ## 1.0.23 - 2022-01-19
 
 ### Added

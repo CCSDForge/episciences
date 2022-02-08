@@ -696,7 +696,7 @@ class Episciences_Mail_Reminder
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
 
-                    $tags[] = [
+                    $tags = array_merge($tags, [
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
@@ -705,7 +705,7 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
                         Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $editor->getLangueid()),
-                    ];
+                    ]);
 
                     $recipients[] = [
                         'uid' => $editor->getUid(),
@@ -719,14 +719,14 @@ class Episciences_Mail_Reminder
                 }
             } else {
 
-                $tags[] = [
+                $tags = array_merge($tags, [
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $author->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $author->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $author->getUsername(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($author->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/" . $paper->getDocid(),
                     Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $author->getLangueid()),
-                ];
+                ]);
 
                 $recipients[] = [
                     'uid' => $author->getUid(),
@@ -798,7 +798,7 @@ class Episciences_Mail_Reminder
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
 
-                    $tags[] = [
+                    $tags = array_merge($tags,  [
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
@@ -807,7 +807,7 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
                         Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $editor->getLangueid()),
-                    ];
+                    ]);
 
                     $recipients[] = [
                         'uid' => $editor->getUid(),
@@ -820,14 +820,14 @@ class Episciences_Mail_Reminder
                 }
             } else {
 
-                $tags[] = [
+                $tags = array_merge($tags, [
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $author->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $author->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $author->getUsername(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($author->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/" . $paper->getDocid(),
                     Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $author->getLangueid()),
-                ];
+                ]);
 
                 $recipients[] = [
                     'uid' => $author->getUid(),
@@ -1060,14 +1060,14 @@ class Episciences_Mail_Reminder
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
 
-                    $tags[] = [
+                    $tags = array_merge($tags,  [
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername()
-                    ];
+                    ]);
 
                     $recipients[] = [
                         'uid' => $editor->getUid(),
@@ -1080,13 +1080,13 @@ class Episciences_Mail_Reminder
                 }
             } else {
 
-                $tags[] = [
+                $tags = array_merge($tags,  [
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($lang, true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $user->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $user->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $fullname,
 
-                ];
+                ]);
 
                 $recipients[] = [
                     'uid' => $data['UID'],
