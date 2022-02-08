@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+#Unreleased
+- Fixed: the reminders are wrong and not usable
+
 ## 1.0.24 - 2022-02-08
 # Fixed
 - Inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
