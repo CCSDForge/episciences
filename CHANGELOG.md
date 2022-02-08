@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-#Unreleased
-- Fixed: the reminders are wrong and not usable
+## 1.0.24.1 - 2022-02-08
+# Fixed
+ - A bug in the reminders code triggered emails with unusable HTTP links
 
 ## 1.0.24 - 2022-02-08
 # Fixed
