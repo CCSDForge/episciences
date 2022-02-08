@@ -1,6 +1,7 @@
 <?php
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
+
 /**
  * Class AdministratepaperController
  */
@@ -483,6 +484,7 @@ class AdministratepaperController extends PaperDefaultController
         $loggedUid = Episciences_Auth::getUid();
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+
 
         $isConflictDetected =
             !Episciences_Auth::isSecretary() && $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
@@ -1800,8 +1802,19 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setPublication_date(date("Y-m-d H:i:s"));
 
             // if HAL, update paper metadata in repository
-            if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal') && APPLICATION_ENV === 'production') {
-                $paper->updateHALMetadata();
+            if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal')) {
+                $notification = new Episciences_Notify_Hal($paper, $journal);
+
+                try {
+                   $idAnnounce =  $notification->announceEndorsement();
+                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage(sprintf('Announcing publication to HAL with ID %s succeeded.', $idAnnounce));
+                } catch (Exception $exception) {
+                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Announcing publication to HAL failed');
+                }
+
+
+
+
             }
 
             // update paper status

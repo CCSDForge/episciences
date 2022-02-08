@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Notify\Headers;
+use Episciences\Signposting\Headers as spHeaders;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -107,6 +109,14 @@ class PaperController extends PaperDefaultController
      */
     public function viewAction(): void
     {
+
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            echo Headers::addInboxAutodiscoveryLDN();
+            exit;
+        }
+
         $this->view->doctype(Zend_View_Helper_Doctype::XHTML1_RDFA);
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -150,30 +160,18 @@ class PaperController extends PaperDefaultController
         }
 
         $this->updatePaperStats($paper);
-
-        if ($paper->hasDoi()) {
-            $headerLinks[] = sprintf('<https://%s>; rel="cite-as"', $paper->getDoi()) ;
-        }
-
         $paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
 
-        $alternateContentTypes['bibtex']='application/x-bibtex';
-        $alternateContentTypes['tei']='application/xml';
-        $alternateContentTypes['dc']='application/xml';
-        $alternateContentTypes['datacite']='application/xml';
-        $alternateContentTypes['crossref']='application/xml';
-        $alternateContentTypes['pdf']='application/pdf';
 
-        foreach ($alternateContentTypes as $format => $mimeType) {
-            if ($format === 'pdf') {
-                $headerLinks[] = sprintf('<%s/%s>; rel="alternate"; type="%s"', $paperUrl, $format, $mimeType);
-            } else {
-                $headerLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"; title="%s"', $paperUrl, $format, $mimeType,strtoupper($format));
-            }
-        }
+        // INBOX autodiscovery @see https://www.w3.org/TR/ldn/#discovery
+        $headerLinks[] = Headers::getInboxHeaderString();
 
+        $paperHasDoi = $paper->hasDoi();
+        $paperDoi = $paper->getDoi();
 
-        $this->getResponse()->setHeader('Link', implode(', ', $headerLinks));
+        $allHeaderLinks = spHeaders::getPaperHeaderLinks($paperHasDoi, $paperDoi, $paperUrl, $headerLinks);
+
+        $this->getResponse()->setHeader('Link', implode(', ', $allHeaderLinks));
 
 
         // if paper is obsolete, display a warning
@@ -2026,7 +2024,7 @@ class PaperController extends PaperDefaultController
 
         $message = trim($message);
 
-        if('' !== $message){
+        if ('' !== $message) {
             $message = $translator->translate($message);
         }
 
@@ -3015,6 +3013,8 @@ class PaperController extends PaperDefaultController
         $this->view->comment = $oComment->toArray();
         $this->render('answerrequest');
     }
+
+
 
     /**
      * reassign reviewers from a paper to another

@@ -1,4 +1,5 @@
 <?php
+use Episciences\Notify\Headers;
 
 class BrowseController extends Zend_Controller_Action
 {
@@ -11,6 +12,16 @@ class BrowseController extends Zend_Controller_Action
      */
     public function init()
     {
+        Headers::addInboxAutodiscoveryHeader();
+
+        if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            echo Headers::addInboxAutodiscoveryLDN();
+            exit;
+        }
+
+
         $solrConfigFile = APPLICATION_PATH . '/../data/' . RVCODE . '/config/solr.json';
 
         if (is_file($solrConfigFile)) {

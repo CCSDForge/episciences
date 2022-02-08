@@ -97,5 +97,17 @@
     "TESTAPI": "https://test.crossref.org/servlet/deposit",
     "API": "https://doi.crossref.org/servlet/deposit",
     "EMAIL_CONTACT": "feedback@example.org"
+  },
+  "NOTIFY_TARGET_HAL": {
+    "INBOX": "https://inbox.example.org/",
+    "URL": "https://hal.example.org/"
+  },
+  "INBOX": {
+    "URL": "https://inbox.example.org/",
+    "DB_HOST": "db.example.org",
+    "DB_DRIVER":"pdo_mysql",
+    "DB_NAME": "inbox",
+    "DB_USER": "inbox",
+    "DB_PASSWORD": "four random common words"
   }
 }
