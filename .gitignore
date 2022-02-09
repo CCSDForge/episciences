@@ -48,3 +48,4 @@ assets/node_modules/
 !.yarn/versions
 /version.php
 /log/
+/phpmetrics/
