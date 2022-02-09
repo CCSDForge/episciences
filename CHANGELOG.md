@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Make it possible to update the metadata on the article page
  - Request a new version of an article that has already been accepted
  - [#166] (https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action   
+ - The "status" filter is now dynamically created.
 
 ##Fixed
 - Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.

@@ -2850,4 +2850,28 @@ class Episciences_PapersManager
         return $list;
     }
 
+
+    public static function getAllStatus(int $byRvId = null, string $order = null, array $without = Episciences_Paper::OTHER_STATUS_CODE): array
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $statusQuery = $db
+            ->select()
+            ->distinct()
+            ->from(T_PAPERS, ['STATUS'])
+            ->where('STATUS NOT IN (?)', $without);
+
+        if ($byRvId) {
+            $statusQuery->where('RVID = ? ', $byRvId);
+        }
+
+        if($order){
+            $statusQuery->order('STATUS', $order);
+        }
+
+        return $db->fetchCol($statusQuery);
+
+    }
+
 }
