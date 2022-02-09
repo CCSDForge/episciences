@@ -49,3 +49,4 @@ assets/node_modules/
 /version.php
 /log/
 /phpmetrics/
+/.php-cs-fixer.cache
