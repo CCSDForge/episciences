@@ -5,7 +5,6 @@ namespace Episciences\Notify;
 trait Headers
 {
 
-
     /**
      * @return void
      */
@@ -15,22 +14,29 @@ trait Headers
     }
 
     /**
-     * @return false|string
+     * @return string
      */
-    public static function addInboxAutodiscoveryLDN()
+    public static function addInboxAutodiscoveryLDN(): string
     {
         $ldJson['@context'] = "http://www.w3.org/ns/ldp";
         $ldJson['inbox'] = INBOX_URL;
-        return json_encode($ldJson);
+
+        try {
+            $jsonEncoded = json_encode($ldJson, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            $jsonEncoded = '';
+        }
+
+        return $jsonEncoded;
+
     }
 
     /**
+     * @param string $headerString
      * @return string
      */
-    public static function getInboxHeaderString($headerString = ''): string
+    public static function getInboxHeaderString(string $headerString = ''): string
     {
         return sprintf('%s<%s>; rel="http://www.w3.org/ns/ldp#inbox"', $headerString, INBOX_URL);
     }
-
-
 }

@@ -629,16 +629,6 @@ class Ccsd_Tools
         error_log("Panic: $file:$line - $message");
     }
 
-    /**
-     * Log function for case a deprecated function is call
-     * @param $file
-     * @param $line
-     * @param $message
-     */
-    public static function deprecatedMsg($file, $line, $message)
-    {
-        error_log("Deprecated: $file:$line - $message");
-    }
 
     /**
      * Effectue une recherche xpath dans une chaine XML
@@ -863,46 +853,8 @@ class Ccsd_Tools
      */
     public static function clear_nl($text): string
     {
-        $text = str_replace("\n", "", $text);
-        $text = str_replace("\r", "", $text);
+        $text = str_replace(["\n", "\r"], "", $text);
         return ($text);
-    }
-
-    /**
-     * @param $string
-     * @param bool $pad
-     * @return string
-     * Verify that the input date is /^\d{4}(-\d{2}(-\d{2})?)?
-     * return '' if not or 0000-00-00 if pad is true
-     * return the same date if yes, and pad with 01-01 if pad is true
-     *
-     */
-    public static function str2date($string, $pad = false)
-    {
-        if (is_string($string)) {
-            $date = '';
-            list($y, $m, $d) = array_pad(explode('-', $string, 3), 3, 0);
-            $y = str_pad((int)substr($y, 0, 4), 4, '0', STR_PAD_LEFT);
-            if ($y != '0000') {
-                $date = $y;
-                $m = str_pad((int)substr($m, 0, 2), 2, '0', STR_PAD_LEFT);
-                if ($m != '00') {
-                    $date .= '-' . $m;
-                    $d = str_pad((int)substr($d, 0, 2), 2, '0', STR_PAD_LEFT);
-                    if ($d != '00') {
-                        $date .= '-' . $d;
-                    } else if ($pad) {
-                        $date = $y . '-' . $m . '-01';
-                    }
-                } else if ($pad) {
-                    $date = $y . '-01-01';
-                }
-            } else if ($pad) {
-                $date = '0000-00-00';
-            }
-            return $date;
-        }
-        return '';
     }
 
     /**
@@ -1021,29 +973,6 @@ class Ccsd_Tools
 
 
     /**
-     * Appel WS geoname pour récupérer la ville et le pays par rapport à une coordonnées GPS
-     *
-     * @param $lng
-     * @param $lat
-     * @return array|bool
-     */
-    public static function geoname($lng, $lat)
-    {
-        $ch = curl_init(str_replace(['%%LNG%%', '%%LAT%%'], [$lng, $lat], "http://ws.geonames.org/findNearbyPlaceName?style=SHORT&lat=%%LAT%%&lng=%%LNG%%"));
-        curl_setopt($ch, CURLOPT_USERAGENT, "CCSD - HAL Proxy");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-        $return = curl_exec($ch);
-        curl_close($ch);
-        try {
-            $simpleXML = new SimpleXMLElement($return);
-            return ['city' => (string)$simpleXML->geoname->name, 'country' => (string)$simpleXML->geoname->countryCode];
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    /**
      * @param $var
      * @param bool $ret
      * @param string $format
@@ -1117,9 +1046,8 @@ class Ccsd_Tools
     public static function protectUnderscore($text): string
     {
 
-        $text_replace = str_replace(
+        return str_replace(
             ["_"], ["\\_"], $text);
-        return $text_replace;
     }
 
     /**
@@ -1251,20 +1179,6 @@ class Ccsd_Tools
         return (!isset($_SERVER ['SERVER_SOFTWARE']) && (php_sapi_name() == 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0)));
     }
 
-    /**
-     * Retourne le domaine d'une adresse mail
-     *
-     * @param string $email
-     * @return string
-     */
-    public static function getEmailDomain($email): string
-    {
-        $arobasePosition = strpos($email, '@');
-        if ($arobasePosition === false) {
-            return '';
-        }
-        return substr($email, $arobasePosition + 1);
-    }
 
     /**
      * @param $value
