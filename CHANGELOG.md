@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - Fixed [RT#146987] "search" button no longer works. 
-- 
+- Fixed: application error: syntax error or access violation [arima #5828: cas user not found]
 ## 1.0.24.1 - 2022-02-08
 # Fixed
  - A bug in the reminders code triggered emails with unusable HTTP links
