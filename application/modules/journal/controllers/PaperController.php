@@ -339,7 +339,7 @@ class PaperController extends PaperDefaultController
         $this->view->copyEditingDemands = $copyEditingDemands;
 
         // reply copy editing answer form
-        if ($isAllowedToAnswerNewVersion || Episciences_Auth::getUid() === $paper->getUid()) {
+        if ($isAllowedToAnswerNewVersion) {
             $copyEditingReplyForms = Episciences_CommentsManager::getCopyEditingReplyForms($copyEditingDemands, $paper);
             $this->view->copyEditingReplyForms = $copyEditingReplyForms;
         }
