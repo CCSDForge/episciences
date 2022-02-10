@@ -70,12 +70,30 @@ if (isset($this->ce)) {
     </a><br/>
 <?php endif; ?>
 
-<?php // Articles acceptés *************************************************** ?>
-<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION]); ?>
+<?php // Accepted, waiting for author's final version?>
+<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ]); ?>
 <?php if ($count) : ?>
-    <?php $params['status'] = [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION]; ?>
+    <?php $params['status'] = [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ]; ?>
     <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
         <?= $this->translate(($count === 1) ? "article accepté, en attente de la version finale de l'auteur" : "articles acceptés, en attente de la version finale de l'auteur") ?>
+    </a><br/>
+<?php endif; ?>
+
+<?php // Accepted, waiting for major revision ?>
+<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION]); ?>
+<?php if ($count) : ?>
+    <?php $params['status'] = [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION]; ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? "article accepté, en attente de modifications majeures" : "articles acceptés, en attente de modifications majeures") ?>
+    </a><br/>
+<?php endif; ?>
+
+<?php // Accepted, waiting for journal formatting?>
+<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING]); ?>
+<?php if ($count) : ?>
+    <?php $params['status'] = [Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING]; ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? "article accepté, en attente de la mise en forme par la revue" : "articles acceptés, en attente de la mise en forme par la revue") ?>
     </a><br/>
 <?php endif; ?>
 
@@ -84,10 +102,36 @@ if (isset($this->ce)) {
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED]; ?>
     <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
-        <?= $this->translate(($count === 1) ? 'version temporaire acceptée' : 'versions temporaires acceptées') ?>
+        <?= $this->translate(($count === 1) ? Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED] : 'versions temporaires acceptées, en attente de la version finale') ?>
     </a><br/>
 <?php endif; ?>
 
+<?php // Accepted temporary version after author's modifications?>
+<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION]); ?>
+<?php if ($count) : ?>
+    <?php $params['status'] = [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION]; ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] : "versions temporaires acceptées après modification de l'auteur") ?>
+    </a><br/>
+<?php endif; ?>
+
+<?php // Accepted temporary version, waiting for minor revision?>
+<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION]); ?>
+<?php if ($count) : ?>
+    <?php $params['status'] = [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION]; ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] : "versions temporaires acceptées, en attente des modifications mineures") ?>
+    </a><br/>
+<?php endif; ?>
+
+<?php // Accepted temporary version, waiting for major revision?>
+<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION]); ?>
+<?php if ($count) : ?>
+    <?php $params['status'] = [Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION]; ?>
+    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
+        <?= $this->translate(($count === 1) ? Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] : "versions temporaires acceptées, en attente des modifications majeures") ?>
+    </a><br/>
+<?php endif; ?>
 
 <?php // Articles en attente de sources de l'auteur?>
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES]); ?>

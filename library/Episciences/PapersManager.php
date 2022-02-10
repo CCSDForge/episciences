@@ -105,7 +105,7 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $papersQuery = $db->select()->from(['papers' => T_PAPERS])->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id' );
+        $papersQuery = $db->select()->from(['papers' => T_PAPERS])->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id');
 
         $countQuery = $db->select()->from($papersQuery, [new Zend_Db_Expr("COUNT('DOCID')")]);
 
@@ -528,7 +528,7 @@ class Episciences_PapersManager
      */
     public static function getStatusLabel($status)
     {
-        $test =  array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
+        $test = array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
         return array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
     }
 
@@ -681,7 +681,7 @@ class Episciences_PapersManager
      * @param int $rvid
      * @return bool
      */
-    public static function paperExists(int $docId, int $rvid = 0) :bool
+    public static function paperExists(int $docId, int $rvid = 0): bool
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -691,7 +691,7 @@ class Episciences_PapersManager
         if ($rvid !== 0) {
             $select->where('RVID = ?', $rvid);
         }
-        return ( (int) $select->query()->fetchColumn() > 0 );
+        return ((int)$select->query()->fetchColumn() > 0);
 
     }
 
@@ -755,7 +755,7 @@ class Episciences_PapersManager
      * @param null $status
      * @param bool $sorted
      * @return array
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|JsonException
      */
     public static function getInvitations($docId, $status = null, bool $sorted = true): array
     {
@@ -783,6 +783,7 @@ class Episciences_PapersManager
         //sort array
         $invitations = [];
         foreach ($source as $aid => $row) {
+            $reviewer = null;
             $tmp = [];
             foreach ($row as $id => $invitation) {
                 $isTmpUser = false;
@@ -790,8 +791,8 @@ class Episciences_PapersManager
                 if (empty($tmp)) {
                     $tmp = $invitation;
                 }
-                //recuperation des infos de l'invitation d'orgine, si il y a eu une réponse à l'invitation
-                if (!empty($tmp) && $aid == $id) {
+                //recuperation des infos de l'invitation d'origine, s'il y a eu une réponse à l'invitation
+                if (!empty($tmp) && $aid === $id) {
                     $tmp['ASSIGNMENT_DATE'] = $invitation['ASSIGNMENT_DATE'];
                 }
 
@@ -803,28 +804,32 @@ class Episciences_PapersManager
 
                         if (!empty($reviewer->find($invitation['UID']))) {
                             $reviewer->generateScreen_name();
-                            $reviewers[$invitation['UID']] = $reviewer;
+                            $reviewers['tmp'][$invitation['UID']] = $reviewer;
                         }
 
                     }
                 } else if (!array_key_exists($invitation['UID'], $reviewers)) {
                     $reviewer = new Episciences_Reviewer();
-                    $reviewer->findWithCAS($invitation['UID']);
-                    $reviewers[$invitation['UID']] = $reviewer;
+                    if ($reviewer->findWithCAS($invitation['UID'])) {
+                        $reviewers[$invitation['UID']] = $reviewer;
+                    } else {
+                        trigger_error('CAS USER UID = ' . $invitation['UID'] . ' NOT FOUND', E_USER_WARNING);
+                        continue;
+                    }
                 }
 
-                $reviewer = $reviewers[$invitation['UID']];
 
-                $tmp['reviewer'] = [
-                    'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
-                    'fullname' => $reviewer->getFullName(),
-                    'screenname' => $reviewer->getScreenName(),
-                    'username' => $reviewer->getUsername(),
-                    'email' => $reviewer->getEmail(),
-                    'hasRoles' => !$isTmpUser ? $reviewer->hasRoles($reviewer->getUid()) : false,
-                    'isCasUserValid' => (bool)$reviewer->getValid()
-                ];
-
+                if ($reviewer) {
+                    $tmp['reviewer'] = [
+                        'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
+                        'fullname' => $reviewer->getFullName(),
+                        'screenname' => $reviewer->getScreenName(),
+                        'username' => $reviewer->getUsername(),
+                        'email' => $reviewer->getEmail(),
+                        'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid()),
+                        'isCasUserValid' => (bool)$reviewer->getValid()
+                    ];
+                }
 
                 $key = !$isTmpUser ? $invitation['UID'] : 'tmp_' . $invitation['UID'];
                 $invitations[$key][] = $tmp;
@@ -842,17 +847,17 @@ class Episciences_PapersManager
             foreach ($invitations as $invitation_list) {
                 $invitation = array_shift($invitation_list);
                 //si l'invitation a expiré, on la place dans une catégorie à part
-                if ($invitation['ASSIGNMENT_STATUS'] == Episciences_User_Assignment::STATUS_PENDING && self::compareToCurrentTime($invitation['EXPIRATION_DATE'])) {
-                    if ((!is_array($status) && $status != Episciences_User_Assignment::STATUS_EXPIRED) ||
-                        (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status))
+                if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING && self::compareToCurrentTime($invitation['EXPIRATION_DATE'])) {
+                    if ((!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
+                        (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
                     ) {
                         //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
                         continue;
                     }
                     $result['expired'][] = $invitation;
                 } else {
-                    if ((!is_array($status) && $status != $invitation['ASSIGNMENT_STATUS']) ||
-                        (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status))
+                    if ((!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
+                        (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
                     ) {
                         //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
                         continue;
@@ -2011,7 +2016,7 @@ class Episciences_PapersManager
         $select = $db->select()
             ->from(['papers' => T_PAPERS])
             ->where('DOCID = ?', $docId)
-            ->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id' );
+            ->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id');
 
         $data = self::fromSequentialArrayToAssoc($select->query()->fetchAll());
 
@@ -2223,7 +2228,7 @@ class Episciences_PapersManager
         $contributorLocale = $contributor->getLangueid(true);
 
         // see gitlab #402
-        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::DEFAULT_LANG : $contributorLocale ;
+        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::DEFAULT_LANG : $contributorLocale;
 
         if (!array_key_exists($locale, $languages)) {
             $locale = key($languages);
@@ -2247,8 +2252,8 @@ class Episciences_PapersManager
                 }
                 $ratings_string .= '<p style="border-bottom: 1px solid #999">';
                 $ratings_string .= ucfirst($translator->translate('reviewer', $locale));
-                $ratings_string .=  ' ' . $reviewer->getAlias($paper->getDocid());
-                $ratings_string .=  '</p>';
+                $ratings_string .= ' ' . $reviewer->getAlias($paper->getDocid());
+                $ratings_string .= '</p>';
 
                 $partial = new Zend_View();
                 $partial->locale = $locale;
@@ -2491,7 +2496,7 @@ class Episciences_PapersManager
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;
 
-        $affectedRows +=  $db->update(T_PAPERS, $data, $where);
+        $affectedRows += $db->update(T_PAPERS, $data, $where);
 
         return $affectedRows;
     }
@@ -2694,7 +2699,7 @@ class Episciences_PapersManager
      * @throws Zend_Form_Exception
      * @throws Zend_Exception
      */
-    public static function getAcceptedAskAuthorFinalVersionForm (array $default): \Zend_Form
+    public static function getAcceptedAskAuthorFinalVersionForm(array $default): \Zend_Form
     {
         return self::getRevisionForm($default, 'minor', null, false);
 
@@ -2789,7 +2794,7 @@ class Episciences_PapersManager
      */
     public static function getEarliestPublicationDate()
     {
-        define ('EPD', 'earliestPublicationDate');
+        define('EPD', 'earliestPublicationDate');
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2821,16 +2826,16 @@ class Episciences_PapersManager
         $currentDocId = null;
         $allConflicts = [];
 
-        foreach ($array as $arrayVals){
+        foreach ($array as $arrayVals) {
 
-            if($currentDocId !== $arrayVals['DOCID'] ) {
+            if ($currentDocId !== $arrayVals['DOCID']) {
                 $currentDocId = $arrayVals['DOCID'];
                 $allConflicts = []; // Collect all conflicts by docId
             }
 
             $currentOtherVals = [];
             $currentConflictVals = [];
-            foreach ($arrayVals as $key => $val){
+            foreach ($arrayVals as $key => $val) {
 
                 if (in_array($key, Episciences_Paper_Conflict::TABLE_COLONES, true)) {
                     $currentConflictVals[$key] = $val;
@@ -2848,6 +2853,30 @@ class Episciences_PapersManager
         }
 
         return $list;
+    }
+
+
+    public static function getAllStatus(int $byRvId = null, string $order = null, array $without = Episciences_Paper::OTHER_STATUS_CODE): array
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $statusQuery = $db
+            ->select()
+            ->distinct()
+            ->from(T_PAPERS, ['STATUS'])
+            ->where('STATUS NOT IN (?)', $without);
+
+        if ($byRvId) {
+            $statusQuery->where('RVID = ? ', $byRvId);
+        }
+
+        if ($order) {
+            $statusQuery->order('STATUS', $order);
+        }
+
+        return $db->fetchCol($statusQuery);
+
     }
 
 }

@@ -23,13 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New review parameter: Allow revision request + refactoring.
 - 'Author' role
 - Script to clean the "USER_ROLES" table
-
+- 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
 
 ## Changed
  - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
  - Make it possible to update the metadata on the article page
  - Request a new version of an article that has already been accepted
  - [#166] (https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action   
+ - The "status" filter is now dynamically created.
 
 ##Fixed
 - Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
@@ -39,7 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed: not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
 - Fixed: the attachments to the rating report are not available [RT#145473]
 - Fixed: answer revision request: in some situations, the "Submit" button remains inactive.
-- Fixed [RT#146987] "search" button no longer works.
+
+## 1.0.24.2 - 2022-02-10
+# Fixed
+- [RT#146987] "search" button no longer works
+- application error: syntax error or access violation if CAS user not found
 
 ## 1.0.24.1 - 2022-02-08
 # Fixed
