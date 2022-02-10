@@ -755,7 +755,7 @@ class Episciences_PapersManager
      * @param null $status
      * @param bool $sorted
      * @return array
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|JsonException
      */
     public static function getInvitations($docId, $status = null, bool $sorted = true): array
     {
@@ -783,6 +783,7 @@ class Episciences_PapersManager
         //sort array
         $invitations = [];
         foreach ($source as $aid => $row) {
+            $reviewer = null;
             $tmp = [];
             foreach ($row as $id => $invitation) {
                 $isTmpUser = false;
@@ -790,8 +791,8 @@ class Episciences_PapersManager
                 if (empty($tmp)) {
                     $tmp = $invitation;
                 }
-                //recuperation des infos de l'invitation d'orgine, si il y a eu une réponse à l'invitation
-                if (!empty($tmp) && $aid == $id) {
+                //recuperation des infos de l'invitation d'origine, s'il y a eu une réponse à l'invitation
+                if (!empty($tmp) && $aid === $id) {
                     $tmp['ASSIGNMENT_DATE'] = $invitation['ASSIGNMENT_DATE'];
                 }
 
@@ -803,28 +804,32 @@ class Episciences_PapersManager
 
                         if (!empty($reviewer->find($invitation['UID']))) {
                             $reviewer->generateScreen_name();
-                            $reviewers[$invitation['UID']] = $reviewer;
+                            $reviewers['tmp'][$invitation['UID']] = $reviewer;
                         }
 
                     }
                 } else if (!array_key_exists($invitation['UID'], $reviewers)) {
                     $reviewer = new Episciences_Reviewer();
-                    $reviewer->findWithCAS($invitation['UID']);
-                    $reviewers[$invitation['UID']] = $reviewer;
+                    if ($reviewer->findWithCAS($invitation['UID'])) {
+                        $reviewers[$invitation['UID']] = $reviewer;
+                    } else {
+                        trigger_error('CAS USER UID = ' . $invitation['UID'] . ' NOT FOUND', E_USER_WARNING);
+                        continue;
+                    }
                 }
 
-                $reviewer = $reviewers[$invitation['UID']];
 
-                $tmp['reviewer'] = [
-                    'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
-                    'fullname' => $reviewer->getFullName(),
-                    'screenname' => $reviewer->getScreenName(),
-                    'username' => $reviewer->getUsername(),
-                    'email' => $reviewer->getEmail(),
-                    'hasRoles' => !$isTmpUser ? $reviewer->hasRoles($reviewer->getUid()) : false,
-                    'isCasUserValid' => (bool)$reviewer->getValid()
-                ];
-
+                if ($reviewer) {
+                    $tmp['reviewer'] = [
+                        'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
+                        'fullname' => $reviewer->getFullName(),
+                        'screenname' => $reviewer->getScreenName(),
+                        'username' => $reviewer->getUsername(),
+                        'email' => $reviewer->getEmail(),
+                        'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid()),
+                        'isCasUserValid' => (bool)$reviewer->getValid()
+                    ];
+                }
 
                 $key = !$isTmpUser ? $invitation['UID'] : 'tmp_' . $invitation['UID'];
                 $invitations[$key][] = $tmp;
@@ -842,17 +847,17 @@ class Episciences_PapersManager
             foreach ($invitations as $invitation_list) {
                 $invitation = array_shift($invitation_list);
                 //si l'invitation a expiré, on la place dans une catégorie à part
-                if ($invitation['ASSIGNMENT_STATUS'] == Episciences_User_Assignment::STATUS_PENDING && self::compareToCurrentTime($invitation['EXPIRATION_DATE'])) {
-                    if ((!is_array($status) && $status != Episciences_User_Assignment::STATUS_EXPIRED) ||
-                        (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status))
+                if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING && self::compareToCurrentTime($invitation['EXPIRATION_DATE'])) {
+                    if ((!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
+                        (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
                     ) {
                         //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
                         continue;
                     }
                     $result['expired'][] = $invitation;
                 } else {
-                    if ((!is_array($status) && $status != $invitation['ASSIGNMENT_STATUS']) ||
-                        (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status))
+                    if ((!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
+                        (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
                     ) {
                         //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
                         continue;
