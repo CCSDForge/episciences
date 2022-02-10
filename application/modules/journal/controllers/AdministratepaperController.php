@@ -1800,7 +1800,7 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setPublication_date(date("Y-m-d H:i:s"));
 
             // if HAL, update paper metadata in repository
-            if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal') && APPLICATION_ENV === 'production') {
+            if (APPLICATION_ENV === 'production' && $paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal')) {
                 $paper->updateHALMetadata();
             }
 
@@ -1855,9 +1855,11 @@ class AdministratepaperController extends PaperDefaultController
         $request = $this->getRequest();
         $docId = $request->getParam('id');
         $type = $request->getParam('type');
+        $isMajorRevision = $type === 'major';
+        $isMinorRevision = $type === 'minor';
 
         // check revision type
-        if ($type !== 'minor' && $type !== 'major') {
+        if (!$isMinorRevision && !$isMajorRevision) {
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué (type incorrect)');
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
         }
@@ -1924,7 +1926,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // log minor/major revision request
             $paper->log(
-                ($type === 'major') ? Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST : Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
+                ($isMajorRevision) ? Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST : Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST,
                 Episciences_Auth::getUid(),
                 [
                     'id' => $comment->getPcid(),
@@ -1947,9 +1949,14 @@ class AdministratepaperController extends PaperDefaultController
             // if needed, set new status
 
             if (!$isAlreadyAccepted) {
-                $status = ($type === 'major') ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
+                $status = ($isMajorRevision) ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
             } else {
-                $status = ($type === 'major') ? Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION;
+
+                $status = ($isMajorRevision) ? Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ;
+
+                if ($paper->isTmp()) {
+                    $status = ($isMajorRevision) ? Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION;
+                }
             }
 
             if ($paper->getStatus() !== $status) {

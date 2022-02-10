@@ -105,7 +105,7 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $papersQuery = $db->select()->from(['papers' => T_PAPERS])->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id' );
+        $papersQuery = $db->select()->from(['papers' => T_PAPERS])->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id');
 
         $countQuery = $db->select()->from($papersQuery, [new Zend_Db_Expr("COUNT('DOCID')")]);
 
@@ -528,7 +528,7 @@ class Episciences_PapersManager
      */
     public static function getStatusLabel($status)
     {
-        $test =  array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
+        $test = array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
         return array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
     }
 
@@ -681,7 +681,7 @@ class Episciences_PapersManager
      * @param int $rvid
      * @return bool
      */
-    public static function paperExists(int $docId, int $rvid = 0) :bool
+    public static function paperExists(int $docId, int $rvid = 0): bool
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -691,7 +691,7 @@ class Episciences_PapersManager
         if ($rvid !== 0) {
             $select->where('RVID = ?', $rvid);
         }
-        return ( (int) $select->query()->fetchColumn() > 0 );
+        return ((int)$select->query()->fetchColumn() > 0);
 
     }
 
@@ -2016,7 +2016,7 @@ class Episciences_PapersManager
         $select = $db->select()
             ->from(['papers' => T_PAPERS])
             ->where('DOCID = ?', $docId)
-            ->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id' );
+            ->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id');
 
         $data = self::fromSequentialArrayToAssoc($select->query()->fetchAll());
 
@@ -2228,7 +2228,7 @@ class Episciences_PapersManager
         $contributorLocale = $contributor->getLangueid(true);
 
         // see gitlab #402
-        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::DEFAULT_LANG : $contributorLocale ;
+        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::DEFAULT_LANG : $contributorLocale;
 
         if (!array_key_exists($locale, $languages)) {
             $locale = key($languages);
@@ -2252,8 +2252,8 @@ class Episciences_PapersManager
                 }
                 $ratings_string .= '<p style="border-bottom: 1px solid #999">';
                 $ratings_string .= ucfirst($translator->translate('reviewer', $locale));
-                $ratings_string .=  ' ' . $reviewer->getAlias($paper->getDocid());
-                $ratings_string .=  '</p>';
+                $ratings_string .= ' ' . $reviewer->getAlias($paper->getDocid());
+                $ratings_string .= '</p>';
 
                 $partial = new Zend_View();
                 $partial->locale = $locale;
@@ -2496,7 +2496,7 @@ class Episciences_PapersManager
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;
 
-        $affectedRows +=  $db->update(T_PAPERS, $data, $where);
+        $affectedRows += $db->update(T_PAPERS, $data, $where);
 
         return $affectedRows;
     }
@@ -2699,7 +2699,7 @@ class Episciences_PapersManager
      * @throws Zend_Form_Exception
      * @throws Zend_Exception
      */
-    public static function getAcceptedAskAuthorFinalVersionForm (array $default): \Zend_Form
+    public static function getAcceptedAskAuthorFinalVersionForm(array $default): \Zend_Form
     {
         return self::getRevisionForm($default, 'minor', null, false);
 
@@ -2794,7 +2794,7 @@ class Episciences_PapersManager
      */
     public static function getEarliestPublicationDate()
     {
-        define ('EPD', 'earliestPublicationDate');
+        define('EPD', 'earliestPublicationDate');
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2826,16 +2826,16 @@ class Episciences_PapersManager
         $currentDocId = null;
         $allConflicts = [];
 
-        foreach ($array as $arrayVals){
+        foreach ($array as $arrayVals) {
 
-            if($currentDocId !== $arrayVals['DOCID'] ) {
+            if ($currentDocId !== $arrayVals['DOCID']) {
                 $currentDocId = $arrayVals['DOCID'];
                 $allConflicts = []; // Collect all conflicts by docId
             }
 
             $currentOtherVals = [];
             $currentConflictVals = [];
-            foreach ($arrayVals as $key => $val){
+            foreach ($arrayVals as $key => $val) {
 
                 if (in_array($key, Episciences_Paper_Conflict::TABLE_COLONES, true)) {
                     $currentConflictVals[$key] = $val;
@@ -2871,7 +2871,7 @@ class Episciences_PapersManager
             $statusQuery->where('RVID = ? ', $byRvId);
         }
 
-        if($order){
+        if ($order) {
             $statusQuery->order('STATUS', $order);
         }
 

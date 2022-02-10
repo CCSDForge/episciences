@@ -9,7 +9,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
      * Random background colors
      * @var string[]
      */
-    protected static $_defaultBackgroundColors = [
+    protected static array $_defaultBackgroundColors = [
         '#f44336', '#E91E63', '#9C27B0', '#673AB7',
         '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
         '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
@@ -26,7 +26,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
      * @param $stringToMakeAvatar
      * @return string
      */
-    public static function asSvg($stringToMakeAvatar)
+    public static function asSvg($stringToMakeAvatar): string
     {
         $avatar = new Avatar([
             'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => self::$_defaultBackgroundColors]);
@@ -97,7 +97,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
     /**
      * @return array
      */
-    public static function getPaperStatusColors()
+    public static function getPaperStatusColors(): array
     {
         $paperStatus[0] = '#aaa';
         $paperStatus[1] = '#666';
@@ -124,6 +124,13 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
         $paperStatus[22] = '#708D23';
         $paperStatus[23] = '#689D71';
         $paperStatus[24] = '#048B9A';
+        $paperStatus[25] =  $paperStatus[4];
+        $paperStatus[26] =  $paperStatus[4];
+        $paperStatus[27] =  $paperStatus[4];
+        $paperStatus[28] =  $paperStatus[4];
+        $paperStatus[29] =  $paperStatus[4];
+        $paperStatus[30] =  $paperStatus[4];
+        $paperStatus[31] =  $paperStatus[4];
 
         return $paperStatus;
     }

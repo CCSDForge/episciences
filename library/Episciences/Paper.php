@@ -64,10 +64,13 @@ class Episciences_Paper
     public const STATUS_CE_READY_TO_PUBLISH = 23;
     public const STATUS_CE_AUTHOR_FORMATTING_DEPOSED = 24; // la mise en forme par l'auteur a été validée
 
-    public const STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION = 26;
+    public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  = 26;
     public const STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 27;
     public const STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING = 28; // waiting to be edited by the Journal
     public const STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION = 29; // after author's modification
+    public const STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 31;
+    public const STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION = 30;
+
     // paper settings
     public const SETTING_UNWANTED_REVIEWER = 'unwantedReviewer';
     public const SETTING_SUGGESTED_REVIEWER = 'suggestedReviewer';
@@ -93,8 +96,10 @@ class Episciences_Paper
         self::STATUS_CE_READY_TO_PUBLISH,
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
         self::STATUS_TMP_VERSION_ACCEPTED,
-        self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
-        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
     ];
 
     // Non présents dans le filtre de recherche
@@ -178,11 +183,13 @@ class Episciences_Paper
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED => 'copy ed : mise en forme par la revue terminée, en attente de la version finale',
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "copy ed : mise en forme par l'auteur terminée, en attente de la version finale",
         self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
-        self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée',
-        self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION => "Accepté, en attente de la version finale de l'auteur",
-        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'Accepté, en attente de modifications majeures',
-        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING => 'Accepté, en attente de la mise en forme par la revue',
-        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "Version temporaire acceptée après modification de l'auteur"
+        self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée, en attente de la version finale',
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  => "accepté, en attente de la version finale de l'auteur",
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'accepté, en attente de modifications majeures',
+        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING => 'accepté, en attente de la mise en forme par la revue',
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "version temporaire acceptée après modification de l'auteur",
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION => 'version temporaire acceptée, en attente des modifications mineures',
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'version temporaire acceptée, en attente des modifications majeures'
     ];
     public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
@@ -214,11 +221,13 @@ class Episciences_Paper
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
         self::STATUS_CE_READY_TO_PUBLISH,
-        self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED,
         self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING,
-        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION,
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
     ];
 
     /**
@@ -312,6 +321,7 @@ class Episciences_Paper
     /**
      * Episciences_Paper constructor.
      * @param array|null $options
+     * @throws Zend_Db_Statement_Exception
      */
     public function __construct(array $options = null)
     {
@@ -1282,9 +1292,11 @@ class Episciences_Paper
         $selectedStatus = [
             self::STATUS_WAITING_FOR_MINOR_REVISION,
             self::STATUS_WAITING_FOR_MAJOR_REVISION,
-            self::STATUS_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+            self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
             self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
-            self::STATUS_TMP_VERSION_ACCEPTED
+            self::STATUS_TMP_VERSION_ACCEPTED,
+            self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+            self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
         ];
 
         return in_array($this->getStatus(), $selectedStatus, true);
