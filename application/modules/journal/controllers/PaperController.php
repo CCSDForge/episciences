@@ -152,23 +152,23 @@ class PaperController extends PaperDefaultController
         $this->updatePaperStats($paper);
 
         if ($paper->hasDoi()) {
-            $headerLinks[] = sprintf('<https://%s>; rel="cite-as"', $paper->getDoi()) ;
+            $headerLinks[] = sprintf('<https://%s>; rel="cite-as"', $paper->getDoi());
         }
 
         $paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
 
-        $alternateContentTypes['bibtex']='application/x-bibtex';
-        $alternateContentTypes['tei']='application/xml';
-        $alternateContentTypes['dc']='application/xml';
-        $alternateContentTypes['datacite']='application/xml';
-        $alternateContentTypes['crossref']='application/xml';
-        $alternateContentTypes['pdf']='application/pdf';
+        $alternateContentTypes['bibtex'] = 'application/x-bibtex';
+        $alternateContentTypes['tei'] = 'application/xml';
+        $alternateContentTypes['dc'] = 'application/xml';
+        $alternateContentTypes['datacite'] = 'application/xml';
+        $alternateContentTypes['crossref'] = 'application/xml';
+        $alternateContentTypes['pdf'] = 'application/pdf';
 
         foreach ($alternateContentTypes as $format => $mimeType) {
             if ($format === 'pdf') {
                 $headerLinks[] = sprintf('<%s/%s>; rel="alternate"; type="%s"', $paperUrl, $format, $mimeType);
             } else {
-                $headerLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"; title="%s"', $paperUrl, $format, $mimeType,strtoupper($format));
+                $headerLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"; title="%s"', $paperUrl, $format, $mimeType, strtoupper($format));
             }
         }
 
@@ -1233,7 +1233,7 @@ class PaperController extends PaperDefaultController
         $requestComment = new Episciences_Comment();
         $requestComment->find($requestId);
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');
-        $isAlreadyAccepted= $requestComment->getOption('isAlreadyAccepted');
+        $isAlreadyAccepted = $requestComment->getOption('isAlreadyAccepted');
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
@@ -2026,7 +2026,7 @@ class PaperController extends PaperDefaultController
 
         $message = trim($message);
 
-        if('' !== $message){
+        if ('' !== $message) {
             $message = $translator->translate($message);
         }
 
@@ -2474,40 +2474,65 @@ class PaperController extends PaperDefaultController
      */
     public function ajaxgetlastpaperidAction(): void
     {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = (int)$request->getPost('id');
-        $result = [];
-        if (Episciences_Auth::isAllowedToManagePaper()) {
-            $controller = self::ADMINISTRATE_PAPER_CONTROLLER;
-        } else {
-            $controller = self::CONTROLLER_NAME;
-        }
 
         if ($request->isXmlHttpRequest()) {
+
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+
+            $result = [];
+            $message = self::MSG_PAPER_DOES_NOT_EXIST;
+            $result[self::DOC_ID_STR] = 0;
+            $lastPaper = false;
+
+            $docId = (int)$request->getPost('id');
+            $from = $request->getPost('from');
+
+
+            if (Episciences_Auth::isAllowedToManagePaper()) {
+                $controller = self::ADMINISTRATE_PAPER_CONTROLLER;
+            } else {
+                $controller = self::CONTROLLER_NAME;
+            }
+
+            $result[self::CONTROLLER] = $controller;
+
             try {
                 $paper = Episciences_PapersManager::get($docId);
-                if (!$paper || $paper->getRvid() !== RVID) {
-                    $result[self::DOC_ID_STR] = 0;
-                    $lastPaper = false;
-                } else {
-                    $lastPaper = Episciences_PapersManager::getLastPaper($paper->getPaperid());
+
+                if ($paper && $paper->getRvid() === RVID) {
+
+                    if ($from === 'my_submissions' && $paper->getUid() !== Episciences_Auth::getUid()) {
+                        $message = "Vous n'êtes pas l'auteur de cet article";
+
+                    } else if ($from === 'assigned_articles' && !$paper->getEditor(Episciences_Auth::getUid())) {
+                        $message = "Vous n'êtes pas assigné à cet article";
+
+                    } else {
+                        $lastPaper = Episciences_PapersManager::getLastPaper($paper->getPaperid());
+                    }
                 }
+
             } catch (Exception $e) {
-                $result['exception'] = $e->getMessage();
-                return;
+                trigger_error($e->getMessage(), E_USER_WARNING);
+                $message = "Une erreur interne s'est produite, veuillez recommencer.";
             }
 
             if (!$lastPaper) {
-                $result[self::ERROR] = Zend_Registry::get('Zend_Translate')->translate(self::MSG_PAPER_DOES_NOT_EXIST);
+                $result[self::ERROR] = Zend_Registry::get('Zend_Translate')->translate($message);
             } else {
                 $result[self::DOC_ID_STR] = $lastPaper->getDocid();
             }
 
-            $result[self::CONTROLLER] = $controller;
-            echo json_encode($result);
+            try {
+                echo json_encode($result, JSON_THROW_ON_ERROR);
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+            }
         }
     }
 
