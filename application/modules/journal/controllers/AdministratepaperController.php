@@ -810,28 +810,32 @@ class AdministratepaperController extends PaperDefaultController
     private function buildRedirectionMessage(Episciences_Review $review, Episciences_Paper $paper): array
     {
         $redirection = [];
-        $jumpTest = true;
 
         $message = "Vous n'avez pas les droits suffisants pour accéder à cet article";
 
         if ($paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid())) {
-            $jumpTest = false;
+            goto  allowEditorsToTakeDecisions;
         }
 
         // if editors encapsulation is on, editors who are not assigned to this paper do not have any permission for it: redirect them
-        if ($jumpTest && Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
+        if (Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
             $redirection['message'] = $message;
-            $jumpTest = false;
+            goto  allowEditorsToTakeDecisions;
         }
 
-        // si ils sont pas rédacteurs et  si ils sont cloisonnés, les préparateurs de copie ne peuvent voir que les articles qui leur sont assignés
-        if ($jumpTest && Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
+        // if copy editors encapsulation is on, copy editors who are not assigned to this paper do not have any permission for it: redirect them
+        if (Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
             $redirection['message'] = $message;
             $redirection['params'] = ['ce' => 1];
         }
 
-        // check if journal settings allow editors to take decisions about this paper
-        switch ($this->getRequest()->getActionName()) {
+        if (Episciences_Auth::isGuestEditor()) {
+            $redirection['message'] = $message;
+            return $redirection;
+        }
+
+         allowEditorsToTakeDecisions:
+        switch ($this->getRequest()->getActionName()) { // check if journal settings allow editors to take decisions about this paper
 
             case 'accept':
                 if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_ACCEPT_PAPERS)) {
@@ -1952,7 +1956,7 @@ class AdministratepaperController extends PaperDefaultController
                 $status = ($isMajorRevision) ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
             } else {
 
-                $status = ($isMajorRevision) ? Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ;
+                $status = ($isMajorRevision) ? Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION;
 
                 if ($paper->isTmp()) {
                     $status = ($isMajorRevision) ? Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION;

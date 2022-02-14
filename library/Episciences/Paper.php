@@ -2990,6 +2990,11 @@ class Episciences_Paper
         return $this->getStatus() === self::STATUS_CE_READY_TO_PUBLISH;
     }
 
+    public function isAcceptedSubmission(): bool
+    {
+        return in_array($this->getStatus(),  self::ACCEPTED_SUBMISSIONS, true);
+    }
+
     /**
      * @return int|null
      */

@@ -23,6 +23,7 @@ class Episciences_PapersManager
      * @param bool $isLimit
      * @return array
      * @throws Zend_Db_Select_Exception
+     * @throws Zend_Db_Statement_Exception
      */
     public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true): array
     {
@@ -218,7 +219,7 @@ class Episciences_PapersManager
     }
 
     /**
-     * Retourne les article assigné à un rôle
+     * Retourne les articles assignés à un rôle
      * @param Zend_Db_Select $select
      * @param array $values
      * @param string $roleId : default : editor
@@ -528,7 +529,6 @@ class Episciences_PapersManager
      */
     public static function getStatusLabel($status)
     {
-        $test = array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
         return array_key_exists($status, Episciences_Paper::$_statusLabel) ? Episciences_Paper::$_statusLabel[$status] : $status;
     }
 
@@ -551,7 +551,7 @@ class Episciences_PapersManager
 
             foreach ($array as $key => $value) {
                 if (!is_object($value)) {
-                    $valuesName[$key] = $array[$key];
+                    $valuesName[$key] = $value;
 
                 } else if (method_exists($value, $method_name)) {
                     $valuesName[$key] = Ccsd_Tools::translate($value->$method_name());
@@ -592,22 +592,22 @@ class Episciences_PapersManager
      * Compte le nombre d'articles d'une liste qui correspondent au(x) statut(s) en paramètre
      * @param $list
      * @param $status
-     * @return bool|int
+     * @return int
      */
-    public static function countByStatus($list, $status)
+    public static function countByStatus($list, $status): int
     {
-        if (!is_array($list) || empty($list)) {
-            return false;
-        }
-
         $count = 0;
+
+        if (!is_array($list) || empty($list)) {
+            return $count ;
+        }
 
         foreach ($list as $oPaper) {
             if (is_array($status)) {
-                if (in_array($oPaper->getStatus(), $status)) {
+                if (in_array($oPaper->getStatus(), $status, false)) {
                     $count++;
                 }
-            } else if ($oPaper->getStatus() == $status) {
+            } else if ($oPaper->getStatus() === (int)$status) {
                 $count++;
             }
         }
@@ -649,21 +649,23 @@ class Episciences_PapersManager
     /**
      * Regroupe les papiers par statut (pour affichage pour le déposant)
      * @param $list
-     * @return bool
+     * @return array
      */
-    public static function sortByStatus($list)
+    public static function sortByStatus($list): array
     {
+        $result = [];
+
         if (empty($list)) {
-            return false;
+            return $result;
         }
 
         /* @var  Episciences_Paper $item */
         foreach ($list as $id => $item) {
             $itemStatus = $item->getStatus();
-            if ($itemStatus == Episciences_Paper::STATUS_SUBMITTED ||
-                $itemStatus == Episciences_Paper::STATUS_OK_FOR_REVIEWING ||
-                $itemStatus == Episciences_Paper::STATUS_BEING_REVIEWED ||
-                $itemStatus == Episciences_Paper::STATUS_REVIEWED
+            if ($itemStatus === Episciences_Paper::STATUS_SUBMITTED ||
+                $itemStatus === Episciences_Paper::STATUS_OK_FOR_REVIEWING ||
+                $itemStatus === Episciences_Paper::STATUS_BEING_REVIEWED ||
+                $itemStatus === Episciences_Paper::STATUS_REVIEWED
             ) {
                 $status = Episciences_Paper::STATUS_SUBMITTED;
             } else {
@@ -725,7 +727,7 @@ class Episciences_PapersManager
      * @param null $typeId
      * @return array
      */
-    public static function getLogs($docId, $uid = null, $typeId = null)
+    public static function getLogs($docId, $uid = null, $typeId = null): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -876,7 +878,7 @@ class Episciences_PapersManager
      * @param $docId
      * @return Zend_Db_Select
      */
-    public static function getInvitationQuery($docId)
+    public static function getInvitationQuery($docId): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         // fetch assignments (invitations don't have a docid, and are linked to an assignment)
@@ -900,11 +902,12 @@ class Episciences_PapersManager
      * @param $docId
      * @param null $status
      * @param bool $getCASdata
-     * @param bool $vid
+     * @param int|null $vid
      * @return Episciences_Reviewer[]
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getReviewers($docId, $status = null, $getCASdata = false, $vid = false): array
+    public static function getReviewers($docId, $status = null, bool $getCASdata = false, int $vid = null): array
     {
         $reviewers = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -918,9 +921,7 @@ class Episciences_PapersManager
             ->where('TMP_USER = ?', 0)
             ->group('z.UID');
 
-        if (is_array($vid)) {
-            //$subquery->joinLeft(array('rp'=>T_REVIEWER_POOL), 'a.UID = rp.UID AND rp.VID =  . $vid))
-        } elseif (is_numeric($vid)) {
+        if (is_numeric($vid)) {
             $subquery->joinLeft(['rp' => T_REVIEWER_POOL], 'z.UID = rp.UID AND rp.VID = ' . $vid, []);
         }
 
@@ -937,7 +938,7 @@ class Episciences_PapersManager
         $result = $db->fetchAssoc($select);
 
         //recuperation des relecteurs qui n'ont pas encore de compte
-        if ((!is_array($status) && $status === Episciences_User_Assignment::STATUS_PENDING) || (is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status, true))) {
+        if ($status === Episciences_User_Assignment::STATUS_PENDING || (is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status, true))) {
             $subquery2 = $db->select()
                 ->from(T_USER_INVITATIONS, ['AID', 'latest' => 'MAX(SENDING_DATE)'])
                 ->group('AID');
@@ -1007,7 +1008,7 @@ class Episciences_PapersManager
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getTmpReviewerForm()
+    public static function getTmpReviewerForm(): \Ccsd_Form
     {
         $form = new Ccsd_Form();
         $form->setAttrib('id', 'tmp-user-form');
@@ -1063,7 +1064,7 @@ class Episciences_PapersManager
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getReviewerInvitationForm($docId, $page, $referer, $params = null)
+    public static function getReviewerInvitationForm($docId, $page, $referer, $params = null): \Ccsd_Form
     {
         $action = '/administratepaper/savereviewerinvitation?docid=' . $docId;
         $action .= ($page) ? '&page=' . $page : '';
@@ -1254,6 +1255,7 @@ class Episciences_PapersManager
      * @param bool $active
      * @param bool $getCASdata
      * @return array|bool
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public static function getEditors($docId, $active = true, $getCASdata = false)
@@ -1298,7 +1300,7 @@ class Episciences_PapersManager
      * @param string $role
      * @return Zend_Db_Select
      */
-    private static function getAssignmentRoleQuery(int $docId, string $role)
+    private static function getAssignmentRoleQuery(int $docId, string $role): \Zend_Db_Select
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -1325,9 +1327,10 @@ class Episciences_PapersManager
      * @param bool $active
      * @param bool $getCasData
      * @return Episciences_CopyEditor[]
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getCopyEditors(int $docId, bool $active = true, bool $getCasData = false)
+    public static function getCopyEditors(int $docId, bool $active = true, bool $getCasData = false): array
     {
 
         $copyEditors = [];
@@ -1386,7 +1389,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getSuggestStatusForm($docId)
+    public static function getSuggestStatusForm($docId): \Ccsd_Form
     {
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
@@ -1471,7 +1474,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getVolumeForm($volumes, $default = null)
+    public static function getVolumeForm($volumes, $default = null): \Ccsd_Form
     {
         $form = new Ccsd_Form;
         $form->setAttrib('class', 'form-horizontal');
@@ -1514,7 +1517,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getAcceptanceForm($default)
+    public static function getAcceptanceForm($default): \Ccsd_Form
     {
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
@@ -1581,7 +1584,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getPublicationForm($default)
+    public static function getPublicationForm($default): \Ccsd_Form
     {
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
@@ -1647,7 +1650,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getRefusalForm($default)
+    public static function getRefusalForm($default): \Ccsd_Form
     {
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
@@ -1716,7 +1719,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getAskOtherEditorsForm($default, $editors, $paper)
+    public static function getAskOtherEditorsForm($default, $editors, $paper): \Ccsd_Form
     {
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
@@ -1906,7 +1909,7 @@ class Episciences_PapersManager
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function assign($ids, array $params)
+    public static function assign($ids, array $params): bool
     {
         if (empty($ids)) {
             return false;
@@ -1938,7 +1941,7 @@ class Episciences_PapersManager
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function unassign($ids, array $params)
+    public static function unassign($ids, array $params): bool
     {
         if (empty($ids)) {
             return false;
@@ -1965,9 +1968,8 @@ class Episciences_PapersManager
      * delete a paper from datbase, and all associated files
      * @param $docid
      * @return bool
-     * @throws Zend_Db_Statement_Exception
      */
-    public static function delete($docid)
+    public static function delete($docid): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $paper = Episciences_PapersManager::get($docid, false);
@@ -2008,6 +2010,7 @@ class Episciences_PapersManager
      * @param $docId
      * @param bool $withxsl
      * @return bool|Episciences_Paper
+     * @throws Zend_Db_Statement_Exception
      */
     public static function get($docId, bool $withxsl = true)
     {
@@ -2035,7 +2038,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getDeadlineForm($aid, $params = [])
+    public static function getDeadlineForm($aid, $params = []): \Ccsd_Form
     {
         $form = new Ccsd_Form([
             'action' => '/administratepaper/savenewdeadline/aid/' . $aid,
@@ -2162,7 +2165,7 @@ class Episciences_PapersManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function getReassignmentForm($docid, $editors)
+    public static function getReassignmentForm($docid, $editors): \Ccsd_Form
     {
         $form = new Ccsd_Form([
             'action' => '/administratepaper/savereassignment?docid=' . $docid,
@@ -2400,10 +2403,10 @@ class Episciences_PapersManager
      * @return int : le nombre de lignes affectées
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function updateUid(int $oldUid = 0, int $newUid = 0)
+    public static function updateUid(int $oldUid = 0, int $newUid = 0): int
     {
 
-        if ($oldUid == 0 || $newUid == 0) {
+        if ($oldUid === 0 || $newUid === 0) {
             return 0;
         }
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -2543,23 +2546,30 @@ class Episciences_PapersManager
     }
 
     /**
-     * Retourne l'article dans sa dernière version(non prise en compte des versions temporaires)
+     * Return latest article version
      * @param $paperId
-     * @return bool|Episciences_Paper
+     * @param bool $withTmpVersions
+     * @return Episciences_Paper | null
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getLastPaper($paperId)
+    public static function getLastPaper($paperId, bool $withTmpVersions = false): ?Episciences_Paper
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->from(T_PAPERS)
-            ->where('PAPERID = ?', $paperId)
-            ->where('REPOID != ?', 0)
+            ->where('PAPERID = ?', $paperId);
+
+        if (!$withTmpVersions) {
+            $select
+                ->where('REPOID != ?', 0);
+        }
+
+        $select
             ->order('WHEN DESC');
         $result = $select->query()->fetch();
 
         if (!$result) {
-            return false;
+            return null;
         }
 
         return new Episciences_Paper($result);
@@ -2570,7 +2580,7 @@ class Episciences_PapersManager
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    public static function getReviewFormattingDeposedForm(array $default)
+    public static function getReviewFormattingDeposedForm(array $default): \Zend_Form
     {
         $form = self::getModalPaperStatusCommonForm($default, 'reviewFormattingDeposed');
         $form->setAttrib('id', 'review-formatting-deposed-form');
@@ -2584,7 +2594,7 @@ class Episciences_PapersManager
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    private static function getModalPaperStatusCommonForm(array $default, string $prefix)
+    private static function getModalPaperStatusCommonForm(array $default, string $prefix): \Zend_Form
     {
         $form = new Ccsd_Form(['class' => 'form-horizontal']);
         $subForm = new Ccsd_Form_SubForm();
@@ -2646,7 +2656,7 @@ class Episciences_PapersManager
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    public static function getCeAcceptFinalVersionForm(array $default)
+    public static function getCeAcceptFinalVersionForm(array $default): \Zend_Form
     {
         $form = self::getModalPaperStatusCommonForm($default, 'ceAcceptFinalVersionRequest');
         $form->setAttrib('id', 'ready-to-publish-form');
@@ -2660,7 +2670,7 @@ class Episciences_PapersManager
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    public static function getWaitingForAuthorSourcesForm(array $default)
+    public static function getWaitingForAuthorSourcesForm(array $default): \Zend_Form
     {
 
         $form = self::getModalPaperStatusCommonForm($default, 'authorSourcesRequest');
@@ -2684,7 +2694,7 @@ class Episciences_PapersManager
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    public static function getWaitingForAuthorFormatting(array $default)
+    public static function getWaitingForAuthorFormatting(array $default): \Zend_Form
     {
 
         $form = self::getModalPaperStatusCommonForm($default, 'authorFormattingRequest');
@@ -2720,8 +2730,8 @@ class Episciences_PapersManager
         try {
             $resUpdate = $db->update(T_PAPERS, $values, $where);
         } catch (Zend_Db_Adapter_Exception $exception) {
-            error_log($exception->getMessage());
-            error_log('Error updating DOI ' . $doi . ' for paperId ' . $paperId);
+            trigger_error($exception->getMessage(), E_USER_WARNING);
+            trigger_error('Error updating DOI ' . $doi . ' for paperId ' . $paperId, E_USER_WARNING);
             $resUpdate = 0;
         }
         return $resUpdate;
@@ -2766,12 +2776,12 @@ class Episciences_PapersManager
      * @param $b
      * @return int
      */
-    private static function statusCmp($a, $b)
+    private static function statusCmp($a, $b): int
     {
         $a = Episciences_Paper::$_statusOrder[$a];
         $b = Episciences_Paper::$_statusOrder[$b];
 
-        if ($a == $b) {
+        if ($a === $b) {
             $r = 0;
         } else {
             $r = ($a > $b) ? 1 : -1;
@@ -2792,7 +2802,7 @@ class Episciences_PapersManager
     /**
      * @return string
      */
-    public static function getEarliestPublicationDate()
+    public static function getEarliestPublicationDate(): string
     {
         define('EPD', 'earliestPublicationDate');
 
