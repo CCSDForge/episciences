@@ -1562,7 +1562,11 @@ class Episciences_Submit
         } else { // tmp version
 
             $latestSubmission = Episciences_PapersManager::getLastPaper($paper->getPaperid());
-            $hasHook = $latestSubmission->hasHook;
+
+            if($latestSubmission){
+                $hasHook = $latestSubmission->hasHook;
+            }
+
             $defaults = [
                 'hasHook' => $hasHook,
                 'docId' => !$hasHook ? $latestSubmission->getIdentifier() : '',

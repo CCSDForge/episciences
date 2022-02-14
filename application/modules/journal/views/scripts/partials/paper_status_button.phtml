@@ -6,7 +6,15 @@ $status = $paper->getStatus();
 $changeStatusMsg = "Changer le statut de l'article";
 $publishMsg = "Publier l'article";
 $refusedMsg = "Refuser l'article";
-$acceptMsg = !$this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) ? "Accepter et passer à la préparation de copie" : "Accepter l'article";
+
+if ($paper->isTmp()) {
+    $acceptMsg = 'Demander la version définitive';
+} else if (!$this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) {
+    $acceptMsg = 'Accepter et passer à la préparation de copie';
+} else {
+    $acceptMsg = "Accepter l'article";
+}
+
 $acceptedAskAuthorFinalVersion = "Demander la version finale à l'auteur";
 $waitingAuthorSources = "Demander à l'auteur ses sources (À mettre en forme par la revue)";
 $waitingFinalVersion = "Demander la version finale (À mettre en forme par l’auteur)";
@@ -111,7 +119,7 @@ if (Episciences_Auth::isSecretary()) : ?>
             <?php elseif (!$isInRevision && $copyEditingNotStarted) : ?>
                 <!-- accept paper -->
                 <li><a href="#" data-toggle="modal"
-                       data-target=".acceptance-modal"><?= $this->translate(($paper->isTmp()) ? 'Demander la version définitive' : $acceptMsg) ?></a>
+                       data-target=".acceptance-modal"><?= $this->translate($acceptMsg) ?></a>
                 </li>
 
                 <!-- revision request -->
@@ -267,7 +275,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                         </li>
                     <?php endif; ?>
 
-                <?php elseif (!$paper->isReadyToPublish()): // editors do not have permission to accept papers, but can suggest to do it ?>
+                <?php elseif (!$paper->isReadyToPublish() && !$paper->isAcceptedSubmission()): // editors do not have permission to accept papers, but can suggest to do it ?>
                     <li onclick="showForm('accept'); return false;"
                         data-toggle="tooltip"
                         data-placement="right"
@@ -310,13 +318,15 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
 
                 ) : ?>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".minor-revision-modal"><?= $this->translate('Demander des modifications mineures') ?></a>
-                    </li>
-                    <li><a href="#" data-toggle="modal"
-                           data-target=".major-revision-modal"><?= $this->translate('Demander des modifications majeures') ?></a>
-                    </li>
+                    <?php if (!$isInRevision) : ?>
+                        <li>
+                            <a href="#" data-toggle="modal"
+                               data-target=".minor-revision-modal"><?= $this->translate('Demander des modifications mineures') ?></a>
+                        </li>
+                        <li><a href="#" data-toggle="modal"
+                               data-target=".major-revision-modal"><?= $this->translate('Demander des modifications majeures') ?></a>
+                        </li>
+                    <?php endif; ?>
                 <?php else : // if there is not enough rating reports, display a notice ?>
                     <li data-toggle="tooltip"
                         data-placement="right"
@@ -455,7 +465,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title"><?= $this->translate(($paper->isTmp()) ? 'Demander la version définitive' : $acceptMsg) ?></h4>
+                        <h4 class="modal-title"><?= $this->translate($acceptMsg) ?></h4>
                     </div>
                     <div class="modal-body">
                         <?= $this->acceptanceForm ?>

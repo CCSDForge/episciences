@@ -1832,5 +1832,9 @@ return [
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
-    "Demander la version finale à l'auteur" => "Ask author's final version"
+    "Demander la version finale à l'auteur" => "Ask author's final version",
+
+    //dashboard
+    "Vous n'êtes pas l'auteur de cet article" => "You are not the author of this article",
+    "Vous n'êtes pas assigné à cet article" => "you are not assigned to this article"
 ];

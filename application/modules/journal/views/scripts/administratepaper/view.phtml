@@ -116,6 +116,20 @@ $this->suggestedRevision = false;
     </div>
 </div>
 
+<?php // bloc "Préparateurs de copie" ?>
+
+<?php if ($showCopyEditorsBloc) : ?>
+    <?php // Copy Editor section : le copy editing n'est possible que si le document est en l'état accepted ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Préparateurs de copie'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->partial('partials/paper_copy_editors.phtml', ['article' => $paper, 'editors' => $editors, 'copyEditors' => $copyEditors, 'id' => 'copy-editors']); ?>
+        </div>
+    </div>
+<?php endif; ?>
+
 <?php //préparation de copie?>
 <?php if ($this->copyEditingDemands) : ?>
     <div id="copy-editing" class="panel panel-default collapsable">
@@ -254,20 +268,6 @@ $this->suggestedRevision = false;
                 'previousVersions' => $this->previousVersions,
                 'previousVersionsDemands' => $this->previousVersionsDemands
             ]); ?>
-        </div>
-    </div>
-<?php endif; ?>
-
-<?php // bloc "Préparateurs de copie" ?>
-
-<?php if ($showCopyEditorsBloc) : ?>
-    <?php // Copy Editor section : le copy editing n'est possible que si le document est en l'état accepted ?>
-    <div class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Préparateurs de copie'); ?></h2>
-        </div>
-        <div class="panel-body in">
-            <?php echo $this->partial('partials/paper_copy_editors.phtml', ['article' => $paper, 'editors' => $editors, 'copyEditors' => $copyEditors, 'id' => 'copy-editors']); ?>
         </div>
     </div>
 <?php endif; ?>

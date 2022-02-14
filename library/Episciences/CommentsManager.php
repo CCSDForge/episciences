@@ -517,10 +517,6 @@ class Episciences_CommentsManager
 
             } else {
 
-                if($commentUid !== Episciences_Auth::getUid()){
-                    continue;
-                }
-
                 $row = !empty( $defaultMessage  = self::buildAnswerMessage($commentUid, $commentType)) ? 6 : 5;
                 $strElement = $id . '_element';
                 $form = new Ccsd_Form();
@@ -576,7 +572,10 @@ class Episciences_CommentsManager
      */
     private static function findByQuery(Zend_Db_Adapter_Abstract $db, $docId): \Zend_Db_Select
     {
-        return $db->select()->from(T_PAPER_COMMENTS)->where(T_PAPER_COMMENTS . '.DOCID = ? ', $docId);
+        return $db->select()
+            ->from(T_PAPER_COMMENTS)
+            ->where(T_PAPER_COMMENTS . '.DOCID = ? ', $docId)
+            ->order('PCID DESC');
     }
 
     /**

@@ -3,7 +3,7 @@
 <?php if ($isAllowedToManegeReview) : ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Gérer la revue'); ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Gérer la revue') ?></h2>
         </div>
         <div class="panel-body in">
             <div class="col-md-8">
@@ -11,30 +11,30 @@
                     'controllerName' => 'administratepaper',
                     'actionName' => 'list',
                     'papers' => $this->allPapers
-                ]);
+                ])
                 ?>
             </div>
             <div class="col-md-4">
                 <?php // Bloc Accèder à un article?>
-                <?php echo $this->partial('partials/dashboard_paper_search.phtml'); ?>
+                <?= $this->partial('partials/dashboard_paper_search.phtml') ?>
             </div>
         </div>
 
         <div class="panel-footer">
             <a class="btn btn-default btn-sm" href="/administratepaper/list"><span
-                        class="glyphicon glyphicon-file"></span> <?php echo $this->translate("Gérer les articles"); ?>
+                        class="glyphicon glyphicon-file"></span> <?= $this->translate("Gérer les articles") ?>
             </a>&nbsp;
             <?php if (Episciences_Auth::isSecretary()) : ?>
                 <a class="btn btn-default btn-sm" href="/volume/list"><span
-                            class="glyphicon glyphicon-book"></span> <?php echo $this->translate("Gérer les volumes"); ?>
+                            class="glyphicon glyphicon-book"></span> <?= $this->translate("Gérer les volumes") ?>
                 </a>&nbsp;
             <?php endif; ?>
             <a class="btn btn-default btn-sm" href="/grid/list"><span
-                        class="glyphicon glyphicon-tasks"></span> <?php echo $this->translate("Grilles de relecture"); ?>
+                        class="glyphicon glyphicon-tasks"></span> <?= $this->translate("Grilles de relecture") ?>
             </a>&nbsp;
             <?php if (Episciences_Auth::isSecretary()) : ?>
                 <a class="btn btn-default btn-sm" href="/review/settings"><span
-                            class="glyphicon glyphicon-cog"></span> <?php echo $this->translate("Paramètres de la revue"); ?>
+                            class="glyphicon glyphicon-cog"></span> <?= $this->translate("Paramètres de la revue") ?>
                 </a>
             <?php endif; ?>
         </div>
@@ -53,22 +53,33 @@
     <div class="panel panel-default collapsable">
 
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $assignedMsg; ?></h2>
+            <h2 class="panel-title"><?= $assignedMsg ?></h2>
         </div>
 
         <div class="panel-body in">
 
-            <?= $this->partial('partials/user_dashboard.phtml', [
-                'controllerName' => 'administratepaper',
-                'actionName' => 'assigned',
-                'papers' => $this->assignedPapers
-            ]);
-            ?>
+            <div class="col-md-8">
+                <?= $this->partial('partials/user_dashboard.phtml', [
+                    'controllerName' => 'administratepaper',
+                    'actionName' => 'assigned',
+                    'papers' => $this->assignedPapers
+                ])
+                ?>
+
+            </div>
+
+
+            <div class="col-md-4">
+                <?php // Bloc Accèder à un article?>
+                <?= $this->partial('partials/dashboard_paper_search.phtml',  ['from' => 'assigned_articles']) ?>
+            </div>
+
+
         </div>
 
         <div class="panel-footer">
-            <a class="btn btn-default btn-sm" href="<?= $assignedUrl; ?>" role="button">
-                <span class="glyphicon glyphicon-file"></span> <?= $assignedMsg; ?>
+            <a class="btn btn-default btn-sm" href="<?= $assignedUrl ?>" role="button">
+                <span class="glyphicon glyphicon-file"></span> <?= $assignedMsg ?>
             </a>&nbsp;
         </div>
     </div>
@@ -80,7 +91,7 @@
     <div class="panel panel-default collapsable">
 
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate("Préparation de copie"); ?></h2>
+            <h2 class="panel-title"><?= $this->translate("Préparation de copie") ?></h2>
         </div>
 
         <div class="panel-body in">
@@ -89,7 +100,7 @@
                 'actionName' => 'assigned',
                 'ce' => 1,
                 'papers' => $this->assignedPapersToCopyEditing
-            ]);
+            ])
             ?>
         </div>
     </div>
@@ -98,38 +109,38 @@
 <?php // Bloc "Mes articles" ************************************************ ?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading">
-        <h2 class="panel-title"><?php echo $this->translate('Mes articles'); ?></h2>
+        <h2 class="panel-title"><?= $this->translate('Mes articles') ?></h2>
     </div>
 
     <div class="panel-body in">
         <?php if ($this->submittedPapers) : ?>
-            <?php if (!$isAllowedToManegeReview) : ?><div class="col-md-8"><?php endif; ?>
-            <p>
-                <?= $this->partial('partials/user_dashboard.phtml', [
-                    'controllerName' => 'paper',
-                    'actionName' => 'submitted',
-                    'papers' => $this->submittedPapers
-                ]);
-                ?>
-            </p>
-            <?php if (!$isAllowedToManegeReview) : ?>
-                </div>
-                <div class="col-md-4">
-                    <?php // Bloc Accèder à un article?>
-                    <?php echo $this->partial('partials/dashboard_paper_search.phtml'); ?>
-                </div>
-            <?php endif; ?>
+            <div class="col-md-8">
+                <p>
+                    <?= $this->partial('partials/user_dashboard.phtml', [
+                        'controllerName' => 'paper',
+                        'actionName' => 'submitted',
+                        'papers' => $this->submittedPapers
+                    ])
+                    ?>
+                </p>
+
+            </div>
+            <div class="col-md-4">
+                <?php // Bloc Accèder à un article?>
+                <?= $this->partial('partials/dashboard_paper_search.phtml', ['from' => 'my_submissions']) ?>
+            </div>
+
         <?php else : ?>
-            <p><?php echo $this->translate("Vous n'avez soumis aucun article pour le moment"); ?>.</p>
+            <p><?= $this->translate("Vous n'avez soumis aucun article pour le moment") ?>.</p>
         <?php endif; ?>
     </div>
 
     <div class="panel-footer">
         <a class="btn btn-default btn-sm" href="/paper/submitted"><span
-                    class="glyphicon glyphicon-file"></span> <?php echo $this->translate('Voir tous mes articles'); ?>
+                    class="glyphicon glyphicon-file"></span> <?= $this->translate('Voir tous mes articles') ?>
         </a>&nbsp;
         <a class="btn btn-default btn-sm" href="/submit"><span
-                    class="glyphicon glyphicon-upload"></span> <?php echo $this->translate('Proposer un article'); ?>
+                    class="glyphicon glyphicon-upload"></span> <?= $this->translate('Proposer un article') ?>
         </a>
     </div>
 
@@ -137,11 +148,11 @@
 
 
 <?php // Bloc "Mes relectures" ************************************************ ?>
-<?php if (Episciences_Auth::isReviewer() || $this->reviewings) : ?>
+<?php if ($this->reviewings || Episciences_Auth::isReviewer()) : ?>
     <div class="panel panel-default collapsable">
 
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Mes relectures'); ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Mes relectures') ?></h2>
         </div>
 
         <div class="panel-body in">
@@ -152,60 +163,60 @@
                     <?php // Relectures en attente (non commencées) ********************************************* ?>
                     <?php $count = Episciences_Reviewer_ReviewingsManager::countByStatus($this->reviewings, Episciences_Reviewer_Reviewing::STATUS_PENDING); ?>
                     <?php if ($count) : ?>
-                        <a href="<?php echo $this->url([
+                        <a href="<?= $this->url([
                             'controller' => 'paper',
                             'action' => 'ratings',
-                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_PENDING]);
-                        ?>"><strong><?php echo $count; ?></strong>
-                            <?php echo $this->translate(($count == 1) ? 'relecture non commencée' : 'relectures non commencées'); ?>
+                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_PENDING])
+                        ?>"><strong><?= $count ?></strong>
+                            <?= $this->translate(($count === 1) ? 'relecture non commencée' : 'relectures non commencées') ?>
                         </a><br/>
                     <?php endif; ?>
 
                     <?php // Relectures en cours ****************************************************************** ?>
                     <?php $count = Episciences_Reviewer_ReviewingsManager::countByStatus($this->reviewings, Episciences_Reviewer_Reviewing::STATUS_WIP); ?>
                     <?php if ($count) : ?>
-                        <a href="<?php echo $this->url([
+                        <a href="<?= $this->url([
                             'controller' => 'paper',
                             'action' => 'ratings',
-                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_WIP]);
-                        ?>"><strong><?php echo $count; ?></strong>
-                            <?php echo $this->translate(($count == 1) ? 'relecture en cours' : 'relectures en cours'); ?>
+                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_WIP])
+                        ?>"><strong><?= $count ?></strong>
+                            <?= $this->translate(($count === 1) ? 'relecture en cours' : 'relectures en cours') ?>
                         </a><br/>
                     <?php endif; ?>
 
                     <?php // Relectures terminées ****************************************************************** ?>
                     <?php $count = Episciences_Reviewer_ReviewingsManager::countByStatus($this->reviewings, Episciences_Reviewer_Reviewing::STATUS_COMPLETE); ?>
                     <?php if ($count) : ?>
-                        <a href="<?php echo $this->url([
+                        <a href="<?= $this->url([
                             'controller' => 'paper',
                             'action' => 'ratings',
-                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_COMPLETE]);
-                        ?>"><strong><?php echo $count; ?></strong>
-                            <?php echo $this->translate(($count == 1) ? 'relecture terminée' : 'relectures terminées'); ?>
+                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_COMPLETE])
+                        ?>"><strong><?= $count ?></strong>
+                            <?= $this->translate(($count === 1) ? 'relecture terminée' : 'relectures terminées') ?>
                         </a><br/>
                     <?php endif; ?>
 
                     <?php // Relectures en attente de réponse ****************************************************************** ?>
                     <?php $count = Episciences_Reviewer_ReviewingsManager::countByStatus($this->reviewings, Episciences_Reviewer_Reviewing::STATUS_UNANSWERED); ?>
                     <?php if ($count) : ?>
-                        <a href="<?php echo $this->url([
+                        <a href="<?= $this->url([
                             'controller' => 'paper',
                             'action' => 'ratings',
-                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_UNANSWERED]);
-                        ?>"><strong><?php echo $count; ?></strong>
-                            <?php echo $this->translate(($count == 1) ? 'invitation en attente' : 'invitations en attente'); ?>
+                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_UNANSWERED])
+                        ?>"><strong><?= $count ?></strong>
+                            <?= $this->translate(($count === 1) ? 'invitation en attente' : 'invitations en attente') ?>
                         </a><br/>
                     <?php endif; ?>
 
                     <?php // Relectures obsolètes ?>
                     <?php $count = Episciences_Reviewer_ReviewingsManager::countByStatus($this->reviewings, Episciences_Reviewer_Reviewing::STATUS_OBSOLETE); ?>
                     <?php if ($count) : ?>
-                        <a href="<?php echo $this->url([
+                        <a href="<?= $this->url([
                             'controller' => 'paper',
                             'action' => 'ratings',
-                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_OBSOLETE]);
-                        ?>"><strong><?php echo $count; ?></strong>
-                            <?php echo $this->translate(($count == 1) ? 'invitation obsolète' : 'invitations obsolètes'); ?>
+                            'ratingStatus' => Episciences_Reviewer_Reviewing::STATUS_OBSOLETE])
+                        ?>"><strong><?= $count ?></strong>
+                            <?= $this->translate(($count === 1) ? 'invitation obsolète' : 'invitations obsolètes') ?>
                         </a><br/>
                     <?php endif; ?>
 
@@ -240,26 +251,26 @@
                     <?php $count = count($this->reviewings); ?>
                     <?php if ($count) : ?>
                         <br/>
-                        <strong><?php echo $this->translate('Total'); ?> : </strong>
-                        <a href="<?php echo $this->url([
+                        <strong><?= $this->translate('Total') ?> : </strong>
+                        <a href="<?= $this->url([
                             'controller' => 'paper',
-                            'action' => 'ratings']);
-                        ?>"><strong><?php echo $count; ?></strong>
-                            <?php echo $this->translate(($count == 1) ? 'relecture' : 'relectures'); ?></a><br/>
+                            'action' => 'ratings'])
+                        ?>"><strong><?= $count ?></strong>
+                            <?= $this->translate(($count === 1) ? 'relecture' : 'relectures') ?></a><br/>
                     <?php endif; ?>
                 </p>
 
             <?php else : ?>
-                <p><?php echo $this->translate("Vous n'avez rien à relire pour le moment."); ?></p>
+                <p><?= $this->translate("Vous n'avez rien à relire pour le moment.") ?></p>
             <?php endif; ?>
 
         </div>
 
-        <?php if ((Episciences_Auth::isReviewer() || Episciences_Auth::isAllowedToUploadPaperReport()) && $this->reviewings) : ?>
+        <?php if ($this->reviewings && (Episciences_Auth::isReviewer() || Episciences_Auth::isAllowedToUploadPaperReport())) : ?>
             <div class="panel-footer">
                 <div class="small">
                     <a href="/paper/ratings" class="btn btn-default btn-sm" role="button">
-                        <span class="glyphicon glyphicon-file"></span> <?php echo $this->translate("Relire les articles"); ?>
+                        <span class="glyphicon glyphicon-file"></span> <?= $this->translate("Relire les articles") ?>
                     </a>
                 </div>
             </div>
@@ -272,16 +283,16 @@
 <div class="panel panel-default collapsable">
 
     <div class="panel-heading">
-        <h2 class="panel-title"><?php echo $this->translate('Mon compte'); ?></h2>
+        <h2 class="panel-title"><?= $this->translate('Mon compte') ?></h2>
     </div>
 
     <div class="panel-body in">
-        <?php echo $this->partial('user/user_profile.phtml', ['user' => $this->user]); ?>
+        <?= $this->partial('user/user_profile.phtml', ['user' => $this->user]) ?>
     </div>
 
     <div class="panel-footer">
         <a class="btn btn-default btn-sm" href="/user/edit"><span
-                    class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?>
+                    class="glyphicon glyphicon-user"></span> <?= $this->translate('Modifier mon profil') ?>
         </a>
 
     </div>
