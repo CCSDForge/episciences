@@ -5,7 +5,6 @@ $controller = $request->getControllerName();
 $action = $request->getActionName();
 $isSecretary = Episciences_Auth::isSecretary();
 $loggedUid = Episciences_Auth::getUid();
-$isDevelopEnv = APPLICATION_ENV === 'development';
 $isCoiEnabled = $this->isCoiEnabled;
 ?>
 <?php /** @var Episciences_Paper $paper */
@@ -13,16 +12,23 @@ foreach ($this->list as $paper) : ?>
 
     <?php
 
+    $isTmp = $paper->isTmp();
+
     $isConflictDetected = !$isSecretary && $isCoiEnabled &&
         (
                 $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
                 $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
         );
 
-    $isAllowed = (
-        ($isSecretary || $paper->getEditor($loggedUid)) &&
-        ($loggedUid !== $paper->getUid() || $isDevelopEnv)
-    );
+    try {
+        $isAllowed = (
+            ($isSecretary || $paper->getEditor($loggedUid)) &&
+            ($loggedUid !== $paper->getUid())
+        );
+    } catch (Zend_Db_Statement_Exception $e) {
+        $isAllowed = false;
+        trigger_error($e->getMessage());
+    }
 
     $disabled = '';
     $ariaDisabled = 'aria-disabled="false"';
@@ -34,31 +40,39 @@ foreach ($this->list as $paper) : ?>
     }
     ?>
 
-    <tr id="paper_<?php echo $paper->getDocid(); ?>">
+    <tr id="paper_<?= $paper->getDocid() ?>">
         <?php // article id ******************************************* ?>
-        <td class="text-center"><?php echo $paper->getPaperid(); ?></td>
+        <td class="text-center"><?= $paper->getPaperid() ?></td>
         <?php // article id ******************************************* ?>
-        <td class="text-center"><?php echo $paper->getDocid(); ?></td>
+        <td class="text-center"><?= $paper->getDocid() ?></td>
         <?php // article status icon ******************************************* ?>
         <td class="text-center">
             <?php if (!$isConflictDetected) : ?>
-            <?php
-            $paperStatusLabel = ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus())));
-            ?>
-            <span data-toggle="tooltip"
-                  title="<?php echo $paperStatusLabel; ?>">
-                  <img src="<?php echo Episciences_View_Helper_GetAvatar::asPaperStatusSvg($paperStatusLabel, $paper->getStatus()); ?>"/>
-            </span>
+                <?php $paperStatusLabel = ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>
+                <?= $isTmp ? ('<div>' . '<span data-toggle="tooltip" class="label label-status-' . $paper->getStatus() . '" title="' . ucfirst($this->translate('version temporaire')) . '">TMP</span>') : '' ?>
+                <span data-toggle="tooltip" title="<?= $paperStatusLabel ?>">
+                    <img src="<?= Episciences_View_Helper_GetAvatar::asPaperStatusSvg($paperStatusLabel, $paper->getStatus()) ?>" alt="statusSvg"/>
+                </span>
+                <?= $isTmp ? '</div>' : '' ?>
             <?php endif; ?>
         </td>
-        <?php // article title ******************************************* ?>
+        <?php
+        // article title *******************************************
+        try {
+            $title = $paper->getTitle();
+        } catch (Zend_Exception $e) {
+            $title = '';
+            trigger_error($e->getMessage());
+        }
+        ?>
+
         <td>
-            <a href="/<?php echo $controller ?>/view?id=<?php echo $paper->getDocid(); ?>"
+            <a href="/<?= $controller ?>/view?id=<?= $paper->getDocid() ?>"
                data-toggle="tooltip"
-               title="<?php echo Episciences_Tools::decodeLatex($paper->getTitle()); ?>">
-                <strong><?php echo Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($paper->getTitle()), 75); ?></strong>
+               title="<?= Episciences_Tools::decodeLatex($title) ?>">
+                <strong><?= Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($title), 75) ?></strong>
                 <?php if ($paper->getMetadata('version') && (int)$paper->getMetadata('version') !== 1) : ?>
-                    (v<?php echo $paper->getMetadata('version'); ?>)
+                    (v<?= $paper->getMetadata('version') ?>)
                 <?php endif; ?>
             </a>
         </td>
@@ -66,7 +80,7 @@ foreach ($this->list as $paper) : ?>
         <td<?php if ($paper->getUid() === $loggedUid) :
             ?> style="background: #fcfcfc"
             data-toggle="tooltip"
-            data-original-title="<?php echo $this->translate("Vous ne pouvez pas voir le volume d'un article que vous avez déposé vous-même") ?>"
+            data-original-title="<?= $this->translate("Vous ne pouvez pas voir le volume d'un article que vous avez déposé vous-même") ?>"
         <?php endif; ?>>
             <?php
             if ($paper->getUid() !== $loggedUid) {
@@ -109,10 +123,19 @@ foreach ($this->list as $paper) : ?>
             <?php // user can't see reviewers for his own submissions ?>
             <?php if (!$isConflictDetected && $paper->getUid() !== $loggedUid ) : ?>
                 <?php
-                $reviewers = $paper->getReviewers();
-                $ratings = $paper->getRatings();
+                try {
+                    $reviewers = $paper->getReviewers();
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                    $reviewers = [];
+                }
+                try {
+                    $ratings = $paper->getRatings();
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
                 ?>
-                <div id="reviewers_<?php echo $paper->getDocid(); ?>">
+                <div id="reviewers_<?= $paper->getDocid() ?>">
                     <?php if (count($reviewers)) : ?>
                         <div style="margin-bottom: 5px">
                             <?php foreach ($reviewers as $uid => $reviewer) : ?>
@@ -163,27 +186,27 @@ foreach ($this->list as $paper) : ?>
                                     <div class="smaller"
                                          style="float: left; margin-right: 10px; cursor: pointer">
                                         <a class="modal-opener"
-                                           title="<?php echo $this->translate('Envoyer un message au relecteur'); ?>"
-                                           href="/administratepaper/contactreviewer?docid=<?php echo $paper->getDocid() ?>&id=<?php echo $reviewer->getUid() ?>">
+                                           title="<?= $this->translate('Envoyer un message au relecteur') ?>"
+                                           href="/administratepaper/contactreviewer?docid=<?= $paper->getDocid() ?>&id=<?= $reviewer->getUid() ?>">
                                                     <span data-toggle="tooltip"
-                                                          data-original-title="<?php echo $this->translate('Envoyer un message au relecteur'); ?>"
+                                                          data-original-title="<?= $this->translate('Envoyer un message au relecteur') ?>"
                                                           class="icon-envelope"></span>
                                         </a>
                                     </div>
                                 <?php endif; ?>
 
                                 <?php // reviewer status icon *********************************************** ?>
-                                <a data-toggle="tooltip" title="<?php echo strip_tags($msg); ?>">
-                                    <span class="glyphicon glyphicon glyphicon-info-sign <?php echo $tipColor; ?>"></span></a>
+                                <a data-toggle="tooltip" title="<?= strip_tags($msg) ?>">
+                                    <span class="glyphicon glyphicon glyphicon-info-sign <?= $tipColor ?>"></span></a>
 
                                 <?php // reviewer name *********************************************** ?>
-                                <span style="margin-left: 5px;" class="<?php echo $userColor; ?>">
+                                <span style="margin-left: 5px;" class="<?= $userColor ?>">
                                     <?php
                                     if (!$reviewer->getScreenName()) {
                                         try {
                                             $reviewer->findWithCAS($uid); // not local data : warning: $reviewer->getUid is null
                                         } catch (Exception $e) {
-                                            error_log($e->getMessage());
+                                            trigger_error($e->getMessage());
                                         }
                                         echo $reviewer->getFullName();
                                     } else {
@@ -208,7 +231,7 @@ foreach ($this->list as $paper) : ?>
                         'controller' => $controller,
                         'action' => $action,
                         'volume' => ($paper->getVid()) ? $this->volumes[$paper->getVid()] : null,
-                    ]);
+                    ])
                     ?>
                 </div>
             <?php endif; ?>
@@ -217,15 +240,19 @@ foreach ($this->list as $paper) : ?>
         <?php // article editors ******************************************* ?>
         <?php if ($paper->getUid() === $loggedUid) : ?>
             <td style="background: #fcfcfc" data-toggle="tooltip"
-                data-original-title="<?php echo $this->translate("Vous ne pouvez pas voir les rédacteurs d'un article que vous avez déposé vous-même"); ?>">
+                data-original-title="<?= $this->translate("Vous ne pouvez pas voir les rédacteurs d'un article que vous avez déposé vous-même") ?>">
             </td>
         <?php else : ?>
             <td>
                 <?php
-                /** @var Episciences_Editor[] $editors */
-                $editors = $paper->getEditors();
+                try {
+                    $editors = $paper->getEditors();
+                } catch (Zend_Db_Statement_Exception $e) {
+                    $editors = [];
+                    trigger_error($e->getMessage());
+                }
                 ?>
-                <?= $this->partial('partials/partial_paper_editors.phtml', ['paper' => $paper, 'users' => $editors]); ?>
+                <?= $this->partial('partials/partial_paper_editors.phtml', ['paper' => $paper, 'users' => $editors]) ?>
             </td>
         <?php endif; // endif (Episciences_Auth::getUid() != $paper->getUid()) ?>
 
@@ -233,11 +260,15 @@ foreach ($this->list as $paper) : ?>
         <td>
             <?php
             /** @var Episciences_CopyEditor $copyEditors [] */
-            $copyEditors = $paper->getCopyEditors();
+            try {
+                $copyEditors = $paper->getCopyEditors();
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+            }
             ?>
 
             <div class="copy-editor">
-                <?= $this->partial('partials/paper_assigned_editors_copyeditors.phtml', ['paper' => $paper, 'users' => $copyEditors, 'userRole' => Episciences_User_Assignment::ROLE_COPY_EDITOR]); ?>
+                <?= $this->partial('partials/paper_assigned_editors_copyeditors.phtml', ['paper' => $paper, 'users' => $copyEditors, 'userRole' => Episciences_User_Assignment::ROLE_COPY_EDITOR]) ?>
                 <?php //copy editors assignment button ********************************************** ?>
                 <?php
                 if ($isSecretary && $paper->isEditable() && $paper->getStatus() >= Episciences_Paper::STATUS_ACCEPTED) : ?>
@@ -265,14 +296,14 @@ foreach ($this->list as $paper) : ?>
 
         <?php // submission date ************************************************ ?>
         <td>
-            <span style="display: none"><?php echo $paper->getWhen(); ?></span>
-            <?php echo $paper->getWhen(); ?>
+            <span style="display: none"><?= $paper->getWhen() ?></span>
+            <?= $paper->getWhen() ?>
         </td>
 
         <?php // publication date ************************************************ ?>
         <td>
-            <span style="display: none"><?php echo $paper->getPublication_date(); ?></span>
-            <?php echo ($paper->getPublication_date()) ?: ''; ?>
+            <span style="display: none"><?= $paper->getPublication_date() ?></span>
+            <?= ($paper->getPublication_date()) ?: '' ?>
         </td>
     </tr>
 <?php endforeach; ?>
