@@ -15,7 +15,7 @@
 </style>
 <?php $this->jQuery()->addJavascriptFile("/js/administratemail/reminders.js"); ?>
 
-<span class="col-md-9 col-md-offset-3 ccsd_form_required"><?php echo $this->translate('Champ requis') ?></span>
+<span class="col-md-9 col-md-offset-3 ccsd_form_required"><?= $this->translate('Champ requis') ?></span>
 
 <form data-library="ccsd" role="form"<?php
 if ($this->element->getAttrib('name')) {
@@ -38,19 +38,19 @@ if ($this->element->getMethod()) {
     <?php $elements = $this->element->getElements(); ?>
 
     <div id="type-element" class="form-group row">
-        <?php echo $elements['type']; ?>
+        <?= $elements['type'] ?>
     </div>
 
     <div id="recipient-element" class="form-group row">
-        <?php echo $elements['recipient']; ?>
+        <?= $elements['recipient'] ?>
     </div>
 
     <div id="delay-element" class="form-group row">
-        <?php echo $elements['delay']; ?>
+        <?=  $elements['delay'] ?>
     </div>
 
     <div id="repetition-element" class="form-group row">
-        <?php echo $elements['repetition']; ?>
+        <?= $elements['repetition'] ?>
     </div>
 
     <?php if (count($this->langs) > 1) : ?>
@@ -58,13 +58,14 @@ if ($this->element->getMethod()) {
             <div id="col-tabs" class="col-md-9 col-md-offset-3">
                 <ul id="languages_tabs" class="nav nav-tabs">
                     <?php foreach ($this->langs as $code => $lang) : ?>
-                        <li class="<?php if ($code == $this->locale) echo 'active' ?>"
+                        <li class="<?= ($code === $this->locale) ? 'active' : '' ?>"
                             data-toggle="tooltip"
                             data-placement="bottom"
-                            title="<?php echo ucfirst(Zend_Locale::getTranslation($code, 'language', $this->locale)); ?>">
-                            <a href="<?php echo '#' . $code . '_form'; ?>" data-toggle="tab">
-                                <img class="<?php echo 'flag_' . $code;
-                                if ($code == $this->locale) echo '_selected'; ?>" src='/img/spacer.gif'/>
+                            title="<?= ucfirst(Zend_Locale::getTranslation($code, 'language', $this->locale)) ?>">
+                            <a href="<?= '#' . $code . '_form' ?>" data-toggle="tab">
+                                <?= strtoupper($code) ?>
+                                <img class="<?= 'flag_' . $code ?>
+                                <?= ($code === $this->locale) ? '_selected' : '' ?>" src='/img/spacer.gif' alt="language"/>
                             </a>
                         </li>
                     <?php endforeach; ?>
@@ -76,25 +77,25 @@ if ($this->element->getMethod()) {
     <div<?php if (count($this->langs) > 1) : ?> class="tab-content"<?php endif; ?>>
         <?php foreach ($this->langs as $code => $lang) : ?>
             <div
-                id="<?php echo $code; ?>_form"<?php if (count($this->langs) > 1) : ?> class="tab-pane fade in<?php if ($code == $this->locale) echo ' active' ?>"<?php endif; ?>>
-                <div id="<?php echo $code ?>_custom_template-element" class="form-group row">
-                    <?php echo $elements[$code . '_custom_template']; ?>
+                id="<?= $code ?>_form"<?php if (count($this->langs) > 1) : ?> class="tab-pane fade in<?= ($code === $this->locale) ? ' active' : ''?>"<?php endif; ?>>
+                <div id="<?= $code ?>_custom_template-element" class="form-group row">
+                    <?= $elements[$code . '_custom_template'] ?>
                 </div>
 
-                <div id="<?php echo $code ?>_default_subject-element" class="form-group row">
-                    <?php echo $elements[$code . '_default_subject']; ?>
+                <div id="<?= $code ?>_default_subject-element" class="form-group row">
+                    <?= $elements[$code . '_default_subject'] ?>
                 </div>
 
-                <div id="<?php echo $code ?>_custom_subject-element" class="form-group row">
-                    <?php echo $elements[$code . '_custom_subject']; ?>
+                <div id="<?= $code ?>_custom_subject-element" class="form-group row">
+                    <?= $elements[$code . '_custom_subject'] ?>
                 </div>
 
-                <div id="<?php echo $code ?>_default_body-element" class="form-group row">
-                    <?php echo $elements[$code . '_default_body']; ?>
+                <div id="<?= $code ?>_default_body-element" class="form-group row">
+                    <?= $elements[$code . '_default_body'] ?>
                 </div>
 
-                <div id="<?php echo $code ?>_custom_body-element" class="form-group row">
-                    <?php echo $elements[$code . '_custom_body']; ?>
+                <div id="<?= $code ?>_custom_body-element" class="form-group row">
+                    <?= $elements[$code . '_custom_body'] ?>
                 </div>
             </div>
         <?php endforeach; ?>
