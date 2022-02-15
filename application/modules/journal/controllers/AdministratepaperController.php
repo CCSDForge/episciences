@@ -808,24 +808,33 @@ class AdministratepaperController extends PaperDefaultController
     private function buildRedirectionMessage(Episciences_Review $review, Episciences_Paper $paper): array
     {
         $redirection = [];
-        $jumpTest = true;
+
+        $isNextTest = true;
 
         $message = "Vous n'avez pas les droits suffisants pour accéder à cet article";
 
-        if ($paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid())) {
-            $jumpTest = false;
+
+        if ($paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid())) { // assigned
+            $isNextTest = false;
         }
 
         // if editors encapsulation is on, editors who are not assigned to this paper do not have any permission for it: redirect them
-        if ($jumpTest && Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
+        if ($isNextTest && Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
             $redirection['message'] = $message;
-            $jumpTest = false;
+            $isNextTest = false;
         }
 
-        // si ils sont pas rédacteurs et  si ils sont cloisonnés, les préparateurs de copie ne peuvent voir que les articles qui leur sont assignés
-        if ($jumpTest && Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
+        // if copy editors encapsulation is on, copy editors who are not assigned to this paper do not have any permission for it: redirect them
+        if ($isNextTest && Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
             $redirection['message'] = $message;
             $redirection['params'] = ['ce' => 1];
+            $isNextTest = false;
+        }
+
+
+        if($isNextTest && Episciences_Auth::isGuestEditor() && !(Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor())){
+            $redirection['message'] = $message;
+            return $redirection;
         }
 
         // check if journal settings allow editors to take decisions about this paper
@@ -857,6 +866,7 @@ class AdministratepaperController extends PaperDefaultController
             default: // not action
                 break;
         }
+
 
         return $redirection;
 

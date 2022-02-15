@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+#Fixed
+- All submissions are accessible to "guest editor" roles.
 
 ## 1.0.24.2 - 2022-02-10
 # Fixed
