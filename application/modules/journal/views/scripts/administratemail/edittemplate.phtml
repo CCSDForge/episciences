@@ -1,24 +1,29 @@
 <ul id="languages_tabs" class="nav nav-tabs">
     <?php
-    $locale = Zend_Registry::get("Zend_Translate")->getLocale();
+    try {
+        $locale = Zend_Registry::get("Zend_Translate")->getLocale();
+    } catch (Zend_Exception $e) {
+        $locale = 'fr';
+        trigger_error($e->getMessage());
+    }
     $defaultLang = (array_key_exists($locale, $this->langs)) ? $locale : 'fr';
     ?>
     <?php foreach ($this->langs as $code => $lang) : ?>
-        <li class="<?php if (count($this->langs) == 1 || $code == $defaultLang) echo 'active' ?>"
+        <?php $isChecked = count($this->langs) === 1 || $code === $defaultLang; ?>
+        <li class="<?= $isChecked ? 'active' : '' ?>"
             data-toggle="tooltip"
             data-placement="bottom"
-            title="<?php echo ucfirst(Zend_Locale::getTranslation($code, 'language', $locale)); ?>">
-            <a href="<?php echo '#' . $code . '_form'; ?>" data-toggle="tab">
-                <img class="<?php echo 'flag_' . $code;
-                if (count($this->langs) == 1 || $code == $defaultLang) echo '_selected'; ?>" src='/img/spacer.gif'/>
+            title="<?= ucfirst(Zend_Locale::getTranslation($code, 'language', $locale)) ?>">
+            <a href="<?= '#' . $code . '_form' ?>" data-toggle="tab">
+                <?= strtoupper($code )?>
+                <img class="<?= 'flag_' . $code ?> <?= $isChecked ? '_selected' : '' ?>" src='/img/spacer.gif' alt="language"/>
             </a>
         </li>
     <?php endforeach; ?>
 </ul>
 
-<?php echo $this->form; ?>
+<?= $this->form ?>
 
-<?php // $this->jQuery()->addJavascriptFile("/js/administratemail/edittemplate.js"); ?>
 <script>
     var options = {
         convert_urls: false,
@@ -27,7 +32,8 @@
         plugins: "link image code fullscreen table textcolor",
         toolbar1: "bold italic underline | styleselect | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image | code"
     };
-    __initMCE("textarea", undefined, options);</script>
+    __initMCE("textarea", undefined, options);
+</script>
 <script>
     $(document).ready(function () {
         $('a[data-toggle="tab"]').on('shown', function (e) {
