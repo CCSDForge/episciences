@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-#Fixed
+## 1.0.25 - 2022-02-15
+# Fixed
 - All submissions are accessible to "guest editor" roles.
-- Fixed: language bar missing when editing a mail template, including reminders.
+- Language bar missing when editing a mail template, including reminders.
 
 ## 1.0.24.2 - 2022-02-10
 # Fixed
