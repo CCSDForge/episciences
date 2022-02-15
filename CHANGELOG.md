@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Changed
+[#152](https://github.com/CCSDForge/episciences/issues/152): page footer modifications.
+
 ## 1.0.25 - 2022-02-15
 # Fixed
 - All submissions are accessible to "guest editor" roles.
