@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent "Add sources files" and "Add the formatted version" buttons JS reactivation
 - Move "copy editing" section
 - Dashboard improvements: ability to reach an article from sections: my submissions and assigned articles
+- [187]: change the default templates: 'new version submitted' and 'tmp version submitted'
 
 ##Fixedto 
 - Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
