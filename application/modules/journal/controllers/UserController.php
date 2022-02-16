@@ -110,7 +110,10 @@ class UserController extends UserDefaultController
 
         // les resources à ne pas afficher
         foreach (Episciences_Acl::TYPE_OF_RESOURCES_NOT_TO_BE_DISPLAYED as $excludedResource) {
-            unset($resources[array_search($excludedResource, $resources, true)]);
+            $key = array_search($excludedResource, $resources, true);
+            if($key !== false){
+                unset($resources[$key]);
+            }
         }
 
         foreach ($resources as $resource) {
@@ -118,8 +121,12 @@ class UserController extends UserDefaultController
             $explodedResource = explode('-', $resource);
 
             if (in_array($explodedResource[0], $ignoredControllerName, true)) {
-                unset($resources[array_search($resource, $resources, true)]);
-                continue;
+                $key = array_search($resource, $resources, true);
+
+                if(false !== $key){
+                    unset($resources[$key]);
+                    continue;
+                }
             }
 
             foreach ($roles as $role) {

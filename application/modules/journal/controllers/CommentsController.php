@@ -64,8 +64,10 @@ class CommentsController extends PaperController
         $is_file = is_file($comment_path);
         if ($file && $is_file) {//note that is_file() returns false if the parent directory doesn't have +x set for you
             if (Episciences_Auth::isLogged() && Episciences_Auth::getUid() == $comment->getUid()) {
-                $key = array_search($file, $jFiles);
-                unset($jFiles[$key]);
+                $key = array_search($file, $jFiles, true);
+                if($key !== false){
+                    unset($jFiles[$key]);
+                }
                 !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
                 unlink($comment_path);
                 $comment->save('update', true);
