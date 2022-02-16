@@ -428,11 +428,11 @@ class Episciences_Review
     /**
      * get the list of users to be notified
      * @param array $recipients
-     * @param int | string $rvId : (rvid or rvcode)
      * @param bool $strict = false [ne pas en tenir compte du module de notifications]
+     * @param int | string $rvId : (rvid or rvcode)
      * @throws Zend_Db_Statement_Exception
      */
-    public static function checkReviewNotifications(array &$recipients, $rvId = RVID, bool $strict = true): void
+    public static function checkReviewNotifications(array &$recipients, bool $strict = true, $rvId = RVID): void
     {
         $review = Episciences_ReviewsManager::find($rvId);
         $notificationSettings = $review->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);

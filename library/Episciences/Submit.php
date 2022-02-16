@@ -970,7 +970,7 @@ class Episciences_Submit
         Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper);
 
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
-        Episciences_Review::checkReviewNotifications($recipients);
+        Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
         unset($recipients[$paper->getUid()]);
 
         if (!empty($recipients)) {
