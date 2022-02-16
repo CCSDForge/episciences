@@ -1186,7 +1186,10 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if (count($currentRoles) > 1) {
             $key = array_search(Episciences_Acl::ROLE_MEMBER, $currentRoles, true);
-            unset($currentRoles[$key]);
+
+            if($key !== false){
+                unset($currentRoles[$key]);
+            }
         }
 
         if (!empty($currentRoles)) {
