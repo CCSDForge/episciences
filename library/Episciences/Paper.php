@@ -2607,7 +2607,6 @@ class Episciences_Paper
                 if ($review->getSetting(Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER)) {
                     $selfMsg = $result['message'];
                     $selfMsg .= $translator->translate('Cet article a déjà été soumis et refusé. Avez-vous apporté des modifications majeures au document ?');
-                    $result['message'] = $selfMsg;
                     $selfMsg .= $confirm;
                     $result['message'] = $selfMsg;
                     $result['oldPaperId'] = (int)$this->getPaperid();
