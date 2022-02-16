@@ -459,6 +459,8 @@ return [
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
     "Identifiant de l'article" => "Item identifier",
     "Accès à un article" => "Access to an article",
+    'Accès à mon article' => 'Access to my article',
+    'Accès à un article assigné' => 'Access to an assigned article',
 
     // Commentaires / lettre d'accompagnement
     "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire." => "You have been redirected because you are not the author of this comment.",

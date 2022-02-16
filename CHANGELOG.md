@@ -34,8 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "status" filter is now dynamically created.
 - Prevent "Add sources files" and "Add the formatted version" buttons JS reactivation
 - Move "copy editing" section
+- Dashboard improvements: ability to reach an article from sections: my submissions and assigned articles
 
-##Fixed
+##Fixedto 
 - Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
 - Improvements in emailing: see github #117.
 - Multiple roles: ignore the "member" role when merging two accounts.

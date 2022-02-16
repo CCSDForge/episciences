@@ -7,10 +7,13 @@ require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultControll
  */
 class UserController extends UserDefaultController
 {
+    public const MY_SUBMISSIONS_STR = 'my_submissions';
+    public const ASSIGNED_ARTICLES_STR = 'assigned_articles';
+
     /**
      * Page d'accueil d'un utilisateur connecté
      * @throws Zend_Db_Select_Exception
-     * @throws Zend_Exception
+     * @throws Zend_Exception|JsonException
      */
     public function dashboardAction(): void
     {

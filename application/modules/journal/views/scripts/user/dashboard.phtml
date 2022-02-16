@@ -71,7 +71,10 @@
 
             <div class="col-md-4">
                 <?php // Bloc Accèder à un article?>
-                <?= $this->partial('partials/dashboard_paper_search.phtml',  ['from' => 'assigned_articles']) ?>
+                <?= $this->partial('partials/dashboard_paper_search.phtml',  [
+                        'from' => UserController::ASSIGNED_ARTICLES_STR, 'title' => "Accès à un article assigné"
+                ]
+                ) ?>
             </div>
 
 
@@ -127,7 +130,10 @@
             </div>
             <div class="col-md-4">
                 <?php // Bloc Accèder à un article?>
-                <?= $this->partial('partials/dashboard_paper_search.phtml', ['from' => 'my_submissions']) ?>
+                <?= $this->partial('partials/dashboard_paper_search.phtml', [
+                        'from' => UserController::MY_SUBMISSIONS_STR, 'title' => 'Accès à mon article'
+                ]
+                ) ?>
             </div>
 
         <?php else : ?>
