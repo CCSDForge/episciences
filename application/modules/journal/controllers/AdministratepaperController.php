@@ -811,31 +811,36 @@ class AdministratepaperController extends PaperDefaultController
     {
         $redirection = [];
 
+        $isNextTest = true;
+
         $message = "Vous n'avez pas les droits suffisants pour accéder à cet article";
 
-        if ($paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid())) {
-            goto  allowEditorsToTakeDecisions;
+
+        if ($paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid())) { // assigned
+            $isNextTest = false;
         }
 
         // if editors encapsulation is on, editors who are not assigned to this paper do not have any permission for it: redirect them
-        if (Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
+        if ($isNextTest && Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
             $redirection['message'] = $message;
-            goto  allowEditorsToTakeDecisions;
+            $isNextTest = false;
         }
 
         // if copy editors encapsulation is on, copy editors who are not assigned to this paper do not have any permission for it: redirect them
-        if (Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
+        if ($isNextTest && Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
             $redirection['message'] = $message;
             $redirection['params'] = ['ce' => 1];
+            $isNextTest = false;
         }
 
-        if (Episciences_Auth::isGuestEditor()) {
+
+        if($isNextTest && Episciences_Auth::isGuestEditor() && !(Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor())){
             $redirection['message'] = $message;
             return $redirection;
         }
 
-         allowEditorsToTakeDecisions:
-        switch ($this->getRequest()->getActionName()) { // check if journal settings allow editors to take decisions about this paper
+        // check if journal settings allow editors to take decisions about this paper
+        switch ($this->getRequest()->getActionName()) {
 
             case 'accept':
                 if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_ACCEPT_PAPERS)) {
@@ -863,6 +868,7 @@ class AdministratepaperController extends PaperDefaultController
             default: // not action
                 break;
         }
+
 
         return $redirection;
 
