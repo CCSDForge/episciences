@@ -1527,10 +1527,11 @@ class Episciences_PapersManager
      */
     public static function getAcceptanceForm($default): \Ccsd_Form
     {
+        $formId= 'acceptance-form';
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
             'action' => '/administratepaper/accept/id/' . $default['id'],
-            'id' => 'acceptance-form'
+            'id' => $formId
         ]);
 
         $form->setDecorators([[
@@ -1547,18 +1548,20 @@ class Episciences_PapersManager
 
         // to
         $form->addElement('text', 'to', [
+            'id' => $formId. '-to' ,
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC']);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId. '-cc']);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC']);
+        $form->addElement('text', 'bcc', ['label' => 'BCC',  'id' => $formId. '-bcc']);
 
         // from
         $form->addElement('text', 'from', [
+            'id' => $formId. '-from',
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1566,6 +1569,7 @@ class Episciences_PapersManager
 
         // reply-to
         $form->addElement('text', 'reply-to', [
+            'id' => $formId. '-reply-to',
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1594,10 +1598,11 @@ class Episciences_PapersManager
      */
     public static function getPublicationForm($default): \Ccsd_Form
     {
+        $formId = 'publish-form';
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
             'action' => '/administratepaper/publish/id/' . $default['id'],
-            'id' => 'publish-form'
+            'id' => $formId
         ]);
 
         $form->setDecorators([[
@@ -1613,18 +1618,20 @@ class Episciences_PapersManager
 
         // to
         $form->addElement('text', 'to', [
+            'id' => $formId . '-to' ,
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC']);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC']);
+        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
 
         // from
         $form->addElement('text', 'from', [
+            'id' => $formId . '-from',
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1632,6 +1639,7 @@ class Episciences_PapersManager
 
         // reply-to
         $form->addElement('text', 'reply-to', [
+            'id' => $formId . 'reply-to',
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1660,10 +1668,11 @@ class Episciences_PapersManager
      */
     public static function getRefusalForm($default): \Ccsd_Form
     {
+        $formId = 'refusal-form';
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
             'action' => '/administratepaper/refuse/id/' . $default['id'],
-            'id' => 'refusal-form'
+            'id' => $formId
         ]);
 
         $form->setDecorators([[
@@ -1679,18 +1688,20 @@ class Episciences_PapersManager
 
         // to
         $form->addElement('text', 'to', [
+            'id' => $formId . '-to',
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC']);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC']);
+        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
 
         // from
         $form->addElement('text', 'from', [
+            'id' => $formId . '-from',
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1698,6 +1709,7 @@ class Episciences_PapersManager
 
         // reply-to
         $form->addElement('text', 'reply-to', [
+            'id' => $formId . '-reply-to',
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1729,7 +1741,9 @@ class Episciences_PapersManager
      */
     public static function getAskOtherEditorsForm($default, $editors, $paper): \Ccsd_Form
     {
+        $formId = 'ask-other-editors-form';
         $form = new Ccsd_Form([
+            'id' => $formId,
             'class' => 'form-horizontal',
             'action' => '/administratepaper/askothereditors/id/' . $default['id']]);
 
@@ -1761,13 +1775,14 @@ class Episciences_PapersManager
         ]);
 
         // cc
-        $askeditors_subform->addElement('text', 'cc', ['label' => 'CC']);
+        $askeditors_subform->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
 
         // bcc
-        $askeditors_subform->addElement('text', 'bcc', ['label' => 'BCC']);
+        $askeditors_subform->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
 
         // from
         $askeditors_subform->addElement('text', 'from', [
+            'id' => $formId . '-from',
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1775,6 +1790,7 @@ class Episciences_PapersManager
 
         // reply-to
         $askeditors_subform->addElement('text', 'reply-to', [
+            'id' => $formId . 'reply-to',
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1810,6 +1826,7 @@ class Episciences_PapersManager
      */
     public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null, bool $withAutoReassignment = true): \Ccsd_Form
     {
+        $formId = $withAutoReassignment ? $type . '_revision-form' : 'accepted-ask-final-version-form';
 
         $minDate = date('Y-m-d');
         $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
@@ -1819,20 +1836,21 @@ class Episciences_PapersManager
         if (null !== $review) { // git #123 : Ne jamais réassigner automatiquement les relecteurs, que ce soit pour des demandes de modif mineures ou majeures
             $automaticallyReassignSameReviewers = $review->getSetting(Episciences_Review::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION);
             if ($type === 'minor') {
-                $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MINOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers);
+                $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MINOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
             } elseif ($type === 'major') {
-                $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MAJOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers);
+                $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MAJOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
             }
         }
 
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
             'action' => '/administratepaper/revision/id/' . $default['id'] . '/type/' . $type,
-            'id' => $type . '_revision-form'
+            'id' => $formId
         ]);
 
         $form->setDecorators([[
             'ViewScript', [
+                'id' => $formId,
                 'viewScript' => '/administratemail/form.phtml'
             ]],
             'FormActions',
@@ -1844,21 +1862,24 @@ class Episciences_PapersManager
 
         // to
         $form->addElement('text', 'to', [
+            'id' => $formId . '-to',
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC']);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
 
         // bcc
         $form->addElement('text', 'bcc', [
+            'id' => $formId . '-bcc',
             'label' => 'BCC',
             'value' => Episciences_Review::forYourInformation()
         ]);
 
         // from
         $form->addElement('text', 'from', [
+            'id' => $formId . '-from',
             'label' => 'De',
             'placeholder' => RVCODE . '@' . DOMAIN,
             'disabled' => true,
@@ -1866,6 +1887,7 @@ class Episciences_PapersManager
 
         // reply-to
         $form->addElement('text', 'reply-to', [
+            'id' => $formId . '-reply-to',
             'label' => 'Répondre à',
             'placeholder' => RVCODE . '@' . DOMAIN,
             'disabled' => true,
@@ -1873,6 +1895,7 @@ class Episciences_PapersManager
 
         // revision deadline (optional)
         $form->addElement('date', $type . '-revision-deadline', [
+            'id' => $formId . '-revision-deadline',
             'label' => 'Date limite de réponse',
             'class' => 'form-control',
             'pattern' => '[A-Za-z]{3}',
@@ -1882,10 +1905,12 @@ class Episciences_PapersManager
         ]);
 
         $form->addElement('text', $type . '-revision-subject', [
+            'id' => $formId . '-revision-subject',
             'label' => 'Sujet',
             'value' => $default['subject']]);
 
         $form->addElement('textarea', $type . '-revision-message', [
+            'id' => $formId . '-revision-message',
             'label' => 'Message',
             'class' => 'full_mce',
             'value' => $default['body']]);
@@ -2281,7 +2306,7 @@ class Episciences_PapersManager
             'refuse' => Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED,
             'minorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
             'majorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST,
-            'acceptedAskAuthorFinalVersion' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
+            'acceptedAskAuthorFinalVersion' => Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION,
         ];
 
         // accept paper (or request final version)
@@ -2585,6 +2610,7 @@ class Episciences_PapersManager
     /**
      * @param array $default
      * @return Zend_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getReviewFormattingDeposedForm(array $default): \Zend_Form
@@ -2598,14 +2624,16 @@ class Episciences_PapersManager
     /**
      * @param array $default
      * @param string $prefix
+     * @param bool $displayDeadlineElement
      * @return Zend_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    private static function getModalPaperStatusCommonForm(array $default, string $prefix): \Zend_Form
+    private static function getModalPaperStatusCommonForm(array $default, string $prefix, bool $displayDeadlineElement = false): \Zend_Form
     {
         $form = new Ccsd_Form(['class' => 'form-horizontal']);
-        $subForm = new Ccsd_Form_SubForm();
-        $subForm->setDecorators([[
+
+        $form->setDecorators([[
             'ViewScript', [
                 'viewScript' => '/administratemail/form.phtml'
             ]],
@@ -2617,50 +2645,70 @@ class Episciences_PapersManager
         ]);
 
         // to
-        $subForm->addElement('text', 'to', [
+        $form->addElement('text', 'to', [
+            'id' => $prefix . '-to',
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $subForm->addElement('text', 'cc', ['label' => 'CC']);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc']);
 
         // bcc
-        $subForm->addElement('text', 'bcc', ['label' => 'BCC']);
+        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $prefix . '-bcc']);
 
         // from
-        $subForm->addElement('text', 'from', [
+        $form->addElement('text', 'from', [
+            'id' => $prefix . '-from',
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
         // reply-to
-        $subForm->addElement('text', 'reply-to', [
+        $form->addElement('text', 'reply-to', [
+            'id' => $prefix . '-reply-to',
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
-        $subForm->addElement(new Ccsd_Form_Element_Text([
+        if($displayDeadlineElement){
+            $minDate = date('Y-m-d');
+            $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
+
+            $form->addElement('date', '-revision-deadline', [
+                'id' => $prefix. '-revision-deadline',
+                'label' => 'Date limite de réponse',
+                'class' => 'form-control',
+                'pattern' => '[A-Za-z]{3}',
+                'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle'),
+                'attr-mindate' => $minDate,
+                'attr-maxdate' => $maxDate
+            ]);
+
+        }
+
+        $form->addElement(new Ccsd_Form_Element_Text([
             'name' => $prefix . 'Subject',
             'label' => 'Sujet',
             'value' => $default['subject']
         ]));
 
-        $subForm->addElement(new Ccsd_Form_Element_Textarea([
+        $form->addElement(new Ccsd_Form_Element_Textarea([
             'name' => $prefix . 'Message',
             'class' => 'full_mce',
             'label' => 'Message',
             'value' => $default['body']
         ]));
 
-        return $form->addSubForm($subForm, $prefix);
+        return $form;
     }
 
     /**
      * @param array $default
      * @return Zend_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getCeAcceptFinalVersionForm(array $default): \Zend_Form
@@ -2675,6 +2723,7 @@ class Episciences_PapersManager
      * retourne le formulaire de demande des sources auteur
      * @param array $default
      * @return Zend_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getWaitingForAuthorSourcesForm(array $default): \Zend_Form
@@ -2684,14 +2733,6 @@ class Episciences_PapersManager
         $form->setAttrib('id', 'waiting-for-author-sources-form');
         $form->setAction('/administratepaper/waitingforauthorsources/id/' . $default['id']);
 
-        /*   // revision deadline (optional)
-           $form->addElement('date', 'author-sources-deadline', [
-               'label' => 'Date limite de réponse',
-               'class' => 'form-control',
-               'pattern' => '[A-Za-z]{3}',
-               'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle')
-           ]);*/
-
         return $form;
     }
 
@@ -2699,6 +2740,7 @@ class Episciences_PapersManager
      * retourne le formulaire de demande de la mise en forme de l'auteur (version finale)
      * @param array $default
      * @return Zend_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getWaitingForAuthorFormatting(array $default): \Zend_Form

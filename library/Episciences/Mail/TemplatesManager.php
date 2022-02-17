@@ -2,129 +2,131 @@
 
 class Episciences_Mail_TemplatesManager
 {
-    const TYPE_USER_REGISTRATION = 'user_registration';
-    const TYPE_USER_LOST_PASSWORD = 'user_lost_password';
-    const TYPE_USER_LOST_LOGIN = 'user_lost_login';
-    const TYPE_PAPER_ACCEPTED_TMP_VERSION = 'paper_accepted_tmp_version';
-    const TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY = 'paper_accepted_tmp_version_managers_copy';
-    const TYPE_PAPER_ACCEPTED = 'paper_accepted';
-    const TYPE_PAPER_PUBLISHED_AUTHOR_COPY = 'paper_published_author_copy';
-    const TYPE_PAPER_PUBLISHED_EDITOR_COPY = 'paper_published_editor_copy';
-    const TYPE_PAPER_REFUSED = 'paper_refused'; // author copy
-    const TYPE_PAPER_REFUSED_EDITORS_COPY = 'paper_refused_editors_copy'; // editors copy
-    const TYPE_PAPER_REVISION_REQUEST = 'paper_revision_request';
-    const TYPE_PAPER_MINOR_REVISION_REQUEST = 'paper_minor_revision_request';
-    const TYPE_PAPER_MAJOR_REVISION_REQUEST = 'paper_major_revision_request';
-    const TYPE_PAPER_UPDATED_RATING_DEADLINE = 'paper_updated_rating_deadline';
-    const TYPE_PAPER_EDITOR_ASSIGN = 'paper_editor_assign';
-    const TYPE_PAPER_EDITOR_UNASSIGN = 'paper_editor_unassign';
-    const TYPE_PAPER_ASK_OTHER_EDITORS = 'paper_ask_other_editors';
+    public const TYPE_USER_REGISTRATION = 'user_registration';
+    public const TYPE_USER_LOST_PASSWORD = 'user_lost_password';
+    public const TYPE_USER_LOST_LOGIN = 'user_lost_login';
+    public const TYPE_PAPER_ACCEPTED_TMP_VERSION = 'paper_accepted_tmp_version';
+    public const TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY = 'paper_accepted_tmp_version_managers_copy';
+    public const TYPE_PAPER_ACCEPTED = 'paper_accepted';
+    public const TYPE_PAPER_PUBLISHED_AUTHOR_COPY = 'paper_published_author_copy';
+    public const TYPE_PAPER_PUBLISHED_EDITOR_COPY = 'paper_published_editor_copy';
+    public const TYPE_PAPER_REFUSED = 'paper_refused'; // author copy
+    public const TYPE_PAPER_REFUSED_EDITORS_COPY = 'paper_refused_editors_copy'; // editors copy
+    public const TYPE_PAPER_REVISION_REQUEST = 'paper_revision_request';
+    public const TYPE_PAPER_MINOR_REVISION_REQUEST = 'paper_minor_revision_request';
+    public const TYPE_PAPER_MAJOR_REVISION_REQUEST = 'paper_major_revision_request';
+    public const TYPE_PAPER_UPDATED_RATING_DEADLINE = 'paper_updated_rating_deadline';
+    public const TYPE_PAPER_EDITOR_ASSIGN = 'paper_editor_assign';
+    public const TYPE_PAPER_EDITOR_UNASSIGN = 'paper_editor_unassign';
+    public const TYPE_PAPER_ASK_OTHER_EDITORS = 'paper_ask_other_editors';
 
-    const TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY = 'paper_comment_answer_reviewer_copy';
-    const TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY = 'paper_comment_answer_editor_copy';
-    const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY = 'paper_comment_author_copy';
-    const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY = 'paper_comment_editor_copy'; // existe mais pas encore exploiter
+    public const TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY = 'paper_comment_answer_reviewer_copy';
+    public const TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY = 'paper_comment_answer_editor_copy';
+    public const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY = 'paper_comment_author_copy';
+    public const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY = 'paper_comment_editor_copy'; // existe mais pas encore exploiter
 
-    const TYPE_PAPER_REVISION_ANSWER = 'paper_revision_answer';
-    const TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION = 'paper_new_version_reviewer_reinvitation';
-    const TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN = 'paper_tmp_version_reviewer_reassign';
-    const TYPE_PAPER_TMP_VERSION_SUBMITTED = 'paper_tmp_version_submitted';
-    const TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN = 'paper_new_version_reviewer_reassign';
-    const TYPE_PAPER_NEW_VERSION_SUBMITTED = 'paper_new_version_submitted';
-    const TYPE_PAPER_REVIEWED_REVIEWER_COPY = 'paper_reviewed_reviewer_copy';
-    const TYPE_PAPER_REVIEWED_EDITOR_COPY = 'paper_reviewed_editor_copy';
-    const TYPE_PAPER_DELETED_AUTHOR_COPY = 'paper_deleted_author_copy';
-    const TYPE_PAPER_DELETED_EDITOR_COPY = 'paper_deleted_editor_copy';
-    const TYPE_PAPER_DELETED_REVIEWER_COPY = 'paper_deleted_reviewer_copy';
+    public const TYPE_PAPER_REVISION_ANSWER = 'paper_revision_answer';
+    public const TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION = 'paper_new_version_reviewer_reinvitation';
+    public const TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN = 'paper_tmp_version_reviewer_reassign';
+    public const TYPE_PAPER_TMP_VERSION_SUBMITTED = 'paper_tmp_version_submitted';
+    public const TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN = 'paper_new_version_reviewer_reassign';
+    public const TYPE_PAPER_NEW_VERSION_SUBMITTED = 'paper_new_version_submitted';
+    public const TYPE_PAPER_REVIEWED_REVIEWER_COPY = 'paper_reviewed_reviewer_copy';
+    public const TYPE_PAPER_REVIEWED_EDITOR_COPY = 'paper_reviewed_editor_copy';
+    public const TYPE_PAPER_DELETED_AUTHOR_COPY = 'paper_deleted_author_copy';
+    public const TYPE_PAPER_DELETED_EDITOR_COPY = 'paper_deleted_editor_copy';
+    public const TYPE_PAPER_DELETED_REVIEWER_COPY = 'paper_deleted_reviewer_copy';
 
-    const TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER = 'paper_reviewer_invitation1';
-    const TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER = 'paper_reviewer_invitation2';
-    const TYPE_PAPER_REVIEWER_INVITATION_NEW_USER = 'paper_reviewer_invitation3';
+    public const TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER = 'paper_reviewer_invitation1';
+    public const TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER = 'paper_reviewer_invitation2';
+    public const TYPE_PAPER_REVIEWER_INVITATION_NEW_USER = 'paper_reviewer_invitation3';
 
-    const TYPE_PAPER_REVIEWER_REMOVAL = 'paper_reviewer_removal';
-    const TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY = 'paper_reviewer_acceptation_reviewer_copy';
-    const TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY = 'paper_reviewer_acceptation_editor_copy';
-    const TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY = 'paper_reviewer_refusal_reviewer_copy';
-    const TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY = 'paper_reviewer_refusal_editor_copy';
-    const TYPE_PAPER_SUBMISSION_EDITOR_COPY = 'paper_submission_editor_copy';
-    const TYPE_PAPER_SUBMISSION_AUTHOR_COPY = 'paper_submission_author_copy';
-    const TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION = 'reminder_unanswered_reviewer_invitation_reviewer_version';
-    const TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION = 'reminder_unanswered_reviewer_invitation_editor_version';
-    const TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION = 'reminder_before_deadline_reviewer_version';
-    const TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION = 'reminder_before_deadline_editor_version';
-    const TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION = 'reminder_after_deadline_reviewer_version';
-    const TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION = 'reminder_after_deadline_editor_version';
-    const TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION = 'reminder_before_revision_deadline_author_version';
-    const TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION = 'reminder_before_revision_deadline_editor_version';
-    const TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION = 'reminder_after_revision_deadline_author_version';
-    const TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION = 'reminder_after_revision_deadline_editor_version';
-    const TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION = 'reminder_not_enough_reviewers';
-    const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
-    const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
+    public const TYPE_PAPER_REVIEWER_REMOVAL = 'paper_reviewer_removal';
+    public const TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY = 'paper_reviewer_acceptation_reviewer_copy';
+    public const TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY = 'paper_reviewer_acceptation_editor_copy';
+    public const TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY = 'paper_reviewer_refusal_reviewer_copy';
+    public const TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY = 'paper_reviewer_refusal_editor_copy';
+    public const TYPE_PAPER_SUBMISSION_EDITOR_COPY = 'paper_submission_editor_copy';
+    public const TYPE_PAPER_SUBMISSION_AUTHOR_COPY = 'paper_submission_author_copy';
+    public const TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION = 'reminder_unanswered_reviewer_invitation_reviewer_version';
+    public const TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION = 'reminder_unanswered_reviewer_invitation_editor_version';
+    public const TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION = 'reminder_before_deadline_reviewer_version';
+    public const TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION = 'reminder_before_deadline_editor_version';
+    public const TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION = 'reminder_after_deadline_reviewer_version';
+    public const TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION = 'reminder_after_deadline_editor_version';
+    public const TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION = 'reminder_before_revision_deadline_author_version';
+    public const TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION = 'reminder_before_revision_deadline_editor_version';
+    public const TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION = 'reminder_after_revision_deadline_author_version';
+    public const TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION = 'reminder_after_revision_deadline_editor_version';
+    public const TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION = 'reminder_not_enough_reviewers';
+    public const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
+    public const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
 
-    const TYPE_PAPER_SUGGEST_ACCEPTATION = 'paper_suggest_acceptation';
-    const TYPE_PAPER_SUGGEST_REFUSAL = 'paper_suggest_refusal';
-    const TYPE_PAPER_SUGGEST_NEW_VERSION = 'paper_suggest_new_version';
+    public const TYPE_PAPER_SUGGEST_ACCEPTATION = 'paper_suggest_acceptation';
+    public const TYPE_PAPER_SUGGEST_REFUSAL = 'paper_suggest_refusal';
+    public const TYPE_PAPER_SUGGEST_NEW_VERSION = 'paper_suggest_new_version';
 
     // Abandon publication process
-    const TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY = 'paper_abandon_publication_author_copy';
-    const TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY = 'paper_abandon_publication_editor_copy';
-    const TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL = 'paper_abandon_publication_reviewer_removal';
-    const TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY = 'paper_abandon_publication_by_author_author_copy';
-    const TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS = 'paper_abandon_publication_no_assigned_editors';
+    public const TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY = 'paper_abandon_publication_author_copy';
+    public const TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY = 'paper_abandon_publication_editor_copy';
+    public const TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL = 'paper_abandon_publication_reviewer_removal';
+    public const TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY = 'paper_abandon_publication_by_author_author_copy';
+    public const TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS = 'paper_abandon_publication_no_assigned_editors';
 
     // Continue publication process
-    const TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY = "paper_continue_publication_author_copy";
-    const TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY = "paper_continue_publication_editor_copy";
+    public const TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY = "paper_continue_publication_author_copy";
+    public const TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY = "paper_continue_publication_editor_copy";
 
     // COPY EDITOR
-    const TYPE_PAPER_COPY_EDITOR_ASSIGN = 'paper_copyeditor_assign';
-    const TYPE_PAPER_COPY_EDITOR_UNASSIGN = 'paper_copyeditor_unassign';
-    const TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY = 'paper_copyeditor_assign_author_copy';
-    const TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY = 'paper_copyeditor_assign_editor_copy';
+    public const TYPE_PAPER_COPY_EDITOR_ASSIGN = 'paper_copyeditor_assign';
+    public const TYPE_PAPER_COPY_EDITOR_UNASSIGN = 'paper_copyeditor_unassign';
+    public const TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY = 'paper_copyeditor_assign_author_copy';
+    public const TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY = 'paper_copyeditor_assign_editor_copy';
 
     //Changement état Copy editing : en attente des sources auteurs
-    const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY = 'paper_ce_waiting_for_author_sources_editor_copy';
-    const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY = 'paper_ce_waiting_for_author_sources_author_copy';
-    const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY = 'paper_ce_waiting_for_author_formatting_author_copy';
-    const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY = 'paper_ce_waiting_for_author_formatting_editor_and_copyeditor_copy';
+    public const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY = 'paper_ce_waiting_for_author_sources_editor_copy';
+    public const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY = 'paper_ce_waiting_for_author_sources_author_copy';
+    public const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY = 'paper_ce_waiting_for_author_formatting_author_copy';
+    public const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY = 'paper_ce_waiting_for_author_formatting_editor_and_copyeditor_copy';
 
     // editor comments
-    const TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY = 'paper_comment_by_editor_editor_copy';
-    const TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY = 'paper_ce_author_sources_deposed_response_author_copy';
-    const TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY = 'paper_ce_author_sources_deposed_response_copyeditors_and_editors_copy';
+    public const TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY = 'paper_comment_by_editor_editor_copy';
+    public const TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY = 'paper_ce_author_sources_deposed_response_author_copy';
+    public const TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY = 'paper_ce_author_sources_deposed_response_copyeditors_and_editors_copy';
     // Reponse à une demande d'une version finale
-    const TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY = 'paper_ce_author_vesrion_finale_deposed_author_copy';
-    const TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY = 'paper_ce_author_vesrion_finale_deposed_editor_and_copyeditor_copy';
+    public const TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY = 'paper_ce_author_vesrion_finale_deposed_author_copy';
+    public const TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY = 'paper_ce_author_vesrion_finale_deposed_editor_and_copyeditor_copy';
     // review formatting deposed
-    const TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY = 'paper_ce_review_formatting_deposed_author_copy';
-    const TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY = 'paper_ce_review_formatting_deposed_editor_and_copyeditor_copy';
+    public const TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY = 'paper_ce_review_formatting_deposed_author_copy';
+    public const TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY = 'paper_ce_review_formatting_deposed_editor_and_copyeditor_copy';
     // ready to  publish
-    const TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY = 'paper_ce_accepted_final_version_author_copy';
-    const TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY = 'paper_ce_accepted_final_version_copyeditor_and_editor_copy';
+    public const TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY = 'paper_ce_accepted_final_version_author_copy';
+    public const TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY = 'paper_ce_accepted_final_version_copyeditor_and_editor_copy';
 
     // paper accepted => stop pending reviewing
-    const TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING = "paper_reviewer_paper_accepted_stop_pending_reviewing";
+    public const TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING = "paper_reviewer_paper_accepted_stop_pending_reviewing";
 
     // demande de modifications => inviter les relecteurs à ne pas poursuivre leurs relectures.
-    const TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING = "paper_reviewer_paper_revision_request_stop_pending_reviewing";
-    const TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING = "paper_reviewer_paper_refused_stop_pending_reviewing";
-    const TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING = "paper_reviewer_paper_published_stop_pending_reviewing";
+    public const TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING = "paper_reviewer_paper_revision_request_stop_pending_reviewing";
+    public const TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING = "paper_reviewer_paper_refused_stop_pending_reviewing";
+    public const TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING = "paper_reviewer_paper_published_stop_pending_reviewing";
 
     // paper accepted: editors notification
-    const TYPE_PAPER_ACCEPTED_EDITORS_COPY = 'paper_accepted_editors_copy';
+    public const TYPE_PAPER_ACCEPTED_EDITORS_COPY = 'paper_accepted_editors_copy';
 
     // refus de gérer un article
-    const TYPE_PAPER_EDITOR_REFUSED_MONITORING = 'paper_editor_refused_monitoring';
+    public const TYPE_PAPER_EDITOR_REFUSED_MONITORING = 'paper_editor_refused_monitoring';
 
-    const TYPE_PAPER_SECTION_EDITOR_ASSIGN = 'paper_section_editor_assign';
-    const TYPE_PAPER_VOLUME_EDITOR_ASSIGN = 'paper_volume_editor_assign';
-    const TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN = 'paper_suggested_editor_assign';
+    public const TYPE_PAPER_SECTION_EDITOR_ASSIGN = 'paper_section_editor_assign';
+    public const TYPE_PAPER_VOLUME_EDITOR_ASSIGN = 'paper_volume_editor_assign';
+    public const TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN = 'paper_suggested_editor_assign';
     // Mise à jour d'un article
-    const TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY = 'paper_submission_updated_author_copy';
-    const TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY = 'paper_submission_updated_editor_copy';
+    public const TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY = 'paper_submission_updated_author_copy';
+    public const TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY = 'paper_submission_updated_editor_copy';
     //git #230
-    const TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY = 'paper_submission_other_recipient_copy';
+    public const TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY = 'paper_submission_other_recipient_copy';
+    public const TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION = 'paper_accepted_ask_authors_final_version';
+
 
     public static function getList()
     {
