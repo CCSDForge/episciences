@@ -1,6 +1,5 @@
 <?php
 
-use Laravolt\Avatar\Avatar;
 use neverbehave\Hcaptcha;
 use ReCaptcha\ReCaptcha;
 
@@ -10,7 +9,7 @@ class UserDefaultController extends Zend_Controller_Action
 
     public const DEFAULT_IMG_PATH = '/../public/img/user.png';
 
-    public function indexAction()
+    public function indexAction(): void
     {
         $this->renderScript('index/submenu.phtml');
     }
@@ -480,7 +479,7 @@ class UserDefaultController extends Zend_Controller_Action
                 try {
                     $user->setUid($lastInsertId);
                 } catch (Exception $e) {
-                    error_log('Error setUid UID: ' . $lastInsertId);
+                    trigger_error('Error setUid UID: ' . $lastInsertId);
                 }
 
 
@@ -488,12 +487,12 @@ class UserDefaultController extends Zend_Controller_Action
                 // regular user: new account is not valid, a mail is sent with an activation link
 
                 if ($displayCaptcha) {
-                    if (CAPTCHA_BRAND == 'RECAPTCHA') {
+                    if (CAPTCHA_BRAND === 'RECAPTCHA') {
                         $recaptcha = new ReCaptcha(RECAPTCHA_PRIVKEY);
                         $userResponse = $request->getPost('g-recaptcha-response');
                         $resp = $recaptcha->setExpectedHostname($_SERVER['SERVER_NAME'])
                             ->verify($userResponse, $_SERVER['REMOTE_ADDR']);
-                    } elseif (CAPTCHA_BRAND == 'HCAPTCHA') {
+                    } elseif (CAPTCHA_BRAND === 'HCAPTCHA') {
                         $hcaptcha = new Hcaptcha(HCAPTCHA_SECRETKEY);
                         $userResponse = $request->getPost('h-captcha-response');
                         $resp = $hcaptcha->challenge($userResponse);
@@ -515,7 +514,7 @@ class UserDefaultController extends Zend_Controller_Action
                 try {
                     $user->setUid($lastInsertId);
                 } catch (Exception $e) {
-                    error_log('Error setUid UID: ' . $lastInsertId);
+                    trigger_error('Error setUid UID: ' . $lastInsertId);
                 }
 
                 // activation token
@@ -527,7 +526,7 @@ class UserDefaultController extends Zend_Controller_Action
 
                 if (!$userTokenMapper->save($userToken)) {
                     $error = "La création du compte a échoué. Merci de réessayer.";
-                    error_log($error);
+                    trigger_error($error);
                     $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
                     $this->view->form = $form;
                     $this->render('create');
