@@ -37,16 +37,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard improvements: ability to reach an article from sections: my submissions and assigned articles
 - [#187](https://github.com/CCSDForge/episciences/issues/187): change the default templates: 'new version submitted' and 'tmp version submitted'
 - [#188](https://github.com/CCSDForge/episciences/issues/18 ): force notifications
+- CWI is removed now: OAI is down.
 
-##Fixedto 
+##Fixed
 - Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
 - Improvements in emailing: see github #117.
 - Multiple roles: ignore the "member" role when merging two accounts.
-- Fixed: undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
-- Fixed: not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
-- Fixed: the attachments to the rating report are not available [RT#145473]
-- Fixed: answer revision request: in some situations, the "Submit" button remains inactive.
-- Fixed: IDE warnings
+- undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
+- not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
+- the attachments to the rating report are not available [RT#145473]
+- answer revision request: in some situations, the "Submit" button remains inactive.
+- IDE warnings
 
 
 ## 1.0.25.1 - 2022-02-15
