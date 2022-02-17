@@ -51,7 +51,8 @@ class Episciences_Repositories
             self::REPO_PAPERURL => 'http://arxiv.org/pdf/%%IDv%%VERSION',
             self::REPO_TYPE => self::TYPE_PAPERS
         ],
-        [
+        // OAI is down.
+       /** [
             self::REPO_LABEL => 'CWI',
             self::REPO_EXAMPLE => '22211',
             self::REPO_BASEURL => 'http://oai.cwi.nl/oai',
@@ -59,7 +60,7 @@ class Episciences_Repositories
             self::REPO_DOCURL => 'http://persistent-identifier.org/?identifier=urn:nbn:nl:ui:18-%%ID',
             self::REPO_PAPERURL => 'https://repository.cwi.nl/noauth/directaccess.php?publnr=%%ID',
             self::REPO_TYPE => self::TYPE_PAPERS
-        ],
+        ],**/
 
         [
             // example https://zenodo.org/oai2d?verb=GetRecord&identifier=oai:zenodo.org:3752641&metadataPrefix=oai_dc
