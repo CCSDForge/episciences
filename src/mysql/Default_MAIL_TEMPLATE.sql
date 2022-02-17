@@ -96,6 +96,8 @@ INSERT INTO `MAIL_TEMPLATE` (`PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, `POSIT
 (NULL, NULL, NULL, 'reminder_article_blocked_in_accepted_state_editor_version', 'paper_review_reminder', NULL),
 (NULL, NULL, NULL, 'paper_refused_editors_copy', 'paper_final_decision', 3),
 (NULL, NULL, NULL, 'paper_submission_other_recipient_copy', 'paper_submission', 8),
-(NULL, NULL, NULL, 'paper_accepted_tmp_version_managers_copy', 'paper_final_decision', 2);
+(NULL, NULL, NULL, 'paper_accepted_tmp_version_managers_copy', 'paper_final_decision', 2),
+(NULL, NULL, NULL, NULL, 'paper_accepted_ask_authors_final_version', 'paper_final_decision', 4)
+;
 
 
