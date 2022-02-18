@@ -1,0 +1,16 @@
+<div class="modal fade <?= $this->target ?>" tabindex="-1" role="dialog" aria-labelledby="<?= $this->target ?>" aria-hidden="true">
+    <div class="modal-dialog" style="width: 50%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title"><?= $this->translate($this->title) ?></h4>
+            </div>
+            <div class="modal-body"><?= $this->body ?></div>
+            <?php if (!isset($this->withoutFooter)) : ?>
+                <div class="modal-footer"> <button type="button" class="btn btn-default" data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
+                    <button type="button" id="submit-modal-<?= $this->target ?>" class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>

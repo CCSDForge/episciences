@@ -70,11 +70,25 @@ $this->suggestedRevision = false;
         <h2 class="panel-title"><?php echo $this->translate('Statut de l\'article'); ?></h2>
     </div>
     <div class="panel-body in">
-        <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
+        <?php
+        $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' ';
+        $isWaitingForAuthorValidation = (Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION === $status);
+        ?>
+
+        <?php if ($isWaitingForAuthorValidation): ?>
+            <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via la plateforme &copy;Episciences"; ?>
+            <div class="alert alert-info">
+                <i class='fas fa-exclamation-triangle' style='color:chocolate'></i>
+                <?= $this->translate($info) ?>
+                <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
+            </div>
+        <?php endif; ?>
+
         <p>
             <strong><?= $statusMsg ?></strong><span
                     class="label label-status-<?= $status  ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
         </p>
+
 
         <?php if ($this->suggestions) : ?>
             <?php foreach ($this->suggestions as $suggestion) : ?>

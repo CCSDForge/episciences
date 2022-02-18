@@ -6,8 +6,7 @@ function getTags() {
     if ($.type(paper.title) === 'object') {
         if (paper.title[locale]) {
             paper_title = paper.title[locale];
-        }
-        else {
+        } else {
             for (let i in paper.title) {
                 paper_title = paper.title[i];
                 break;
@@ -64,7 +63,7 @@ $(document).ready(function () {
     if (paper.repository != 0) {
         $('#update_metadata').prop('disabled', false);
     }
-    
+
     let options = {
         convert_urls: false,
         menubar: false,
@@ -195,7 +194,7 @@ $(document).ready(function () {
         let name = attrName.substring(0, attrName.length - 8) + 'message'; // 8: length (deadline)
 
         $.map(available_languages, function (val, index) {
-            let firstLanguage = index ;
+            let firstLanguage = index;
 
             if (index === locale) {
                 return false;
@@ -436,7 +435,7 @@ function cancel() {
  * @param placement, default : 'bottom'
  * @param url, default, '/administratepaper/doiform'
  */
-function getCommunForm(button, docId, url = '/administratepaper/doiform', placement = 'bottom', ) {
+function getCommunForm(button, docId, url = '/administratepaper/doiform', placement = 'bottom',) {
     // Destruction des anciens popups
     $('button').popover('destroy');
 
@@ -459,9 +458,9 @@ function getCommunForm(button, docId, url = '/administratepaper/doiform', placem
     return ajaxRequest(url, {docid: docId});
 }
 
-function getPublicationDateForm(button, docId, placement = 'bottom', action = 'doiform' ) {
+function getPublicationDateForm(button, docId, placement = 'bottom', action = 'doiform') {
 
-    let request = getCommunForm(button, docId, '/administratepaper/publicationdateform' );
+    let request = getCommunForm(button, docId, '/administratepaper/publicationdateform');
 
     request.done(function (result) {
         // Destruction du popup de chargement
@@ -542,7 +541,7 @@ function closeResult() {
  * @param docid : l'id de document  à relire
  * @param uid : l'id de relecteur à reinviter
  */
-function reinviteReviewer(docid, uid){
+function reinviteReviewer(docid, uid) {
     let $formId = $('#invitereviewer_form_' + docid);
     $formId.append('<input id = "reinvite_uid" type="hidden" name="reinvite_uid" value="' + uid + '">');
     $formId.submit();
@@ -574,8 +573,8 @@ function refreshPaperHistory(docid) {
  * @param target
  */
 function editAttachmentDescription(target) {
-    let $validateButton = $('#submit-modal-review-formatting-submitted');
-    $validateButton.prop('disabled', true);
+    let $submitButton = $('button[id^="submit-modal-review-formatting"]');
+    $submitButton.prop('disabled', true);
     let selector = target.attr('data-target');
     let $helpBlock = $(selector).closest('div' + selector).find('span.help-block');
 
@@ -603,10 +602,11 @@ function editAttachmentDescription(target) {
     $("#no-attachments-checkbox").on('change', function () {
 
         if ($(this).prop('checked')) {
-            $validateButton.prop('disabled', false);
+            $submitButton.prop('disabled', false);
         } else {
-            $validateButton.prop('disabled', true);
+            $submitButton.prop('disabled', true);
         }
     });
-
 }
+
+

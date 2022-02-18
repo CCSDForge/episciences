@@ -257,6 +257,10 @@ return [
     // PAPER - DECISION FINALE *****************************************************************************************************************************
     "paper_final_decision_tpl_group" => "Article - décision finale",
 
+    //accepted ask authors final version
+    "paper_accepted_ask_authors_final_version_tpl_name" => "Accepté, demande de la version finale à l'auteur",
+    "paper_accepted_ask_authors_final_version_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Article déjà accepté, demande de la version finale",
+
     // accept paper
     "paper_accepted_tpl_name" => "Article accepté - Copie à destination de l'auteur",
     "paper_accepted_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Votre article a été accepté",
@@ -268,6 +272,9 @@ return [
     // accept tmp paper - managers copy
     "paper_accepted_tmp_version_managers_copy_tpl_name" => "Article accepté dans sa version temporaire (copie destinée aux managers de l'article)",
     "paper_accepted_tmp_version_managers_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - La version temporaire d'un article a été acceptée",
+
+    'paper_formatted_by_journal_waiting_author_validation_tpl_name' => "Dépôt de la mise en forme par la revue, en attente de validation par l'auteur",
+    'paper_formatted_by_journal_waiting_author_validation_mail_subject' => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - mise en forme en attente de validation",
 
     // reject paper
     "paper_refused_tpl_name" => "Article refusé - Copie à destination de l'auteur",

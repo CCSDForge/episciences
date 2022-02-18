@@ -131,6 +131,8 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
         $paperStatus[29] =  $paperStatus[4];
         $paperStatus[30] =  $paperStatus[4];
         $paperStatus[31] =  $paperStatus[4];
+        $paperStatus[32] =  $paperStatus[20];
+        $paperStatus[33] =  $paperStatus[23];
 
         return $paperStatus;
     }

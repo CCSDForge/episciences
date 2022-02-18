@@ -126,18 +126,28 @@ class Episciences_Mail_TemplatesManager
     //git #230
     public const TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY = 'paper_submission_other_recipient_copy';
     public const TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION = 'paper_accepted_ask_authors_final_version';
+    public const TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION = 'paper_formatted_by_journal_waiting_author_validation';
 
-
-    public static function getList()
+    /**
+     * @param array $withoutKeys
+     * @return array
+     */
+    public static function getList(array $withoutKeys = []): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = $db->select()
             ->from(T_MAIL_TEMPLATES)
-            ->where('RVID IS NULL')
-            ->orWhere('RVID = ?', RVID)
-            ->order('TYPE')
-            ->order('POSITION');
+            ->where('(RVID IS NULL OR RVID = ?)', RVID);
+
+        if (!empty($withoutKeys)) {
+            foreach ($withoutKeys as $key) {
+                $select->where($db->quoteIdentifier('KEY') .  ' !=  ?', $key);
+            }
+        }
+
+        $select->order('TYPE');
+        $select->order('POSITION');
 
         $templates = $db->fetchAssoc($select);
 
@@ -180,7 +190,7 @@ class Episciences_Mail_TemplatesManager
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getTemplateForm(Episciences_Mail_Template $template, $langs = null)
+    public static function getTemplateForm(Episciences_Mail_Template $template, $langs = null): Zend_Form
     {
         $id = $template->getId();
         $form = new Zend_Form();

@@ -2306,7 +2306,6 @@ class Episciences_PapersManager
             'refuse' => Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED,
             'minorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
             'majorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST,
-            'acceptedAskAuthorFinalVersion' => Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION,
         ];
 
         // accept paper (or request final version)
@@ -2327,6 +2326,9 @@ class Episciences_PapersManager
         $template_keys['reviewFormattingDeposed'] = Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY;
         // ready to publish
         $template_keys['ceAcceptFinalVersion'] = Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY;
+        $template_keys['acceptedAskAuthorFinalVersion'] = Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION;
+        // accepted - waiting for authors validation
+        $template_keys['acceptedAskAuthorValidation'] = Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION;
 
         foreach ($template_keys as $template_name => $template_key) {
             $oTemplate = new Episciences_Mail_Template();
@@ -2677,8 +2679,8 @@ class Episciences_PapersManager
             $minDate = date('Y-m-d');
             $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
 
-            $form->addElement('date', '-revision-deadline', [
-                'id' => $prefix. '-revision-deadline',
+            $form->addElement('date', $prefix . '-revision-deadline', [
+                'id' => $prefix . '-revision-deadline',
                 'label' => 'Date limite de réponse',
                 'class' => 'form-control',
                 'pattern' => '[A-Za-z]{3}',
@@ -2760,8 +2762,29 @@ class Episciences_PapersManager
      */
     public static function getAcceptedAskAuthorFinalVersionForm(array $default): \Zend_Form
     {
-        return self::getRevisionForm($default, 'minor', null, false);
+        $type = 'acceptedAskAuthorsFinalVersion';
+        $formId = 'accepted-ask-authors-final-version-form';
+        $formAction = '/administratepaper/acceptedaskauhorfinalversion/id/' . $default['id'] . '/type/' . $type;
+        $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorsFinalVersion', true);
+        $form->setAttrib('id', $formId);
+        $form->setAction($formAction);
+        return $form;
+    }
 
+    /**
+     * @param array $default
+     * @return Zend_Form
+     * @throws Zend_Form_Exception
+     * @throws Zend_Exception
+     */
+    public static function getAcceptedAskAuthorValidationForm(array $default): \Zend_Form
+    {
+        $formId = 'accepted-ask-author-validation-form';
+        $formAction = '/administratepaper/acceptedaskauthorvalidation/id/' . $default['id'];
+        $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorValidation');
+        $form->setAttrib('id', $formId);
+        $form->setAction($formAction);
+        return $form;
     }
 
     /**
@@ -2937,6 +2960,37 @@ class Episciences_PapersManager
 
         return $db->fetchCol($statusQuery);
 
+    }
+
+    /**
+     *
+     * @param $docId
+     * @return Ccsd_Form
+     * @throws Zend_Form_Exception
+     */
+    public static function getApprovedForm($docId): \Ccsd_Form
+    {
+        $action = 'approvedwaitingforfinalpublication';
+        $id = 'approved' ;
+        $form = new Ccsd_Form();
+        $form->setAttrib('class', 'form-horizontal');
+        $form->setName($id);
+        $form->setAction('/administratepaper/' . $action . '?id=' . $docId);
+
+
+        $form->addElement('submit', 'submit', [
+            'label' => 'Envoyer',
+            'class' => 'btn btn-primary',
+            'decorators' => [['HtmlTag', ['tag' => 'div', 'openOnly' => true, 'class' => 'form-actions text-center']], 'ViewHelper']]);
+
+        $form->addElement('button', 'cancel', [
+            'label' => 'Annuler',
+            'class' => 'btn btn-default',
+            'data-dismiss' => 'modal',
+            'onclick' => "cancel()",
+            'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'closeOnly' => true]]]]);
+
+        return $form;
     }
 
 }

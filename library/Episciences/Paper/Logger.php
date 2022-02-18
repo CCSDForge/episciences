@@ -2,58 +2,58 @@
 
 class Episciences_Paper_Logger
 {
-    const CODE_STATUS = 'status';
-    const CODE_RESTORATION_OF_STATUS = 'restoration_of_status';
-    const CODE_EDITOR_ASSIGNMENT = 'editor_assignment';
-    const CODE_EDITOR_UNASSIGNMENT = 'editor_unassignment';
-    const CODE_REVIEWER_INVITATION = 'reviewer_invitation';
-    const CODE_REVIEWER_INVITATION_ACCEPTED = 'reviewer_invitation_accepted';
-    const CODE_REVIEWER_INVITATION_DECLINED = 'reviewer_invitation_declined';
-    const CODE_REVIEWER_ASSIGNMENT = 'reviewer_assignment';
-    const CODE_REVIEWER_UNASSIGNMENT = 'reviewer_unassignment';
-    const CODE_REVIEWING_IN_PROGRESS = 'reviewing_in_progress';
-    const CODE_REVIEWING_COMPLETED = 'reviewing_completed';
-    const CODE_MAIL_SENT = 'mail_sent';
-    const CODE_REMINDER_SENT = 'reminder_sent';
+    public const CODE_STATUS = 'status';
+    public const CODE_RESTORATION_OF_STATUS = 'restoration_of_status';
+    public const CODE_EDITOR_ASSIGNMENT = 'editor_assignment';
+    public const CODE_EDITOR_UNASSIGNMENT = 'editor_unassignment';
+    public const CODE_REVIEWER_INVITATION = 'reviewer_invitation';
+    public const CODE_REVIEWER_INVITATION_ACCEPTED = 'reviewer_invitation_accepted';
+    public const CODE_REVIEWER_INVITATION_DECLINED = 'reviewer_invitation_declined';
+    public const CODE_REVIEWER_ASSIGNMENT = 'reviewer_assignment';
+    public const CODE_REVIEWER_UNASSIGNMENT = 'reviewer_unassignment';
+    public const CODE_REVIEWING_IN_PROGRESS = 'reviewing_in_progress';
+    public const CODE_REVIEWING_COMPLETED = 'reviewing_completed';
+    public const CODE_MAIL_SENT = 'mail_sent';
+    public const CODE_REMINDER_SENT = 'reminder_sent';
     // master volume selection
-    const CODE_VOLUME_SELECTION = 'volume_selection';
+    public const CODE_VOLUME_SELECTION = 'volume_selection';
     // secondary volume selection
-    const CODE_OTHER_VOLUMES_SELECTION = 'other_volumes_selection';
-    const CODE_SECTION_SELECTION = 'section_selection';
-    const CODE_MINOR_REVISION_REQUEST = 'minor_revision_request';
-    const CODE_MAJOR_REVISION_REQUEST = 'major_revision_request';
+    public const CODE_OTHER_VOLUMES_SELECTION = 'other_volumes_selection';
+    public const CODE_SECTION_SELECTION = 'section_selection';
+    public const CODE_MINOR_REVISION_REQUEST = 'minor_revision_request';
+    public const CODE_MAJOR_REVISION_REQUEST = 'major_revision_request';
     // revision request answer : comment
-    const CODE_REVISION_REQUEST_ANSWER = 'revision_request_answer';
+    public const CODE_REVISION_REQUEST_ANSWER = 'revision_request_answer';
     // revision request answer : new version
-    const CODE_REVISION_REQUEST_NEW_VERSION = 'revision_request_new_version';
+    public const CODE_REVISION_REQUEST_NEW_VERSION = 'revision_request_new_version';
     // revision request answer : tmp version
-    const CODE_REVISION_REQUEST_TMP_VERSION = 'revision_request_tmp_version';
+    public const CODE_REVISION_REQUEST_TMP_VERSION = 'revision_request_tmp_version';
     // alter report status
-    const CODE_ALTER_REPORT_STATUS = 'alter_report_status';
-    const CODE_MONITORING_REFUSED = 'monitoring_refused';
+    public const CODE_ALTER_REPORT_STATUS = 'alter_report_status';
+    public const CODE_MONITORING_REFUSED = 'monitoring_refused';
     // Abandon publication process
-    const CODE_ABANDON_PUBLICATION_PROCESS = 'abandon_publication_process';
+    public const CODE_ABANDON_PUBLICATION_PROCESS = 'abandon_publication_process';
     // Continue publication process
-    const CODE_CONTINUE_PUBLICATION_PROCESS = 'continue_publication_process';
+    public const CODE_CONTINUE_PUBLICATION_PROCESS = 'continue_publication_process';
     // COPY EDITOR
-    const CODE_COPY_EDITOR_ASSIGNMENT = 'copy_editor_assignment';
-    const CODE_COPY_EDITOR_UNASSIGNMENT = 'copy_editor_unassignment';
+    public const CODE_COPY_EDITOR_ASSIGNMENT = 'copy_editor_assignment';
+    public const CODE_COPY_EDITOR_UNASSIGNMENT = 'copy_editor_unassignment';
 
     // copy editing author sources request
-    const CODE_CE_AUTHOR_SOURCES_REQUEST = 'copy_editing_author_sources_request';
-    const CODE_CE_AUTHOR_SOURCES_DEPOSED = 'copy_editing_author_sources_deposed';
-    const CODE_CE_AUTHOR_FINALE_VERSION_REQUEST = 'copy_editing_author_finale_version_request';
-    const CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED = 'copy_editing_author_finale_version_deposed';
-    const CODE_CE_READY_TO_PUBLISH = 'copy_editing_ready_to_publish';
-    const CODE_CE_REVIEW_FORMATTING_DEPOSED = 'copy_editing_review_formatting_deposed';
+    public const CODE_CE_AUTHOR_SOURCES_REQUEST = 'copy_editing_author_sources_request';
+    public const CODE_CE_AUTHOR_SOURCES_DEPOSED = 'copy_editing_author_sources_deposed';
+    public const CODE_CE_AUTHOR_FINALE_VERSION_REQUEST = 'copy_editing_author_finale_version_request';
+    public const CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED = 'copy_editing_author_finale_version_deposed';
+    public const CODE_CE_READY_TO_PUBLISH = 'copy_editing_ready_to_publish';
+    public const CODE_CE_REVIEW_FORMATTING_DEPOSED = 'copy_editing_review_formatting_deposed';
     // new paper comment
-    const CODE_NEW_PAPER_COMMENT = 'new_paper_comment';
-    const CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED = 'copy_editing_author_final_version_submitted';
-    const CODE_AUTHOR_COMMENT_COVER_LETTER =  "author_comment_cover_letter";
-    const CODE_EDITOR_COMMENT=  "editor_comment";
-    const CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR = "paper_comment_form_reviewer_to_contributor";
-    const CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER = "paper_comment_form_contributor_to_reviewer";
-    const CODE_PAPER_UPDATED = "paper_updated";
+    public const CODE_NEW_PAPER_COMMENT = 'new_paper_comment';
+    public const CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED = 'copy_editing_author_final_version_submitted';
+    public const CODE_AUTHOR_COMMENT_COVER_LETTER =  "author_comment_cover_letter";
+    public const CODE_EDITOR_COMMENT=  "editor_comment";
+    public const CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR = "paper_comment_form_reviewer_to_contributor";
+    public const CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER = "paper_comment_form_contributor_to_reviewer";
+    public const CODE_PAPER_UPDATED = "paper_updated";
     // https://github.com/CCSDForge/episciences/issues/50
     public const CODE_ALTER_PUBLICATION_DATE = "paper_alter_publication_date";
 
@@ -62,16 +62,19 @@ class Episciences_Paper_Logger
 
     public const CODE_COI_REPORTED = "coi_reported";
 
+    public const CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION = "accepted_ask_authors_final_version";
+    public const CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION = "accepted_ask_for_author_validation";
+
     // alert-
-    const WARNING = 'warning';
-    const INFO = 'info';
-    const VIOLET = 'violet';
-    const SUCCESS = 'success';
-    const DANGER = 'danger';
-    const PRIMARY = 'primary';
+    public const WARNING = 'warning';
+    public const INFO = 'info';
+    public const VIOLET = 'violet';
+    public const SUCCESS = 'success';
+    public const DANGER = 'danger';
+    public const PRIMARY = 'primary';
 
     // log type css class
-    public static $_css = [
+    public static array $_css = [
         self::CODE_RESTORATION_OF_STATUS => self::SUCCESS,
         self::CODE_STATUS => self::SUCCESS,
         self::CODE_EDITOR_ASSIGNMENT => self::WARNING,
@@ -115,10 +118,12 @@ class Episciences_Paper_Logger
         self::CODE_DOI_ASSIGNED => self::INFO,
         self::CODE_DOI_UPDATED => self::INFO,
         self::CODE_ALTER_PUBLICATION_DATE => self::WARNING,
-        self::CODE_COI_REPORTED => self::DANGER
+        self::CODE_COI_REPORTED => self::DANGER,
+        self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => self::VIOLET,
+        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => self::VIOLET
     ];
 
-    public static $_label = [
+    public static array $_label = [
         self::CODE_STATUS => 'Nouveau statut',
         self::CODE_EDITOR_ASSIGNMENT => "Assignation d'un rédacteur",
         self::CODE_EDITOR_UNASSIGNMENT => "Désassignation d'un rédacteur",
@@ -143,9 +148,11 @@ class Episciences_Paper_Logger
         self::CODE_MONITORING_REFUSED => "Ne plus gérer l'artcile",
         self::CODE_NEW_PAPER_COMMENT => 'Nouveau commentaire',
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Demande d'éclaircissements (relecteur au contributeur)",
-        self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'eclaicissement (contributeur au relecteur) ",
+        self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'éclaircissement (contributeur au relecteur)",
         self::CODE_DOI_ASSIGNED => 'DOI assigné',
-        self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)"
+        self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)",
+        self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepté, demande de la version finale à l'auteur",
+        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur"
     ];
 
     /**
@@ -159,7 +166,7 @@ class Episciences_Paper_Logger
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function log($paperid, $docid, $action, $uid = null, $detail = null, $date = null, $rvid = null)
+    public static function log($paperid, $docid, $action, $uid = null, $detail = null, $date = null, $rvid = null): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -167,11 +174,11 @@ class Episciences_Paper_Logger
             'PAPERID' => $paperid,
             'DOCID' => $docid,
             // if no user is specified, 'episciences' uid is used
-            'UID' => ($uid) ? $uid : EPISCIENCES_UID,
-            'RVID' => ($rvid) ? $rvid : RVID,
+            'UID' => ($uid) ?: EPISCIENCES_UID,
+            'RVID' => ($rvid) ?: RVID,
             'ACTION' => $action,
             'DETAIL' => $detail,
-            'DATE' => ($date) ? $date : new Zend_DB_Expr('NOW()')
+            'DATE' => ($date) ?: new Zend_DB_Expr('NOW()')
         ];
 
         if (!$db->insert(T_LOGS, $data)) {
@@ -183,14 +190,13 @@ class Episciences_Paper_Logger
 
     /**
      * @return array
-     * @throws ReflectionException
      */
-    public static function getLogTypes()
+    public static function getLogTypes(): array
     {
-        $reflect = new ReflectionClass(get_class());
+        $reflect = new ReflectionClass(__CLASS__);
         $constants = $reflect->getConstants();
-        $keys = array_filter(array_keys($constants), function ($k) {
-            return substr($k, 0, 5) === "CODE_";
+        $keys = array_filter(array_keys($constants), static function ($k) {
+            return strpos($k, "CODE_") === 0;
         });
         return array_intersect_key($constants, array_flip($keys));
     }
@@ -202,10 +208,10 @@ class Episciences_Paper_Logger
      * @return int : le nombre de lignes affectées
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function updateUid(int $oldUid = 0, int $newUid = 0)
+    public static function updateUid(int $oldUid = 0, int $newUid = 0): int
     {
 
-            if($oldUid == 0 || $newUid == 0){
+            if($oldUid === 0 || $newUid === 0){
                 return 0;
             }
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();

@@ -256,5 +256,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('EPISCIENCES_SOLR_LOG_PATH', '');
         define('EPISCIENCES_API_URL', '');
         define('EPISCIENCES_API_SECRET_KEY', '');
+        define('EPISCIENCES_UID',  0);
     }
 }
