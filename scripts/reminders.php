@@ -191,9 +191,9 @@ try {
                 $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $rvCode);
                 $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, $review->getName());
 
-                if (isset($recipient['deadline'])) {
+                if (isset($recipient['invitationDate'])) {
 
-                    $target = date_create($recipient['deadline']);
+                    $target = date_create($recipient['invitationDate']);
                     $interval = $origin->diff($target, true)->format('%a'); // in days
 
                     $mail->addTag(Episciences_Mail_Tags::TAG_REMINDER_DELAY, $interval);

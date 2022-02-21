@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+# Fixed
+- RT #148133: incorrect "Reminder Delay": 
+  The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
 
 ## 1.0.25.1 - 2022-02-15
 # Changed
