@@ -1075,7 +1075,7 @@ class Episciences_Mail_Reminder
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
                         'tags' => $tags,
-                        'deadline' => $data['EXPIRATION_DATE']
+                        'deadline' => $data['INVITATION_DATE']
                     ];
                 }
             } else {
@@ -1094,6 +1094,7 @@ class Episciences_Mail_Reminder
                     'email' => $user->getEmail(),
                     'lang' => $lang,
                     'tags' => $tags,
+                    'invitationDate' => $data['INVITATION_DATE'],
                     'deadline' => $data['EXPIRATION_DATE']
                 ];
             }
