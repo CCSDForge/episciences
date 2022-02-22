@@ -824,11 +824,11 @@ class Episciences_Submit
 
             }
 
-        } catch (Ccsd_Error $e) { // message personalisé : visible à l'utilisateur
+        } catch (Ccsd_Error $e) { // customized message : visible to the user
             $result['status'] = 0;
             $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate($e->parseError());
             return ($result);
-        } catch (Exception $e) { // autre exception : message générique
+        } catch (Exception $e) { // other exceptions: generic message
             $result['status'] = 0;
             $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate("Le document n'a pas été trouvé ou n'a pas pu être chargé.");
             return ($result);
