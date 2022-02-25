@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+# fixed
+- Rt #148466:
+   * Sorting by date in the Dashboard is wrong
+   * Enabling the conflict of interest (COI) option distorts the pagination
+
 ## 1.0.25.1 - 2022-02-15
 # Changed
 [#152](https://github.com/CCSDForge/episciences/issues/152): page footer modifications.
