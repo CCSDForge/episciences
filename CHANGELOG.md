@@ -14,13 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+
+## 1.0.26 - 2022-03-01
 # Fixed
-- RT #148133: incorrect "Reminder Delay": 
-  The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
-- Rt #148466:
-   * Sorting by date in the Dashboard is wrong
-   * Enabling the conflict of interest (COI) option distorts the pagination
+- Issue reported to support RT #148133:
+   * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
+- Issue reported to support RT #148466:
+   * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
 
 ## 1.0.25.1 - 2022-02-15
 # Changed
