@@ -1522,7 +1522,7 @@ class PaperController extends PaperDefaultController
                 '3' => '', // désactiver dans js/paper/submitted.js, sinon prévoir une jointure si nécessaire
                 '4' => 'vid',
                 '5' => 'sid',
-                '6' => 'submission_date'
+                '6' => 'when'
             ];
 
             $post = $request->getParams();
@@ -1606,7 +1606,7 @@ class PaperController extends PaperDefaultController
                 '5' => '',
                 '6' => 'vid',
                 '7' => 'sid',
-                '8' => 'submission_date'
+                '8' => 'when'
 
             ];
 

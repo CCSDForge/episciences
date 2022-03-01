@@ -31,10 +31,11 @@ class Episciences_PapersManager
 
         $select = self::getListQuery($settings, $isFilterInfos, $isLimit);
 
-        $all = $db->fetchAll($select, $cached); // the first column not contains unique values, that's why we use fetchAll
-        $list = self::fromSequentialArrayToAssoc($all);
+        $list = $db->fetchAssoc($select, $cached);
 
         $result = [];
+
+        $allConflicts = Episciences_Paper_ConflictsManager::all(RVID);
 
         foreach ($list as $id => $item) {
 
@@ -46,12 +47,19 @@ class Episciences_PapersManager
                 } else {
                     $item['withxsl'] = false;
                     $paper = new Episciences_Paper($item);
+                    if (array_key_exists($paper->getPaperid(), $allConflicts)) {
+                        $paper->setConflicts($allConflicts[$paper->getPaperid()]);
+                    }
                     $result[$id] = $paper;
                     Episciences_Cache::save($cachename, serialize($paper));
                 }
             } else {
                 $item['withxsl'] = false;
-                $result[$id] = new Episciences_Paper($item);
+                $paper = new Episciences_Paper($item);
+                if (array_key_exists($paper->getPaperid(), $allConflicts)) {
+                    $paper->setConflicts($allConflicts[$paper->getPaperid()]);
+                }
+                $result[$id] = $paper;
             }
         }
 
@@ -106,7 +114,7 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $papersQuery = $db->select()->from(['papers' => T_PAPERS])->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id');
+        $papersQuery = $db->select()->from(['papers' => T_PAPERS]);
 
         $countQuery = $db->select()->from($papersQuery, [new Zend_Db_Expr("COUNT('DOCID')")]);
 
@@ -2018,17 +2026,16 @@ class Episciences_PapersManager
 
         $select = $db->select()
             ->from(['papers' => T_PAPERS])
-            ->where('DOCID = ?', $docId)
-            ->joinLeft(['conflicts' => T_PAPER_CONFLICTS], 'papers.PAPERID = conflicts.paper_id');
+            ->where('DOCID = ?', $docId);
 
-        $data = self::fromSequentialArrayToAssoc($select->query()->fetchAll());
+        $data = $select->query()->fetch();
 
         if (!$data) {
             return false;
         }
 
-        $data = $data[$docId];
-        return new Episciences_Paper(array_merge($data, ['withxsl' => $withxsl]));
+        $paper = new Episciences_Paper(array_merge($data, ['withxsl' => $withxsl]));
+        return $paper->setConflicts(Episciences_Paper_ConflictsManager::findByPaperId($paper->getPaperid()));
 
     }
 
@@ -2826,6 +2833,7 @@ class Episciences_PapersManager
     }
 
     /**
+     * @deprecated
      * @param array $array
      * @return array
      */

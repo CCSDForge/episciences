@@ -3945,13 +3945,7 @@ class Episciences_Paper
      */
     public function setConflicts(array $conflicts): self
     {
-        $oConflicts = [];
-
-        foreach ($conflicts as $conflict){
-            $oConflicts[] = new Episciences_Paper_Conflict($conflict);
-        }
-
-        $this->_conflicts = $oConflicts;
+        $this->_conflicts = $conflicts;
         return $this;
     }
 

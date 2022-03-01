@@ -17,8 +17,9 @@ class AdministratepaperController extends PaperDefaultController
         '6' => '', // ***
         '7' => '',// ***
         '8' => '',// *** (désactiver dans js/paper/submitted.js) sinon prévoir une jointure si nécessaire
-        '9' => 'submission_date',
-        '10' => 'publication_date'
+        '9' => '',
+        '10' => 'when',
+        '11' => 'publication_date'
     ];
 
 
