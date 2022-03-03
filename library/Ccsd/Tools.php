@@ -1326,7 +1326,7 @@ class Ccsd_Tools
             CURLOPT_HEADER => 0, // TRUE pour inclure l'en-tête dans la valeur de retour.
             CURLOPT_RETURNTRANSFER => 1, // TRUE pour retourner le transfert en tant que chaîne de caractères de la valeur retournée par curl_exec() au lieu de l'afficher directement.
             CURLOPT_CONNECTTIMEOUT => 15, // Le nombre de secondes à attendre durant la tentative de connexion
-            CURLOPT_TIMEOUT => 100, // Le temps maximum d'exécution de la fonction cURL exprimé en secondes
+            CURLOPT_TIMEOUT => 60, // Le temps maximum d'exécution de la fonction cURL exprimé en secondes
             CURLOPT_USERAGENT => $curlUserAgent, // Le contenu de l'en-tête "User-Agent: " à utiliser dans une requête HTTP.
             CURLOPT_FOLLOWLOCATION => true // TRUE pour suivre tous les en-têtes "Location: " que le serveur envoie dans les en-têtes HTTP (à noter que ceci est récursif, PHP suivra tous les en-têtes "Location: " qui lui sont envoyés à moins que CURLOPT_MAXREDIRS ne soit définie).
         ];
