@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+## Unreleased
+#Fixed
+- Dashboard: the number of papers assigned to the copy editor includes obsolete papers
 
 ## 1.0.26 - 2022-03-01
 # Fixed
