@@ -38,22 +38,20 @@ class Episciences_Paper
     public const STATUS_REFUSED = 5;
     public const STATUS_OBSOLETE = 6;
     public const STATUS_WAITING_FOR_MINOR_REVISION = 7;
-    public const STATUS_WAITING_FOR_MAJOR_REVISION = 15;
+    public const STATUS_WAITING_FOR_COMMENTS = 8;
     public const STATUS_TMP_VERSION = 9;
     public const STATUS_NO_REVISION = 10;
     public const STATUS_NEW_VERSION = 11;
-    public const STATUS_WAITING_FOR_COMMENTS = 8;
     // paper removed by contributor (before publication)
     public const STATUS_DELETED = 12;
     // paper removed by editorial board (after publication)
     public const STATUS_REMOVED = 13;
     // reviewers have been invited, but no one has accepted yet
     public const STATUS_REVIEWERS_INVITED = 14;
+    public const STATUS_WAITING_FOR_MAJOR_REVISION = 15;
     public const STATUS_PUBLISHED = 16;
     // Le processus de publication peut être stoppé tant que l'article n'est pas publié
     public const STATUS_ABANDONED = 17;
-    public const STATUS_TMP_VERSION_ACCEPTED = 25; // tmp version accepted
-
     //Copy editing
     public const STATUS_CE_WAITING_FOR_AUTHOR_SOURCES = 18;
     public const STATUS_CE_AUTHOR_SOURCES_DEPOSED = 19;
@@ -63,13 +61,15 @@ class Episciences_Paper
     public const STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED = 22;
     public const STATUS_CE_READY_TO_PUBLISH = 23;
     public const STATUS_CE_AUTHOR_FORMATTING_DEPOSED = 24; // la mise en forme par l'auteur a été validée
-
+    public const STATUS_TMP_VERSION_ACCEPTED = 25; // tmp version accepted
     public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  = 26;
     public const STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 27;
-    public const STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING = 28; // waiting to be edited by the Journal
+    public const STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING = 28; // waiting to be edited by the Journal
     public const STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION = 29; // after author's modification
-    public const STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 31;
     public const STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION = 30;
+    public const STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 31;
+    public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION = 32;
+    public const STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION = 33; // Journal formatting approved by author
 
     // paper settings
     public const SETTING_UNWANTED_REVIEWER = 'unwantedReviewer';
@@ -100,8 +100,10 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
-        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING,
-        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION
+        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
     ];
 
     // Non présents dans le filtre de recherche
@@ -186,12 +188,14 @@ class Episciences_Paper
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "copy ed : mise en forme par l'auteur terminée, en attente de la version finale",
         self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
         self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée, en attente de la version finale',
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  => "accepté, en attente de la version finale de l'auteur",
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  => "accepté - en attente de la version finale de l'auteur",
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'accepté, en attente de modifications majeures',
-        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING => 'accepté, en attente de la mise en forme par la revue',
+        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING => 'Accepté - version finale soumise, en attente de la mise en forme par la revue',
         self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "version temporaire acceptée après modification de l'auteur",
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION => 'version temporaire acceptée, en attente des modifications mineures',
-        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'version temporaire acceptée, en attente des modifications majeures'
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'version temporaire acceptée, en attente des modifications majeures',
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "accepté - en attente de validation par l'auteur",
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "approuvé - en attente de publication"
     ];
     public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
@@ -226,7 +230,7 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED,
-        self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING,
+        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
         self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
@@ -1227,8 +1231,8 @@ class Episciences_Paper
      */
     public function isEditable(): bool
     {
-        return (Episciences_Auth::getUid() != $this->getUid()) &&
-            !in_array($this->getStatus(), self::$_noEditableStatus);
+        return (Episciences_Auth::getUid() !== $this->getUid()) &&
+            !in_array($this->getStatus(), self::$_noEditableStatus, true);
     }
 
     /**
@@ -1238,6 +1242,15 @@ class Episciences_Paper
     {
         return ($this->getStatus() === self::STATUS_ACCEPTED);
     }
+
+    /**
+     * @return bool
+     */
+    public function isApprovedByAuthor(): bool
+    {
+        return ($this->getStatus() === self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION);
+    }
+
 
 
     /**
@@ -2983,13 +2996,16 @@ class Episciences_Paper
             self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
             self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
             self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
-            self::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING
+            self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+            self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION
         ], true);
     }
 
     public function isReadyToPublish(): bool
     {
-        return $this->getStatus() === self::STATUS_CE_READY_TO_PUBLISH;
+        return in_array($this->getStatus(),
+            [self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION],
+            true);
     }
 
     public function isAcceptedSubmission(): bool

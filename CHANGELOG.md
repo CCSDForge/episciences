@@ -15,28 +15,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-#Fixed
-- Dashboard: the number of papers assigned to the copy editor includes obsolete papers
-
-## 1.0.26 - 2022-03-01
-# Fixed
-- Issue reported to support RT #148133:
-   * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
-- Issue reported to support RT #148466:
-   * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
-
-## Unreleased
-
 ## added
-- New article status "temporary version accepted": now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
+
+- New article status:
+ * Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
+ * Accepted - waiting for author's final version
+ * Accepted, waiting for major revision
+ * Accepted article - final version submitted, waiting for formatting by copy editors
+ * Accepted temporary version after author's modifications
+ * Accepted temporary version, waiting for minor revision
+ * Accepted temporary version, waiting for major revision
+ * Accepted - waiting validation by the author
+ * Approved by author, waiting for final publication
+
 - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
 - New review parameter: Allow revision request + refactoring.
 - 'Author' role
 - Script to clean the "USER_ROLES" table
 - 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
 - Paper list: temporary versions are now labeled
+- Alert administrators on the existence of papers without assigned editors
 
 ## Changed
+- Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
 - Make it possible to update the metadata on the article page
 - Request a new version of an article that has already been accepted
@@ -48,18 +49,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#187](https://github.com/CCSDForge/episciences/issues/187): change the default templates: 'new version submitted' and 'tmp version submitted'
 - [#188](https://github.com/CCSDForge/episciences/issues/18 ): force notifications
 - CWI is removed now: OAI is down.
+- Code Refactoring fixing of warning
 
 ##Fixed
-- Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
-- Improvements in emailing: see github #117.
 - Multiple roles: ignore the "member" role when merging two accounts.
-- undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
-- not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
-- the attachments to the rating report are not available [RT#145473]
-- answer revision request: in some situations, the "Submit" button remains inactive.
-- IDE warnings
+- Dashboard: the number of papers assigned to the copy editor includes obsolete papers
 
 
+## 1.0.26 - 2022-03-01
+# Fixed
+- Issue reported to support RT #148133:
+  * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
+- Issue reported to support RT #148466:
+  * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
+  
 ## 1.0.25.1 - 2022-02-15
 # Changed
 [#152](https://github.com/CCSDForge/episciences/issues/152): page footer modifications.

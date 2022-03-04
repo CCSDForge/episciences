@@ -106,7 +106,7 @@ class Episciences_Review
     #git 303
     public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
 
-    public const SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION = 'paperFinaDecisionAllowRevision';
+    public const SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION = 'paperFinalDecisionAllowRevision';
 
     /** @var int */
     public static $_currentReviewId = null;

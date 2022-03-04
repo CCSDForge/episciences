@@ -26,9 +26,23 @@ class UserController extends UserDefaultController
         $this->view->user['editorSections'] = null;
 
         // Bloc "Gérer la revue"
-        if (Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$review->getSetting('encapsulateEditors'))) {
-            $settings = ['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]];
+        if (Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$review->getSetting('encapsulateEditors'))) {
+            $settings = [
+                'isNot' =>
+                    [
+                        'status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]
+                    ]
+            ];
+
             $this->view->allPapers = $review->getPapers($settings);
+
+            if (Episciences_Auth::isSecretary()) { // Alert on the existence of papers without assigned editors
+
+                $settings['is']['status'] = array_diff(Episciences_PapersManager::getAllStatus(RVID, 'ASC'), Episciences_Paper::$_noEditableStatus);
+                $settings['is']['editors'] = [Episciences_View_Helper_PaperFilter::NONE_KEY];
+
+                $this->view->onlyEditablePapersWithoutEditors = $review->getPapers($settings);
+            }
         }
 
         // Bloc "Articles assignés"

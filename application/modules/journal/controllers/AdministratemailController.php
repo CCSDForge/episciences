@@ -30,10 +30,28 @@ class AdministratemailController extends Zend_Controller_Action
     /**
      * list all mail templates
      */
-    public function templatesAction()
+    public function templatesAction(): void
     {
 
-        $this->view->templates = Episciences_Mail_TemplatesManager::getList();
+        $withoutKeys = [];
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            if (
+                 !isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) ||
+                 (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] === 0 ) {
+
+                $withoutKeys = [
+                    Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION,
+                    Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION
+                ];
+
+            }
+        } catch (Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        $this->view->templates = Episciences_Mail_TemplatesManager::getList($withoutKeys);
         $this->view->editorsCanEditTmplates = $this->isAllowedToEdit();
     }
 
@@ -75,7 +93,7 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         $params = $request->getPost();
-        $id = $params['id'];
+        $id = (int)$params['id'];
 
         $oTemplate = new Episciences_Mail_Template();
         $oTemplate->find($id);
@@ -106,7 +124,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $id = $request->getQuery('id');
+        $id = (int)$request->getQuery('id');
 
         $template = new Episciences_Mail_Template();
         $template->find($id);
@@ -153,7 +171,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $id = $request->getQuery('id');
+        $id = (int)$request->getQuery('id');
 
         $template = new Episciences_Mail_Template();
         $template->find($id);
