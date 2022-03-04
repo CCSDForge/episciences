@@ -47,6 +47,7 @@ class UserController extends UserDefaultController
 
         $copyEditor = new Episciences_CopyEditor(Episciences_Auth::getUser()->toArray());
         try {
+            $copyEditor->loadAssignedPapers(['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]]);
             $assignedPapersToCopyEditing = $copyEditor->getAssignedPapers();
         } catch (Zend_Exception $e) {
             error_log('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_COPYEDITOR_' . $copyEditor->getUid() . ' : ' . $e);
