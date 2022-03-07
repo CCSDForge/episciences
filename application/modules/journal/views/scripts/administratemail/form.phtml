@@ -15,28 +15,28 @@ $suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
 
     <?php foreach ($this->element->getElements() as $name => $element) : ?>
         <?php
-        if ($element->getName() == 'submit') {
+        if ($element->getName() === 'submit') {
             continue;
         }
         ?>
-        <?php if ($element->helper == 'formHidden') : ?>
-            <?php echo $element; ?>
+        <?php if ($element->helper === 'formHidden') : ?>
+            <?= $element ?>
         <?php else: ?>
-            <div id="<?php echo str_replace(['-'], '', $name); ?>-element" class="form-group row">
-                <?php echo $element ?>
+            <div id="<?= str_replace(['-'], '', $name) ?>-element" class="form-group row">
+                <?= $element ?>
             </div>
         <?php endif; ?>
     <?php endforeach; ?>
 
-    <div id="attachments-element<?php echo $suffix; ?>" class="form-group row">
+    <div id="attachments-element<?= $suffix ?>" class="form-group row">
         <div class="col-md-9 col-md-offset-3" style="padding-left: 10px">
-            <div id="upload_widget<?php echo $suffix; ?>" class="upload_widget" data-upload-container="test">
-                <span id = "help-block<?php echo $suffix; ?>" class="help-block text-info"><?php echo $description; ?></span>
-                <div id="upload_button<?php echo $suffix; ?>" class="upload_button btn btn-default">
+            <div id="upload_widget<?= $suffix ?>" class="upload_widget" data-upload-container="test">
+                <span id = "help-block<?= $suffix ?>" class="help-block text-info"><?= $description ?></span>
+                <div id="upload_button<?= $suffix ?>" class="upload_button btn btn-default">
                     <span class="glyphicon glyphicon-file"></span>
-                    <?php echo $this->translate('Fichiers joints'); ?>
+                    <?= $this->translate('Fichiers joints') ?>
                 </div>
-                <input id="upload_input_<?php echo $suffix;?>" class="upload_input" type="file" multiple/>
+                <input id="upload_input<?= $suffix ?>" class="upload_input" type="file" multiple/>
                 <div class="uploads_container"></div>
             </div>
         </div>
@@ -44,7 +44,7 @@ $suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
 
     <?php if (isset($this->element->submit)) : ?>
         <div class="form-actions text-center">
-            <?php echo $this->element->submit ?>
+            <?= $this->element->submit ?>
         </div>
     <?php endif; ?>
 </form>

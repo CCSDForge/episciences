@@ -102,6 +102,8 @@ return [
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI mis à jour',
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'Nouvelle date de publication',
     Episciences_Paper_Logger::CODE_COI_REPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REPORTED],
+    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION ],
+
 
     // Erreurs OAI
     "The operation ended with an error. Please try again." => "L'opération s'est terminée avec une erreur. Merci de réessayer.",
@@ -219,6 +221,8 @@ return [
     'volume-view' => 'Voir un volume',
     'section-view' => 'Voir une rubrique',
     'user-delete' => 'Supprimer un compte',
+    'administratepaper-acceptedaskauhorfinalversion' => "Article accepté - demander à l'auteur la version finale",
+    'administratepaper-acceptedaskauthorvalidation' => "Article accepté - demander à l'auteur la validation de la mise en forme",
 
     /**
      * DOI

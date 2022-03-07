@@ -329,7 +329,8 @@ class PaperController extends PaperDefaultController
             Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_ANSWER,
             Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST,
             Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED,
-            Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST
+            Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST,
+            Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION
         ]];
 
         $copyEditingDemands = Episciences_CommentsManager::getList($docId, $copyEditingSettings);
@@ -1320,9 +1321,11 @@ class PaperController extends PaperDefaultController
 
         if (isset($post['copyEditingNewVersion'])) {
             $copyEditors = $paper->getCopyEditors(true, true);
-            $status = Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
+            $status = ($newPaper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) ?
+                Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION :
+                Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
         } elseif ($isAlreadyAccepted && !$isAssignedReviewers) {
-            $status = Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING;
+            $status = Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING;
         } else {
             $status = $isAssignedReviewers ? $newPaper::STATUS_OK_FOR_REVIEWING : $newPaper::STATUS_SUBMITTED;
         }
@@ -1520,7 +1523,7 @@ class PaperController extends PaperDefaultController
                 '3' => '', // désactiver dans js/paper/submitted.js, sinon prévoir une jointure si nécessaire
                 '4' => 'vid',
                 '5' => 'sid',
-                '6' => 'submission_date'
+                '6' => 'when'
             ];
 
             $post = $request->getParams();
@@ -1604,7 +1607,7 @@ class PaperController extends PaperDefaultController
                 '5' => '',
                 '6' => 'vid',
                 '7' => 'sid',
-                '8' => 'submission_date'
+                '8' => 'when'
 
             ];
 

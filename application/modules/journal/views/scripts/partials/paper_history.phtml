@@ -1,12 +1,12 @@
 <?php if ($this->logs) : ?>
     <div class="history-filters">
-        <a class="popover-button" data-title="<?php echo $this->translate("Filtrer les logs par date") ?>">
+        <a class="popover-button" data-title="<?= $this->translate("Filtrer les logs par date") ?>">
             <button type="button" class="history-datepicker-button btn btn-default btn-sm"><span
                     class="glyphicon glyphicon-calendar"></span></button>
         </a>
         <div style="display: inline-block">
             <input type="search" class="form-control input-sm history-search"
-                   placeholder="<?php echo $this->translate('Filtrer les logs') ?>">
+                   placeholder="<?= $this->translate('Filtrer les logs') ?>">
         </div>
 
         <div id="history-popover-content" style="display: none">
@@ -19,7 +19,7 @@
                        class="form-control input-sm datepicker-input"
                        name="history-filter-start"
                        id="history-filter-start"
-                       placeholder="<?php echo $this->translate("Depuis") ?>">
+                       placeholder="<?= $this->translate("Depuis") ?>">
             </div>
 
             <div class="input-group" style="margin-bottom: 5px">
@@ -30,12 +30,12 @@
                        class="form-control input-sm datepicker-input"
                        id="history-filter-end"
                        name="history-filter-end"
-                       placeholder="<?php echo $this->translate("Jusqu'à") ?>">
+                       placeholder="<?= $this->translate("Jusqu'à") ?>">
             </div>
 
             <div class="history-popover-buttons" style="text-align: right">
-                <button class="btn btn-default btn-sm cancel"><?php echo $this->translate('Effacer') ?></button>
-                <button class="btn btn-default btn-sm submit"><?php echo $this->translate('Valider') ?></button>
+                <button class="btn btn-default btn-sm cancel"><?= $this->translate('Effacer') ?></button>
+                <button class="btn btn-default btn-sm submit"><?= $this->translate('Valider') ?></button>
             </div>
         </div>
     </div>
@@ -95,9 +95,9 @@
                 <li role="presentation"
                     <?php if ($version['docid'] == $this->docid) : ?>class="active current"<?php endif; ?>>
                     <?php // le point (.) n'est pas interprété dans l'ID => son remplacement par un tiret (-) ?>
-                    <a href="#history-version-<?php echo str_replace('.','-', $i); ?>" aria-controls="version-<?php echo $i ?>" role="tab"
+                    <a href="#history-version-<?= str_replace('.','-', $i) ?>" aria-controls="version-<?= $i ?>" role="tab"
                        data-toggle="tab">
-                        <?php echo $this->translate('Version ') . $i; ?>
+                        <?= $this->translate('Version ') . $i ?>
                     </a>
                 </li>
             <?php endforeach; ?>
@@ -109,9 +109,8 @@
                 <?php // le point (.) n'est pas interprété dans l'ID => son remplacement par un tiret (-) ?>
                 <div role="tabpanel"
                      class="tab-pane<?php if ($version['docid'] == $this->docid) : ?> active<?php endif; ?>"
-                     id="history-version-<?php echo str_replace('.','-', $i); ?>">
-                    <!-- <div style="margin: 0 5px 5px 0; text-align: right" class="grey">Consulter cette version</div>  -->
-                    <?php echo $this->partial('partials/paper_history_logs.phtml', array('logs' => $version['logs'])); ?>
+                     id="history-version-<?= str_replace('.','-', $i) ?>">
+                    <?= $this->partial('partials/paper_history_logs.phtml', ['logs' => $version['logs']]) ?>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -119,5 +118,5 @@
     </div>
 
 <?php else : ?>
-    <?php echo $this->translate('Historique indisponible'); ?>
+    <?= $this->translate('Historique indisponible') ?>
 <?php endif; ?>

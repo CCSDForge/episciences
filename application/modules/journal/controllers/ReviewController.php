@@ -194,9 +194,14 @@ class ReviewController extends Zend_Controller_Action
                 if ($doSave) {
                     $tmp = array_keys($review::ASSIGNMENT_EDITORS_DETAIL);
                     foreach ($selectedOptions as $value) {
-                        $setting = array_search($value, $review::ASSIGNMENT_EDITORS_DETAIL);
-                        $review->setSetting($setting, $review::ENABLED);
-                        unset($tmp[(int)$value]);
+                        $setting = array_search($value, $review::ASSIGNMENT_EDITORS_DETAIL, true);
+
+                        if($setting !== false){
+                            $review->setSetting($setting, $review::ENABLED);
+                            unset($tmp[(int)$value]);
+
+                        }
+
                     }
 
                     if (!empty($tmp)) {

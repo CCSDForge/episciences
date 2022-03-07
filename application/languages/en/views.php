@@ -446,6 +446,8 @@ return [
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED] => 'Copy ed.: formatting by journal completed, waiting for a final version',
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED] => "Copy ed.: formatting by author completed, waiting for final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_READY_TO_PUBLISH] => 'Copy ed.: ready to publish',
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION] =>"Accepted - waiting for author's validation",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION] =>'Accepted - waiting for final publication',
     "Demander des sources auteur" => "Ask author's sources",
     "Demander la mise en forme par l'auteur (version finale)" => "Ask copy editing by the author (final version)",
     "Accepter et passer à la préparation de copie" => "Accept and proceed to copy editing",
@@ -454,11 +456,14 @@ return [
     "Aller à la page publique de cet article" => "Go to the public page for this article",
     "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
     "son compte n'a pas encore été activé" => 'his account is not active yet',
+    "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via la plateforme &copy;Episciences" => "At this point, the author coordinates with the copy editor and agree by exchanging emails outside or via the &copy;Episciences system",
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
     "Identifiant de l'article" => "Item identifier",
     "Accès à un article" => "Access to an article",
+    'Accès à mon article' => 'Access to my article',
+    'Accès à un article assigné' => 'Access to an assigned article',
 
     // Commentaires / lettre d'accompagnement
     "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire." => "You have been redirected because you are not the author of this comment.",
@@ -1005,6 +1010,9 @@ return [
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
     Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
+    Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Update',
+    Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'New publication date',
+    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepted, ask author's final version",
 
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_REQUEST] => "request for clarification",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_ANSWER] => "response for clarification",
@@ -1023,9 +1031,8 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_MONITORING_REFUSED] => "refusal to follow up",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_COMMENT] => "editor's comment",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => "Copy editing: awaiting formatting by author",
+    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
 
-    Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Update',
-    Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'New publication date',
 
     "Date d'assignation" => "Assignation date",
     "Date de désassignation" => "De-assignment date",
@@ -1191,6 +1198,8 @@ return [
     'volume-view' => 'View a volume',
     'section-view' => 'View a section',
     'user-delete' => 'delete account',
+    'administratepaper-acceptedaskauhorfinalversion' => "Accepted article - ask author's final version",
+    'administratepaper-acceptedaskauthorvalidation' => "Accepted article - ask author's validation",
 
     // demande de revision
     'Optionnelle' => 'Optional',
@@ -1354,6 +1363,8 @@ return [
 
     'en attente des sources auteurs' => "waiting for author's sources",
     'en attente de la mise en forme par la revue' => 'waiting for formatting by the journal',
+    "Accepté - en attente de validation par l'auteur" => "Accepted - waiting validation by the author",
+    "Approuvé par l'auteur, en attente de publication" => "Approved by author, waiting for final publication",
 
     "Attention, si vous décidez de poursuivre l'abandon, il ne vous sera plus possible de soumettre cet article dans cette revue. L'abandon est définitif." => "Warning, if you decide to continue with the abandonment, you will no longer be able to submit this article to this journal. The abandonment is final.",
     "Saisir la version du document (nombre uniquement)." => "Enter the document version (number only).",
@@ -1660,6 +1671,8 @@ return [
     "articles acceptés, en attente de la version finale de l'auteur" => "accepted articles, waiting for author's final version",
     "articles acceptés, en attente de la mise en forme par la revue" => "accepted articles, waiting for journal's formatting",
     "articles acceptés, en attente de modifications majeures" => "accepted articles, waiting for major revision",
+    "article approuvé par l'auteur, en attente de publication" => "approved article by author, waiting for final publication",
+    "articles approuvés par l'auteur, en attente de publication" => "approved articles by author, waiting for final publication",
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',
@@ -1826,15 +1839,21 @@ return [
     "Permettre la demande de revision" => "Allow revision request",
     "Article - décision finale" => "Paper - final decision",
     "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté." => "Sometimes it is necessary to change some things on an article already accepted.",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ] => "accepted, waiting for author's final version",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ] => "accepted - waiting for author's final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_JOURNAL_FORMATTING] => "accepted, waiting for journal's formatting",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for
+    formatting by copy editors",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
-    "Demander la version finale à l'auteur" => "Ask author's final version",
+    "Accepté - en attente de la version finale" => "Accepted - waiting for author's final version",
 
     //dashboard
     "Vous n'êtes pas l'auteur de cet article" => "You are not the author of this article",
-    "Vous n'êtes pas assigné à cet article" => "you are not assigned to this article"
+    "Vous n'êtes pas assigné à cet article" => "you are not assigned to this article",
+    "article accepté - version finale soumise, en attente de la mise en forme par la revue" => "accepted article - final version submitted, waiting for formatting by copy editors",
+    "articles acceptés - versions finales soumises, en attente de la mise en forme par la revue" => "accepted articles - final versions submitted, waiting for formatting by copy editors",
+    "Attention, il n'y a aucun suivi effectué pour" => "Please note that there is no tracking for",
+    "ces articles" => "these articles",
+    "Aucun rédacteur assigné pour le moment" => "No assigned editor yet"
 ];

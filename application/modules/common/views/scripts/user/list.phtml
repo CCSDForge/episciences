@@ -75,13 +75,18 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 <?php else: ?>
                     <td><?= $this->escape($user['CAS']['USERNAME']); ?></td>
                     <td><?= $this->escape($user['CAS']['EMAIL']); ?></td>
-                    <?php error_log(RVCODE . '_NOTICE_UNDEFINED_CAS_INDEX_IN_ARRAY_USER: ' . json_encode($user)); ?>
+                    <?php trigger_error(RVCODE . '_NOTICE_UNDEFINED_CAS_INDEX_IN_ARRAY_USER: ' . json_encode($user)); ?>
                 <?php endif; ?>
                 <td>
                     <div class="tags" style="float:left; max-width: 250px; display: inline">
                         <?php if ($user['ROLES'][RVID]) : ?>
                             <?php
-                            if (count($user['ROLES'][RVID]) > 1 && array_search(Episciences_Acl::ROLE_MEMBER, $user['ROLES'][RVID])){unset($user['ROLES'][RVID][array_search(Episciences_Acl::ROLE_MEMBER, $user['ROLES'][RVID])]); } // Bug ICI
+                            if (count($user['ROLES'][RVID]) > 1){
+                                $key = array_search(Episciences_Acl::ROLE_MEMBER, $user['ROLES'][RVID], true);
+                                if($key !== false ){
+                                    unset($user['ROLES'][RVID][$key]);
+                                }
+                            }
                             echo $this->partial('partials/user_roles.phtml', array('roles' => $user['ROLES'][RVID])) ?>
                         <?php endif; ?>
                     </div>

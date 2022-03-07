@@ -14,45 +14,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
 ## Unreleased
-
 ## added
-- New article status "temporary version accepted": now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
+
+- New article status:
+ * Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
+ * Accepted - waiting for author's final version
+ * Accepted, waiting for major revision
+ * Accepted article - final version submitted, waiting for formatting by copy editors
+ * Accepted temporary version after author's modifications
+ * Accepted temporary version, waiting for minor revision
+ * Accepted temporary version, waiting for major revision
+ * Accepted - waiting validation by the author
+ * Approved by author, waiting for final publication
+
 - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
 - New review parameter: Allow revision request + refactoring.
 - 'Author' role
 - Script to clean the "USER_ROLES" table
 - 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
 - Paper list: temporary versions are now labeled
+- Alert administrators on the existence of papers without assigned editors
 
 ## Changed
- - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
- - Make it possible to update the metadata on the article page
- - Request a new version of an article that has already been accepted
- - [#166] (https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action   
- - The "status" filter is now dynamically created.
- - Prevent "Add sources files" and "Add the formatted version" buttons JS reactivation
- - Move "copy editing" section
- 
+- Workflow reviewing
+- [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
+- Make it possible to update the metadata on the article page
+- Request a new version of an article that has already been accepted
+- [#166] (https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action
+- The "status" filter is now dynamically created.
+- Prevent "Add sources files" and "Add the formatted version" buttons JS reactivation
+- Move "copy editing" section
+- Dashboard improvements: ability to reach an article from sections: my submissions and assigned articles
+- [#187](https://github.com/CCSDForge/episciences/issues/187): change the default templates: 'new version submitted' and 'tmp version submitted'
+- [#188](https://github.com/CCSDForge/episciences/issues/18 ): force notifications
+- CWI is removed now: OAI is down.
+- Code Refactoring fixing of warning
+
 ##Fixed
-- Fixed: inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
-- Improvements in emailing: see github #117.
 - Multiple roles: ignore the "member" role when merging two accounts.
-- Fixed: undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
-- Fixed: not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
-- Fixed: the attachments to the rating report are not available [RT#145473]
-- Fixed: answer revision request: in some situations, the "Submit" button remains inactive.
-- Fixed: IDE warnings
+- Dashboard: the number of papers assigned to the copy editor includes obsolete papers
+
+
+## 1.0.26 - 2022-03-01
+# Fixed
+- Issue reported to support RT #148133:
+  * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
+- Issue reported to support RT #148466:
+  * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
+  
+## 1.0.25.1 - 2022-02-15
+# Changed
+[#152](https://github.com/CCSDForge/episciences/issues/152): page footer modifications.
+
+## 1.0.25 - 2022-02-15
+# Fixed
+- All submissions are accessible to "guest editor" roles.
+- Language bar missing whe
 
 ## 1.0.24.2 - 2022-02-10
 # Fixed
-- [RT#146987] "search" button no longer works
+- [RT#146987] "search" button no longer works 
 - application error: syntax error or access violation if CAS user not found
-
+ 
 ## 1.0.24.1 - 2022-02-08
 # Fixed
-- A bug in the reminders code triggered emails with unusable HTTP links
+ - A bug in the reminders code triggered emails with unusable HTTP links
+
+## 1.0.24 - 2022-02-08
+# Fixed
+- Inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
+- [#117](https://github.com/CCSDForge/episciences/issues/117) Improvements in emailing 
+- Undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
+- Not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
+- The attachments to the rating report are not available [RT#145473]
+- Answer revision request: in some situations, the "Submit" button remains inactive.
 
 ## 1.0.23 - 2022-01-19
 
@@ -61,20 +97,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editors' choice at time of submission: informative text added. (gitlab #369)
 - [#143](https://github.com/CCSDForge/episciences/issues/143) New DOI setting: Allow switching off manual or automatic DOI assignation (disabled mode)
 - [#37](https://github.com/CCSDForge/episciences/issues/37)
-- Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
-- On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html (only published content)
-- On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
-- Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
-- JSON added to the list of public export formats
+  - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
+  - On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html (only published content)
+  - On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
+  - JSON added to the list of public export formats
 - Enhanced information message for statistics
-
 
 ### Changed
 - UI/UX: Make the version number more explicit when proposing a new version
 - Code Refactoring fixing of warning
 - Dumping default data for table `MAIL_TEMPLATE`
-- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
-- Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ### Fixed
 - [#126](https://github.com/CCSDForge/episciences/issues/126) Clicking outside the window to compose an email closes the window with no confirmation #126
@@ -84,11 +116,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New submission: if the "submission date" metadata is empty: do not display it anymore.
 - [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
 - RT#144252: better cleaning of attached file names
-- RT#144246: an inactive account could still be visible on the Editorial Staff members page.
+- RT#144246: an inactive account could still be visible on the Editorial Staff members page. 
 - [#117](https://github.com/CCSDForge/episciences/issues/117): An empty e-mail is not sent or received
 - [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
 - [#141](https://github.com/CCSDForge/episciences/issues/141): visibility of pages menu is wrong inside menu editing.
 
+### Changed
+- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
+- Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ## 1.0.22.3 - 2021-11-30
 ### Changed

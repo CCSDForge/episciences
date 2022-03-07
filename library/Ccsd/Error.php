@@ -83,6 +83,7 @@ class Ccsd_Error extends Exception
             default :
                 //todo interpréter les messages CURL exp. CURL_ERROR_6 { Couldn't resolve host name. }
                 $message = "The operation ended with an error. Please try again.";
+                trigger_error($this->getMessage());
         }
 
         return $message;

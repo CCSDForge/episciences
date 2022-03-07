@@ -4,40 +4,36 @@ class Episciences_CommentsManager
 {
     // possible comment types
     // comment from chief editors
-    const TYPE_INFO_REQUEST                 = 0;
-    const TYPE_REVISION_REQUEST             = 2;
+    public const TYPE_INFO_REQUEST                 = 0;
     // comment from contributor
-    const TYPE_INFO_ANSWER                  = 1;
-    const TYPE_REVISION_ANSWER_COMMENT      = 3;
-    const TYPE_REVISION_ANSWER_TMP_VERSION  = 6;
-    const TYPE_REVISION_ANSWER_NEW_VERSION  = 7;
-    const TYPE_CONTRIBUTOR_TO_REVIEWER      = 11;
-    // comment for editors
-    const TYPE_SUGGESTION_ACCEPTATION       = 8;
-    const TYPE_SUGGESTION_REFUS             = 9;
-    const TYPE_SUGGESTION_NEW_VERSION       = 10;
-    const TYPE_EDITOR_COMMENT               = 12;
+    public const TYPE_INFO_ANSWER                  = 1;
+    public const TYPE_REVISION_REQUEST             = 2;
+    public const TYPE_REVISION_ANSWER_COMMENT      = 3;
     // Comment from author
-    const TYPE_AUTHOR_COMMENT               = 4;
-    // refus de gérer l'article
-    const TYPE_EDITOR_MONITORING_REFUSED = 13;
+    public const TYPE_AUTHOR_COMMENT               = 4;
     #git #320
-    const TYPE_REVISION_CONTACT_COMMENT      = 5;
-
-    // Copy editing waiting for author sources
-    // Mise en prod 14/02/220 & fusion  preprod develop :
-    // 13 => TYPE_EDITOR_MONITORING_REFUSED
-    // DONC, 20 => TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST
-    const TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST = 20;
-    const TYPE_AUTHOR_SOURCES_DEPOSED_ANSWER = 14;
-    const TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST = 15;
-    const TYPE_AUTHOR_FORMATTING_ANSWER = 16;
+    public const TYPE_REVISION_CONTACT_COMMENT     = 5;
+    public const TYPE_REVISION_ANSWER_TMP_VERSION  = 6;
+    public const TYPE_REVISION_ANSWER_NEW_VERSION  = 7;
+    // comment for editors
+    public const TYPE_SUGGESTION_ACCEPTATION       = 8;
+    public const TYPE_SUGGESTION_REFUS             = 9;
+    public const TYPE_SUGGESTION_NEW_VERSION       = 10;
+    public const TYPE_CONTRIBUTOR_TO_REVIEWER      = 11;
+    public const TYPE_EDITOR_COMMENT               = 12;
+    // refus de gérer l'article
+    public const TYPE_EDITOR_MONITORING_REFUSED = 13;
+    public const TYPE_AUTHOR_SOURCES_DEPOSED_ANSWER = 14;
+    public const TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST = 15;
+    public const TYPE_AUTHOR_FORMATTING_ANSWER = 16;
     // invitation à déposer la version définitive
-    const TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST = 17;
-    const TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST = 18;
-    const TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED = 19;
+    public const TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST = 17;
+    public const TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST = 18;
+    public const TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED = 19;
+    public const TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST = 20;
+    public const TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION = 21;
 
-    public static $_typeLabel = array(
+    public static array $_typeLabel = [
         self::TYPE_INFO_REQUEST                 =>  "demande d'éclaircissements",
         self::TYPE_INFO_ANSWER                  =>  "réponse à une demande d'éclaircissements",
         self::TYPE_REVISION_REQUEST             =>  "demande de modifications",
@@ -57,28 +53,30 @@ class Episciences_CommentsManager
         self::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST => 'Préparation de copie : la version formatée est validée, en attente de la version définitive',
         self::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST => 'Préparation de copie : la mise en forme par la revue est terminée, en attente de la version finale',
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Préparation de copie : version finale soumise',
-    );
+        self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur"
+    ];
 
-    public static $_copyEditingRequestTypes = [
+    public static array $_copyEditingRequestTypes = [
         self::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST,
         self::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST,
         self::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST,
         self::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST
     ];
 
-    public static $_copyEditingAnswerTypes = [
+    public static array $_copyEditingAnswerTypes = [
         self::TYPE_AUTHOR_SOURCES_DEPOSED_ANSWER,
         self::TYPE_AUTHOR_FORMATTING_ANSWER,
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED
     ];
 
     // demander la version définitive si la mise en page est faite soit par la revue ou bien par l'auteur
-    public static $_copyEditingFinalVersionRequest = [
+    public static array $_copyEditingFinalVersionRequest = [
         self::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST,
-        self::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST
+        self::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST,
+        self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION
     ];
 
-    public static $_UploadFilesRequest = [
+    public static array $_UploadFilesRequest = [
         Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST,
         Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST
     ];
@@ -508,7 +506,7 @@ class Episciences_CommentsManager
             $commentType = (int)$comment['TYPE'];
             $commentUid = (int)$comment['UID'];
 
-            if (in_array($commentType, self::$_copyEditingFinalVersionRequest)) {// load form
+            if (in_array($commentType, self::$_copyEditingFinalVersionRequest, true)) {// load form
 
                 $form = Episciences_Submit::getNewVersionForm($paper, ['newVersionOf' => $paper->getDocid(), 'commentType' => $comment['TYPE']]);
                 $form->addElement('hidden', 'copyEditingNewVersion'); // distinguer la nouvelle version suite à une demande de révision de celle de travail éditorial

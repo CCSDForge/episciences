@@ -1,7 +1,10 @@
-<?php $suffix = isset($this->from) ? '_'. $this->from : ''; ?>
+<?php
+$suffix = isset($this->from) ? '_'. $this->from : '';
+$title = $this->title ?? 'Accès à un article';
+?>
 <div class="col-md-11">
     <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Accès à un article') ?></h2>
+        <h2 class="panel-title"><?= $this->translate($title) ?></h2>
     </div>
     <div>
         <div class="row">

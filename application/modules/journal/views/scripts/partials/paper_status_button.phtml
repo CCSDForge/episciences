@@ -1,21 +1,23 @@
 <?php
+
+$isAskAuthorsFinalVersionEnabled = $this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
 $suggestionInfoMsg = "Votre suggestion à déjà été enregistrée.";
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $status = $paper->getStatus();
 $changeStatusMsg = "Changer le statut de l'article";
 $publishMsg = "Publier l'article";
-$refusedMsg = "Refuser l'article";
+$refusalMsg = "Refuser l'article";
 
 if ($paper->isTmp()) {
     $acceptMsg = 'Demander la version définitive';
-} else if (!$this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) {
+} else if (!$isAskAuthorsFinalVersionEnabled) {
     $acceptMsg = 'Accepter et passer à la préparation de copie';
 } else {
     $acceptMsg = "Accepter l'article";
 }
 
-$acceptedAskAuthorFinalVersion = "Demander la version finale à l'auteur";
+$acceptedAskAuthorFinalVersion = "Accepté - en attente de la version finale";
 $waitingAuthorSources = "Demander à l'auteur ses sources (À mettre en forme par la revue)";
 $waitingFinalVersion = "Demander la version finale (À mettre en forme par l’auteur)";
 $reviewFormattingMsg = 'Mise en forme revue terminée, demander la version finale';
@@ -27,6 +29,8 @@ $isInRevision = $paper->isRevisionRequested();
 $isNotTheFirstVersion = empty($paper->getPreviousVersions());
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
+$acceptedWaitingForAuthorValidation = "Accepté - en attente de validation par l'auteur";
+
 // **** CHIEF EDITORS, administrator and secretary (git #235) : can do whatever they want *****************************
 if (Episciences_Auth::isSecretary()) : ?>
     <div class="btn-group">
@@ -55,7 +59,7 @@ if (Episciences_Auth::isSecretary()) : ?>
 
             <?php elseif ($paper->isAccepted()) : ?>
                 <?php // Ask author's final version  ?>
-                <?php if ($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) : ?>
+                <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
@@ -84,11 +88,38 @@ if (Episciences_Auth::isSecretary()) : ?>
                     </li>
                 <?php endif; ?>
 
+            <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING) : ?>
+
+                <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
+
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".review-formatting-accepted-ask-author-validation-modal"
+                           onclick="editAttachmentDescription($(this));"><?= $this->translate($acceptedWaitingForAuthorValidation) ?></a>
+                    </li>
+
+
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
+                    </li>
+
+                <?php else: ?>
+
+                    <?php // Copy ed. : mise en forme par la revue terminée?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".review-formatting-submitted-modal"
+                           onclick="editAttachmentDescription($(this));"><?= $this->translate($reviewFormattingMsg) ?>
+                        </a>
+                    </li>
+                <?php endif; ?>
+
             <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
                 <?php // Copy ed. : mise en forme revue terminée?>
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".review-formatting-deposed-modal"
+                       data-target=".review-formatting-submitted-modal"
                        onclick="editAttachmentDescription($(this));"><?= $this->translate($reviewFormattingMsg) ?>
                     </a>
                 </li>
@@ -132,6 +163,27 @@ if (Episciences_Auth::isSecretary()) : ?>
                     <a href="#" data-toggle="modal"
                        data-target=".major-revision-modal"><?= $this->translate('Demander des modifications majeures') ?></a>
                 </li>
+
+            <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) : ?>
+
+                <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
+
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
+                    </li>
+
+                <?php else: ?>
+
+                    <?php // Copy ed. : mise en forme par la revue terminée?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".review-formatting-submitted-modal"
+                           onclick="editAttachmentDescription($(this));"><?= $this->translate($reviewFormattingMsg) ?>
+                        </a>
+                    </li>
+                <?php endif; ?>
+
             <?php endif; ?>
 
             <!-- ask other editors -->
@@ -150,7 +202,7 @@ if (Episciences_Auth::isSecretary()) : ?>
             <!-- reject paper -->
             <li>
                 <a href="#" data-toggle="modal"
-                   data-target=".refusal-modal"><?= $this->translate($refusedMsg) ?></a>
+                   data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?></a>
             </li>
         </ul>
     </div>
@@ -165,14 +217,6 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         <ul class="status-menu dropdown-menu" role="menu">
 
             <?php if ($paper->isAccepted()) : ?>
-
-                <?php // ask author's final version  ?>
-                <?php if ($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) : ?>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
-                    </li>
-                <?php endif; ?>
 
                 <?php // Préparation de copie: en attente des sources auteurs?>
                 <li>
@@ -216,7 +260,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php // Copy ed. : mise en forme revue terminée?>
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".review-formatting-deposed-modal"
+                       data-target=".review-formatting-submitted-modal"
                        onclick="editAttachmentDescription($(this));"><?= $this->translate($reviewFormattingMsg) ?>
                     </a>
                 </li>
@@ -291,13 +335,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php if ($isNotTheFirstVersion) : // if this is not the first version of this paper ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".refusal-modal"><?= $this->translate($refusedMsg) ?>
+                           data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?>
                         </a>
                     </li>
                 <?php else : // display a notice ?>
                     <li data-toggle="tooltip" data-placement="right"
                         title="<?= $this->translate("Cet article n'est pas la première version de ce document, vous ne pouvez pas donc le refuser.") ?>">
-                        <a class="disabled"><?= $this->translate($refusedMsg) ?></a>
+                        <a class="disabled"><?= $this->translate($refusalMsg) ?></a>
                     </li>
                 <?php endif; ?>
             <?php else : // editors do not have permission to reject papers, but can suggest to do it?>
@@ -370,7 +414,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             </button>
             <ul class="status-menu dropdown-menu" role="menu">
                 <?php // ask author's final version  ?>
-                <?php if ($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION)) : ?>
+                <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
@@ -395,10 +439,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
             </button>
             <ul class="status-menu dropdown-menu" role="menu">
-                <?php // Copy ed. : mise en forme revue terminée?>
+                <?php // Copy ed. : mise en forme par la revue terminée ?>
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".review-formatting-deposed-modal"
+                       data-target=".review-formatting-submitted-modal"
                        onclick="editAttachmentDescription($(this));"><?= $this->translate($reviewFormattingMsg) ?>
                     </a>
                 </li>
@@ -413,17 +457,71 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
         <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED) : ?>
 
-            <?php // Préparation de copie: prêt à publier ?>
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
+            </button>
+            <ul class="status-menu dropdown-menu" role="menu">
 
-            <a href="#" data-toggle="modal" class="btn btn-primary btn-sm"
-               data-target=".ready-to-publish-modal"><?= $this->translate($validFinalVersionMsg) ?></a>
+                <?php // Préparation de copie : prêt à publier ?>
 
-            <?php // Préparation de copie: redemander la mise en forme à l'auteur ?>
-            <li>
-                <a href="#" data-toggle="modal"
-                   data-target=".waiting-for-author-formatting-modal"><?= $this->translate($askFinalVersionAgainMsg) ?>
-                </a>
-            </li>
+                <a href="#" data-toggle="modal" class="btn btn-primary btn-sm"
+                   data-target=".ready-to-publish-modal"><?= $this->translate($validFinalVersionMsg) ?></a>
+
+                <?php // Préparation de copie: redemander la mise en forme à l'auteur ?>
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".waiting-for-author-formatting-modal"><?= $this->translate($askFinalVersionAgainMsg) ?>
+                    </a>
+                </li>
+            </ul>
+
+        <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING) : ?>
+
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
+            </button>
+
+            <ul class="status-menu dropdown-menu" role="menu">
+
+                <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".review-formatting-accepted-ask-author-validation-modal"
+                           onclick="editAttachmentDescription($(this));"><?= $this->translate($acceptedWaitingForAuthorValidation) ?></a>
+                    </li>
+
+
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
+                    </li>
+
+                <?php else: ?>
+
+                    <?php // Copy ed. : mise en forme par la revue terminée?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".review-formatting-submitted-modal"
+                           onclick="editAttachmentDescription($(this));"><?= $this->translate($reviewFormattingMsg) ?>
+                        </a>
+                    </li>
+                <?php endif; ?>
+
+            </ul>
+
+        <?php elseif ($status === Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION) : ?>
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
+            </button>
+
+            <ul class="status-menu dropdown-menu" role="menu">
+                <!-- publication request -->
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".publication-modal"><?= $this->translate($publishMsg) ?>
+                    </a>
+                </li>
+            </ul>
 
         <?php else: ?>
             <a href="#" class="btn btn-default btn-sm disabled" role="button"
@@ -437,250 +535,134 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 <?php if (Episciences_Auth::isAllowedToManagePaper()) : ?>
     <?php // *** publication form ************ ?>
     <?php if ($paper->isAccepted() || $paper->isReadyToPublish()) : ?>
-        <div class="modal fade publication-modal" tabindex="-1" role="dialog" aria-labelledby="publication-modal"
-             aria-hidden="true">
-            <div class="modal-dialog" style="width: 50%">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title"><?= $this->translate($publishMsg) ?></h4>
-                    </div>
-                    <div class="modal-body"><?= $this->publicationForm ?></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default"
-                                data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                        <button type="button" id="submit-modal-publication"
-                                class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'publication-modal',
+            'title' => $publishMsg,
+            'body' => $this->publicationForm
+        ]) ?>
 
     <?php
 // *** acceptation form ************
     else: ?>
-        <div class="modal fade acceptance-modal" tabindex="-1" role="dialog" aria-labelledby="acceptance-modal"
-             aria-hidden="true">
-            <div class="modal-dialog" style="width: 50%">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title"><?= $this->translate($acceptMsg) ?></h4>
-                    </div>
-                    <div class="modal-body">
-                        <?= $this->acceptanceForm ?>
-                        <div class="contacts_container"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default"
-                                data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                        <button type="button" id="submit-modal-acceptance"
-                                class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-                    </div>
-                </div>
-            </div>
-        </div>
+
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'acceptance-modal',
+            'title' => $acceptMsg,
+            'body' => $this->acceptanceForm
+        ]) ?>
+
     <?php endif; ?>
 
-    <?php // accepted article: ask author's final version  ?>
-    <div class="modal fade accepted-ask-author-final-version-modal" tabindex="-1" role="dialog"
-         aria-labelledby="accepted-ask-author-final-version-modal"
-         aria-hidden="true">
-        <div class="modal-dialog" style="width: 50%">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title"><?= $this->translate("Demander la version final à l'auteur") ?></h4>
-                </div>
-                <div class="modal-body"><?= $this->acceptedAskAuthorFinalVersionForm ?></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default"
-                            data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                    <button type="button" id="submit-modal-minor-revision"
-                            class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <?php // *** minor revision request form ********** ?>
-    <div class="modal fade minor-revision-modal" tabindex="-1" role="dialog" aria-labelledby="minor-revision-modal"
-         aria-hidden="true">
-        <div class="modal-dialog" style="width: 50%">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title"><?= $this->translate("Demander des modifications mineures") ?></h4>
-                </div>
-                <div class="modal-body"><?= $this->minorRevisionForm ?></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default"
-                            data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                    <button type="button" id="submit-modal-minor-revision"
-                            class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <?=
+    $this->partial('partials/paper-status-modal.phtml', [
+        'target' => 'minor-revision-modal',
+        'title' => 'Demander des modifications mineures',
+        'body' => $this->minorRevisionForm
+    ]) ?>
 
     <?php // *** major revision request form ********** ?>
-    <div class="modal fade major-revision-modal" tabindex="-1" role="dialog" aria-labelledby="major-revision-modal"
-         aria-hidden="true">
-        <div class="modal-dialog" style="width: 50%">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title"><?= $this->translate("Demander des modifications majeures") ?></h4>
-                </div>
-                <div class="modal-body"><?= $this->majorRevisionForm ?></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default"
-                            data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                    <button type="button" id="submit-modal-major-revision"
-                            class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <?=
+    $this->partial('partials/paper-status-modal.phtml', [
+        'target' => 'major-revision-modal',
+        'title' => 'Demander des modifications majeures',
+        'body' => $this->majorRevisionForm
+    ]) ?>
 
     <?php // *** reject form ********** ?>
-    <div class="modal fade refusal-modal" tabindex="-1" role="dialog" aria-labelledby="refusal-modal"
-         aria-hidden="true">
-        <div class="modal-dialog" style="width: 50%">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title"><?= $this->translate($refusedMsg) ?></h4>
-                </div>
-                <div class="modal-body"><?= $this->refusalForm ?></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default"
-                            data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                    <button type="button" id="submit-modal-refusal"
-                            class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <?=
+    $this->partial('partials/paper-status-modal.phtml', [
+        'target' => 'refusal-modal',
+        'title' => $refusalMsg,
+        'body' => $this->refusalForm
+    ]) ?>
 
     <?php // *** ask other editors form ********** ?>
     <?php if (!empty($this->other_editors)) : ?>
-        <div class="modal fade ask-other-editors-modal" tabindex="-1" role="dialog"
-             aria-labelledby="ask-other-editors-modal" aria-hidden="true">
-            <div class="modal-dialog" style="width: 50%">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title"><?= $this->translate("Demander l'avis d'autres rédacteurs") ?></h4>
-                    </div>
-                    <div class="modal-body">
-                        <?= $this->askOtherEditorsForm ?>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default"
-                                data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                        <button type="button" id="submit-modal-ask-other-editors"
-                                class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'ask-other-editors-modal',
+            'title' => "Demander l'avis d'autres rédacteurs",
+            'body' => $this->askOtherEditorsForm
+        ]) ?>
     <?php endif; ?>
 
+    <?php // *** suggestions status  ********** ?>
     <?php if ($this->suggestionsStatusForm) : ?>
-        <?php // *** suggestions status  ********** ?>
-        <div class="modal fade suggestions-status-modal" tabindex="-1" role="dialog"
-             aria-labelledby="suggestion-status-modal" aria-hidden="true">
-            <div class="modal-dialog" style="width: 50%">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title"><?= $this->translate('Suggestions') ?></h4>
-                    </div>
-                    <div class="modal-body"><?= $this->suggestionsStatusForm ?></div>
-                </div>
-            </div>
-        </div>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'suggestions-status-modal',
+            'title' => 'Suggestions',
+            'body' => $this->suggestionsStatusForm,
+            'withoutFooter' => true
+        ]) ?>
+
     <?php endif; ?>
 <?php endif; ?>
 
-<?php // Waiting for author sources request?>
-<div class="modal fade waiting-for-author-sources-modal" tabindex="-1" role="dialog"
-     aria-labelledby="waiting-for-author-resources-modal" aria-hidden="true">
-    <div class="modal-dialog" style="width: 50%">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title"><?= $this->translate("Demander des sources auteur") ?></h4>
-            </div>
-            <div class="modal-body"><?= $this->authorSourcesRequestForm ?></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default"
-                        data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                <button type="button" id="submit-modal-author-sources"
-                        class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-            </div>
-        </div>
-    </div>
-</div>
+<?php if (Episciences_Auth::isCopyEditor() || Episciences_Auth::isSecretary()) : ?>
+    <?php // accepted article: ask author's final version  ?>
+    <?=
+    $this->partial('partials/paper-status-modal.phtml', [
+        'target' => 'accepted-ask-author-final-version-modal',
+        'title' => $acceptedAskAuthorFinalVersion,
+        'body' => $this->acceptedAskAuthorFinalVersionForm
+    ]) ?>
+
+    <?php // : Accepted - waiting for authors to validate ?>
+    <?=
+    $this->partial('partials/paper-status-modal.phtml', [
+        'target' => 'review-formatting-accepted-ask-author-validation-modal',
+        'title' => $acceptedWaitingForAuthorValidation,
+        'body' => $this->acceptedAskAuthorValidationForm
+    ]) ?>
+
+    <?php if ($paper->isApprovedByAuthor()) : ?>
+
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'publication-modal',
+            'title' => $publishMsg,
+            'body' => $this->publicationForm
+        ]) ?>
+
+    <?php endif; ?>
+
+
+<?php endif; ?>
+
+<?php // Waiting for author sources request ?>
+<?=
+$this->partial('partials/paper-status-modal.phtml', [
+    'target' => 'waiting-for-author-sources-modal',
+    'title' => 'Demander des sources auteur',
+    'body' => $this->authorSourcesRequestForm
+]) ?>
 
 <?php // Waiting for author  formatting (last version)?>
-<div class="modal fade waiting-for-author-formatting-modal" tabindex="-1" role="dialog"
-     aria-labelledby="waiting-for-author-formatting-modal" aria-hidden="true">
-    <div class="modal-dialog" style="width: 50%">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title"><?= $this->translate("Demander la mise en forme par l'auteur (version finale)") ?></h4>
-            </div>
-            <div class="modal-body"><?= $this->authorFormattingRequestForm ?></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default"
-                        data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                <button type="button" id="submit-modal-author-formatting"
-                        class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-            </div>
-        </div>
-    </div>
-</div>
+<?=
+$this->partial('partials/paper-status-modal.phtml', [
+    'target' => 'waiting-for-author-formatting-modal',
+    'title' => "Demander la mise en forme par l'auteur (version finale)",
+    'body' => $this->authorFormattingRequestForm
+]) ?>
+
+<?php // la mise en forme par la revue est terminée ?>
+<?=
+$this->partial('partials/paper-status-modal.phtml', [
+    'target' => 'review-formatting-submitted-modal',
+    'title' => $reviewFormattingMsg,
+    'body' => $this->reviewFormattingDeposedForm
+]) ?>
+
+<?php // ready to publish :  once the final version is submitted ?>
+<?=
+$this->partial('partials/paper-status-modal.phtml', [
+    'target' => 'ready-to-publish-modal',
+    'title' => $validFinalVersionMsg,
+    'body' => $this->ceAcceptFinalVersionForm
+]) ?>
 
 
-<?php // Mise en forme revue terminée)?>
-<div class="modal fade review-formatting-deposed-modal" tabindex="-1" role="dialog"
-     aria-labelledby="review-formatting-deposed-modal" aria-hidden="true">
-    <div class="modal-dialog" style="width: 50%">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title"><?= $this->translate($reviewFormattingMsg) ?></h4>
-            </div>
-            <div class="modal-body"><?= $this->reviewFormattingDeposedForm ?></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default"
-                        data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                <button type="button" id="submit-modal-review-formatting-submitted"
-                        class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<?php // ready to publish : une fois la version finale est déposée)?>
-<div class="modal fade ready-to-publish-modal" tabindex="-1" role="dialog"
-     aria-labelledby="ready-to-publish-modal" aria-hidden="true">
-    <div class="modal-dialog" style="width: 50%">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title"><?= $this->translate($validFinalVersionMsg) ?></h4>
-            </div>
-            <div class="modal-body"><?= $this->ceAcceptFinalVersionForm ?></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default"
-                        data-dismiss="modal"><?= $this->translate('Annuler') ?></button>
-                <button type="button" id="submit-modal-ce-accept-final-version"
-                        class="btn btn-primary submit-modal"><?= $this->translate('Valider') ?></button>
-            </div>
-        </div>
-    </div>
-</div>
