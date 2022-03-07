@@ -1198,6 +1198,8 @@ return [
     'volume-view' => 'View a volume',
     'section-view' => 'View a section',
     'user-delete' => 'delete account',
+    'administratepaper-acceptedaskauhorfinalversion' => "Accepted article - ask author's final version",
+    'administratepaper-acceptedaskauthorvalidation' => "Accepted article - ask author's validation",
 
     // demande de revision
     'Optionnelle' => 'Optional',

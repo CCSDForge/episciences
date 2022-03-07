@@ -221,6 +221,8 @@ return [
     'volume-view' => 'Voir un volume',
     'section-view' => 'Voir une rubrique',
     'user-delete' => 'Supprimer un compte',
+    'administratepaper-acceptedaskauhorfinalversion' => "Article accepté - demander à l'auteur la version finale",
+    'administratepaper-acceptedaskauthorvalidation' => "Article accepté - demander à l'auteur la validation de la mise en forme",
 
     /**
      * DOI

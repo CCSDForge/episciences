@@ -30,8 +30,6 @@ $isNotTheFirstVersion = empty($paper->getPreviousVersions());
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 $acceptedWaitingForAuthorValidation = "Accepté - en attente de validation par l'auteur";
-$approvedByAuthorWaitingForFinalPublication = "Approuvé par l'auteur, en attente de publication";
-
 
 // **** CHIEF EDITORS, administrator and secretary (git #235) : can do whatever they want *****************************
 if (Episciences_Auth::isSecretary()) : ?>
@@ -169,11 +167,6 @@ if (Episciences_Auth::isSecretary()) : ?>
             <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) : ?>
 
                 <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
-
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".approved-by-author-waiting-for-final-publication-modal"><?= $this->translate($approvedByAuthorWaitingForFinalPublication) ?></a>
-                    </li>
 
                     <li>
                         <a href="#" data-toggle="modal"
