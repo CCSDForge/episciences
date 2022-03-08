@@ -188,12 +188,15 @@ class ApiController extends Zend_Controller_Action
         $format = $request->getParam('format', 'json');
 
         if ($format === 'json') {
+            $journals = [];
             $headers = array_shift($journalArray);
             foreach ($journalArray as $journalNumber => $journalRow) {
                 foreach ($journalRow as $rowNumber => $journalInfo) {
                     $journals[$journalNumber][$rowNumber] = [$headers[$rowNumber] => $journalInfo];
                 }
             }
+
+            header('Content-Type: application/json');
             echo Zend_Json_Encoder::encode($journals);
             exit;
         }
