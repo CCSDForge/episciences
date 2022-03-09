@@ -163,29 +163,6 @@ $(document).ready(function () {
         });
     });
 
-
-    // cc
-    /*
-    $('#cc-element').find('label').click(function() {
-
-        var $form = $(this).closest('form');
-        var $contacts_container = $form.next('.contacts_container');
-
-        $form.hide();
-        $contacts_container.show();
-        $contacts_container.html(getLoader());
-
-        $.ajax({
-            url: '/administratemail/getcontacts?target=cc',
-            type: 'POST',
-            data: {ajax: true},
-            success: function (content) {
-                $contacts_container.html(content);
-            }
-        });
-    });
-    */
-
     // update deadline
     $('#majorrevisiondeadline-id, #minorrevisiondeadline-id').on('change', (function () {
         let locale = (author) ? author.langueid : 'en';
@@ -458,7 +435,7 @@ function getCommunForm(button, docId, url = '/administratepaper/doiform', placem
     return ajaxRequest(url, {docid: docId});
 }
 
-function getPublicationDateForm(button, docId, placement = 'bottom', action = 'doiform') {
+function getPublicationDateForm(button, docId, placement = 'bottom') {
 
     let request = getCommunForm(button, docId, '/administratepaper/publicationdateform');
 
