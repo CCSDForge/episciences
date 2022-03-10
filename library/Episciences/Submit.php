@@ -1111,19 +1111,17 @@ class Episciences_Submit
      * @param array $rawRecord
      * @return array
      */
-    private static function extractVersionsFromArXivRaw(array $rawRecord)
+    public  static function extractVersionsFromArXivRaw(array $rawRecord): array
     {
         $historyVersions = $rawRecord['metadata']['arXivRaw']['version'];
         $versions = [];
         foreach ($historyVersions as $index => $version) {
-            if (is_array($historyVersions[$index])) {
+            if (is_array($version)) {
                 $versions[] = substr($version['version'], 1); // supprimer le caractère 'v'
-            } else {
-                if ($index === 'version') {
-                    $versions[] = substr($historyVersions[$index], 1);
-                    // ne pas parcourir les autres elements
-                    return $versions;
-                }
+            } else if ($index === 'version') {
+                $versions[] = substr($version, 1);
+                // ne pas parcourir les autres elements
+                return $versions;
             }
         }
         return $versions;

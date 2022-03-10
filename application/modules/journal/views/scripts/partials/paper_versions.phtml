@@ -10,6 +10,8 @@ $controller = $request->getControllerName();
 $action = $request->getActionName();
 /** @var Episciences_Paper $currentPaper */
 $currentPaper = $this->paper;
+$loggedUid = Episciences_Auth::getUid();
+$isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper->getCopyEditor($loggedUid);
 ?>
 <div id="versions" class="panel panel-default collapsable">
     <div class="panel-heading">
@@ -19,14 +21,29 @@ $currentPaper = $this->paper;
         <ol class="list-unstyled">
             <?php /** @var Episciences_Paper $paper */ ?>
             <?php foreach ($this->versions as $v => $paper) : ?>
-
-                <?php $docid = $paper->getDocid(); ?>
+                <?php $docId = $paper->getDocid(); ?>
                 <li>
-                    <?php if ($currentPaper->getDocid() !== $docid) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docid ?>"><?php endif; ?>
+                    <?php if ($currentPaper->getDocid() !== $docId) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docId ?>"><?php endif; ?>
                         <?php $sourceMsg = (!$paper->isImported()) ? $this->translate('Soumise le : ') : $this->translate('Importée le : ') ?>
-                        <?= $this->translate("Version") ?>&nbsp;<?= $v ?> <span class="label label-status-0 pull-right"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
-                        <?php if ($currentPaper->getDocid() !== $docid) : ?></a><?php endif; ?>
+                        <?= $this->translate("Version") ?>&nbsp;<span id="version-of-paper-<?= $docId ?>"><?= $v ?></span>
+                        <span class="label label-status-0 pull-right"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
+                        <?php if ($currentPaper->getDocid() !== $docId) : ?></a><?php endif; ?>
+
+                    <?php if (
+                        $controller === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER &&
+                        !$paper->isTmp() &&
+                        ($docId === $this->versions[array_key_first($this->versions)]->getDocId()) &&
+                        (
+                            (Episciences_Auth::isSecretary() && !$paper->isExcluded()) ||
+                            ($isAllowedToEditVersion && $paper->canBeAssignedDOI())
+                        )
+
+                    ) : ?>
+                        <a class="btn btn-default btn-xs" role="button"
+                           onclick="getVersionEditingForm(this, <?= $docId ?>)"><i class="fas fa-edit" style="margin-right: 5px"></i><?= $this->translate('Modifier') ?></a>
+                    <?php endif; ?>
                 </li>
+
             <?php endforeach; ?>
             <li>
                 <a class="pull-right" target="_blank" href="<?= $this->translate('help_versions_link') ?>">

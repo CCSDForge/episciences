@@ -1,0 +1,74 @@
+<?php
+$label = $this->label ?? 'Your label';
+$type = $this->type ?? 'text';
+$options = ($type === 'select' && isset($this->options)) ? $this->options : [];
+$docId = $this->docId ?? '';
+$action = $this->action ?? '#';
+$prefix = $this->prefix ?? 'prefix';
+$min = $this->min ?? '';
+$max = $this->max ?? '';
+?>
+<div style="width: 400px" id="<?= $prefix ?>">
+
+    <?php if (!empty($options)) : ?>
+
+        <form action="<?= $action ?>" id="<?= $prefix ?>-form-<?= $docId ?>" style="height : 34px;">
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <?= $this->translate($label) ?>
+                            </div>
+                            <div class="col-md-4">
+
+                                <?php if ($type === 'select'): ?>
+                                    <label>
+                                        <select name="<?= $prefix ?>" id="<?= $prefix ?>" class="form-control">
+
+                                            <?php foreach ($options as $index => $value): ?>
+                                                <option value="<?= $value ?>" <?= (array_key_first($options) === $index) ? 'selected' : '' ?>><?= $value ?></option>
+                                            <?php endforeach; ?>
+
+                                        </select>
+                                    </label>
+                                <?php else: ?>
+
+                                    <label>
+                                        <input type=<?= $type ?> id="<?= $prefix ?>" class="form-control" name="<?= $prefix ?>" min="<?= $min ?>" max="<?= $max ?>"/>
+                                    </label>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+                        <a class="btn btn-default pull-right close" role="button" aria-hidden="true"
+                           onclick="$('.popover').hide();">
+                            &times;
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </form>
+
+    <?php else : ?>
+
+        <p class="text-warning"><?= $this->translate('La version actuelle est la version la plus récente.') ?>
+            <a class="btn btn-default btn-xs pull-right close" role="button" aria-hidden="true"
+               onclick="$('.popover').hide();">
+                &times;
+            </a>
+        </p>
+
+    <?php endif; ?>
+
+
+</div>
+
+
+
+
+

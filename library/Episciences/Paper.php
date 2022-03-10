@@ -216,6 +216,10 @@ class Episciences_Paper
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
         self::STATUS_CE_READY_TO_PUBLISH,
         self::STATUS_PUBLISHED,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION,
+        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
     ];
 
     public const ACCEPTED_SUBMISSIONS = [
@@ -3982,6 +3986,16 @@ class Episciences_Paper
         }
 
         return Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'];
+    }
+
+
+    public function isExcluded(): bool
+    {
+        if (in_array($this->getStatus(), self::DO_NOT_SORT_THIS_KIND_OF_PAPERS, true)) {
+            return true;
+        }
+
+        return false;
     }
 
 }

@@ -457,6 +457,7 @@ return [
     "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
     "son compte n'a pas encore été activé" => 'his account is not active yet',
     "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via la plateforme &copy;Episciences" => "At this point, the author coordinates with the copy editor and agree by exchanging emails outside or via the &copy;Episciences system",
+    "La version actuelle est la version la plus récente." => "The current version is the most recent version.",
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
@@ -1032,6 +1033,7 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_COMMENT] => "editor's comment",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => "Copy editing: awaiting formatting by author",
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
+    Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version repointing',
 
 
     "Date d'assignation" => "Assignation date",
