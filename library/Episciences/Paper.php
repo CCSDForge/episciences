@@ -3897,4 +3897,10 @@ class Episciences_Paper
         return Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'];
     }
 
+
+    public function isOwner(): bool
+    {
+        return Episciences_Auth::getUid() === $this->getUid();
+    }
+
 }

@@ -131,7 +131,7 @@ if ($paper->isPublished()) {
             $this->headMeta()->prependName('citation_volume', $volume);
             $this->headMeta()->prependName('DC.citation.volume', $volume);
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage());
         }
     }
 
@@ -160,14 +160,14 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php // obsolete paper notice ****************************************************** ?>
 <?php if ($paper->isObsolete()) : ?>
     <div class="alert alert-info" style="margin-top: 20px">
-        <strong><?php echo $this->translate('Attention, cet article est obsolète.'); ?></strong><br/>
+        <strong><?= $this->translate('Attention, cet article est obsolète.') ?></strong><br/>
         <?php
         $url = $this->url([
             'controller' => Zend_Controller_Front::getInstance()->getRequest()->getControllerName(),
             'action' => Zend_Controller_Front::getInstance()->getRequest()->getActionName(),
             'id' => $paper->getLatestVersionId()]);
         ?>
-        <?php echo $this->translate("Il s'agit d'une ancienne version de %s cet article %s", '<a href="' . $url . '">', '</a>'); ?>
+        <?= $this->translate("Il s'agit d'une ancienne version de %s cet article %s", '<a href="' . $url . '">', '</a>') ?>
     </div>
 <?php endif; ?>
 
@@ -183,7 +183,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
     <?php // paper status ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate("Statut de l'article"); ?></h2>
+            <h2 class="panel-title"><?= $this->translate("Statut de l'article") ?></h2>
         </div>
         <div class="panel-body in">
             <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
@@ -230,11 +230,10 @@ if (
 <?php if ($this->reports) : ?>
     <div id="ratings" class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Evaluations'); ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Evaluations') ?></h2>
         </div>
         <div class="panel-body in" style="max-height: 350px; overflow: auto;">
-            <?php echo $this->partial('partials/paper_reports.phtml', ['paper' => $paper, 'reports' => $this->reports]);
-            ?>
+            <?= $this->partial('partials/paper_reports.phtml', ['paper' => $paper, 'reports' => $this->reports, 'isAllowedToSeeReportDetails' => $this->isAllowedToSeeReportDetails]) ?>
         </div>
     </div>
 <?php endif; ?>
@@ -243,17 +242,17 @@ if (
 <?php // author's comments and cover letter ************************************************************************* ?>
 <?php if ($isAllowed && $this->author_comments && !$paper->isPublished()) : ?>
     <?php // Author comments  *****************************************?>
-    <?php echo $this->render('partials/paper_author_comments_bloc.phtml'); ?>
+    <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
 <?php endif; ?>
 
 <?php // reviewer comments ************************************** ?>
 <?php if ($isAllowed && $this->comments && !$paper->isPublished()) : ?>
     <div id="comments" class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Commentaires des relecteurs'); ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Commentaires des relecteurs') ?></h2>
         </div>
         <div class="panel-body in" style="max-height: 350px; overflow: auto;">
-            <?php echo $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->comments, 'replyForms' => $this->replyForms, 'paperContributorUid' => $this->paper->getUid()]) ?>
+            <?= $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->comments, 'replyForms' => $this->replyForms, 'paperContributorUid' => $this->paper->getUid()]) ?>
         </div>
     </div>
 <?php endif; ?>
@@ -263,7 +262,7 @@ if (
 <?php if ($isAllowedToAnswerNewVersion && ($this->revision_requests || $this->currentDemand || $this->previousVersionsDemands) && !$paper->isPublished()) : ?>
     <div id="answer" class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Demandes de modifications'); ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Demandes de modifications') ?></h2>
         </div>
         <div class="panel-body in" style="overflow: visible">
             <?= $this->partial('partials/answer_revision_request_form.phtml', [
@@ -275,7 +274,7 @@ if (
 
             <?= !empty($this->currentDemand) ? '<hr>' : ''; ?>
 
-            <?php echo $this->partial('partials/paper_demands.phtml', [
+            <?= $this->partial('partials/paper_demands.phtml', [
                 'paper' => $paper,
                 'review' => $this->review,
                 'current_demand' => $this->currentDemand,
@@ -294,29 +293,29 @@ if (
 <?php if ($paper->isPublished()) : ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Exporter') ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Exporter') ?></h2>
         </div>
         <div class="panel-body in" style="overflow: visible">
             <a class="btn btn-default btn-sm" target="_blank"
-               href="<?php echo $this->url(['id' => $paper->getDocid()], 'bibtex') ?>">
+               href="<?= $this->url(['id' => $paper->getDocid()], 'bibtex') ?>">
                 BibTeX
             </a>
             <a class="btn btn-default btn-sm" target="_blank"
-               href="<?php echo $this->url(['id' => $paper->getDocid()], 'tei') ?>">
+               href="<?= $this->url(['id' => $paper->getDocid()], 'tei') ?>">
                 <abbr title="Text Encoding Initiative">TEI</abbr>
             </a>
             <a class="btn btn-default btn-sm" target="_blank"
-               href="<?php echo $this->url(['id' => $paper->getDocid()], 'dc') ?>">
+               href="<?= $this->url(['id' => $paper->getDocid()], 'dc') ?>">
                 <abbr title="Dublin Core">DC</abbr>
             </a>
             <a class="btn btn-default btn-sm" target="_blank"
-               href="<?php echo $this->url(['id' => $paper->getDocid()], 'datacite') ?>">DataCite</a>
+               href="<?= $this->url(['id' => $paper->getDocid()], 'datacite') ?>">DataCite</a>
             <a class="btn btn-default btn-sm" target="_blank"
-               href="<?php echo $this->url(['id' => $paper->getDocid()], 'crossref') ?>">Crossref</a>
+               href="<?= $this->url(['id' => $paper->getDocid()], 'crossref') ?>">Crossref</a>
             <a class="btn btn-default btn-sm" target="_blank"
-               href="<?php echo $this->url(['id' => $paper->getDocid()], 'zbjats') ?>">zbJATS</a>
+               href="<?= $this->url(['id' => $paper->getDocid()], 'zbjats') ?>">zbJATS</a>
             <a class="btn btn-default btn-sm" target="_blank"
-               href="<?php echo $this->url(['id' => $paper->getDocid()], 'json') ?>">JSON</a>
+               href="<?= $this->url(['id' => $paper->getDocid()], 'json') ?>">JSON</a>
         </div>
     </div>
 <?php endif; ?>
@@ -325,7 +324,7 @@ if (
 <?php if ($paper->isPublished()) : ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Partager') ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Partager') ?></h2>
         </div>
         <div class="panel-body in" style="overflow: visible">
             <!-- AddToAny BEGIN -->
@@ -355,14 +354,14 @@ if (
     <!-- stats -->
     <div id="stats" class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Statistiques de consultation'); ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Statistiques de consultation') ?></h2>
         </div>
         <div class="panel-body in">
             <?php if ($this->page_count) : ?>
-                <div><?php echo $this->translate("Cette page a été consultée %s fois.", $this->page_count); ?></div>
+                <div><?= $this->translate("Cette page a été consultée %s fois.", $this->page_count) ?></div>
             <?php endif; ?>
             <?php if ($this->file_count) : ?>
-                <div><?php echo $this->translate("Le PDF de cet article a été téléchargé %s fois.", $this->file_count); ?></div>
+                <div><?= $this->translate("Le PDF de cet article a été téléchargé %s fois.", $this->file_count) ?></div>
             <?php endif; ?>
         </div>
     </div>
