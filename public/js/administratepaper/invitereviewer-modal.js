@@ -572,7 +572,8 @@ function dt_init(self_id, self_reviewers) {
             stateSave: true,
             "dom": "<'dt-header row'<'left col-xs-6'l><'right col-xs-6'f>r>t<'dt-footer row'<'left col-xs-6'i><'right col-xs-6'p>>",
             "pagingType": "numbers",
-            // "aaSorting": [[ 2, "asc" ]],
+            //"aaSorting": [[ 2, "asc" ]],
+            "order": [[ 1, 'asc' ], [ 0, 'asc' ]],
             "autoWidth": true,
             "language": {
                 "lengthMenu": translate("Afficher") + " _MENU_ " + translate("lignes"),
