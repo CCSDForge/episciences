@@ -1,5 +1,6 @@
-<?php $this->layout()->pageTitle = $this->translate("Gérer les articles");
-$this->layout()->description = ($this->pageDescription) ? $this->pageDescription : $this->translate("Gestion des articles de la revue.");
+<?php
+$this->layout()->pageTitle = $this->translate("Gérer les articles");
+$this->layout()->description = ($this->pageDescription) ?: $this->translate("Gestion des articles de la revue.");
 
 $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
@@ -46,19 +47,49 @@ $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
     <tbody></tbody>
 </table>
 
+<?php
+
+$status = [];
+$noEditors = [];
+
+$editableWithoutEditorsData = [
+    'status' => $status,
+    'editors' => $noEditors
+];
+
+if (Episciences_Auth::isAdministrator()) {
+
+    $status = array_values(array_diff(Episciences_PapersManager::getAllStatus(RVID, 'ASC'), Episciences_Paper::$_noEditableStatus));
+    $noEditors = [Episciences_View_Helper_PaperFilter::NONE_KEY];
+}
+
+try {
+    $editableWithoutEditorsData = json_encode([
+        'editors' => $noEditors,
+        'status' => $status
+    ], JSON_THROW_ON_ERROR);
+
+
+} catch (JsonException $e) {
+
+    trigger_error($e->getMessage());
+}
+
+?>
+
 
 <script type="text/javascript">
 
-    /*$.ajaxSetup({
-        cache: true
-    });*/
 
-    let selfController = <?php echo "'$controller'"; ?>;
-    let selfAction = <?php echo "'$action'"; ?>;
+    let selfController = <?= "'$controller'" ?>;
+    let selfAction = <?= "'$action'" ?>;
 
-    $.getScript("/js/paper/submitted.js?_=v<?php echo APPLICATION_VERSION; ?>;");
-    $.getScript("/js/administratepaper/section-assignment.js?_=v<?php echo APPLICATION_VERSION; ?>");
-    $.getScript("/js/administratepaper/volume-assignment.js?_=v<?php echo APPLICATION_VERSION; ?>");
+    const editableWithoutEditorsData = <?= $editableWithoutEditorsData ?>;
+
+    $.getScript("/js/paper/submitted.js?_=v<?= APPLICATION_VERSION ?>;");
+    $.getScript("/js/administratepaper/section-assignment.js?_=v<?= APPLICATION_VERSION ?>");
+    $.getScript("/js/administratepaper/volume-assignment.js?_=v<?= APPLICATION_VERSION ?>");
+
 </script>
 
 

@@ -38,7 +38,7 @@ class Episciences_Mail_Template
     }
 
     // available in all templates
-    protected $_tags = [
+    protected array $_tags = [
         Episciences_Mail_Tags::TAG_REVIEW_CODE,
         Episciences_Mail_Tags::TAG_REVIEW_NAME,
         Episciences_Mail_Tags::TAG_SENDER_EMAIL,
@@ -52,7 +52,7 @@ class Episciences_Mail_Template
     // protected $_paper_published_editor_copy_tags = [];
 
     // paper status change
-    protected $_paper_accepted_tags = [
+    protected array $_paper_accepted_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -66,7 +66,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_RATING,
     ];
 
-    protected $_paper_accepted_editors_copy_tags = [
+    protected array $_paper_accepted_editors_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -82,7 +82,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK
     ];
 
-    protected $_paper_accepted_tmp_version_tags = [
+    protected array $_paper_accepted_tmp_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -95,7 +95,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_RATING,
     ];
 
-    protected $_paper_accepted_tmp_version_managers_copy_tags = [
+    protected array $_paper_accepted_tmp_version_managers_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -110,7 +110,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REQUESTER_SCREEN_NAME
     ];
 
-    protected $_paper_ask_other_editors_tags = [
+    protected array $_paper_ask_other_editors_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -121,7 +121,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL
     ];
-    protected $_paper_published_author_copy_tags = [
+    protected array $_paper_published_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -134,7 +134,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_RATING
     ];
-    protected $_paper_refused_tags = [
+    protected array $_paper_refused_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -146,7 +146,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_RATING
     ];
-    protected $_paper_revision_request_tags = [
+    protected array $_paper_revision_request_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -158,7 +158,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_RATING
     ];
-    protected $_paper_major_revision_request_tags = [
+    protected array $_paper_major_revision_request_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -170,7 +170,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_RATING
     ];
-    protected $_paper_minor_revision_request_tags = [
+    protected array $_paper_minor_revision_request_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -183,7 +183,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_RATING
     ];
 
-    protected $_paper_commnet_by_edditor_copy_tags = [
+    protected array $_paper_commnet_by_edditor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_ARTICLE_ID,
@@ -192,7 +192,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
     ];
 
-    protected $_paper_comment_answer_reviewer_copy_tags = [
+    protected array $_paper_comment_answer_reviewer_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -208,7 +208,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
 
-    protected $_paper_comment_from_reviewer_to_contributor_author_copy_tags = [
+    protected array $_paper_comment_from_reviewer_to_contributor_author_copy_tags = [
         Episciences_Mail_Tags::TAG_ARTICLE_ID,
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
@@ -219,7 +219,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
     ];
 
-    protected $_paper_comment_from_reviewer_to_contributor_editor_copy_tags = [
+    protected array $_paper_comment_from_reviewer_to_contributor_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_ARTICLE_ID,
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
@@ -229,7 +229,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
     ];
-    protected $_paper_deleted_author_copy_tags = [
+    protected array $_paper_deleted_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -241,7 +241,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
-    protected $_paper_deleted_editor_copy_tags = [
+    protected array $_paper_deleted_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, // = sender full name
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
@@ -253,7 +253,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
-    protected $_paper_deleted_reviewer_copy_tags = [
+    protected array $_paper_deleted_reviewer_copy_tags = [
         Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, // = sender full name
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
@@ -265,7 +265,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
-    protected $_paper_editor_assign_tags = [
+    protected array $_paper_editor_assign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -277,7 +277,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
-    protected $_paper_editor_unassign_tags = [
+    protected array $_paper_editor_unassign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -289,7 +289,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
-    protected $_paper_new_version_reviewer_reassign_tags = [
+    protected array $_paper_new_version_reviewer_reassign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -302,7 +302,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_NEW_VERSION_URL,
     ];
-    protected $_paper_new_version_submitted_tags = [
+    protected array $_paper_new_version_submitted_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -316,7 +316,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REQUEST_MESSAGE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
-    protected $_paper_reviewed_editor_copy_tags = [
+    protected array $_paper_reviewed_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
         Episciences_Mail_Tags::TAG_PAPER_RATING,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
@@ -330,7 +330,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL // paper administration page url
     ];
-    protected $_paper_reviewed_reviewer_copy_tags = [
+    protected array $_paper_reviewed_reviewer_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -342,7 +342,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL // rating page url
     ];
-    protected $_paper_reviewer_acceptation_editor_copy_tags = [
+    protected array $_paper_reviewer_acceptation_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -357,7 +357,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
         Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME,
     ];
-    protected $_paper_reviewer_acceptation_reviewer_copy_tags = [
+    protected array $_paper_reviewer_acceptation_reviewer_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -372,7 +372,7 @@ class Episciences_Mail_Template
 
     ];
 
-    protected $_paper_reviewer_invitation1_tags = [
+    protected array $_paper_reviewer_invitation1_tags = [
         Episciences_Mail_Tags::TAG_RATING_DEADLINE,
         Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
@@ -386,7 +386,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
         Episciences_Mail_Tags::TAG_SENDER_EMAIL
     ];
-    protected $_paper_reviewer_invitation2_tags = [
+    protected array $_paper_reviewer_invitation2_tags = [
         Episciences_Mail_Tags::TAG_RATING_DEADLINE,
         Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
@@ -400,7 +400,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
         Episciences_Mail_Tags::TAG_SENDER_EMAIL
     ];
-    protected $_paper_reviewer_invitation3_tags = [
+    protected array $_paper_reviewer_invitation3_tags = [
         Episciences_Mail_Tags::TAG_RATING_DEADLINE,
         Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
@@ -414,7 +414,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
         Episciences_Mail_Tags::TAG_SENDER_EMAIL
     ];
-    protected $_paper_reviewer_refusal_editor_copy_tags = [
+    protected array $_paper_reviewer_refusal_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -430,7 +430,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION,
         Episciences_Mail_Tags::TAG_REFUSAL_REASON,
     ];
-    protected $_paper_reviewer_refusal_reviewer_copy_tags = [
+    protected array $_paper_reviewer_refusal_reviewer_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -442,7 +442,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION,
         Episciences_Mail_Tags::TAG_REFUSAL_REASON,
     ];
-    protected $_paper_reviewer_removal_tags = [
+    protected array $_paper_reviewer_removal_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -453,7 +453,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME
     ];
-    protected $_paper_revision_answer_tags = [
+    protected array $_paper_revision_answer_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -467,7 +467,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REQUEST_ANSWER,
         Episciences_Mail_Tags::TAG_PAPER_URL,
     ];
-    protected $_paper_submission_author_copy_tags = [
+    protected array $_paper_submission_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -479,7 +479,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_PAPER_URL,
     ];
-    protected $_paper_submission_editor_copy_tags = [
+    protected array $_paper_submission_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -498,7 +498,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
     ];
 
-    protected $_paper_submission_updated_author_copy_tags = [
+    protected array $_paper_submission_updated_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -512,7 +512,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
     ];
 
-    protected $_paper_submission_updated_editor_copy_tags = [
+    protected array $_paper_submission_updated_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -525,7 +525,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL,
     ];
 
-    protected $_paper_suggest_acceptation_tags = [
+    protected array $_paper_suggest_acceptation_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -539,7 +539,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_COMMENT,      // editor's message (acceptation suggestion)
         Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
     ];
-    protected $_paper_suggest_new_version_tags = [
+    protected array $_paper_suggest_new_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -553,7 +553,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_COMMENT,      // editor's message (acceptation suggestion)
         Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
     ];
-    protected $_paper_suggest_refusal_tags = [
+    protected array $_paper_suggest_refusal_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -567,7 +567,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_COMMENT,      // editor's message (acceptation suggestion)
         Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
     ];
-    protected $_paper_tmp_version_reviewer_reassign_tags = [
+    protected array $_paper_tmp_version_reviewer_reassign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -580,7 +580,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_TMP_PAPER_URL,
     ];
-    protected $_paper_tmp_version_submitted_tags = [
+    protected array $_paper_tmp_version_submitted_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
@@ -595,7 +595,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REQUEST_ANSWER,
         Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
     ];
-    protected $_paper_updated_rating_deadline_tags = [
+    protected array $_paper_updated_rating_deadline_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // reviewer screen name (recipient)
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // reviewer full name (recipient)
@@ -608,7 +608,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_UPDATED_DEADLINE,
     ];
 
-    protected $_paper_editor_refused_monitoring_tags = [
+    protected array $_paper_editor_refused_monitoring_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -625,7 +625,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
 
-    protected $_paper_new_version_reviewer_re_invitation = [
+    protected array $_paper_new_version_reviewer_re_invitation = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -641,7 +641,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_RATING_DEADLINE
     ];
 
-    protected $_paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags = [
+    protected array $_paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -653,11 +653,11 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
     ];
 
-    protected $_user_lost_login_tags = [
+    protected array $_user_lost_login_tags = [
         Episciences_Mail_Tags::TAG_LOST_LOGINS,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, // link
     ];
-    protected $_user_lost_password_tags = [
+    protected array $_user_lost_password_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -665,7 +665,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
         Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK
     ];
-    protected $_user_registration_tags = [
+    protected array $_user_registration_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -674,7 +674,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK
     ];
 
-    protected $_reminder_after_deadline_editor_version_tags = [
+    protected array $_reminder_after_deadline_editor_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -686,7 +686,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
-    protected $_reminder_after_deadline_reviewer_version_tags = [
+    protected array $_reminder_after_deadline_reviewer_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -698,7 +698,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK,
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
-    protected $_reminder_after_revision_deadline_author_version_tags = [
+    protected array $_reminder_after_revision_deadline_author_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -711,7 +711,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
-    protected $_reminder_after_revision_deadline_editor_version_tags = [
+    protected array $_reminder_after_revision_deadline_editor_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -724,7 +724,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
-    protected $_reminder_before_deadline_editor_version_tags = [
+    protected array $_reminder_before_deadline_editor_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -739,7 +739,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
 
-    protected $_reminder_before_deadline_reviewer_version_tags = [
+    protected array $_reminder_before_deadline_reviewer_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -751,7 +751,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK,
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
-    protected $_reminder_before_revision_deadline_author_version_tags = [
+    protected array $_reminder_before_revision_deadline_author_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -763,7 +763,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
-    protected $_reminder_before_revision_deadline_editor_version_tags = [
+    protected array $_reminder_before_revision_deadline_editor_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -776,7 +776,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
-    protected $_reminder_not_enough_reviewers_tags = [
+    protected array $_reminder_not_enough_reviewers_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -790,7 +790,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT,
         Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT
     ];
-    protected $_reminder_unanswered_reviewer_invitation_editor_version_tags = [
+    protected array $_reminder_unanswered_reviewer_invitation_editor_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -806,7 +806,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
 
-    protected $_reminder_unanswered_reviewer_invitation_reviewer_version_tags = [
+    protected array $_reminder_unanswered_reviewer_invitation_reviewer_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -821,7 +821,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_REMINDER_DELAY
     ];
 
-    protected $_paper_abandon_publication_author_copy_tags = [
+    protected array $_paper_abandon_publication_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -835,7 +835,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ACTION_TIME
     ];
 
-    protected $_paper_abandon_publication_editor_copy_tags = [
+    protected array $_paper_abandon_publication_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -850,7 +850,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_LAST_STATUS
     ];
 
-    protected $_paper_abandon_publication_reviewer_removal_tags = [
+    protected array $_paper_abandon_publication_reviewer_removal_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -865,7 +865,7 @@ class Episciences_Mail_Template
     ];
 
 
-    protected $_paper_ce_accepted_final_version_author_copy_tags = [
+    protected array $_paper_ce_accepted_final_version_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -878,7 +878,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
     ];
 
-    protected $_paper_ce_accepted_final_version_copyEditor_and_editor_copy_tags = [
+    protected array $_paper_ce_accepted_final_version_copyEditor_and_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -889,7 +889,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES
     ];
 
-    protected $_paper_ce_author_sources_submitted_response_author_copy_tags = [
+    protected array $_paper_ce_author_sources_submitted_response_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -903,7 +903,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ACTION_TIME
     ];
 
-    protected $_paper_ce_author_sources_submitted_response_copyEditor_and_editor_copy_tags = [
+    protected array $_paper_ce_author_sources_submitted_response_copyEditor_and_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -918,7 +918,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_COMMENT_DATE
     ];
 
-    protected $_paper_ce_author_final_version_submitted_author_copy_tags = [
+    protected array $_paper_ce_author_final_version_submitted_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -932,7 +932,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ACTION_TIME
     ];
 
-    protected $_paper_ce_author_final_version_submitted_editor_and_copyEditor_copy_tags = [
+    protected array $_paper_ce_author_final_version_submitted_editor_and_copyEditor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -946,7 +946,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_COMMENT_DATE
     ];
 
-    protected $_paper_ce_review_formatting_submitted_author_copy_tags = [
+    protected array $_paper_ce_review_formatting_submitted_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -959,7 +959,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
     ];
 
-    protected $_paper_ce_review_formatting_submitted_editor_and_copyEditor_copy_tags = [
+    protected array $_paper_ce_review_formatting_submitted_editor_and_copyEditor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -969,7 +969,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES
     ];
-    protected $_paper_ce_waiting_for_author_formatting_author_copy_tags = [
+    protected array $_paper_ce_waiting_for_author_formatting_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1000,7 +1000,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_CURRENT_YEAR,
         Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL,
     ];
-    protected $_paper_ce_waiting_for_author_formatting_editor_and_copyEditor_copy_tags = [
+    protected array $_paper_ce_waiting_for_author_formatting_editor_and_copyEditor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1011,7 +1011,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
     ];
-    protected $_paper_ce_waiting_for_author_sources_author_copy_tags = [
+    protected array $_paper_ce_waiting_for_author_sources_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1022,7 +1022,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
-    protected $_paper_ce_waiting_for_author_sources_editor_copy_tags = [
+    protected array $_paper_ce_waiting_for_author_sources_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1033,7 +1033,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
-    protected $_paper_continue_publication_author_copy_tags = [
+    protected array $_paper_continue_publication_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1046,7 +1046,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ACTION_DATE,
         Episciences_Mail_Tags::TAG_ACTION_TIME
     ];
-    protected $_paper_continue_publication_editor_copy_tags = [
+    protected array $_paper_continue_publication_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1061,7 +1061,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_LAST_STATUS
     ];
 
-    protected $_paper_copyEditor_assign_author_copy_tags = [
+    protected array $_paper_copyEditor_assign_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1072,7 +1072,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
-    protected $_paper_copyEditor_assign_Editor_copy_tags = [
+    protected array $_paper_copyEditor_assign_Editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1083,7 +1083,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
     ];
-    protected $_paper_copyEditor_assign_tags = [
+    protected array $_paper_copyEditor_assign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1095,7 +1095,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
-    protected $_paper_copyEditor_unassign_tags = [
+    protected array $_paper_copyEditor_unassign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1107,7 +1107,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
-    protected $_paper_published_editor_copy_tags = [
+    protected array $_paper_published_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1119,7 +1119,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
-    protected $_paper_refused_editor_copy_tags = [
+    protected array $_paper_refused_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1131,7 +1131,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
-    protected $_paper_volume_editor_assign_tags = [
+    protected array $_paper_volume_editor_assign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1143,7 +1143,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_SECTION_NAME
     ];
-    protected $_paper_section_editor_assign_tags = [
+    protected array $_paper_section_editor_assign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1157,7 +1157,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
     ];
 
-    protected $_paper_suggested_editor_assign_tags = [
+    protected array $_paper_suggested_editor_assign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1169,7 +1169,7 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
 
-    protected $_reminder_article_blocked_in_accepted_state_editor_version_tags = [
+    protected array $_reminder_article_blocked_in_accepted_state_editor_version_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1180,6 +1180,36 @@ class Episciences_Mail_Template
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE
+    ];
+
+    protected array $_paper_accepted_ask_authors_final_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_PAPER_RATINGS,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
+        Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
+    ];
+
+    protected array $_paper_formatted_by_journal_waiting_author_validation_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_PAPER_RATINGS,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
+
     ];
 
     public function __construct(array $options = null)
@@ -1208,7 +1238,7 @@ class Episciences_Mail_Template
         return $this;
     }
 
-    public function setLocale($locale)
+    public function setLocale($locale): \Episciences_Mail_Template
     {
         $availableLanguages = Episciences_Tools::getLanguages();
 
@@ -1237,7 +1267,7 @@ class Episciences_Mail_Template
      * @return bool
      * @throws Zend_Db_Statement_Exception
      */
-    public function find($id)
+    public function find(int $id): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -1247,9 +1277,9 @@ class Episciences_Mail_Template
         if ($template) {
             $this->populate($template);
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
 
@@ -1259,7 +1289,7 @@ class Episciences_Mail_Template
      * @return bool
      * @throws Zend_Exception
      */
-    public function findByKey($key)
+    public function findByKey(string $key): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -1292,7 +1322,7 @@ class Episciences_Mail_Template
      * @param array $data
      * @return bool
      */
-    private function populate($data)
+    private function populate(array $data): bool
     {
         if ($data) {
             $this->setId($data['ID']);
@@ -1302,25 +1332,25 @@ class Episciences_Mail_Template
             $this->setType($data['TYPE']);
             // $this->loadTranslations();
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
-        $result = array();
+        $result = [];
 
-        $fields = array(
+        $fields = [
             'id',
             'parentId',
             'rvcode',
             'key',
             'type'
-        );
+        ];
         foreach ($fields as $key) {
             $method = 'get' . ucfirst($key);
             if (method_exists($this, $method)) {
@@ -1339,7 +1369,7 @@ class Episciences_Mail_Template
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public function save()
+    public function save(): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -1375,7 +1405,7 @@ class Episciences_Mail_Template
 
         if (empty($name)) {
             $result = false;
-            error_log('TEMPLATE::SAVE_GET_NAME_TRANSLATIONS_IS_EMPTY');
+            trigger_error('TEMPLATE::SAVE_GET_NAME_TRANSLATIONS_IS_EMPTY');
         }
 
         foreach ($name as $lang => $translation) {
@@ -1387,7 +1417,7 @@ class Episciences_Mail_Template
 
         if (empty($subject)) {
             $result = false;
-            error_log('TEMPLATE::SAVE_GET_SUBJECT_TRANSLATIONS_IS_EMPTY');
+            trigger_error('TEMPLATE::SAVE_GET_SUBJECT_TRANSLATIONS_IS_EMPTY');
         }
 
         foreach ($subject as $lang => $translation) {
@@ -1396,7 +1426,7 @@ class Episciences_Mail_Template
 
         // Mise à jour du fichier de traduction
         if (Episciences_Tools::writeTranslations($translations, $this->getTranslationsFolder(), 'mails.php') < 1) {
-            error_log('UPDATING_THE_TRANSLATION_FILE_TOTAL_BYTES_WRITTEN_IS_EMPTY');
+            trigger_error('UPDATING_THE_TRANSLATION_FILE_TOTAL_BYTES_WRITTEN_IS_EMPTY');
         }
 
         // Création du template dans ses différentes langues
@@ -1404,19 +1434,19 @@ class Episciences_Mail_Template
 
         if (empty($body)) {
             $result = false;
-            error_log('TEMPLATE::SAVE_GET_BODY_TRANSLATIONS_IS_EMPTY');
+            trigger_error('TEMPLATE::SAVE_GET_BODY_TRANSLATIONS_IS_EMPTY');
         }
 
         foreach ($body as $lang => $translation) {
             $path = $this->getTranslationsFolder() . $lang . '/emails/';
 
             if (!mkdir($path) && !is_dir($path)) {
-                error_log('Directory "%s" was not created', $path);
+                trigger_error('Directory "%s" was not created', $path);
             }
 
             if (!$filePutContent = file_put_contents($path . $key . '.phtml', $translation)) {
                 $result = $result && $filePutContent;
-                error_log('TEMPLATE::SAVE_WRITE_DATA_TO_FILE_IS_EMPTY');
+                trigger_error('TEMPLATE::SAVE_WRITE_DATA_TO_FILE_IS_EMPTY');
             }
         }
 
@@ -1425,7 +1455,7 @@ class Episciences_Mail_Template
     }
 
     // Suppression d'un template
-    public function delete()
+    public function delete(): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $id = $this->getId();
@@ -1454,7 +1484,7 @@ class Episciences_Mail_Template
      * @param null $langs
      * @throws Zend_Exception
      */
-    public function loadTranslations($langs = null)
+    public function loadTranslations($langs = null): void
     {
         if (!$langs) {
             $langs = Episciences_Tools::getLanguages();
@@ -1472,12 +1502,14 @@ class Episciences_Mail_Template
         return $this->_translations;
     }
 
-    // Charge le corps du template dans les différentes langues trouvées
-    // @return array
-    public function loadBody()
+    /**
+     * Charge le corps du template dans les différentes langues trouvées
+     * @return array
+     */
+    public function loadBody(): array
     {
         $path = $this->getTranslationsFolder();
-        $exclusions = array('.', '..', '.svn');
+        $exclusions = ['.', '..', '.svn'];
         $result = [];
 
         if (is_dir($path)) {
@@ -1485,7 +1517,7 @@ class Episciences_Mail_Template
             $files = scandir($path);
             foreach ($files as $file) {
                 $filepath = $path . $file . '/emails/' . $this->getKey() . '.phtml';
-                if (!in_array($file, $exclusions) && file_exists($filepath)) {
+                if (!in_array($file, $exclusions, true) && file_exists($filepath)) {
                     $result[$file] = file_get_contents($filepath);
                 }
             }
@@ -1501,10 +1533,10 @@ class Episciences_Mail_Template
     /**
      * Charge le nom template dans les différentes langues trouvées
      * @param $langs
-     * @return null
+     * @return array
      * @throws Zend_Exception
      */
-    public function loadName($langs)
+    public function loadName($langs): array
     {
         $name = [];
         $translator = Zend_Registry::get('Zend_Translate');
@@ -1519,9 +1551,13 @@ class Episciences_Mail_Template
         return $name;
     }
 
-    // Charge le sujet du template dans les différentes langues trouvées
-    // @return array
-    public function loadSubject($langs)
+    /**
+     * Charge le sujet du template dans les différentes langues trouvées
+     * @param $langs
+     * @return array
+     * @throws Zend_Exception
+     */
+    public function loadSubject($langs): array
     {
         $subject = [];
         $translator = Zend_Registry::get('Zend_Translate');
@@ -1538,37 +1574,36 @@ class Episciences_Mail_Template
         return $subject;
     }
 
-
-    // GETTERS **************************************************
-
-    public function getTagList()
-    {
-        $tags = $this->_tag_list;
-
-        /*
-        if ($this->getKey()) {
-            array_merge($tags, []);
-        }
-        */
-
-        return $tags;
-    }
-
     /**
      * return true if template has a custom version, false otherwise
      * @return bool
      */
-    public function isCustom()
+    public function isCustom(): bool
     {
         return ((bool)$this->getParentid());
     }
+
+    // Getters ***************************************************
+
+    /**
+     * @return int
+     */
+    public function getRvid(): int
+    {
+        if (!$this->_rvid && defined('RVID')) {
+            $this->setRvid(RVID);
+        }
+
+        return $this->_rvid;
+    }
+
 
     /**
      * fetch template path
      * @param null $locale
      * @return string
      */
-    public function getPath($locale = null)
+    public function getPath($locale = null): string
     {
         if (!$locale) {
             $locale = $this->getLocale();
@@ -1576,7 +1611,11 @@ class Episciences_Mail_Template
         return $this->getTranslationsFolder() . $locale . '/emails';
     }
 
-    // Renvoie le body dans la langue voulue, ou la langue par défaut
+    /**
+     * Renvoie le body dans la langue voulue, ou la langue par défaut
+     * @param $lang
+     * @return mixed|null
+     */
     public function getBody($lang = null)
     {
         if (!$lang) {
@@ -1584,18 +1623,25 @@ class Episciences_Mail_Template
         }
         if (is_array($this->_body) && array_key_exists($lang, $this->_body)) {
             return $this->_body[$lang];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
-    // Renvoie toutes les traductions du body
+    /**
+     * Renvoie toutes les traductions du body
+     * @return mixed
+     */
     public function getBodyTranslations()
     {
         return $this->_body;
     }
 
-    // Renvoie le nom du template dans la langue voulue, ou la langue par défaut
+    /**
+     *  Renvoie le nom du template dans la langue voulue, ou la langue par défaut
+     * @param $lang
+     * @return mixed|null
+     */
     public function getName($lang = null)
     {
         if (!$lang) {
@@ -1603,18 +1649,26 @@ class Episciences_Mail_Template
         }
         if (is_array($this->_name) && array_key_exists($lang, $this->_name)) {
             return $this->_name[$lang];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
-    // Renvoie toutes les traductions du nom du template
+    /**
+     * Renvoie toutes les traductions du nom du template
+     * @return mixed
+     */
     public function getNameTranslations()
     {
         return $this->_name;
     }
 
-    // Renvoie le sujet dans la langue voulue, ou la langue par défaut
+    /**
+     *  Renvoie le sujet dans la langue voulue ou la langue par défaut
+     * @param $lang
+     * @return mixed|null
+     * @throws Zend_Exception
+     */
     public function getSubject($lang = null)
     {
         if (!$lang) {
@@ -1623,12 +1677,15 @@ class Episciences_Mail_Template
 
         if (is_array($this->_subject) && array_key_exists($lang, $this->_subject) && array_key_exists($lang, Episciences_Tools::getLanguages())) {
             return $this->_subject[$lang];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
-    // Renvoie toutes les traductions du sujet du mail
+    /**
+     *  Renvoie toutes les traductions du sujet du mail
+     * @return mixed
+     */
     public function getSubjectTranslations()
     {
         return $this->_subject;
@@ -1664,79 +1721,68 @@ class Episciences_Mail_Template
 
     // SETTERS ***************************************************
 
-    public function setBody($body)
+    public function setBody($body): \Episciences_Mail_Template
     {
         $this->_body = $body;
         return $this;
     }
 
-    public function setName($name)
+    public function setName($name): \Episciences_Mail_Template
     {
         $this->_name = $name;
         return $this;
     }
 
-    public function setSubject($subject)
+    public function setSubject($subject): \Episciences_Mail_Template
     {
         $this->_subject = $subject;
         return $this;
     }
 
-    public function setId($id)
+    public function setId($id): \Episciences_Mail_Template
     {
         $this->_id = $id;
         return $this;
     }
 
-    public function setParentid($parentId)
+    public function setParentid($parentId): \Episciences_Mail_Template
     {
         $this->_parentId = $parentId;
         return $this;
     }
 
-    public function setRvcode($rvcode)
+    public function setRvcode($rvcode): \Episciences_Mail_Template
     {
         $this->_rvcode = $rvcode;
         return $this;
     }
 
-    public function setKey($key)
+    public function setKey($key): \Episciences_Mail_Template
     {
         $this->_key = $key;
         return $this;
     }
 
-    public function setType($type)
+    public function setType($type): \Episciences_Mail_Template
     {
         $this->_type = $type;
         return $this;
     }
 
     /**
-     * @return int
-     */
-    public function getRvid()
-    {
-        if (!$this->_rvid && defined('RVID')) {
-            $this->setRvid(RVID);
-        }
-
-        return $this->_rvid;
-    }
-
-    /**
      * @param int $rvid
      */
-    public function setRvid($rvid)
+    public function setRvid($rvid): \Episciences_Mail_Template
     {
         $this->_rvid = (int)$rvid;
+        return $this;
     }
 
     /**
      * get available tags list description
      * @return string
      */
-    public function getAvailableTagsListDescription()
+    public function getAvailableTagsListDescription(): string
     {
         $tags = $this->_tags;
         $key = !$this->isCustom() ? $this->getKey() : substr($this->getKey(), 7); // Custom key = 'custom_' . $this->getKey();
@@ -1834,7 +1880,9 @@ class Episciences_Mail_Template
             Episciences_Mail_TemplatesManager::TYPE_PAPER_SECTION_EDITOR_ASSIGN => $this->_paper_section_editor_assign_tags,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN => $this->_paper_suggested_editor_assign_tags,
             Episciences_Mail_TemplatesManager::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION => $this->_reminder_article_blocked_in_accepted_state_editor_version_tags,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => $this->_paper_accepted_tmp_version_managers_copy_tags
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => $this->_paper_accepted_tmp_version_managers_copy_tags,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => $this->_paper_accepted_ask_authors_final_version_tags,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION =>$this->_paper_formatted_by_journal_waiting_author_validation_tags
         ];
 
         if (array_key_exists($key, $map)) {

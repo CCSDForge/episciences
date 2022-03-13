@@ -7,10 +7,13 @@ require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultControll
  */
 class UserController extends UserDefaultController
 {
+    public const MY_SUBMISSIONS_STR = 'my_submissions';
+    public const ASSIGNED_ARTICLES_STR = 'assigned_articles';
+
     /**
      * Page d'accueil d'un utilisateur connecté
      * @throws Zend_Db_Select_Exception
-     * @throws Zend_Exception
+     * @throws Zend_Exception|JsonException
      */
     public function dashboardAction(): void
     {
@@ -23,9 +26,23 @@ class UserController extends UserDefaultController
         $this->view->user['editorSections'] = null;
 
         // Bloc "Gérer la revue"
-        if (Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$review->getSetting('encapsulateEditors'))) {
-            $settings = ['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]];
+        if (Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$review->getSetting('encapsulateEditors'))) {
+            $settings = [
+                'isNot' =>
+                    [
+                        'status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]
+                    ]
+            ];
+
             $this->view->allPapers = $review->getPapers($settings);
+
+            if (Episciences_Auth::isSecretary()) { // Alert on the existence of papers without assigned editors
+
+                $settings['is']['status'] = array_diff(Episciences_PapersManager::getAllStatus(RVID, 'ASC'), Episciences_Paper::$_noEditableStatus);
+                $settings['is']['editors'] = [Episciences_View_Helper_PaperFilter::NONE_KEY];
+
+                $this->view->onlyEditablePapersWithoutEditors = $review->getPapers($settings);
+            }
         }
 
         // Bloc "Articles assignés"
@@ -47,6 +64,7 @@ class UserController extends UserDefaultController
 
         $copyEditor = new Episciences_CopyEditor(Episciences_Auth::getUser()->toArray());
         try {
+            $copyEditor->loadAssignedPapers(['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]]);
             $assignedPapersToCopyEditing = $copyEditor->getAssignedPapers();
         } catch (Zend_Exception $e) {
             trigger_error('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_COPYEDITOR_' . $copyEditor->getUid() . ' : ' . $e, E_USER_WARNING);
@@ -107,7 +125,10 @@ class UserController extends UserDefaultController
 
         // les resources à ne pas afficher
         foreach (Episciences_Acl::TYPE_OF_RESOURCES_NOT_TO_BE_DISPLAYED as $excludedResource) {
-            unset($resources[array_search($excludedResource, $resources, true)]);
+            $key = array_search($excludedResource, $resources, true);
+            if($key !== false){
+                unset($resources[$key]);
+            }
         }
 
         foreach ($resources as $resource) {
@@ -115,8 +136,12 @@ class UserController extends UserDefaultController
             $explodedResource = explode('-', $resource);
 
             if (in_array($explodedResource[0], $ignoredControllerName, true)) {
-                unset($resources[array_search($resource, $resources, true)]);
-                continue;
+                $key = array_search($resource, $resources, true);
+
+                if(false !== $key){
+                    unset($resources[$key]);
+                    continue;
+                }
             }
 
             foreach ($roles as $role) {

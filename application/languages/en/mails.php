@@ -260,6 +260,10 @@ return [
     // PAPER - DECISION FINALE *****************************************************************************************************************************
     "paper_final_decision_tpl_group" => "Paper - final decision",
 
+    //accepted ask authors final version
+    "paper_accepted_ask_authors_final_version_tpl_name" => "Accepted, ask author's final version",
+    "paper_accepted_ask_authors_final_version_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Article already accepted, ask author's final version",
+
     // Article accepté
     "paper_accepted_tpl_name" => "Accepted article - Author copy",
     "paper_accepted_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Your article has been accepted",
@@ -399,6 +403,9 @@ return [
 
     "paper_ce_review_formatting_deposed_author_copy_tpl_name" => "Journal formatting submitted (author copy)",
     "paper_ce_review_formatting_deposed_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - journal formatting has been submitted",
+
+    'paper_formatted_by_journal_waiting_author_validation_tpl_name' => "Journal formatting submitted, ask author's validation",
+    'paper_formatted_by_journal_waiting_author_validation_mail_subject' => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - formatting awaiting validation",
 
     // Confirmation de la mise à jour d'un article – copie destinée aux rédacteurs
     "paper_submission_updated_editor_copy_tpl_name" => "Updated article - Editors copy",

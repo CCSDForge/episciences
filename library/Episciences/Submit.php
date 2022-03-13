@@ -824,11 +824,11 @@ class Episciences_Submit
 
             }
 
-        } catch (Ccsd_Error $e) { // message personalisé : visible à l'utilisateur
+        } catch (Ccsd_Error $e) { // customized message : visible to the user
             $result['status'] = 0;
             $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate($e->parseError());
             return ($result);
-        } catch (Exception $e) { // autre exception : message générique
+        } catch (Exception $e) { // other exceptions: generic message
             $result['status'] = 0;
             $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate("Le document n'a pas été trouvé ou n'a pas pu être chargé.");
             return ($result);
@@ -970,7 +970,7 @@ class Episciences_Submit
         Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper);
 
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
-        Episciences_Review::checkReviewNotifications($recipients);
+        Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
         unset($recipients[$paper->getUid()]);
 
         if (!empty($recipients)) {
@@ -1562,7 +1562,11 @@ class Episciences_Submit
         } else { // tmp version
 
             $latestSubmission = Episciences_PapersManager::getLastPaper($paper->getPaperid());
-            $hasHook = $latestSubmission->hasHook;
+
+            if($latestSubmission){
+                $hasHook = $latestSubmission->hasHook;
+            }
+
             $defaults = [
                 'hasHook' => $hasHook,
                 'docId' => !$hasHook ? $latestSubmission->getIdentifier() : '',

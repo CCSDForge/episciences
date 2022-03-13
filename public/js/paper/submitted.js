@@ -13,7 +13,20 @@ $(document).ready(function () {
     const $KeyboardNavigationKeys = [37, 39, 38, 40, 36, 33, 35, 34]; // [Turn left, Turn right, Forward, Backward, Home (start), Pitch Up, End, Pitch Down ]
 
     if ($(".dataTable").length && $action !== '') {
-        $oTable = fill_datatable($controller, $action, getUrlParams());
+
+        let params = getUrlParams();
+
+        if (typeof params.onlyEditableWithoutEditors !== 'undefined' && $controller === 'administratepaper' && $action === 'list') {
+
+            delete params.onlyEditableWithoutEditors;
+
+            $oTable = applyMultipleFilters($controller, $action, {}, editableWithoutEditorsData.status, editableWithoutEditorsData.editors);
+
+        } else {
+
+            $oTable = applyMultipleFilters($controller, $action, params);
+        }
+
         $('#submit').on('click', function () {
 
             let filter_status = $status.length > 0 ? $status.val() : [''];
@@ -27,9 +40,9 @@ $(document).ready(function () {
             let isFilter = checkFilterParams(filter_status, filter_volume, filter_section, filter_editors, filter_ratingStatus, filter_reviewers, filter_doi);
 
             if (isFilter) {
-                $oTable = fill_datatable($controller, $action, {}, filter_status, filter_volume, filter_section, filter_editors, filter_ratingStatus, filter_reviewers, filter_doi);
+                $oTable = applyMultipleFilters($controller, $action, {}, filter_status, filter_editors, filter_volume, filter_section, filter_ratingStatus, filter_reviewers, filter_doi);
             } else {
-                $oTable = fill_datatable($controller, $action);
+                $oTable = applyMultipleFilters($controller, $action);
             }
         });
 
@@ -64,13 +77,13 @@ $(document).ready(function () {
  * @param action
  * @param get
  * @param filter_status
+ * @param filter_editors
  * @param filter_volume
  * @param filter_section
- * @param filter_editors
  * @param filter_ratingStatus
  * @returns {jQuery|*}
  */
-function fill_datatable(controller, action, get = {}, filter_status = [], filter_volume = [], filter_section = [], filter_editors = [], filter_ratingStatus = [], filter_reviewers = [], filter_doi = []) {
+function applyMultipleFilters(controller, action, get = {}, filter_status = [], filter_editors = [], filter_volume = [], filter_section = [], filter_ratingStatus = [], filter_reviewers = [], filter_doi = []) {
 
     let badRequest = translate("Une erreur interne s'est produite, veuillez recommencer.");
     let url = '/' + controller + '/' + action;

@@ -2,8 +2,15 @@
 
 class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
 {
-    const NONE_KEY = '0';
-    public function PaperFilter($open=null)
+    public const NONE_KEY = '0';
+
+    /**
+     * @param $open
+     * @return Zend_Form
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Form_Exception
+     */
+    public function PaperFilter($open = null): \Zend_Form
     {
         $review = Episciences_ReviewsManager::find(RVID);
 
@@ -12,8 +19,8 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
         $params = Episciences_PapersManager::getFiltersParams();
 
         // filters are open if at least one is activated, closed otherwise
-        if ($open === null) {
-            $open = ($params) ? true : false;
+        if (!$open) {
+            $open = !empty($params);
         }
 
         $form = new Zend_Form();
@@ -31,11 +38,14 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
         );
 
         // paper status
-        $status = array();
+        $status = [];
 
-        foreach (Episciences_Paper::STATUS_CODES as $code) {
+        /** @var string $code */
+        foreach (Episciences_PapersManager::getAllStatus(RVID, 'ASC') as $code) {
+            $code = (int)$code;
             $status[$code] = ucfirst($this->view->translate(Episciences_PapersManager::getStatusLabel($code)));
         }
+
         asort($status);
 
         $form->addElement(new Zend_Form_Element_Multiselect(array(
@@ -158,9 +168,7 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
                 'label'		=> 'Filtrer les articles'
         ]));
 
-        if (is_array($params)) {
-            $form->populate($params);
-        }
+        $form->populate($params);
 
         return $form;
     }
@@ -168,18 +176,19 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
     /**
      * @param Episciences_User[] $users
      */
-    private function sortOut(array &$users){
-        usort($users, function ($a, $b) {
+    private function sortOut(array &$users): void
+    {
+        usort($users, static function ($a, $b) {
             /**
              * @var Episciences_User $a
              * @var Episciences_User $b
              */
-            if ($a->getLastname() == $b->getLastname()) {
-                if ($a->getFirstname() == $b->getFirstname()) {
+            if ($a->getLastname() === $b->getLastname()) {
+                if ($a->getFirstname() === $b->getFirstname()) {
                     return 0;
-                } else {
-                    return ($a->getFirstname() > $b->getFirstname()) ? -1 : 1; // LOL
                 }
+
+                return ($a->getFirstname() > $b->getFirstname()) ? -1 : 1; // LOL
             }
             return ($a->getLastname() < $b->getLastname()) ? -1 : 1;
         });

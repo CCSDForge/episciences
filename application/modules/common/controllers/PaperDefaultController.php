@@ -47,6 +47,7 @@ class PaperDefaultController extends DefaultController
      * @param bool $strict
      * @param bool $withCasData
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     protected function getAllEditors(Episciences_Paper $paper, bool $strict = false, bool $withCasData = true): array
@@ -135,7 +136,7 @@ class PaperDefaultController extends DefaultController
                 if ($validator->isValid($recipient)) {
                     $mail->addCc($recipient);
                 } else {
-                    error_log(RVCODE . 'FROM_MODAL_BAD_CC_MAIL: ' . $recipient);
+                    trigger_error(RVCODE . 'FROM_MODAL_BAD_CC_MAIL: ' . $recipient);
                 }
             }
         }
@@ -147,7 +148,7 @@ class PaperDefaultController extends DefaultController
                 if ($validator->isValid($recipient)) {
                     $mail->addBcc($recipient);
                 } else {
-                    error_log(RVCODE . 'FROM_MODAL__BAD_BCC_MAIL: ' . $recipient);
+                    trigger_error(RVCODE . 'FROM_MODAL__BAD_BCC_MAIL: ' . $recipient);
                 }
             }
         }
@@ -194,6 +195,7 @@ class PaperDefaultController extends DefaultController
      * @param array $tags
      * @param array $CC
      * @return bool
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -312,6 +314,9 @@ class PaperDefaultController extends DefaultController
      * @param array $tags : additional tags
      * @param array $additionalAttachments
      * @return bool
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = []): bool
@@ -322,14 +327,27 @@ class PaperDefaultController extends DefaultController
         try {
             $commentator->findWithCAS($commentatorUid);
         } catch (Exception $e) {
-            error_log('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e);
+            trigger_error('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e);
             return false;
         }
 
         $attachmentsFiles = [];
         $docId = $paper->getDocid();
         $recipients = $this->getAllEditors($paper, false, true);
-        Episciences_Review::checkReviewNotifications($recipients);
+
+        // ne pas notifier le commentateur
+
+        unset($recipients[$commentatorUid]);
+
+        $strict = !empty($recipients) &&
+            (   !in_array($oComment->getType(), [
+                Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+                Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
+                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS
+            ], true)
+            );
+
+        Episciences_Review::checkReviewNotifications($recipients, $strict);
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
@@ -384,11 +402,7 @@ class PaperDefaultController extends DefaultController
 
         $nbNotifications = 0; // si = count($recipients) : tous les mails sont envoyés
 
-        foreach ($recipients as $uid => $recipient) { // ne pas notifier le  commentateur
-            if ($uid === $commentatorUid) {
-                unset($recipients[$uid]);
-                continue;
-            }
+        foreach ($recipients as $uid => $recipient) {
 
             $locale = $recipient->getLangueid();
             $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
@@ -402,7 +416,7 @@ class PaperDefaultController extends DefaultController
                 ++$nbNotifications;
                 $makeCopy = false;
             } catch (Zend_Mail_Exception | Zend_Session_Exception $e) {
-                error_log('FAILED_TO_SEND_NEW_COMMENT_NOTIFICATION_TO_RECIPIENT_' . $uid . ' : ' . $e);
+                trigger_error('FAILED_TO_SEND_NEW_COMMENT_NOTIFICATION_TO_RECIPIENT_' . $uid . ' : ' . $e);
                 continue;
             }
             // reset $CC
@@ -416,6 +430,7 @@ class PaperDefaultController extends DefaultController
      * @param Episciences_Paper $paper
      * @param bool $withCasData
      * @return Episciences_CopyEditor[] || []
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     protected function getAllCopyEditors(Episciences_Paper $paper, bool $withCasData = true): array
@@ -470,6 +485,7 @@ class PaperDefaultController extends DefaultController
      * @param array $attachments
      * @param boolean $strict = true : prendre en compte le module de notifications
      * @param array $ignoredRecipients
+     * @throws JsonException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -484,7 +500,7 @@ class PaperDefaultController extends DefaultController
 
         $recipients = $this->getAllEditors($paper) + $this->getAllCopyEditors($paper);
 
-        Episciences_Review::checkReviewNotifications($recipients, RVID, $strict);
+        Episciences_Review::checkReviewNotifications($recipients, $strict);
 
         foreach ($ignoredRecipients as $uid => $recep) {
             unset($recipients[$uid]);
@@ -560,6 +576,7 @@ class PaperDefaultController extends DefaultController
     /**
      * @param Episciences_Paper $paper
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
@@ -586,6 +603,7 @@ class PaperDefaultController extends DefaultController
      * @param string $role
      * @param string $answer
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     protected function usersWithReportedCoiProcessing(Episciences_Paper $paper, string $role = 'user', string $answer = Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ): array
@@ -665,7 +683,7 @@ class PaperDefaultController extends DefaultController
                 $aid = $paper->unassign($uid, $userAssignment);
 
             } catch (Exception $e) {
-                error_log($e . ' : UNASSIGN_USER_UID : ' . $assignedUser->getUid() . ' Paper ID : ' . $paper->getDocid());
+                trigger_error($e . ' : UNASSIGN_USER_UID : ' . $assignedUser->getUid() . ' Paper ID : ' . $paper->getDocid());
                 continue;
             }
 
@@ -673,7 +691,7 @@ class PaperDefaultController extends DefaultController
             if (
                 !$paper->log($loggerType, $unassignedBy, ["aid" => $aid, "user" => $assignedUser->toArray()])
             ) {
-                error_log('Error: failed to log ' . $loggerType . ' AID : ' . $aid . ' UID : ' . $assignedUser->getUid());
+                trigger_error('Error: failed to log ' . $loggerType . ' AID : ' . $aid . ' UID : ' . $assignedUser->getUid());
             }
 
 

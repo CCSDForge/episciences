@@ -106,7 +106,7 @@ class Episciences_Review
     #git 303
     public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
 
-    public const SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION = 'paperFinaDecisionAllowRevision';
+    public const SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION = 'paperFinalDecisionAllowRevision';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -428,11 +428,11 @@ class Episciences_Review
     /**
      * get the list of users to be notified
      * @param array $recipients
-     * @param int | string $rvId : (rvid or rvcode)
      * @param bool $strict = false [ne pas en tenir compte du module de notifications]
+     * @param int | string $rvId : (rvid or rvcode)
      * @throws Zend_Db_Statement_Exception
      */
-    public static function checkReviewNotifications(array &$recipients, $rvId = RVID, bool $strict = true): void
+    public static function checkReviewNotifications(array &$recipients, bool $strict = true, $rvId = RVID): void
     {
         $review = Episciences_ReviewsManager::find($rvId);
         $notificationSettings = $review->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);

@@ -24,7 +24,8 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION,
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR,
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER,
-    Episciences_Paper_Logger::CODE_COI_REPORTED
+    Episciences_Paper_Logger::CODE_COI_REPORTED,
+    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
@@ -36,23 +37,23 @@ $logs_with_details = [
 
     <div
             style="padding:5px; margin-bottom:5px; margin-right: 5px" role="alert"
-            data-date="<?php echo $this->Date($log['DATE'], null, 'MM/dd/y'); ?>"
-            data-time="<?php echo $this->Date($log['DATE'], null, Zend_Date::TIME_MEDIUM); ?>"
-            class="log-entry <?php echo $log['ACTION']; ?> alert alert-<?php echo Episciences_Paper_Logger::$_css[$log['ACTION']]; ?> alert-fixed">
+            data-date="<?= $this->Date($log['DATE'], null, 'MM/dd/y') ?>"
+            data-time="<?= $this->Date($log['DATE'], null, Zend_Date::TIME_MEDIUM) ?>"
+            class="log-entry <?= $log['ACTION'] ?> alert alert-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?> alert-fixed">
 
         <span style="font-size:11px; margin-right: 5px"
-              class="label label-<?php echo Episciences_Paper_Logger::$_css[$log['ACTION']]; ?>">
-            <?php echo $this->Date($log['DATE'], null, Zend_Date::DATE_MEDIUM . ' ' . Zend_Date::TIME_MEDIUM); ?>
+              class="label label-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?>">
+            <?= $this->Date($log['DATE'], null, Zend_Date::DATE_MEDIUM . ' ' . Zend_Date::TIME_MEDIUM) ?>
         </span>
 
         <span>
-            <strong><?php echo $this->translate($log['ACTION']); ?></strong>
+            <strong><?= $this->translate($log['ACTION']) ?></strong>
             <?php
             try {
                 $detail = ($log['DETAIL']) ? Zend_Json::decode($log['DETAIL']) : [];
             } catch (Zend_Json_Exception $e) {
                 $detail = [];
-                error_log($e->getMessage() . ' of docid ' . $log['DOCID']);
+                trigger_error($e->getMessage() . ' of docid ' . $log['DOCID'], E_USER_WARNING);
             }
 
             $status = isset($detail['status']) && in_array($detail['status'], array_merge(Episciences_Paper::STATUS_CODES, Episciences_Paper::OTHER_STATUS_CODE), false) ?
@@ -64,23 +65,23 @@ $logs_with_details = [
             ?>
             <?php switch ($log['ACTION']): ?>
 <?php case Episciences_Paper_Logger::CODE_STATUS: ?><?php // Tout affichage entre une structure switch et le premier case va produire une erreur de syntaxe. ?>
-                    <?php echo $this->translate(' :'); ?>
+                    <?= $this->translate(' :') ?>
                     <?php // Il  arrive en DEV. de récupérer des valeurs inattendues ?>
                     <?= $status ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_RESTORATION_OF_STATUS: ?>
-                    <?php echo $this->translate(' :'); ?>
+                    <?= $this->translate(' :') ?>
                     <?= $status ?>
                     <?php break; ?>
                 <?php case Episciences_Paper_Logger::CODE_ALTER_REPORT_STATUS: ?>
-                    <?php echo $fullName; ?>
+                    <?= $fullName ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT:
                 case Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT: ?>
-                    <?php echo $this->translate(' :'); ?>
-                    <?php echo $fullName; ?>
+                    <?= $this->translate(' :') ?>
+                    <?= $fullName ?>
                     <?= $tag ?>
                     <?php break; ?>
 
@@ -91,6 +92,8 @@ $logs_with_details = [
                     <?php break; ?>
                 <?php
 
+                case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION:
+                case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION:
                 case Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT:
                 case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION:
                 case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED:
@@ -111,9 +114,10 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_NEW_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER:
+
                 ?>
-                    <?php echo $this->translate(' :'); ?>
-                    <?php echo $fullName; ?>
+                    <?= $this->translate(' :') ?>
+                    <?= $fullName ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT: ?>
@@ -127,20 +131,20 @@ $logs_with_details = [
                 <?php case Episciences_Paper_Logger::CODE_MAIL_SENT: ?>
                 <?php case Episciences_Paper_Logger::CODE_REMINDER_SENT: ?>
                     <?php if (array_key_exists('To', $detail['mail'])) : ?>
-                        <?php echo $this->translate("à") . ' ' . implode(', ', $detail['mail']['To']); ?>
+                        <?= $this->translate("à") . ' ' . implode(', ', $detail['mail']['To']) ?>
                     <?php endif; ?>
-                    <?php echo $this->translate(' :'); ?>
-                    <?php echo $detail['mail']['Subject']; ?>
+                    <?= $this->translate(' :') ?>
+                    <?= $detail['mail']['Subject'] ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_SECTION_SELECTION: ?>
-                    <?php echo $this->translate(' :'); ?>
-                    <?= $detail['sid'] !== 0 ? $this->translate('section_' . $detail['sid'] . '_title') : $this->translate('Hors rubrique'); ?>
+                    <?= $this->translate(' :') ?>
+                    <?= $detail['sid'] !== 0 ? $this->translate('section_' . $detail['sid'] . '_title') : $this->translate('Hors rubrique') ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_VOLUME_SELECTION: ?>
-                    <?php echo $this->translate(' :'); ?>
-                    <?php echo ($detail['vid'] !== 0) ? $this->translate('volume_' . $detail['vid'] . '_title') : $this->translate('Hors volume'); ?>
+                    <?= $this->translate(' :') ?>
+                    <?= ($detail['vid'] !== 0) ? $this->translate('volume_' . $detail['vid'] . '_title') : $this->translate('Hors volume') ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION: ?>
@@ -163,8 +167,8 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED:
                 case Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST:
                     ?>
-                    <?php echo $this->translate(' :'); ?>
-                    <?php echo $fullName . ' > ' . $detail['submitter']['fullname']; ?>
+                    <?= $this->translate(' :') ?>
+                    <?= $fullName . ' > ' . $detail['submitter']['fullname'] ?>
                     <?php break; ?>
 
                 <?php

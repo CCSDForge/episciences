@@ -15,7 +15,7 @@ $(function () {
         paperCommentId = null;
     }
 
-    $('.upload_button').on('click',function () {
+    $('.upload_button').on('click', function () {
         // Simulate a click on the file input button
         // to show the file browser dialog
         $(this).parent().children('input:first').click();
@@ -31,7 +31,7 @@ $(function () {
         // This function is called when a file is added to the queue;
         // via the browse button
         add: function (e, data) {
-            $('button[id^="submit"]').prop('disabled', true);
+            $('button[id^="submit-modal"]').prop('disabled', true);
             idCpt++;
 
             let file_name = data.files[0].name;
@@ -69,13 +69,18 @@ $(function () {
                 tpl.fadeOut('fast', function () {
                     let file = tpl.find('.upload_filename').val();
                     // if not errors in ajax file/upload response
-                    if ('' !== file) {
-                        let data = $.extend({}, formData, {file: file});
-                        // ajax call: delete
-                        ajaxDeleteFile(data).done(function () {
-                            tpl.remove();
-                        });
-                    }
+                    //if ('' !== file) {
+                    let data = $.extend({}, formData, {file: file});
+                    // ajax call: delete
+                    ajaxDeleteFile(data).done(function () {
+                        tpl.remove();
+                        if ($('.errors').length > 0) {
+                            $('button[id^="submit-modal"]').prop('disabled', true);
+                        } else {
+                            $('button[id^="submit"]').prop('disabled', false);
+                        }
+                    });
+                    //}
                 });
             });
 
@@ -84,14 +89,14 @@ $(function () {
         },
 
         done: function (e, data) {
-            $('button[id^="submit"]').prop('disabled', false);
             let result = data.result;
 
             if (result.status === 'error') {
                 data.context.find('.upload_filename').val('');
                 let errors = Object.values(result.messages);
                 if (errors.length) {
-                    let html = '<div style="padding-left: 15px">';
+                    $('button[id^="submit-modal"]').prop('disabled', true);
+                    let html = '<div style="padding-left: 15px" class="errors">';
                     html += '<div style="margin-bottom: 5px; color: red"><strong>' + translate('Erreurs :') + '</strong></div>';
                     for (let i in errors) {
                         html += '<div style="margin-left: 10px; color: red"> * ' + errors[i] + '</div>';
@@ -101,6 +106,7 @@ $(function () {
                     $('#file_container_errors_' + data.idCpt).html(html);
                 }
             } else {
+
                 if (result.filename) {
                     // replace filename string
                     data.context.find('.file_name').text(result.filename);
@@ -109,6 +115,8 @@ $(function () {
                     //update href
                     data.context.find('[id^=href-]').attr('href', result.fileUrl)
                 }
+
+                $('button[id^="submit-modal"]').prop('disabled', false);
             }
         },
 
@@ -129,8 +137,9 @@ $(function () {
         fail: function (e, data) {
 
             if (data.jqXHR.statusText === 'OK') {
-                $('button[id^="submit"]').prop('disabled', false);
+                $('button[id^="submit-modal"]').prop('disabled', false);
             }
+
             data.context.addClass('error');
         }
 

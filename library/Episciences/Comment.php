@@ -329,10 +329,10 @@ class Episciences_Comment
         return $this->_when;
     }
 
-    public function isCopyEditingComment()
+    public function isCopyEditingComment(): bool
     {
 
-        if (!$this->_isCopyEditingComment && in_array($this->getType(), array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes))) {
+        if (!$this->_isCopyEditingComment && in_array($this->getType(), array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes), true)) {
             $this->setCopyEditingComment(true);
         }
 
@@ -518,15 +518,27 @@ class Episciences_Comment
                     $action = Episciences_Paper_Logger::CODE_EDITOR_COMMENT;
                     break;
 
+                case Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION:
+                    $action = Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION;
+                    break;
+
                 default: // todo vérifier les anciennes actions et les logs dans les controlleurs pour eviter la duplication de ces dernier ; aussi les autres actions à personaliser
                     $action = Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT; // default action log
             }
 
             if (!$paper->log($action, Episciences_Auth::getUid(), $detail)) {
-                error_log('FAILED_TO_LOG_COMMENT_DETAILS: ' . $this->toArray());
+                try {
+                    $data = json_encode($this->toArray(), JSON_THROW_ON_ERROR);
+
+                } catch (Exception $e) {
+                    $data = '';
+                    trigger_error($e->getMessage());
+                }
+
+                trigger_error('FAILED_TO_LOG_COMMENT_DETAILS: ' . $data);
             }
         } catch (Exception $exp) {
-            error_log('NO_PAPER_ASSOCIATED_WITH_COMMENT_ID: ' . $this->getPcid());
+            trigger_error('NO_PAPER_ASSOCIATED_WITH_COMMENT_ID: ' . $this->getPcid());
         }
     }
 

@@ -57,24 +57,29 @@ class Episciences_Paper_ConflictsManager
     /**
      * @return array [Episciences_Paper_Conflict]
      */
-    public static function all(): array
+    public static function all(int $rvId = null): array
     {
         $conflicts = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $sql = $db->select()->from(self::TABLE);
+        $sql = $db
+            ->select()
+            ->from(['pc' => self::TABLE])
+            ->joinLeft(['p' => T_PAPERS], 'pc.paper_id = p.PAPERID', ['RVID'])
+            ->where('p.RVID = ?', $rvId);
 
         $rows = $db->fetchAll($sql);
 
-        foreach ($rows as $row) {
-
-            $oConflict = new Episciences_Paper_Conflict($row);
-
-            $conflicts [$oConflict->getCid()] = $oConflict;
-
+        if (empty($rows)) {
+            return [];
         }
 
-        return $conflicts;
+        foreach ($rows as $row) {
+            $oConflict = new Episciences_Paper_Conflict($row);
+            $conflicts [$row['RVID']][$oConflict->getPaperId()][] = $oConflict;
+        }
+
+        return !$rvId ? $conflicts : $conflicts[$rvId];
     }
 
 
