@@ -14,10 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-#Fixed
+
+##  1.0.27 - 2022-03-14
+# Changed
+- Reviewer invitation: Users are now sorted by Name, First Name instead of First Name
+
+# Fixed
 - Dashboard: the number of papers assigned to the copy editor includes obsolete papers
-- RT#149643: the paper owner can see reviewers names.  
+- Issue reported to support RT #148133 (fixed before this release):
+  * Some editors could see the reviewers names if they were also authors of the article  
 
 ## 1.0.26 - 2022-03-01
 # Fixed
