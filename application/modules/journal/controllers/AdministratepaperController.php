@@ -734,7 +734,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->reviewFormattingDeposedForm = Episciences_PapersManager::getReviewFormattingDeposedForm($templates['reviewFormattingDeposed']);
             $this->view->ceAcceptFinalVersionForm = Episciences_PapersManager::getCeAcceptFinalVersionForm($templates['ceAcceptFinalVersion']);
 
-            if(Episciences_Auth::isSecretary()){
+            if (Episciences_Auth::isSecretary()) {
                 $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersion']);
                 $this->view->acceptedAskAuthorValidationForm = Episciences_PapersManager::getAcceptedAskAuthorValidationForm($templates['acceptedAskAuthorValidation']);
             }
@@ -743,7 +743,7 @@ class AdministratepaperController extends PaperDefaultController
                 $this->view->askOtherEditorsForm = Episciences_PapersManager::getAskOtherEditorsForm($templates['askOtherEditors'], $all_editors, $paper);
             }
 
-        } elseif(Episciences_Auth::isCopyEditor()) { // copy editor role only
+        } elseif (Episciences_Auth::isCopyEditor()) { // copy editor role only
             // waiting for author resources form request (review formatting)
             $this->view->authorSourcesRequestForm = Episciences_PapersManager::getWaitingForAuthorSourcesForm($templates['waitingAuthorSources']);
             // Author formatting
@@ -753,7 +753,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersion']);
             $this->view->acceptedAskAuthorValidationForm = Episciences_PapersManager::getAcceptedAskAuthorValidationForm($templates['acceptedAskAuthorValidation']);
 
-            if($paper->isApprovedByAuthor()){
+            if ($paper->isApprovedByAuthor()) {
                 $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
 
             }
@@ -852,7 +852,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
 
-        if($isNextTest && Episciences_Auth::isGuestEditor() && !(Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor())){
+        if ($isNextTest && Episciences_Auth::isGuestEditor() && !(Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor())) {
             $redirection['message'] = $message;
             return $redirection;
         }
@@ -1899,11 +1899,11 @@ class AdministratepaperController extends PaperDefaultController
 
         $isTypeFound = $isMinorRevision; // check revision type
 
-        if($isMajorRevision = (!$isTypeFound && $type === 'major')){ // not executed if type is found
+        if ($isMajorRevision = (!$isTypeFound && $type === 'major')) { // not executed if type is found
             $isTypeFound = true;
         }
 
-        if($isAcceptedAskAuthorsFinalVersion = (!$isTypeFound && $type === 'acceptedAskAuthorsFinalVersion')){ // not executed if type is found
+        if ($isAcceptedAskAuthorsFinalVersion = (!$isTypeFound && $type === 'acceptedAskAuthorsFinalVersion')) { // not executed if type is found
             $isTypeFound = true;
         }
 
@@ -1942,7 +1942,7 @@ class AdministratepaperController extends PaperDefaultController
             $locale = $submitter->getLangueid();
 
             $subject = !$isAcceptedAskAuthorsFinalVersion ? $data[$type . 'revisionsubject'] : $data[$type . 'Subject'];
-            $message = !$isAcceptedAskAuthorsFinalVersion ? $data[$type . 'revisionmessage'] : $data[$type . 'Message'] ;
+            $message = !$isAcceptedAskAuthorsFinalVersion ? $data[$type . 'revisionmessage'] : $data[$type . 'Message'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
             $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
@@ -1985,12 +1985,12 @@ class AdministratepaperController extends PaperDefaultController
 
             // log revision request
             $paper->log($actionLog, Episciences_Auth::getUid(), [
-                    'id' => $comment->getPcid(),
-                    'deadline' => $deadline,
-                    'subject' => $subject,
-                    'message' => $message,
-                    'isAlreadyAccepted' => $isAlreadyAccepted
-                ]);
+                'id' => $comment->getPcid(),
+                'deadline' => $deadline,
+                'subject' => $subject,
+                'message' => $message,
+                'isAlreadyAccepted' => $isAlreadyAccepted
+            ]);
 
             // sends an e-mail to the author
             $tags = [
@@ -4246,9 +4246,9 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * @return void
      * @deprecated
      * Final version approved by author, waiting for final publication
-     * @return void
      */
     public function approvedwaitingforfinalpublicationAction(): void
     {
@@ -4261,10 +4261,10 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * @deprecated
      * @param int $docId
      * @return Ccsd_Form|null
      * @throws Zend_Form_Exception
+     * @deprecated
      */
     private function getApprovedForm(int $docId): ?Ccsd_Form
     {
@@ -4287,6 +4287,194 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         return Episciences_PapersManager::getApprovedForm($docId);
+    }
+
+    /**
+     * edit latest version form (ajax)
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function latestversioneditingformAction(): bool
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getPost('docid');
+
+        if (!$docId) {
+            return false;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper) {
+            return false;
+        }
+
+        $availableVersions = $this->availableRepositoryVersions($paper);
+
+        foreach ($availableVersions as $index => $value) {
+
+            if ((int)$value > $paper->getVersion()) {
+                continue;
+            }
+
+            unset($availableVersions[$index]);
+        }
+
+        $vString = "version la plus récente dans l’archive ouverte";
+        $hasHook = $paper->hasHook; // zenodo repository
+        $this->view->hasHook = $hasHook;
+        $this->view->label = !$hasHook ? 'La ' . $vString : "L'identifiant de la " . $vString;
+        $this->view->type = 'select';
+        $this->view->options = $availableVersions;
+        $this->view->docId = $paper->getDocid();
+        $this->view->latestversion = $paper->getVersion();
+        $this->view->action = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/savenewpostedversion';
+        $this->view->prefix = 'latest-repository-version';
+
+        $this->_helper->layout->disableLayout();
+        $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-version-numbers-form.phtml');
+        return true;
+    }
+
+
+    private function availableRepositoryVersions(Episciences_Paper $paper): array
+    {
+        $versions = [];
+        $repoId = $paper->getRepoid();
+
+        $api = Episciences_Repositories::getApiUrl($paper->getRepoid());
+
+        if ('' !== $api) {
+
+            if ((int)Episciences_Repositories::HAL_REPO_ID === $repoId) {
+
+                $url = $api . '/search/?indent=true&q=' . $paper->getIdentifier() . '&fl=label_xml';
+
+                $result = Episciences_Tools::callApi($url);
+
+                if ($result && is_array($result)) {
+                    $xml = $result['response']['docs'][array_key_first($result['response']['docs'])]['label_xml'] ?? '';
+
+                    if ('' !== $xml) {
+
+                        $xmlObject = simplexml_load_string($xml);
+
+                        if ($xmlObject) {
+
+                            $editions = $xmlObject->text->body->listBibl->biblFull->editionStmt->edition;
+
+                            foreach ($editions as $edition) {
+
+                                $versions[] = substr($edition['n'][0], 1);
+
+                            }
+                        }
+
+                    }
+                }
+
+            } elseif ((int)Episciences_Repositories::ZENODO_REPO_ID === $repoId) {
+
+                $dataCiteUrl = 'https://api.datacite.org/dois/';
+                $dataCiteUrl .= Episciences_Repositories::getRepoDoiPrefix($repoId);
+                $dataCiteUrl .= '/';
+                $dataCiteUrl .= mb_strtolower(Episciences_Repositories::getLabel($repoId));
+                $dataCiteUrl .= '.';
+
+                $conceptIdentifierUrl = $dataCiteUrl . $paper->getConcept_identifier();
+                $responseWithConceptId = Episciences_Tools::callApi($conceptIdentifierUrl);
+
+                $doisVersions = $responseWithConceptId['data']['relationships']['versions']['data'];
+
+                foreach ($doisVersions as $index => $value) {
+
+                    $cleanedIdentifier = Episciences_Repositories_Zenodo_Hooks::hookCleanIdentifiers(['id' => $value['id'], 'repoId' => $repoId])['identifier'];
+
+                    if ($cleanedIdentifier > $paper->getIdentifier()) {
+                        $versions[$index + 1] = $cleanedIdentifier;
+                    }
+                }
+
+            }
+
+
+        } else {
+
+            $identifier = Episciences_Repositories::getIdentifier($paper->getRepoid(), $paper->getIdentifier());
+            $baseUrl = Episciences_Repositories::getBaseUrl($paper->getRepoid());
+            $oai = new Episciences_Oai_Client($baseUrl, 'xml');
+            if ((int)Episciences_Repositories::ARXIV_REPO_ID === $repoId) {
+                try {
+                    $versions = Episciences_Submit::extractVersionsFromArXivRaw($oai->getArXivRawRecord($identifier));
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+
+        }
+
+        arsort($versions);
+        return $versions;
+    }
+
+    /**
+     * Update paper version
+     * @return false|void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    public function savenewpostedversionAction()
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $latestPostedVersion = (int)$request->getPost('latest-repository-version'); // or version identifier
+
+        $docId = (int)$request->getPost('docid');
+
+        if (!$docId) {
+            return false;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper) {
+            return false;
+        }
+
+        $hookedVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $latestPostedVersion, 'repoId' => $paper->getRepoid()]);
+
+        if (isset($hookedVersion['version'])) {
+            $paper->setIdentifier($latestPostedVersion); // posted identifier
+            $latestPostedVersion = (float)$hookedVersion['version'];
+        }
+
+        $currentVersion = $paper->getVersion();
+
+        $result = ['version' => 0, 'isDataRecordUpdated' => false];
+
+        if ($latestPostedVersion > $currentVersion) {
+
+            $paper->setVersion($latestPostedVersion);
+
+            if ($paper->save()) {
+                $paper->log(Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED, Episciences_Auth::getUid(), ['user' => Episciences_Auth::getUser()->toArray(), 'version' => ['old' => $currentVersion, 'new' => $latestPostedVersion]]);
+                $result['version'] = $latestPostedVersion;
+                $result['isDataRecordUpdated'] = Episciences_PapersManager::updateRecordData($docId) > 0;
+            }
+
+        }
+
+        try {
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+        }
+
     }
 
 }

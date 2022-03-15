@@ -57,7 +57,7 @@ function getTags() {
 }
 
 $(document).ready(function () {
-    // Désactivation de la possibilité de mettre à jour des métadonnées pour les version temporaires d'un article.
+    // Désactivation de la possibilité de mettre à jour des métadonnées pour les versions temporaires d'un article.
     $('#update_metadata').prop('disabled', true);
 
     if (paper.repository != 0) {
@@ -406,15 +406,42 @@ function cancel() {
 }
 
 /**
- * get form
+ *
  * @param button
  * @param docId
- * @param placement, default : 'bottom'
- * @param url, default, '/administratepaper/doiform'
+ * @param url
+ * @param popoverParams
+ * @returns {boolean|*}
  */
-function getCommunForm(button, docId, url = '/administratepaper/doiform', placement = 'bottom',) {
+function getCommunForm(button, docId, url = '/administratepaper/doiform', popoverParams = {}) {
+
+    const defaultParams = {
+        'placement': 'bottom',
+        'container': 'body',
+        'html': true,
+        'content': getLoader()
+    }
+
+
+    if (typeof popoverParams.placement === 'undefined') {
+        popoverParams.placement = defaultParams.placement;
+    }
+
+    if (typeof popoverParams.container === 'undefined') {
+        popoverParams.container = defaultParams.container;
+    }
+
+    if (typeof popoverParams.html === 'undefined') {
+        popoverParams.html = defaultParams.html;
+    }
+
+    if (typeof popoverParams.content === 'undefined') {
+        popoverParams.content = defaultParams.content;
+    }
+
+
     // Destruction des anciens popups
-    $('button').popover('destroy');
+    $(button).popover('destroy');
 
     // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
     if (openedPopover && openedPopover == docId) {
@@ -424,32 +451,36 @@ function getCommunForm(button, docId, url = '/administratepaper/doiform', placem
         openedPopover = docId;
     }
 
-    $(button).popover({
-        'placement': placement,
-        'container': 'body',
-        'html': true,
-        'content': getLoader()
-    }).popover('show');
+    $(button).popover(popoverParams).popover('show');
 
     // Récupération du formulaire
     return ajaxRequest(url, {docid: docId});
 }
 
-function getPublicationDateForm(button, docId, placement = 'bottom') {
+/**
+ *
+ * @param button
+ * @param docId
+ */
+function getPublicationDateForm(button, docId) {
 
     let request = getCommunForm(button, docId, '/administratepaper/publicationdateform');
 
+    let popoverParams = {
+        'placement': 'bottom',
+        'container': 'body',
+        'html': true,
+        'content': getLoader()
+    }
+
     request.done(function (result) {
+
         // Destruction du popup de chargement
         $(button).popover('destroy');
         openedPopover = null;
         // Affichage du formulaire dans le popover
-        $(button).popover({
-            'placement': placement,
-            'container': 'body',
-            'html': true,
-            'content': result
-        }).popover('show');
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
 
         $('form[action^="/administratepaper/savepublicationdate"]').on('submit', function () {
             let $publicationDate = $("#publication-date");
@@ -478,22 +509,24 @@ function getPublicationDateForm(button, docId, placement = 'bottom') {
  *
  * @param button
  * @param docId
- * @param placement
  * @param url
  */
-function getDoiForm(button, docId, placement = 'bottom', url = '/administratepaper/doiform') {
+function getDoiForm(button, docId, url = '/administratepaper/doiform') {
     let request = getCommunForm(button, docId);
+
+    let popoverParams = {
+        'placement': 'bottom',
+        'container': 'body',
+        'html': true,
+        'content': getLoader()
+    }
     request.done(function (result) {
         // Destruction du popup de chargement
         $(button).popover('destroy');
         openedPopover = null;
         // Affichage du formulaire dans le popover
-        $(button).popover({
-            'placement': placement,
-            'container': 'body',
-            'html': true,
-            'content': result
-        }).popover('show');
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
 
         $('form[action^="/administratepaper/savedoi"]').on('submit', function () {
             let sRequest = ajaxRequest('/administratepaper/savedoi', $(this).serialize() + "&paperid=" + docId, 'POST', 'json');
@@ -584,6 +617,74 @@ function editAttachmentDescription(target) {
             $submitButton.prop('disabled', true);
         }
     });
+}
+
+/**
+ *
+ * @param button
+ * @param docId
+ */
+
+function getVersionEditingForm(button, docId) {
+
+    let request = getCommunForm(button, docId, '/administratepaper/latestversioneditingform');
+
+    let popoverParams = {
+        'placement': 'bottom',
+        'container': 'body',
+        'html': true,
+        'content': getLoader()
+    }
+
+    request.done(function (result) {
+        // Destruction du popup de chargement
+        $(button).popover('destroy');
+        openedPopover = null;
+        // Affichage du formulaire dans le popover
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
+
+        let actionStr = '/administratepaper/savenewpostedversion';
+
+        $('form[action^="' + actionStr + '"]').on('submit', function () {
+            let $inProgress = $('#in-progress');
+            // Traitement AJAX du formulaire
+            let sRequest = ajaxRequest(actionStr, $(this).serialize() + "&docid=" + docId, 'POST', 'json');
+
+            popoverParams.content = getLoader;
+
+            $inProgress.html(getLoader());
+
+            sRequest.done(function (response) {
+
+                let result = JSON.parse(response);
+
+                if (result.version > 0) {
+
+                    if (result.isDataRecordUpdated) {
+                        location.reload();
+                    } else {
+
+                        $('#version-of-paper-' + docId).text(result.version);
+                        refreshPaperHistory(docId);
+                    }
+
+                }
+
+                $inProgress.html('');
+
+                sRequest.fail(function () {
+                    alert('<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px"></span>' + translate("Une erreur interne s'est produite, veuillez recommencer."));
+                });
+
+
+            });
+
+            return false;
+
+        });
+    });
+
 }
 
 

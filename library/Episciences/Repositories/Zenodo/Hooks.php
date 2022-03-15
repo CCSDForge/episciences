@@ -1,7 +1,5 @@
 <?php
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_HooksInterface
 {
@@ -26,7 +24,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      *  Extract the "files" metadata and save it in the database
      * @param array $hookParams
      * @return array
-     * @throws GuzzleException
      */
     public static function hookFilesProcessing(array $hookParams): array
     {
@@ -67,7 +64,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     {
         $identifier = trim($hookParams['id']);
         $pattern1 = '#^http(s*)://doi.org/#';
-        $pattern2 = '#^http(s*)://.+/record/#';#^https?://.+#
+        $pattern2 = '#^http(s*)://.+/record/#';
 
         if (preg_match($pattern1, $identifier)) {
             $identifier = preg_replace($pattern1, '', $identifier);
@@ -87,7 +84,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
-     * @throws GuzzleException
      */
     public static function hookApiRecords(array $hookParams): array
     {
@@ -95,39 +91,27 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             return [];
         }
 
-        $cHeaders = [
-            'headers' => ['Content-type' => 'application/json']
-        ];
+        $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
 
-        $client = new Client($cHeaders);
-
-        try {
-            $response = $client->get(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
-
-        } catch (GuzzleHttp\Exception\RequestException $e) {
-            return [];
-        }
-
-        return json_decode($response->getBody()->getContents(), true);
+        return $response ?: [];
     }
 
     /**
      * @param array $hookParams ['identifier' => '1234', 'response' => []]
      * @return array
-     * @throws GuzzleException
      */
     public static function hookVersion(array $hookParams): array
     {
-        $latestVersion = 1;
+        $version = 1;
         $response = self::checkResponse($hookParams);
         if (!empty($response)) {
-            $latestVersion = array_key_exists('version', $response['metadata']) ?
+            $version = array_key_exists('version', $response['metadata']) && is_numeric($response['metadata']['version']) ?
                 $response['metadata']['version'] :
                 $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
 
         }
 
-        return ['version' => $latestVersion];
+        return ['version' => $version];
     }
 
     /**
@@ -197,7 +181,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      * Retourne l'identifiant unique qui lie les différentes  versions
      * @param array $hookParams
      * @return array
-     * @throws GuzzleException
      */
 
     public static function hookConceptIdentifier(array $hookParams): array
@@ -217,12 +200,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
-     * @throws GuzzleException
      */
     private static function checkResponse(array $hookParams): array
     {
         $response = [];
-        if (isset($hookParams['identifier']) && (!isset($hookParams['response']) || empty($hookParams['response']))) {
+        if (isset($hookParams['identifier']) && empty($hookParams['response'])) {
             $response = self::hookApiRecords(['identifier' => $hookParams['identifier']]);
         } elseif (isset($hookParams['response'])) {
             $response = $hookParams['response'];
@@ -235,7 +217,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
-     * @throws GuzzleException
      */
     public static function hookGetLinkedIdentifiers(array $hookParams): array
     {
@@ -262,7 +243,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
-     * @throws GuzzleException
      */
 
     public static function hookLinkedDataProcessing(array $hookParams): array
