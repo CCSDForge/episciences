@@ -435,7 +435,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
     public function setOnbehalf_uid($onbehalf_uid)
     {
-        $this->_onbehalf_uid = $onbehalf_uid;
+        $this->_onbehalf_uid = (int)$onbehalf_uid;
     }
 
     public function setUid($uid)

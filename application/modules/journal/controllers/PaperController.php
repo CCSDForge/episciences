@@ -103,7 +103,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
+     * @throws Zend_Session_Exception|JsonException
      */
     public function viewAction(): void
     {
@@ -205,6 +205,8 @@ class PaperController extends PaperDefaultController
         if ($review->getSetting(Episciences_Review::SETTING_SHOW_RATINGS)) {
             $paper->loadRatings();
             $this->view->reports = $paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED, Episciences_Auth::getUser());
+            $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid));
+
         }
 
         // COI

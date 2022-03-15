@@ -1,24 +1,26 @@
 <?php
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
+$loggedUid = Episciences_Auth::getUid();
 ?>
 <div class="panel-group" id="ratings">
     <?php foreach ($this->reports as $uid => $report) : ?>
         <?php /** @var Episciences_Rating_Report $report */
         $reviewer = new Episciences_Reviewer();
         $reviewer->find($uid);
-        $reviewerScreenName = ($uid == Episciences_Auth::getUid()) ?
+        $reviewerScreenName = ($uid === $loggedUid) ?
             ucfirst($this->translate('vous')) : $reviewer->getScreenName();
 
         $byUid = $report->getOnbehalf_uid();
+        $viaViceMessage = '';
 
         if ($byUid) {
             $byUidUser = new Episciences_User();
             $byUidUser->find($byUid);
-            $userScreenName = ($byUid == Episciences_Auth::getUid()) ?
+            $userScreenName = ($byUid === $loggedUid) ?
                 ucfirst($this->translate('vous')) : $byUidUser->getScreenName();
 
-            $viaViceMessage  = '<span class="badge alert-info" style="margin-right: 5px;">' . ucfirst($this->translate('via')) . '</span>';
+            $viaViceMessage .= '<span class="badge alert-info" style="margin-right: 5px;">' . ucfirst($this->translate('via')) . '</span>';
             $viaViceMessage .= ' [ ' . $userScreenName . ' ] ' . ' ';
             $viaViceMessage .= '<span class="badge alert-info" style="margin-right: 5px;">' . ucfirst($this->translate('pour le compte de')) . '</span>' . ' [ ' . $reviewerScreenName . ' ] ';
             $viaViceMessage .= ' ( ' . ucfirst($this->translate('reviewer') . ' ' . $reviewer->getAlias($paper->getDocid())) . ' )';
@@ -26,58 +28,54 @@ $paper = $this->paper;
 
         $message = '';
 
-        if (Episciences_Auth::isAllowedToManagePaper()) { // pour les relectures ajoutées
-            if (null != $byUid) { // Affichage du nom de celui qui a fait la relecture à la place d'un autre relecteur
-               $message .= $viaViceMessage;
-            } else { // $byUid == null
+        if ($this->isAllowedToSeeReportDetails) { // pour les relectures ajoutées
+            if ($byUid) { // Affichage du nom de celui qui a fait la relecture à la place d'un autre relecteur
+                $message .= $viaViceMessage;
+            } else { // $byUid == 0
                 $message = '<span class="badge alert-success" style="margin-right: 5px;">' . ucfirst($this->translate('par')) . '</span>';
                 $message .= ' [ ' . $reviewerScreenName . ' ] ';
                 $message .= ' ( ' . ucfirst($this->translate('reviewer') . ' ' . $reviewer->getAlias($paper->getDocid())) . ' )';
             }
 
-        } else { // Not allowed to show screenname  and is reveiwer
-
-            if ($uid == Episciences_Auth::getUid()) { // reviewer
-                $message .= $reviewerScreenName;
-            } else {
-                $message .= ucfirst($this->translate('reviewer') . ' ' . $reviewer->getAlias($paper->getDocid()));
-            }
-
+        } else if ($uid === $loggedUid) { // reviewer
+            $message .= $reviewerScreenName;
+        } else {
+            $message .= ucfirst($this->translate('reviewer') . ' ' . $reviewer->getAlias($paper->getDocid()));
         }
 
         ?>
         <?php if ($report->getStatus()) : ?>
             <div class="panel panel-warning">
                 <div class="panel-heading" data-parent="#ratings" data-toggle="collapse"
-                     data-target="#rating-<?php echo $report->getUid() ?>">
+                     data-target="#rating-<?= $report->getUid() ?>">
                     <h4 class="panel-title">
-                        <strong><?php
-                            //Le rapport a été uploader par l'editeur, ce dernier n'a pas le rôle reviewer
-                            echo $message;
-                            ?>
+                        <strong><?= $message ?>
                         </strong>
-                        <?php if (Episciences_Auth::isEditor() && is_numeric($report->getScore())) : ?>
+                        <?php if ($this-> isAllowedToSeeReportDetails && is_numeric($report->getScore())) : ?>
                             : <?= round(($report->getScore() / $report->getMax_score()), 1) ?>
                         <?php endif; ?>
-                        <span class="grey pull-right"><?php echo $this->Date($report->getUpdate_date()); ?>
+                        <span class="grey pull-right"><?= $this->Date($report->getUpdate_date()) ?>
                             <span class="glyphicon glyphicon-chevron-down" style="margin-left: 5px;"></span>
                         </span>
                     </h4>
                 </div>
-                <div id="rating-<?php echo $report->getUid() ?>" class="panel-collapse collapse rating">
+                <div id="rating-<?= $report->getUid() ?>" class="panel-collapse collapse rating">
                     <div class="panel-body">
-                        <?php echo $this->partial('partials/paper_report.phtml', ['report' => $report, 'paper' => $paper]); ?>
+                        <?= $this->partial('partials/paper_report.phtml', ['report' => $report, 'paper' => $paper]) ?>
                     </div>
                 </div>
             </div>
         <?php endif; ?>
+
+        <?php if ($this->isAllowedToSeeReportDetails && count($paper->getRatings()) > 1 && $paper->getAverageRating()) : ?>
+            <div style="margin-top: 20px; font-size: 16px" class="text-center darkgrey"><strong>
+                    <?= $this->translate('Note moyenne') ?> :
+                    <?= $paper->getAverageRating(1) . '/' . $report->getMax_score() ?>
+                </strong></div>
+        <?php endif; ?>
+
     <?php endforeach; ?>
 </div>
 
 
-<?php if (Episciences_Auth::isEditor() && count($paper->getRatings()) > 1 && $paper->getAverageRating()) : ?>
-    <div style="margin-top: 20px; font-size: 16px" class="text-center darkgrey"><strong>
-            <?php echo $this->translate('Note moyenne') ?> :
-            <?php echo $paper->getAverageRating(1) . '/' . $report->getMax_score(); ?>
-        </strong></div>
-<?php endif; ?>
+

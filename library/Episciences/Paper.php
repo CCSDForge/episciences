@@ -3998,4 +3998,10 @@ class Episciences_Paper
         return false;
     }
 
+    public function isOwner(): bool
+    {
+        return Episciences_Auth::getUid() === $this->getUid();
+    }
+
+
 }
