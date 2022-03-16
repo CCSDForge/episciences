@@ -105,10 +105,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $version = 1;
         $response = self::checkResponse($hookParams);
         if (!empty($response)) {
-            $version = array_key_exists('version', $response['metadata']) && is_numeric($response['metadata']['version']) ?
-                $response['metadata']['version'] :
-                $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
-
+            $version = $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
         }
 
         return ['version' => $version];

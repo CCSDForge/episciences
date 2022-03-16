@@ -210,8 +210,8 @@ $(function () {
                 if ('newVerErrors' in result) {
 
                     let newVersionErrors = JSON.parse(result['newVerErrors']);
-                    $submit_form.append('<input type="hidden" name="can_replace" value="' + newVersionErrors.canReplace + '">');
-                    if (newVersionErrors.canReplace) {
+                    $submit_form.append('<input type="hidden" name="can_replace" value="' + newVersionErrors.canBeReplaced + '">');
+                    if (newVersionErrors.canBeReplaced) {
                         $submit_form.append('<input id = "old_docid" type="hidden" name="old_docid" value="' + newVersionErrors.oldDocId + '">');
                         $submit_form.append('<input id = "old_identifier" type="hidden" name="old_identifier" value="' + newVersionErrors.oldIdentifier + '">');
                         $submit_form.append('<input id = "old_version" type="hidden" name="old_version" value="' + newVersionErrors.oldVersion + '">');

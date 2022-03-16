@@ -2628,7 +2628,7 @@ class Episciences_Paper
                     $selfMsg .= $translator->translate('Cet article a déjà été soumis et refusé. Avez-vous apporté des modifications majeures au document ?');
                     $selfMsg .= $confirm;
                     $result['message'] = $selfMsg;
-                    $result['oldPaperId'] = (int)$this->getPaperid();
+                    $result['oldPaperId'] = $this->getPaperid();
                     $result['oldVid'] = $this->getVid();
                     $result['oldSid'] = $this->getSid();
                     $canReplace = true;
@@ -2667,12 +2667,21 @@ class Episciences_Paper
 
         $result['message'] .= '</span>';
 
-        $result['canReplace'] = $canReplace; // Peut-on remplacer l'ancienne version
+        $result['canBeReplaced'] = $canReplace; // Peut-on remplacer l'ancienne version
         $result['oldIdentifier'] = $identifier;
-        $result['oldVersion'] = (int)$version;
-        $result['oldRepoId'] = (int)$repoId;
+        $result['oldVersion'] = (float)$version;
+        $result['oldRepoId'] = $repoId;
 
-        return json_encode($result);
+        try {
+            $jResult = json_encode($result, JSON_THROW_ON_ERROR);
+
+        }catch (Exception $e){
+            $jResult = '';
+            trigger_error($e->getMessage());
+        }
+
+        return $jResult;
+
     }
 
     /**
