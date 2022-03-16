@@ -14,10 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+## 1.0.27.1 - 2022-03-16
 ### Fixed
 - Exclude the "paper-status" directory from the journal's resources.
-- Content that is copied and pasted when reviewing an article loses its formatting.
+- Content that is copied and pasted when reviewing an article may lose end of line.
 - The linked data to an article is not deleted when the author deletes his own article
 
 ##  1.0.27 - 2022-03-14
