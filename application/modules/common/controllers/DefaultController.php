@@ -11,7 +11,7 @@ class DefaultController extends Zend_Controller_Action
         try {
             $postMaxSize = Episciences_Tools::convertToBytes(ini_get('post_max_size'));
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage());
             return true;
         }
 

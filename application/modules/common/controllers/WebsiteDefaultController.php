@@ -86,23 +86,24 @@ class WebsiteDefaultController extends Zend_Controller_Action
     /**
      * Affichage des ressources publiques d'un site
      */
-    public function publicAction()
+    public function publicAction(): void
     {
         $dir = REVIEW_PATH . 'public/';
-        if (!is_dir($dir)) {
-            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
-            }
+        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
         }
 
-        $params = $this->getRequest()->getParams();
-        if ($this->getRequest()->isPost() && isset($params['method'])) {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        $params = $request->getParams();
+        if (isset($params['method']) && $request->isPost()) {
             if ($params['method'] === 'remove') {
                 //Suppression d'un fichier
                 if (isset($params['name']) && is_file($dir . $params['name'])) {
                     unlink($dir . $params['name']);
                 }
-            } else if (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] != '') {
+            } else if (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] !== '') {
                 //Ajout d'un fichier
                 copy($_FILES['file']['tmp_name'], $dir . Ccsd_File::renameFile($_FILES['file']['name'], $dir));
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Le fichier a été déposé.");
@@ -111,7 +112,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
         $files = [];
         foreach (scandir($dir) as $file) {
-            if (!in_array($file, ['.', '..'])) {
+            if (!in_array($file, ['.', '..', 'paper-status'])) {
                 $files[$file] = $dir . $file;
             }
         }

@@ -18,15 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## added
 
 - New article status:
- * Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
- * Accepted - waiting for author's final version
- * Accepted, waiting for major revision
- * Accepted article - final version submitted, waiting for formatting by copy editors
- * Accepted temporary version after author's modifications
- * Accepted temporary version, waiting for minor revision
- * Accepted temporary version, waiting for major revision
- * Accepted - waiting validation by the author
- * Approved by author, waiting for final publication
+* Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
+* Accepted - waiting for author's final version
+* Accepted, waiting for major revision
+* Accepted article - final version submitted, waiting for formatting by copy editors
+* Accepted temporary version after author's modifications
+* Accepted temporary version, waiting for minor revision
+* Accepted temporary version, waiting for major revision
+* Accepted - waiting validation by the author
+* Approved by author, waiting for final publication
 
 - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
 - New review parameter: Allow revision request + refactoring.
@@ -50,19 +50,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#188](https://github.com/CCSDForge/episciences/issues/18 ): force notifications
 - CWI is removed now: OAI is down.
 - Code Refactoring fixing of warning
+- It is now possible to re-point the version in Episciences to the most recent version in the open archive.
 
 ##Fixed
 - Multiple roles: ignore the "member" role when merging two accounts.
+
+## 1.0.27.1 - 2022-03-16
+### Fixed
+- Exclude the "paper-status" directory from the journal's resources.
+- Content that is copied and pasted when reviewing an article may lose end of line.
+- The linked data to an article is not deleted when the author deletes his own article
+
+##  1.0.27 - 2022-03-14
+# Changed
+- Reviewer invitation: Users are now sorted by Name, First Name instead of First Name
+
+# Fixed
 - Dashboard: the number of papers assigned to the copy editor includes obsolete papers
-
-
+- Issue reported to support RT #148133 (fixed before this release):
+  * Some editors could see the reviewers names if they were also authors of the article
+  
 ## 1.0.26 - 2022-03-01
 # Fixed
 - Issue reported to support RT #148133:
-  * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
+   * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
 - Issue reported to support RT #148466:
-  * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
-  
+   * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
+
 ## 1.0.25.1 - 2022-02-15
 # Changed
 [#152](https://github.com/CCSDForge/episciences/issues/152): page footer modifications.
@@ -70,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.25 - 2022-02-15
 # Fixed
 - All submissions are accessible to "guest editor" roles.
-- Language bar missing whe
+- Language bar missing when editing a mail template, including reminders.
 
 ## 1.0.24.2 - 2022-02-10
 # Fixed
