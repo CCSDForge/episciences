@@ -895,6 +895,13 @@ class Episciences_Submit
 
             $result['docId'] = (int)$docId;
 
+            if ($canReplace) {
+                // delete all paper datasets
+                Episciences_Paper_DatasetsManager::deleteByDocId($oldDocId);
+                // delete all paper files
+                Episciences_Paper_FilesManager::deleteByDocId($oldDocId);
+            }
+
             $response = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()]);
 
             Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid(), 'response' => $response]);
@@ -1332,8 +1339,7 @@ class Episciences_Submit
         $jump = false;
 
         // Suggested reviewers
-        if (!$jump &&
-            array_key_exists('suggestReviewers', $data) &&
+        if (array_key_exists('suggestReviewers', $data) &&
             count($data['suggestReviewers']) &&
             !$this->saveAuthorSuggestions($result['docId'], $data['suggestReviewers'], 'suggestedReviewer')
 
@@ -1437,14 +1443,15 @@ class Episciences_Submit
      */
     private function getSuggestedEditorsFromPost(array $post): array
     {
-        $suggestedEditors = Ccsd_Tools::ifsetor($post['suggestEditors'], []);
 
-        if (!empty($suggestedEditors)) {
-            // choisir un seul et un seul editeur
-            $suggestedEditors = (!is_array($post['suggestEditors'])) ? (array)$suggestedEditors : $suggestedEditors;
+        if (!isset($post['can_replace']) || !$post['can_replace']) {
+            return array_filter((array)$post['suggestEditors'], static function ($value) {
+                return !empty($value);
+            });
         }
 
-        return $suggestedEditors;
+        return [];
+
     }
 
     /**

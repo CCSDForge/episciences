@@ -151,26 +151,24 @@ class PaperController extends PaperDefaultController
         $this->updatePaperStats($paper);
 
         if ($paper->hasDoi()) {
-            $headerLinks[] = sprintf('<https://%s>; rel="cite-as"', $paper->getDoi()) ;
+            $headerLinks[] = sprintf('<https://%s>; rel="cite-as"', $paper->getDoi());
         }
-
-
 
 
         $paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
 
-        $alternateContentTypes['bibtex']='application/x-bibtex';
-        $alternateContentTypes['tei']='application/xml';
-        $alternateContentTypes['dc']='application/xml';
-        $alternateContentTypes['datacite']='application/xml';
-        $alternateContentTypes['crossref']='application/xml';
-        $alternateContentTypes['pdf']='application/pdf';
+        $alternateContentTypes['bibtex'] = 'application/x-bibtex';
+        $alternateContentTypes['tei'] = 'application/xml';
+        $alternateContentTypes['dc'] = 'application/xml';
+        $alternateContentTypes['datacite'] = 'application/xml';
+        $alternateContentTypes['crossref'] = 'application/xml';
+        $alternateContentTypes['pdf'] = 'application/pdf';
 
         foreach ($alternateContentTypes as $format => $mimeType) {
             if ($format === 'pdf') {
                 $headerLinks[] = sprintf('<%s/%s>; rel="alternate"; type="%s"', $paperUrl, $format, $mimeType);
             } else {
-                $headerLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"; title="%s"', $paperUrl, $format, $mimeType,strtoupper($format));
+                $headerLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"; title="%s"', $paperUrl, $format, $mimeType, strtoupper($format));
             }
         }
 
@@ -1240,15 +1238,15 @@ class PaperController extends PaperDefaultController
             $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $post[self::SEARCH_DOC_STR]['h_docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId'], 'response' => $hookApiRecord]);
 
             if (isset($hookVersion['version'])) {
-                $currentVersion = (int)$hookVersion['version'];
+                $currentVersion = (float)$hookVersion['version'];
             }
 
 
         } else {
-            $currentVersion = (int)$post[self::SEARCH_DOC_STR][self::VERSION_STR];
+            $currentVersion = (float)$post[self::SEARCH_DOC_STR][self::VERSION_STR];
         }
 
-        if ($currentVersion < (int)$paper->getVersion()) {
+        if ($currentVersion < $paper->getVersion()) {
             $message = $this->view->translate("la version de l'article à mettre à jour doit être supérieure à la version précédente.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
@@ -1977,7 +1975,7 @@ class PaperController extends PaperDefaultController
 
         $message = trim($message);
 
-        if('' !== $message){
+        if ('' !== $message) {
             $message = $translator->translate($message);
         }
 
@@ -2342,77 +2340,88 @@ class PaperController extends PaperDefaultController
 
         // check paper status before removal
         $authorizedStatus = [Episciences_Paper::STATUS_SUBMITTED];
-        $paper = Episciences_PapersManager::get($docId);
 
-        if (!in_array($paper->getStatus(), $authorizedStatus, true)) {
-            $message = $this->view->translate("L'article ne peut pas être supprimé en raison de son statut.");
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl('/' . $docId);
-            return;
-        }
+        $paper = Episciences_PapersManager::get($docId, false);
 
-        // check that user really is paper contributor
-        if (Episciences_Auth::getUid() !== $paper->getUid()) {
-            $message = $this->view->translate("L'article ne peut être supprimé que par son déposant.");
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl('/' . $docId);
-            return;
-        }
+        if ($paper) {
 
-        // remove paper (update its status)
-        $paper->setStatus(Episciences_Paper::STATUS_DELETED);
-        $paper->save();
+            if (!in_array($paper->getStatus(), $authorizedStatus, true)) {
+                $message = $this->view->translate("L'article ne peut pas être supprimé en raison de son statut.");
+                $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                $this->_helper->redirector->gotoUrl('/' . $docId);
+                return;
+            }
 
-        // if reviewers were assigned, remove them
-        $reviewers = $paper->getReviewers(null, true);
-        foreach (array_keys($reviewers) as $uid) {
-            $paper->unassign($uid, Episciences_User_Assignment::ROLE_REVIEWER);
-        }
+            // check that user really is paper contributor
+            if (!$paper->isOwner()) {
+                $message = $this->view->translate("L'article ne peut être supprimé que par son déposant.");
+                $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                $this->_helper->redirector->gotoUrl('/' . $docId);
+                return;
+            }
 
-        // if there were editors, remove them
-        $editors = $paper->getEditors(null, true);
-        foreach (array_keys($editors) as $uid) {
-            $paper->unassign($uid, Episciences_User_Assignment::ROLE_EDITOR);
-        }
+            // remove paper (update its status)
+            $paper->setStatus(Episciences_Paper::STATUS_DELETED);
+            $paper->save();
 
-        // success message ***************************************************************
-        $message = $this->view->translate("L'article a bien été supprimé.");
-        $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+            // delete all paper datasets
+            Episciences_Paper_DatasetsManager::deleteByDocId($paper->getDocid());
+            // delete all paper files
+            Episciences_Paper_FilesManager::deleteByDocId($paper->getDocid());
 
-        // Contributor info
-        /** @var  $contributor Episciences_User */
-        $contributor = Episciences_Auth::getUser();
-        $aLocale = $contributor->getLangueid();
 
-        $commonTags = [
-            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
-            Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $contributor->getFullName()
-        ];
+            // if reviewers were assigned, remove them
+            $reviewers = $paper->getReviewers(null, true);
+            foreach (array_keys($reviewers) as $uid) {
+                $paper->unassign($uid, Episciences_User_Assignment::ROLE_REVIEWER);
+            }
 
-        $authorTags = $commonTags + [
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($aLocale, true),
-                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale),
-                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $aLocale)
+            // if there were editors, remove them
+            $editors = $paper->getEditors(null, true);
+            foreach (array_keys($editors) as $uid) {
+                $paper->unassign($uid, Episciences_User_Assignment::ROLE_EDITOR);
+            }
+
+            // success message ***************************************************************
+            $message = $this->view->translate("L'article a bien été supprimé.");
+            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+
+            // Contributor info
+            /** @var  $contributor Episciences_User */
+            $contributor = Episciences_Auth::getUser();
+            $aLocale = $contributor->getLangueid();
+
+            $commonTags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
+                Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $contributor->getFullName()
             ];
 
-        // send mail to contributor - successful removal ***********************************
+            $authorTags = $commonTags + [
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($aLocale, true),
+                    Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale),
+                    Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $aLocale)
+                ];
 
-        Episciences_Mail_Send::sendMailFromReview($contributor, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_AUTHOR_COPY, $authorTags, $paper);
+            // send mail to contributor - successful removal ***********************************
 
-        // send mail to editors - warn paper editors that the paper was removed *************************
-        // En fonction des paramètres de la revue, notifier les administrateurs, rédacteurs en chef et les secrétaires de rédaction
-        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_EDITOR_COPY, null, $commonTags);
+            Episciences_Mail_Send::sendMailFromReview($contributor, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_AUTHOR_COPY, $authorTags, $paper);
 
-        // send mail to reviewers (if any) **********************************************
-        foreach ($reviewers as $reviewer) {
-            $rLocale = $reviewer->getLangueid();
-            $rTags = [
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($rLocale, true),
-                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($rLocale),
-                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $rLocale)
-            ];
+            // send mail to editors - warn paper editors that the paper was removed *************************
+            // En fonction des paramètres de la revue, notifier les administrateurs, rédacteurs en chef et les secrétaires de rédaction
+            $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_EDITOR_COPY, null, $commonTags);
 
-            Episciences_Mail_Send::sendMailFromReview($reviewer, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY, $commonTags + $rTags, $paper);
+            // send mail to reviewers (if any) **********************************************
+            foreach ($reviewers as $reviewer) {
+                $rLocale = $reviewer->getLangueid();
+                $rTags = [
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($rLocale, true),
+                    Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($rLocale),
+                    Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $rLocale)
+                ];
+
+                Episciences_Mail_Send::sendMailFromReview($reviewer, Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY, $commonTags + $rTags, $paper);
+            }
+
         }
 
         // redirect *******************************

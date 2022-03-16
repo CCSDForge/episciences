@@ -118,16 +118,15 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookVersion(array $hookParams): array
     {
-        $latestVersion = 1;
-        $response = self::checkResponse($hookParams);
-        if (!empty($response)) {
-            $latestVersion = array_key_exists('version', $response['metadata']) ?
-                $response['metadata']['version'] :
-                $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
+        $version = 1;
 
+        $response = self::checkResponse($hookParams);
+
+        if (!empty($response)) {
+            $version = $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
         }
 
-        return ['version' => $latestVersion];
+        return ['version' => $version];
     }
 
     /**
