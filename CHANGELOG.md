@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+- Exclude the "paper-status" directory from the journal's resources.
 
 ##  1.0.27 - 2022-03-14
 # Changed
