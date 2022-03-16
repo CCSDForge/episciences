@@ -25,7 +25,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
     public const HTML_AllOWED_HTML = [
         'HTML.AllowedElements' => [
-            'p', 'span', 'strong', 'em', 'li', 'ol', 'ul'
+            'p', 'span', 'strong', 'em', 'li', 'ol', 'ul', 'br'
         ],
         'HTML.AllowedAttributes' => ['p.style']
     ];

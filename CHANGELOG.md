@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 - Exclude the "paper-status" directory from the journal's resources.
+- Fixed: content that is copied and pasted when reviewing an article loses its formatting.
 
 ##  1.0.27 - 2022-03-14
 # Changed
