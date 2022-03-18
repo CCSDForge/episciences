@@ -55,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ##Fixed
 - Multiple roles: ignore the "member" role when merging two accounts.
 
+## Unreleased
+### Fixed
+- "Copy editor" role not authorized accessing to the public page of the paper
+ and report a conflict of interest, if the option has been activated by the journal
+ 
 ## 1.0.27.1 - 2022-03-16
 ### Fixed
 - Exclude the "paper-status" directory from the journal's resources.
