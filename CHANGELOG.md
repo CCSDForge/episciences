@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.27.2 - 2022-03-18
 ### Fixed
 - "Copy editor" role not authorized accessing to the public page of the paper
  and report a conflict of interest, if the option has been activated by the journal
