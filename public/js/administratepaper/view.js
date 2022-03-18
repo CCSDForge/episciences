@@ -657,6 +657,9 @@ function getVersionEditingForm(button, docId) {
 
             sRequest.done(function (response) {
 
+                $inProgress.html('');
+                $(button).popover('destroy');
+
                 let result = JSON.parse(response);
 
                 if (result.version > 0) {
@@ -670,8 +673,6 @@ function getVersionEditingForm(button, docId) {
                     }
 
                 }
-
-                $inProgress.html('');
 
                 sRequest.fail(function () {
                     alert('<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px"></span>' + translate("Une erreur interne s'est produite, veuillez recommencer."));
