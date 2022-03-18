@@ -2773,18 +2773,25 @@ class Episciences_Paper
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public function refreshStatus()
+    public function refreshStatus(): void
     {
         // update paper status
         $status = ($this->isReviewed()) ? self::STATUS_REVIEWED : self::STATUS_BEING_REVIEWED;
+
         $oldStatus = $this->getStatus();
-        if ($oldStatus !== self::STATUS_OBSOLETE &&
-            $oldStatus !== self::STATUS_PUBLISHED &&
-            $oldStatus !== self::STATUS_ACCEPTED &&
-            $oldStatus !== self::STATUS_REFUSED &&
-            $oldStatus !== self::STATUS_WAITING_FOR_MINOR_REVISION &&
-            $oldStatus !== self::STATUS_WAITING_FOR_MAJOR_REVISION &&
-            $oldStatus !== $status) {
+
+        $ignoredStatus = [$status, $oldStatus];
+
+        $ignoredStatus += [
+            self::STATUS_OBSOLETE,
+            self::STATUS_REFUSED,
+            self::STATUS_WAITING_FOR_MINOR_REVISION,
+            self::STATUS_WAITING_FOR_MAJOR_REVISION
+        ];
+
+        $ignoredStatus += self::$_canBeAssignedDOI;
+
+        if (!in_array($oldStatus, $ignoredStatus, true)) {
             $this->setStatus($status);
             $this->save();
             // log new paper status
