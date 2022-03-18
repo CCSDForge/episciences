@@ -15,12 +15,14 @@ class Episciences_Submit
     /**
      * @param array $settings
      * @param null $defaults
+     * @param bool $isFromZSubmit
      * @return Ccsd_Form
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
 
-    public static function getForm($settings = [], $defaults = null)
+    public static function getForm(array $settings = [], $defaults = null, bool $isFromZSubmit = false): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $review = Episciences_ReviewsManager::find(RVID);
@@ -51,32 +53,44 @@ class Episciences_Submit
         foreach ($repositories as $repoId) {
             $options[$repoId] = Episciences_Repositories::getLabel($repoId);
         }
-
-        // Select: repositories
-        $subform->addElement('select', 'repoId', [
+        $repIdElementOptions = [
             'label' => 'Archive',
             'multiOptions' => $options,
             'style' => 'width:auto;',
-        ]);
+        ];
 
-        unset($options);
-
-        // Champ texte : identifiant du document
-        $subform->addElement('text', 'docId', [
+        $docIdElementOptions = [
             'label' => 'Identifiant du document',
             'required' => true,
             'description' => $translator->translate("Saisir l'identifiant du document") . '.',
             'style' => 'width:auto; text-align:center;',
-        ]);
+        ] ;
+
+        if($isFromZSubmit){
+            $repIdElementOptions['disabled'] = true;
+            $docIdElementOptions['disabled'] = true;
+        }
+
+        // Select: repositories
+        $subform->addElement('select', 'repoId', $repIdElementOptions );
+
+        unset($options);
+
+        // Champ texte : identifiant du document
+        $subform->addElement('text', 'docId', $docIdElementOptions);
 
         // Champ texte : version du document
-        $subform->addElement('text', 'version', [
-            'label' => 'Version',
-            'required' => true,
-            'description' => $translator->translate("Saisir la version du document (nombre uniquement)."),
-            'value' => '',
-            'style' => 'width:17%;']);
+        $isNotRequired = isset($defaults['repoId']) && ((int)$defaults['repoId'] === 4);
 
+        if (!$isNotRequired) {
+            $subform->addElement('text', 'version', [
+                'label' => 'Version',
+                'required' => false,
+                'description' => $translator->translate("Saisir la version du document (nombre uniquement)."),
+                'value' => '',
+                'style' => 'width:17%;']);
+
+        }
 
         // Bouton : Rechercher
         $subform->addElement('button', 'getPaper', [

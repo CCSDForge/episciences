@@ -43,28 +43,15 @@ $(function () {
         activateDeactivateSubmitButton();
     });
 
+
+    if (iSFromZSubmit) {
+        doSearching();
+    }else{
+
+    }
+
     $search_button.on('click', function () {
-
-        let $checkBoxCondition1 = $('#disclaimers-disclaimer1');
-        let $checkBoxCondition2 = $('#disclaimers-disclaimer2');
-        let version = $searchDocVersion.val();
-
-        // submission error: attempt to re-submit
-        if ($checkBoxCondition1.is(':checked')) {
-            $checkBoxCondition1.prop('checked', false)
-
-        }
-
-        if ($checkBoxCondition2.is(':checked')) {
-            $checkBoxCondition2.prop('checked', false);
-        }
-
-        if (!hasHook && ('' === version || isNaN(version))) {
-            alert(translate("Veuillez indiquer la version du document (nombre uniquement)."));
-            return;
-        }
-
-        search();
+        doSearching();
     });
 
     $cancel_button.click(function () {
@@ -357,6 +344,40 @@ $(function () {
             $submit_button.attr('aria-disabled', true)
         }
     }
+
+
+    function doSearching() {
+
+        let $checkBoxCondition1 = $('#disclaimers-disclaimer1');
+        let $checkBoxCondition2 = $('#disclaimers-disclaimer2');
+
+        let version;
+        let $isRequiredVersion = $searchDocVersion.length > 0;
+
+        if ($isRequiredVersion) {
+            version = $searchDocVersion.val();
+        }
+
+        // submission error: attempt to re-submit
+        if ($checkBoxCondition1.is(':checked')) {
+            $checkBoxCondition1.prop('checked', false)
+
+        }
+
+        if ($checkBoxCondition2.is(':checked')) {
+            $checkBoxCondition2.prop('checked', false);
+        }
+
+        if ($isRequiredVersion && !hasHook && ('' === version || isNaN(version))) {
+            alert(translate("Veuillez indiquer la version du document (nombre uniquement)."));
+            return;
+        }
+
+        search();
+
+    }
+
+
 });
 
 /**

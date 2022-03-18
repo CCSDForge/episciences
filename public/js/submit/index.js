@@ -7,7 +7,8 @@ $(document).ready(function () {
     setPlaceholder();
 
     $(window).on('load', function () {
-        toggleVersionBloc();
+        if ($versionBloc.length > 0)
+            toggleVersionBloc();
     });
 
     $searchDocRepoId.on('change', function () {

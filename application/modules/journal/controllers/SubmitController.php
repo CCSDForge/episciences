@@ -12,19 +12,31 @@ class SubmitController extends DefaultController
     public function indexAction(): void
     {
 
-        $submit = new Episciences_Submit();
+        $default = [];
+        $settings = Zend_Registry::get('reviewSettings');
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        $zIdentifier = $request->getParam('id');
+        $requestedFrom = 'zsubmit';
+        $pattern = '#^' . $requestedFrom . '[-a-z]*.' . DOMAIN . '$#';
 
-        $review = Episciences_ReviewsManager::find(RVID);
-        $review->loadSettings();
-        $settings = $review->getSettings();
-        $form = $submit::getForm($settings);
+        $isFromZSubmit = preg_match($pattern, $request->getServer('REMOTE_HOST'), $matches) && $zIdentifier &&
+            in_array(Episciences_Repositories::ZENODO_REPO_ID , $settings['repositories'], true);
+
+        if ($isFromZSubmit) {
+            $default ['repoId'] = Episciences_Repositories::ZENODO_REPO_ID;
+            $default ['docId'] = $zIdentifier;
+        }
+
+        $submit = new Episciences_Submit();
+
+        $form = $submit::getForm($settings, $default, $isFromZSubmit);
 
         if ($request->isPost()) {
             $post = $request->getPost();
 
-            if(isset($post['search_doc']['repoId'])){
+            if (isset($post['search_doc']['repoId'])) {
                 $repoId = (int)$post['search_doc']['repoId'];
                 $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['search_doc']['docId'], 'repoId' => $repoId]);
                 if (!empty($hookCleanIdentifiers)) {
@@ -92,29 +104,29 @@ class SubmitController extends DefaultController
                     }
 
                     $this->_helper->redirector('submitted', 'paper');
-                } else { // End isValid
+                    return;
+                } // End isValid
 
-                    $validationErrors = '<ol  type="i">';
-                    foreach ($form->getMessages() as $val) {
-                        foreach ($val as $v) {
-                            $v = is_array($v) ? implode(' ', array_values($v)) : $v;
-                            $validationErrors .= '<li>';
-                            $validationErrors .= '<code>' . $v . '</code>';
-                            $validationErrors .= '</li>';
-                        }
+                $validationErrors = '<ol  type="i">';
+                foreach ($form->getMessages() as $val) {
+                    foreach ($val as $v) {
+                        $v = is_array($v) ? implode(' ', array_values($v)) : $v;
+                        $validationErrors .= '<li>';
+                        $validationErrors .= '<code>' . $v . '</code>';
+                        $validationErrors .= '</li>';
                     }
-                    $validationErrors .= '</ol>';
-
-                    $message = '<strong>';
-                    $message .= $this->view->translate("Ce formulaire comporte des erreurs");
-                    $message .= $this->view->translate(' :');
-                    $message .= $validationErrors;
-                    $message .= $this->view->translate('Merci de les corriger.');
-                    $message .= '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
-                    $this->view->form = $form;
-                    $this->view->error = true;
                 }
+                $validationErrors .= '</ol>';
+
+                $message = '<strong>';
+                $message .= $this->view->translate("Ce formulaire comporte des erreurs");
+                $message .= $this->view->translate(' :');
+                $message .= $validationErrors;
+                $message .= $this->view->translate('Merci de les corriger.');
+                $message .= '</strong>';
+                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->view->form = $form;
+                $this->view->error = true;
 
             } // end isPost
 
@@ -151,13 +163,14 @@ class SubmitController extends DefaultController
 
         $this->view->repositories = implode(', ', $allowedRepositories);
         $this->view->examples = Zend_Json::encode($examples);
+        $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
 
     }
 
     /**
      * @throws Zend_Exception
      */
-    public function getdocAction()
+    public function getdocAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -261,7 +274,7 @@ class SubmitController extends DefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if(!$request->isXmlHttpRequest() || !$request->isPost()){
+        if (!$request->isXmlHttpRequest() || !$request->isPost()) {
             return;
         }
 
