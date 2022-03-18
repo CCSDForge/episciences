@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - Ratings submitted late after the start of the layout process caused the status of the article to be updated (rolled back).
+- There is no need to review an article while it is being formatted by the author.
 
 ## 1.0.27.2 - 2022-03-18
 ### Fixed

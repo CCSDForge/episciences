@@ -2932,6 +2932,7 @@ class Episciences_Paper
     {
         return in_array($this->getStatus(), [
             self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
+            self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
             self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
             self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
             self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
