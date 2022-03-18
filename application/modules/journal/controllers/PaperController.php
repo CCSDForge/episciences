@@ -169,7 +169,7 @@ class PaperController extends PaperDefaultController
         $paperHasDoi = $paper->hasDoi();
         $paperDoi = $paper->getDoi();
 
-        $allHeaderLinks = spHeaders::getPaperHeaderLinks($paperHasDoi, $paperDoi, $paperUrl, $headerLinks);
+        $allHeaderLinks = spHeaders::getPaperHeaderLinks($paperHasDoi, $paperUrl, $paperDoi, $headerLinks);
 
         $this->getResponse()->setHeader('Link', implode(', ', $allHeaderLinks));
 
