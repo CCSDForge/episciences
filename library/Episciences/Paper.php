@@ -251,7 +251,7 @@ class Episciences_Paper
     /**
      * @var string
      */
-    private $_doi;
+    private string $_doi = '';
     private $_version;
     private $_rvId = 0;
     private $_vId = 0;
@@ -428,12 +428,12 @@ class Episciences_Paper
 
 
     /**
-     * @param string $doi
+     * @param string|null $doi
      * @return $this
      */
-    public function setDoi($doi): self
+    public function setDoi(string $doi = null): self
     {
-        $this->_doi = $doi;
+        $this->_doi = !$doi ? '' : $doi;
         return $this;
     }
 
