@@ -7,12 +7,12 @@ trait Headers
 
     /**
      * @param bool $paperHasDoi
-     * @param string $paperDoi
      * @param string $paperUrl
+     * @param string $paperDoi
      * @param array $existingHeaderLinks
      * @return array
      */
-    public static function getPaperHeaderLinks(bool $paperHasDoi, string $paperDoi = '', string $paperUrl, array $existingHeaderLinks = []): array
+    public static function getPaperHeaderLinks(bool $paperHasDoi, string $paperUrl, string $paperDoi = '', array $existingHeaderLinks = []): array
     {
         $newHeaderLinks = [];
 

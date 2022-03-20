@@ -1,5 +1,8 @@
 <?php
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+
 class Episciences_Tools
 {
     public static $bashColors = [
@@ -1408,6 +1411,50 @@ class Episciences_Tools
     {
         $pattern = '/^((https?:\/\/)?ror\.org\/)?([A-Za-z0-9]){9}$/i';
         return (bool)preg_match($pattern, $string);
+    }
+
+
+    /**
+     * @param string $url
+     * @param array $options
+     * @return false|array|string
+     */
+
+    public static function callApi(string $url, array $options = [])
+    {
+
+        $result = false;
+
+        $jsonMimeType = 'application/json';
+
+        if (empty($options)) {
+            $options['headers'] = ['Content-type' => $jsonMimeType];
+        }
+
+        $client = new Client($options);
+
+        try {
+            $response = $client->get($url);
+
+            if (isset($options['headers']['Content-type']) && $options['headers']['Content-type'] === $jsonMimeType) {
+
+                try {
+                    $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                }
+
+            } else {
+                $result = $response->getBody()->getContents();
+            }
+
+
+        } catch (GuzzleException $e) {
+            trigger_error($e->getMessage());
+        }
+
+        return $result;
+
     }
 
 }

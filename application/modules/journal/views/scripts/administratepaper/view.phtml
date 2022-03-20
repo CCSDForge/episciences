@@ -204,7 +204,9 @@ $this->suggestedRevision = false;
         </div>
         <div class="panel-body in">
             <?php echo $this->partial('partials/paper_reports.phtml', ['paper' => $paper,
-                'reports' => $paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)])
+                'reports' => $paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED),
+                'isAllowedToSeeReportDetails' => $this->isAllowedToSeeReportDetails
+            ])
             ?>
         </div>
     </div>

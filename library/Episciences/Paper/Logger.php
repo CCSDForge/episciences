@@ -65,6 +65,8 @@ class Episciences_Paper_Logger
     public const CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION = "accepted_ask_authors_final_version";
     public const CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION = "accepted_ask_for_author_validation";
 
+    public const CODE_VERSION_REPOSITORY_UPDATED = "version_repository_updated";
+
     // alert-
     public const WARNING = 'warning';
     public const INFO = 'info';
@@ -120,7 +122,8 @@ class Episciences_Paper_Logger
         self::CODE_ALTER_PUBLICATION_DATE => self::WARNING,
         self::CODE_COI_REPORTED => self::DANGER,
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => self::VIOLET,
-        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => self::VIOLET
+        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => self::VIOLET,
+        self::CODE_VERSION_REPOSITORY_UPDATED => self::INFO
     ];
 
     public static array $_label = [
@@ -152,7 +155,8 @@ class Episciences_Paper_Logger
         self::CODE_DOI_ASSIGNED => 'DOI assigné',
         self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)",
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepté, demande de la version finale à l'auteur",
-        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur"
+        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur",
+        self::CODE_VERSION_REPOSITORY_UPDATED => 'Re-pointage de version'
     ];
 
     /**

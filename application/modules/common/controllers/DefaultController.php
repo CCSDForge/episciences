@@ -11,7 +11,7 @@ class DefaultController extends Zend_Controller_Action
         try {
             $postMaxSize = Episciences_Tools::convertToBytes(ini_get('post_max_size'));
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage());
             return true;
         }
 
@@ -101,8 +101,9 @@ class DefaultController extends Zend_Controller_Action
 
         return !$isAllowToEditors && !$isAllowToCopyEditors && !$paper->isPublished() &&
             !Episciences_Auth::isSecretary() && // nor editorial secretary or user is not chief editor or // nor admin
-            !$paper->getEditor($loggedUid) && // assigned editors
+            !$paper->getEditor($loggedUid) &&
+            !$paper->getCopyEditor($loggedUid) &&
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
-            $paper->getUid() !== $loggedUid;
+            !$paper->isOwner();
     }
 }
