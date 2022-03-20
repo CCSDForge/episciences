@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.27.4 - 2022-03-21
+### Fixed
+- Fixes and enhancements for zbMATH Open format
+
 ## 1.0.27.3 - 2022-03-18
 ### Fixed
 - Ratings submitted late after the start of the layout process caused the status of the article to be updated (rolled back).
