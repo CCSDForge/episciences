@@ -17,7 +17,7 @@ class SubmitController extends DefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $zIdentifier = $request->getParam('id');
+        $zIdentifier = filter_var($request->getParam('id'), \FILTER_VALIDATE_INT);
         $requestedFrom = 'zsubmit';
         $pattern = '#^' . $requestedFrom . '[-a-z]*.' . DOMAIN . '$#';
 
