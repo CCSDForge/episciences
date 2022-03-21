@@ -56,6 +56,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ##Fixed
 - Multiple roles: ignore the "member" role when merging two accounts.
 
+## 1.0.27.5 - 2022-03-21
+### Fixed
+- Fixes and enhancements for zbMATH Open format
+- Adding Polyfill PHP 8.0
+
+
 ## 1.0.27.4 - 2022-03-21
 ### Fixed
 - Fixes and enhancements for zbMATH Open format
