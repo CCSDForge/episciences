@@ -98,7 +98,7 @@ class Episciences_Repositories
 
     public static function getLabel($repoId)
     {
-        return self::$_repositories[$repoId][self::REPO_LABEL];
+        return isset (self::$_repositories[$repoId]) ? self::$_repositories[$repoId][self::REPO_LABEL] : '';
     }
 
     public static function getBaseUrl($repoId)
