@@ -163,7 +163,16 @@ class Episciences_ReviewsManager
             $issnPrint = $oReview->getSetting(Episciences_Review::SETTING_ISSN_PRINT);
             $issnElec = $oReview->getSetting(Episciences_Review::SETTING_ISSN);
 
-            $acceptedRepositories = $oReview->getSetting(Episciences_Review::SETTING_REPOSITORIES);
+            $acceptedRepositories = [];
+
+            foreach ($oReview->getSetting(Episciences_Review::SETTING_REPOSITORIES) as $repoId) {
+
+                $label = Episciences_Repositories::getLabel($repoId);
+
+                if ('' !== $label) {
+                    $acceptedRepositories[$repoId] = $label;
+                }
+            }
 
             if (!$issnPrint) {
                 $issnPrint = '';

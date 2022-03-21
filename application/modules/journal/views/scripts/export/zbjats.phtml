@@ -71,9 +71,11 @@ $timestamp = time();
             <article-id pub-id-type="doi"><?php echo htmlentities($this->doi, ENT_XML1); ?></article-id>
 
             <?php if ($paper->getRepoid() === 2): ?>
-                <article-id pub-id-type="arxiv"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
-            <?php elseif($paper->getRepoid() === 1):?>
-                <article-id pub-id-type="hal"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
+                <article-id
+                        pub-id-type="arxiv"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
+            <?php elseif ($paper->getRepoid() === 1): ?>
+                <article-id
+                        pub-id-type="hal"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
             <?php endif; ?>
 
             <article-id
@@ -151,7 +153,8 @@ $timestamp = time();
                         $lang = $this->paperLanguage;
                         //default to paper language
                     }
-                    if ($abstract === 'International audience') {
+                    $abstract = trim($abstract);
+                    if (($abstract === 'International audience') || (str_starts_with($abstract, 'Comment:'))) {
                         continue;
                     }
                     if ($abstractCount === 0): ?>
@@ -180,7 +183,7 @@ $timestamp = time();
                 }
                 if (!empty($keywordByLang)) {
                     foreach ($keywordByLang as $keywordByLangIndex => $keywordByLangValue) {
-                        printf('<kwd-group xml:lang="%s">', $keywordByLangIndex);
+                        printf('<kwd-group kwd-group-type="author" xml:lang="%s">', $keywordByLangIndex);
                         echo implode(PHP_EOL, $keywordByLangValue);
                         echo '</kwd-group>';
                     }
