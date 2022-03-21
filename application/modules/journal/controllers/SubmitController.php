@@ -17,11 +17,10 @@ class SubmitController extends DefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        
         $zIdentifier = filter_var($request->getParam('id'), \FILTER_VALIDATE_INT);
-        $requestedFrom = 'zsubmit';
-        $pattern = '#^' . $requestedFrom . '[-a-z]*.' . DOMAIN . '$#';
 
-        $isFromZSubmit = preg_match($pattern, $request->getServer('REMOTE_HOST'), $matches) && $zIdentifier &&
+        $isFromZSubmit = EPISCIENCES_Z_SUBMIT_SECRET_KEY === $request->getPost('z-submit-secret-key') && $zIdentifier &&
             in_array(Episciences_Repositories::ZENODO_REPO_ID , $settings['repositories'], true);
 
         if ($isFromZSubmit) {
