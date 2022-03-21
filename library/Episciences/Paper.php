@@ -2856,14 +2856,21 @@ class Episciences_Paper
     {
         // update paper status
         $status = ($this->isReviewed()) ? self::STATUS_REVIEWED : self::STATUS_BEING_REVIEWED;
+
         $oldStatus = $this->getStatus();
-        if ($oldStatus !== self::STATUS_OBSOLETE &&
-            $oldStatus !== self::STATUS_PUBLISHED &&
-            $oldStatus !== self::STATUS_ACCEPTED &&
-            $oldStatus !== self::STATUS_REFUSED &&
-            $oldStatus !== self::STATUS_WAITING_FOR_MINOR_REVISION &&
-            $oldStatus !== self::STATUS_WAITING_FOR_MAJOR_REVISION &&
-            $oldStatus !== $status) {
+
+        $ignoredStatus = [$status, $oldStatus];
+
+        $ignoredStatus += [
+            self::STATUS_OBSOLETE,
+            self::STATUS_REFUSED,
+            self::STATUS_WAITING_FOR_MINOR_REVISION,
+            self::STATUS_WAITING_FOR_MAJOR_REVISION
+        ];
+
+        $ignoredStatus += self::$_canBeAssignedDOI;
+
+        if (!in_array($oldStatus, $ignoredStatus, true)) {
             $this->setStatus($status);
             $this->save();
             // log new paper status
@@ -3004,6 +3011,7 @@ class Episciences_Paper
     {
         return in_array($this->getStatus(), [
             self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
+            self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
             self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
             self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
             self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,

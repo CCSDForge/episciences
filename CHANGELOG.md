@@ -56,7 +56,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ##Fixed
 - Multiple roles: ignore the "member" role when merging two accounts.
 
-## Unreleased
+## 1.0.27.4 - 2022-03-21
+### Fixed
+- Fixes and enhancements for zbMATH Open format
+
+## 1.0.27.3 - 2022-03-18
+### Fixed
+- Ratings submitted late after the start of the layout process caused the status of the article to be updated (rolled back).
+- There is no need to review an article while it is being formatted by the author.
+
+## 1.0.27.2 - 2022-03-18
 ### Fixed
 - "Copy editor" role not authorized accessing to the public page of the paper
  and report a conflict of interest, if the option has been activated by the journal

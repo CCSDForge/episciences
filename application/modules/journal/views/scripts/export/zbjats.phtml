@@ -69,6 +69,13 @@ $timestamp = time();
 
         <article-meta>
             <article-id pub-id-type="doi"><?php echo htmlentities($this->doi, ENT_XML1); ?></article-id>
+
+            <?php if ($paper->getRepoid() === 2): ?>
+                <article-id pub-id-type="arxiv"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
+            <?php elseif($paper->getRepoid() === 1):?>
+                <article-id pub-id-type="hal"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
+            <?php endif; ?>
+
             <article-id
                     pub-id-type="publisher-id"><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?></article-id>
 
@@ -100,7 +107,7 @@ $timestamp = time();
                 <?php
                 if (is_array($authors)) {
                     foreach ($authors as $creatorName) {
-                        list($familyName, $givenName) = explode(', ', $creatorName);
+                        [$familyName, $givenName] = explode(', ', $creatorName);
                         ?>
                         <contrib contrib-type="author">
                             <name>
@@ -140,43 +147,49 @@ $timestamp = time();
                 <?php $abstractCount = 0; ?>
                 <?php foreach ($abstracts as $lang => $abstract) {
 
-                if (!$lang || !Zend_Locale::isLocale($lang)) {
-                    $lang = $this->paperLanguage;
-                    //default to paper language
-                }
-
-                if ($abstractCount === 0): ?>
-                    <abstract
-                            xml:lang="<?php echo $this->escape($lang) ?>">
-                        <p>
-                            <?php echo $this->escape($abstract) ?>
-                        </p>
-                    </abstract>
-                    <?php $abstractCount++; ?>
-                <?php elseif ($abstractCount == 1) : ?>
-                    <trans-abstract xml:lang="<?php echo $this->escape($lang) ?>">
-                        <p><?php echo $this->escape($abstract) ?></p>
-                    </trans-abstract>
-                <?php endif; ?>
+                    if (!$lang || !Zend_Locale::isLocale($lang)) {
+                        $lang = $this->paperLanguage;
+                        //default to paper language
+                    }
+                    if ($abstract === 'International audience') {
+                        continue;
+                    }
+                    if ($abstractCount === 0): ?>
+                        <abstract xml:lang="<?php echo $this->escape($lang) ?>">
+                            <p><?php echo $this->escape($abstract) ?></p>
+                        </abstract>
+                        <?php $abstractCount++; ?>
+                    <?php elseif ($abstractCount == 1) : ?>
+                        <trans-abstract xml:lang="<?php echo $this->escape($lang) ?>">
+                            <p><?php echo $this->escape($abstract) ?></p>
+                        </trans-abstract>
+                    <?php endif; ?>
                 <?php } ?>
             <?php endif; ?>
 
             <?php if (is_array($subjects)): ?>
-                <kwd-group>
-                    <?php
-                    $langSubject = '';
-                    foreach ($subjects as $lang => $keyword) {
-                        if (is_array($keyword)) {
-                            foreach ($keyword as $kwdLang => $kwd) {
-                                echo PHP_EOL . '<kwd>' . $this->escape($kwd) . '</kwd>';
-                            }
-                        } else {
-                            echo PHP_EOL . '<kwd>' . $this->escape($keyword) . '</kwd>';
+
+                <?php
+                $keywordByLang = [];
+                foreach ($subjects as $keyword) {
+                    if (is_array($keyword)) {
+                        foreach ($keyword as $kwdLang => $kwd) {
+                            $keywordByLang[$kwdLang][] = '<kwd>' . $this->escape($kwd) . '</kwd>';
                         }
                     }
-                    ?>
-                </kwd-group>
+                }
+                if (!empty($keywordByLang)) {
+                    foreach ($keywordByLang as $keywordByLangIndex => $keywordByLangValue) {
+                        printf('<kwd-group xml:lang="%s">', $keywordByLangIndex);
+                        echo implode(PHP_EOL, $keywordByLangValue);
+                        echo '</kwd-group>';
+                    }
+                }
+                ?>
             <?php endif; ?>
+            <permissions>
+                <license license-type="open-access"/>
+            </permissions>
 
         </article-meta>
     </front>
