@@ -430,7 +430,7 @@ class ReviewerController extends PaperDefaultController
 
 
         $editorialCommitteeTags = [
-            Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getFullName(),
+            Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getScreenName(),
             Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME => $user->getScreenName(),
             Episciences_Mail_Tags::TAG_PAPER_URL => $adminPaperUrl
         ];

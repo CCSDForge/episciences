@@ -1047,7 +1047,7 @@ class Episciences_Mail_Reminder
             } else {
                 $user = new Episciences_User;
                 $user->findWithCAS($data['UID']);
-                $fullname = $user->getFullName();
+                $fullname = $user->getScreenName();
                 $lang = $user->getLangueid(true);
                 $invitation_url .= $lang;
             }
@@ -1198,7 +1198,7 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getFullName(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
                         Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()];
 
@@ -1341,7 +1341,7 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getFullName(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
                         Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()];
 

@@ -2296,7 +2296,7 @@ class PaperController extends PaperDefaultController
                 $ratingDisplay = Ccsd_Tools::clear_nl(Ccsd_Tools::br2space($ratingDisplay));
 
                 $editorTags = $commonTags + [
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getFullName(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getScreenName(),
                         Episciences_Mail_Tags::TAG_PAPER_RATING => $ratingDisplay,
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $recipient->getUsername(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $recipient->getScreenName(),

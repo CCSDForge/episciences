@@ -495,7 +495,7 @@ class Ccsd_User_Models_User
         return $this;
     }
 
-    public function getFullName()
+    public function getFullName(): string
     {
         return Ccsd_Tools::formatUser($this->getFirstname(), $this->getLastname());
     }

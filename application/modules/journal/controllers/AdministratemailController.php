@@ -634,6 +634,7 @@ class AdministratemailController extends Zend_Controller_Action
                 'firstname' => $user->getFirstname(),
                 'lastname' => $user->getLastname(),
                 'fullname' => $user->getFullName(),
+                'screen_name' => $user->getScreenName(),
                 'mail' => $user->getEmail()
             ];
 

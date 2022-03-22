@@ -43,7 +43,7 @@ class Episciences_Mail_Send
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
-            'value' => Episciences_Auth::getFullName() . ' <' . RVCODE . '@' . DOMAIN . '>'));
+            'value' => Episciences_Auth::getScreenName() . ' <' . RVCODE . '@' . DOMAIN . '>'));
 
         // reply-to
         // default reply-to: recipient name <recipient@domain.com>
@@ -51,30 +51,39 @@ class Episciences_Mail_Send
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
-            'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>'));
+            'value' => Episciences_Auth::getScreenName() . ' <' . Episciences_Auth::getEmail() . '>'));
 
         $title = $translator->translate('Ajouter des destinataires');
 
         // to
         $to_element = self::getElementName('to', $prefix);
+
+        $form->addElement('text', $to_element);
+
+
         if (!$to_enabled) {
-            $form->addElement('text', $to_element, [
+
+            $options = [
                 'label' => 'À',
-                'disabled' => true,
-            ]);
+                'disabled' => true
+            ];
+
+
+            $form->addElement('text', $to_element, $options);
+
+
         } else {
-            $form->addElement('text', $to_element, [
+
+            $options = [
                 'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=to">' . $translator->translate('À') . '</a>',
                 'class' => 'autocomplete'
-            ]);
 
-            $decorators = $form->getElement($to_element)->getDecorators();
+            ];
 
-            $form->getElement($to_element)
-                ->clearDecorators()
-                ->addDecorator(array('openDiv' => 'HtmlTag'), array('tag' => 'span', 'id' => 'to_tags', 'placement' => 'APPEND', 'openOnly' => true))
-                ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
-                ->addDecorators($decorators);
+            $form->addElement('text', $to_element, $options);
+
+            self::decorate($form->getElement($to_element));
+
         }
 
         $form->addElement('hidden', self::getElementName('hidden_to', $prefix));
@@ -87,13 +96,8 @@ class Episciences_Mail_Send
             'class' => 'autocomplete'
         ]);
 
-        $decorators = $form->getElement($cc_element)->getDecorators();
 
-        $form->getElement($cc_element)
-            ->clearDecorators()
-            ->addDecorator(array('openDiv' => 'HtmlTag'), array('tag' => 'span', 'id' => 'cc_tags', 'placement' => 'APPEND', 'openOnly' => true))
-            ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
-            ->addDecorators($decorators);
+        self::decorate($form->getElement($cc_element));
 
         $form->addElement('hidden', self::getElementName('hidden_cc', $prefix));
 
@@ -104,13 +108,7 @@ class Episciences_Mail_Send
             'class' => 'autocomplete'
         ]);
 
-        $decorators = $form->getElement($bcc_element)->getDecorators();
-
-        $form->getElement($bcc_element)
-            ->clearDecorators()
-            ->addDecorator(array('openDiv' => 'HtmlTag'), array('tag' => 'span', 'id' => 'bcc_tags', 'placement' => 'APPEND', 'openOnly' => true))
-            ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
-            ->addDecorators($decorators);
+        self::decorate($form->getElement($bcc_element));
 
         $form->addElement('hidden', self::getElementName('hidden_bcc', $prefix));
 
@@ -125,11 +123,11 @@ class Episciences_Mail_Send
         $form->addElement('checkbox', self::getElementName('copy', $prefix), array(
             'uncheckedValue' => null,
             'label' => "Recevoir une copie de ce message",
-            'decorators' => array(
+            'decorators' => [
                 'ViewHelper',
-                array('Label', array('placement' => 'APPEND')),
-                array('HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3'))
-            )
+                ['Label', array('placement' => 'APPEND')],
+                ['HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3')]
+            ]
         ));
 
         // Git #61
@@ -249,5 +247,23 @@ class Episciences_Mail_Send
         }
 
         return true;
+    }
+
+    private static function decorate(Zend_Form_Element $element): Zend_Form_Element
+    {
+
+        $decorators = $element->getDecorators();
+
+        try {
+            $element->clearDecorators()
+                ->addDecorator(['openDiv' => 'HtmlTag'], ['tag' => 'span', 'id' => 'bcc_tags', 'placement' => 'APPEND', 'openOnly' => true])
+                ->addDecorator(['closeDiv' => 'HtmlTag'], ['tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true])
+                ->addDecorators($decorators);
+        } catch (Zend_Form_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        return $element;
+
     }
 }
