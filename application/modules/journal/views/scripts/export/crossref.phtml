@@ -49,10 +49,10 @@ http://www.crossref.org/schema/4.8.1 "
                 <issn media_type="electronic"><?php echo $this->escape($issn); ?></issn>
             <?php endif; ?>
             <?php if ($journalDoi) : ?>
-            <doi_data>
-                <doi><?php echo $this->escape($journalDoi); ?></doi>
-                <resource><?php echo $this->escape($journalUrl); ?></resource>
-            </doi_data>
+                <doi_data>
+                    <doi><?php echo $this->escape($journalDoi); ?></doi>
+                    <resource><?php echo $this->escape($journalUrl); ?></resource>
+                </doi_data>
             <?php endif; ?>
         </journal_metadata>
         <journal_issue>
@@ -75,14 +75,14 @@ http://www.crossref.org/schema/4.8.1 "
             <titles>
                 <?php $titleCount  = 0; ?>
                 <?php foreach ($titles as $lang => $title) : ?>
-                <?php
-                if ($titleCount == 0): ?>
-                     <title><?php echo $this->escape($title) ?></title>
-                    <?php $titleCount++; ?>
-                <?php elseif ($titleCount == 1) :?>
-                    <original_language_title language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
-                    <?php $titleCount++; ?>
-                <?php endif; ?>
+                    <?php
+                    if ($titleCount == 0): ?>
+                        <title><?php echo $this->escape($title) ?></title>
+                        <?php $titleCount++; ?>
+                    <?php elseif ($titleCount == 1) :?>
+                        <original_language_title language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                        <?php $titleCount++; ?>
+                    <?php endif; ?>
 
 
                 <?php endforeach; ?>
@@ -156,20 +156,27 @@ http://www.crossref.org/schema/4.8.1 "
             </publisher_item>
 
             <program xmlns="http://www.crossref.org/relations.xsd">
-                <related_item>
-                    <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
-                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
-                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix(2) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
-                    <?php else: ?>
-                        <intra_work_relation identifier-type="uri" relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
-                    <?php endif; ?>
 
-                    <?php if (!empty($this->previousVersionsUrl)) :?>
+                <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
+                    <related_item>
+                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                    </related_item>
+                    <related_item>
+                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix(2) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                    </related_item>
+                <?php else: ?>
+                    <related_item>
+                        <intra_work_relation identifier-type="uri" relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
+                    </related_item>
+                <?php endif; ?>
+
+                <?php if (!empty($this->previousVersionsUrl)) :?>
                     <?php foreach ($this->previousVersionsUrl as $preprintUrl) { ?>
-                        <intra_work_relation identifier-type="uri" relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
+                        <related_item>
+                            <intra_work_relation identifier-type="uri" relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
+                        </related_item>
                     <?php } ?>
-                    <?php endif; ?>
-                </related_item>
+                <?php endif; ?>
             </program>
 
             <doi_data>
