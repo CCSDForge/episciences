@@ -14,6 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.28 - 2022-03-23
+### Changed
+- Bump crossref schema to ver 4.8.1
+- arXiv URLs now links to https version instead of http
+
+### Added
+- Crossref metadata export format for DOI:
+  - add previous version URLs, link with relationship 'hasPreprint' to link preprints versions with the published version
+  - add arXiv DOIs, link to journal's published DOI with 'isSameAs' relationship
+  - add full text PDF URLs for Crossref 'Similarity Check' service
+  
 ## 1.0.27.5 - 2022-03-21
 ### Fixed
 - Fixes and enhancements for zbMATH Open format
