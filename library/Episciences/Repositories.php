@@ -45,7 +45,7 @@ class Episciences_Repositories
             // identifier example: 1511.01076
             self::REPO_LABEL => 'arXiv',
             self::REPO_EXAMPLE => '0123.45678',
-            self::REPO_BASEURL => 'https://export.arXiv.org/oai2',
+            self::REPO_BASEURL => 'http://export.arXiv.org/oai2',
             self::REPO_IDENTIFIER => 'oai:arXiv.org:%%ID',
             self::REPO_DOCURL => 'https://arxiv.org/abs/%%IDv%%VERSION',
             self::REPO_PAPERURL => 'https://arxiv.org/pdf/%%IDv%%VERSION',
