@@ -156,20 +156,27 @@ http://www.crossref.org/schema/4.8.1 "
             </publisher_item>
 
             <program xmlns="http://www.crossref.org/relations.xsd">
-                <related_item>
-                    <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
-                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
-                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix(2) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
-                    <?php else: ?>
-                        <intra_work_relation identifier-type="uri" relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
-                    <?php endif; ?>
 
-                    <?php if (!empty($this->previousVersionsUrl)) :?>
+                <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
+                    <related_item>
+                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                    </related_item>
+                    <related_item>
+                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix(2) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                    </related_item>
+                <?php else: ?>
+                    <related_item>
+                        <intra_work_relation identifier-type="uri" relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
+                    </related_item>
+                <?php endif; ?>
+
+                <?php if (!empty($this->previousVersionsUrl)) :?>
                     <?php foreach ($this->previousVersionsUrl as $preprintUrl) { ?>
-                        <intra_work_relation identifier-type="uri" relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
+                        <related_item>
+                            <intra_work_relation identifier-type="uri" relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
+                        </related_item>
                     <?php } ?>
-                    <?php endif; ?>
-                </related_item>
+                <?php endif; ?>
             </program>
 
             <doi_data>
