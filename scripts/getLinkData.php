@@ -104,17 +104,26 @@ class getLinkData extends JournalScript
             ->from('PAPERS','DOI')
             ->where('DOI IS NOT NULL');
         foreach ($db->fetchCol($select) as $value){
-            Zend_Debug::dump($value);
+            $value = trim($value);
+            if ($value === '') {
+                continue;
+            }
+
             $apiResult = $client->get("http://api.scholexplorer.openaire.eu/v1/linksFromPid?pid=".$value,[
                 'headers' => [
+                    'User-Agent' => 'CCSD Episciences support@episciences.org',
                     'Content-Type' => 'application/json',
                     'Accept'=> 'application/json'
                 ]
             ])->getBody()->getContents();
 
             if (!empty(json_decode($apiResult,true)[0])){
-                file_put_contents('../data/'.explode("/",$value)[1].".json",$apiResult);
+                echo PHP_EOL . 'Found: ' . $value;
+                file_put_contents('../data/scholexplorer/'.explode("/",$value)[1].".json",$apiResult);
+            } else {
+                echo PHP_EOL . 'No match: ' . $value;
             }
+
             sleep(1);
         }
     }
