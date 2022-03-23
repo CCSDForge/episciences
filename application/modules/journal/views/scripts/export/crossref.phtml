@@ -28,10 +28,10 @@ if (defined('RVISSN')) {
 $timestamp = time();
 ?>
 <doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://www.crossref.org/schema/4.4.2 https://www.crossref.org/schemas/crossref4.4.2.xsd
-http://www.crossref.org/schema/4.4.2 "
-           xmlns="http://www.crossref.org/schema/4.4.2" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1"
-           version="4.4.2">
+           xsi:schemaLocation="http://www.crossref.org/schema/4.8.1 https://www.crossref.org/schemas/crossref4.8.1.xsd
+http://www.crossref.org/schema/4.8.1 "
+           xmlns="http://www.crossref.org/schema/4.8.1" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1"
+           version="4.8.1">
     <head>
         <doi_batch_id><?php echo DOMAIN . '_' . $paper->getPaperid() . '_' . $timestamp; ?></doi_batch_id>
         <timestamp><?php echo $timestamp; ?></timestamp>
@@ -93,9 +93,7 @@ http://www.crossref.org/schema/4.4.2 "
             if (is_array($authors)) { ?>
                 <contributors>
                     <?php
-                    foreach ($authors
-
-                    as $order => $creatorName) {
+                    foreach ($authors as $order => $creatorName) {
                     list($familyName, $givenName) = explode(', ', $creatorName);
                     ?>
                     <?php if ($order === 0) : ?>
@@ -160,11 +158,16 @@ http://www.crossref.org/schema/4.4.2 "
             <program xmlns="http://www.crossref.org/relations.xsd">
                 <related_item>
                     <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
-                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">
-                            arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix(2) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     <?php else: ?>
-                        <intra_work_relation identifier-type="uri"
-                                             relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="uri" relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
+                    <?php endif; ?>
+
+                    <?php if (!empty($this->previousVersionsUrl)) :?>
+                    <?php foreach ($this->previousVersionsUrl as $preprintUrl) { ?>
+                        <intra_work_relation identifier-type="uri" relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
+                    <?php } ?>
                     <?php endif; ?>
                 </related_item>
             </program>
@@ -172,6 +175,11 @@ http://www.crossref.org/schema/4.4.2 "
             <doi_data>
                 <doi><?php echo htmlentities($this->doi, ENT_XML1); ?></doi>
                 <resource><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></resource>
+                <collection property="crawler-based">
+                    <item crawler="iParadigms">
+                        <resource><?php echo $journalUrl . '/' . $paper->getPaperid() . '/pdf'; ?></resource>
+                    </item>
+                </collection>
             </doi_data>
 
         </journal_article>
