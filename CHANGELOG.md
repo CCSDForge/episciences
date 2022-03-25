@@ -14,10 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+
 ## Unreleased
 ## added
-- API to get a list of publishing journals: include accepted repositories. 
-
+- API to get a list of publishing journals: include accepted repositories.
 - New article status:
 * Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
 * Accepted - waiting for author's final version
@@ -57,11 +58,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple roles: ignore the "member" role when merging two accounts.
 - [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names + refactoring 
 
+## 1.0.28 - 2022-03-23
+### Changed
+- Bump crossref schema to ver 4.8.1
+- arXiv URLs now links to https version instead of http
+
+### Added
+- Crossref metadata export format for DOI:
+  - add previous version URLs, link with relationship 'hasPreprint' to link preprints versions with the published version
+  - add arXiv DOIs, link to journal's published DOI with 'isSameAs' relationship
+  - add full text PDF URLs for Crossref 'Similarity Check' service
+  
 ## 1.0.27.5 - 2022-03-21
 ### Fixed
 - Fixes and enhancements for zbMATH Open format
 - Adding Polyfill PHP 8.0
-
 
 ## 1.0.27.4 - 2022-03-21
 ### Fixed
