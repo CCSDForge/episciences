@@ -1339,9 +1339,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@symfony/webpack-encore@npm:^1.8.1":
-  version: 1.8.1
-  resolution: "@symfony/webpack-encore@npm:1.8.1"
+"@symfony/webpack-encore@npm:^1.8.2":
+  version: 1.8.2
+  resolution: "@symfony/webpack-encore@npm:1.8.2"
   dependencies:
     "@babel/core": ^7.7.0
     "@babel/plugin-syntax-dynamic-import": ^7.0.0
@@ -1370,7 +1370,7 @@ __metadata:
     yargs-parser: ^20.2.4
   bin:
     encore: bin/encore.js
-  checksum: 0bbcc49618428331794ac39e279c85e06fc3831b4d544417221a7957c95ba72af945b88d4b63c754fc54a7acba2f246bdcc04e98c2e5ed3e56fb72ef7390cabb
+  checksum: 7dcd1dc7a36990a9db11f142eaaf179d136a294841979d44e402d65f6a471e89487451c71f053853af77ec38d17df4b5dc1f637011cdb32d2ec8b167b0d7fe1f
   languageName: node
   linkType: hard
 
@@ -5912,12 +5912,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@symfony/webpack-encore": ^1.8.1
+    "@symfony/webpack-encore": ^1.8.2
     compass-mixins: ^0.12.11
     resolve-url-loader: ^5.0.0
     sass: ^1.49.9
     sass-loader: ^12.6.0
-    ts-loader: ^9.2.7
+    ts-loader: ^9.2.8
     typescript: ^4.6.2
     webpack-notifier: ^1.15.0
   languageName: unknown
@@ -6623,9 +6623,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-loader@npm:^9.2.7":
-  version: 9.2.7
-  resolution: "ts-loader@npm:9.2.7"
+"ts-loader@npm:^9.2.8":
+  version: 9.2.8
+  resolution: "ts-loader@npm:9.2.8"
   dependencies:
     chalk: ^4.1.0
     enhanced-resolve: ^5.0.0
@@ -6634,7 +6634,7 @@ __metadata:
   peerDependencies:
     typescript: "*"
     webpack: ^5.0.0
-  checksum: ef2c2a8e3c2d90025dae0838d20411b961a550ee6eee7fcafc5e8dbbcd8bf814d18519bb25cf0be72f483e8f5f485be9681e6d1c02392f34c2c55af8d4e70351
+  checksum: 3afd9a4cc1d46738ac3f2decc7dfa655e0183d4d2d48c7a113ea9f3ac313304f54be59252cde2ef04757c791e28cfcfc63323d3dd1f2f949485242c1ea4835e5
   languageName: node
   linkType: hard
 
