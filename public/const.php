@@ -257,6 +257,5 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('EPISCIENCES_API_URL', '');
         define('EPISCIENCES_API_SECRET_KEY', '');
         define('EPISCIENCES_UID',  0);
-        define('EPISCIENCES_Z_SUBMIT_SECRET_KEY', '');
     }
 }
