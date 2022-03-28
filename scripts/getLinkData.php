@@ -101,15 +101,15 @@ class getLinkData extends JournalScript
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->distinct('DOI')
-            ->from('PAPERS','DOI')
-            ->where('DOI IS NOT NULL');
-        foreach ($db->fetchCol($select) as $value){
-            $value = trim($value);
-            if ($value === '') {
-                continue;
-            }
-
-            $apiResult = $client->get("http://api.scholexplorer.openaire.eu/v1/linksFromPid?pid=".$value,[
+            ->from('PAPERS',['DOI','DOCID'])
+            ->where('DOI IS NOT NULL')->limit('10');
+        $docId = '';
+        foreach ($db->fetchAll($select) as $value){
+            $docId = $value['DOCID'];
+            // a changer car utilisé
+            // -10.2168/LMCS-1(1:2)2005
+            // -10.46298/jdmdh.5
+            $apiResult = $client->get("http://api.scholexplorer.openaire.eu/v1/linksFromPid?pid=10.2168/LMCS-1(1:2)2005",[
                 'headers' => [
                     'User-Agent' => 'CCSD Episciences support@episciences.org',
                     'Content-Type' => 'application/json',
@@ -118,8 +118,25 @@ class getLinkData extends JournalScript
             ])->getBody()->getContents();
 
             if (!empty(json_decode($apiResult,true)[0])){
-                echo PHP_EOL . 'Found: ' . $value;
-                file_put_contents('../data/scholexplorer/'.explode("/",$value)[1].".json",$apiResult);
+                //echo PHP_EOL . 'Found: ' . $value;
+                $fileName = '../data/scholexplorer/LMCS-1(1:2)2005.json';// test '../data/scholexplorer/'.explode("/",$value)[1].".json";
+                if (!file_exists($fileName)){
+                    file_put_contents($fileName,$apiResult);
+                }
+                $arrayResult = json_decode(file_get_contents($fileName), true, 512, JSON_THROW_ON_ERROR);
+                $targetString = json_encode($arrayResult[0]['target'], JSON_THROW_ON_ERROR);
+                //$lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext'=>$targetString]);
+                foreach ($arrayResult[0]['target']['identifiers'] as $key => $identifier) {
+                    $identifierDoi = $identifier['identifier'];
+                    $schemaName = $identifier['schema'];
+                    $code = "null";
+                    $sourceId = '5';
+
+                    var_dump($identifierDoi,$schemaName,$code,$sourceId,$docId);
+                }
+
+                die;
+
             } else {
                 echo PHP_EOL . 'No match: ' . $value;
             }
