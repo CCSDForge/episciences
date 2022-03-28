@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CWI is removed now: OAI is down.
 - Code Refactoring fixing of warning
 - It is now possible to re-point the version in Episciences to the most recent version in the open archive.
+- Submission from episciences-zenodo: first submission.
 
 ##Fixed
 - Multiple roles: ignore the "member" role when merging two accounts.
