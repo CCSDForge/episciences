@@ -469,7 +469,7 @@ class UserDefaultController extends Zend_Controller_Action
             $user = new Episciences_User($form->getValues());
             $user->setTime_registered();
             $user->setRegistration_date(); // Episciences registration
-            $user->setScreenName(Ccsd_Tools::formatUser($user->getFirstname(), $user->getLastname()));
+            $user->setScreenName();
 
             if ($isAllowedToAddUserAccounts) {
                 // admin: new account does not need to be activated, no mail is sent

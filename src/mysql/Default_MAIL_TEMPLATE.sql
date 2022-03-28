@@ -3,7 +3,7 @@
 -- Dumping default data for table `MAIL_TEMPLATE`
 --
 
-INSERT INTO `MAIL_TEMPLATE` (`PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, `POSITION`) VALUES
+INSERT INTO `MAIL_TEMPLATE` (`ID`, `PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, `POSITION`) VALUES
 (NULL, NULL, NULL, NULL, 'user_registration', 'user', 1),
 (NULL, NULL, NULL, NULL, 'paper_revision_answer', 'paper_revision', 2),
 (NULL, NULL, NULL, NULL, 'paper_tmp_version_submitted', 'paper_revision', 3),

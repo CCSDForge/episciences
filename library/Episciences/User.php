@@ -316,17 +316,18 @@ class Episciences_User extends Ccsd_User_Models_User
         return str_replace('/', ' ', $_screenName);
     }
 
-    public function getScreenName()
+    public function getScreenName(): string
     {
 
-        return $this->_screenName;
+        return $this->_screenName ?: $this->getFullName();
     }
 
-    public function setScreenName($_screenName = null)
+    public function setScreenName($_screenName = null): Episciences_User
     {
-        if ($_screenName == '') {
-            $_screenName = Ccsd_Tools::formatAuthor($this->getFirstname(), $this->getLastname());
+        if (empty($_screenName)) {
+            $_screenName = Ccsd_Tools::formatUser($this->getFirstname(), $this->getLastname());
         }
+
         $_screenName = self::cleanScreenName($_screenName);
         $this->_screenName = filter_var($_screenName, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
@@ -345,11 +346,6 @@ class Episciences_User extends Ccsd_User_Models_User
     {
         $this->_langueid = $_langueid;
         return $this;
-    }
-
-    public function getFullName()
-    {
-        return Episciences_Tools::formatUser($this->getFirstname(), $this->getLastname());
     }
 
     public function getAllRoles()

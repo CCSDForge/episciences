@@ -1,11 +1,11 @@
 <script>
-    var sender_uid = <?php echo Episciences_Auth::getUid(); ?>;
-    var target = '<?php echo $this->target ?>';
-    var all_contacts = <?php echo $this->js_contacts ?>;
+    var sender_uid = <?= Episciences_Auth::getUid() ?>;
+    var target = '<?= $this->target ?>';
+    var all_contacts = <?= $this->js_contacts ?>;
 
 
     <?php
-    define('JS_PREFIX', 'js_');
+    const JS_PREFIX = 'js_';
 
     $jsRoles = [
         Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL => 'Rédacteurs en chef',
@@ -19,7 +19,7 @@
 
     foreach (array_keys($jsRoles) as $jsRoleName) {
         $jsRoleNamePrefixed = JS_PREFIX . $jsRoleName;
-        if ((isset($this->$jsRoleNamePrefixed)) && ($this->$jsRoleNamePrefixed != '')) {
+        if ((isset($this->$jsRoleNamePrefixed)) && !(empty($this->$jsRoleNamePrefixed))) {
             echo PHP_EOL . "var $jsRoleName = " . $this->$jsRoleNamePrefixed . ';';
         }
     }
@@ -27,7 +27,7 @@
     $.ajaxSetup({
         cache: true
     });
-    var url = "/js/administratemail/get-contacts.js?_=v<?php echo APPLICATION_VERSION; ?>";
+    var url = "/js/administratemail/get-contacts.js?_=v<?= APPLICATION_VERSION ?>";
     $.getScript(url)
 
         .done(function() {
@@ -43,12 +43,12 @@
 
 <div id="contact-type-dropdown" class="btn-group">
     <button class="btn btn-default dropdown-toggle" type="button" id="contact-type-button" data-toggle="dropdown">
-        <span><?php echo $this->translate('Tous les contacts'); ?></span>
+        <span><?= $this->translate('Tous les contacts'); ?></span>
         <span class="caret"></span>
     </button>
     <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
         <li role="presentation" data-value="all_contacts">
-            <a role="menuitem" tabindex="-1" href="#"><?php echo $this->translate('Tous les contacts'); ?></a>
+            <a role="menuitem" tabindex="-1" href="#"><?= $this->translate('Tous les contacts') ?></a>
         </li>
         <li role="presentation" class="divider"></li>
 
@@ -56,7 +56,7 @@
 
         foreach ($jsRoles as $jsRoleCode => $jsRoleName) {
             $jsRoleNamePrefixed = JS_PREFIX . $jsRoleCode;
-            if ((isset($this->$jsRoleNamePrefixed)) && ($this->$jsRoleNamePrefixed != '')) {
+            if ((isset($this->$jsRoleNamePrefixed)) && !empty($this->$jsRoleNamePrefixed)) {
                 echo '<li role="presentation" data-value="' . $jsRoleCode . '">
             <a role="menuitem" tabindex="-1" href="#">';
                 echo $this->translate($jsRoleName);
@@ -69,26 +69,26 @@
 
 <div style="float: right">
     <input class="form-control" id="filter-input" type="text"
-           placeholder="<?php echo $this->translate('Filtrer les contacts') ?>">
+           placeholder="<?= $this->translate('Filtrer les contacts') ?>">
 </div>
 
 <div id="toggleAll" style="margin: 20px 0 5px 10px;" data-action="select">
-    <span class="checkbox-label"><strong><?php echo $this->translate('Tout sélectionner') ?></strong></span>
+    <span class="checkbox-label"><strong><?= $this->translate('Tout sélectionner') ?></strong></span>
 </div>
 <div id="contact-list">
 
     <?php if (!empty($this->contacts)) : ?>
         <table>
             <?php foreach ($this->contacts as $contact) : ?>
-                <tr id="contact_<?php echo $contact['uid']; ?>">
-                    <td><?php echo $contact['fullname']; ?></td>
-                    <td class="grey"><?php echo $contact['username']; ?></td>
-                    <td><?php echo $contact['mail']; ?></td>
+                <tr id="contact_<?= $contact['uid'] ?>">
+                    <td><?= $contact['screen_name'] ?></td>
+                    <td class="grey"><?= $contact['username'] ?></td>
+                    <td><?= $contact['mail'] ?></td>
                 </tr>
             <?php endforeach; ?>
         </table>
     <?php else : ?>
-        <?php echo $this->translate('Aucun destinataire'); ?>
+        <?= $this->translate('Aucun destinataire') ?>
     <?php endif; ?>
 
 </div>

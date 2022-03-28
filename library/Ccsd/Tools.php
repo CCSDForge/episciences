@@ -365,19 +365,19 @@ class Ccsd_Tools
      * @param string
      * @return string
      */
-    public static function upperWord($string = "")
+    public static function upperWord($string = ""): string
     {
-        if (strlen($string) == 0) {
+        if ($string === '') {
             return '';
         }
-        $string = strtolower(self::space_clean($string));
-        $res = mb_strtoupper(substr($string, 0, 1));
-        for ($i = 1, $iMax = strlen($string); $i < $iMax; $i++) {
-            $theIchar = substr($string, ($i - 1), 1);
-            if ($theIchar == "-" || $theIchar == "'" || $theIchar == " " || $theIchar == ".") {
-                $res .= mb_strtoupper(substr($string, $i, 1));
+        $string = mb_strtolower(self::space_clean($string));
+        $res = mb_strtoupper(mb_substr($string, 0, 1));
+        for ($i = 1, $iMax = mb_strlen($string); $i < $iMax; $i++) {
+            $theIchar = mb_substr($string, ($i - 1), 1);
+            if ($theIchar === "-" || $theIchar === "'" || $theIchar === " " || $theIchar === ".") {
+                $res .= mb_strtoupper(mb_substr($string, $i, 1));
             } else {
-                $res .= substr($string, $i, 1);
+                $res .= mb_substr($string, $i, 1);
             }
         }
         // Particules patronymiques
