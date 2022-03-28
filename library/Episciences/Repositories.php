@@ -47,9 +47,10 @@ class Episciences_Repositories
             self::REPO_EXAMPLE => '0123.45678',
             self::REPO_BASEURL => 'http://export.arXiv.org/oai2',
             self::REPO_IDENTIFIER => 'oai:arXiv.org:%%ID',
-            self::REPO_DOCURL => 'http://arxiv.org/abs/%%IDv%%VERSION',
-            self::REPO_PAPERURL => 'http://arxiv.org/pdf/%%IDv%%VERSION',
-            self::REPO_TYPE => self::TYPE_PAPERS
+            self::REPO_DOCURL => 'https://arxiv.org/abs/%%IDv%%VERSION',
+            self::REPO_PAPERURL => 'https://arxiv.org/pdf/%%IDv%%VERSION',
+            self::REPO_TYPE => self::TYPE_PAPERS,
+            self::REPO_DOI_PREFIX => '10.48550'
         ],
         [
             self::REPO_LABEL => 'CWI',

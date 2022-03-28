@@ -158,6 +158,17 @@ class ExportController extends Zend_Controller_Action
         $paper = $this->getPaperToExport();
 
 
+        $previousVersionsUrl = [];
+        $previousVersions = $paper->getPreviousVersions(false);
+        if (!empty($previousVersions)) {
+            foreach ($previousVersions as $paperVersions) {
+                /** Episciences_Paper $paperVersions */
+                if ($paperVersions instanceof Episciences_Paper) {
+                    $previousVersionsUrl[] = $paperVersions->getDocUrl();
+                }
+            }
+        }
+
         $volume = '';
         $section = '';
 
@@ -196,6 +207,7 @@ class ExportController extends Zend_Controller_Action
         $this->view->journal = $journal;
         $this->view->paper = $paper;
         $this->view->doi = $doi;
+        $this->view->previousVersionsUrl = $previousVersionsUrl;
 
         $paperLanguage = $paper->getMetadata('language');
 
