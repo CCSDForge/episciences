@@ -18,23 +18,64 @@ class Episciences_User extends Ccsd_User_Models_User
     protected $_screenName;
 
     /** @var array */
-    protected $_aliases = [];
+    protected array $_aliases = [];
 
     /**
      * @var string
      */
-    protected $_api_password;
+    protected string $_api_password;
     /**
      * @var int
      */
-    protected $_is_valid = 1;
+    protected int $_is_valid = 1;
     protected $_registration_date;
     protected $_modification_date;
 
-    private $_papersNotInConflict = [];
+    private array $_papersNotInConflict = [];
 
-    protected $_orcid = null;
-    protected $_affiliations = null;
+    protected ?string $_orcid = null;
+    protected ?array $_affiliations = null;
+
+    protected ?array $_socialMedias = null;
+    protected ?array $_webSites = null;
+
+
+    /**
+     * @return array
+     */
+    public function getSocialMedias(): ?array
+    {
+        return $this->_socialMedias;
+    }
+
+    /**
+     * @param array|null $socialMedias
+     */
+    public function setSocialMedias(array $socialMedias = null): Episciences_User
+    {
+
+        $this->_socialMedias = Episciences_Tools::arrayFilterString($socialMedias);
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getWebSites(): ?array
+    {
+        return $this->_webSites;
+    }
+
+    /**
+     * @param array|null $webSites
+     */
+    public function setWebSites(array $webSites = null): Episciences_User
+    {
+
+        $this->_webSites = Episciences_Tools::arrayFilterString($webSites, FILTER_VALIDATE_URL,FILTER_FLAG_NONE);
+        return $this;
+    }
+
 
     /**
      * Constructeur d'un utilisateur
@@ -69,7 +110,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
             $key = strtolower($key); // les noms de champs sont en majuscules dans la BDD
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set' . Episciences_Tools::convertToCamelCase($key, '_', true);
+
             if (in_array($method, $methods)) {
                 $this->$method($value);
             }
@@ -301,9 +343,10 @@ class Episciences_User extends Ccsd_User_Models_User
         $res['langueid'] = $this->getLangueid();
         $res['fullname'] = ($this->getFullName()) ?: $this->getScreenName();
         $res['ROLES'] = $this->getAllRoles();
-        $res['email'] = $this->getEmail();
         $res['affiliations'] = $this->getAffiliations();
         $res['orcid'] = $this->getOrcid();
+        $res['web_sites'] = $this->getWebSites();
+        $res['social_medias'] = $this->getSocialMedias();
         return $res;
     }
 
@@ -393,9 +436,36 @@ class Episciences_User extends Ccsd_User_Models_User
             'REGISTRATION_DATE' => $this->getRegistration_date(),
             'MODIFICATION_DATE' => $this->getModification_date(),
             'IS_VALID' => $this->getIs_valid(),
-            'AFFILIATIONS' => !empty($this->getAffiliations()) ? json_encode(Episciences_Tools::implodeOrExplode($this->getAffiliations())) : null,
             'ORCID' => $this->getOrcid()
         ];
+
+        try {
+            $data['AFFILIATIONS'] = !empty($this->getAffiliations()) ? json_encode(Episciences_Tools::implodeOrExplode($this->getAffiliations()), JSON_THROW_ON_ERROR) : null;
+        } catch (JsonException $e) {
+            $data['AFFILIATIONS'] = null;
+            trigger_error($e->getMessage());
+        }
+
+
+        if (!empty($this->getWebSites() || !empty($this->getSocialMedias()))) {
+
+            $addProfileInformations = [
+                'webSites' => $this->getWebSites(),
+                'socialMedias' => $this->getSocialMedias()
+            ];
+
+            try {
+                $data['ADDITIONAL_PROFILE_INFORMATION'] = json_encode($addProfileInformations, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $data['ADDITIONAL_PROFILE_INFORMATION'] = null;
+                trigger_error($e->getMessage());
+            }
+
+        } else {
+            $data['ADDITIONAL_PROFILE_INFORMATION'] = null;
+
+        }
+
 
         // Création des données locales (compte ES + rôle)
 
@@ -517,7 +587,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public function hasLocalData(int $uid = null): bool
     {
 
-        if(!$uid){
+        if (!$uid) {
             $uid = $this->getUid();
         }
 
@@ -576,10 +646,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
     /**
      * Recherche les propriétés locales d'un utilisateur par son UID
-     *
      * @param int $uid
      * @return array
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function find($uid): array
@@ -594,8 +662,19 @@ class Episciences_User extends Ccsd_User_Models_User
             return [];
         }
 
-        if(isset($result['AFFILIATIONS'])){
-            $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true, 512, JSON_THROW_ON_ERROR) : $result['AFFILIATIONS'];
+        if (isset($result['AFFILIATIONS'])) {
+            try {
+                $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true, 512, JSON_THROW_ON_ERROR) : $result['AFFILIATIONS'];
+            } catch (JsonException $e) {
+                $result['AFFILIATIONS'] = null;
+                trigger_error($e->getMessage());
+            }
+        }
+
+        if(isset($result['ADDITIONAL_PROFILE_INFORMATION'])){
+           $this->setAdditionalProfileInformation($result['ADDITIONAL_PROFILE_INFORMATION']);
+           $result['WEB_SITES'] = $this->getWebSites();
+           $result['SOCIAL_MEDIAS'] = $this->getSocialMedias();
         }
 
 
@@ -649,7 +728,7 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         if (!isset($result['IS_VALID'])) {
-            $result['IS_VALID'] = 1;
+            $result['IS_VALID'] = Episciences_UsersManager::VALID_USER;
         } else {
             $result['IS_VALID'] = (int)$result['IS_VALID'];
         }
@@ -1122,8 +1201,41 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function setAffiliations(array $affiliations = null): self
     {
+
         $this->_affiliations = $affiliations;
+
         return $this;
+    }
+
+    /**
+     * @param string|null $additionalProfileInformation
+     *
+     */
+    private function setAdditionalProfileInformation(string $additionalProfileInformation = null): void
+    {
+
+        try {
+
+            $addProfileInfo = Episciences_Tools::isJson($additionalProfileInformation) ? json_decode($additionalProfileInformation, true, 512, JSON_THROW_ON_ERROR) : $additionalProfileInformation;
+
+        } catch (JsonException $e) {
+            $addProfileInfo = null;
+            trigger_error($e->getMessage());
+        }
+
+
+        if ($addProfileInfo) {
+
+            //$affiliations = $addProfileInfo ['affiliations'] ?? null;
+            $webSites = $addProfileInfo ['webSites'] ?? null;
+            $socialMedias = $addProfileInfo ['socialMedias'] ?? null;
+
+            // $this->setAffiliations($affiliations);
+            $this->setWebSites($webSites);
+            $this->setSocialMedias($socialMedias);
+
+        }
+
     }
 
     /**
@@ -1131,7 +1243,7 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function getPapersNotInConflict(): array
     {
-        if(empty($this->_papersNotInConflict)){
+        if (empty($this->_papersNotInConflict)) {
             $this->loadPapersNotInConflict();
         }
 
@@ -1183,7 +1295,7 @@ class Episciences_User extends Ccsd_User_Models_User
         if (count($currentRoles) > 1) {
             $key = array_search(Episciences_Acl::ROLE_MEMBER, $currentRoles, true);
 
-            if($key !== false){
+            if ($key !== false) {
                 unset($currentRoles[$key]);
             }
         }
@@ -1198,4 +1310,5 @@ class Episciences_User extends Ccsd_User_Models_User
 
         return $this;
     }
+
 }

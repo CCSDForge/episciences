@@ -877,6 +877,10 @@ return [
     "Télécopie" => 'Fax',
     "Photo" => 'Picture',
     "Complément de nom" => 'Middle Name',
+    'Réseaux Sociaux' => 'Social media(s)',
+    'Site(s) Web' => 'Web Site(s)',
+    'Veuillez saisir le réseau social que vous souhaitez ajouter' => 'Please enter the social media you wish to add',
+    'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
 
     // User activation
     "Activation de votre compte" => 'Account activation',
@@ -1312,6 +1316,7 @@ return [
     "Aucun article pour le moment" => "No article yet",
     "Modifier le contenu de la page" => "Edit content page",
     "Privilèges" => "Privileges",
+    'rôles' => 'roles',
     "Liste" => "List",
     "Rôles" => "Rights",
     "Paramètres" => "Settings",

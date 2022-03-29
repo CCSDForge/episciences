@@ -37,6 +37,9 @@
 
                 <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $this->user['affiliations']]) ?>
 
+                <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $this->user['web_sites'], 'socialMedias' => $this->user['social_medias']]) ?>
+
+
             </div>
 
             <div class="col-md-5">

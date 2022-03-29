@@ -23,7 +23,7 @@ class Episciences_User_Form_Edit extends Ccsd_User_Form_Accountedit
             $this->addSubForms(["ccsd" => $ccsd_sub_form, "episciences" => $episciences_sub_form]);
             $this->setActions(true);
         } catch (Zend_Config_Exception $zend_Config_Exception) {
-            error_log($zend_Config_Exception->getMessage());
+            trigger_error($zend_Config_Exception->getMessage());
         }
     }
 

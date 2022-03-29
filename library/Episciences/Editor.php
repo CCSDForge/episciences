@@ -21,10 +21,12 @@ class Episciences_Editor extends Episciences_User
 
     public function __construct(array $options = null)
     {
+        parent::__construct($options);
+
         if (is_array($options)) {
             $this->setOptions($options);
         }
-        parent::__construct($options);
+
     }
 
     public function toArray()

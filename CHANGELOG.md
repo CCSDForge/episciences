@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
 - Paper list: temporary versions are now labeled
 - Alert administrators on the existence of papers without assigned editors
+- Social Medias & Websites profile informations.
 
 ## Changed
 - Workflow reviewing
@@ -53,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CWI is removed now: OAI is down.
 - Code Refactoring fixing of warning
 - It is now possible to re-point the version in Episciences to the most recent version in the open archive.
+- [#164](https://github.com/CCSDForge/episciences/issues/164): harmonization of roles/privileges.
 - Submission from episciences-zenodo: first submission.
 
 ##Fixed

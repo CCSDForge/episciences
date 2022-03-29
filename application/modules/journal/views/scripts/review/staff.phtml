@@ -4,6 +4,7 @@
     <?php foreach ($this->staff as $role => $members) : ?>
         <?php if (count($members)) : ?>
             <h2 style="clear: both"><?php echo $this->translate(constant("Episciences_Acl::ROLE_" . mb_strtoupper($role) . "_PLURAL")) ?></h2>
+        <?php /** @var Episciences_User $member */?>
             <?php foreach ($members as $member) : ?>
                 <div class="staff_member col-sm-12">
 
@@ -30,6 +31,10 @@
                         </div>
 
                         <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $member->getAffiliations()]) ?>
+
+                        <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $member->getWebSites(), 'socialMedias' => $member->getSocialMedias()]) ?>
+
+
 
                         <div class="fullname">
 
