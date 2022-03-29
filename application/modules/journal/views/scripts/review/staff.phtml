@@ -2,8 +2,12 @@
 
 <div id="editorial_staff">
     <?php foreach ($this->staff as $role => $members) : ?>
-        <?php if (count($members)) : ?>
-            <h2 style="clear: both"><?php echo $this->translate(constant("Episciences_Acl::ROLE_" . mb_strtoupper($role) . "_PLURAL")) ?></h2>
+        <?php if ($count = count($members)) : ?>
+            <?php
+            $name = "Episciences_Acl::ROLE_" . mb_strtoupper($role);
+            $name = $count > 1 ? $name . "_PLURAL" : $name
+            ?>
+            <h2 style="clear: both"><?= $this->translate(constant($name)) ?></h2>
         <?php /** @var Episciences_User $member */?>
             <?php foreach ($members as $member) : ?>
                 <div class="staff_member col-sm-12">
@@ -11,7 +15,7 @@
                     <div class="col-sm-2">
                         <?php if ($this->isDisplayPhotos !== 0) : ?>
                             <img style="width: 128px"
-                                 src="/user/photo/uid/<?php echo $this->escape($member->getUid()); ?>/size/normal<?php
+                                 src="/user/photo/uid/<?= $this->escape($member->getUid()) ?>/size/normal<?php
                                  if (Episciences_Auth::getUid() === $member->getUid()) {
                                      echo '?v=' . Episciences_Auth::getPhotoVersion();
                                  } ?>"
@@ -26,7 +30,7 @@
                             <?= $this->partial('user/user_orcid.phtml', ['orcid' => $member->getOrcid()]) ?>
 
                             <h3>
-                                <a href="/user/view/userid/<?php echo $this->escape($member->getUid()) ?>"><?php echo $this->escape($member->getScreenName()); ?></a>
+                                <a href="/user/view/userid/<?= $this->escape($member->getUid()) ?>"><?= $this->escape($member->getScreenName()) ?></a>
                             </h3>
                         </div>
 
@@ -40,11 +44,11 @@
 
                             <?php if ((Episciences_Auth::isLogged()) && (Episciences_Auth::isAllowedToSendMail())): ?>
                                 <p>
-                                    <a title="<?php echo $this->translate('Contacter') . ' ' . $this->escape($member->getScreenName()); ?>"
-                                       href="/administratemail/send/recipient/<?php echo $this->escape($member->getUid()); ?>"
+                                    <a title="<?= $this->translate('Contacter') . ' ' . $this->escape($member->getScreenName()) ?>"
+                                       href="/administratemail/send/recipient/<?= $this->escape($member->getUid()) ?>"
                                        data-width="50%" class="modal-opener">
                                         <button class="btn btn-default btn-sm" style="margin-top: 5px;"><span
-                                                    class="glyphicon glyphicon-envelope grey" ></span> <?php echo $this->translate('Contacter'); ?>
+                                                    class="glyphicon glyphicon-envelope grey" ></span> <?= $this->translate('Contacter') ?>
                                         </button>
                                     </a>
                                 </p>
@@ -55,7 +59,7 @@
                         <?php if ($role === Episciences_Acl::ROLE_EDITOR && count($member->getAssignedSections())) : ?>
                             <div class="sections">
                                 <span class="title">
-                                    <?php echo $this->translate(["Rédacteur de la rubrique : ", "Rédacteur des rubriques : ", count($member->getAssignedSections())]); ?>
+                                    <?= $this->translate(["Rédacteur de la rubrique : ", "Rédacteur des rubriques : ", count($member->getAssignedSections())]) ?>
                                 </span>
                                 <span>
                                     <?php

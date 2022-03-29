@@ -82,7 +82,7 @@ return [
     'reviewer' => 'Reviewer',
     'editor' => 'Editor',
     'administrator' => 'Administrator',
-    'chief_editor' => 'Chief editor',
+    'chief_editor' => 'Editor in Chief',
     'guest_editor' => 'Guest editor',
     'guest_editors' => 'Guest editors',
     'epiadmin' => 'Root',
@@ -95,7 +95,7 @@ return [
     'reviewers' => 'Reviewers',
     'editors' => 'Editors',
     'administrators' => 'Administrators',
-    'chief_editors' => 'Chief editors',
+    'chief_editors' => 'Editors in Chief',
     'epiadmins' => 'Root',
 
     // Formulaires
@@ -695,7 +695,8 @@ return [
     'Tags disponibles : ' => 'Available Tags: ',
     "Tout sélectionner" => 'Select all',
     "Tous les contacts" => 'All contacts',
-    "Rédacteurs en chef" => 'Chief Editors',
+    "Rédacteurs en chef" => 'Editors in Chief',
+    "Rédacteur en chef" => 'Editor in Chief',
     "Secrétaires de rédaction" => "Editorial Secretaries",
     "Membres" => "Members",
     "Votre message n'a pas pu être envoyé :" => "Your mail could not be sent:",

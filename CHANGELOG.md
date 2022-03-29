@@ -60,6 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ##Fixed
 - Multiple roles: ignore the "member" role when merging two accounts.
 - [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names + refactoring 
+- Templates updating
+- [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
+
 
 ## 1.0.28 - 2022-03-23
 ### Changed
