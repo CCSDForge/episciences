@@ -10,7 +10,7 @@
 			<li style="padding:0 10px;">
 				<table>
 		            <tr>
-                            <td width="110px;">
+                            <td>
                             <a href="/user">
 	                            	<img src="/user/photo/size/normal?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>" class="user-photo-normal img-thumbnail" alt="<?= $this->translate('Ma photo');?>"/>
 	                        </a>
@@ -27,7 +27,7 @@
 		            </tr>
 	            	<tr>
 						<td colspan="2">
-							<span class="nav-header"><?php echo $this->translate("Privilèges") ?></span>
+							<span class="nav-header"><?php echo $this->translate('rôles') ?></span>
 							<?php if (is_array(Episciences_Auth::getRoles()) && count(Episciences_Auth::getRoles())) : ?>
 								<div><?php echo $this->partial('user/roles_only_tags.phtml', array('roles'=>Episciences_Auth::getRoles())); ?></div>
 							<?php endif; ?>

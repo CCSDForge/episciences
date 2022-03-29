@@ -1312,6 +1312,7 @@ return [
     "Aucun article pour le moment" => "No article yet",
     "Modifier le contenu de la page" => "Edit content page",
     "Privilèges" => "Privileges",
+    'rôles' => 'roles',
     "Liste" => "List",
     "Rôles" => "Rights",
     "Paramètres" => "Settings",
