@@ -22,7 +22,9 @@ class UserController extends UserDefaultController
         $this->view->review = $review;
 
         // Bloc Mon compte
-        $this->view->user = Episciences_Auth::getInstance()->getIdentity()->toArray();
+        /** @var Episciences_User $user */
+        $user = Episciences_Auth::getInstance()->getIdentity();
+        $this->view->user = $user->toArray();
         $this->view->user['editorSections'] = null;
 
         // Bloc "Gérer la revue"

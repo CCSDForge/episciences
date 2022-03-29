@@ -1457,4 +1457,34 @@ class Episciences_Tools
 
     }
 
+    /**
+     * @param array|null $input
+     * @param int $type
+     * @param int $options
+     * @return array|null
+     */
+
+    public static function arrayFilterString(array $input = null, int $type = FILTER_SANITIZE_STRING , int $options = FILTER_FLAG_NO_ENCODE_QUOTES): ?array
+    {
+
+        if (empty($input)) {
+            return null;
+        }
+
+        $tmp = [];
+
+        foreach ($input as $value) {
+
+            $value = filter_var(trim($value), $type, $options);
+
+            if (!$value || in_array($value, $tmp, true)) {
+                continue;
+            }
+
+            $tmp[] = $value;
+        }
+
+        return !empty($tmp) ? $tmp : null;
+    }
+
 }

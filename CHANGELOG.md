@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
 - Paper list: temporary versions are now labeled
 - Alert administrators on the existence of papers without assigned editors
+- Social Medias & Websites profile informations.
 
 ## Changed
 - Workflow reviewing

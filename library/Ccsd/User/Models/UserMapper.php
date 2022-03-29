@@ -193,10 +193,11 @@ class Ccsd_User_Models_UserMapper {
         $row = $this->getDbTable()->fetchRow($select);
 
 
-        if (!isset($row) || 0 == count($row->toArray())) {
+        if (!isset($row) || 0 === count($row->toArray())) {
             return null;
         }
-        if ($user != null) {
+
+        if ($user !== null) {
             $user->setUid($row->UID)->setUsername($row->USERNAME)->setEmail($row->EMAIL)->setCiv($row->CIV)->setLastname($row->LASTNAME)->setFirstname($row->FIRSTNAME)->setMiddlename($row->MIDDLENAME);
             $user->setTime_registered($row->TIME_REGISTERED)->setTime_modified($row->TIME_MODIFIED)->setValid($row->VALID);
         }

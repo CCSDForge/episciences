@@ -331,10 +331,11 @@ class Episciences_Review
                     $role = $role[0];
                 }
                 $class_name = 'Episciences_' . ucfirst($role);
+                $options = $user->toArray();
                 if (@class_exists($class_name)) {
-                    $result[$uid] = new $class_name($user->toArray());
+                    $result[$uid] = new $class_name($options);
                 } else {
-                    $result[$uid] = new Episciences_User($user->toArray());
+                    $result[$uid] = new Episciences_User($options);
                 }
             }
 

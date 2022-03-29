@@ -605,6 +605,7 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function editAction(): void
     {
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
@@ -643,9 +644,6 @@ class UserDefaultController extends Zend_Controller_Action
 
             $values = $form->getValues();
             $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
-
-            // keep username (not sent with form)
-            $updatedUserValues['USERNAME'] = $casUserDefaults['USERNAME'];
 
             $user = new Episciences_User($updatedUserValues);
             $subform = $form->getSubForm('ccsd');

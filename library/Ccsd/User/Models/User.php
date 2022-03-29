@@ -541,8 +541,8 @@ class Ccsd_User_Models_User
 
     public function toArray()
     {
-        $res = array();
-        $fields = array(
+        $res = [];
+        $fields = [
             'uid',
             'username',
             'civ',
@@ -553,7 +553,7 @@ class Ccsd_User_Models_User
             'time_registered',
             'time_modified',
             'ftp_home'
-        );
+        ];
 
         foreach ($fields as $key) {
             $method = 'get' . ucfirst($key);
