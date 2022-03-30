@@ -115,7 +115,7 @@ return [
     "There are no metadata formats available for the specified item." => "Aucun format de métadonnées n'est disponible pour l'élément spécifié.",
     "This repository does not support sets." => "Cette archive ne prend pas en charge les ensembles.",
     //Soumission d'une notice vide
-    "You can not submit an empty record." => "Vous ne pouvez pas soumettre une notice vide.",
+    "You can not submit an empty record: you must first modify the deposit on the open archive to attach the PDF file of your article without formatting." => "Vous ne pouvez pas soumettre une notice : il convient de modifier le dépôt sur l'archive ouverte au préalable pour y joindre le fichier PDF de votre article sans mise en page.",
     "You can not submit this document; the file is not available; the end date of the embargo: " => "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : ",
     // log
     'Chief editor' => 'Rédacteur en chef',
