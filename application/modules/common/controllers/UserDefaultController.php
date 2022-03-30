@@ -116,6 +116,10 @@ class UserDefaultController extends Zend_Controller_Action
             return;
         }
 
+        // save uidFrom
+
+        Episciences_Auth::saveRealIdentity();
+
 
         Episciences_Auth::getInstance()->clearIdentity();
         Episciences_Auth::setIdentity($user);

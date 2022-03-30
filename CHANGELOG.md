@@ -14,10 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-### Changed
-- Empty record: error message updating.
-
 
 ## Unreleased
 ## added
@@ -65,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names + refactoring 
 - Templates updating
 - [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
+- Empty record: error message updating.
+- Sign in an admin as another user: real identity is now saved.
 
 
 ## 1.0.28 - 2022-03-23
