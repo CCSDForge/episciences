@@ -102,43 +102,52 @@ class getLinkData extends JournalScript
         $select = $db->select()
             ->distinct('DOI')
             ->from('PAPERS',['DOI','DOCID'])
-            ->where('DOI IS NOT NULL')->limit('10');
+            ->where('DOI IS NOT NULL')->limit('200');
         $docId = '';
         foreach ($db->fetchAll($select) as $value){
             $docId = $value['DOCID'];
-            // a changer car utilisé
-            // -10.2168/LMCS-1(1:2)2005
-            // -10.46298/jdmdh.5
-            $apiResult = $client->get("http://api.scholexplorer.openaire.eu/v1/linksFromPid?pid=10.2168/LMCS-1(1:2)2005",[
-                'headers' => [
-                    'User-Agent' => 'CCSD Episciences support@episciences.org',
-                    'Content-Type' => 'application/json',
-                    'Accept'=> 'application/json'
-                ]
-            ])->getBody()->getContents();
+            $fileName = '../data/scholexplorer/'.explode("/",$value['DOI'])[1].".json";
 
-            if (!empty(json_decode($apiResult,true)[0])){
-                //echo PHP_EOL . 'Found: ' . $value;
-                $fileName = '../data/scholexplorer/LMCS-1(1:2)2005.json';// test '../data/scholexplorer/'.explode("/",$value)[1].".json";
-                if (!file_exists($fileName)){
+            if (!file_exists($fileName)){
+                $apiResult = $client->get("http://api.scholexplorer.openaire.eu/v1/linksFromPid?pid=".$value['DOI'],[
+                    'headers' => [
+                        'User-Agent' => 'CCSD Episciences support@episciences.org',
+                        'Content-Type' => 'application/json',
+                        'Accept'=> 'application/json'
+                    ]
+                ])->getBody()->getContents();
+                if (!empty(json_decode($apiResult, true, 512, JSON_THROW_ON_ERROR)) ) {
                     file_put_contents($fileName,$apiResult);
                 }
+            }
+            if (file_exists($fileName)) {
+                echo PHP_EOL . 'Found: ' . $value['DOI'];
                 $arrayResult = json_decode(file_get_contents($fileName), true, 512, JSON_THROW_ON_ERROR);
+                $relationship = $arrayResult[0]['relationship']['name'];
                 $targetString = json_encode($arrayResult[0]['target'], JSON_THROW_ON_ERROR);
-                //$lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext'=>$targetString]);
+                $lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext'=>$targetString]);
+
                 foreach ($arrayResult[0]['target']['identifiers'] as $key => $identifier) {
-                    $identifierDoi = $identifier['identifier'];
-                    $schemaName = $identifier['schema'];
-                    $code = "null";
-                    $sourceId = '5';
+                    try {
+                        $enrichment = Episciences_Paper_DatasetsManager::insert([[
+                            'docId'=> $docId,
+                            'code' => "null",
+                            'name' => $identifier['schema'],
+                            'value' => $identifier['identifier'],
+                            'link' => $identifier['schema'],
+                            'sourceId'=> '5',
+                            'relationship' => $relationship,
+                            'idPaperDatasetsMeta'=> $lastMetatextInserted
 
-                    var_dump($identifierDoi,$schemaName,$code,$sourceId,$docId);
+                        ]]);
+                    }catch (Exception $e){
+                        var_dump('data existing '.$e->getMessage());
+                        continue;
+                    }
+                    echo PHP_EOL . 'DB info inserted for ' . $value['DOI'];
                 }
-
-                die;
-
             } else {
-                echo PHP_EOL . 'No match: ' . $value;
+                echo PHP_EOL . 'No match: ' . $value['DOI'];
             }
 
             sleep(1);

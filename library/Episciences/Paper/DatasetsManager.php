@@ -97,10 +97,10 @@ class Episciences_Paper_DatasetsManager
                 $dataset = new Episciences_Paper_Dataset($dataset);
             }
 
-            $values[] = '(' . $db->quote($dataset->getDocId()) . ',' . $db->quote($dataset->getCode()) . ',' . $db->quote($dataset->getName()) . ',' . $db->quote($dataset->getValue()) . ',' . $db->quote($dataset->getLink()) . ',' . $db->quote($dataset->getSourceId()) . ')';
+            $values[] = '(' . $db->quote($dataset->getDocId()) . ',' . $db->quote($dataset->getCode()) . ',' . $db->quote($dataset->getName()) . ',' . $db->quote($dataset->getValue()) . ',' . $db->quote($dataset->getLink()) . ',' . $db->quote($dataset->getSourceId()) . ',' . $db->quote($dataset->getRelationship()) . ',' . $db->quote($dataset->getIdPaperDatasetsMeta()) . ')';
         }
 
-        $sql = 'INSERT IGNORE INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS) . ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`) VALUES ';
+        $sql = 'INSERT IGNORE INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS) . ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`, `relationship`, `id_paper_datasets_meta`) VALUES ';
 
         if (!empty($values)) {
             try {
