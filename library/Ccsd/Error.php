@@ -70,7 +70,7 @@ class Ccsd_Error extends Exception
                 $message = 'This repository does not support sets.';
                 break;
             case 'docIsNotice' :
-                $message = 'You can not submit an empty record.';
+                $message = 'You can not submit an empty record: you must first modify the deposit on the open archive to attach the PDF file of your article without formatting.';
                 break;
             case 'arXivVersionDoesNotExist' :
                 $message = "This document version does not exist in the open archive, please check the document version.";
