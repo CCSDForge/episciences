@@ -11,7 +11,6 @@ class SubmitController extends DefaultController
      */
     public function indexAction(): void
     {
-
         $isFromZSubmit = false;
         $default = [];
         $settings = Zend_Registry::get('reviewSettings');
@@ -21,30 +20,39 @@ class SubmitController extends DefaultController
 
         if ($request->isPost()) {
 
-            $post = $request->getPost()['episciences_form'];
+            if (!Episciences_Auth::hasRealIdentity()) {
 
-            $repoId = $post['repoid'];
-            $zIdentifier = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['doi_show'], 'repoId' => $repoId])['identifier'];
-            $zConceptIdentifier = $post['ci'];
+                $message = $this->view->translate("Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !");
 
-            $isFromZSubmit = $zIdentifier && $zConceptIdentifier && in_array($repoId, $settings['repositories'], true);
+                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
 
-            if( $isFromZSubmit){
+            } else {
+                $post = $request->getPost()['episciences_form'];
 
-                $paper = Episciences_PapersManager::findByIdentifier($zConceptIdentifier);
+                $repoId = $post['repoid'];
+                $zIdentifier = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['doi_show'], 'repoId' => $repoId])['identifier'];
+                $zConceptIdentifier = $post['ci'];
 
-                $isFirstSubmission = !$paper || (
-                        $paper->getConcept_identifier() === $zConceptIdentifier &&
-                        in_array($paper->getStatus(), [Episciences_Paper::STATUS_SUBMITTED, Episciences_Paper::STATUS_OK_FOR_REVIEWING, Episciences_Paper::STATUS_REFUSED], true)
-                    );
+                $isFromZSubmit = $zIdentifier && $zConceptIdentifier && in_array($repoId, $settings['repositories'], true);
 
-                if (!$isFirstSubmission) {
-                    $this->redirect($this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()], null, true));
-                    return;
+                if ($isFromZSubmit) {
+
+                    $paper = Episciences_PapersManager::findByIdentifier($zConceptIdentifier);
+
+                    $isFirstSubmission = !$paper || (
+                            $paper->getConcept_identifier() === $zConceptIdentifier &&
+                            in_array($paper->getStatus(), [Episciences_Paper::STATUS_SUBMITTED, Episciences_Paper::STATUS_OK_FOR_REVIEWING, Episciences_Paper::STATUS_REFUSED], true)
+                        );
+
+                    if (!$isFirstSubmission) {
+                        $this->redirect($this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()], null, true));
+                        return;
+                    }
+
+                    $default ['repoId'] = Episciences_Repositories::ZENODO_REPO_ID;
+                    $default ['docId'] = $zIdentifier;
+
                 }
-
-                $default ['repoId'] = Episciences_Repositories::ZENODO_REPO_ID;
-                $default ['docId'] = $zIdentifier;
 
             }
 
