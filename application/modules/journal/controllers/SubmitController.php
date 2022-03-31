@@ -122,32 +122,18 @@ class SubmitController extends DefaultController
 
         $this->view->form = $form;
 
-        // Récupération des repositories choisis par la revues
-        if (array_key_exists('repositories', $settings) && !empty($settings['repositories'])) {
-            $repositoriesList = $settings['repositories'];
-        } else {
-            //all repositories are enabled
-            $repositoriesList = array_keys(Episciences_Repositories::getRepositories());
-            //remove episciences from repositories list
-            unset($repositoriesList[0]);
-        }
-
-        $allowedRepositories = [];
         $examples = [];
-
-        foreach ($repositoriesList as $repoId) {
-            $allowedRepositories[$repoId] = Episciences_Repositories::getLabel($repoId);
-        }
 
         // Liste des archives ouvertes disponibles pour la revue (string)
         foreach (Episciences_Repositories::getRepositories() as $id => $repository) {
-            if ($id == 0) {
+            if ((int)$id === 0) {
                 //remove episciences from repositories list
                 continue;
             }
             $examples[$id] = $repository['example'];
         }
 
+        $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
 
         $this->view->repositories = implode(', ', $allowedRepositories);
         $this->view->examples = Zend_Json::encode($examples);

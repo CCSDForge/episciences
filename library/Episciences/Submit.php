@@ -37,20 +37,7 @@ class Episciences_Submit
         // Recherche du document (subform) **************************************************************************
         $subform = new Ccsd_Form_SubForm();
 
-
-        // Récupération des repositories
-        if (array_key_exists('repositories', $settings) && !empty($settings['repositories'])) {
-            $repositories = $settings['repositories'];
-        } else {
-            $repositories = array_keys(Episciences_Repositories::getRepositories());
-            unset($repositories[0]);
-        }
-
-        $options = [];
-
-        foreach ($repositories as $repoId) {
-            $options[$repoId] = Episciences_Repositories::getLabel($repoId);
-        }
+        $options = self::getRepositoriesLabels($settings);
 
         // Select: repositories
         $subform->addElement('select', 'repoId', [
@@ -517,16 +504,7 @@ class Episciences_Submit
 
             }
 
-            // fetch repositories
-            if (array_key_exists('repositories', $settings) && !empty($settings['repositories'])) {
-                $repositories = $settings['repositories'];
-            } else {
-                $repositories = array_keys(Episciences_Repositories::getRepositories());
-                unset($repositories[0]); // unset local repository
-            }
-            foreach ($repositories as $repoId) {
-                $options[$repoId] = Episciences_Repositories::getLabel($repoId);
-            }
+            $options = self::getRepositoriesLabels($settings);
 
             // Select: repositories
             $subform->addElement('select', 'repoId', [
@@ -1583,4 +1561,35 @@ class Episciences_Submit
         return $defaults;
 
     }
+
+    /**
+     * fetch labels from repositories
+     * @param array $settings
+     * @return array
+     */
+    public static function getRepositoriesLabels(array $settings = []): array
+    {
+
+        // fetch repositories
+        if (array_key_exists('repositories', $settings) && !empty($settings['repositories'])) {
+            $repositories = $settings['repositories'];
+        } else {
+            $repositories = array_keys(Episciences_Repositories::getRepositories());
+            unset($repositories[0]);
+        }
+
+        $options = [];
+
+        foreach ($repositories as $repoId) {
+            $label = Episciences_Repositories::getLabel($repoId);
+
+            if ('' !== $label) {
+                $options[$repoId] = Episciences_Repositories::getLabel($repoId);
+            }
+        }
+
+        return $options;
+
+    }
+
 }
