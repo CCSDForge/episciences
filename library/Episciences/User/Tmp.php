@@ -2,8 +2,6 @@
 
 class Episciences_User_Tmp extends Episciences_User
 {
-
-    protected $_screen_name;
     protected $_status;
     private $_id;
     private $_lang;
@@ -106,17 +104,7 @@ class Episciences_User_Tmp extends Episciences_User
 
         return $result;
     }
-
-    public function getScreenName()
-    {
-        return $this->_screen_name;
-    }
-
-    public function setScreenName($screenname = null)
-    {
-        $this->_screen_name = $screenname;
-    }
-
+    
     public function getStatus()
     {
         return $this->_status;
