@@ -628,6 +628,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
+
         $userDefaults['AFFILIATIONS'] = Episciences_Tools::implodeOrExplode($userDefaults['AFFILIATIONS'], 'implode');
 
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);

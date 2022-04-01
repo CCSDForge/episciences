@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Templates updating
 - [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
 - Update Episciences_User::getScreenName()
+- User Table: merge AFFILIATIONS" filed in "ADDITIONAL_PROFILE_INFORMATION"
 
 
 ## 1.0.28 - 2022-03-23
