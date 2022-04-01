@@ -200,7 +200,13 @@ class PaperController extends PaperDefaultController
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
         $this->view->review = $review;
-        if ($review->getSetting(Episciences_Review::SETTING_SHOW_RATINGS)) {
+
+        //[#169]: https://github.com/CCSDForge/episciences/issues/169
+        $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
+            $paper->isReportsVisibleToAuthor() ||
+            ($review->getSetting(Episciences_Review::SETTING_SHOW_RATINGS) && $paper->isPublished());
+
+        if ($isVisibleRatings) {
             $paper->loadRatings();
             $this->view->reports = $paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED, Episciences_Auth::getUser());
             $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid));

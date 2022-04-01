@@ -3982,5 +3982,13 @@ class Episciences_Paper
         return Episciences_Auth::getUid() === $this->getUid();
     }
 
+    /**
+     * @return bool
+     */
+    public function isReportsVisibleToAuthor(): bool
+    {
+        return $this->isOwner() && ($this->canBeAssignedDOI() || $this->isRevisionRequested() || $this->isRefused());
+    }
+
 
 }

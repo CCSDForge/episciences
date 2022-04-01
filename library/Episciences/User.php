@@ -439,19 +439,24 @@ class Episciences_User extends Ccsd_User_Models_User
             'ORCID' => $this->getOrcid()
         ];
 
-        try {
+    /*    try {
             $data['AFFILIATIONS'] = !empty($this->getAffiliations()) ? json_encode(Episciences_Tools::implodeOrExplode($this->getAffiliations()), JSON_THROW_ON_ERROR) : null;
         } catch (JsonException $e) {
             $data['AFFILIATIONS'] = null;
             trigger_error($e->getMessage());
-        }
+        }*/
 
 
-        if (!empty($this->getWebSites() || !empty($this->getSocialMedias()))) {
+        if (
+            !empty($this->getWebSites()) ||
+            !empty($this->getSocialMedias()) ||
+            !empty($this->getAffiliations())
+        ) {
 
             $addProfileInformations = [
                 'webSites' => $this->getWebSites(),
-                'socialMedias' => $this->getSocialMedias()
+                'socialMedias' => $this->getSocialMedias(),
+                'affiliations' => Episciences_Tools::implodeOrExplode($this->getAffiliations())
             ];
 
             try {
@@ -662,19 +667,11 @@ class Episciences_User extends Ccsd_User_Models_User
             return [];
         }
 
-        if (isset($result['AFFILIATIONS'])) {
-            try {
-                $result['AFFILIATIONS'] = Episciences_Tools::isJson($result['AFFILIATIONS']) ? json_decode($result['AFFILIATIONS'], true, 512, JSON_THROW_ON_ERROR) : $result['AFFILIATIONS'];
-            } catch (JsonException $e) {
-                $result['AFFILIATIONS'] = null;
-                trigger_error($e->getMessage());
-            }
-        }
-
         if(isset($result['ADDITIONAL_PROFILE_INFORMATION'])){
            $this->setAdditionalProfileInformation($result['ADDITIONAL_PROFILE_INFORMATION']);
            $result['WEB_SITES'] = $this->getWebSites();
            $result['SOCIAL_MEDIAS'] = $this->getSocialMedias();
+           $result['AFFILIATIONS'] = $this->getAffiliations();
         }
 
 
@@ -1226,11 +1223,11 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($addProfileInfo) {
 
-            //$affiliations = $addProfileInfo ['affiliations'] ?? null;
+            $affiliations = $addProfileInfo ['affiliations'] ?? null;
             $webSites = $addProfileInfo ['webSites'] ?? null;
             $socialMedias = $addProfileInfo ['socialMedias'] ?? null;
 
-            // $this->setAffiliations($affiliations);
+            $this->setAffiliations($affiliations);
             $this->setWebSites($webSites);
             $this->setSocialMedias($socialMedias);
 

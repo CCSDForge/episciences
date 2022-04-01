@@ -63,8 +63,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
 - Empty record: error message updating.
 - Sign in an admin as another user: real identity is now saved.
-
-
+- Update Episciences_User::getScreenName()
+- User Table: merge AFFILIATIONS" filed in "ADDITIONAL_PROFILE_INFORMATION"
+- [#169](https://github.com/CCSDForge/episciences/issues/169): reports become visible on the article web page:
+  * according to the parameters of the journal for published articles
+  * for the owner, only if the paper is refused, waiting for revision, already accepted or published
+  
 ## 1.0.28 - 2022-03-23
 ### Changed
 - Bump crossref schema to ver 4.8.1
