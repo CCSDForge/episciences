@@ -20,19 +20,10 @@ $isAllowed = Episciences_Auth::isLogged() &&
             )
     );
 
-$isAllowedToAnswerNewVersion = Episciences_Auth::isLogged() &&
-    (
-            !$isConflictDetected &&
-                (
-                        $isSecretary ||
-                        $paper->getEditor($loggedUid) ||
-                        $loggedUid === $paper->getUid()
-                )
-    );
+$isAllowedToAnswerNewVersion = $this->isAllowedToAnswerNewVersion;
 
 
-
-$language = ($paper->getMetadata('language') != null) ? $paper->getMetadata('language') : 'en';
+$language = $paper->getMetadata('language') ?? 'en';
 
 if ($paper->isPublished()) {
     $this->headLink(['rel' => 'schema.DC', 'href' => 'http://purl.org/dc/elements/1.1/']);
@@ -188,7 +179,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
         <div class="panel-body in">
             <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
             <p>
-                <strong><?= $statusMsg; ?></strong><span
+                <strong><?= $statusMsg ?></strong><span
                         class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
             </p>
         </div>
@@ -199,7 +190,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php if ($isAllowed && ($this->copyEditingDemands) && !$paper->isPublished()) : ?>
     <div id="copy-editing" class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Préparation de copie'); ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Préparation de copie') ?></h2>
         </div>
         <div class="panel-body in" style="overflow: visible">
             <?= $this->partial('partials/paper_copy_editing.phtml', [
@@ -209,7 +200,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
                     'latestDocId' => $this->latestDocId,
                     'linkToLatestDocId' => $this->linkToLatestDocId
                 ]
-            ); ?>
+            ) ?>
         </div>
     </div>
 <?php endif; ?>
@@ -269,10 +260,10 @@ if (
                 'paper' => $paper,
                 'review' => $this->review,
                 'current_demand' => $this->currentDemand
-            ]);
+            ])
             ?>
 
-            <?= !empty($this->currentDemand) ? '<hr>' : ''; ?>
+            <?= !empty($this->currentDemand) ? '<hr>' : '' ?>
 
             <?= $this->partial('partials/paper_demands.phtml', [
                 'paper' => $paper,
