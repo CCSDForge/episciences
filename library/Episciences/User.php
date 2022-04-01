@@ -362,7 +362,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public function getScreenName(): string
     {
 
-        return $this->_screenName ?: $this->getFullName();
+        return $this->_screenName ?: $this->setScreenName()->getScreenName();
     }
 
     public function setScreenName($_screenName = null): Episciences_User
