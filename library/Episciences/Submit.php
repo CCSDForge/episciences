@@ -1310,7 +1310,7 @@ class Episciences_Submit
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      */
-    private function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null])
+    private function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null]): void
     {
         // Save author comment and attached file
         $authorComment = new Episciences_Comment();
@@ -1318,6 +1318,8 @@ class Episciences_Submit
         $authorComment->setType(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
         $authorComment->setDocid($paper->getDocid());
         $authorComment->setMessage($coverLetter["message"]);
+
+        if($paper->getUid())
 
         //Eviter l'insertion d'une ligne vide dans la table
         if ((!empty($coverLetter['message']) || !empty($coverLetter["attachedFile"])) && !$authorComment->save()) {
@@ -1374,7 +1376,7 @@ class Episciences_Submit
      * @param null $sid
      * @return array
      */
-    private function buildValuesToPopulatePaper(array $data, $paperId = null, $vid = null, $sid = null)
+    private function buildValuesToPopulatePaper(array $data, $paperId = null, $vid = null, $sid = null): array
     {
 
         $values = [];

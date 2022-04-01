@@ -123,6 +123,7 @@ class PaperController extends PaperDefaultController
         }
 
         $loggedUid = Episciences_Auth::getUid();
+        $isSecretary = Episciences_Auth::isSecretary();
 
         if ($this->isRestrictedAccess($paper)) {
 
@@ -212,7 +213,7 @@ class PaperController extends PaperDefaultController
         // COI
 
         $isConflictDetected =
-            !Episciences_Auth::isSecretary() &&
+            !$isSecretary &&
             Episciences_Auth::getUid() !== $paper->getUid() &&
             !$paper->getReviewer($loggedUid) &&
             $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
@@ -222,6 +223,13 @@ class PaperController extends PaperDefaultController
             );
 
         $this->view->isConflictDetected = $isConflictDetected;
+
+        $isAllowedToAnswerNewVersion = Episciences_Auth::isLogged() &&
+            (
+                !$isConflictDetected && ($isSecretary || $loggedUid === $paper->getUid())
+            );
+
+        $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
         // reviewers comments **************************************************
         // fetch reviewers comments
@@ -334,7 +342,7 @@ class PaperController extends PaperDefaultController
         $this->view->copyEditingDemands = $copyEditingDemands;
 
         // reply copy editing answer form
-        if (Episciences_Auth::getUid() === $paper->getUid()) {
+        if ($isAllowedToAnswerNewVersion || Episciences_Auth::getUid() === $paper->getUid()) {
             $copyEditingReplyForms = Episciences_CommentsManager::getCopyEditingReplyForms($copyEditingDemands, $paper);
             $this->view->copyEditingReplyForms = $copyEditingReplyForms;
         }
@@ -760,6 +768,8 @@ class PaperController extends PaperDefaultController
         $post = $request->getPost();
         $docId = $request->getQuery(self::DOC_ID_STR);
 
+        $url = self::PAPER_URL_STR . $docId;
+
         $message = "Votre réponse n'a pas pu être enregistrée : merci de bien vouloir compléter les champs marqués d'un astérisque (*).";
         $nameSpace = 'error';
 
@@ -767,7 +777,7 @@ class PaperController extends PaperDefaultController
             $parentId = $request->getQuery('pcid');
 
             // get paper object
-            $paper = Episciences_PapersManager::get($docId);
+            $paper = Episciences_PapersManager::get($docId, false);
 
             // get revision request
             $oComment = new Episciences_Comment;
@@ -782,17 +792,10 @@ class PaperController extends PaperDefaultController
             $oAnswer->setType($type);
             $oAnswer->setDocid($docId);
             $oAnswer->setMessage($post[self::COMMENT_STR]);
-            $oAnswer->save();
+            $oAnswer->save('insert', false, $paper->getUid()); // admin can save answer
 
             // send mail to chief editors and editors
             $recipients = $paper->getEditors(true, true);
-
-            // paper management page url
-            $paper_url = $this->view->url([
-                self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
-                self::ACTION => 'view',
-                'id' => $paper->getDocid()]);
-            $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
 
             foreach ($recipients as $recipient) {
 
@@ -808,7 +811,7 @@ class PaperController extends PaperDefaultController
                     Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($oComment->getWhen(), $locale),
                     Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $oComment->getMessage(),
                     Episciences_Mail_Tags::TAG_REQUEST_ANSWER => $oAnswer->getMessage(),
-                    Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url
+                    Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($paper->getDocid()) //paper management page url
                 ];
 
                 Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER, $tags, $paper, Episciences_Auth::getUid());
@@ -836,11 +839,21 @@ class PaperController extends PaperDefaultController
 
             $nameSpace = self::SUCCESS;
             $message = "Votre réponse a bien été enregistrée.";
+
+            if (Episciences_Auth::isSecretary() && (Episciences_Auth::getUid() !== $paper->getUid())) { // not author
+                $url = $this->view->url(
+                    [
+                        self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
+                        self::ACTION => 'view',
+                        'id' => $paper->getDocid()
+                    ]);
+            }
+
         }
 
         // redirection and success message
         $this->_helper->FlashMessenger->setNamespace($nameSpace)->addMessage($this->view->translate($message));
-        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+        $this->_helper->redirector->gotoUrl($url);
 
     }
 
@@ -905,12 +918,15 @@ class PaperController extends PaperDefaultController
 
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');
 
+        // admin can submit tmp version
+        $answerCommentUid = (Episciences_Auth::isSecretary() && ($paper->getUid() !== Episciences_Auth::getUid())) ? $paper->getUid() : Episciences_Auth::getUid();
+
         // save answer (comment)
         $answerComment = new Episciences_Comment;
         $answerComment->setParentid($requestId);
         $answerComment->setType(Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION);
         $answerComment->setDocid($docId);
-        $answerComment->setUid(Episciences_Auth::getUid());
+        $answerComment->setUid($answerCommentUid);
         $answerComment->setMessage(array_key_exists(self::COMMENT_STR, $post) ? $post[self::COMMENT_STR] : '');
         $answerComment->setFilePath(REVIEW_FILES_PATH . $paperId . '/tmp/');
 
@@ -921,7 +937,7 @@ class PaperController extends PaperDefaultController
         }
 
         try {
-            $isSaved = $answerComment->save();
+            $isSaved = $answerComment->save('insert', false, $answerCommentUid);
         } catch (Zend_Exception $e) {
             throw new Zend_Exception('failure to save the answer comment', 0, $e);
         }
@@ -947,7 +963,6 @@ class PaperController extends PaperDefaultController
 
         // unassign editors from previous version
         if ($editors) {
-            /** @var Episciences_Editor $editor */
             foreach ($editors as $editor) {
                 $aid = $paper->unassign($editor->getUid(), Episciences_User_Assignment::ROLE_EDITOR);
                 // log editor unassignment
@@ -1030,13 +1045,7 @@ class PaperController extends PaperDefaultController
         if (!empty($recipients)) {
 
             // link to manage article page
-            $paper_url = $this->view->url([
-                self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
-                self::ACTION => 'view',
-                'id' => $tmpPaper->getDocid()
-            ]);
-
-            $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+            $paper_url = $this->buildAdminPaperUrl($tmpPaper->getDocid());
             $makeCopy = true;
             foreach ($recipients as $recipient) {
                 $this->answerRevisionNotifyManager($recipient, $paper, $tmpPaper, $requestComment, $answerComment, $makeCopy, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
@@ -1046,8 +1055,22 @@ class PaperController extends PaperDefaultController
             }
         }
 
+
+        if (Episciences_Auth::isSecretary() && (Episciences_Auth::getUid() !== $paper->getUid())) { // not author
+            $url = $this->view->url(
+                [
+                    self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
+                    self::ACTION => 'view',
+                    'id' => $tmpPaper->getDocid()
+                ]);
+        } else {
+
+            $url = self::PAPER_URL_STR . $tmpPaper->getDocid();
+
+        }
+
         // Redirection
-        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+        $this->_helper->redirector->gotoUrl($url);
     }
 
     /**
@@ -1297,12 +1320,14 @@ class PaperController extends PaperDefaultController
 
             // Author comment
             $author_comment = new Episciences_Comment();
+            // admin can submit new version
+            $commentUid = (Episciences_Auth::isSecretary() && ($paper->getUid() !== Episciences_Auth::getUid())) ? $paper->getUid() : Episciences_Auth::getUid();
             $author_comment->setDocid($newPaper->getDocid());
             $author_comment->setMessage($post['new_author_comment']);
-            $author_comment->setUid(Episciences_Auth::getUid());
+            $author_comment->setUid($commentUid);
             $author_comment->setType(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
             $author_comment->setFilePath(REVIEW_FILES_PATH . $newPaper->getDocid() . self::COMMENTS_STR);
-            $author_comment->save();
+            $author_comment->save('insert', false, $commentUid);
 
             // save answer (new version)
             $answerCommentType = !in_array($requestComment->getType(), Episciences_CommentsManager::$_copyEditingFinalVersionRequest) ?
@@ -1313,7 +1338,7 @@ class PaperController extends PaperDefaultController
             $answerComment->setParentid($requestId);
             $answerComment->setType($answerCommentType);
             $answerComment->setDocid($docId);
-            $answerComment->save();
+            $answerComment->save('insert', false, $answerComment->getUid());
 
             if ($answerComment->isCopyEditingComment()) {
                 $file = $answerComment->getFile();
@@ -1427,7 +1452,8 @@ class PaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
 
             // Redirection
-            $this->_helper->redirector->gotoUrl('paper/submitted');
+            $redUrl = (!Episciences_Auth::isSecretary()) ? 'paper/submitted' : '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $newPaper->getDocid();
+            $this->_helper->redirector->gotoUrl($redUrl);
         } else {
             $message = $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
