@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Changed
+- Empty record: error message updating.
 
 ## 1.0.28.1 - 2022-03-23
 ### Fixed
