@@ -48,32 +48,19 @@ class Episciences_Paper_DatasetsMetadataManager
         return $db->lastInsertId();
 
     }
-//
-//    /**
-//     * @param Episciences_Paper_Dataset $dataset
-//     * @return int
-//     */
-//    public static function update(Episciences_Paper_Dataset $dataset): int
-//    {
-//        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-//        $where['id = ?'] = $dataset->getId();
-//
-//        $values = [
-//            'docId' => $dataset->getDocId(),
-//            'code' => $dataset->getCode(),
-//            'name' => $dataset->getName(),
-//            'value' => $dataset->getValue(),
-//            'link' => $dataset->getLink(),
-//            'sourceId' => $dataset->getSourceId()
-//        ];
-//
-//        try {
-//            $resUpdate = $db->update(T_PAPER_DATASETS, $values, $where);
-//        } catch (Zend_Db_Adapter_Exception $exception) {
-//            $resUpdate = 0;
-//            trigger_error($exception->getMessage(), E_USER_ERROR);
-//        }
-//        return $resUpdate;
-//    }
+    /**
+     * @param int $id
+     * @return bool
+     */
 
+    public static function deleteMetaDataAndDatasetsByIdMd(int $id): bool{
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        try {
+            $db->delete('paper_datasets_meta',['id = ?' => $id]);
+            return true;
+        } catch (Zend_Db_Statement_Exception $exception) {
+            return false;
+        }
+    }
 }
