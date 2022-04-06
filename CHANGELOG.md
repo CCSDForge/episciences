@@ -14,9 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-### Changed
-- Empty record: error message updating.
+
+## 1.0.28.2 - 2022-04-06
+### Fixed
+- Empty records from HAL repository: error message improved.
+- Improvements and fixes on Datacite and Crossref XML exports
 
 ## 1.0.28.1 - 2022-03-23
 ### Fixed
