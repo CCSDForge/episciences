@@ -69,6 +69,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * according to the parameters of the journal for published articles
   * for the owner, only if the paper is refused, waiting for revision, already accepted or published
   
+## 1.0.28.1 - 2022-03-23
+### Fixed
+-  fix issue in crossref xml format with related_item
+
 ## 1.0.28 - 2022-03-23
 ### Changed
 - Bump crossref schema to ver 4.8.1
