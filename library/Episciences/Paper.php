@@ -3381,9 +3381,10 @@ class Episciences_Paper
     /**
      * return an array of papers (previous versions of this paper)
      * @param bool $isCurrentVersionIncluded
+     * @param bool $includeTempVersions
      * @return array|null
      */
-    public function getPreviousVersions(bool $isCurrentVersionIncluded = false): ?array
+    public function getPreviousVersions(bool $isCurrentVersionIncluded = false, bool $includeTempVersions = true): ?array
     {
         if (($isCurrentVersionIncluded || !isset($this->_previousVersions)) && $this->getPaperid() !== $this->getDocid()) {
 
@@ -3396,6 +3397,10 @@ class Episciences_Paper
                 $sql = $db->select()
                     ->from(T_PAPERS)
                     ->where('PAPERID = ?', $parentId);
+
+                if (!$includeTempVersions) {
+                    $sql->where('REPOID != 0');
+                }
 
                 !$isCurrentVersionIncluded ? $sql->where('`WHEN` < ?', $this->getWhen()) : $sql->where('`WHEN` <= ?', $this->getWhen());
 
