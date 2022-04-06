@@ -159,7 +159,7 @@ class ExportController extends Zend_Controller_Action
 
 
         $previousVersionsUrl = [];
-        $previousVersions = $paper->getPreviousVersions(false);
+        $previousVersions = $paper->getPreviousVersions(false, false);
         if (!empty($previousVersions)) {
             foreach ($previousVersions as $paperVersions) {
                 /** Episciences_Paper $paperVersions */

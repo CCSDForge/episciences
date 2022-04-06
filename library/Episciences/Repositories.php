@@ -24,7 +24,7 @@ class Episciences_Repositories
     public const REPO_DOI_PREFIX = null;
 
 
-    private static $_repositories = [
+    private static array $_repositories = [
         [
             self::REPO_LABEL => 'Episciences',
             self::REPO_IDENTIFIER => null,

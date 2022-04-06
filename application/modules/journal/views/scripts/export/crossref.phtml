@@ -73,14 +73,15 @@ http://www.crossref.org/schema/4.8.1 "
         </journal_issue>
         <journal_article publication_type="full_text">
             <titles>
-                <?php $titleCount  = 0; ?>
+                <?php $titleCount = 0; ?>
                 <?php foreach ($titles as $lang => $title) : ?>
                     <?php
                     if ($titleCount == 0): ?>
                         <title><?php echo $this->escape($title) ?></title>
                         <?php $titleCount++; ?>
-                    <?php elseif ($titleCount == 1) :?>
-                        <original_language_title language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                    <?php elseif ($titleCount == 1) : ?>
+                        <original_language_title
+                                language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
                         <?php $titleCount++; ?>
                     <?php endif; ?>
 
@@ -94,15 +95,23 @@ http://www.crossref.org/schema/4.8.1 "
                 <contributors>
                     <?php
                     foreach ($authors as $order => $creatorName) {
-                    list($familyName, $givenName) = explode(', ', $creatorName);
+                        $givenName= '';
+                        $familyName= '';
+                        if (str_contains($creatorName, ',')) {
+                            [$familyName, $givenName] = explode(', ', $creatorName);
+                        } else {
+                            $familyName = $creatorName;
+                        }
+
                     ?>
                     <?php if ($order === 0) : ?>
                     <person_name sequence="first" contributor_role="author">
                         <?php else: ?>
                         <person_name sequence="additional" contributor_role="author">
                             <?php endif; ?>
-
+                            <?php if($givenName !=='') :?>
                             <given_name><?php echo $this->escape($givenName) ?></given_name>
+                            <?php endif; ?>
                             <surname><?php echo $this->escape($familyName) ?></surname>
                             <?php
                             /**
@@ -162,15 +171,19 @@ http://www.crossref.org/schema/4.8.1 "
                         <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                     <related_item>
-                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix(2) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
-                <?php else: ?>
+                <?php elseif ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Zenodo')) : ?>
+                    <related_item>
+                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                    </related_item>
+                <?php elseif ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal')) : ?>
                     <related_item>
                         <intra_work_relation identifier-type="uri" relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
                     </related_item>
                 <?php endif; ?>
 
-                <?php if (!empty($this->previousVersionsUrl)) :?>
+                <?php if (!empty($this->previousVersionsUrl)) : ?>
                     <?php foreach ($this->previousVersionsUrl as $preprintUrl) { ?>
                         <related_item>
                             <intra_work_relation identifier-type="uri" relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
@@ -184,7 +197,7 @@ http://www.crossref.org/schema/4.8.1 "
                 <resource><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></resource>
                 <collection property="crawler-based">
                     <item crawler="iParadigms">
-                        <resource><?php echo $journalUrl . '/' . $paper->getPaperid() . '/pdf'; ?></resource>
+                        <resource><?php echo $journalUrl . '/' . $paper->getDocid() . '/pdf'; ?></resource>
                     </item>
                 </collection>
             </doi_data>
