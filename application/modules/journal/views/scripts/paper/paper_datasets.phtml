@@ -13,19 +13,34 @@ $datasets = $paper->getDatasets()
         <div class="panel-body in">
             <table class="table table-striped">
                 <tbody>
-                <?php /** @var  Episciences_Paper_Dataset $oDataset */ ?>
-                <?php foreach ($paper->getDatasets() as $oDataset) : ?>
-                    <?php $href = $oDataset->getLink(); ?>
                     <tr>
                         <td>
-                            <a href="<?= $href ?>"><?= $oDataset->getValue() ?></a>
-                            <br/>
-                            <small class="label label-default"> <?= strtoupper($this->translate($oDataset->getName())) ?></small>
+                            <?php /** @var  Episciences_Paper_Dataset $oDataset */ ?>
+                            <?php foreach ($paper->getDatasets() as $key => $oDataset) : ?>
+                                <?php if ($key !== "metatext") :  ?>
+                                    <?php $href = $oDataset->getLink(); ?>
+                            <?= $oDataset->getRelationship() ?> <?= strtoupper($this->translate($oDataset->getName())) ?> <a href="<?= $href ?>"><?= $oDataset->getValue() ?></a><br>
+                                <?php endif;?>
+                            <?php endforeach; ?>
+                                <ul>
+                                    <?php foreach ($paper->getDatasets()['metatext']['identifiers'] as $key => $value) :     ?>
+                                        <li>
+                                            <span><?= $this->escape($value['identifier']) ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                                <span style="font-weight: bold"><?= $this->escape($paper->getDatasets()['metatext']['title']) ?></span><br>
+                                <?php foreach ($paper->getDatasets()['metatext']['creators'] as $key => $value) : ?>
+                                    <span><?= $value['name'] ?>
+                                        <?php if ($value['identifiers'] !== null) : ?>
+                                            <?php foreach ($value['identifiers'] as $identifierInfo) : ?>
+                                                <span><?= $identifierInfo['identifier'] ?></span>
+                                            <?php endforeach; ?>
+                                        <?php endif;?>
+                                    </span>;
+                                <?php endforeach; ?>
                         </td>
-                        <td></td>
-                        <td><span class="pull-right"><a data-toggle="tooltip" data-placement="top" title="<?= $this->translate('Voir') ?>" href="<?= $href ?>"><em class="fas fa-eye"></em></a></span></td>
                     </tr>
-                <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

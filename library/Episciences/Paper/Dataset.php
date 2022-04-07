@@ -253,10 +253,10 @@ class Episciences_Paper_Dataset
     }
 
     /**
-     * @param string $code
+     * @param null $relationship
      * @return Episciences_Paper_Dataset
      */
-    public function setRelationship(string $relationship): self
+    public function setRelationship(string $relationship = null): self
     {
 
         $this->_relationship = $relationship;
@@ -268,7 +268,7 @@ class Episciences_Paper_Dataset
      * @return int
      */
 
-    public function getIdPaperDatasetsMeta(): int
+    public function getIdPaperDatasetsMeta(): ?int
     {
 
         return $this->_idPaperDatasetsMeta;
@@ -276,11 +276,11 @@ class Episciences_Paper_Dataset
     }
 
     /**
-     * @param int $idPaperDatasetsMeta
+     * @param int|null $idPaperDatasetsMeta
      * @return $this
      */
 
-    public function setIdPaperDatasetsMeta(int $idPaperDatasetsMeta): self
+    public function setIdPaperDatasetsMeta(int $idPaperDatasetsMeta = null): self
     {
         $this->_idPaperDatasetsMeta = $idPaperDatasetsMeta;
         return $this;

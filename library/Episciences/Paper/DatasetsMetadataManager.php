@@ -63,4 +63,12 @@ class Episciences_Paper_DatasetsMetadataManager
             return false;
         }
     }
+    /**
+     * @param string $metatext
+     * @return bool
+     */
+
+    public static function decodeJsonMetatext(string $metatext): array {
+        return json_decode($metatext, true, 512, JSON_THROW_ON_ERROR);
+    }
 }

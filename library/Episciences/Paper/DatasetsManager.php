@@ -12,15 +12,18 @@ class Episciences_Paper_DatasetsManager
         $oResult = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
-            ->from(T_PAPER_DATASETS)
-            ->where('doc_id = ?', $docId);
+            ->from(array('DS' => T_PAPER_DATASETS,['DS.id']))
+            ->joinLeft(array('DM' => T_PAPER_DATASETS_META), 'DS.id_paper_datasets_meta = DM.id',['DM.metatext'])
+            ->where('DS.doc_id = ?', $docId);
+        $rows = $db->fetchAll($sql);
+        $iRow = count($rows)-1;
 
-        $rows = $db->fetchAssoc($sql);
-
-        foreach ($rows as $value) {
+        foreach ($rows as $key => $value) {
             $oResult[] = new Episciences_Paper_Dataset($value);
+            if ($key === $iRow && !is_null($oResult[$key]->getIdPaperDatasetsMeta())){
+                $oResult['metatext'] = Episciences_Paper_DatasetsMetadataManager::decodeJsonMetatext($value['metatext']);
+            }
         }
-
         return $oResult;
     }
 
@@ -134,7 +137,9 @@ class Episciences_Paper_DatasetsManager
             'name' => $dataset->getName(),
             'value' => $dataset->getValue(),
             'link' => $dataset->getLink(),
-            'sourceId' => $dataset->getSourceId()
+            'sourceId' => $dataset->getSourceId(),
+            'relationship' => $dataset->getRelationship(),
+            'id_paper_datasets_meta' => $dataset->getIdPaperDatasetsMeta()
         ];
 
         try {

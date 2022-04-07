@@ -3836,6 +3836,8 @@ class Episciences_Paper
         }
 
         $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
+        Zend_Debug::dump($this->_datasets);
+
     }
 
 
