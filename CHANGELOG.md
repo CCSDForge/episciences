@@ -14,10 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
-### Changed
-- Empty record: error message updating.
-- [#152](https://github.com/CCSDForge/episciences/issues/142)
+## Changed
+- [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
+
+## 1.0.28.2 - 2022-04-06
+### Fixed
+- Empty records from HAL repository: error message improved.
+- Improvements and fixes on Datacite and Crossref XML exports
+
+## 1.0.28.1 - 2022-03-23
+### Fixed
+-  fix issue in crossref xml format with related_item
 
 ## 1.0.28 - 2022-03-23
 ### Changed
@@ -97,9 +106,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
 - The attachments to the rating report are not available [RT#145473]
 - Answer revision request: in some situations, the "Submit" button remains inactive.
-
-## Changed
- - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
 
 ## 1.0.23 - 2022-01-19
 
