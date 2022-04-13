@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.28.3 - 2022-04-13
+### Changed
+- Updated error message when using a HAL identifier without any file.
+- [#142](https://github.com/CCSDForge/episciences/issues/142)
+
 ## 1.0.28.2 - 2022-04-06
 ### Fixed
 - Empty records from HAL repository: error message improved.
@@ -23,10 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.28.1 - 2022-03-23
 ### Fixed
 -  fix issue in crossref xml format with related_item
-## Unreleased
-### Changed
-- Empty record: error message updating.
-- [#152](https://github.com/CCSDForge/episciences/issues/142)
 
 ## 1.0.28 - 2022-03-23
 ### Changed
