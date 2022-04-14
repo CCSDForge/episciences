@@ -65,6 +65,7 @@ class Episciences_Paper_Dataset
         self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'https://archive.softwareheritage.org/'
     ];
 
+    protected $_metatext;
 
 
     /**
@@ -113,7 +114,13 @@ class Episciences_Paper_Dataset
             'time' => $this->getTime()
         ];
     }
+    public function getMetatext(): ?string {
+        return  $this->_metatext;
+    }
 
+    public function setMetatext($metatext){
+        return $this->_metatext = $metatext;
+    }
     /**
      * @return int
      */

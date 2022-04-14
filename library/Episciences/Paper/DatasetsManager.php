@@ -14,15 +14,23 @@ class Episciences_Paper_DatasetsManager
         $sql = $db->select()
             ->from(array('DS' => T_PAPER_DATASETS,['DS.id']))
             ->joinLeft(array('DM' => T_PAPER_DATASETS_META), 'DS.id_paper_datasets_meta = DM.id',['DM.metatext'])
-            ->where('DS.doc_id = ?', $docId);
+            ->where('DS.doc_id = ?', $docId)->order('source_id');
         $rows = $db->fetchAll($sql);
-        $iRow = count($rows)-1;
-
-        foreach ($rows as $key => $value) {
+        foreach ($rows as $value) {
+            switch ($value['link']):
+                case 'doi':
+                    $value['link'] = "https://doi.org/".$value['value'];
+                    break;
+                case 'arXiv':
+                    $value['link'] = "https://arxiv.org/abs/".$value['value'];
+                    break;
+                case 'SWHID':
+                    $value['link'] = "https://archive.softwareheritage.org/".$value['value'];
+                    break;
+                default:
+                    break;
+            endswitch;
             $oResult[] = new Episciences_Paper_Dataset($value);
-            if ($key === $iRow && !is_null($oResult[$key]->getIdPaperDatasetsMeta())){
-                $oResult['metatext'] = Episciences_Paper_DatasetsMetadataManager::decodeJsonMetatext($value['metatext']);
-            }
         }
         return $oResult;
     }
