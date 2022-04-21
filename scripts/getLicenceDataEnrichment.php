@@ -23,7 +23,7 @@ if (file_exists(__DIR__ . "/loadHeader.php")) {
 }
 require_once "JournalScript.php";
 
-class getCreatorData extends JournalScript
+class getLicenceDataEnrichment extends JournalScript
 {
     /**
      * @var Episciences_Paper
@@ -262,5 +262,5 @@ class getCreatorData extends JournalScript
 }
 
 
-$script = new getCreatorData($localopts);
+$script = new getLicenceDataEnrichment($localopts);
 $script->run();
