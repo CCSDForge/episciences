@@ -5,6 +5,10 @@
     {
       "type": "vcs",
       "url": "https://github.com/CCSDForge/php-hcaptcha"
+    },
+    {
+      "type": "vcs",
+      "url": "https://github.com/CCSDForge/coar-notifications"
     }
   ],
 
@@ -42,7 +46,7 @@
     "symfony/polyfill-mbstring": "*",
     "symfony/cache": "^5.4",
     "ezyang/htmlpurifier": "^4.14",
-    "cottagelabs/coar-notifications": "^0.9.6"
+    "cottagelabs/coar-notifications": "dev-main"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
