@@ -1284,11 +1284,11 @@ class Episciences_Tools
     }
 
     /**
-     * @param $authorString
+     * @param string $authorString
      * @param bool $protectLatex
      * @return string
      */
-    public static function reformatOaiDcAuthor($authorString, $protectLatex = false)
+    public static function reformatOaiDcAuthor(string $authorString, bool $protectLatex = false): string
     {
         $fistname = '';
         $lastname = '';
