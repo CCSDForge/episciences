@@ -166,6 +166,7 @@ function define_table_constants()
     define('T_PAPER_DATASETS', 'paper_datasets');
     define('T_PAPER_LICENCES', 'paper_licences');
     define('T_PAPER_DATASETS_META', 'paper_datasets_meta');
+    define('T_PAPER_AUTHORS', 'authors');
     define('T_PAPER_CONFLICTS', 'paper_conflicts');
 }
 
