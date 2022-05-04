@@ -54,11 +54,19 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
         <?php
         if (is_array($authors)) {
             foreach ($authors as $creatorName) {
-                list($familyName, $givenName) = explode(', ', $creatorName);
+                $givenName= '';
+                $familyName= '';
+                if (str_contains($creatorName, ',')) {
+                    [$familyName, $givenName] = explode(', ', $creatorName);
+                } else {
+                    $familyName = $creatorName;
+                }
                 ?>
                 <creator>
                     <creatorName><?php echo $this->escape($creatorName) ?></creatorName>
-                    <givenName><?php echo $this->escape($givenName) ?></givenName>
+                    <?php if($givenName !=='') :?>
+                        <givenName><?php echo $this->escape($givenName) ?></givenName>
+                    <?php endif; ?>
                     <familyName><?php echo $this->escape($familyName) ?></familyName>
                 </creator>
                 <?php
@@ -138,15 +146,17 @@ $schemInfo = ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http
 
     <relatedIdentifiers>
 
-        <?php if ($paper->getRepoid() == Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
-            <relatedIdentifier relatedIdentifierType="arXiv" relationType="References">
-                arXiv:<?php echo $paper->getIdentifier(); ?></relatedIdentifier>
+        <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
+            <relatedIdentifier relatedIdentifierType="arXiv" relationType="IsIdenticalTo">arXiv:<?php echo $paper->getIdentifier(); ?></relatedIdentifier>
+            <relatedIdentifier relatedIdentifierType="DOI" relationType="IsIdenticalTo"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></relatedIdentifier>
+        <?php elseif ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Zenodo')) : ?>
+            <relatedIdentifier relatedIdentifierType="DOI" relationType="IsIdenticalTo"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></relatedIdentifier>
         <?php else: ?>
             <relatedIdentifier relatedIdentifierType="URL"
-                               relationType="References"><?php echo $paper->getDocUrl(); ?></relatedIdentifier>
+                               relationType="IsIdenticalTo"><?php echo $paper->getDocUrl(); ?></relatedIdentifier>
         <?php endif; ?>
 
-        <?php if (isset($issn) && $issn != '') : ?>
+        <?php if (isset($issn) && $issn !== '') : ?>
             <relatedIdentifier relatedIdentifierType="ISSN"
                                relationType="IsPartOf"><?php echo $this->escape($issn); ?></relatedIdentifier>
         <?php endif; ?>

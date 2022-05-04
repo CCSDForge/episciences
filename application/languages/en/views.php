@@ -794,6 +794,7 @@ return [
     "Déconnexion du serveur d'authentification du" => 'Logging out from',
     "Déconnexion réussie" => 'You\'ve been successfuly logged out',
     "Échec de la déconnexion" => 'Logging out failed',
+    "Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !" => "You've been redirected to this page, your account on this application does not seem to be the right one!",
 
     // Lost login
     "Courriel" => "E-mail",

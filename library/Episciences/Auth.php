@@ -219,7 +219,7 @@ class Episciences_Auth extends Ccsd_Auth
      * @param $photoVersion
      * @return string
      */
-    public static function getPhotoVersionAsHash($photoVersion) :string
+    public static function getPhotoVersionAsHash($photoVersion): string
     {
         //add some salt with uid
         return sha1(self::getUid() . $photoVersion);
@@ -238,5 +238,35 @@ class Episciences_Auth extends Ccsd_Auth
         $session->photoVersion++;
     }
 
+    /**
+     * Save a real identity if an admin Sign in as another user
+     * @return void
+     */
+    public static function saveRealIdentity(): void
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $realIdentities = isset($session->realIdentities) ? array_merge($session->realIdentities, [self::getUid()]) : [self::getUid()];
+        $session->realIdentities = $realIdentities;
+
+    }
+
+    /**
+     * Check if user has a real identity
+     * @return bool
+     */
+    public static function hasRealIdentity(): bool
+    {
+
+        return self::isLogged() && self::getOriginalIdentity() === self::getUid();
+    }
+
+    /**
+     * @return int
+     */
+    public static function getOriginalIdentity(): int
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        return isset($session->realIdentities) ? $session->realIdentities[array_key_first($session->realIdentities)] : self::getUid();
+    }
 
 }
