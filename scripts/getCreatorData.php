@@ -104,7 +104,8 @@ class getCreatorData extends JournalScript
         define_review_constants();
         $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->distinct('DOI')->from('PAPERS',['DOI','PAPERID','DOCID'])->where('DOI IS NOT NULL')->where('DOI != ""')->order('DOCID ASC'); // prevent empty row
+        $select = $db->select()->distinct('DOI')->from(T_PAPERS,['DOI','PAPERID','DOCID'])->where('DOI IS NOT NULL')->where('DOI != ""')->order('DOCID DESC'); // prevent empty row
+
         foreach($db->fetchAll($select) as $value) {
             $pathOpenAireCreator = '../data/authors/openAire/'.explode("/",$value['DOI'])[1]."_creator.json";
             echo PHP_EOL . "PAPERID " . $value['PAPERID'];
@@ -112,6 +113,7 @@ class getCreatorData extends JournalScript
             echo PHP_EOL . "DOI " . $value['DOI'];
             //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
             $paper = Episciences_PapersManager::get($value['DOCID']);
+            Zend_Debug::dump($paper);
             if (empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']))) {
                 $this->InsertAuthorsFromPapers($paper, $value['PAPERID']);
             }
