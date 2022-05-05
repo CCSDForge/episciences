@@ -105,7 +105,6 @@ class getCreatorData extends JournalScript
         $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->distinct('DOI')->from('PAPERS',['DOI','PAPERID','DOCID'])->where('DOI IS NOT NULL')->where('DOI != ""')->order('DOCID ASC'); // prevent empty row
-        $i = 0;
         foreach($db->fetchAll($select) as $value) {
             $pathOpenAireCreator = '../data/authors/openAire/'.explode("/",$value['DOI'])[1]."_creator.json";
             echo PHP_EOL . "PAPERID " . $value['PAPERID'];
@@ -161,8 +160,6 @@ class getCreatorData extends JournalScript
                     }
                 }
             }
-            $i++;
-            if ($i === 10)die;
         }
 
     }

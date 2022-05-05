@@ -94,12 +94,14 @@ class getLicenceDataEnrichment extends JournalScript
         define_review_constants();
         $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from('PAPERS', ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', 16)->order('REPOID ASC'); // prevent empty row
+        $select = $db->select()->from('PAPERS', ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', 16)->order('REPOID DESC'); // prevent empty row
         $prefixArxiv = '10.48550/arxiv.';
         $prefixZen = '10.5281/zenodo.';
         $communUrlArXZen = 'https://api.datacite.org/dois/';
+
         foreach ($db->fetchAll($select) as $value) {
-            $fileName = "../data/enrichmentLicences/" . $value['IDENTIFIER'] . "_licence.json";
+            $cleanID = str_replace('/','',$value['IDENTIFIER']); // ARXIV CAN HAVE "/" in ID
+            $fileName = "../data/enrichmentLicences/" . $cleanID . "_licence.json";
             echo PHP_EOL . $value['IDENTIFIER'];
             if (!file_exists($fileName)) {
                 switch ($value['REPOID']) {
@@ -147,7 +149,7 @@ class getLicenceDataEnrichment extends JournalScript
                 if ($value['REPOID'] === "2" || $value['REPOID'] === "4") {
                     $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
                     if (isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
-                        file_put_contents('../data/enrichmentLicences/' . $value['IDENTIFIER'] . "_licence.json", json_encode($licenceArray['data']['attributes']['rightsList'][0], JSON_THROW_ON_ERROR));
+                        file_put_contents('../data/enrichmentLicences/' . $cleanID . "_licence.json", json_encode($licenceArray['data']['attributes']['rightsList'][0], JSON_THROW_ON_ERROR));
                         Episciences_Paper_LicenceManager::insert([
                             [
                                 'licence' => $licenceArray['data']['attributes']['rightsList'][0]['rightsUri'],
@@ -156,6 +158,8 @@ class getLicenceDataEnrichment extends JournalScript
                             ]
                         ]);
                         echo PHP_EOL . 'INSERT DONE ';
+                    }else{
+                        file_put_contents('../data/enrichmentLicences/' . $value['IDENTIFIER'] . "_licence.json", json_encode([""], JSON_THROW_ON_ERROR));
                     }
                 } elseif ($value['REPOID'] === "1") {
                     $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
@@ -168,6 +172,8 @@ class getLicenceDataEnrichment extends JournalScript
                                 'sourceId' => '1'
                             ]
                         ]);
+                    }else{
+                        file_put_contents('../data/enrichmentLicences/' . $value['IDENTIFIER'] . "_licence.json", json_encode([""], JSON_THROW_ON_ERROR));
                     }
                 }
             }
