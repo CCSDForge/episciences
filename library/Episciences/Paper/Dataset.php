@@ -32,6 +32,15 @@ class Episciences_Paper_Dataset
      */
     protected $_sourceId;
 
+    /** @var string */
+    protected $_relationship;
+
+    /**
+     * @var int
+     */
+    protected $_idPaperDatasetsMeta;
+
+
     /** @var DateTime */
     protected $_time = 'CURRENT_TIMESTAMP';
 
@@ -55,6 +64,9 @@ class Episciences_Paper_Dataset
         self::DOI_CODE => 'https://doi.org/',
         self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'https://archive.softwareheritage.org/'
     ];
+
+    protected $_metatext;
+
 
     /**
      * Episciences_Paper_Dataset constructor.
@@ -97,10 +109,18 @@ class Episciences_Paper_Dataset
             'value' => $this->getValue(),
             'link' => $this->getLink(),
             'sourceId' => $this->getSourceId(),
+            'relationship'=> $this->getRelationship(),
+            'idPaperDatasetsMeta'=> $this->getIdPaperDatasetsMeta(),
             'time' => $this->getTime()
         ];
     }
+    public function getMetatext(): ?string {
+        return  $this->_metatext;
+    }
 
+    public function setMetatext($metatext){
+        return $this->_metatext = $metatext;
+    }
     /**
      * @return int
      */
@@ -228,6 +248,48 @@ class Episciences_Paper_Dataset
     public function setSourceId(int $sourceId): self
     {
         $this->_sourceId = $sourceId;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRelationship(): string
+    {
+        return $this->_relationship;
+    }
+
+    /**
+     * @param null $relationship
+     * @return Episciences_Paper_Dataset
+     */
+    public function setRelationship(string $relationship = null): self
+    {
+
+        $this->_relationship = $relationship;
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+
+    public function getIdPaperDatasetsMeta(): ?int
+    {
+
+        return $this->_idPaperDatasetsMeta;
+
+    }
+
+    /**
+     * @param int|null $idPaperDatasetsMeta
+     * @return $this
+     */
+
+    public function setIdPaperDatasetsMeta(int $idPaperDatasetsMeta = null): self
+    {
+        $this->_idPaperDatasetsMeta = $idPaperDatasetsMeta;
         return $this;
     }
 

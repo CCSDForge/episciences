@@ -109,7 +109,6 @@ class PaperController extends PaperDefaultController
      */
     public function viewAction(): void
     {
-
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
@@ -125,6 +124,7 @@ class PaperController extends PaperDefaultController
         $papersManager = new Episciences_PapersManager();
         $paper = $papersManager::get($docId);
 
+        $this->view->metadata = $paper->getDatasetsFromEnrichment();
         // check if paper exists
         if (!$paper || $paper->getRvid() !== RVID) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');

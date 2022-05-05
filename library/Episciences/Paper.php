@@ -3820,7 +3820,6 @@ class Episciences_Paper
         if (!$this->_datasets) {
             $this->loadDatasets();
         }
-
         return $this->_datasets;
     }
 
@@ -3839,10 +3838,25 @@ class Episciences_Paper
             $this->_datasets = [];
             return;
         }
-
         $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
     }
 
+    public function getDatasetsFromEnrichment(){
+
+        $notFormatedDatasets =  $this->getDatasets();
+        $formatedDatasets = [];
+        $metatexttmp = '';
+        foreach ($notFormatedDatasets as $value){
+            $formatedDatasets[$value->getSourceId()][] = $value;
+            if (!is_null($value->getMetatext())){
+                if ($metatexttmp !== $value->getMetatext()){
+                    $formatedDatasets[$value->getSourceId()]['metatext'][] = json_decode($value->getMetatext(), true, 512, JSON_THROW_ON_ERROR);
+                    $metatexttmp = $value->getMetatext();
+                }
+            }
+        }
+        return $formatedDatasets;
+    }
 
     public function getDatasetByValue(string $value): ?Episciences_Paper_Dataset
     {

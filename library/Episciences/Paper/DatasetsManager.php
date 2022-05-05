@@ -12,15 +12,26 @@ class Episciences_Paper_DatasetsManager
         $oResult = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
-            ->from(T_PAPER_DATASETS)
-            ->where('doc_id = ?', $docId);
-
-        $rows = $db->fetchAssoc($sql);
-
+            ->from(array('DS' => T_PAPER_DATASETS,['DS.id']))
+            ->joinLeft(array('DM' => T_PAPER_DATASETS_META), 'DS.id_paper_datasets_meta = DM.id',['DM.metatext'])
+            ->where('DS.doc_id = ?', $docId)->order('source_id');
+        $rows = $db->fetchAll($sql);
         foreach ($rows as $value) {
+            switch ($value['link']):
+                case 'doi':
+                    $value['link'] = "https://doi.org/".$value['value'];
+                    break;
+                case 'arXiv':
+                    $value['link'] = "https://arxiv.org/abs/".$value['value'];
+                    break;
+                case 'SWHID':
+                    $value['link'] = "https://archive.softwareheritage.org/".$value['value'];
+                    break;
+                default:
+                    break;
+            endswitch;
             $oResult[] = new Episciences_Paper_Dataset($value);
         }
-
         return $oResult;
     }
 
@@ -97,10 +108,10 @@ class Episciences_Paper_DatasetsManager
                 $dataset = new Episciences_Paper_Dataset($dataset);
             }
 
-            $values[] = '(' . $db->quote($dataset->getDocId()) . ',' . $db->quote($dataset->getCode()) . ',' . $db->quote($dataset->getName()) . ',' . $db->quote($dataset->getValue()) . ',' . $db->quote($dataset->getLink()) . ',' . $db->quote($dataset->getSourceId()) . ')';
+            $values[] = '(' . $db->quote($dataset->getDocId()) . ',' . $db->quote($dataset->getCode()) . ',' . $db->quote($dataset->getName()) . ',' . $db->quote($dataset->getValue()) . ',' . $db->quote($dataset->getLink()) . ',' . $db->quote($dataset->getSourceId()) . ',' . $db->quote($dataset->getRelationship()) . ',' . $db->quote($dataset->getIdPaperDatasetsMeta()) . ')';
         }
 
-        $sql = 'INSERT IGNORE INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS) . ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`) VALUES ';
+        $sql = 'INSERT IGNORE INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS) . ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`, `relationship`, `id_paper_datasets_meta`) VALUES ';
 
         if (!empty($values)) {
             try {
@@ -134,7 +145,9 @@ class Episciences_Paper_DatasetsManager
             'name' => $dataset->getName(),
             'value' => $dataset->getValue(),
             'link' => $dataset->getLink(),
-            'sourceId' => $dataset->getSourceId()
+            'sourceId' => $dataset->getSourceId(),
+            'relationship' => $dataset->getRelationship(),
+            'id_paper_datasets_meta' => $dataset->getIdPaperDatasetsMeta()
         ];
 
         try {

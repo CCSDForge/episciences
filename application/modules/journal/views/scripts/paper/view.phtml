@@ -2,6 +2,7 @@
 
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
+$metadata = $this->metadata;
 $status = $paper->getStatus();
 $isSecretary = Episciences_Auth::isSecretary();
 $loggedUid = Episciences_Auth::getUid();
@@ -167,7 +168,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <div>
     <?= $paper->getXslt() ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
-    <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper]) ?>
+    <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper,'metadata'=> $metadata]) ?>
 </div>
 
 <?php if ($isAllowed): ?>
