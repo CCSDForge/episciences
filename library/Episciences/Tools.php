@@ -224,7 +224,7 @@ class Episciences_Tools
         $files = $upload->getFileInfo();
 
         if (count($files) && !is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
-            error_log('Upload file failed: directory "%s" was not created', $path);
+            trigger_error('Upload file failed: directory "%s" was not created', $path);
         }
 
         foreach ($files as $file => $info) {
@@ -368,7 +368,7 @@ class Episciences_Tools
             }
 
             if (!is_dir($path . $lang) && !mkdir($concurrentDirectory = $path . $lang) && !is_dir($concurrentDirectory)) {
-                error_log('Write translation failed: directory "%s" was not created', $concurrentDirectory);
+                trigger_error('Write translation failed: directory "%s" was not created', $concurrentDirectory);
             }
 
             $filePath = $path . $lang . '/' . $file;
@@ -1057,14 +1057,14 @@ class Episciences_Tools
         if (!is_dir($dest)) {
             $resMkdir = mkdir($dest, 0777, true);
             if (!$resMkdir) {
-                error_log('Fatal error : unable to create folder: ' . $dest);
+                trigger_error('Fatal error : unable to create folder: ' . $dest);
                 return $resMkdir;
             }
         }
 
         foreach ($filesList as $file) {
             if (!copy($source . $file, $dest . $file)) {
-                error_log('FAILED_TO_COPY_FILE_ERROR: ' . $file . '( SOURCE: ' . $source . 'DESTINATION: ' . $dest . ' )');
+                trigger_error('FAILED_TO_COPY_FILE_ERROR: ' . $file . '( SOURCE: ' . $source . 'DESTINATION: ' . $dest . ' )');
                 $nbFilesNotCopied++;
             }
         }
@@ -1141,7 +1141,7 @@ class Episciences_Tools
             return ($description . ' <strong>' . self::toHumanReadable(MAX_FILE_SIZE) . '</strong>');
 
         } catch (Zend_Exception $e) {
-            error_log('ZEND_TRANSLATE_EXCEPTION: ' . $e->getMessage());
+            trigger_error('ZEND_TRANSLATE_EXCEPTION: ' . $e->getMessage());
         }
         return $additionalDescription;
     }
@@ -1166,13 +1166,11 @@ class Episciences_Tools
      * @param array $attachments
      * @return array
      */
-    public static function arrayFilterAttachments(array $attachments): array
+    public static function arrayFilterEmptyValues(array $attachments): array
     {
-        $attachments = array_filter($attachments, function ($value) {
+        return array_filter($attachments, static function ($value) {
             return '' !== $value;
         });
-
-        return $attachments;
     }
 
     /**
@@ -1189,7 +1187,7 @@ class Episciences_Tools
             $paper = Episciences_PapersManager::get($firstElement->nodeValue, false);
 
         } catch (Zend_Db_Statement_Exception $e) {
-            error_log('(Zend_Db_Statement_Exception: ' . $e->getMessage());
+            trigger_error('(Zend_Db_Statement_Exception: ' . $e->getMessage());
             return $text;
         }
 
@@ -1202,7 +1200,7 @@ class Episciences_Tools
             $fileExp = $translator->translate('Fichier');
         } catch (Zend_Exception $e) {
             $fileExp = 'Fichier';
-            error_log('Expression "%s" was not translated', $fileExp . ': ' . $e->getMessage());
+            trigger_error('Expression "%s" was not translated', $fileExp . ': ' . $e->getMessage());
         }
 
         $paperId = $paper->getPaperid();
@@ -1211,16 +1209,21 @@ class Episciences_Tools
         // Extract file(s) name
         $subStr = substr($identifier, (strlen($paperId) + 1));
 
-        $result = !self::isJson($subStr) ? $result = (array)$subStr : json_decode($subStr, true);
+        try {
+            $result = !self::isJson($subStr) ? (array)$subStr : json_decode($subStr, true, 512, JSON_THROW_ON_ERROR);
+            $result = self::arrayFilterEmptyValues($result);
+        } catch (JsonException $e) {
+            $result = [];
+            trigger_error($e->getMessage());
+        }
 
         if (empty($result)) {
-            error_log('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
+            trigger_error('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
             return $text;
         }
 
         $cHref = '/tmp_files/' . $paperId . '/';
 
-        $text = '';
         foreach ($result as $index => $fileName) {
             $href = $cHref . $fileName;
             $text .= '<a target="_blank" href="' . $href . '">';

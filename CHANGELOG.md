@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Fixed
+- File not found for Temporary Versions without attached files + refactoring.
+
 ## 1.0.28.3 - 2022-04-13
 ### Changed
 - Updated error message when using a HAL identifier without any file.

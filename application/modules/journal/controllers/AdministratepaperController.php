@@ -3765,7 +3765,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!empty($post['attachments'])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterAttachments($post['attachments']);
+            $attachments = Episciences_Tools::arrayFilterEmptyValues($post['attachments']);
             $comment->setFile(json_encode($attachments));
         }
 

@@ -96,7 +96,7 @@ class PaperDefaultController extends DefaultController
         $mail->setRawBody(Ccsd_Tools::clear_nl($message));
         if (isset($data['attachments'])) {
             $path = REVIEW_FILES_PATH . 'attachments/';
-            $attachments = Episciences_Tools::arrayFilterAttachments($data['attachments']);
+            $attachments = Episciences_Tools::arrayFilterEmptyValues($data['attachments']);
             foreach ($attachments as $attachment) {
                 $filepath = $path . $attachment;
                 if (file_exists($filepath)) {
