@@ -117,7 +117,6 @@ class getLicenceDataEnrichment extends JournalScript
 
                         file_put_contents('../data/enrichmentLicences/' . $cleanID . "_licence.json", json_encode($licenceArray['data']['attributes']['rightsList'][0], JSON_THROW_ON_ERROR));
                         $licenceGetter = $licenceArray['data']['attributes']['rightsList'][0]['rightsUri'];
-
                         $licenceGetter = $this->cleanLicence($licenceGetter);
                         echo PHP_EOL . $licenceGetter;
                         Episciences_Paper_LicenceManager::insert([
