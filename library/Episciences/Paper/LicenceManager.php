@@ -3,7 +3,7 @@
 class Episciences_Paper_LicenceManager
 {
     /**
-     * @param array $licencesk
+     * @param array $licences
      * @return int
      */
 
