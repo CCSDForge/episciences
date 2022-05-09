@@ -20,3 +20,6 @@ ALTER TABLE `paper_licences`
 ALTER TABLE `paper_licences`
   MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 COMMIT;
+
+ALTER TABLE `paper_licences` DROP INDEX `unique_docid`, ADD UNIQUE `unique_docid` (`docid`) USING BTREE;
+ALTER TABLE `paper_licences` CHANGE `updated_at` `updated_at` DATETIME on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;

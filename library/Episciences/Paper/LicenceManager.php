@@ -3,7 +3,7 @@
 class Episciences_Paper_LicenceManager
 {
     /**
-     * @param array $licences
+     * @param array $licencesk
      * @return int
      */
 
@@ -19,21 +19,20 @@ class Episciences_Paper_LicenceManager
 
             if (!($licence instanceof Episciences_Paper_Licence)) {
 
-                $licenceData = new Episciences_Paper_Licence($licence);
+                $licence = new Episciences_Paper_Licence($licence);
             }
 
-            $values[] = '(' . $db->quote($licenceData->getLicence()) . ',' . $db->quote($licenceData->getDocId()) . ',' . $db->quote($licenceData->getSourceId()) . ')';
+            $values[] = '(' . $db->quote($licence->getLicence()) . ',' . $db->quote($licence->getDocId()) . ',' . $db->quote($licence->getSourceId()) . ')';
 
         }
         $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_LICENCES) . ' (`licence`,`docid`,`source_id`) VALUES ';
 
-        if (!empty($values)) {
 
+        if (!empty($values)) {
             try {
                 //Prepares and executes an SQL
                 /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values));
-
+                $result = $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE licence=VALUES(licence)');
                 $affectedRows = $result->rowCount();
 
             } catch (Exception $e) {
