@@ -2,18 +2,10 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Psr\Http\Message\ResponseInterface;
 
 
 $localopts = [
-    'paperid=i' => "Paper ID",
     'dry-run' => 'Work with Test API',
-    'check' => 'Check DOI submission status',
-    'rvid=i' => 'RVID of a journal',
-    'assign-accepted' => 'Assign DOI to all accepted papers',
-    'assign-published' => 'Assign DOI to all accepted papers',
-    'request' => 'Request all assigned DOI of a journal',
-    'journal-hostname=s' => 'Get XML files from an alternate journal hostname, eg: test.episciences.org'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -25,39 +17,15 @@ require_once "JournalScript.php";
 
 class getLicenceDataEnrichment extends JournalScript
 {
-    /**
-     * @var Episciences_Paper
-     */
-    protected $_paper;
-
-    /**
-     * @var Episciences_Review
-     */
-    protected $_review;
-    /**
-     * @var Episciences_Paper_DoiQueue
-     */
-    protected $_doiQueue;
-
-    /**
-     * @var Episciences_Review_DoiSettings
-     */
-    protected $_doiSettings;
 
     /**
      * @var bool
      */
-    protected $_dryRun = true;
-
-    /**
-     * @var string
-     */
-    protected $_journalHostname;
+    protected bool $_dryRun = true;
 
     /**
      * getDoi constructor.
      * @param $localopts
-     * @throws Zend_Db_Statement_Exception
      */
     public function __construct($localopts)
     {
@@ -72,21 +40,13 @@ class getLicenceDataEnrichment extends JournalScript
         } else {
             $this->setDryRun(false);
         }
-
-        $journalHostname = $this->getParam('journal-hostname');
-        if ($journalHostname === null) {
-            $journalHostname = '';
-        }
-        $this->setJournalHostname($journalHostname);
-
     }
 
     /**
-     * @return mixed|void
-     * @throws GuzzleException
+     * @return void
+     * @throws GuzzleException|JsonException
      */
-    public
-    function run()
+    public function run(): void
     {
         $this->initApp();
         $this->initDb();
@@ -94,16 +54,16 @@ class getLicenceDataEnrichment extends JournalScript
         define_review_constants();
         $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from('PAPERS', ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', 16)->order('REPOID DESC'); // prevent empty row
+        $select = $db->select()->from(T_PAPERS, ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', 16)->order('REPOID DESC'); // prevent empty row
         $prefixArxiv = '10.48550/arxiv.';
         $prefixZen = '10.5281/zenodo.';
         $communUrlArXZen = 'https://api.datacite.org/dois/';
 
         foreach ($db->fetchAll($select) as $value) {
-            $cleanID = str_replace('/','',$value['IDENTIFIER']); // ARXIV CAN HAVE "/" in ID
+            $cleanID = str_replace('/', '', $value['IDENTIFIER']); // ARXIV CAN HAVE "/" in ID
             // arxiv ID can have some extra no needed
-            if (strpos($value['IDENTIFIER'], '.LO/')){
-                $value['IDENTIFIER'] = str_replace('.LO/','/',$value['IDENTIFIER']);
+            if (strpos($value['IDENTIFIER'], '.LO/')) {
+                $value['IDENTIFIER'] = str_replace('.LO/', '/', $value['IDENTIFIER']);
             }
 
             $fileName = "../data/enrichmentLicences/" . $cleanID . "_licence.json";
@@ -168,7 +128,7 @@ class getLicenceDataEnrichment extends JournalScript
                             ]
                         ]);
                         echo PHP_EOL . 'INSERT DONE ';
-                    }else{
+                    } else {
                         file_put_contents('../data/enrichmentLicences/' . $value['IDENTIFIER'] . "_licence.json", json_encode([""], JSON_THROW_ON_ERROR));
                     }
                 } elseif ($value['REPOID'] === "1") {
@@ -186,12 +146,23 @@ class getLicenceDataEnrichment extends JournalScript
                             ]
                         ]);
                         echo PHP_EOL . 'INSERT DONE ';
-                    }else{
+                    } else {
                         file_put_contents('../data/enrichmentLicences/' . $value['IDENTIFIER'] . "_licence.json", json_encode([""], JSON_THROW_ON_ERROR));
                     }
                 }
             }
         }
+    }
+
+    /**
+     * @param string $licenceGetter
+     * @return string
+     */
+    public function cleanLicence(string $licenceGetter): string
+    {
+        $licenceGetter = str_replace("http://", "https://", $licenceGetter);
+        $licenceGetter = rtrim($licenceGetter, '/legalcode');
+        return rtrim($licenceGetter, '/');
     }
 
     /**
@@ -210,92 +181,6 @@ class getLicenceDataEnrichment extends JournalScript
     function setDryRun(bool $dryRun)
     {
         $this->_dryRun = $dryRun;
-    }
-
-    /**
-     * @return Episciences_Paper
-     */
-    public
-    function getPaper(): Episciences_Paper
-    {
-        return $this->_paper;
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     */
-    public
-    function setPaper($paper)
-    {
-        $this->_paper = $paper;
-    }
-
-    /**
-     * @return string
-     */
-    public function getJournalHostname(): string
-    {
-        return $this->_journalHostname;
-    }
-
-    /**
-     * @param string $journalDomain
-     */
-    public function setJournalHostname(string $journalDomain)
-    {
-        $this->_journalHostname = $journalDomain;
-    }
-
-    /**
-     * @return Episciences_Review
-     */
-    public
-    function getReview(): Episciences_Review
-    {
-        return $this->_review;
-    }
-
-    /**
-     * @param Episciences_Review $review
-     */
-    public
-    function setReview($review)
-    {
-        $this->_review = $review;
-    }
-
-    public
-    function getDoiQueue(): Episciences_Paper_DoiQueue
-    {
-        return $this->_doiQueue;
-    }
-
-    /**
-     * @param mixed $doiQueue
-     */
-    public
-    function setDoiQueue($doiQueue)
-    {
-        $this->_doiQueue = $doiQueue;
-    }
-
-    /**
-     * @param $licenceGetter
-     * @return array|false|mixed|string|string[]
-     */
-    public function cleanLicence($licenceGetter)
-    {
-        if (str_contains($licenceGetter, "http://")) {
-            $licenceGetter = str_replace("http://", "https://", $licenceGetter);
-        }
-        if (substr($licenceGetter, -1) == '/') {
-            $licenceGetter = substr($licenceGetter, 0, -1);
-        }
-        if (substr($licenceGetter, strrpos($licenceGetter, '/' )+1) === "legalcode"){
-            $licenceGetter = str_replace("/legalcode", "", $licenceGetter);
-        }
-
-        return $licenceGetter;
     }
 
 }
