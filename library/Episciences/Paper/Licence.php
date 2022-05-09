@@ -7,22 +7,22 @@ class Episciences_Paper_Licence
     /**
      * @var int
      */
-    protected $_id;
+    protected int $_id;
 
     /**
      * @var string
      */
-    protected $_licence;
+    protected string $_licence;
 
     /**
      * @var int
      */
-    protected $_docId;
+    protected int $_docId;
 
     /**
      * @var int
      */
-    protected $_sourceId;
+    protected int $_sourceId;
 
     /**
      * @var datetime
@@ -133,8 +133,8 @@ class Episciences_Paper_Licence
     }
 
     /**
-     * @param DateTime $updatedAt
-     * @return Episciences_Paper_Dataset
+     * @param string $updatedAt
+     * @return Episciences_Paper_Licence
      * @throws Exception
      */
     public function setUpdatedAt(string $updatedAt): self
