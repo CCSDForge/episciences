@@ -159,6 +159,10 @@ class getLicenceDataEnrichment extends JournalScript
      */
     public function cleanLicence(string $licenceGetter): string
     {
+        //specific url
+        $licenceGetter = str_replace("http://hal.archives-ouvertes.fr/licences/etalab/","https://raw.githubusercontent.com/DISIC/politique-de-contribution-open-source/master/LICENSE",$licenceGetter);
+        $licenceGetter = str_replace("http://hal.archives-ouvertes.fr/licences/publicDomain/","https://creativecommons.org/publicdomain/zero/1.0",$licenceGetter);
+        //////////////
         $licenceGetter = str_replace("http://", "https://", $licenceGetter);
         $licenceGetter = rtrim($licenceGetter, '/legalcode');
         return rtrim($licenceGetter, '/');

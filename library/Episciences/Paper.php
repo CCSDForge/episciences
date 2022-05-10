@@ -1862,6 +1862,12 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
 
+        //get licence paper
+        $licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        if ($licence !== "") {
+            $node->appendChild($dom->createElement('paperLicence', $licence));
+        }
+
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());

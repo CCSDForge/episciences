@@ -209,6 +209,18 @@
                     </div>
                 </xsl:if>
 
+                <xsl:if test="episciences/paperLicence/text() != ''">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
+                        <a rel="noopener" target="_blank">
+                            <xsl:attribute name="href">
+                                <xsl:value-of select="episciences/paperLicence/text()"/>
+                            </xsl:attribute>
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', string(episciences/paperLicence))"/>
+                        </a>
+                    </div>
+                </xsl:if>
+
                 <br/>
 
                 <xsl:if test="(episciences/status = 0) and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = 0)">
@@ -281,7 +293,6 @@
                                 </button>
 
                             </xsl:if>
-
                         </xsl:otherwise>
                     </xsl:choose>
 

@@ -303,6 +303,7 @@ return [
     "Refusé le : " => 'Refused on: ',
     'Accepté le : ' => 'Accepted on: ',
     'Mots-clés : ' => 'Keywords: ',
+    'Licence : ' => 'Licence: ',
     'Rubrique : ' => 'Section: ',
     'Volumes & rubriques' => 'Volumes & sections',
     'Volume : ' => 'Volume: ',

@@ -43,4 +43,12 @@ class Episciences_Paper_LicenceManager
         return $affectedRows;
 
     }
+
+    public static function getLicenceByDocId($docId) {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()->from(T_PAPER_LICENCES, ['licence','source_id'])->where('docid = ? ', $docId);
+        return $db->fetchOne($sql);
+
+    }
 }
