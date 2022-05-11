@@ -30,6 +30,7 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = self::getListQuery($settings, $isFilterInfos, $isLimit);
+        $test = $select->__tostring();
 
         $list = $db->fetchAssoc($select, $cached);
 
