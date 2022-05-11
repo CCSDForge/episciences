@@ -61,7 +61,7 @@ foreach ($comments as $id => $comment) : ?>
             ?>
 
             <button id="replyFormBtn_<?= $id ?>" style="margin: 10px 0 20px 20px"
-                    class='btn btn <?= $replyBtnClass; ?> btn-sm replyButton' <?= $disabled . ' ' . $toolTip ?>>
+                    class='btn btn <?= $replyBtnClass ?> btn-sm replyButton' <?= $disabled . ' ' . $toolTip ?>>
                 <span class="glyphicon glyphicon-edit "></span> <?= $this->translate($replyBtnMsg) ?>
             </button>
 
@@ -99,12 +99,12 @@ foreach ($comments as $id => $comment) : ?>
                     </strong>
                 </span>
 
-                <?php if ((int)$reply['UID'] === Episciences_Auth::getUid()) : ?>
+                <?php if ($reply['UID'] === Episciences_Auth::getUid()) : ?>
                     (<?= $this->translate('vous') ?>)
                 <?php else: ?>
-                    (<?= $this->translate('l\'auteur') . ' : ' . $reply['SCREEN_NAME'] ?>)
+                    (<?= $reply['SCREEN_NAME'] ?>)
                 <?php endif; ?>
-                <?= $infoMsg; ?>
+                <?= $infoMsg ?>
 
                 <div><?= Episciences_Tools::formatText($this->escape($reply['MESSAGE'])) ?></div>
 
@@ -112,7 +112,7 @@ foreach ($comments as $id => $comment) : ?>
                     <?php $files = Episciences_Tools::isJson($reply['FILE']) ? json_decode($reply['FILE'], true) : (array)$reply['FILE'] ?>
                     <hr>
                     <p class="small">
-                        <strong><?= $this->translate('Fichier(s) joint(s)'); ?> :</strong>
+                        <strong><?= $this->translate('Fichier(s) joint(s)') ?> :</strong>
                     </p>
 
                     <?php foreach ($files as $file) : ?>

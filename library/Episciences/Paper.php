@@ -1986,7 +1986,7 @@ class Episciences_Paper
      */
     public function getOaiIdentifier(): string
     {
-        return 'oai:' . DOMAIN . ':' . Episciences_Review::getData($this->getRvid())['CODE'] . ':' . $this->getPaperid();
+        return 'oai:' . DOMAIN . ':' . Episciences_Review::getData($this->getRvid())['CODE'] . ':' . $this->getDocid();
     }
 
     /**

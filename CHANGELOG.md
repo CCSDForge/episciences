@@ -14,9 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+## 1.0.28.4 - 2022-05-09
+### Fixed
+- File not found for Temporary Versions without attached files + refactoring.
+
+## 1.0.28.3 - 2022-04-13
 ### Changed
-- Empty record: error message updating.
+- Updated error message when using a HAL identifier without any file.
+- [#142](https://github.com/CCSDForge/episciences/issues/142)
+
+## 1.0.28.2 - 2022-04-06
+### Fixed
+- Empty records from HAL repository: error message improved.
+- Improvements and fixes on Datacite and Crossref XML exports
 
 
 ## Unreleased
