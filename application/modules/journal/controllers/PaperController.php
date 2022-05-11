@@ -217,7 +217,7 @@ class PaperController extends PaperDefaultController
 
         $isConflictDetected =
             !$isSecretary &&
-            Episciences_Auth::getUid() !== $paper->getUid() &&
+            $loggedUid !== $paper->getUid() &&
             !$paper->getReviewer($loggedUid) &&
             $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
             (
@@ -567,7 +567,7 @@ class PaperController extends PaperDefaultController
 
         if (!empty($attachments)) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterAttachments($attachments);
+            $attachments = Episciences_Tools::arrayFilterEmptyValues($attachments);
             $cAnswer->setFile(json_encode($attachments));
         }
 
@@ -954,7 +954,7 @@ class PaperController extends PaperDefaultController
 
         if (!empty($attachments)) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterAttachments($attachments);
+            $attachments = Episciences_Tools::arrayFilterEmptyValues($attachments);
             $answerComment->setFile(json_encode($attachments));
         }
 

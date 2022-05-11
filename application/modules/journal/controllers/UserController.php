@@ -41,9 +41,12 @@ class UserController extends UserDefaultController
             if (Episciences_Auth::isSecretary()) { // Alert on the existence of papers without assigned editors
 
                 $settings['is']['status'] = array_diff(Episciences_PapersManager::getAllStatus(RVID, 'ASC'), Episciences_Paper::$_noEditableStatus);
-                $settings['is']['editors'] = [Episciences_View_Helper_PaperFilter::NONE_KEY];
 
-                $this->view->onlyEditablePapersWithoutEditors = $review->getPapers($settings);
+                if (!empty($settings['is']['status'])) {
+                    $settings['is']['editors'] = [Episciences_View_Helper_PaperFilter::NONE_KEY];
+
+                    $this->view->onlyEditablePapersWithoutEditors = $review->getPapers($settings);
+                }
             }
         }
 
