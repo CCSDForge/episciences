@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display the origin of a linked data.
 - Administration page of a paper: new shortcut for administrators to allow to sign in as a copy-editor
 - Administration page of a paper: new shortcut for administrators to allow to sign in as an editor
+- Automatic mail detection
+
 
 ## Changed
 - Workflow reviewing
@@ -54,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move "copy editing" section
 - Dashboard improvements: ability to reach an article from sections: my submissions and assigned articles
 - [#187](https://github.com/CCSDForge/episciences/issues/187): change the default templates: 'new version submitted' and 'tmp version submitted'
-- [#188](https://github.com/CCSDForge/episciences/issues/18 ): force notifications
+- [#188](https://github.com/CCSDForge/episciences/issues/188 ): force notifications
 - CWI is removed now: OAI is down.
 - Code Refactoring fixing of warning
 - It is now possible to re-point the version in Episciences to the most recent version in the open archive.

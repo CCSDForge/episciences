@@ -258,6 +258,13 @@
         "privilege": "chief_editor,administrator,editor,secretary,webmaster",
         "pages": [
           {
+            "label": "Liste de Tags",
+            "controller": "administratemail",
+            "action": "tagslist",
+            "resource": "administratemail-tagslist",
+            "privilege": "chief_editor,administrator,editor,secretary,webmaster"
+          },
+          {
             "label": "Templates",
             "controller": "administratemail",
             "action": "templates",

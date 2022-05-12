@@ -44,6 +44,9 @@ class Episciences_Mail extends Zend_Mail
     private $_docid;
     private $_sendDate;
     private $_rawBody;
+    protected bool $_isAutomatic = false;
+
+
 
     /**
      * Episciences_Mail constructor.
@@ -935,10 +938,52 @@ class Episciences_Mail extends Zend_Mail
         $this->tags = [];
     }
 
-    public function setTemplate($templatePath, $templateName)
+    public function setTemplate($templatePath, $templateName): Episciences_Mail
     {
         $this->_templatePath = $templatePath;
         $this->_templateName = $templateName;
+
+        $templateKey = str_replace(Episciences_Mail_Send::TEMPLATE_EXTENSION, '', $templateName);
+
+        if (in_array($templateKey, Episciences_Mail_TemplatesManager::AUTOMATIC_TEMPLATES, true)) {
+
+            $this->setIsAutomatic(true);
+
+            foreach (Episciences_Mail_Tags::SENDER_TAGS as $tag) {
+                $this->removeTag($tag);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAutomatic(): bool
+    {
+        return $this->_isAutomatic;
+    }
+
+    /**
+     * @param string $tag
+     * @return void
+     */
+    private function removeTag(string $tag): void
+    {
+
+        if(array_key_exists($tag, $this->getTags())){
+            unset($this->tags[$tag]);
+        }
+
+    }
+
+    /**
+     * @param bool $isAutomatic
+     */
+    public function setIsAutomatic(bool $isAutomatic): void
+    {
+        $this->_isAutomatic = $isAutomatic;
     }
 
 
