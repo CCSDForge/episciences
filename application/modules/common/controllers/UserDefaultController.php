@@ -663,6 +663,8 @@ class UserDefaultController extends Zend_Controller_Action
                 }
             }
 
+            $user->setUsername(Episciences_Auth::getUsername()); //otherwise the username is removed from the identity: in modification it is not used in save() method.
+
             if (!$user->save()) {
                 $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_EDIT_FAILURE;
                 $this->view->form = $form;
