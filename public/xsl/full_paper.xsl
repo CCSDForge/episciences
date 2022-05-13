@@ -228,6 +228,7 @@
                 </xsl:if>
 
                 <xsl:if test="episciences">
+                    <div id='record-loading' style="display:none"/>
                     <xsl:choose>
                         <xsl:when test="episciences/tmp/text() = '1'">
                             <xsl:variable name="docUrls"
