@@ -2441,7 +2441,7 @@ class PaperController extends PaperDefaultController
             $paper->save();
 
             // delete all paper datasets
-            Episciences_Paper_DatasetsManager::deleteByDocId($paper->getDocid());
+            Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($paper->getDocid(), $paper->getRepoid());
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($paper->getDocid());
 

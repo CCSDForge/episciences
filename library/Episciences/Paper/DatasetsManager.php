@@ -62,6 +62,26 @@ class Episciences_Paper_DatasetsManager
 
     }
 
+
+    /**
+     * @param int $docId
+     * @param int $repoId
+     * @return bool
+     */
+    public static function deleteByDocIdAndRepoId(int $docId, int $repoId): bool
+    {
+        if ($docId < 1) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return (
+            $db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $docId, 'source_id = ?' => $repoId]) > 0
+        );
+
+    }
+
     /**
      * @param int $id
      * @return bool
