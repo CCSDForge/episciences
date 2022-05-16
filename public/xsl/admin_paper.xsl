@@ -101,10 +101,7 @@
                     <i>
                         <div>
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Auteurs : ')"/>
-                            <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
-                                <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                                <xsl:if test="position() != last()"> ; </xsl:if>
-                            </xsl:for-each>
+                            <xsl:value-of select="episciences/authorEnriched" disable-output-escaping="yes"/>
                         </div>
                     </i>
                 </p>

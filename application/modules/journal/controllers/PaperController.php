@@ -123,8 +123,9 @@ class PaperController extends PaperDefaultController
 
         $papersManager = new Episciences_PapersManager();
         $paper = $papersManager::get($docId);
-
-        $this->view->metadata = $paper->getDatasetsFromEnrichment();
+        if (!empty($paper->getDocid())){
+            $this->view->metadata = $paper->getDatasetsFromEnrichment();
+        }
         // check if paper exists
         if (!$paper || $paper->getRvid() !== RVID) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');

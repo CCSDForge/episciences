@@ -52,6 +52,30 @@ class Episciences_Paper_AuthorsManager
         return $db->fetchAssoc($select);
     }
 
+    public static function formatAuthorEnrichmentForViewByPaper($paperId):string {
+        $decodedauthor = [];
+        foreach (self::getAuthorByPaperId($paperId) as $value){
+            $decodedauthor = json_decode($value['authors'], true);
+        }
+        $templateString = "";
+        $sizeArr = count($decodedauthor);
+        if (!empty($decodedauthor)) {
+            foreach ($decodedauthor as $key => $value) {
+                $fullname = htmlspecialchars($value['fullname']);
+                if (array_key_exists('orcid',$value)) {
+                    $orcid = htmlspecialchars($value['orcid']);
+                    $orcidUrl = "https://orcid.org/".$orcid;
+                    $templateString .= $fullname.' <a rel="noopener" href='.$orcidUrl.' data-toggle="tooltip" data-placement="bottom" data-original-title='.$orcid.' target="_blank" ><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"/></a>';
+                }else{
+                    $templateString .= ' '. $fullname.' ';
+                }
+                if ($key !== $sizeArr-1){
+                    $templateString .= '; ';
+                }
+            }
+        }
+        return $templateString;
+    }
     /**
      * @param Episciences_Paper_Authors $authors
      * @return int
@@ -72,5 +96,31 @@ class Episciences_Paper_AuthorsManager
             trigger_error($exception->getMessage(), E_USER_ERROR);
         }
         return $resUpdate;
+    }
+    /**
+     * @param $paper
+     * @param $paperId
+     * @return void
+     */
+    public static function InsertAuthorsFromPapers($paper, $paperId): void
+    {
+        $authors = $paper->getMetadata('authors');
+        foreach ($authors as $author) {
+            $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
+            [$familyName, $givenName] = explode(', ', $author);
+            $arrayAuthors[] = [
+                'fullname' => $authorsFormatted,
+                'given' => $givenName,
+                'family' => $familyName
+            ];
+        }
+
+        Episciences_Paper_AuthorsManager::insert([
+            [
+                'authors' => json_encode($arrayAuthors, JSON_FORCE_OBJECT),
+                'paperId' => $paperId
+            ]
+        ]);
+        unset($arrayAuthors);
     }
 }
