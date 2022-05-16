@@ -1863,9 +1863,18 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
 
         //get licence paper
-        $licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
-        if ($licence !== "") {
-            $node->appendChild($dom->createElement('paperLicence', $licence));
+        if (!empty($this->getDocid())){
+            $licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+            if ($licence !== "") {
+                $node->appendChild($dom->createElement('paperLicence', $licence));
+            }
+        }
+        //author with orcid
+        $authorEnrich = Episciences_Paper_AuthorsManager::formatAuthorEnrichmentForViewByPaper($this->_paperId);
+        if (!empty($authorEnrich)) {
+            $node->appendChild($dom->createElement('authorEnriched', $authorEnrich));
+        } else {
+            $node->appendChild($dom->createElement('authorEnriched', ""));
         }
 
         // fetch volume data
@@ -2891,6 +2900,12 @@ class Episciences_Paper
                 if (!$this->getPaperid()) {
                     $this->setPaperid($this->getDocid());
                     $this->save();
+                    // insert author dc:creator to json author in the database
+                    Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($this, $this->getPaperid());
+                    //insert licence when save paper
+                    $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
+                    Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
+
                 } else {
                     $this->setPosition($this->applyPositioningStrategy());
                 }

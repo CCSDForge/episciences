@@ -62,10 +62,7 @@
                 <p>
                     <i>
                         <div>
-                            <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
-                                <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                                <xsl:if test="position() != last()"> ; </xsl:if>
-                            </xsl:for-each>
+                            <xsl:value-of select="episciences/authorEnriched" disable-output-escaping="yes"/>
                         </div>
 
                         <xsl:if test="episciences/submission_date">
@@ -88,6 +85,18 @@
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Id : ')"/>
                         <xsl:value-of select="episciences/id"/>
+                    </div>
+                </xsl:if>
+
+                <xsl:if test="episciences/paperLicence/text() != ''">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
+                        <a rel="noopener" target="_blank">
+                            <xsl:attribute name="href">
+                                <xsl:value-of select="episciences/paperLicence/text()"/>
+                            </xsl:attribute>
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', string(episciences/paperLicence))"/>
+                        </a>
                     </div>
                 </xsl:if>
 

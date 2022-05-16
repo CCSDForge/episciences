@@ -115,7 +115,7 @@ class getCreatorData extends JournalScript
             $paper = Episciences_PapersManager::get($value['DOCID']);
             Zend_Debug::dump($paper);
             if (empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']))) {
-                $this->InsertAuthorsFromPapers($paper, $value['PAPERID']);
+                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $value['PAPERID']);
             }
 
             // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
@@ -342,39 +342,14 @@ class getCreatorData extends JournalScript
     public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
     {
         $pathCreator = '../data/authors/openAire/' . explode("/", $doi)[1] . "_creator.json";
-        if (!is_null($decodeOpenAireResp) && array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
-            $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
-            file_put_contents($pathCreator, json_encode($creatorArrayOpenAire, JSON_THROW_ON_ERROR));
+        if (!is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
+            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])){
+                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
+                file_put_contents($pathCreator, json_encode($creatorArrayOpenAire, JSON_THROW_ON_ERROR));
+            }
         } else {
             file_put_contents($pathCreator, [""]);
         }
-    }
-
-    /**
-     * @param $paper
-     * @param $paperId
-     * @return void
-     */
-    public function InsertAuthorsFromPapers($paper, $paperId): void
-    {
-        $authors = $paper->getMetadata('authors');
-        foreach ($authors as $author) {
-            $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
-            [$familyName, $givenName] = explode(', ', $author);
-            $arrayAuthors[] = [
-                'fullname' => $authorsFormatted,
-                'given' => $givenName,
-                'family' => $familyName
-            ];
-        }
-
-        Episciences_Paper_AuthorsManager::insert([
-            [
-                'authors' => json_encode($arrayAuthors, JSON_FORCE_OBJECT),
-                'paperId' => $paperId
-            ]
-        ]);
-        unset($arrayAuthors);
     }
 }
 

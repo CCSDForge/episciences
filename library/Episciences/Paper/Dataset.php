@@ -254,7 +254,7 @@ class Episciences_Paper_Dataset
     /**
      * @return string
      */
-    public function getRelationship(): string
+    public function getRelationship(): ?string
     {
         return $this->_relationship;
     }
