@@ -21,6 +21,7 @@ $datasets = $paper->getDatasets()
                             <a href="<?= $href ?>"><?= $oDataset->getValue() ?></a>
                             <br/>
                             <small class="label label-default"> <?= strtoupper($this->translate($oDataset->getName())) ?></small>
+                            <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $oDataset->getSourceLabel($oDataset->getSourceId()) ?></small>
                         </td>
                         <td></td>
                         <td><span class="pull-right"><a data-toggle="tooltip" data-placement="top" title="<?= $this->translate('Voir') ?>" href="<?= $href ?>"><em class="fas fa-eye"></em></a></span></td>

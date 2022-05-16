@@ -15,21 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## 1.0.28.4 - 2022-05-09
-### Fixed
-- File not found for Temporary Versions without attached files + refactoring.
-
-## 1.0.28.3 - 2022-04-13
-### Changed
-- Updated error message when using a HAL identifier without any file.
-- [#142](https://github.com/CCSDForge/episciences/issues/142)
-
-## 1.0.28.2 - 2022-04-06
-### Fixed
-- Empty records from HAL repository: error message improved.
-- Improvements and fixes on Datacite and Crossref XML exports
-
-
 ## Unreleased
 ## added
 - API to get a list of publishing journals: include accepted repositories.
@@ -52,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Paper list: temporary versions are now labeled
 - Alert administrators on the existence of papers without assigned editors
 - Social Medias & Websites profile informations.
+- Display the origin of a linked data.
 
 ## Changed
 - Workflow reviewing
@@ -79,6 +65,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#169](https://github.com/CCSDForge/episciences/issues/169): reports become visible on the article web page: 
   * according to the parameters of the journal for published articles
   * for the owner, only if the paper is refused, waiting for revision, already accepted or published
+
+## 1.0.28.4 - 2022-05-09
+### Fixed
+- File not found for Temporary Versions without attached files + refactoring.
+
+## 1.0.28.3 - 2022-04-13
+### Changed
+- Updated error message when using a HAL identifier without any file.
+- [#142](https://github.com/CCSDForge/episciences/issues/142)
+
+## 1.0.28.2 - 2022-04-06
+### Fixed
+- Empty records from HAL repository: error message improved.
+- Improvements and fixes on Datacite and Crossref XML exports
   
 ## 1.0.28.1 - 2022-03-23
 ### Fixed

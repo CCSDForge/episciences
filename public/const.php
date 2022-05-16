@@ -165,6 +165,7 @@ function define_table_constants()
     define('T_PAPER_FILES', 'paper_files');
     define('T_PAPER_DATASETS', 'paper_datasets');
     define('T_PAPER_CONFLICTS', 'paper_conflicts');
+    define('T_PAPER_METADATA_SOURCES', 'metadata_sources');
 }
 
 /**

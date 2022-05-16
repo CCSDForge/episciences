@@ -625,6 +625,34 @@ CREATE TABLE `WEBSITE_STYLES` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
+-- Table structure for table `metadata_sources`
+--
+
+CREATE TABLE `metadata_sources` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `type` enum('repository','metadataRepository','user') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Unloading the table data`metadata_sources`
+--
+
+INSERT INTO `metadata_sources` (`id`, `name`, `type`) VALUES
+(1, 'HAL', 'repository'),
+(2, 'arXiv', 'repository'),
+(3, 'CWI', 'repository'),
+(4, 'Zenodo', 'repository'),
+(5, 'ScholeXplorer', 'metadataRepository'),
+(6, 'Crossref', 'metadataRepository'),
+(7, 'Datacite', 'metadataRepository'),
+(8, 'OpenAIRE Research Graph', 'metadataRepository'),
+(9, 'Software Heritage', 'repository'),
+(10, 'bioRxiv', 'repository'),
+(11, 'medRxiv', 'repository'),
+(12, 'Episciences User', 'user');
+
+--
 -- Indexes for dumped tables
 
 --
@@ -924,6 +952,9 @@ ALTER TABLE `WEBSITE_SETTINGS`
 ALTER TABLE `WEBSITE_STYLES`
   ADD PRIMARY KEY (`RVID`,`SETTING`);
 
+ALTER TABLE `metadata_sources`
+    ADD PRIMARY KEY (`id`);
+
 --
 -- AUTO_INCREMENT for dumped tables
 --
@@ -1077,6 +1108,9 @@ ALTER TABLE `WEBSITE_HEADER`
 --
 ALTER TABLE `WEBSITE_NAVIGATION`
   MODIFY `NAVIGATIONID` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `metadata_sources`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 COMMIT;
 
