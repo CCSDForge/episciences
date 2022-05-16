@@ -633,7 +633,9 @@ class UserDefaultController extends Zend_Controller_Action
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
 
-        $userDefaults['AFFILIATIONS'] = Episciences_Tools::implodeOrExplode($userDefaults['AFFILIATIONS'], 'implode');
+        if(isset($userDefaults['AFFILIATIONS'])){
+            $userDefaults['AFFILIATIONS'] = Episciences_Tools::implodeOrExplode($userDefaults['AFFILIATIONS'], 'implode');
+        }
 
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
         $form->setAction($this->view->url());
@@ -664,6 +666,8 @@ class UserDefaultController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace('danger')->addMessage($e->getMessage());
                 }
             }
+
+            $user->setUsername(Episciences_Auth::getUsername()); //otherwise the username is removed from the identity: in modification it is not used in save() method.
 
             if (!$user->save()) {
                 $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_EDIT_FAILURE;
