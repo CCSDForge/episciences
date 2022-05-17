@@ -1787,6 +1787,7 @@ return [
     'Mentions légales' => 'Legal mentions',
     'Vie privée' => 'Privacy',
     'Remerciements' => 'Acknowledgements',
+    'Paramètres généraux (affichés dans le pied de page)'=>'General settings (displayed in the footer)',
 
     //stats
     "toutes les soumissions" => "all submissions",
@@ -1846,9 +1847,9 @@ return [
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
     //review settings: final decision
-    "Permettre la demande de revision" => "Allow revision request",
-    "Article - décision finale" => "Paper - final decision",
-    "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté." => "Sometimes it is necessary to change some things on an article already accepted.",
+    "Permettre la demande de revision" => "Allow post-acceptance revisions of articles",
+    "Article - décision finale" => "Post-acceptance revisions of articles",
+    "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post-acceptance revisions of articles, e.g. requesting new versions of accepted preprints",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ] => "accepted - waiting for author's final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for
