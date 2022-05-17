@@ -231,7 +231,14 @@ class PaperController extends PaperDefaultController
 
         $isAllowedToAnswerNewVersion = Episciences_Auth::isLogged() &&
             (
-                !$isConflictDetected && ($isSecretary || $loggedUid === $paper->getUid())
+                !$isConflictDetected && (
+                    $isSecretary ||
+                    (
+                        $paper->getCopyEditor($loggedUid) &&
+                        ($paper->isAlreadyAcceptedWaitingForAuthorFinalVersion() || $paper->isCopyEditingProcessStarted())
+                    ) ||
+                    $loggedUid === $paper->getUid()
+                )
             );
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
@@ -1232,7 +1239,9 @@ class PaperController extends PaperDefaultController
 
     /**
      * save new version (revision request answer)
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
@@ -1912,7 +1921,7 @@ class PaperController extends PaperDefaultController
         if ($paper->isDeleted()) {
             $result['message'] = $translator->translate("Le document demandé a été supprimé par son auteur.");
             $result['url'] = '/';
-        } elseif ($paper->isAccepted() || $paper->copyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
+        } elseif ($paper->isAccepted() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
             $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
         } elseif ($paper->isPublished()) {  // paper has been published

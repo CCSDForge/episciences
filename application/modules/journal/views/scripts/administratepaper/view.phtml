@@ -8,7 +8,7 @@ $this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle() . ' (v' .
 
 $editors = $this->editors;
 $copyEditors = $this->copyEditors;
-$showCopyEditorsBloc = $paper->isEditable() && ($paper->isAccepted() || $paper->copyEditingProcessStarted() || $paper->isReadyToPublish());
+$showCopyEditorsBloc = $paper->isEditable() && ($paper->isAcceptedSubmission() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish());
 $invitations = $this->invitations;
 $this->suggestedRefuse = false;
 $this->suggestedAccept = false;
@@ -77,7 +77,7 @@ $this->suggestedRevision = false;
 
         <?php if ($isWaitingForAuthorValidation): ?>
             <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences"; ?>
-            <div class="alert alert-info">
+            <div class="alert alert-info alert-fixed">
                 <i class="fas fa-exclamation-triangle" style="color:chocolate"></i>
                 <?= $this->translate($info) ?>
                   <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>

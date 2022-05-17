@@ -6,7 +6,7 @@ $isAllowed =
     (APPLICATION_ENV === 'development' || Episciences_Auth::getUid() !== $paper->getUid()) &&
     $paper->isEditable() &&
     !$paper->isRevisionRequested() &&
-    !$paper->copyEditingProcessStarted() &&
+    !$paper->isCopyEditingProcessStarted() &&
     !$paper->isReadyToPublish() &&
     !$paper->isAccepted();
 ?>
