@@ -6,7 +6,7 @@
     <div id="unassigned-papers-alert" class="alert alert-warning" style="margin-top: 20px">
         <strong><?= $this->translate("Attention, il n'y a aucun suivi effectué pour") . ' ' ?></strong>
         <?php if (count($this->onlyEditablePapersWithoutEditors) > 1) : ?>
-            <a id="unassigned-papers" onclick="window.location='/administratepaper/list?onlyEditableWithoutEditors'"><?= $this->translate('ces articles') ?>...</a> <?php // todo ?>
+            <a id="unassigned-papers" href="/administratepaper/list?onlyEditableWithoutEditors"><?= $this->translate('ces articles') ?>...</a> <?php // todo ?>
         <?php else: ?>
             <a href="/administratepaper/view?id=<?= array_key_first($this->onlyEditablePapersWithoutEditors) ?>"><?= $this->translate('cet article') ?>...</a>
         <?php endif; ?>

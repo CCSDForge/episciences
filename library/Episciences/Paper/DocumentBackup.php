@@ -7,22 +7,22 @@ class Episciences_Paper_DocumentBackup
     /**
      * @var int
      */
-    protected $_docid;
+    protected int $_docid;
 
     /**
      * @var string
      */
-    protected $path;
+    protected string $path;
 
     /**
      * @var string
      */
-    protected $pathFileName;
+    protected string $pathFileName;
 
     /**
      * @var string
      */
-    protected $extension = self::DEFAULT_FILE_EXTENSION;
+    protected string $extension = self::DEFAULT_FILE_EXTENSION;
 
     /**
      * Episciences_Paper_DocumentBackup constructor.

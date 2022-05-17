@@ -194,6 +194,12 @@ $timestamp = time();
                 <license license-type="open-access"/>
             </permissions>
 
+            <?php if ($this->nbPages > 0): ?>
+            <counts>
+                <page-count count="<?= $this->nbPages ?>"/>
+            </counts>
+            <?php endif; ?>
+
         </article-meta>
     </front>
 
