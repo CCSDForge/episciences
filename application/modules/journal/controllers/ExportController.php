@@ -211,6 +211,12 @@ class ExportController extends Zend_Controller_Action
 
         $paperLanguage = $paper->getMetadata('language');
 
+
+        $nbPages = $this->getDocumentBackupNbOfPages($paper);
+        $this->view->nbPages = $nbPages;
+
+
+
         if ($paperLanguage == '') {
             $paperLanguage = 'eng';
             // TODO temporary fix see https://gitlab.ccsd.cnrs.fr/ccsd/episciences/issues/215
@@ -343,6 +349,30 @@ class ExportController extends Zend_Controller_Action
 
         $this->redirectIfNotPublished($request, $paper);
         return $paper;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return int
+     */
+    private function getDocumentBackupNbOfPages(Episciences_Paper $paper): int
+    {
+        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
+        $nbPages = 0;
+        if ($paperDocBackup->hasDocumentBackupFile()) {
+            $parser = new \Smalot\PdfParser\Parser();
+            try {
+                $pdf = $parser->parseFile($paperDocBackup->getPathFileName());
+                $pdfMeta = $pdf->getDetails();
+            } catch (Exception $exception) {
+                // Fail, meh
+            }
+
+            if (!empty($pdfMeta['Pages'])) {
+                $nbPages = (int) $pdfMeta['Pages'];
+            }
+        }
+        return $nbPages;
     }
 
 }
