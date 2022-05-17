@@ -76,11 +76,11 @@ $this->suggestedRevision = false;
         ?>
 
         <?php if ($isWaitingForAuthorValidation): ?>
-            <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via la plateforme &copy;Episciences"; ?>
+            <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences"; ?>
             <div class="alert alert-info">
-                <i class='fas fa-exclamation-triangle' style='color:chocolate'></i>
+                <i class="fas fa-exclamation-triangle" style="color:chocolate"></i>
                 <?= $this->translate($info) ?>
-                <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
+                  <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
             </div>
         <?php endif; ?>
 
