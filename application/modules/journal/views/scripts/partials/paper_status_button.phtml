@@ -31,7 +31,7 @@ $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme pa
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 $acceptedWaitingForAuthorValidation = "Accepté - en attente de validation par l'auteur";
 // For the copy editors
-$onBeHalfOfMsg  = $this->translate("Répondre au nom de l'auteur");
+$onBeHalfOfMsg = $this->translate("Répondre au nom de l'auteur");
 
 $description = '';
 $ancre = '';
@@ -488,8 +488,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
                 <?php // Préparation de copie : prêt à publier ?>
 
-                <a href="#" data-toggle="modal" class="btn btn-primary btn-sm"
-                   data-target=".ready-to-publish-modal"><?= $this->translate($validFinalVersionMsg) ?></a>
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".ready-to-publish-modal"><?= $this->translate($validFinalVersionMsg) ?></a>
+                </li>
 
                 <?php // Préparation de copie: redemander la mise en forme à l'auteur ?>
                 <li>
@@ -550,7 +552,9 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         <?php else: ?>
         <div>
             <?= $description ?>
-            <a href="<?= $this->paperUrl . $ancre ?>" class="btn btn-default btn-sm" role="button" style="margin-top: 5px;"><?= $onBeHalfOfMsg ?></a>
+            <a href="<?= $this->paperUrl . $ancre ?>" class="btn btn-default btn-sm" role="button"
+               style="margin-top: 5px;"><?= $onBeHalfOfMsg ?>
+            </a>
             <?php endif; ?>
 
         </div>
