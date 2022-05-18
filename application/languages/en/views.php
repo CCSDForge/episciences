@@ -383,7 +383,10 @@ return [
     'Volume principal' => 'Master volume',
 
     // Gestion d'un article (administrateur)
-    "Vous ne pouvez pas changer le statut de l'article : temporairement indisponible." => "You are not allowed to change article status: temporarily unavailable.",
+    "L'auteur n'a pas encore répondu :" => "The author has not responded yet: ",
+    "Il n'est donc pas possible de modifier le statut de l'article." => "hence, it is not possible to change article status.",
+    "Aucune action n'est requise de votre part" => 'No action is required on your part',
+    "Répondre au nom de l'auteur" => 'Answer on behalf of author',
     "Gérer un article" => 'Manage an article',
     "Evaluations" => 'Ratings',
     "Aucune évaluation terminée pour le moment." => 'No rating yet',

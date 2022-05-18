@@ -30,6 +30,30 @@ $isNotTheFirstVersion = empty($paper->getPreviousVersions());
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 $acceptedWaitingForAuthorValidation = "Accepté - en attente de validation par l'auteur";
+// For the copy editors
+$onBeHalfOfMsg  = $this->translate("Répondre au nom de l'auteur");
+
+$description = '';
+$ancre = '';
+if (array_key_exists(Episciences_Auth::getUid(), $assignedCopyEditors)) {
+    if ($paper->isAlreadyAcceptedWaitingForAuthorFinalVersion()) {
+        $ancre = '#answer';
+    } elseif ($paper->isCopyEditingProcessStarted()) {
+        $ancre = '#copy-editing';
+    }
+
+    $description .= '<small>';
+    $description .= '<em>';
+    $description .= $this->translate("L'auteur n'a pas encore répondu :");
+    $description .= '<br>';
+    $description .= $this->translate("Aucune action n'est requise de votre part");
+    $description .= ', ';
+    $description .= $this->translate("Il n'est donc pas possible de modifier le statut de l'article.");
+    $description .= '<br>';
+    $description .= '</em>';
+    $description .= '</small>';
+}
+
 
 // **** CHIEF EDITORS, administrator and secretary (git #235) : can do whatever they want *****************************
 if (Episciences_Auth::isSecretary()) : ?>
@@ -524,9 +548,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             </ul>
 
         <?php else: ?>
-            <a href="#" class="btn btn-default btn-sm disabled" role="button"
-               aria-disabled="true"><?= $this->translate("Vous ne pouvez pas changer le statut de l'article : temporairement indisponible.") ?></a>
-        <?php endif; ?>
+        <div>
+            <?= $description ?>
+            <a href="<?= $this->paperUrl . $ancre ?>" class="btn btn-default btn-sm" role="button" style="margin-top: 5px;"><?= $onBeHalfOfMsg ?></a>
+            <?php endif; ?>
+
+        </div>
+
     </div>
 
 <?php endif ?>

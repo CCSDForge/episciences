@@ -298,6 +298,9 @@ $this->suggestedRevision = false;
     </div>
 </div>
 
+<?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $paper]) ?>
+
+
 <script type="text/javascript">
     var review = <?php if ($this->js_review) : ?><?php echo $this->js_review; ?><?php else:?>null<?php endif;?>;
     var paper = <?php if ($this->js_paper) : ?><?php echo $this->js_paper; ?><?php else:?>null<?php endif;?>;

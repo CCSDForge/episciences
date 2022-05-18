@@ -792,6 +792,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
 
         $this->view->paper = $paper;
+        $this->view->paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
     }
 
     /**
