@@ -190,16 +190,24 @@ class Episciences_Auth extends Ccsd_Auth
 
     public static function isAllowedToListOnlyAssignedPapers(): bool
     {
-        $review = Episciences_ReviewsManager::find(RVID);
-        $review->loadSettings();
-        return (
-            !self::isSecretary() &&
-            (
-                self::isEditor(RVID, true) ||
-                self::isGuestEditor(RVID, true)
-            ) &&
-            $review->getSetting('encapsulateEditors')
-        );
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+
+            return (
+                !self::isSecretary() &&
+                (
+                    self::isEditor(RVID, true) ||
+                    self::isGuestEditor(RVID, true)
+                ) &&
+                (isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && $journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] !== '')
+            );
+
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+            return false;
+        }
+
     }
 
     /**
