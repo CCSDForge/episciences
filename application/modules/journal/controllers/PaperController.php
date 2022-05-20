@@ -2420,10 +2420,12 @@ class PaperController extends PaperDefaultController
 
     /**
      * remove contributor paper (done by the contributor himself)
+     * @throws JsonException
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
     public function removeAction(): void
     {
@@ -2463,6 +2465,7 @@ class PaperController extends PaperDefaultController
             Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($paper->getDocid(), $paper->getRepoid());
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($paper->getDocid());
+            // todo delete authors & Licence
 
 
             // if reviewers were assigned, remove them

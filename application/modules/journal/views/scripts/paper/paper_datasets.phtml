@@ -17,9 +17,17 @@ $countEnrichmentMeta = 0;
                     <?php foreach ($metadata as $sourceId => $metadataArray) : ?>
                         <tr>
                             <td>
-                                <?php foreach ($metadataArray as $k => $meta) : ?>
+                                <?php
+
+                                /**
+                                 * @var  $k
+                                 * @var  Episciences_Paper_Dataset $meta
+                                 */
+                                foreach ($metadataArray as $k => $meta) : ?>
+                                    <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($meta->getSourceId()) ?></small>
                                     <?php if ($k !== "metatext" && is_null($meta->getMetatext())) : ?>
-                                        <?=strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>"><?= $meta->getValue() ?></a><br>
+                                        <?=strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>"><?= $meta->getValue() ?></a>
+                                        <br>
                                     <?php elseif($k !== "metatext" && !is_null($meta->getMetatext())) : ?>
                                         <?= $meta->getRelationship() ?>&nbsp;<?= strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>"><?= $meta->getValue() ?></a><br>
                                         <?php  $countEnrichmentMeta++; ?>

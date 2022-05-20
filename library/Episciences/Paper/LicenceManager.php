@@ -44,21 +44,22 @@ class Episciences_Paper_LicenceManager
         return $affectedRows;
 
     }
+
     /**
      * @param $url
      * @return string
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public static function callApiForLicenceByRepoId($url)
+    public static function callApiForLicenceByRepoId($url): string
     {
         $client = new Client();
-        $callArrayResp = $client->get($url, [
+        return $client->get($url, [
             'headers' => [
                 'User-Agent' => 'CCSD Episciences support@episciences.org',
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
             ]
         ])->getBody()->getContents();
-        return $callArrayResp;
     }
 
     /**
@@ -81,10 +82,11 @@ class Episciences_Paper_LicenceManager
      * @param $identifier
      * @param $version
      * @return string
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public static function getApiResponseByRepoId($repoId, $identifier, $version)
+    public static function getApiResponseByRepoId($repoId, $identifier, $version): string
     {
-        $client = new Client();
+        $callArrayResp = '';
         $prefixArxiv = '10.48550/arxiv.';
         $prefixZen = '10.5281/zenodo.';
         $communUrlArXZen = 'https://api.datacite.org/dois/';
@@ -122,13 +124,14 @@ class Episciences_Paper_LicenceManager
      * @param $docId
      * @param $identifier
      * @return void
+     * @throws JsonException
      */
     public static function InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier): void
     {
         $pathFile =  APPLICATION_PATH . '/../data/enrichmentLicences/';
         $cleanID = str_replace('/', '', $identifier); // ARXIV CAN HAVE "/" in ID
         $repoId = (string) $repoId;
-        if ($repoId === "2" || $repoId === "4") {
+        if ($repoId === Episciences_Repositories::ARXIV_REPO_ID || $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
             $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
             if (isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
 
@@ -140,25 +143,25 @@ class Episciences_Paper_LicenceManager
                     [
                         'licence' => $licenceGetter,
                         'docId' => (int) $docId,
-                        'sourceId' => '7'
+                        'sourceId' => Episciences_Repositories::DATACITE_REPO_ID
                     ]
                 ]);
                 echo PHP_EOL . 'INSERT DONE ';
             } else {
                 file_put_contents($pathFile . $identifier . "_licence.json", json_encode([""], JSON_THROW_ON_ERROR));
             }
-        } elseif ($repoId === "1") {
+        } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
             $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
             if ($licenceArray['response']['numFound'] !== 0 && array_key_exists('licence_s', $licenceArray['response']['docs'][0])) {
                 $licenceGetter = $licenceArray['response']['docs'][0]['licence_s'];
-                $licenceGetter = Episciences_Paper_LicenceManager::cleanLicence($licenceGetter);
+                $licenceGetter = self::cleanLicence($licenceGetter);
                 echo PHP_EOL . $licenceGetter;
                 file_put_contents($pathFile . $identifier . "_licence.json", json_encode($licenceArray['response'], JSON_THROW_ON_ERROR));
-                Episciences_Paper_LicenceManager::insert([
+                self::insert([
                     [
                         'licence' => $licenceGetter,
                         'docId' => (int) $docId,
-                        'sourceId' => '1'
+                        'sourceId' => Episciences_Repositories::HAL_REPO_ID
                     ]
                 ]);
                 echo PHP_EOL . 'INSERT DONE ';
@@ -169,7 +172,8 @@ class Episciences_Paper_LicenceManager
     }
 
 
-    public static function getLicenceByDocId($docId) {
+    public static function getLicenceByDocId($docId): string
+    {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()->from(T_PAPER_LICENCES, ['licence','source_id'])->where('docid = ? ', $docId);

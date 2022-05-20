@@ -2858,6 +2858,7 @@ class Episciences_Paper
     /**
      * save paper to database
      * @return bool
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      */
     public function save(): bool

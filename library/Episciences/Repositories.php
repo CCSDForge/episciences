@@ -28,6 +28,7 @@ class Episciences_Repositories
     public const ARXIV_REPO_ID = '2';
     //public const CWI_REPO_ID = '3';
     public const ZENODO_REPO_ID = '4';
+    public const DATACITE_REPO_ID = '7';
 
     // todo : to be converted to a database table
     private static array $_repositories = [
