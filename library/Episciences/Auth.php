@@ -200,7 +200,9 @@ class Episciences_Auth extends Ccsd_Auth
                     self::isEditor(RVID, true) ||
                     self::isGuestEditor(RVID, true)
                 ) &&
-                (isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && $journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] !== '')
+                (
+                    isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && !empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS])
+                )
             );
 
         } catch (Zend_Exception $e) {

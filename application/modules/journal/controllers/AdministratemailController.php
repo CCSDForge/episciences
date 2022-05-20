@@ -8,14 +8,21 @@ class AdministratemailController extends Zend_Controller_Action
      */
     private $_allowedToEdit;
 
-    public function init()
+    public function init(): void
     {
         $isAllowed = Episciences_Auth::isSecretary() || Episciences_Auth::isWebmaster();
 
         if (!$isAllowed) {
-            $review = Episciences_ReviewsManager::find(RVID);
-            $review->loadSettings();
-            $isAllowed = $review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_EDIT_TEMPLATES);
+
+            try {
+                $journalSettings = Zend_Registry::get('reviewSettings');
+                $isAllowed = isset($journalSettings[Episciences_Review::SETTING_EDITORS_CAN_EDIT_TEMPLATES]) &&
+                    !empty($journalSettings[Episciences_Review::SETTING_EDITORS_CAN_EDIT_TEMPLATES]);
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
         }
 
         $this->setAllowedToEdit($isAllowed);
@@ -503,7 +510,7 @@ class AdministratemailController extends Zend_Controller_Action
             if ($validator->isValid($email)) {
                 $mail->addCc($email, $name);
             } else {
-                error_log(RVCODE . 'FROM_MAILING_BAD_CC_MAIL: ' . $email);
+                trigger_error(RVCODE . 'FROM_MAILING_BAD_CC_MAIL: ' . $email);
             }
         }
 
@@ -514,7 +521,7 @@ class AdministratemailController extends Zend_Controller_Action
             if ($validator->isValid($email)) {
                 $mail->addBcc($email);
             } else {
-                error_log(RVCODE . 'FROM_MAILING_BAD_BCC_MAIL: ' . $email);
+                trigger_error(RVCODE . 'FROM_MAILING_BAD_BCC_MAIL: ' . $email);
             }
         }
 
@@ -716,7 +723,7 @@ class AdministratemailController extends Zend_Controller_Action
         $isExistTemplateForThisRecipient = array_key_exists($recipient, $templates[$type]);
 
         if (!$isExistTemplateForThisRecipient) {
-            error_log('reminder (type = ' . $type . ') not saved: no template defined for ' . $recipient . 'recipient');
+            trigger_error('reminder (type = ' . $type . ') not saved: no template defined for ' . $recipient . 'recipient');
             return;
         }
 
