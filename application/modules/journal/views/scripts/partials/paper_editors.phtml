@@ -58,6 +58,17 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
                     </span>
                 </a>
 
+                <?php if (Episciences_Auth::isSecretary()) : ?>
+                    <a class="btn btn-default" href="/user/su/uid/<?php echo $editor->getUid(); ?>">
+                        <span data-toggle="tooltip"
+                              style="margin: 0.2rem"
+                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                              class="fas fa-user-secret">
+
+                        </span>
+                    </a>&nbsp;
+                <?php endif; ?>
+
                 <span style="margin-left: 0.5em;"><strong><?php echo $editor->getScreenName(); ?></strong></span>
 
                 <?php

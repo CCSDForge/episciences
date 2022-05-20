@@ -2965,7 +2965,7 @@ class Episciences_Paper
             return null;
         }
 
-        if ($this->isAccepted() || $this->copyEditingProcessStarted() || $this->isReadyToPublish()) {
+        if ($this->isAccepted() || $this->isCopyEditingProcessStarted() || $this->isReadyToPublish()) {
             return $this->createPositionProcessing();
         }
 
@@ -2990,7 +2990,7 @@ class Episciences_Paper
      * @return bool
      */
 
-    public function copyEditingProcessStarted(): bool
+    public function isCopyEditingProcessStarted(): bool
     {
         return in_array($this->getStatus(), [
             self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
@@ -4029,6 +4029,14 @@ class Episciences_Paper
     {
         return $this->isOwner() && ($this->canBeAssignedDOI() || $this->isRevisionRequested() || $this->isRefused());
     }
+
+    public function isAlreadyAcceptedWaitingForAuthorFinalVersion(): bool
+    {
+        return $this->getStatus() === self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION;
+
+    }
+
+
 
 
 }

@@ -238,7 +238,7 @@ $ratings = $paper->getRatings();
             $paper->isEditable() &&
             !$paper->isRevisionRequested() &&
             !$paper->isAccepted() &&
-            !$paper->copyEditingProcessStarted() &&
+            !$paper->isCopyEditingProcessStarted() &&
             !$paper->isReadyToPublish() &&
             (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid()))
     ) : ?>

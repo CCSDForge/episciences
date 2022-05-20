@@ -230,7 +230,14 @@ class PaperController extends PaperDefaultController
 
         $isAllowedToAnswerNewVersion = Episciences_Auth::isLogged() &&
             (
-                !$isConflictDetected && ($isSecretary || $loggedUid === $paper->getUid())
+                !$isConflictDetected && (
+                    $isSecretary ||
+                    (
+                        $paper->getCopyEditor($loggedUid) &&
+                        ($paper->isAlreadyAcceptedWaitingForAuthorFinalVersion() || $paper->isCopyEditingProcessStarted())
+                    ) ||
+                    $loggedUid === $paper->getUid()
+                )
             );
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
@@ -395,6 +402,16 @@ class PaperController extends PaperDefaultController
         }
 
         $this->view->hasHook = $hasHook;
+
+        $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() &&
+            (
+                $isSecretary ||
+                $paper->getEditor($loggedUid) ||
+                $paper->getCopyEditor($loggedUid) ||
+                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
+                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor())
+
+            );
     }
 
     /**
@@ -862,7 +879,7 @@ class PaperController extends PaperDefaultController
             $nameSpace = self::SUCCESS;
             $message = "Votre réponse a bien été enregistrée.";
 
-            if (Episciences_Auth::isSecretary() && (Episciences_Auth::getUid() !== $paper->getUid())) { // not author
+            if (!$paper->isOwner()) {
                 $url = $this->view->url(
                     [
                         self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
@@ -908,7 +925,9 @@ class PaperController extends PaperDefaultController
      * update previous version status
      * reassign editors to new version
      * optional: reassign reviewers to new version
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
@@ -1093,7 +1112,7 @@ class PaperController extends PaperDefaultController
         }
 
 
-        if (Episciences_Auth::isSecretary() && (Episciences_Auth::getUid() !== $paper->getUid())) { // not author
+        if (!$paper->isOwner()) {
             $url = $this->view->url(
                 [
                     self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
@@ -1231,7 +1250,9 @@ class PaperController extends PaperDefaultController
 
     /**
      * save new version (revision request answer)
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
@@ -1318,7 +1339,7 @@ class PaperController extends PaperDefaultController
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
-        $copyEditors = [];
+        $copyEditors = $paper->getCopyEditors(true, true);
 
         // new version init
         $newPaper = clone($paper);
@@ -1329,7 +1350,6 @@ class PaperController extends PaperDefaultController
         $isAssignedReviewers = $reassignReviewers && $reviewers;
 
         if (isset($post['copyEditingNewVersion'])) {
-            $copyEditors = $paper->getCopyEditors(true, true);
             $status = ($newPaper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) ?
                 Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION :
                 Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
@@ -1408,7 +1428,7 @@ class PaperController extends PaperDefaultController
             }
 
             // unassign editors from previous version
-            if ($editors) {
+            if (!empty($editors)) {
                 foreach ($editors as $editor) {
                     $aid = $paper->unassign($editor->getUid(), Episciences_User_Assignment::ROLE_EDITOR);
                     // log editor unassignment
@@ -1417,7 +1437,7 @@ class PaperController extends PaperDefaultController
             }
 
             // unassign Copy editors from previous version
-            if ($copyEditors) {
+            if (!empty($copyEditors)) {
                 /** @var Episciences_CopyEditor $copyEditor */
                 foreach ($copyEditors as $copyEditor) {
                     $aid = $paper->unassign($copyEditor->getUid(), Episciences_User_Assignment::ROLE_COPY_EDITOR);
@@ -1501,7 +1521,7 @@ class PaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
 
             // Redirection
-            $redUrl = (!Episciences_Auth::isSecretary()) ? 'paper/submitted' : '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $newPaper->getDocid();
+            $redUrl = ($paper->isOwner()) ? 'paper/submitted' : '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $newPaper->getDocid();
             $this->_helper->redirector->gotoUrl($redUrl);
         } else {
             $message = $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.");
@@ -1911,7 +1931,7 @@ class PaperController extends PaperDefaultController
         if ($paper->isDeleted()) {
             $result['message'] = $translator->translate("Le document demandé a été supprimé par son auteur.");
             $result['url'] = '/';
-        } elseif ($paper->isAccepted() || $paper->copyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
+        } elseif ($paper->isAccepted() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
             $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
         } elseif ($paper->isPublished()) {  // paper has been published
@@ -2440,7 +2460,7 @@ class PaperController extends PaperDefaultController
             $paper->save();
 
             // delete all paper datasets
-            Episciences_Paper_DatasetsManager::deleteByDocId($paper->getDocid());
+            Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($paper->getDocid(), $paper->getRepoid());
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($paper->getDocid());
 

@@ -384,7 +384,10 @@ return [
     'Volume principal' => 'Master volume',
 
     // Gestion d'un article (administrateur)
-    "Vous ne pouvez pas changer le statut de l'article : temporairement indisponible." => "You are not allowed to change article status: temporarily unavailable.",
+    "L'auteur n'a pas encore répondu :" => "The author has not responded yet: ",
+    "Il n'est donc pas possible de modifier le statut de l'article." => "hence, it is not possible to change article status.",
+    "Aucune action n'est requise de votre part" => 'No action is required on your part',
+    "Répondre au nom de l'auteur" => 'Answer on behalf of author',
     "Gérer un article" => 'Manage an article',
     "Evaluations" => 'Ratings',
     "Aucune évaluation terminée pour le moment." => 'No rating yet',
@@ -457,7 +460,7 @@ return [
     "Aller à la page publique de cet article" => "Go to the public page for this article",
     "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
     "son compte n'a pas encore été activé" => 'his account is not active yet',
-    "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via la plateforme &copy;Episciences" => "At this point, the author coordinates with the copy editor and agree by exchanging emails outside or via the &copy;Episciences system",
+    "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences" => "At this point, the author coordinates with the copy editor and agree by exchanging emails outside or via Episciences",
     "La version actuelle est la version la plus récente." => "The current version is the most recent version.",
     "L'identifiant de la version la plus récente dans l’archive ouverte" => "The identifier of the most open archive version",
     "La version la plus récente dans l’archive ouverte" => "The most recent open archive version",
@@ -1789,6 +1792,7 @@ return [
     'Mentions légales' => 'Legal mentions',
     'Vie privée' => 'Privacy',
     'Remerciements' => 'Acknowledgements',
+    'Paramètres généraux (affichés dans le pied de page)'=>'General settings (displayed in the footer)',
 
     //stats
     "toutes les soumissions" => "all submissions",
@@ -1848,9 +1852,9 @@ return [
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
     //review settings: final decision
-    "Permettre la demande de revision" => "Allow revision request",
-    "Article - décision finale" => "Paper - final decision",
-    "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté." => "Sometimes it is necessary to change some things on an article already accepted.",
+    "Permettre la demande de revision" => "Allow post-acceptance revisions of articles",
+    "Article - décision finale" => "Post-acceptance revisions of articles",
+    "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post-acceptance revisions of articles, e.g. requesting new versions of accepted preprints",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ] => "accepted - waiting for author's final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for

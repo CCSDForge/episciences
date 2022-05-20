@@ -879,7 +879,7 @@ class Episciences_Review
         //COI
         $form = $this->addCoiForm($form);
 
-        // Paper - Final Decision : allow revision request after acception
+        // Allow post-acceptance revisions of articles
 
         $form = $this->addFinalDecisionForm($form);
 
@@ -1457,7 +1457,7 @@ class Episciences_Review
 
         return $form->addElement('checkbox', self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, [
                 'label' => "Permettre la demande de revision",
-                'description' => "Il est parfois nécessaire de modifier certaines choses sur un article déjà accepté.",
+                'description' => "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );

@@ -30,13 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Approved by author, waiting for final publication
 
 - Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
-- New review parameter: Allow revision request + refactoring.
+- New review parameter: Allow post-acceptance revisions of articles + refactoring.
 - 'Author' role
 - Script to clean the "USER_ROLES" table
 - 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
 - Paper list: temporary versions are now labeled
 - Alert administrators on the existence of papers without assigned editors
 - Social Medias & Websites profile informations.
+- Display the origin of a linked data.
+- Administration page of a paper: new shortcut for administrators to allow to sign in as a copy-editor
+- Administration page of a paper: new shortcut for administrators to allow to sign in as an editor
 
 ## Changed
 - Workflow reviewing

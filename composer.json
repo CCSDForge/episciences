@@ -45,7 +45,8 @@
     "symfony/polyfill-mbstring": "*",
     "symfony/cache": "^5.4",
     "ezyang/htmlpurifier": "^4.14",
-    "cottagelabs/coar-notifications": "dev-main"
+    "cottagelabs/coar-notifications": "dev-main",
+    "smalot/pdfparser": "^2.2"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",

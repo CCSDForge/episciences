@@ -312,4 +312,23 @@ class Episciences_Paper_Dataset
         return $this;
     }
 
+    /**
+     * get metadata sources from T_PAPER_METADATA_SOURCES table
+     * @param int $sourcesId
+     * @return string
+     */
+    public function getSourceLabel(int $sourcesId): string
+    {
+        $all = Episciences_Paper_MetaDataSourcesManger::all();
+
+        if (!array_key_exists($sourcesId, $all)) {
+            return 'Undefined';
+        }
+
+        /** @var Episciences_Paper_MetaDataSource $metaDataSource */
+        $metaDataSource = $all[$sourcesId];
+
+        return $metaDataSource->getName();
+    }
+
 }

@@ -15,6 +15,7 @@ $isAllowed = Episciences_Auth::isLogged() &&
                 !$isConflictDetected &&
                 (
                         Episciences_Auth::isEditor() ||
+                        Episciences_Auth::isCopyEditor() ||
                         Episciences_Auth::isReviewer() ||
                         $loggedUid === $paper->getUid()
                 )
@@ -137,15 +138,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 
 ?>
 
-<?php if (
-        Episciences_Auth::isLogged() &&
-        (
-                $isSecretary ||
-                $paper->getEditor($loggedUid) ||
-                $paper->getCopyEditor($loggedUid) ||
-                (!$this->review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor())
-        )
-): ?>
+<?php if ($this->isAllowedToBackToAdminPage): ?>
     <?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $paper]) ?>
 <?php endif; ?>
 
@@ -273,13 +266,12 @@ if (
                 'previous_demands' => $this->revision_requests,
                 'previousVersions' => $this->previousVersions,
                 'previousVersionsDemands' => $this->previousVersionsDemands
-            ]);
+            ])
             ?>
         </div>
 
     </div>
 <?php endif; ?>
-
 
 <?php // export options ***************************************************** ?>
 <?php if ($paper->isPublished()) : ?>
@@ -357,6 +349,10 @@ if (
             <?php endif; ?>
         </div>
     </div>
+<?php endif; ?>
+
+<?php if ($this->isAllowedToBackToAdminPage): ?>
+    <?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $paper]) ?>
 <?php endif; ?>
 
 
