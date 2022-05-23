@@ -257,14 +257,19 @@ class Episciences_Paper_Dataset
      */
     public function getSourceLabel(int $sourcesId): string
     {
-        $all = Episciences_Paper_MetaDataSourcesManger::all();
 
-        if (!array_key_exists($sourcesId, $all)) {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        if (!isset($session->metadataSources)) {
+            $session->metadataSources = Episciences_Paper_MetaDataSourcesManger::all();
+        }
+
+        if (!array_key_exists($sourcesId, $session->metadataSources)) {
             return 'Undefined';
         }
 
         /** @var Episciences_Paper_MetaDataSource $metaDataSource */
-        $metaDataSource = $all[$sourcesId];
+        $metaDataSource = $session->metadataSources[$sourcesId];
 
         return $metaDataSource->getName();
     }
