@@ -3145,7 +3145,7 @@ class AdministratepaperController extends PaperDefaultController
                     $message = "Une erreur s'est produite pendant l'enregistrement de vos modifications.";
                     $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
                 } else {
-                    $paper->refreshStatus();
+                    $paper->ratingRefreshPaperStatus();
                     // log
                     $paper->log('alter_report_status', Episciences_Auth::getUid(), [
                         'user' => Episciences_Auth::getUser()->toArray()
