@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+- [RT#158293]: article status is not correctly updated
 ## added
 - API to get a list of publishing journals: include accepted repositories.
 - New article status:
