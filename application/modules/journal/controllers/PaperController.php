@@ -2263,7 +2263,7 @@ class PaperController extends PaperDefaultController
         $this->logReport($user, $paper, $report);
 
         // update paper status
-        $paper->refreshStatus();
+        $paper->ratingRefreshPaperStatus();
 
         // if report is completed, send mails to reviewer and editors
         if ($report->isCompleted()) {
