@@ -261,7 +261,7 @@ class Episciences_Paper_Dataset
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
 
         if (!isset($session->metadataSources)) {
-            $session->metadataSources = Episciences_Paper_MetaDataSourcesManger::all();
+            $session->metadataSources = Episciences_Paper_MetaDataSourcesManager::all();
         }
 
         if (!array_key_exists($sourcesId, $session->metadataSources)) {

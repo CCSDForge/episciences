@@ -1,7 +1,7 @@
 <?php
 
 
-class Episciences_Paper_MetaDataSourcesManger
+class Episciences_Paper_MetaDataSourcesManager
 {
     public static function all(): array
     {
