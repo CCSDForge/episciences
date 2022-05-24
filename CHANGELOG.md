@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Fixed
+- [RT#158293]: article status is not correctly updated
+
 ## 1.0.28.4 - 2022-05-09
 ### Fixed
 - File not found for Temporary Versions without attached files + refactoring.

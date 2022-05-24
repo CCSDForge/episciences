@@ -2780,7 +2780,7 @@ class Episciences_Paper
 
         $oldStatus = $this->getStatus();
 
-        $ignoredStatus = [$status, $oldStatus];
+        $ignoredStatus = [$oldStatus];
 
         $ignoredStatus += [
             self::STATUS_OBSOLETE,
@@ -2791,7 +2791,7 @@ class Episciences_Paper
 
         $ignoredStatus += self::$_canBeAssignedDOI;
 
-        if (!in_array($oldStatus, $ignoredStatus, true)) {
+        if (!in_array($status, $ignoredStatus, true)) {
             $this->setStatus($status);
             $this->save();
             // log new paper status
