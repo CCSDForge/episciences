@@ -1490,4 +1490,11 @@ class Episciences_Tools
         return !empty($tmp) ? $tmp : null;
     }
 
+    public static function replace_accents($str): string
+    {
+        $str = htmlentities($str, ENT_COMPAT, "UTF-8");
+        $str =  preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|ring|slash);/','$1',$str);
+        return html_entity_decode($str);
+    }
+
 }

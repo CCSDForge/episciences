@@ -84,12 +84,7 @@ class getCreatorData extends JournalScript
 
     }
 
-    public function replace_accents($str): string
-    {
-        $str = htmlentities($str, ENT_COMPAT, "UTF-8");
-        $str =  preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|ring|slash);/','$1',$str);
-        return html_entity_decode($str);
-    }
+
 
     /**
      * @return mixed|void
@@ -113,7 +108,6 @@ class getCreatorData extends JournalScript
             echo PHP_EOL . "DOI " . $value['DOI'];
             //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
             $paper = Episciences_PapersManager::get($value['DOCID']);
-            Zend_Debug::dump($paper);
             if (empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']))) {
                 Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $value['PAPERID']);
             }
@@ -124,7 +118,7 @@ class getCreatorData extends JournalScript
                 echo PHP_EOL.'https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json';
                 // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                 try {
-                    $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_THROW_ON_ERROR);
+                    $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
                     $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $value['DOI']);
                 } catch (JsonException $e) {
                     // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
@@ -135,7 +129,7 @@ class getCreatorData extends JournalScript
                 sleep('1');
             }
             if (file_exists($pathOpenAireCreator) && (filesize($pathOpenAireCreator) !== 0 )) {
-                $fileFound = json_decode(file_get_contents($pathOpenAireCreator),true);
+                $fileFound = json_decode(file_get_contents($pathOpenAireCreator),true, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 $reformatFileFound = [];
                 if (!array_key_exists(0,$fileFound)) {
                     $reformatFileFound[] = $fileFound;
@@ -145,7 +139,7 @@ class getCreatorData extends JournalScript
                 $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']);
                 foreach ($selectAuthor as $key => $authorInfo) {
                     // LOOP IN ARRAY FROM DB
-                    $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_THROW_ON_ERROR);
+                    $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_UNESCAPED_SLASHES| JSON_THROW_ON_ERROR| JSON_UNESCAPED_UNICODE);
                     // WE NEED TO DECODE JSON IN DB TO LOOP IN
                     foreach ($decodeAuthor as $keyDbJson => $authorFromDB) {
                         $needleFullName = $authorFromDB['fullname'];
@@ -259,7 +253,7 @@ class getCreatorData extends JournalScript
     public function insertAuthors($decodeAuthor, $paperId, $key): void
     {
         $newAuthorInfos = new Episciences_Paper_Authors();
-        $newAuthorInfos->setAuthors(json_encode($decodeAuthor, JSON_FORCE_OBJECT));
+        $newAuthorInfos->setAuthors(json_encode($decodeAuthor, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
         $newAuthorInfos->setPaperId($paperId);
         $newAuthorInfos->setAuthorsId($key);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
@@ -281,14 +275,14 @@ class getCreatorData extends JournalScript
          * SECOND IF REPLACE ALL ACCENT IN BOTH FULLNAME
          */
         $msgLogAuthorFound = "Author Found \n Searching :\n". print_r($needleFullName, TRUE). "\n API: \n" .print_r($authorInfoFromApi, TRUE)." DB DATA:\n ".print_r($decodeAuthor,true);
-        if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search($this->replace_accents($needleFullName), $authorInfoFromApi, false)) {
+        if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
             self::logErrorMsg($msgLogAuthorFound);
             if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
                 $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
                 $flagNewOrcid = 1;
             }
 
-        } elseif ($this->replace_accents($needleFullName) === $this->replace_accents($authorInfoFromApi['$'])) {
+        } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
             self::logErrorMsg($msgLogAuthorFound);
             if (array_key_exists("@orcid", $authorInfoFromApi)) {
                 $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
@@ -345,7 +339,7 @@ class getCreatorData extends JournalScript
         if (!is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
             if (array_key_exists('result', $decodeOpenAireResp['response']['results'])){
                 $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
-                file_put_contents($pathCreator, json_encode($creatorArrayOpenAire, JSON_THROW_ON_ERROR));
+                file_put_contents($pathCreator, json_encode($creatorArrayOpenAire, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
             }
         } else {
             file_put_contents($pathCreator, [""]);

@@ -1,8 +1,12 @@
 <?php
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_Paper_LicenceManager
 {
+    public const ONE_MONTH = 3600 * 24 * 31;
+
     /**
      * @param array $licences
      * @return int
@@ -53,13 +57,20 @@ class Episciences_Paper_LicenceManager
     public static function callApiForLicenceByRepoId($url): string
     {
         $client = new Client();
-        return $client->get($url, [
-            'headers' => [
-                'User-Agent' => 'CCSD Episciences support@episciences.org',
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
-            ]
-        ])->getBody()->getContents();
+        try {
+            $callArrayResp = $client->get($url, [
+                'headers' => [
+                    'User-Agent' => 'CCSD Episciences support@episciences.org',
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ]
+            ])->getBody()->getContents();
+            return $callArrayResp;
+        }catch (ClientException $e) {
+            trigger_error('Api call error: '.$url);
+            return "";
+        }
+
     }
 
     /**
@@ -131,42 +142,50 @@ class Episciences_Paper_LicenceManager
         $pathFile =  APPLICATION_PATH . '/../data/enrichmentLicences/';
         $cleanID = str_replace('/', '', $identifier); // ARXIV CAN HAVE "/" in ID
         $repoId = (string) $repoId;
-        if ($repoId === Episciences_Repositories::ARXIV_REPO_ID || $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
-            $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
-            if (isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
-
-                file_put_contents($pathFile . $cleanID . "_licence.json", json_encode($licenceArray['data']['attributes']['rightsList'][0], JSON_THROW_ON_ERROR));
-                $licenceGetter = $licenceArray['data']['attributes']['rightsList'][0]['rightsUri'];
-                $licenceGetter = self::cleanLicence($licenceGetter);
-                echo PHP_EOL . $licenceGetter;
-                self::insert([
-                    [
-                        'licence' => $licenceGetter,
-                        'docId' => (int) $docId,
-                        'sourceId' => Episciences_Repositories::DATACITE_REPO_ID
-                    ]
-                ]);
-                echo PHP_EOL . 'INSERT DONE ';
-            } else {
-                file_put_contents($pathFile . $identifier . "_licence.json", json_encode([""], JSON_THROW_ON_ERROR));
-            }
-        } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
-            $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
-            if ($licenceArray['response']['numFound'] !== 0 && array_key_exists('licence_s', $licenceArray['response']['docs'][0])) {
-                $licenceGetter = $licenceArray['response']['docs'][0]['licence_s'];
-                $licenceGetter = self::cleanLicence($licenceGetter);
-                echo PHP_EOL . $licenceGetter;
-                file_put_contents($pathFile . $identifier . "_licence.json", json_encode($licenceArray['response'], JSON_THROW_ON_ERROR));
-                self::insert([
-                    [
-                        'licence' => $licenceGetter,
-                        'docId' => (int) $docId,
-                        'sourceId' => Episciences_Repositories::HAL_REPO_ID
-                    ]
-                ]);
-                echo PHP_EOL . 'INSERT DONE ';
-            } else {
-                file_put_contents($pathFile . $identifier . "_licence.json", json_encode([""], JSON_THROW_ON_ERROR));
+        $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        $sets = $cache->getItem($cleanID . "_licence.json");
+        $sets->expiresAfter(self::ONE_MONTH);
+        if ($callArrayResp !== ""){
+            if ($repoId === Episciences_Repositories::ARXIV_REPO_ID|| $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
+                $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
+                if (isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
+                    $sets->set(json_encode($licenceArray['data']['attributes']['rightsList'][0], JSON_THROW_ON_ERROR));
+                    $cache->save($sets);
+                    $licenceGetter = $licenceArray['data']['attributes']['rightsList'][0]['rightsUri'];
+                    $licenceGetter = self::cleanLicence($licenceGetter);
+                    echo PHP_EOL . $licenceGetter;
+                    self::insert([
+                        [
+                            'licence' => $licenceGetter,
+                            'docId' => (int) $docId,
+                            'sourceId' => Episciences_Repositories::DATACITE_REPO_ID
+                        ]
+                    ]);
+                    echo PHP_EOL . 'INSERT DONE ';
+                } else {
+                    $sets->set(json_encode([""]));
+                    $cache->save($sets);
+                }
+            } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
+                $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
+                if ($licenceArray['response']['numFound'] !== 0 && array_key_exists('licence_s', $licenceArray['response']['docs'][0])) {
+                    $licenceGetter = $licenceArray['response']['docs'][0]['licence_s'];
+                    $licenceGetter = self::cleanLicence($licenceGetter);
+                    echo PHP_EOL . $licenceGetter;
+                    $sets->set(json_encode($licenceArray['response'], JSON_THROW_ON_ERROR));
+                    $cache->save($sets);
+                    self::insert([
+                        [
+                            'licence' => $licenceGetter,
+                            'docId' => (int) $docId,
+                            'sourceId' => Episciences_Repositories::HAL_REPO_ID
+                        ]
+                    ]);
+                    echo PHP_EOL . 'INSERT DONE ';
+                } else {
+                    $sets->set(json_encode([""]));
+                    $cache->save($sets);
+                }
             }
         }
     }
@@ -180,4 +199,16 @@ class Episciences_Paper_LicenceManager
         return $db->fetchOne($sql);
 
     }
+
+    public static function deleteLicenceByDocId(int $docId): bool
+    {
+        if ($docId < 1) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        return ($db->delete(T_PAPER_LICENCES, ['docid = ?' => $docId]) > 0);
+
+    }
+
 }

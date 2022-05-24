@@ -3,6 +3,7 @@
 $paper = $this->paper;
 $metadata = $this->metadata;
 $countEnrichmentMeta = 0;
+$currentSmall = "";
 ?>
 
 <?php if (!empty($metadata)) : ?>
@@ -24,7 +25,9 @@ $countEnrichmentMeta = 0;
                                  * @var  Episciences_Paper_Dataset $meta
                                  */
                                 foreach ($metadataArray as $k => $meta) : ?>
-                                    <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($meta->getSourceId()) ?></small>
+                                    <?php if ($k !== "metatext"): ?>
+                                        <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($sourceId) ?></small>
+                                    <?php endif;?>
                                     <?php if ($k !== "metatext" && is_null($meta->getMetatext())) : ?>
                                         <?=strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>"><?= $meta->getValue() ?></a>
                                         <br>

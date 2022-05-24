@@ -2,11 +2,13 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 
 $localopts = [
     'dry-run' => 'Work with Test API',
 ];
+
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
     require_once __DIR__ . '/loadHeader.php';
@@ -27,6 +29,9 @@ class getLicenceDataEnrichment extends JournalScript
      * getDoi constructor.
      * @param $localopts
      */
+
+    public const ONE_MONTH = 3600 * 24 * 31;
+
     public function __construct($localopts)
     {
 
@@ -44,7 +49,6 @@ class getLicenceDataEnrichment extends JournalScript
 
     /**
      * @return void
-     * @throws GuzzleException|JsonException
      */
     public function run(): void
     {
@@ -52,10 +56,8 @@ class getLicenceDataEnrichment extends JournalScript
         $this->initDb();
         $this->initTranslator();
         define_review_constants();
-        $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_PAPERS, ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', 16)->order('REPOID DESC'); // prevent empty row
-        $pathFile =  APPLICATION_PATH . '/../data/enrichmentLicences/';
         foreach ($db->fetchAll($select) as $value) {
             $identifier = $value['IDENTIFIER'];
             $repoId = $value['REPOID'];
@@ -63,9 +65,12 @@ class getLicenceDataEnrichment extends JournalScript
             $version = $value['VERSION'];
             $cleanID = str_replace('/', '', $identifier); // ARXIV CAN HAVE "/" in ID
             $identifier = $this->cleanOldArxivId($identifier);
-            $fileName = $pathFile . $cleanID . "_licence.json";
+            $fileName = $cleanID . "_licence.json";
             echo PHP_EOL . $identifier;
-            if (!file_exists($fileName)) {
+            $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+            $sets = $cache->getItem($fileName);
+            $sets->expiresAfter(self::ONE_MONTH);
+            if (!$sets->isHit()) {
                 $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
                 Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
             }

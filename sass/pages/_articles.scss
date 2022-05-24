@@ -52,8 +52,13 @@
 }
 
 // articles list - editors list
-.editors-list {
+.editors-list{
   max-height: 150px;
   overflow: auto;
   margin-bottom: 10px;
+}
+
+.modal-orcid{
+  max-height: 50vh;
+  overflow-y: auto;
 }

@@ -1871,10 +1871,13 @@ class Episciences_Paper
         }
         //author with orcid
         $authorEnrich = Episciences_Paper_AuthorsManager::formatAuthorEnrichmentForViewByPaper($this->_paperId);
-        if (!empty($authorEnrich)) {
-            $node->appendChild($dom->createElement('authorEnriched', $authorEnrich));
+        if (!empty($authorEnrich['template'])) {
+            $node->appendChild($dom->createElement('authorEnriched', $authorEnrich['template']));
+            $node->appendChild($dom->createElement('authorsOrcid', $authorEnrich['orcid']));
+
         } else {
             $node->appendChild($dom->createElement('authorEnriched', ""));
+            $node->appendChild($dom->createElement('authorsOrcid', ""));
         }
 
         // fetch volume data
