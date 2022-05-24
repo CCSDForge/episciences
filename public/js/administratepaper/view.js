@@ -386,6 +386,7 @@ function getUserMenu(button) {
 }
 
 function showForm(name) {
+    console.log('ok');
     hideForms();
     $('#change-status-group').hide();
     $('#' + name + '-form').fadeIn();

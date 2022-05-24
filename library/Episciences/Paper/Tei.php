@@ -523,7 +523,7 @@ class Episciences_Paper_Tei
         foreach ($this->getAbstracts() as $locale => $abstractText) {
 
             if (is_array($abstractText)) {
-                $locale = Episciences_Tools::epi_array_key_first($abstractText);
+                $locale = array_key_first($abstractText);
                 $abstractText = array_shift($abstractText);
             }
 
@@ -550,7 +550,7 @@ class Episciences_Paper_Tei
         $comments = array();
         foreach ($this->getPaper()->getAllAbstracts() as $locale => $abstract) {
             if (is_array($abstract)) {
-                $locale = Episciences_Tools::epi_array_key_first($abstract);
+                $locale = array_key_first($abstract);
                 $abstractText = array_shift($abstract);
                 $abstractText = $this->cleanComment($abstractText);
                     if ($this->isComment($abstractText)) {
@@ -590,7 +590,7 @@ class Episciences_Paper_Tei
         $abstracts = [];
         foreach ($this->getPaper()->getAllAbstracts() as $locale => $abstract) {
             if (is_array($abstract)) {
-                $abstractLang = Episciences_Tools::epi_array_key_first($abstract);
+                $abstractLang = array_key_first($abstract);
                 $abstractText = array_shift($abstract);
                 $abstractText = $this->cleanAbstract($abstractText);
                 $abstracts[][$abstractLang] = $abstractText;
