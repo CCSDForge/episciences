@@ -1075,7 +1075,7 @@ class Episciences_User extends Ccsd_User_Models_User
         /** @var array $versionIdsValues ['version' => 'docId'] */
         $versionIdsValues = $paper->getVersionsIds();
         arsort($versionIdsValues); // high to low
-        unset($versionIdsValues[Episciences_Tools::epi_array_key_first($versionIdsValues)]);
+        unset($versionIdsValues[array_key_first($versionIdsValues)]);
         return array_values($versionIdsValues);
     }
 

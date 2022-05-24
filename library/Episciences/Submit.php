@@ -1472,7 +1472,7 @@ class Episciences_Submit
                 $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhidId_s,researchData_s&version_i:' . $paper->getversion();
                 $response = $client->get($url);
                 $result = json_decode($response->getBody()->getContents(), true);
-                $allDatasets = $result['response']['docs'][Episciences_Tools::epi_array_key_first($result['response']['docs'])];
+                $allDatasets = $result['response']['docs'][array_key_first($result['response']['docs'])];
 
                 $data = [];
                 $tmpData = [];

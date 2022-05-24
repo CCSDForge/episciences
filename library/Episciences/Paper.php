@@ -2228,7 +2228,7 @@ class Episciences_Paper
     private function getTitleByLanguage(string $language)
     {
         $title = $this->getMetadata('title');
-        if ((is_array($title)) && (Episciences_Tools::epi_array_key_first($title) == 0)) {
+        if ((is_array($title)) && (array_key_first($title) == 0)) {
             $title = array_shift($title);
 
             if (!is_array($title)) {
@@ -2836,7 +2836,7 @@ class Episciences_Paper
 
         $oldStatus = $this->getStatus();
 
-        $ignoredStatus = [$status, $oldStatus];
+        $ignoredStatus = [$oldStatus];
 
         $ignoredStatus += [
             self::STATUS_OBSOLETE,
@@ -2847,7 +2847,7 @@ class Episciences_Paper
 
         $ignoredStatus += self::$_canBeAssignedDOI;
 
-        if (!in_array($oldStatus, $ignoredStatus, true)) {
+        if (!in_array($status, $ignoredStatus, true)) {
             $this->setStatus($status);
             $this->save();
             // log new paper status
