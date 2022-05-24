@@ -261,7 +261,7 @@ class ReviewerController extends PaperDefaultController
             ]);
 
         // update paper status
-        $paper->refreshStatus();
+        $paper->ratingRefreshPaperStatus();
 
         $this->emailSendingProcessing($user, $paper, $newAssignment);
     }
