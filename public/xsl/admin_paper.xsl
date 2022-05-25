@@ -8,7 +8,27 @@
     <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
     <xsl:template match="/record">
-
+        <!-- Modal -->
+        <form id="post-orcid-author" action="/paper/postorcidauthor" method="POST">
+            <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label" aria-hidden="true">
+                <div class="modal-dialog modal-orcid" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="author-modal-orcid-label-title">  <xsl:value-of
+                                    select="php:function('Ccsd_Tools::translate', 'Ajouter les ORCID aux auteurs')"/></h5>
+                            <div class="hidden" id="paperid-for-author">  <xsl:value-of select="episciences/paperId"/></div>
+                        </div>
+                        <div id="modal-body-authors" class="modal-body">
+                            <input class='hidden' id='modal-called' value='0'></input>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-success" id="valid-new-orcid">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
         <xsl:variable name="client_language" select="php:function('Episciences_Tools::getLocale')"/>
         <xsl:variable name="doc_language" select="metadata/oai_dc:dc/dc:language"/>
         <xsl:variable name="title">
@@ -99,9 +119,22 @@
 
                 <p>
                     <i>
-                        <div>
+                        <div id="paper-authors">
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Auteurs : ')"/>
-                            <xsl:value-of select="episciences/authorEnriched" disable-output-escaping="yes"/>
+                            <xsl:choose>
+                                <xsl:when test="episciences/authorEnriched!= '' ">
+                                    <xsl:value-of select="episciences/authorEnriched" disable-output-escaping="yes"/>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
+                                        <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                        <xsl:if test="position() != last()"> ; </xsl:if>
+                                    </xsl:for-each>
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </div>
+                        <div id="orcid-author-existing" class="hidden">
+                            <xsl:value-of select="episciences/authorsOrcid"/>
                         </div>
                     </i>
                 </p>
@@ -276,6 +309,14 @@
                                 <span class="fas fa-sync-alt" style="margin-right: 5px"/>
                                 <xsl:value-of
                                         select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
+                            </button>
+                            <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
+                                <xsl:attribute name="onclick">
+                                    <xsl:value-of select="'updateOrcidAuthors()'"/>
+                                </xsl:attribute>
+                                <span class="fab fa-orcid" style="margin-right: 5px"></span>
+                                <xsl:value-of
+                                        select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
                             </button>
                         </xsl:otherwise>
                     </xsl:choose>

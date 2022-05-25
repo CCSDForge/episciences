@@ -143,6 +143,11 @@ class Episciences_Auth extends Ccsd_Auth
         );
     }
 
+    public static function isAllowedToManageOrcidAuthor(): bool
+    {
+        return (self::isAllowedToManagePaper() || self::isAuthor());
+    }
+
     /**
      * @param int $rvId
      * @return bool

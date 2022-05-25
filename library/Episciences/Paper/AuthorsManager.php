@@ -52,13 +52,15 @@ class Episciences_Paper_AuthorsManager
         return $db->fetchAssoc($select);
     }
 
-    public static function formatAuthorEnrichmentForViewByPaper($paperId):string {
+    public static function formatAuthorEnrichmentForViewByPaper($paperId): array {
         $decodedauthor = [];
         foreach (self::getAuthorByPaperId($paperId) as $value){
             $decodedauthor = json_decode($value['authors'], true);
         }
         $templateString = "";
         $sizeArr = count($decodedauthor);
+        //create TMP text to save orcid for view popup Jquery
+        $orcidText = "";
         if (!empty($decodedauthor)) {
             foreach ($decodedauthor as $key => $value) {
                 $fullname = htmlspecialchars($value['fullname']);
@@ -66,15 +68,18 @@ class Episciences_Paper_AuthorsManager
                     $orcid = htmlspecialchars($value['orcid']);
                     $orcidUrl = "https://orcid.org/".$orcid;
                     $templateString .= $fullname.' <a rel="noopener" href='.$orcidUrl.' data-toggle="tooltip" data-placement="bottom" data-original-title='.$orcid.' target="_blank" ><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"/></a>';
+                    $orcidText .= $orcid;
                 }else{
                     $templateString .= ' '. $fullname.' ';
+                    $orcidText .= "NULL";
                 }
-                if ($key !== $sizeArr-1){
+                if ($key !== $sizeArr-1) {
                     $templateString .= '; ';
+                    $orcidText.= "##";
                 }
             }
         }
-        return $templateString;
+        return ['template'=>$templateString,'orcid'=>$orcidText];
     }
     /**
      * @param Episciences_Paper_Authors $authors
@@ -83,7 +88,10 @@ class Episciences_Paper_AuthorsManager
     public static function update(Episciences_Paper_Authors $authors): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $where['idauthors = ?'] = $authors->getAuthorId();
+        $authorId = $authors->getAuthorId();
+        if ($authorId !== null) {
+            $where['idauthors = ?'] = $authors->getAuthorId();
+        }
         $where['paperid = ?'] = $authors->getPaperId();
 
         $values = [
@@ -114,13 +122,21 @@ class Episciences_Paper_AuthorsManager
                 'family' => $familyName
             ];
         }
-
         Episciences_Paper_AuthorsManager::insert([
             [
-                'authors' => json_encode($arrayAuthors, JSON_FORCE_OBJECT),
+                'authors' => json_encode($arrayAuthors, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 'paperId' => $paperId
             ]
         ]);
         unset($arrayAuthors);
+    }
+
+    public static function deleteAuthorsByPaperId(int $paperId){
+        if ($paperId < 1) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        return ($db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0);
     }
 }

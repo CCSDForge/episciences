@@ -414,6 +414,54 @@ class PaperController extends PaperDefaultController
             );
     }
 
+
+    public function postorcidauthorAction(){
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $request = $this->getRequest();
+        if (($request->isXmlHttpRequest() && $request->isPost()) && Episciences_Auth::isAllowedToManageOrcidAuthor()) {
+            $body = $request->getRawBody();
+            $data = json_decode($body,true, JSON_UNESCAPED_UNICODE);
+            $dbAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($data['paperid']);
+            $arrayAuthorDb = [];
+            foreach ($dbAuthor as $value)  {
+                $arrayAuthorDb = json_decode($value['authors'],true,JSON_UNESCAPED_UNICODE);
+            }
+            //we can do that because we have the same number of author at the same place
+            $arrayAuthorForm = $data['authors'];
+            foreach ($arrayAuthorDb as $key => $value) {
+                if ($arrayAuthorForm[$key][1] !== '') {
+                    if (isset($value['orcid'])) {
+                        if ($value['orcid'] !== $arrayAuthorForm[$key][1]) {
+                            $arrayAuthorDb[$key]['orcid'] = $arrayAuthorForm[$key][1];
+                        }
+                    } else {
+                        $arrayAuthorDb[$key]['orcid'] = $arrayAuthorForm[$key][1];
+                    }
+                }
+                // remove orcid from db if orcid is removed in the form
+                if (isset($arrayAuthorDb[$key]['orcid']) && $arrayAuthorDb[$key]['orcid'] !== '' && $arrayAuthorForm[$key][1] === '') {
+                    unset($arrayAuthorDb[$key]['orcid']);
+                }
+            }
+            $newAuthorInfos = new Episciences_Paper_Authors();
+            $newAuthorInfos->setAuthors(json_encode($arrayAuthorDb,JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
+            $newAuthorInfos->setPaperId($data['paperid']);
+            $updateAuthor = Episciences_Paper_AuthorsManager::update($newAuthorInfos);
+            if ($updateAuthor>0) {
+                $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+            } else {
+                $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Informations déjà prises en compte');
+            }
+
+        } else {
+            trigger_error('Someone tryed to do request for orcid modifications');
+        }
+    }
+
+
     /**
      * save contributor answer to a reviewer comment
      * @param int $id : request comment
@@ -2465,7 +2513,10 @@ class PaperController extends PaperDefaultController
             Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($paper->getDocid(), $paper->getRepoid());
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($paper->getDocid());
-            // todo delete authors & Licence
+            // delete licences
+            Episciences_Paper_LicenceManager::deleteLicenceByDocId($paper->getDocid());
+            //delete authors
+            Episciences_Paper_AuthorsManager::deleteAuthorsByPaperId($paper->getPaperid());
 
 
             // if reviewers were assigned, remove them

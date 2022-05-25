@@ -50,3 +50,6 @@ assets/node_modules/
 /log/
 /phpmetrics/
 /.php-cs-fixer.cache
+
+#Cache
+/cache/*
