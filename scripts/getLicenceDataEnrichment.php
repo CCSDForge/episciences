@@ -49,6 +49,9 @@ class getLicenceDataEnrichment extends JournalScript
 
     /**
      * @return void
+     * @throws GuzzleException
+     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function run(): void
     {
@@ -57,7 +60,7 @@ class getLicenceDataEnrichment extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', 16)->order('REPOID DESC'); // prevent empty row
+        $select = $db->select()->from(T_PAPERS, ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)->order('REPOID DESC'); // prevent empty row
         foreach ($db->fetchAll($select) as $value) {
             $identifier = $value['IDENTIFIER'];
             $repoId = $value['REPOID'];
@@ -75,6 +78,9 @@ class getLicenceDataEnrichment extends JournalScript
                 Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
             }
         }
+
+        $this->displayInfo('Licence Data Enrichment completed. Good Bye ! =)', true);
+
     }
 
 

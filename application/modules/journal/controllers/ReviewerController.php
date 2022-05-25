@@ -146,7 +146,7 @@ class ReviewerController extends PaperDefaultController
 
             $this->view->is_tmp_user = $assignment->isTmp_user();
             $this->view->refuse_form = $refuse_form;
-
+            $this->view->metadata = $paper->getDatasetsFromEnrichment();
         }
     }
 

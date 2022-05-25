@@ -795,6 +795,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $this->view->paper = $paper;
         $this->view->paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
+        $this->view->metadata = $paper->getDatasetsFromEnrichment();
     }
 
     /**

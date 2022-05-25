@@ -27,7 +27,7 @@ $paper = $this->paper;
     <div class="col-md-7">
         <?= $paper->getXslt() ?>
         <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
-        <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper]) ?>
+        <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper,'metadata'=> $this->metadata]) ?>
     </div>
 
     <div class="col-md-5">

@@ -123,15 +123,15 @@ class PaperController extends PaperDefaultController
 
         $papersManager = new Episciences_PapersManager();
         $paper = $papersManager::get($docId);
-        if (!empty($paper->getDocid())){
-            $this->view->metadata = $paper->getDatasetsFromEnrichment();
-        }
+
         // check if paper exists
         if (!$paper || $paper->getRvid() !== RVID) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             return;
         }
+
+        $this->view->metadata = $paper->getDatasetsFromEnrichment();
 
         $loggedUid = Episciences_Auth::getUid();
         $isSecretary = Episciences_Auth::isSecretary();
@@ -1911,7 +1911,7 @@ class PaperController extends PaperDefaultController
 
         $previousRatings = Episciences_Rating_Manager::getPreviousRatings($paper, Episciences_Auth::getUid(), Episciences_Rating_Report::STATUS_COMPLETED);
         $this->view->previousRatings = $previousRatings;
-
+        $this->view->metadata = $paper->getDatasetsFromEnrichment();
     }
 
     /**

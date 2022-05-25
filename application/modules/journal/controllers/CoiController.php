@@ -72,6 +72,7 @@ class CoiController extends PaperDefaultController
         }
 
         $this->_helper->redirector->gotoUrl($url);
+        $this->view->metadata = $paper->getDatasetsFromEnrichment();
     }
 
     /**

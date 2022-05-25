@@ -24,7 +24,7 @@ $previousRatings = $this->previousRatings;
 <div>
     <?= $this->paper->getXslt() ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $this->paper]) ?>
-    <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $this->paper]) ?>
+    <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $this->paper, 'metadata' => $this->metadata]) ?>
 </div>
 
 <?php // author's comments and cover letter ************************************************************************* ?>

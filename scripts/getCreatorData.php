@@ -57,10 +57,11 @@ class getCreatorData extends JournalScript
      */
     protected $_journalHostname;
 
+    public const DIR = '../data';
+
     /**
      * getDoi constructor.
      * @param $localopts
-     * @throws Zend_Db_Statement_Exception
      */
     public function __construct($localopts)
     {
@@ -85,10 +86,10 @@ class getCreatorData extends JournalScript
     }
 
 
-
     /**
      * @return mixed|void
-     * @throws GuzzleException
+     * @throws JsonException
+     * @throws Zend_Db_Statement_Exception
      */
     public
     function run()
@@ -99,47 +100,52 @@ class getCreatorData extends JournalScript
         define_review_constants();
         $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->distinct('DOI')->from(T_PAPERS,['DOI','PAPERID','DOCID'])->where('DOI IS NOT NULL')->where('DOI != ""')->order('DOCID DESC'); // prevent empty row
+        $select = $db->select()->distinct('DOI')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID'])->where('DOI IS NOT NULL')->where('DOI != ""')->order('DOCID DESC'); // prevent empty row
 
-        foreach($db->fetchAll($select) as $value) {
-            $pathOpenAireCreator = '../data/authors/openAire/'.explode("/",$value['DOI'])[1]."_creator.json";
+        foreach ($db->fetchAll($select) as $value) {
+            $pathOpenAireCreator = self::DIR . '/authors/openAire/' . explode("/", $value['DOI'])[1] . "_creator.json";
             echo PHP_EOL . "PAPERID " . $value['PAPERID'];
             echo PHP_EOL . "DOCID " . $value['DOCID'];
             echo PHP_EOL . "DOI " . $value['DOI'];
             //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
             $paper = Episciences_PapersManager::get($value['DOCID']);
-            if (empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']))) {
-                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $value['PAPERID']);
+
+            if (!empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']))) { // remettre à jour les auteurs d'un article
+                //delete authors
+                Episciences_Paper_AuthorsManager::deleteAuthorsByPaperId($paper->getPaperid());
+
             }
 
+            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $value['PAPERID']);
+
             // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
-            if (!file_exists($pathOpenAireCreator)){
+            if (!file_exists($pathOpenAireCreator)) {
                 $openAireCallArrayResp = $this->callOpenAireApi($client, $value['DOI']);
-                echo PHP_EOL.'https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json';
+                echo PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json';
                 // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                 try {
                     $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
                     $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $value['DOI']);
                 } catch (JsonException $e) {
                     // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                    self::logErrorMsg($e->getMessage(). " for PAPER ". $value['PAPERID'] . ' URL called https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json ');
+                    self::logErrorMsg($e->getMessage() . " for PAPER " . $value['PAPERID'] . ' URL called https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json ');
                     file_put_contents($pathOpenAireCreator, [""]);
                     continue;
                 }
                 sleep('1');
             }
-            if (file_exists($pathOpenAireCreator) && (filesize($pathOpenAireCreator) !== 0 )) {
-                $fileFound = json_decode(file_get_contents($pathOpenAireCreator),true, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            if (file_exists($pathOpenAireCreator) && (filesize($pathOpenAireCreator) !== 0)) {
+                $fileFound = json_decode(file_get_contents($pathOpenAireCreator), true, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 $reformatFileFound = [];
-                if (!array_key_exists(0,$fileFound)) {
+                if (!array_key_exists(0, $fileFound)) {
                     $reformatFileFound[] = $fileFound;
-                }else{
+                } else {
                     $reformatFileFound = $fileFound;
                 }
                 $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']);
                 foreach ($selectAuthor as $key => $authorInfo) {
                     // LOOP IN ARRAY FROM DB
-                    $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_UNESCAPED_SLASHES| JSON_THROW_ON_ERROR| JSON_UNESCAPED_UNICODE);
+                    $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
                     // WE NEED TO DECODE JSON IN DB TO LOOP IN
                     foreach ($decodeAuthor as $keyDbJson => $authorFromDB) {
                         $needleFullName = $authorFromDB['fullname'];
@@ -157,6 +163,8 @@ class getCreatorData extends JournalScript
                 }
             }
         }
+
+        $this->displayInfo('Authors Enrichment completed. Good Bye ! =)', true);
 
     }
 
@@ -195,6 +203,7 @@ class getCreatorData extends JournalScript
     {
         $this->_paper = $paper;
     }
+
     /**
      * @return string
      */
@@ -257,7 +266,7 @@ class getCreatorData extends JournalScript
         $newAuthorInfos->setPaperId($paperId);
         $newAuthorInfos->setAuthorsId($key);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
-        echo PHP_EOL . 'new Orcid for id ' . $key . ' and paper ' . $paperId. PHP_EOL;
+        echo PHP_EOL . 'new Orcid for id ' . $key . ' and paper ' . $paperId . PHP_EOL;
     }
 
     /**
@@ -274,7 +283,7 @@ class getCreatorData extends JournalScript
          * FIRST IF PRETTY RAW SEARCHING
          * SECOND IF REPLACE ALL ACCENT IN BOTH FULLNAME
          */
-        $msgLogAuthorFound = "Author Found \n Searching :\n". print_r($needleFullName, TRUE). "\n API: \n" .print_r($authorInfoFromApi, TRUE)." DB DATA:\n ".print_r($decodeAuthor,true);
+        $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, TRUE) . "\n API: \n" . print_r($authorInfoFromApi, TRUE) . " DB DATA:\n " . print_r($decodeAuthor, true);
         if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
             self::logErrorMsg($msgLogAuthorFound);
             if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
@@ -288,21 +297,22 @@ class getCreatorData extends JournalScript
                 $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
                 $flagNewOrcid = 1;
             }
-        }else{
-            self::logErrorMsg("No matching : API ". $authorInfoFromApi['$']. " #DB# ". $needleFullName);
+        } else {
+            self::logErrorMsg("No matching : API " . $authorInfoFromApi['$'] . " #DB# " . $needleFullName);
         }
         //SOME LOGGING TO KNOW IF OCCURENCE WAS FOUND EACH LOOP OF ARRAYS
-        if (!isset($decodeAuthor[$keyDbJson]['orcid'])){
-            self::logErrorMsg("ORCID not found \n Searching :\n". print_r($needleFullName, TRUE). "\n API: \n" .print_r($authorInfoFromApi, TRUE)." DB DATA:\n ".print_r($decodeAuthor,true));
+        if (!isset($decodeAuthor[$keyDbJson]['orcid'])) {
+            self::logErrorMsg("ORCID not found \n Searching :\n" . print_r($needleFullName, TRUE) . "\n API: \n" . print_r($authorInfoFromApi, TRUE) . " DB DATA:\n " . print_r($decodeAuthor, true));
         }
-        if ($flagNewOrcid === 1){
-            self::logErrorMsg("ORCID found \n Searching :\n". print_r($needleFullName, TRUE). "\n API: \n" .print_r($authorInfoFromApi, TRUE)." DB DATA:\n ".print_r($decodeAuthor,true));
+        if ($flagNewOrcid === 1) {
+            self::logErrorMsg("ORCID found \n Searching :\n" . print_r($needleFullName, TRUE) . "\n API: \n" . print_r($authorInfoFromApi, TRUE) . " DB DATA:\n " . print_r($decodeAuthor, true));
 
         }
         return array($decodeAuthor, $flagNewOrcid);
     }
 
-    public static function logErrorMsg($msg){
+    public static function logErrorMsg($msg)
+    {
         $logger = new Logger('my_logger');
         $logger->pushHandler(new StreamHandler(__DIR__ . '/creatorEnrichment.log', Logger::INFO));
         $logger->info($msg);
@@ -313,17 +323,28 @@ class getCreatorData extends JournalScript
      * @param Client $client
      * @param $doi
      * @return string
-     * @throws GuzzleException
      */
     public function callOpenAireApi(Client $client, $doi): string
     {
-        $openAireCallArrayResp = $client->get('https://api.openaire.eu/search/publications/?doi=' . $doi . '&format=json', [
-            'headers' => [
-                'User-Agent' => 'CCSD Episciences support@episciences.org',
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
-            ]
-        ])->getBody()->getContents();
+
+        $openAireCallArrayResp = '';
+
+        try {
+
+            return $client->get('https://api.openaire.eu/search/publications/?doi=' . $doi . '&format=json', [
+                'headers' => [
+                    'User-Agent' => 'CCSD Episciences support@episciences.org',
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ]
+            ])->getBody()->getContents();
+
+        } catch (GuzzleException $e) {
+
+            trigger_error($e->getMessage());
+
+        }
+
         return $openAireCallArrayResp;
     }
 
@@ -335,15 +356,29 @@ class getCreatorData extends JournalScript
      */
     public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
     {
-        $pathCreator = '../data/authors/openAire/' . explode("/", $doi)[1] . "_creator.json";
-        if (!is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
-            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])){
-                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
-                file_put_contents($pathCreator, json_encode($creatorArrayOpenAire, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+        $dir = self::DIR . '/authors/openAire';
+
+        if (!file_exists($dir)) {
+
+            $result = mkdir($dir, 0770, true);
+
+            if (!$result) {
+                die('Fatal error: Failed to create directory: ' . $dir);
             }
-        } else {
-            file_put_contents($pathCreator, [""]);
+
+            $pathCreator = $dir . '/' . explode("/", $doi)[1] . "_creator.json";
+
+            if (!is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
+                if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
+                    $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
+                    file_put_contents($pathCreator, json_encode($creatorArrayOpenAire, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                }
+            } else {
+                file_put_contents($pathCreator, [""]);
+            }
+
         }
+
     }
 }
 
