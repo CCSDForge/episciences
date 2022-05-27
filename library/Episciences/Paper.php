@@ -115,6 +115,7 @@ class Episciences_Paper
         self::STATUS_NEW_VERSION,
         self::STATUS_WAITING_FOR_COMMENTS,
         self::STATUS_DELETED,
+        self::STATUS_REMOVED
     ];
 
     // exclude from a list of sorted papers for current volume
@@ -195,7 +196,8 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION => 'version temporaire acceptée, en attente des modifications mineures',
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'version temporaire acceptée, en attente des modifications majeures',
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "accepté - en attente de validation par l'auteur",
-        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "approuvé - en attente de publication"
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "approuvé - en attente de publication",
+        self::STATUS_REMOVED => 'supprimé par la revue',
     ];
     public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
@@ -238,6 +240,12 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
+    ];
+
+    public const NOT_LISTED_STATUS = [
+        Episciences_Paper::STATUS_OBSOLETE,
+        Episciences_Paper::STATUS_DELETED,
+        Episciences_Paper::STATUS_REMOVED
     ];
 
     /**

@@ -382,7 +382,7 @@ class Episciences_PapersManager
      * @param array $excludeStatus
      * @return Zend_Db_Select
      */
-    private static function allPapers(array $excludeStatus = [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]): Zend_Db_Select
+    private static function allPapers(array $excludeStatus = Episciences_Paper::NOT_LISTED_STATUS): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db

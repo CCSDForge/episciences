@@ -34,12 +34,7 @@ class PaperController extends PaperDefaultController
 
         $this->requestingAnUnpublishedFile($paper);
 
-        if ($paper->isDeleted()) {
-            $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
-            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->redirect('/');
-            return;
-        }
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
         $this->updatePaperStats($paper, Episciences_Paper_Visits::CONSULT_TYPE_FILE);
 
@@ -142,12 +137,7 @@ class PaperController extends PaperDefaultController
 
         }
 
-        if ($paper->isDeleted()) {
-            $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
-            $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->redirect('/');
-            return;
-        }
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
         $this->updatePaperStats($paper);
 
@@ -1569,7 +1559,7 @@ class PaperController extends PaperDefaultController
             $sections = $review->getSections();
             $settings = [
                 'is' => ['uid' => Episciences_Auth::getUid()] + Episciences_PapersManager::getFiltersParams(),
-                'isNot' => [self::STATUS => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]],
+                'isNot' => [self::STATUS => Episciences_Paper::NOT_LISTED_STATUS],
                 'limit' => $limit,
                 'offset' => $offset
             ];
@@ -1929,8 +1919,8 @@ class PaperController extends PaperDefaultController
         $url = '/' . $paper->getDocid();
 
         // paper has been deleted
-        if ($paper->isDeleted()) {
-            $result['message'] = $translator->translate("Le document demandé a été supprimé par son auteur.");
+        if ($paper->isDeleted() || $paper->isRemoved()) {
+            $result['message'] = $paper->isDeleted() ?  $translator->translate("Le document demandé a été supprimé par son auteur.") :  $translator->translate("Le document demandé a été supprimé par la revue.")  ;
             $result['url'] = '/';
         } elseif ($paper->isAccepted() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
             $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");

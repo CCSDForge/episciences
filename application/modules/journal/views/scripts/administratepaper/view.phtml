@@ -40,14 +40,6 @@ $this->suggestedRevision = false;
     </div>
 <?php endif; ?>
 
-
-<?php if ($paper->isDeleted()) : ?>
-    <div class="alert alert-danger" style="margin-top: 20px">
-        <strong><?php echo $this->translate('Attention, cet article a été supprimé par son auteur.'); ?></strong><br/>
-    </div>
-<?php endif; ?>
-
-
 <?php // Bloc "Papier" ***************************************************** ?>
 <div>
     <?= $paper->getXslt() ?>
