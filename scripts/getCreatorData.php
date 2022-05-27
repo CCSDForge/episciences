@@ -103,20 +103,33 @@ class getCreatorData extends JournalScript
         $select = $db->select()->distinct('DOI')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID'])->where('DOI IS NOT NULL')->where('DOI != ""')->order('DOCID DESC'); // prevent empty row
 
         foreach ($db->fetchAll($select) as $value) {
+            $paperId = $value['PAPERID'];
             $pathOpenAireCreator = self::DIR . '/authors/openAire/' . explode("/", $value['DOI'])[1] . "_creator.json";
-            echo PHP_EOL . "PAPERID " . $value['PAPERID'];
+            echo PHP_EOL . "PAPERID " . $paperId;
             echo PHP_EOL . "DOCID " . $value['DOCID'];
             echo PHP_EOL . "DOI " . $value['DOI'];
-            //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
-            $paper = Episciences_PapersManager::get($value['DOCID']);
 
-            if (!empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']))) { // remettre à jour les auteurs d'un article
+            if (!empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId))) {
+                /**
+                 * NB. Cas typique : un papier soumis, un auteur ajoute les orcid(s) et on relance le script le soir même :
+                 * potentiellement on peut perdre des infos
+                 * *
+                 */
+
                 //delete authors
-                Episciences_Paper_AuthorsManager::deleteAuthorsByPaperId($paper->getPaperid());
+                //Episciences_Paper_AuthorsManager::deleteAuthorsByPaperId($paper->getPaperid());
+
+                echo PHP_EOL;
+                $this->displayInfo('The authors for this paper [' . $paperId . '] already exist', true);
+
+                continue;
 
             }
 
-            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $value['PAPERID']);
+            //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
+            $paper = Episciences_PapersManager::get($value['DOCID']);
+
+            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $paperId);
 
             // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
             if (!file_exists($pathOpenAireCreator)) {
@@ -128,7 +141,7 @@ class getCreatorData extends JournalScript
                     $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $value['DOI']);
                 } catch (JsonException $e) {
                     // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                    self::logErrorMsg($e->getMessage() . " for PAPER " . $value['PAPERID'] . ' URL called https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json ');
+                    self::logErrorMsg($e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json ');
                     file_put_contents($pathOpenAireCreator, [""]);
                     continue;
                 }
@@ -142,7 +155,7 @@ class getCreatorData extends JournalScript
                 } else {
                     $reformatFileFound = $fileFound;
                 }
-                $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($value['PAPERID']);
+                $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
                 foreach ($selectAuthor as $key => $authorInfo) {
                     // LOOP IN ARRAY FROM DB
                     $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
@@ -156,7 +169,7 @@ class getCreatorData extends JournalScript
                             [$decodeAuthor, $flagNewOrcid] = $this->getOrcidApiForDb($needleFullName, $authorInfoFromApi, $decodeAuthor, $keyDbJson, $flagNewOrcid);
                         }
                         if ($flagNewOrcid === 1) {
-                            $this->insertAuthors($decodeAuthor, $value['PAPERID'], $key);
+                            $this->insertAuthors($decodeAuthor, $paperId, $key);
                         }
 
                     }
