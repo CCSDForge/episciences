@@ -1,0 +1,109 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "license": "https://spdx.org/licenses/GPL-3.0",
+  "codeRepository": "https://github.com/CCSDForge/episciences",
+  "dateCreated": "2013-01-01",
+  "datePublished": "2020-12-23",
+  "dateModified": "2022-05-25",
+  "issueTracker": "https://github.com/CCSDForge/episciences/issues",
+  "name": "Episciences",
+  "version": "1.0.28.5",
+  "description": "An overlay journal platform",
+  "applicationCategory": "Scientific Publishing",
+  "releaseNotes": "https://github.com/CCSDForge/episciences/blob/main/CHANGELOG.md",
+  "funding": "CCSD; European Commission grant 101017452 “OpenAIRE Nexus - OpenAIRE-Nexus Scholarly Communication Services for EOSC users”",
+  "developmentStatus": "active",
+  "funder": {
+    "@type": "Organization",
+    "name": "CCSD"
+  },
+  "keywords": [
+    "overlay journal;open-access;open science;journal"
+  ],
+  "programmingLanguage": [
+    "PHP;XML;XSLT"
+  ],
+  "operatingSystem": [
+    "Linux"
+  ],
+  "relatedLink": [
+    "https://www.episciences.org/"
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0000-0003-2955-5678",
+      "givenName": "Bruno",
+      "familyName": "Marmol",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Djamel",
+      "familyName": "Chibane",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Julien",
+      "familyName": "Charles",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Kevin",
+      "familyName": "Loiseau",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Laurent ",
+      "familyName": "Capelli",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Loic ",
+      "familyName": "Comparet",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0000-0003-1244-0823",
+      "givenName": "Raphaël",
+      "familyName": "Tournoy",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Yannick ",
+      "familyName": "Barborini",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CCSD"
+      }
+    }
+  ]
+}
