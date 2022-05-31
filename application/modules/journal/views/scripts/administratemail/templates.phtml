@@ -8,8 +8,12 @@
         <?php
         $previous_group = '';
         $current_group = '';
+        $i=0;
         ?>
         <?php foreach ($this->templates as $template) : ?>
+            <?php
+        $i++;
+            ?>
             <?php $current_group = $template['TYPE']; ?>
             <?php if ($current_group !== $previous_group) : ?>
                 <h3><strong><?= $this->translate($current_group . '_tpl_group') ?></strong></h3>
@@ -25,7 +29,7 @@
                     <a class="modal-opener"
                        title="<?= $this->translate($editTemplateTitle) ?>"
                        href="/administratemail/edittemplate?id=<?= $template['ID'] ?>">
-                        <?= $this->translate($template['KEY'] . '_tpl_name') ?>
+                        <?= $i ?> - <?= $this->translate($template['KEY'] . '_tpl_name') ?> - <?= $template['KEY'] . '_tpl_name' ?>
                     </a>
                 <?php else: ?>
                     <span class="text-info"><?= $this->translate($template['KEY'] . '_tpl_name') ?></span>
