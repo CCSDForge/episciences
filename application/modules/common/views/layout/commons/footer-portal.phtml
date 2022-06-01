@@ -42,6 +42,10 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                         <i class="fas fa-cookie-bite"></i>&nbsp;<a
                                 href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
                     </li>
+                    <li>
+                        <i class="fas fa-comment-alt"></i>&nbsp;<a
+                                href="https://survey.ccsd.cnrs.fr/index.php/852898?newtest=Y&lang=en"><?php echo $this->translate('Retours utilisateurs'); ?></a>
+                    </li>
                 </ul>
             </div>
             <div class="col-lg-3 col-md-3 col-sm-4 col-xs-12">
@@ -59,9 +63,6 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                     <li>
                         <a href="https://github.com/CCSDForge/episciences/projects/2"><?php echo $this->translate('Feuille de route'); ?></a>
                     </li>
-                    <li>
-                        <a href="https://survey.ccsd.cnrs.fr/index.php/852898?newtest=Y&lang=en"><?php echo $this->translate('Retours utilisateurs'); ?></a>
-                    </li>
                 </ul>
             </div>
         </div>
@@ -74,7 +75,8 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                 <p><img srcset="/img/flags/eu.svg" height="14px"
                         style="border: 0;"
                         alt="European Union"/>
-                    Episciences has received support from OpenAIRE and its services, notably for the integration of
+                    Episciences has received support from <a href="https://www.openaire.eu/">OpenAIRE</a> and its
+                    services, notably for the integration of
                     its service in the OpenAIRE Nexus project: funding from the <a
                             href="https://cordis.europa.eu/project/id/101017452">European Commission grant 101017452</a>
                     “OpenAIRE Nexus - OpenAIRE-Nexus Scholarly Communication Services for EOSC users”.</p>

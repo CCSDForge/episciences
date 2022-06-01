@@ -14,14 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+## 1.0.29 - 2022-06-01
 ### Fixed
 - Failed 'Not enough reviewers - editor copy' reminders. 
-- Loading journal translations from '/'.
+- But leading to load journal translations from '/'.
 - PHP Warning:  Use of undefined constant RVID - assumed 'RVID' (this will throw an Error in a future version of PHP)
 
 ### Added
 - User list: make it easier to locate accounts that have not been activated.
+- Addes Roadmap link + User survey/feedback on portal
+- Make EU grants and OpenAIRE support more visible at the bottom of the page
 
 ## 1.0.28.5 - 2022-05-25
 ### Fixed
