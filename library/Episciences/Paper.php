@@ -3152,13 +3152,14 @@ class Episciences_Paper
      * fetch reviewer invitations
      * @param null $status
      * @param bool $sorted
+     * @param int $rvId
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function getInvitations($status = null, bool $sorted = false): array
+    public function getInvitations($status = null, bool $sorted = false, int $rvId = RVID): array
     {
         if (!isset($this->_invitations)) {
-            $invitations = Episciences_PapersManager::getInvitations($this->getDocid(), $status, $sorted);
+            $invitations = Episciences_PapersManager::getInvitations($this->getDocid(), $status, $sorted, $rvId);
             $this->_invitations = $invitations;
         }
 

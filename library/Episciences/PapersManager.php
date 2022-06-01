@@ -773,10 +773,11 @@ class Episciences_PapersManager
      * @param $docId
      * @param null $status
      * @param bool $sorted
+     * @param int $rvId
      * @return array
-     * @throws Zend_Db_Statement_Exception|JsonException
+     * @throws Zend_Db_Statement_Exception
      */
-    public static function getInvitations($docId, $status = null, bool $sorted = true): array
+    public static function getInvitations($docId, $status = null, bool $sorted = true, int $rvId = RVID): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -845,7 +846,7 @@ class Episciences_PapersManager
                         'screenname' => $reviewer->getScreenName(),
                         'username' => $reviewer->getUsername(),
                         'email' => $reviewer->getEmail(),
-                        'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid()),
+                        'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid(), $rvId),
                         'isCasUserValid' => (bool)$reviewer->getValid()
                     ];
                 }
