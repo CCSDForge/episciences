@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Hotfix: awaiting deployment
+### Fixed
+- Failed 'Not enough reviewers - editor copy' reminders. 
+- Loading journal translations from '/'.
 
 ## Unreleased
 ### Fixed
