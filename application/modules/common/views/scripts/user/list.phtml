@@ -67,7 +67,15 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
             }
             ?>
             <tr id="localUsers_<?php echo $this->escape($user['uid']); ?>">
-                <td><?php echo $user['uid'] ?></td>
+                <td>
+                    <?php if (!$user['isCasUserValid']) : ?>
+                        <span data-toggle="tooltip" class="label label-danger" title="<?= $this->translate('Compte en attente de validation') ?>" >
+                        <?= $user['uid'] ?>
+                        </span>
+                    <?php else: ?>
+                        <?= $user['uid'] ?>
+                    <?php endif; ?>
+                </td>
                 <td><?php echo $this->escape($user['SCREEN_NAME']); ?></td>
                 <?php if (array_key_exists('CAS', $user)) : ?>
                     <td><?php echo $this->escape($user['CAS']['USERNAME']); ?></td>

@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Failed 'Not enough reviewers - editor copy' reminders. 
 - Loading journal translations from '/'.
 
+### Added
+- User list: make it easier to locate accounts that have not been activated.
+
 ## 1.0.28.5 - 2022-05-25
 ### Fixed
 - [RT#158293]: article status is not correctly updated
