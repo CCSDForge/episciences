@@ -23,7 +23,8 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                 <ul class="contact">
                     <span>Support</span>
                     <li>
-                        <i class="fas fa-book"></i>&nbsp;<a href="https://doc.episciences.org/"><?php echo $this->translate('Documentation'); ?></a>
+                        <i class="fas fa-book"></i>&nbsp;<a
+                                href="https://doc.episciences.org/"><?php echo $this->translate('Documentation'); ?></a>
                     </li>
                     <?php
                     if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== '') {
@@ -34,10 +35,12 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                     }
                     ?>
                     <li>
-                        <i class="fas fa-balance-scale"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
+                        <i class="fas fa-balance-scale"></i>&nbsp;<a
+                                href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
                     </li>
                     <li>
-                        <i class="fas fa-cookie-bite"></i>&nbsp;<a href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
+                        <i class="fas fa-cookie-bite"></i>&nbsp;<a
+                                href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
                     </li>
                 </ul>
             </div>
@@ -52,10 +55,30 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                     <li>
                         <a href="https://doc.episciences.org/oai-pmh">OAI-PMH</a>
                     </li>
+
+                    <li>
+                        <a href="https://github.com/CCSDForge/episciences/projects/2"><?php echo $this->translate('Feuille de route'); ?></a>
+                    </li>
+                    <li>
+                        <a href="https://survey.ccsd.cnrs.fr/index.php/852898?newtest=Y&lang=en"><?php echo $this->translate('Retours utilisateurs'); ?></a>
+                    </li>
                 </ul>
             </div>
+        </div>
+    </div>
 
+    <div class="container">
+        <div class="row">
 
+            <div style="margin: 0 4% 0 4%" class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <p><img srcset="/img/flags/eu.svg" height="14px"
+                        style="border: 0;"
+                        alt="European Union"/>
+                    Episciences has received support from OpenAIRE and its services, notably for the integration of
+                    its service in the OpenAIRE Nexus project: funding from the <a
+                            href="https://cordis.europa.eu/project/id/101017452">European Commission grant 101017452</a>
+                    “OpenAIRE Nexus - OpenAIRE-Nexus Scholarly Communication Services for EOSC users”.</p>
+            </div>
         </div>
     </div>
 </footer>

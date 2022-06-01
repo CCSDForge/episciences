@@ -258,9 +258,9 @@ return [
     'Manuel' => 'Manual',
     'Désactivé' => 'Disabled',
     'Journal code' => 'Journal code',
-    'Motif de DOI incorrect'=>'Wrong DOI pattern',
+    'Motif de DOI incorrect' => 'Wrong DOI pattern',
     'Document non trouvé' => 'Document non found',
-    'Échec de la mise à jour'=> 'Update failed',
+    'Échec de la mise à jour' => 'Update failed',
     "Volume de l'article" => "Volume of the paper",
     "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
     "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the paper (numbers only) [Replacement char for spaces]',
@@ -1805,5 +1805,7 @@ return [
                             Your action will be recorded in the submission event log',
     "Vous pouvez décider plus tard, aucune action ne sera enregistrée." => 'You can decide later, no action will be recorded',
     'Commentaire facultatif' => 'Optional comments',
-    "Rapporté le" => "Reported on"
+    "Rapporté le" => "Reported on",
+    'Feuille de route' => 'Roadmap',
+    "Retours utilisateurs" => "User feedback"
 ];
