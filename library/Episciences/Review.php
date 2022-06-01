@@ -1678,7 +1678,14 @@ class Episciences_Review
      */
     public function getTranslationsPath(): string
     {
-        return realpath($this->getPath() . '/languages') . '/';
+        $translationPath = realpath($this->getPath() . '/languages') . '/';
+
+        if ($translationPath === '/') {
+            return APPLICATION_PATH . '/data/languages/'; //avoid loading translations from the root directory ($realpathPath == false, '/' returned)
+        }
+
+        return $translationPath;
+
     }
 
     /**
