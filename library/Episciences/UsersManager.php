@@ -16,6 +16,7 @@ class Episciences_UsersManager
         foreach ($localUsers as $key => $user) {
             if (array_key_exists($key, $casUsers)) {
                 $localUsers[$key]['CAS'] = $casUsers[$key];
+                $localUsers[$key]['isCasUserValid'] = (bool)$casUsers[$key]['VALID'];
                 unset ($casUsers[$key]);
             }
         }
