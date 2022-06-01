@@ -26,6 +26,7 @@ class Episciences_PapersManager
      */
     public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true): array
     {
+        $rvId = $settings['is']['RVID'] ?? RVID;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -35,7 +36,7 @@ class Episciences_PapersManager
 
         $result = [];
 
-        $allConflicts = Episciences_Paper_ConflictsManager::all(RVID);
+        $allConflicts = Episciences_Paper_ConflictsManager::all($rvId);
 
         foreach ($list as $id => $item) {
 
