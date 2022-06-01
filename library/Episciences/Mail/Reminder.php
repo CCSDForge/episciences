@@ -877,7 +877,7 @@ class Episciences_Mail_Reminder
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
             // recuperation des invitations (acceptées ou en attente) pour chaque article
-            $invitations = $paper->getInvitations(array(Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING), true, $review->getRvid());
+            $invitations = $paper->getInvitations(array(Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING), false, $review->getRvid());
             // si il y a suffisamment d'invitations, on n'envoie pas de relance
             if (count($invitations) >= $required_reviewers) {
                 continue;
