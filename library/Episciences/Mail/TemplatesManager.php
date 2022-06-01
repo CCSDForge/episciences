@@ -128,21 +128,1399 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION = 'paper_accepted_ask_authors_final_version';
     public const TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION = 'paper_formatted_by_journal_waiting_author_validation';
 
+    // available in all templates
+    public const COMMON_TAGS  = [
+        Episciences_Mail_Tags::TAG_REVIEW_CODE,
+        Episciences_Mail_Tags::TAG_REVIEW_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
+    ];
+
+    public const DESCRIPTION = 'description';
+    public const RECIPIENT = 'recipient';
+
+
+    // obsolete templates ?
+    // protected $_paper_comment_answer_editor_copy_tags = [];
+    // protected $_paper_comment_author_copy_tags = [];
+    // protected $_paper_comment_editor_copy_tags = [];
+    // protected $_paper_published_editor_copy_tags = [];
+
+    // paper status change
+    public const paper_accepted_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING,
+    ];
+
+    public const  paper_accepted_editors_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING,
+        Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_NAME,
+        Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK
+    ];
+
+    public const paper_accepted_tmp_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING,
+    ];
+
+    public const paper_accepted_tmp_version_managers_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_REQUESTER_SCREEN_NAME
+    ];
+
+    public const paper_ask_other_editors_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL
+    ];
+    public const paper_published_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING
+    ];
+    public const paper_refused_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING
+    ];
+    public const paper_revision_request_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING
+    ];
+    public const paper_major_revision_request_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING
+    ];
+    public const paper_minor_revision_request_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_RATING
+    ];
+
+    public const paper_commnet_by_edditor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+    ];
+
+    public const paper_comment_answer_reviewer_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_COMMENT_DATE,
+        Episciences_Mail_Tags::TAG_ANSWER,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+
+    public const paper_comment_from_reviewer_to_contributor_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_COMMENT_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
+    ];
+
+    public const paper_comment_from_reviewer_to_contributor_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_COMMENT_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
+    ];
+    public const paper_deleted_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+    public const paper_deleted_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, // = sender full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+    public const paper_deleted_reviewer_copy_tags = [
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, // = sender full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+    public const paper_editor_assign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+    public const paper_editor_unassign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+    public const paper_new_version_reviewer_reassign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_NEW_VERSION_URL,
+    ];
+    public const paper_new_version_submitted_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_REQUEST_DATE,
+        Episciences_Mail_Tags::TAG_REQUEST_MESSAGE,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+    public const paper_reviewed_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
+        Episciences_Mail_Tags::TAG_PAPER_RATING,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL // paper administration page url
+    ];
+    public const paper_reviewed_reviewer_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL // rating page url
+    ];
+    public const paper_reviewer_acceptation_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
+        Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME,
+    ];
+    public const paper_reviewer_acceptation_reviewer_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+
+    ];
+
+    public const paper_reviewer_invitation1_tags = [
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE,
+        Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL
+    ];
+    public const paper_reviewer_invitation2_tags = [
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE,
+        Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL
+    ];
+    public const paper_reviewer_invitation3_tags = [
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE,
+        Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL
+    ];
+    public const paper_reviewer_refusal_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
+        Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION,
+        Episciences_Mail_Tags::TAG_REFUSAL_REASON,
+    ];
+    public const paper_reviewer_refusal_reviewer_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION,
+        Episciences_Mail_Tags::TAG_REFUSAL_REASON,
+    ];
+    public const paper_reviewer_removal_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME
+    ];
+    public const paper_revision_answer_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REQUEST_DATE,
+        Episciences_Mail_Tags::TAG_REQUEST_MESSAGE,
+        Episciences_Mail_Tags::TAG_REQUEST_ANSWER,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+    ];
+    public const paper_submission_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+    ];
+    public const paper_submission_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME,  // editor screen name (sender screen name)
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url,
+        Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE,
+        Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL,
+        Episciences_Mail_Tags::TAG_SECTION_NAME,
+        Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
+    ];
+
+    public const paper_submission_updated_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME,  // editor screen name (sender screen name)
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
+    ];
+
+    public const paper_submission_updated_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+    ];
+
+    public const paper_suggest_acceptation_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME,  // editor screen name (sender screen name)
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT,      // editor's message (acceptation suggestion)
+        Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
+    ];
+    public const paper_suggest_new_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME,  // editor screen name (sender screen name)
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT,      // editor's message (acceptation suggestion)
+        Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
+    ];
+    public const paper_suggest_refusal_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME,  // editor screen name (sender screen name)
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT,      // editor's message (acceptation suggestion)
+        Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
+    ];
+    public const paper_tmp_version_reviewer_reassign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_TMP_PAPER_URL,
+    ];
+    public const paper_tmp_version_submitted_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_REQUEST_DATE,
+        Episciences_Mail_Tags::TAG_REQUEST_MESSAGE,
+        Episciences_Mail_Tags::TAG_REQUEST_ANSWER,
+        Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
+    ];
+    public const paper_updated_rating_deadline_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // reviewer screen name (recipient)
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // reviewer full name (recipient)
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
+        Episciences_Mail_Tags::TAG_UPDATED_DEADLINE,
+    ];
+
+    public const paper_editor_refused_monitoring_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+
+    public const paper_new_version_reviewer_re_invitation = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_INVITATION_URL,
+        Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE
+    ];
+
+    public const paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+    ];
+
+    public const user_lost_login_tags = [
+        Episciences_Mail_Tags::TAG_LOST_LOGINS,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, // link
+    ];
+    public const user_lost_password_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK
+    ];
+    public const user_registration_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK
+    ];
+
+    public const reminder_after_deadline_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_ARTICLE_LINK,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+    public const reminder_after_deadline_reviewer_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+    public const reminder_after_revision_deadline_author_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+    public const reminder_after_revision_deadline_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+    public const reminder_before_deadline_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
+        Episciences_Mail_Tags::TAG_REVIEWER_MAIL,
+        Episciences_Mail_Tags::TAG_ARTICLE_LINK,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+
+    public const reminder_before_deadline_reviewer_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+    public const reminder_before_revision_deadline_author_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+    public const reminder_before_revision_deadline_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_PAPER_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+    public const reminder_not_enough_reviewers_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_LINK,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY,
+        Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT,
+        Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT
+    ];
+    public const reminder_unanswered_reviewer_invitation_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
+        Episciences_Mail_Tags::TAG_REVIEWER_MAIL,
+        Episciences_Mail_Tags::TAG_INVITATION_DATE,
+        Episciences_Mail_Tags::TAG_EXPIRATION_DATE,
+        Episciences_Mail_Tags::TAG_INVITATION_LINK,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+
+    public const reminder_unanswered_reviewer_invitation_reviewer_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_INVITATION_LINK,
+        Episciences_Mail_Tags::TAG_INVITATION_DATE,
+        Episciences_Mail_Tags::TAG_EXPIRATION_DATE,
+        Episciences_Mail_Tags::TAG_REMINDER_DELAY
+    ];
+
+    public const paper_abandon_publication_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME
+    ];
+
+    public const paper_abandon_publication_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME,
+        Episciences_Mail_Tags::TAG_LAST_STATUS
+    ];
+
+    public const paper_abandon_publication_reviewer_removal_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME,
+    ];
+
+
+    public const paper_ce_accepted_final_version_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
+    ];
+
+    public const paper_ce_accepted_final_version_copyEditor_and_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES
+    ];
+
+    public const paper_ce_author_sources_submitted_response_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME
+    ];
+
+    public const paper_ce_author_sources_submitted_response_copyEditor_and_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REQUESTER_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_REQUEST_MESSAGE,
+        Episciences_Mail_Tags::TAG_REQUEST_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT_DATE
+    ];
+
+    public const paper_ce_author_final_version_submitted_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME
+    ];
+
+    public const paper_ce_author_final_version_submitted_editor_and_copyEditor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_REQUEST_MESSAGE,
+        Episciences_Mail_Tags::TAG_REQUEST_DATE,
+        Episciences_Mail_Tags::TAG_COMMENT_DATE
+    ];
+
+    public const paper_ce_review_formatting_submitted_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
+    ];
+
+    public const paper_ce_review_formatting_submitted_editor_and_copyEditor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES
+    ];
+    public const paper_ce_waiting_for_author_formatting_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE_ISO,
+        Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE_ISO,
+        Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE,
+        Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE_ISO,
+        Episciences_Mail_Tags::TAG_LAST_REVISION_DATE,
+        Episciences_Mail_Tags::TAG_LAST_REVISION_DATE_ISO,
+        Episciences_Mail_Tags::TAG_REVISION_DATES,
+        Episciences_Mail_Tags::TAG_REVISION_DATES_ISO,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_DOI,
+        Episciences_Mail_Tags::TAG_VOLUME_ID,
+        Episciences_Mail_Tags::TAG_VOLUME_EDITORS,
+        Episciences_Mail_Tags::TAG_SECTION_ID,
+        Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF,
+        Episciences_Mail_Tags::TAG_SECTION_NAME,
+        Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME,
+        Episciences_Mail_Tags::TAG_CURRENT_YEAR,
+        Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL,
+    ];
+    public const paper_ce_waiting_for_author_formatting_editor_and_copyEditor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+    ];
+    public const paper_ce_waiting_for_author_sources_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+    public const paper_ce_waiting_for_author_sources_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+    public const paper_continue_publication_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME
+    ];
+    public const paper_continue_publication_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME,
+        Episciences_Mail_Tags::TAG_LAST_STATUS
+    ];
+
+    public const paper_copyEditor_assign_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+    public const paper_copyEditor_assign_Editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+    ];
+    public const paper_copyEditor_assign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+    public const paper_copyEditor_unassign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+    public const paper_published_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+    public const paper_refused_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+    public const paper_volume_editor_assign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_SECTION_NAME
+    ];
+    public const paper_section_editor_assign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
+    ];
+
+    public const paper_suggested_editor_assign_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+
+    public const reminder_article_blocked_in_accepted_state_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_LINK,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE
+    ];
+
+    public const paper_accepted_ask_authors_final_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_PAPER_RATINGS,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
+        Episciences_Mail_Tags::TAG_REVISION_DEADLINE,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
+    ];
+
+    public const paper_formatted_by_journal_waiting_author_validation_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_PAPER_RATINGS,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
+
+    ];
+
+    public const TEMPLATE_DESCRIPTION_AND_RECIPIENT = [
+        self::TYPE_USER_REGISTRATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_USER_LOST_PASSWORD => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_USER_LOST_LOGIN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ACCEPTED_TMP_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ACCEPTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_PUBLISHED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_PUBLISHED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REFUSED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'], // author copy
+        self::TYPE_PAPER_REFUSED_EDITORS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'], // editors copy
+        self::TYPE_PAPER_REVISION_REQUEST => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_MINOR_REVISION_REQUEST => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_MAJOR_REVISION_REQUEST => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_UPDATED_RATING_DEADLINE => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_EDITOR_UNASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ASK_OTHER_EDITORS => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVISION_ANSWER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_TMP_VERSION_SUBMITTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_NEW_VERSION_SUBMITTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWED_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_DELETED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_DELETED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_DELETED_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_REMOVAL => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUBMISSION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUGGEST_ACCEPTATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUGGEST_REFUSAL => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUGGEST_NEW_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COPY_EDITOR_UNASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ACCEPTED_EDITORS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_EDITOR_REFUSED_MONITORING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SECTION_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_VOLUME_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
+        self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo']
+
+    ];
+
+    public const AUTOMATIC_TEMPLATES = [
+        self::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING,
+        self::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY,
+        self::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY,
+        self::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY,
+        self::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS,
+        self::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL,
+        self::TYPE_PAPER_ACCEPTED_EDITORS_COPY,
+        self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY,
+        self::TYPE_PAPER_ASK_OTHER_EDITORS,
+        self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY,
+        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY,
+        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY,
+        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY,
+        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY,
+        self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY,
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY,
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY,
+        self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY,
+        self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY,
+        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY,
+        self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY,
+        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY,
+        self::TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY,
+        self::TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY,
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN,
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY,
+        self::TYPE_PAPER_COPY_EDITOR_UNASSIGN,
+        self::TYPE_PAPER_DELETED_AUTHOR_COPY,
+        self::TYPE_PAPER_DELETED_EDITOR_COPY,
+        self::TYPE_PAPER_DELETED_REVIEWER_COPY,
+        self::TYPE_PAPER_EDITOR_ASSIGN,
+        self::TYPE_PAPER_EDITOR_REFUSED_MONITORING,
+        self::TYPE_PAPER_EDITOR_UNASSIGN,
+        self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION,
+        self::TYPE_PAPER_PUBLISHED_EDITOR_COPY,
+        self::TYPE_PAPER_REFUSED_EDITORS_COPY,
+        self::TYPE_PAPER_REVIEWED_EDITOR_COPY,
+        self::TYPE_PAPER_REVIEWED_REVIEWER_COPY,
+        self::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY,
+        self::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY,
+        self::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING,
+        self::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING,
+        self::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING,
+        self::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY,
+        self::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY,
+        self::TYPE_PAPER_SECTION_EDITOR_ASSIGN,
+        self::TYPE_PAPER_SUBMISSION_AUTHOR_COPY,
+        self::TYPE_PAPER_SUBMISSION_EDITOR_COPY,
+        self::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY,
+        self::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY,
+        self::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY,
+        self::TYPE_PAPER_SUGGEST_ACCEPTATION,
+        self::TYPE_PAPER_SUGGEST_NEW_VERSION,
+        self::TYPE_PAPER_SUGGEST_REFUSAL,
+        self::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN,
+        self::TYPE_PAPER_VOLUME_EDITOR_ASSIGN,
+        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
+        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION,
+        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION,
+        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION,
+        self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION,
+        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
+        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION,
+        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION,
+        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION,
+        self::TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION,
+        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION,
+        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION,
+        self::TYPE_USER_LOST_LOGIN,
+        self::TYPE_USER_LOST_PASSWORD,
+        self::TYPE_USER_REGISTRATION
+    ];
+
     /**
      * @param array $withoutKeys
+     * @param int|null $rvId
      * @return array
      */
-    public static function getList(array $withoutKeys = []): array
+    public static function getList(array $withoutKeys = [], int $rvId = null): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = $db->select()
-            ->from(T_MAIL_TEMPLATES)
-            ->where('(RVID IS NULL OR RVID = ?)', RVID);
+            ->from(T_MAIL_TEMPLATES);
+
+        if ($rvId) {
+
+            try {
+                $journalSettings = Zend_Registry::get('reviewSettings');
+                if (
+                    !isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) ||
+                    (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] === 0) {
+
+                    $withoutKeys = [
+                        self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION,
+                        self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION
+                    ];
+
+                }
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
+            $select->where('(RVID IS NULL OR RVID = ?)', $rvId);
+
+        } else {
+            $select->where('RVID IS NULL');
+        }
+
 
         if (!empty($withoutKeys)) {
             foreach ($withoutKeys as $key) {
-                $select->where($db->quoteIdentifier('KEY') .  ' !=  ?', $key);
+                $select->where($db->quoteIdentifier('KEY') . ' !=  ?', $key);
             }
         }
 
@@ -151,16 +1529,17 @@ class Episciences_Mail_TemplatesManager
 
         $templates = $db->fetchAssoc($select);
 
-       /* $order = array(
-            'user',
-            'paper_submission',
-            'paper_editor_assign',
-            'paper_review',
-            'paper_comment',
-            'paper_editor_suggestion',
-            'paper_revision',
-            'paper_final_decision');
-       */
+
+        /* $order = array(
+             'user',
+             'paper_submission',
+             'paper_editor_assign',
+             'paper_review',
+             'paper_comment',
+             'paper_editor_suggestion',
+             'paper_revision',
+             'paper_final_decision');
+        */
 
         // On retire de la liste les templates par défaut qui ont une version modifiée
         foreach ($templates as $template) {
@@ -289,5 +1668,132 @@ class Episciences_Mail_TemplatesManager
         }
 
         return $result;
+    }
+
+    public static function getDefaultList(): array
+    {
+        return self::getList();
+    }
+
+
+    /**
+     *
+     * @param string $key
+     * @param bool $withoutCommunTags
+     * @return array
+     */
+    public static function getAvailableTagsByKey(string $key, bool $withoutCommunTags = false): array
+    {
+        $key = str_replace('custom_' , '', $key); // Custom key = 'custom_' . $this->getKey();
+
+        if (!$withoutCommunTags) {
+            $tags = self::COMMON_TAGS;
+        } else {
+            $tags = [];
+        }
+
+        $map = [
+            self::TYPE_PAPER_ACCEPTED => self::paper_accepted_tags,
+            self::TYPE_PAPER_ACCEPTED_EDITORS_COPY => self::paper_accepted_editors_copy_tags,
+            self::TYPE_PAPER_ACCEPTED_TMP_VERSION => self::paper_accepted_tmp_version_tags,
+            self::TYPE_PAPER_ASK_OTHER_EDITORS => self::paper_ask_other_editors_tags,
+            self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => self::paper_comment_from_reviewer_to_contributor_author_copy_tags,
+            self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => self::paper_comment_from_reviewer_to_contributor_editor_copy_tags,
+            self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => self::paper_comment_answer_reviewer_copy_tags,
+            self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => self::paper_comment_answer_reviewer_copy_tags,
+            self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => self::paper_commnet_by_edditor_copy_tags,
+            self::TYPE_PAPER_DELETED_AUTHOR_COPY => self::paper_deleted_author_copy_tags,
+            self::TYPE_PAPER_DELETED_EDITOR_COPY => self::paper_deleted_editor_copy_tags,
+            self::TYPE_PAPER_DELETED_REVIEWER_COPY => self::paper_deleted_reviewer_copy_tags,
+            self::TYPE_PAPER_EDITOR_ASSIGN => self::paper_editor_assign_tags,
+            self::TYPE_PAPER_EDITOR_REFUSED_MONITORING => self::paper_editor_refused_monitoring_tags,
+            self::TYPE_PAPER_EDITOR_UNASSIGN => self::paper_editor_unassign_tags,
+            self::TYPE_PAPER_MAJOR_REVISION_REQUEST => self::paper_major_revision_request_tags,
+            self::TYPE_PAPER_MINOR_REVISION_REQUEST => self::paper_minor_revision_request_tags,
+            self::TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN => self::paper_new_version_reviewer_reassign_tags,
+            self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => self::paper_new_version_reviewer_re_invitation,
+            self::TYPE_PAPER_NEW_VERSION_SUBMITTED => self::paper_new_version_submitted_tags,
+            self::TYPE_PAPER_PUBLISHED_AUTHOR_COPY => self::paper_published_author_copy_tags,
+            self::TYPE_PAPER_REFUSED => self::paper_refused_tags,
+            self::TYPE_PAPER_REVIEWED_EDITOR_COPY => self::paper_reviewed_editor_copy_tags,
+            self::TYPE_PAPER_REVIEWED_REVIEWER_COPY => self::paper_reviewed_reviewer_copy_tags,
+            self::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY => self::paper_reviewer_acceptation_editor_copy_tags,
+            self::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY => self::paper_reviewer_acceptation_reviewer_copy_tags,
+            self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER => self::paper_reviewer_invitation1_tags,
+            self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER => self::paper_reviewer_invitation2_tags,
+            self::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER => self::paper_reviewer_invitation3_tags,
+            self::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING => self::paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags,
+            self::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING => self::paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags,
+            self::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING => self::paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags,
+            self::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING => self::paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags,
+            self::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY => self::paper_reviewer_refusal_editor_copy_tags,
+            self::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY => self::paper_reviewer_refusal_reviewer_copy_tags,
+            self::TYPE_PAPER_REVIEWER_REMOVAL => self::paper_reviewer_removal_tags,
+            self::TYPE_PAPER_REVISION_ANSWER => self::paper_revision_answer_tags,
+            self::TYPE_PAPER_REVISION_REQUEST => self::paper_revision_request_tags,
+            self::TYPE_PAPER_SUBMISSION_AUTHOR_COPY => self::paper_submission_author_copy_tags,
+            self::TYPE_PAPER_SUBMISSION_EDITOR_COPY => self::paper_submission_editor_copy_tags,
+            self::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY => self::paper_submission_editor_copy_tags,
+            self::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY => self::paper_submission_updated_author_copy_tags,
+            self::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY => self::paper_submission_updated_editor_copy_tags,
+            self::TYPE_PAPER_SUGGEST_ACCEPTATION => self::paper_suggest_acceptation_tags,
+            self::TYPE_PAPER_SUGGEST_NEW_VERSION => self::paper_suggest_new_version_tags,
+            self::TYPE_PAPER_SUGGEST_REFUSAL => self::paper_suggest_refusal_tags,
+            self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => self::paper_tmp_version_reviewer_reassign_tags,
+            self::TYPE_PAPER_TMP_VERSION_SUBMITTED => self::paper_tmp_version_submitted_tags,
+            self::TYPE_PAPER_UPDATED_RATING_DEADLINE => self::paper_updated_rating_deadline_tags,
+            self::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION => self::reminder_after_deadline_editor_version_tags,
+            self::TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION => self::reminder_after_deadline_reviewer_version_tags,
+            self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION => self::reminder_after_revision_deadline_author_version_tags,
+            self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION => self::reminder_after_revision_deadline_editor_version_tags,
+            self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION => self::reminder_before_revision_deadline_editor_version_tags,
+            self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION => self::reminder_before_revision_deadline_author_version_tags,
+            self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION => self::reminder_before_deadline_editor_version_tags,
+            self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION => self::reminder_before_deadline_reviewer_version_tags,
+            self::TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION => self::reminder_not_enough_reviewers_tags,
+            self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION => self::reminder_unanswered_reviewer_invitation_editor_version_tags,
+            self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION => self::reminder_unanswered_reviewer_invitation_reviewer_version_tags,
+            self::TYPE_USER_LOST_LOGIN => self::user_lost_login_tags,
+            self::TYPE_USER_LOST_PASSWORD => self::user_lost_password_tags,
+            self::TYPE_USER_REGISTRATION => self::user_registration_tags,
+            self::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY => self::paper_abandon_publication_author_copy_tags,
+            self::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY => self::paper_abandon_publication_author_copy_tags,
+            self::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY => self::paper_abandon_publication_editor_copy_tags,
+            self::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS => self::paper_abandon_publication_editor_copy_tags,
+            self::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL => self::paper_abandon_publication_reviewer_removal_tags,
+            self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY => self::paper_ce_accepted_final_version_author_copy_tags,
+            self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY => self::paper_ce_accepted_final_version_copyEditor_and_editor_copy_tags,
+            self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY => self::paper_ce_author_sources_submitted_response_author_copy_tags,
+            self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY => self::paper_ce_author_sources_submitted_response_copyEditor_and_editor_copy_tags,
+            self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY => self::paper_ce_author_final_version_submitted_author_copy_tags,
+            self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => self::paper_ce_author_final_version_submitted_editor_and_copyEditor_copy_tags,
+            self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY => self::paper_ce_review_formatting_submitted_author_copy_tags,
+            self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => self::paper_ce_review_formatting_submitted_editor_and_copyEditor_copy_tags,
+            self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY => self::paper_ce_waiting_for_author_formatting_author_copy_tags,
+            self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY => self::paper_ce_waiting_for_author_formatting_editor_and_copyEditor_copy_tags,
+            self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY => self::paper_ce_waiting_for_author_sources_author_copy_tags,
+            self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY => self::paper_ce_waiting_for_author_sources_editor_copy_tags,
+            self::TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY => self::paper_continue_publication_author_copy_tags,
+            self::TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY => self::paper_continue_publication_editor_copy_tags,
+            self::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY => self::paper_copyEditor_assign_author_copy_tags,
+            self::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY => self::paper_copyEditor_assign_Editor_copy_tags,
+            self::TYPE_PAPER_COPY_EDITOR_ASSIGN => self::paper_copyEditor_assign_tags,
+            self::TYPE_PAPER_COPY_EDITOR_UNASSIGN => self::paper_copyEditor_unassign_tags,
+            self::TYPE_PAPER_PUBLISHED_EDITOR_COPY => self::paper_published_editor_copy_tags,
+            self::TYPE_PAPER_REFUSED_EDITORS_COPY => self::paper_refused_editor_copy_tags,
+            self::TYPE_PAPER_VOLUME_EDITOR_ASSIGN => self::paper_volume_editor_assign_tags,
+            self::TYPE_PAPER_SECTION_EDITOR_ASSIGN => self::paper_section_editor_assign_tags,
+            self::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN => self::paper_suggested_editor_assign_tags,
+            self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION => self::reminder_article_blocked_in_accepted_state_editor_version_tags,
+            self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => self::paper_accepted_tmp_version_managers_copy_tags,
+            self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => self::paper_accepted_ask_authors_final_version_tags,
+            self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => self::paper_formatted_by_journal_waiting_author_validation_tags
+        ];
+
+        if (array_key_exists($key, $map)) {
+            $tags = array_merge($tags, $map[$key]);
+        }
+
+        return $tags;
     }
 }

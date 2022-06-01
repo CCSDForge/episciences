@@ -1,0 +1,78 @@
+<?php
+$title = $this->translate('TAGS disponibles');
+$title .= ' [<code>' . count($this->allTags) . '</code>]';
+$title .= '  |  ';
+$title .= $this->translate('Templates');
+$title .= '  |  ';
+$title .= ' [<code>' . count($this->oTemplates) . '</code>]';
+$this->layout()->pageTitle = $title;
+?>
+
+
+<div id="tags-list">
+
+    <?php
+    $previousGroup = '';
+    $current_group = '';
+    /** @var Episciences_Mail_Template $oTemplate */
+    foreach ($this->oTemplates as $oTemplate) : ?>
+        <?php $current_group = $oTemplate->getType() ?>
+        <?php if ($current_group !== $previousGroup) : ?>
+            <h3><?= $this->translate($current_group . '_tpl_group') ?></h3>
+        <?php endif; ?>
+        <?php $key = $oTemplate->getKey(); ?>
+        <p>
+            <strong>
+                <?= $this->translate($key . '_tpl_name') ?> </strong>
+            <em>(<?= $key ?>)</em>
+            <?php if ($oTemplate->isAutomatic()): ?>
+                <br>
+                <mark><?= $this->translate('Type :') . ' ' ?><?= $this->translate('Mail automatique') ?> </mark>
+            <?php endif; ?>
+            <br>
+            <?php
+
+            if (array_key_exists($key, $tab = Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT)) :?>
+                <?php if ($description = $tab[$key][Episciences_Mail_TemplatesManager::DESCRIPTION]): ?>
+                    <?= $this->translate('Description :') . ' ' . $this->translate($description) ?>
+                <?php endif; ?>
+
+                <?php if ($recipient = $tab[$key][Episciences_Mail_TemplatesManager::RECIPIENT]): ?>
+                    <br>
+                    <?= $this->translate('Destinataire :') . ' ' . $this->translate($recipient) ?>
+                <?php endif; ?>
+
+            <?php else: ?>
+                <?php trigger_error('Please remember to add ' . $key . ' in Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT') ?>
+            <?php endif; ?>
+
+        </p>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col"><?= $this->translate('TAG') ?></th>
+                    <th scope="col"><?= $this->translate('Description') ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($oTemplate->getTags() as $tag): ?>
+
+                    <tr>
+                        <td><?= $tag ?></td>
+                        <td><?= ucfirst($this->translate(Episciences_Mail_Tags::TAG_DESCRIPTION[$tag])) ?></td>
+                    </tr>
+
+                <?php endforeach; ?>
+
+                </tbody>
+            </table>
+        </div>
+        <?php $previousGroup = $oTemplate->getType(); ?>
+    <?php endforeach; ?>
+    <?php ?>
+
+</div>
+
+

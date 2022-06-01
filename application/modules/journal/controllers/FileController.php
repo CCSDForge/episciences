@@ -324,12 +324,7 @@ class FileController extends DefaultController
 
         $this->redirectsIfHaveNotEnoughPermissions($paper);
 
-        if ($paper->isDeleted()) {
-            $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->redirect('/');
-            return;
-        }
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
         // update paper stats (only if user is not the contributor)
         if (Episciences_Auth::getUid() !== $paper->getUid()) {

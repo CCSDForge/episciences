@@ -89,7 +89,7 @@ class AdministratepaperController extends PaperDefaultController
 
             $settings = [
                 'is' => $is,
-                'isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]],
+                'isNot' => ['status' => Episciences_Paper::NOT_LISTED_STATUS],
                 'limit' => $limit,
                 'offset' => $offset,
             ];
@@ -253,7 +253,7 @@ class AdministratepaperController extends PaperDefaultController
 
             $settings = [
                 'is' => $is,
-                'isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]],
+                'isNot' => ['status' => Episciences_Paper::NOT_LISTED_STATUS],
                 'limit' => $limit,
                 'offset' => $offset
             ];
@@ -335,7 +335,7 @@ class AdministratepaperController extends PaperDefaultController
 
             $settings = [
                 'is' => Episciences_PapersManager::getFiltersParams(),
-                'isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]],
+                'isNot' => ['status' => Episciences_Paper::NOT_LISTED_STATUS],
                 'limit' => $limit,
                 'offset' => $offset];
 
@@ -487,6 +487,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate("Le document demande n’existe pas."));
             $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/' . $actionName);
         }
+
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper, false);
 
         $loggedUid = Episciences_Auth::getUid();
 

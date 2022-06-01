@@ -32,7 +32,7 @@ class UserController extends UserDefaultController
             $settings = [
                 'isNot' =>
                     [
-                        'status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]
+                        'status' => Episciences_Paper::NOT_LISTED_STATUS
                     ]
             ];
 
@@ -55,7 +55,7 @@ class UserController extends UserDefaultController
             $editor = new Episciences_Editor(Episciences_Auth::getUser()->toArray());
             /** Episciences_Editor $editor */
             try {
-                $editor->loadAssignedPapers(['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]]);
+                $editor->loadAssignedPapers(['isNot' => ['status' => Episciences_Paper::NOT_LISTED_STATUS]]);
                 $assignedPapers = $editor->getAssignedPapers();
             } catch (Zend_Exception $e) {
                 trigger_error('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_EDITOR_' . $editor->getUid() . ' : ' . $e, E_USER_WARNING);
@@ -69,7 +69,7 @@ class UserController extends UserDefaultController
 
         $copyEditor = new Episciences_CopyEditor(Episciences_Auth::getUser()->toArray());
         try {
-            $copyEditor->loadAssignedPapers(['isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]]);
+            $copyEditor->loadAssignedPapers(['isNot' => ['status' => Episciences_Paper::NOT_LISTED_STATUS]]);
             $assignedPapersToCopyEditing = $copyEditor->getAssignedPapers();
         } catch (Zend_Exception $e) {
             trigger_error('FAILED_TO_LOAD_ASSIGNED_PAPERS_TO_COPYEDITOR_' . $copyEditor->getUid() . ' : ' . $e, E_USER_WARNING);
@@ -82,7 +82,7 @@ class UserController extends UserDefaultController
         // Bloc "Mes articles"
         $settings = [
             'is' => ['uid' => Episciences_Auth::getUid()],
-            'isNot' => ['status' => [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]]
+            'isNot' => ['status' => Episciences_Paper::NOT_LISTED_STATUS]
         ];
         $this->view->submittedPapers = $review->getPapers($settings);
 

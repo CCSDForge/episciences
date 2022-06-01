@@ -27,16 +27,17 @@ class Episciences_PapersManager
      */
     public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true): array
     {
+        $rvId = $settings['is']['RVID'] ?? RVID;
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = self::getListQuery($settings, $isFilterInfos, $isLimit);
-        $test = $select->__tostring();
 
         $list = $db->fetchAssoc($select, $cached);
 
         $result = [];
 
-        $allConflicts = Episciences_Paper_ConflictsManager::all(RVID);
+        $allConflicts = Episciences_Paper_ConflictsManager::all($rvId);
 
         foreach ($list as $id => $item) {
 
@@ -382,7 +383,7 @@ class Episciences_PapersManager
      * @param array $excludeStatus
      * @return Zend_Db_Select
      */
-    private static function allPapers(array $excludeStatus = [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED]): Zend_Db_Select
+    private static function allPapers(array $excludeStatus = Episciences_Paper::NOT_LISTED_STATUS): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db

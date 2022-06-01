@@ -39,26 +39,7 @@ class AdministratemailController extends Zend_Controller_Action
      */
     public function templatesAction(): void
     {
-
-        $withoutKeys = [];
-
-        try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            if (
-                 !isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) ||
-                 (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] === 0 ) {
-
-                $withoutKeys = [
-                    Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION,
-                    Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION
-                ];
-
-            }
-        } catch (Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        $this->view->templates = Episciences_Mail_TemplatesManager::getList($withoutKeys);
+        $this->view->templates = Episciences_Mail_TemplatesManager::getList([], RVID);
         $this->view->editorsCanEditTmplates = $this->isAllowedToEdit();
     }
 
@@ -565,13 +546,13 @@ class AdministratemailController extends Zend_Controller_Action
 
             $message = '<strong>' . $selfView->translate("Une erreur interne s'est produite, veuillez recommencer.") . '</strong>';
 
-            if(!$isInModal){
+            if (!$isInModal) {
                 $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
             }
 
         }
 
-        if($isInModal){
+        if ($isInModal) {
             return $message;
         }
 
@@ -766,6 +747,43 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         return false;
+    }
+
+    /**
+     * Liste les variables à insérer dans les templates
+     * @return void
+     */
+    public function tagslistAction(): void
+    {
+        $oTemplates = [];
+        $templates = Episciences_Mail_TemplatesManager::getDefaultList();
+        $commonTags = Episciences_Mail_TemplatesManager::COMMON_TAGS;
+        $allTags = $commonTags;
+
+        /**
+         * @var  int $id
+         * @var  array $template
+         */
+
+        foreach ($templates as $id => $template) {
+
+            try {
+                $oTemplate = new Episciences_Mail_Template();
+                $oTemplate->find($id);
+                $oTemplates[$id] = $oTemplate;
+                $allTags = array_merge($allTags, array_diff($oTemplate->getTags(), $allTags));
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
+            unset($oTemplate);
+
+
+        }
+
+        $this->view->oTemplates = $oTemplates;
+        $this->view->allTags = $allTags;
+
     }
 
     /**

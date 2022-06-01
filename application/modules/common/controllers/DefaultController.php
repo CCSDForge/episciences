@@ -106,4 +106,15 @@ class DefaultController extends Zend_Controller_Action
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
             !$paper->isOwner();
     }
+
+    protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
+    {
+        if ($paper->isDeleted() || $paper->isRemoved()) {
+            $message = $paper->isDeleted() ? 'Le document demandé a été supprimé par son auteur.' : 'Le document demandé a été supprimé par la revue.';
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate($message));
+            if ($forceRedirection) {
+                $this->redirect('/'); // redirect and immediately exit
+            }
+        }
+    }
 }
