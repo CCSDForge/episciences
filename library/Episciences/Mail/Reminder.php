@@ -852,6 +852,7 @@ class Episciences_Mail_Reminder
      * TODO: use $debug & $date parameters
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Exception
+     * @throws JsonException
      */
     private function getNotEnoughReviewersRecipients($debug, $date, $filters): array
     {
@@ -876,7 +877,7 @@ class Episciences_Mail_Reminder
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
             // recuperation des invitations (acceptées ou en attente) pour chaque article
-            $invitations = $paper->getInvitations(array(Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING), true);
+            $invitations = $paper->getInvitations(array(Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING), true, $review->getRvid());
             // si il y a suffisamment d'invitations, on n'envoie pas de relance
             if (count($invitations) >= $required_reviewers) {
                 continue;
