@@ -870,7 +870,7 @@ return [
     "Cet identifiant n'est pas valide." => "Invalid user identifier",
     "Ce compte n'existe pas." => "This account could not be found",
     "Vous êtes connecté en tant que : " => "You are now signed in as: ",
-
+    "Compte en attente de validation" => "Account pending validation",
 
     // User form
     "Identifiant" => 'Username',
