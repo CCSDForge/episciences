@@ -615,14 +615,15 @@ class Episciences_User extends Ccsd_User_Models_User
      * check if user already has some roles for this review
      *
      * @param int $uid
+     * @param int $rvId
      * @return boolean
      * @throws Zend_Db_Statement_Exception
      */
-    public function hasRoles($uid)
+    public function hasRoles(int $uid, int $rvId = RVID ): bool
     {
         $select = $this->_db->select()
             ->from(T_USER_ROLES, 'ROLEID')
-            ->where('RVID = ?', RVID)
+            ->where('RVID = ?', $rvId)
             ->where('UID = ?', $uid);
 
         $result = $select->query()->fetch();

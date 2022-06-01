@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Failed 'Not enough reviewers - editor copy' reminders. 
 - Loading journal translations from '/'.
+- PHP Warning:  Use of undefined constant RVID - assumed 'RVID' (this will throw an Error in a future version of PHP)
 ### Added
 - User list: make it easier to locate accounts that have not been activated.
 
