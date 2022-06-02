@@ -1344,6 +1344,7 @@ return [
     "Lettre d'accompagnement" => 'Cover letter',
     'Visible par : ' => 'Visible by: ',
     "Progression : " => "Progression:",
+    "" => "",
 
     "Vous n'êtes pas l'auteur de cet article." => "You are not the author of this article.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
@@ -1689,6 +1690,8 @@ return [
     "articles acceptés, en attente de modifications majeures" => "accepted articles, waiting for major revision",
     "article approuvé par l'auteur, en attente de publication" => "approved article by author, waiting for final publication",
     "articles approuvés par l'auteur, en attente de publication" => "approved articles by author, waiting for final publication",
+    "article en attente d'une décision : refus de modifications" => "article waiting for decision: refusal of modifications",
+    "articles en attente d'une décision : refus de modifications" => "articles waiting for decision: refusal of modifications",
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',
@@ -1863,6 +1866,8 @@ return [
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_NO_REVISION] => "revision request answer: without any modifications",
+
     "Accepté - en attente de la version finale" => "Accepted - waiting for author's final version",
 
     //dashboard

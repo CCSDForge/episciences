@@ -81,6 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * according to the parameters of the journal for published articles
   * for the owner, only if the paper is refused, waiting for revision, already accepted or published
 
+- Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
+
 ## 1.0.28.4 - 2022-05-09
 ### Fixed
 - File not found for Temporary Versions without attached files + refactoring.

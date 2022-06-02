@@ -849,15 +849,7 @@ class PaperController extends PaperDefaultController
 
             if ($type !== Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
                 // update paper status
-                if ($paper->isReviewed()) {
-                    $newStatus = Episciences_Paper::STATUS_REVIEWED;
-                } elseif ($paper->isBeingReviewed()) {
-                    $newStatus = Episciences_Paper::STATUS_BEING_REVIEWED;
-                } elseif (count($paper->getReviewers())) {
-                    $newStatus = Episciences_Paper::STATUS_OK_FOR_REVIEWING;
-                } else {
-                    $newStatus = Episciences_Paper::STATUS_SUBMITTED;
-                }
+                $newStatus = Episciences_Paper::STATUS_NO_REVISION;
 
                 if ($paper->getStatus() !== $newStatus) {
                     $paper->setStatus($newStatus);
