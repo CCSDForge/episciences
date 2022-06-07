@@ -1,0 +1,40 @@
+<?php
+$log = $this->log;
+$revisionDetails = $log['detail'];
+?>
+<table class="log-details">
+    <tr>
+        <td class="td-label"><?= $this->translate("Demander le") ?></td>
+        <td class="small"><?= $this->Date($log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+    </tr>
+    <tr>
+        <td class="td-label"><?= ucfirst($this->translate('par')) ?></td>
+        <td class="small">
+            <?= $this->user['fullname'] ?>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="td-label"><?= $this->translate('Id du document') ?></td>
+        <td class="small">
+            <?= $log['docid'] ?>
+        </td>
+    </tr>
+
+    <?php if (!empty($revisionDetails['message'])) : ?>
+        <tr>
+            <td class="td-label"><?= $this->translate('Détails') ?></td>
+            <td class="small"><?= Episciences_Tools::formatText(htmlspecialchars_decode($revisionDetails['message'])) ?></td>
+        </tr>
+    <?php endif; ?>
+
+</table>
+
+
+
+
+
+
+
+
+

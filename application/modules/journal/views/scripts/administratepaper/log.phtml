@@ -18,7 +18,6 @@
 <?php switch ($this->log['action']): ?>
 <?php
     case Episciences_Paper_Logger::CODE_STATUS:
-    case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION:
     case Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT:
     case Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS:
     case Episciences_Paper_Logger::CODE_REVIEWING_COMPLETED:
@@ -272,11 +271,16 @@
     case Episciences_Paper_Logger::CODE_EDITOR_COMMENT:
     case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
     case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR:
-    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER: ?>
+    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER:
+
+    ?>
         <?= $this->partial('administratepaper/new_comment_log_details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
         <?php break; ?>
     <?php case Episciences_Paper_Logger::CODE_COI_REPORTED: ?>
         <?= $this->partial('administratepaper/new_conflict_log_details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
+        <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION : ?>
+        <?= $this->partial('administratepaper/revision-log-details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
         <?php break; ?>
 
     <?php endswitch ?>

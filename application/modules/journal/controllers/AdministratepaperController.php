@@ -1947,8 +1947,8 @@ class AdministratepaperController extends PaperDefaultController
 
             $locale = $submitter->getLangueid();
 
-            $subject = !$isAcceptedAskAuthorsFinalVersion ? $data[$type . 'revisionsubject'] : $data[$type . 'Subject'];
-            $message = !$isAcceptedAskAuthorsFinalVersion ? $data[$type . 'revisionmessage'] : $data[$type . 'Message'];
+            $subject = $data[$type . 'revisionsubject'];
+            $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
             $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
@@ -1995,7 +1995,8 @@ class AdministratepaperController extends PaperDefaultController
                 'deadline' => $deadline,
                 'subject' => $subject,
                 'message' => $message,
-                'isAlreadyAccepted' => $isAlreadyAccepted
+                'isAlreadyAccepted' => $isAlreadyAccepted,
+                'user' => Episciences_Auth::getUser()->toArray()
             ]);
 
             // sends an e-mail to the author
@@ -3560,7 +3561,7 @@ class AdministratepaperController extends PaperDefaultController
         $oLog->load($id);
         $log = $oLog->toArray();
 
-        $oUser = new Episciences_User;
+        $oUser = new Episciences_User();
         $oUser->findWithCAS($oLog->getUid());
         $user = $oUser->toArray();
 
