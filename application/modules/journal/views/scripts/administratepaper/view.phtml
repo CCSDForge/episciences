@@ -77,8 +77,9 @@ $this->suggestedRevision = false;
         <?php endif; ?>
 
         <p>
-            <strong><?= $statusMsg ?></strong><span
-                    class="label label-status-<?= $status  ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+            <strong><?= $statusMsg ?></strong>
+            <span class="label label-status-<?= $status  ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+            <?= $this->partial('partials/paper-revision-deadline.phtml', ['revisionDeadline' => $this->revisionDeadline]) ?>
         </p>
 
 

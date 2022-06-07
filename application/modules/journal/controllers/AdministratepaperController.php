@@ -664,12 +664,16 @@ class AdministratepaperController extends PaperDefaultController
 
         // get revision requests ******************************************************
         // fetch revision requests
-        $settings = ['types' => [
-            Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION]];
-        $demands = Episciences_CommentsManager::getList($paper->getDocid(), $settings);
+        $settings = [
+            'types' => [
+                Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION
+            ]
+        ];
+
+        $demands = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), $settings);
 
         // fetch previous version revision requests
         // TODO: optimize this (don't need to get the full paper object)
@@ -690,11 +694,14 @@ class AdministratepaperController extends PaperDefaultController
 
         // check if last revision request has been answered
         $currentDemand = null;
+        $revisionDeadline = null;
         if (!empty($demands) && !array_key_exists('replies', current($demands))) {
             $currentDemand = array_shift($demands);
+            $revisionDeadline = $currentDemand['DEADLINE'];
         }
         $this->view->demands = $demands;
         $this->view->currentDemand = $currentDemand;
+        $this->view->revisionDeadline = $revisionDeadline;
 
         // load all paper rating reports
         $this->view->grid = $paper->getGrid();

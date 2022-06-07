@@ -1218,6 +1218,7 @@ return [
     // demande de revision
     'Optionnelle' => 'Optional',
     'Cliquer ici pour ouvrir le calendrier' => 'Click here to open the calendar',
+    'Version révisée attendue avant le :' => 'Revised version expected before:',
 
 
     /**

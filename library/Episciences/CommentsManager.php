@@ -4,23 +4,23 @@ class Episciences_CommentsManager
 {
     // possible comment types
     // comment from chief editors
-    public const TYPE_INFO_REQUEST                 = 0;
+    public const TYPE_INFO_REQUEST = 0;
     // comment from contributor
-    public const TYPE_INFO_ANSWER                  = 1;
-    public const TYPE_REVISION_REQUEST             = 2;
-    public const TYPE_REVISION_ANSWER_COMMENT      = 3;
+    public const TYPE_INFO_ANSWER = 1;
+    public const TYPE_REVISION_REQUEST = 2;
+    public const TYPE_REVISION_ANSWER_COMMENT = 3;
     // Comment from author
-    public const TYPE_AUTHOR_COMMENT               = 4;
+    public const TYPE_AUTHOR_COMMENT = 4;
     #git #320
-    public const TYPE_REVISION_CONTACT_COMMENT     = 5;
-    public const TYPE_REVISION_ANSWER_TMP_VERSION  = 6;
-    public const TYPE_REVISION_ANSWER_NEW_VERSION  = 7;
+    public const TYPE_REVISION_CONTACT_COMMENT = 5;
+    public const TYPE_REVISION_ANSWER_TMP_VERSION = 6;
+    public const TYPE_REVISION_ANSWER_NEW_VERSION = 7;
     // comment for editors
-    public const TYPE_SUGGESTION_ACCEPTATION       = 8;
-    public const TYPE_SUGGESTION_REFUS             = 9;
-    public const TYPE_SUGGESTION_NEW_VERSION       = 10;
-    public const TYPE_CONTRIBUTOR_TO_REVIEWER      = 11;
-    public const TYPE_EDITOR_COMMENT               = 12;
+    public const TYPE_SUGGESTION_ACCEPTATION = 8;
+    public const TYPE_SUGGESTION_REFUS = 9;
+    public const TYPE_SUGGESTION_NEW_VERSION = 10;
+    public const TYPE_CONTRIBUTOR_TO_REVIEWER = 11;
+    public const TYPE_EDITOR_COMMENT = 12;
     // refus de gérer l'article
     public const TYPE_EDITOR_MONITORING_REFUSED = 13;
     public const TYPE_AUTHOR_SOURCES_DEPOSED_ANSWER = 14;
@@ -34,16 +34,16 @@ class Episciences_CommentsManager
     public const TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION = 21;
 
     public static array $_typeLabel = [
-        self::TYPE_INFO_REQUEST                 =>  "demande d'éclaircissements",
-        self::TYPE_INFO_ANSWER                  =>  "réponse à une demande d'éclaircissements",
-        self::TYPE_REVISION_REQUEST             =>  "demande de modifications",
-        self::TYPE_REVISION_ANSWER_COMMENT      =>  "réponse à une demande de modifications (commentaire)",
-        self::TYPE_REVISION_ANSWER_TMP_VERSION  =>  "réponse à une demande de modifications (version temporaire)",
-        self::TYPE_REVISION_ANSWER_NEW_VERSION  =>  "réponse à une demande de modifications (nouvelle version)",
-        self::TYPE_SUGGESTION_ACCEPTATION       =>  "suggestion d'acceptation du papier",
-        self::TYPE_SUGGESTION_REFUS             =>  "suggestion de refus du papier",
-        self::TYPE_SUGGESTION_NEW_VERSION       =>  "suggestion de demande de modifications du papier",
-        self::TYPE_EDITOR_MONITORING_REFUSED    =>  "refus d'assurer le suivi",
+        self::TYPE_INFO_REQUEST => "demande d'éclaircissements",
+        self::TYPE_INFO_ANSWER => "réponse à une demande d'éclaircissements",
+        self::TYPE_REVISION_REQUEST => "demande de modifications",
+        self::TYPE_REVISION_ANSWER_COMMENT => "réponse à une demande de modifications (commentaire)",
+        self::TYPE_REVISION_ANSWER_TMP_VERSION => "réponse à une demande de modifications (version temporaire)",
+        self::TYPE_REVISION_ANSWER_NEW_VERSION => "réponse à une demande de modifications (nouvelle version)",
+        self::TYPE_SUGGESTION_ACCEPTATION => "suggestion d'acceptation du papier",
+        self::TYPE_SUGGESTION_REFUS => "suggestion de refus du papier",
+        self::TYPE_SUGGESTION_NEW_VERSION => "suggestion de demande de modifications du papier",
+        self::TYPE_EDITOR_MONITORING_REFUSED => "refus d'assurer le suivi",
         self::TYPE_EDITOR_COMMENT => "Commentaire du rédacteur",
         self::TYPE_AUTHOR_COMMENT => "Commentaire de l'auteur / lettre d'accompagnement",
         self::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST => "Préparation de copie : en attente des sources auteurs",
@@ -453,7 +453,7 @@ class Episciences_CommentsManager
      * @param array $extensions
      * @return array
      */
-    private static function getDescriptions(Array $extensions = ALLOWED_EXTENSIONS): array
+    private static function getDescriptions(array $extensions = ALLOWED_EXTENSIONS): array
     {
         $descriptions = [];
         $implode_extensions = implode(',', $extensions);
@@ -515,7 +515,7 @@ class Episciences_CommentsManager
 
             } else {
 
-                $row = !empty( $defaultMessage  = self::buildAnswerMessage($commentUid, $commentType)) ? 6 : 5;
+                $row = !empty($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) ? 6 : 5;
                 $strElement = $id . '_element';
                 $form = new Ccsd_Form();
                 $form->setName('copy_editing_form_' . $strElement);
@@ -617,7 +617,7 @@ class Episciences_CommentsManager
      * @return array
      */
 
-    private static function sortComments(Array $result): array
+    private static function sortComments(array $result): array
     {
 
         $comments = [];
@@ -678,5 +678,19 @@ class Episciences_CommentsManager
 
         return $defaultMessage;
 
-}
+    }
+
+    /**
+     * @param int $docId
+     * @param array $settings
+     * @return array
+     */
+
+    public static function getRevisionRequests(int $docId, array $settings = ['types' => [Episciences_CommentsManager::TYPE_REVISION_REQUEST]]): array
+    {
+        return self::getList($docId, $settings);
+
+    }
+
+
 }
