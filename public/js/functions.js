@@ -675,7 +675,7 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
 
     let search = new RegExp('<span class="' + tagName + '">(.*?)<\/span>');
     let content = body.getContent();
-    let replace = '<span class="revision_deadline">' + translate('dès que possible') + '</span>';
+    let replace = '<span class="revision_deadline">' + translate('dès que possible', locale) + '</span>';
 
     if (isISOdate(date) && isValidDate(date)) {
 
