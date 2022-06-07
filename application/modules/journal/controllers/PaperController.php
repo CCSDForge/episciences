@@ -293,12 +293,16 @@ class PaperController extends PaperDefaultController
 
         // revision requests ******************************************************
         // fetch revision requests
-        $settings = [self::TYPES_STR => [
-            Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION]];
-        $revision_requests = Episciences_CommentsManager::getList($docId, $settings);
+        $settings = [
+            self::TYPES_STR => [
+                Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION
+            ]
+        ];
+
+        $revision_requests = Episciences_CommentsManager::getRevisionRequests($docId, $settings);
 
         // if revision requests were made on previous versions, fetch them too
         $previousVersions = $paper->getPreviousVersions();
@@ -320,11 +324,15 @@ class PaperController extends PaperDefaultController
 
         // check if author answered the latest revision request
         $currentDemand = null;
+        $revisionDeadline = null;
+
         if (!empty($revision_requests) && !array_key_exists('replies', current($revision_requests))) {
             $currentDemand = array_shift($revision_requests);
+            $revisionDeadline = $currentDemand['DEADLINE'];
         }
         $this->view->revision_requests = $revision_requests;
         $this->view->currentDemand = $currentDemand;
+        $this->view->revisionDeadline = $revisionDeadline;
 
         // préparation de copie
 
@@ -896,15 +904,7 @@ class PaperController extends PaperDefaultController
 
             if ($type !== Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
                 // update paper status
-                if ($paper->isReviewed()) {
-                    $newStatus = Episciences_Paper::STATUS_REVIEWED;
-                } elseif ($paper->isBeingReviewed()) {
-                    $newStatus = Episciences_Paper::STATUS_BEING_REVIEWED;
-                } elseif (count($paper->getReviewers())) {
-                    $newStatus = Episciences_Paper::STATUS_OK_FOR_REVIEWING;
-                } else {
-                    $newStatus = Episciences_Paper::STATUS_SUBMITTED;
-                }
+                $newStatus = Episciences_Paper::STATUS_NO_REVISION;
 
                 if ($paper->getStatus() !== $newStatus) {
                     $paper->setStatus($newStatus);

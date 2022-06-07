@@ -111,7 +111,6 @@ class Episciences_Paper
     public const OTHER_STATUS_CODE = [
         self::STATUS_OBSOLETE,
         self::STATUS_TMP_VERSION,
-        self::STATUS_NO_REVISION,
         self::STATUS_NEW_VERSION,
         self::STATUS_WAITING_FOR_COMMENTS,
         self::STATUS_DELETED,
@@ -177,7 +176,7 @@ class Episciences_Paper
         self::STATUS_WAITING_FOR_MAJOR_REVISION => 'en attente de modifications majeures',
         self::STATUS_WAITING_FOR_COMMENTS => 'en attente d\'éclaircissements',
         self::STATUS_TMP_VERSION => 'version temporaire',
-        self::STATUS_NO_REVISION => 'réponse à une demande de modifications: pas de modifications',
+        self::STATUS_NO_REVISION => 'réponse à une demande de modifications : pas de modifications',
         self::STATUS_NEW_VERSION => 'réponse à une demande de modifications: nouvelle version',
         self::STATUS_DELETED => 'supprimé',
         self::STATUS_ABANDONED => 'abandonné',

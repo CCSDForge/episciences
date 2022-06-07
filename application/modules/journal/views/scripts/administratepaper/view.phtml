@@ -77,8 +77,9 @@ $this->suggestedRevision = false;
         <?php endif; ?>
 
         <p>
-            <strong><?= $statusMsg ?></strong><span
-                    class="label label-status-<?= $status  ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+            <strong><?= $statusMsg ?></strong>
+            <span class="label label-status-<?= $status  ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+            <?= $this->partial('partials/paper-revision-deadline.phtml', ['revisionDeadline' => $this->revisionDeadline]) ?>
         </p>
 
 
@@ -300,6 +301,8 @@ $this->suggestedRevision = false;
     var author = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
     var sender = <?php if ($this->js_sender) : ?><?php echo $this->js_sender; ?><?php else:?>null<?php endif;?>;
     var available_languages = <?php echo $this->available_languages?>;
+    let siteLocale  = '<?= $this->siteLocale ?>';
+    let defaultLocale = '<?= $this->defaultLocale ?>';
 </script>
 
 <?php

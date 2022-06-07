@@ -666,12 +666,16 @@ class AdministratepaperController extends PaperDefaultController
 
         // get revision requests ******************************************************
         // fetch revision requests
-        $settings = ['types' => [
-            Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
-            Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION]];
-        $demands = Episciences_CommentsManager::getList($paper->getDocid(), $settings);
+        $settings = [
+            'types' => [
+                Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION
+            ]
+        ];
+
+        $demands = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), $settings);
 
         // fetch previous version revision requests
         // TODO: optimize this (don't need to get the full paper object)
@@ -692,11 +696,14 @@ class AdministratepaperController extends PaperDefaultController
 
         // check if last revision request has been answered
         $currentDemand = null;
+        $revisionDeadline = null;
         if (!empty($demands) && !array_key_exists('replies', current($demands))) {
             $currentDemand = array_shift($demands);
+            $revisionDeadline = $currentDemand['DEADLINE'];
         }
         $this->view->demands = $demands;
         $this->view->currentDemand = $currentDemand;
+        $this->view->revisionDeadline = $revisionDeadline;
 
         // load all paper rating reports
         $this->view->grid = $paper->getGrid();
@@ -798,6 +805,8 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->paper = $paper;
         $this->view->paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
+        $this->view->siteLocale = Episciences_Tools::getLocale();
+        $this->view->defaultLocale = Episciences_Review::DEFAULT_LANG;
     }
 
     /**
@@ -1959,8 +1968,8 @@ class AdministratepaperController extends PaperDefaultController
 
             $locale = $submitter->getLangueid();
 
-            $subject = !$isAcceptedAskAuthorsFinalVersion ? $data[$type . 'revisionsubject'] : $data[$type . 'Subject'];
-            $message = !$isAcceptedAskAuthorsFinalVersion ? $data[$type . 'revisionmessage'] : $data[$type . 'Message'];
+            $subject = $data[$type . 'revisionsubject'];
+            $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
             $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
@@ -2007,7 +2016,8 @@ class AdministratepaperController extends PaperDefaultController
                 'deadline' => $deadline,
                 'subject' => $subject,
                 'message' => $message,
-                'isAlreadyAccepted' => $isAlreadyAccepted
+                'isAlreadyAccepted' => $isAlreadyAccepted,
+                'user' => Episciences_Auth::getUser()->toArray()
             ]);
 
             // sends an e-mail to the author
@@ -3572,7 +3582,7 @@ class AdministratepaperController extends PaperDefaultController
         $oLog->load($id);
         $log = $oLog->toArray();
 
-        $oUser = new Episciences_User;
+        $oUser = new Episciences_User();
         $oUser->findWithCAS($oLog->getUid());
         $user = $oUser->toArray();
 

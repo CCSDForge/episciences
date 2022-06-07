@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Administration page of a paper: new shortcut for administrators to allow to sign in as a copy-editor
 - Administration page of a paper: new shortcut for administrators to allow to sign in as an editor
 - Automatic mail detection
+- The revision deadline is now displayed below the article's status.
 
 
 ## Changed
@@ -84,6 +85,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#169](https://github.com/CCSDForge/episciences/issues/169): reports become visible on the article web page:
   * according to the parameters of the journal for published articles
   * for the owner, only if the paper is refused, waiting for revision, already accepted or published
+
+- Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
+- Revision requests: now we have an immediate visual feedback when changing the deadline.
 
 ## 1.0.28.4 - 2022-05-09
 ### Fixed
