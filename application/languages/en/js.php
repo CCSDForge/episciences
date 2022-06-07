@@ -151,6 +151,7 @@ return [
 
     "exemple : " => "example: ",
     "Filtrer les contacts" => 'Filter contacts',
+    'dès que possible' => 'as soon as possible',
 
     // error messages for reviewer invitation
     "Une erreur interne s'est produite, veuillez recommencer." => "An internal error has occurred, please try again.",

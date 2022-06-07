@@ -2637,6 +2637,8 @@ class Episciences_PapersManager
     private static function getModalPaperStatusCommonForm(array $default, string $prefix, bool $displayDeadlineElement = false): \Zend_Form
     {
         $form = new Ccsd_Form(['class' => 'form-horizontal']);
+        $subjectStr = 'Subject';
+        $messageStr = 'Message';
 
         $form->setDecorators([[
             'ViewScript', [
@@ -2678,7 +2680,9 @@ class Episciences_PapersManager
             'placeholder' => RVCODE . '@' . DOMAIN,
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
-        if($displayDeadlineElement){
+        if ($displayDeadlineElement) {
+            $subjectStr = '-revision-subject'; // see /public/js/administratepaper/view.js
+            $messageStr = '-revision-message';
             $minDate = date('Y-m-d');
             $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
 
@@ -2695,13 +2699,15 @@ class Episciences_PapersManager
         }
 
         $form->addElement(new Ccsd_Form_Element_Text([
-            'name' => $prefix . 'Subject',
+            'name' => $prefix . $subjectStr,
+            'id' => $prefix . $subjectStr,
             'label' => 'Sujet',
             'value' => $default['subject']
         ]));
 
         $form->addElement(new Ccsd_Form_Element_Textarea([
-            'name' => $prefix . 'Message',
+            'name' => $prefix . $messageStr,
+            'id' => $prefix . $messageStr,
             'class' => 'full_mce',
             'label' => 'Message',
             'value' => $default['body']
@@ -2766,9 +2772,9 @@ class Episciences_PapersManager
     public static function getAcceptedAskAuthorFinalVersionForm(array $default): \Zend_Form
     {
         $type = 'acceptedAskAuthorsFinalVersion';
-        $formId = 'accepted-ask-authors-final-version-form';
+        $formId = $type . '-form';
         $formAction = '/administratepaper/acceptedaskauhorfinalversion/id/' . $default['id'] . '/type/' . $type;
-        $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorsFinalVersion', true);
+        $form = self::getModalPaperStatusCommonForm($default, $type, true);
         $form->setAttrib('id', $formId);
         $form->setAction($formAction);
         return $form;

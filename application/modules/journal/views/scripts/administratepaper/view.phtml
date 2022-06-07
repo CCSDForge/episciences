@@ -300,6 +300,8 @@ $this->suggestedRevision = false;
     var author = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
     var sender = <?php if ($this->js_sender) : ?><?php echo $this->js_sender; ?><?php else:?>null<?php endif;?>;
     var available_languages = <?php echo $this->available_languages?>;
+    let siteLocale  = '<?= $this->siteLocale ?>';
+    let defaultLocale = '<?= $this->defaultLocale ?>';
 </script>
 
 <?php
