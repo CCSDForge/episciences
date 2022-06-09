@@ -944,20 +944,39 @@ class Episciences_Volume
      * Returns a list of sorted papers for current volume
      * @return array
      * @throws Zend_Db_Select_Exception
+     * @throws Zend_Exception
      */
     public function getSortedPapersFromVolume(): array
     {
         $paperList = [];
         $sorted_papers = [];
 
+        $locale = Episciences_Tools::getLocale() ?: Episciences_Review::getDefaultLanguage();
+
         $papers = $this->getPaperListFromVolume([Episciences_Paper::STATUS_OBSOLETE]);
 
         /* @var $p Episciences_paper */
         foreach ($papers as $p) {
             $docId = $p->getDocid();
-            foreach ($p->getAllTitles() as $title) {
-                $paperList[$docId]['title'] = $title;
+            $titles = $p->getAllTitles();
+
+            foreach ($titles as $lang => $title) {
+
+                if ($locale === $lang) {
+
+                     $pTitle = $titles[$locale];
+
+                } else {
+                    $pTitle  = $titles[array_key_first($titles)];
+                }
+
+                $paperList[$docId]['title'] = $pTitle;
+
+                continue 1;
+
+
             }
+
             $paperList[$docId]['docid'] = $docId;
             // RT#129760
             $paperList[$docId]['paperid'] = $p->getPaperid();

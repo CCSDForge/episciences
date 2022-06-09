@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- [#247](https://github.com/CCSDForge/episciences/issues/247):
+  HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute URLs.
+- Edition of a volume: it happens that the title of an article is not retrieved or it appears in another language (not managed by the platform).
 
 ## 1.0.29 - 2022-06-01
 ### Fixed
