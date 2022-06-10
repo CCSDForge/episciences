@@ -188,28 +188,19 @@ $(document).ready(function () {
     */
 
     // update deadline
-    $('#majorrevisiondeadline-id, #minorrevisiondeadline-id').on('change', (function () {
-        let locale = (author) ? author.langueid : 'en';
+    $("[id$='-revision-deadline']").on('change keyup past', (function () {
+        
+        let locale = (author) && author.langueid !== siteLocale ? defaultLocale : author.langueid;
+
         let deadline = $(this).val();
-        let attrName = $(this).attr('name');
-        let name = attrName.substring(0, attrName.length - 8) + 'message'; // 8: length (deadline)
+        let id = $(this).attr('id');
 
-        $.map(available_languages, function (val, index) {
-            let firstLanguage = index ;
+        let messageId = id.substring(0, id.length - 8) + 'message'; // 8: length (deadline)
 
-            if (index === locale) {
-                return false;
-            }
+        let oBody = getObjectNameFromTinyMce(messageId); // object
 
-            locale = firstLanguage;
-            return false;
-        });
+        updateDeadlineTag(oBody, 'revision_deadline', deadline, locale);
 
-
-        if (isISOdate(deadline) && isValidDate(deadline)) {
-            let body = getObjectNameFromTinyMce(name); // object
-            updateDeadlineTag(body, 'revision_deadline', deadline, locale);
-        }
     }));
 });
 

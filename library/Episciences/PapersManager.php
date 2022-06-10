@@ -1880,6 +1880,7 @@ class Episciences_PapersManager
 
         // revision deadline (optional)
         $form->addElement('date', $type . '-revision-deadline', [
+            'id' => $type . '-revision-deadline',
             'label' => 'Date limite de réponse',
             'class' => 'form-control',
             'pattern' => '[A-Za-z]{3}',
@@ -1889,10 +1890,12 @@ class Episciences_PapersManager
         ]);
 
         $form->addElement('text', $type . '-revision-subject', [
+            'id' => $type . '-revision-subject',
             'label' => 'Sujet',
             'value' => $default['subject']]);
 
         $form->addElement('textarea', $type . '-revision-message', [
+            'id' => $type . '-revision-message',
             'label' => 'Message',
             'class' => 'full_mce',
             'value' => $default['body']]);

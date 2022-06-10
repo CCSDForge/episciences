@@ -668,15 +668,25 @@ function getLocaleDate(date , oLocale = {language: 'en', country: 'br'}, options
  * @param body
  * @param tagName
  * @param date
+ * @param locale
  * @returns {*}
  */
 function updateDeadlineTag(body, tagName, date, locale = 'en') {
+
+    let search = new RegExp('<span class="' + tagName + '">(.*?)<\/span>');
     let content = body.getContent();
-    let search =  new RegExp('<span class="' + tagName + '">(.*?)<\/span>');
-    let replace = '<span class="' + tagName + '">' + getLocaleDate(date, {
-        language: locale,
-        country: locale
-    }) + '</span>';
+    let replace = '<span class="revision_deadline">' + translate('dès que possible', locale) + '</span>';
+
+    if (isISOdate(date) && isValidDate(date)) {
+
+        let localeDate = getLocaleDate(date, {
+            language: locale,
+            country: locale
+        });
+
+        replace = '<span class="' + tagName + '">' + localeDate + '</span>';
+
+    }
 
     content = content.replace(search, replace);
     body.setContent(content);
