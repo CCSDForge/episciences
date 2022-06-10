@@ -1,6 +1,6 @@
-var $contact_list;
-var $contacts;
-var $contact_type_dropdown;
+let $contact_list;
+let $contacts;
+let $contact_type_dropdown;
 
 /**
  *
@@ -21,7 +21,7 @@ function initGetContacts() {
     // toggle all contacts
     $('#toggleAll').on('click', function () {
 
-        var action = $(this).data('action');
+        let action = $(this).data('action');
 
         $contacts.each(function () {
             if (action === 'select') {
@@ -73,7 +73,7 @@ function filterTable(input, elements) {
 // when a contact is clicked, it is either added or removed
 function initList() {
     $contacts.on('click', function () {
-        var action = $(this).hasClass('selected') ? 'remove' : 'add';
+        let action = $(this).hasClass('selected') ? 'remove' : 'add';
         if (action === 'add') {
             select($(this));
         } else {
@@ -86,12 +86,12 @@ function initList() {
 function showList($li) {
 
     $contact_type_dropdown.find('span:first').html($li.find('a').html());
-    var contacts = eval($li.data('value'));
+    let contacts = eval($li.data('value'));
 
-    var html = '';
-    for (var i in contacts) {
+    let html = '';
+    for (let i in contacts) {
 
-        var user = contacts[i];
+        let user = contacts[i];
 
         html += '<tr id="contact_' + user['uid'] + '">';
         html += '   <td>' + user['fullname'] + '</td>';
@@ -111,21 +111,21 @@ function showList($li) {
 }
 
 function select(row) {
-    var uid = $(row).attr('id').replace(/[^\d]/g, '');
-    var user;
-    for (var i in all_contacts) {
+    let uid = $(row).attr('id').replace(/[^\d]/g, '');
+    let user;
+    for (let i in all_contacts) {
         if (all_contacts[i].uid == uid) {
             user = all_contacts[i];
         }
     }
-    var tagId = addRecipient('added_contacts', user, 'known');
+    let tagId = addRecipient('added_contacts', user, 'known');
     $('#' + tagId).find('.remove-recipient').on('click', function () {
         $('#contact_' + uid).removeClass('selected');
     });
 }
 
 function unselect(row) {
-    var uid = $(row).attr('id').replace(/[^\d]/g, '');
-    var tag = $('#added_contacts_tags .recipient-tag[data-uid="' + uid + '"]');
+    let uid = $(row).attr('id').replace(/[^\d]/g, '');
+    let tag = $('#added_contacts_tags .recipient-tag[data-uid="' + uid + '"]');
     removeRecipient(tag);
 }
