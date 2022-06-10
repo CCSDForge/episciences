@@ -2246,7 +2246,7 @@ class Episciences_PapersManager
         $contributorLocale = $contributor->getLangueid(true);
 
         // see gitlab #402
-        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::DEFAULT_LANG : $contributorLocale ;
+        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::getDefaultLanguage() : $contributorLocale ;
 
         if (!array_key_exists($locale, $languages)) {
             $locale = key($languages);
