@@ -678,5 +678,3 @@ function getVersionEditingForm(button, docId) {
     });
 
 }
-
-

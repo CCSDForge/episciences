@@ -806,7 +806,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
         $this->view->siteLocale = Episciences_Tools::getLocale();
-        $this->view->defaultLocale = Episciences_Review::DEFAULT_LANG;
+        $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
     }
 
     /**

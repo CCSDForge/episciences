@@ -247,6 +247,16 @@ class Episciences_Paper
         Episciences_Paper::STATUS_REMOVED
     ];
 
+    public const STATUS_WITH_EXPECTED_REVISION = [
+        self::STATUS_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_WAITING_FOR_MAJOR_REVISION,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+        self::STATUS_TMP_VERSION_ACCEPTED,
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
+    ];
+
     /**
      * @var int
      */
@@ -1315,17 +1325,7 @@ class Episciences_Paper
 
     public function isRevisionRequested(): bool
     {
-        $selectedStatus = [
-            self::STATUS_WAITING_FOR_MINOR_REVISION,
-            self::STATUS_WAITING_FOR_MAJOR_REVISION,
-            self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
-            self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
-            self::STATUS_TMP_VERSION_ACCEPTED,
-            self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
-            self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
-        ];
-
-        return in_array($this->getStatus(), $selectedStatus, true);
+        return in_array($this->getStatus(), self::STATUS_WITH_EXPECTED_REVISION, true);
     }
 
     /**

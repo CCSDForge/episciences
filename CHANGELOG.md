@@ -15,14 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Hotfix: awaiting deployment
+### Changed
+- Revision requests: now we have an immediate visual feedback when changing the deadline
+### Fixed
+- [#247](https://github.com/CCSDForge/episciences/issues/247):
+  HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute URLs.
+- Edition of a volume: it happens that the title of an article is not retrieved or it appears in another language (not managed by the platform).
+
+## 1.0.29 - 2022-06-01
 ### Fixed
 - Failed 'Not enough reviewers - editor copy' reminders. 
-- Loading journal translations from '/'.
+- But leading to load journal translations from '/'.
 - PHP Warning:  Use of undefined constant RVID - assumed 'RVID' (this will throw an Error in a future version of PHP)
 - Not enough review reminders: articles without invitations escape reminders because the function that retrieves invitations is not used properly.
 
 ### Added
 - User list: make it easier to locate accounts that have not been activated.
+- Addes Roadmap link + User survey/feedback on portal
+- Make EU grants and OpenAIRE support more visible at the bottom of the page
 
 ## Unreleased
 ### Fixed

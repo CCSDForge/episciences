@@ -57,10 +57,10 @@ $(document).ready(function () {
             addRecipient('bcc', $.grep(users, function (e) {
                 return e.uid == sender_uid;
             })[0], 'known');
-            resizeInput('#bcc', 'add');
+            //resizeInput('#bcc', 'add');
         } else {
             removeRecipient($('#bcc_tags .recipient-tag[data-uid="' + sender_uid + '"]'));
-            resizeInput('#bcc', 'remove');
+            //resizeInput('#bcc', 'remove');
         }
     });
 
@@ -132,7 +132,7 @@ function initAutocomplete() {
             select: function (event, ui) {
                 addRecipient(input_id, ui.item, 'known');
                 $(input).val('');
-                resizeInput('#' + input_id, 'add');
+                //resizeInput('#' + input_id, 'add');
 
                 return false;
             },
@@ -151,7 +151,7 @@ function initAutocomplete() {
                 addRecipient(input_id, $(input).val(), 'unknown');
                 $(input).autocomplete("close");
                 $(input).val('');
-                resizeInput('#' + input_id, 'add');
+                //resizeInput('#' + input_id, 'add');
             }
         });
 
@@ -165,7 +165,7 @@ function initAutocomplete() {
                     addRecipient(input_id, $(input).val(), 'unknown');
                     $(input).autocomplete("close");
                     $(input).val('');
-                    resizeInput('#' + input_id, 'add');
+                    //resizeInput('#' + input_id, 'add');
                 }
             }
         });
@@ -175,7 +175,7 @@ function initAutocomplete() {
             let code = e.keyCode || e.which;
             if (code == 8 && input_val == 0 && $('#' + input_id + '_tags').find('.recipient-tag').length) {
                 removeRecipient($('#' + input_id + '_tags').find('.recipient-tag:last'));
-                resizeInput('#' + input_id, 'remove');
+                //resizeInput('#' + input_id, 'remove');
             }
         });
 
@@ -206,6 +206,6 @@ function normalize(term) {
 function setDefaultRecipient() {
     if (typeof recipient !== 'undefined' && recipient) {
         addRecipient('to', recipient, 'known');
-        resizeInput('#to', 'add');
+        //resizeInput('#to', 'add');
     }
 }

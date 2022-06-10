@@ -679,12 +679,12 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
 
     if (isISOdate(date) && isValidDate(date)) {
 
-        let localDate = getLocaleDate(date, {
+        let localeDate = getLocaleDate(date, {
             language: locale,
             country: locale
         });
 
-        replace = '<span class="' + tagName + '">' + localDate + '</span>';
+        replace = '<span class="' + tagName + '">' + localeDate + '</span>';
 
     }
 

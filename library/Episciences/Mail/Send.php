@@ -82,7 +82,7 @@ class Episciences_Mail_Send
 
             $form->addElement('text', $to_element, $options);
 
-            self::decorate($form->getElement($to_element));
+            self::decorate($form->getElement($to_element), 'to');
 
         }
 
@@ -97,7 +97,7 @@ class Episciences_Mail_Send
         ]);
 
 
-        self::decorate($form->getElement($cc_element));
+        self::decorate($form->getElement($cc_element), 'cc');
 
         $form->addElement('hidden', self::getElementName('hidden_cc', $prefix));
 
@@ -108,7 +108,7 @@ class Episciences_Mail_Send
             'class' => 'autocomplete'
         ]);
 
-        self::decorate($form->getElement($bcc_element));
+        self::decorate($form->getElement($bcc_element), 'bcc');
 
         $form->addElement('hidden', self::getElementName('hidden_bcc', $prefix));
 
@@ -249,14 +249,19 @@ class Episciences_Mail_Send
         return true;
     }
 
-    private static function decorate(Zend_Form_Element $element): Zend_Form_Element
+    /**
+     * @param Zend_Form_Element $element
+     * @param string $id
+     * @return Zend_Form_Element
+     */
+    private static function decorate(Zend_Form_Element $element, string $id): Zend_Form_Element
     {
 
         $decorators = $element->getDecorators();
 
         try {
             $element->clearDecorators()
-                ->addDecorator(['openDiv' => 'HtmlTag'], ['tag' => 'span', 'id' => 'bcc_tags', 'placement' => 'APPEND', 'openOnly' => true])
+                ->addDecorator(['openDiv' => 'HtmlTag'], ['tag' => 'span', 'id' => $id . '_tags', 'placement' => 'APPEND', 'openOnly' => true])
                 ->addDecorator(['closeDiv' => 'HtmlTag'], ['tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true])
                 ->addDecorators($decorators);
         } catch (Zend_Form_Exception $e) {

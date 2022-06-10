@@ -11,8 +11,8 @@ function __initEditor(selectorName, context, options) {
 
     // see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
     let domainAbsoluteURLsOptions = {
-        relative_urls: true,
-        remove_script_host: true,
+        relative_urls: false,
+        remove_script_host: false,
         document_base_url: window.location.origin
     }
 
