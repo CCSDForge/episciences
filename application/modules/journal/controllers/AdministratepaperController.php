@@ -803,7 +803,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->paper = $paper;
         $this->view->paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
         $this->view->siteLocale = Episciences_Tools::getLocale();
-        $this->view->defaultLocale = Episciences_Review::DEFAULT_LANG;
+        $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
     }
 
     /**
