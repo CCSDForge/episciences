@@ -103,6 +103,7 @@ return [
     "Ce formulaire comporte des erreurs" => "This form contains errors",
     "Le formulaire comporte des erreurs." => "This form contains errors.",
     "Les modifications ont bien été enregistrées." => "Changes have been saved.",
+    "Modifications des affiliations bien prise en compte" => "Affiliations are updated",
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
     "Fichier" => 'File',
     "Parcourir" => 'Browse',
@@ -122,8 +123,8 @@ return [
     "Votre message aurait été envoyé. NB : les messages ne sont pas réellement envoyés dans l'environnement : " => 'Your message would have been sent. NB: messages are not really sent when using the environment: ',
     "Merci de les corriger." => "Please correct them.",
     "La taille maximale des fichiers que vous pouvez télécharger est limitée à" => "The maximum size of files you can download is limited to",
-
-
+    "Choisissez un auteur" => "Choose an author",
+    "Ajouter une affiliation à un auteur" => "Add an affiliation to an author",
     // Administration
     "Gestion des utilisateurs" => 'User management',
     "Gestion des articles" => 'Article management',
