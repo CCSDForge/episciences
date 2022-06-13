@@ -410,6 +410,7 @@ class PaperController extends PaperDefaultController
                 (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor())
 
             );
+        $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
     }
 
 
@@ -458,6 +459,90 @@ class PaperController extends PaperDefaultController
             trigger_error('Someone tryed to do request for orcid modifications');
         }
     }
+
+    public function getaffiliationsbyauthorAction(){
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $request = $this->getRequest();
+
+        if (($request->isXmlHttpRequest() && $request->isPost()) && Episciences_Auth::isAllowedToManageOrcidAuthor()) {
+            $body = $request->getRawBody();
+            $data = json_decode($body, true, JSON_UNESCAPED_UNICODE);
+            $affi = Episciences_Paper_AuthorsManager::findAffiliationsOneAuthorByPaperId($data['paperId'],$data['idAuthor']);
+            $arrayFormOption = [
+                'paperid' => $data['paperId'],
+                'idAuthor' => $data['idAuthor'],
+            ];
+            if ($affi !== ""){
+                $formattedAffiliationForInput = Episciences_Paper_AuthorsManager::formatAffiliationForInputRor($affi);
+                $arrayFormOption['affiliations'] = $formattedAffiliationForInput;
+            }
+
+
+            echo Episciences_PapersManager::getAffiliationsForm($arrayFormOption);
+
+        }
+    }
+
+
+
+    public function addaffiliationsauthorAction() {
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        $rorDomain = "https://ror.org/";
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $affiliations = $request->getPost('affiliations');
+        $affiliations = array_unique($affiliations);
+        // the authors in the html selection and the database are sorted in the same way, so we just need to get the index of the chosen author.
+
+        $authorKeyJson = $request->getPost('ideditedaffiauthor');
+        $paperId = $request->getPost('paperidauthors');
+        $authorsInfo = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+        foreach ($authorsInfo as $key => $value) {
+            $jsonAuthorDecoded =  json_decode($value['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        }
+        $arrayAffi = [];
+        foreach ($affiliations as $key => $affiliation) {
+            if ($affiliation !== "") {
+                $affiliation = explode('#',$affiliation);
+                //check if we have ROR url
+                $nameRor = ["name" => rtrim($affiliation[0])];
+                $idArray = [];
+                if ((isset($affiliation[1]) && $affiliation[1] !== "") && str_contains(rtrim($affiliation[1]),$rorDomain)) {
+                    $idArray["id"] = [
+                        ['id'=>rtrim($affiliation[1]),'id-type'=>"ROR"]
+                    ];
+                    $arrayAffi[] = array_merge($nameRor,$idArray);
+                } else {
+                    $arrayAffi[] = $nameRor;
+                }
+
+            }
+
+        }
+        // avoid space in url to avoid duplicate affiliations
+        $currentUrlchecked = '';
+        foreach ($arrayAffi as $keyAffi => $affi){
+            if (isset($affi['id'])){
+                if ($currentUrlchecked !== '' && $currentUrlchecked === $affi['id'][0]['id']){
+                    unset($arrayAffi[$keyAffi]);
+                }
+                $currentUrlchecked = $affi['id'][0]['id'];
+            }
+        }
+        $jsonAuthorDecoded[$authorKeyJson]["affiliation"] = $arrayAffi;
+        $newAuthorInfos = new Episciences_Paper_Authors();
+        $newAuthorInfos->setAuthors(json_encode($jsonAuthorDecoded,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+        $newAuthorInfos->setPaperId($paperId);
+        Episciences_Paper_AuthorsManager::update($newAuthorInfos);
+        $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
+        $url = self::PAPER_URL_STR . $paperId;
+        $this->_helper->redirector->gotoUrl($url);
+    }
+
 
 
     /**

@@ -16,7 +16,6 @@
                         <div class="modal-header">
                             <h5 class="modal-title" id="author-modal-orcid-label-title">  <xsl:value-of
                                     select="php:function('Ccsd_Tools::translate', 'Ajouter les ORCID aux auteurs')"/></h5>
-                            <div class="hidden" id="paperid-for-author">  <xsl:value-of select="episciences/paperId"/></div>
                         </div>
                         <div id="modal-body-authors" class="modal-body">
                             <input class='hidden' id='modal-called' value='0'></input>
@@ -29,6 +28,7 @@
                 </div>
             </div>
         </form>
+        <div class="hidden" id="paperid-for-author">  <xsl:value-of select="episciences/paperId"/></div>
         <xsl:variable name="client_language" select="php:function('Episciences_Tools::getLocale')"/>
         <xsl:variable name="doc_language" select="metadata/oai_dc:dc/dc:language"/>
         <xsl:variable name="title">
@@ -136,9 +136,12 @@
                         <div id="orcid-author-existing" class="hidden">
                             <xsl:value-of select="episciences/authorsOrcid"/>
                         </div>
+                        <div id="authors-list" class="hidden">
+                            <xsl:value-of select="episciences/listAuthors"/>
+                        </div>
                     </i>
                 </p>
-
+                <xsl:value-of select="episciences/listAffi" disable-output-escaping="yes"/>
                 <p class="small" style="text-align: justify">
                     <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($description))"/>
                 </p>

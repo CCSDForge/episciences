@@ -51,6 +51,9 @@ $this->suggestedRevision = false;
 
 <?= $this->render('partials/paper_conflicts.phtml') ?>
 
+<?php // affiliations *****************************************************
+echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' =>  $this->affiliationsForm]);
+?>
 <?php // contributor section  ?>
 <?php if ($paper->getUid()): ?>
     <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor']) ?>
@@ -330,5 +333,7 @@ $this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
 $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
+$this->jQuery()->addJavascriptFile('/js/paper/paperAffiAuthors.js');
+$this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
 ?>
 

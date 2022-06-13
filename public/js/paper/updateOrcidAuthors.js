@@ -1,7 +1,6 @@
 function updateOrcidAuthors() {
-    let authors = $("div#paper-authors").text();
+    let authors = $("div#authors-list").text();
     let orcidExisting = $("div#orcid-author-existing").text();
-    authors = authors.substring(authors.indexOf(":") + 1);
     authors = authors.split(';');
     authors = authors.map(Function.prototype.call, String.prototype.trim);
     orcidExisting = orcidExisting.split("##");
@@ -26,7 +25,27 @@ function updateOrcidAuthors() {
 
     $("input#modal-called").val("1");
 }
+
+function generateSelectAuthors(){
+    let authors = $("div#authors-list").text();
+    authors = authors.split(';');
+    authors = authors.map(Function.prototype.call, String.prototype.trim);
+    let selectString = "";
+    selectString+="<option></option>";
+    authors.forEach(function (author,index){
+        //escape weird name like foo. bar. loremipsum -> for ajax later when we want get value selected
+        let clearString = "\""+author+"\"";
+        selectString += '<option id='+index+' value='+clearString+'>'+author+'</option>';
+    });
+    $("label#affiliations-label").before("<select id='select-author-affi' class='select-author-affi'>"+selectString+"</select>");
+}
+
 $(document).ready(function() {
+    generateSelectAuthors();
+    submitNewOrcidAuthors();
+});
+
+function submitNewOrcidAuthors(){
     $("form#post-orcid-author").submit(function (e) {
         let url = $(this).attr('action');
         let arrayAuthor = [];
@@ -51,7 +70,8 @@ $(document).ready(function() {
         });
         let dataT = {
             "paperid": $("div#paperid-for-author").text(),
-            "authors":arrayMerge};
+            "authors":arrayMerge
+        };
         $.ajax({
             url: url,
             type: 'POST',
@@ -62,5 +82,4 @@ $(document).ready(function() {
         });
         e.preventDefault();
     });
-
-});
+}

@@ -1,0 +1,21 @@
+<?php
+$affiForm  = $this->affiliations;
+$versionCache =  APPLICATION_VERSION;
+?>
+<div id="affiliations-body" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Ajouter une affiliation à un auteur') ?></h2>
+    </div>
+    <br>
+    <div class="panel-body in" style="overflow: visible">
+        <div>
+            <span><?php echo $this->translate('Choisissez un auteur');?></span>
+            <label id="affiliations-label" for="affiliations"></label>
+            <div id="affi-body"><?php echo $affiForm; ?></div>
+        </div>
+    </div>
+</div>
+<script>
+    let versionCache = <?= $versionCache ?>;
+</script>
+

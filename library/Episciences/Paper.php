@@ -1882,10 +1882,14 @@ class Episciences_Paper
         if (!empty($authorEnrich['template'])) {
             $node->appendChild($dom->createElement('authorEnriched', $authorEnrich['template']));
             $node->appendChild($dom->createElement('authorsOrcid', $authorEnrich['orcid']));
+            $node->appendChild($dom->createElement('listAffi', $authorEnrich['listAffi']));
+            $node->appendChild($dom->createElement('listAuthors', $authorEnrich['authorsList']));
 
         } else {
             $node->appendChild($dom->createElement('authorEnriched', ""));
             $node->appendChild($dom->createElement('authorsOrcid', ""));
+            $node->appendChild($dom->createElement('listAffi', ""));
+            $node->appendChild($dom->createElement('listAuthors', ""));
         }
 
         // fetch volume data

@@ -212,6 +212,10 @@ if (
 }
 ?>
 
+<?php // affiliations *****************************************************
+    echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' =>  $this->affiliationsForm]);
+?>
+
 <?php // rating reports ************************************************************************* ?>
 <?php if ($this->reports) : ?>
     <div id="ratings" class="panel panel-default collapsable">
@@ -371,6 +375,8 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
 $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
+$this->jQuery()->addJavascriptFile('/js/paper/paperAffiAuthors.js');
+$this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
 <script>
