@@ -258,6 +258,11 @@ function getLoader() {
     return loading;
 }
 
+function getLoaderAffi(){
+    loading = "<img src=/img/episciences_sign_50x50.png class='loader-affi'>";
+    return loading;
+}
+
 function ucfirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }

@@ -26,3 +26,22 @@
 input.ui-autocomplete-input {
   margin-bottom: 0;
 }
+
+.loader-affi {
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spinner-affi 0.3s linear infinite;
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: 8%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes spinner-affi {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

@@ -18,11 +18,11 @@ $(function () {
 
             let ajaxReq = ajaxRequest(url, {}, 'GET');
 
-            $affiliations.before(getLoader());
+            $affiliations.before(getLoaderAffi());
 
             ajaxReq.done(function (rorResponse) {
 
-                $('.loader').remove();
+                $('.loader-affi').remove();
 
                 if ('items' in rorResponse) {
 
