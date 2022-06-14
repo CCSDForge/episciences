@@ -14,26 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Hotfix: awaiting deployment
-### Changed
-- Revision requests: now we have an immediate visual feedback when changing the deadline
-### Fixed
-- [#247](https://github.com/CCSDForge/episciences/issues/247):
-  HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute URLs.
-- Edition of a volume: it happens that the title of an article is not retrieved or it appears in another language (not managed by the platform).
-
-## 1.0.29 - 2022-06-01
-### Fixed
-- Failed 'Not enough reviewers - editor copy' reminders. 
-- But leading to load journal translations from '/'.
-- PHP Warning:  Use of undefined constant RVID - assumed 'RVID' (this will throw an Error in a future version of PHP)
-- Not enough review reminders: articles without invitations escape reminders because the function that retrieves invitations is not used properly.
-
-### Added
-- User list: make it easier to locate accounts that have not been activated.
-- Addes Roadmap link + User survey/feedback on portal
-- Make EU grants and OpenAIRE support more visible at the bottom of the page
-
 ## Unreleased
 ### Fixed
 - [RT#158293]: article status is not correctly updated
@@ -64,7 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic mail detection
 - The revision deadline is now displayed below the article's status.
 
-
 ## Changed
 - Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
@@ -82,13 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - It is now possible to re-point the version in Episciences to the most recent version in the open archive.
 - [#164](https://github.com/CCSDForge/episciences/issues/164): harmonization of roles/privileges.
 - Submission from episciences-zenodo: first submission.
-
-##Fixed
+  ##Fixed
 - Multiple roles: ignore the "member" role when merging two accounts.
-- [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names + refactoring 
+- [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names + refactoring
 - Templates updating
 - [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
-- Empty record: error message updating.
 - Sign in an admin as another user: real identity is now saved.
 - Update Episciences_User::getScreenName()
 - User Table: merge AFFILIATIONS" filed in "ADDITIONAL_PROFILE_INFORMATION"
@@ -98,6 +75,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
+
+## Awaiting deployment
+### Added
+- It is now possible to manage conflicts on the article page: display & delete them
+
+## 1.0.29.1 - 2022-06-13
+### Changed
+- Revision requests: now we have an immediate visual feedback when changing the deadline
+### Fixed
+- [#247](https://github.com/CCSDForge/episciences/issues/247):
+  HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute URLs.
+- Edition of a volume: The title of article might not be retrieved if the language was not managed by the platform.
+
+## 1.0.29 - 2022-06-01
+### Fixed
+- Failed 'Not enough reviewers - editor copy' reminders. 
+- But leading to load journal translations from '/'.
+- PHP Warning:  Use of undefined constant RVID - assumed 'RVID' (this will throw an Error in a future version of PHP)
+- Not enough review reminders: articles without invitations escape reminders because the function that retrieves invitations is not used properly.
+
+### Added
+- User list: make it easier to locate accounts that have not been activated.
+- Addes Roadmap link + User survey/feedback on portal
+- Make EU grants and OpenAIRE support more visible at the bottom of the page
+
+## 1.0.28.5 - 2022-05-25
+### Fixed
+- [RT#158293]: article status is not correctly updated
 
 ## 1.0.28.4 - 2022-05-09
 ### Fixed
@@ -112,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Empty records from HAL repository: error message improved.
 - Improvements and fixes on Datacite and Crossref XML exports
-  
+
 ## 1.0.28.1 - 2022-03-23
 ### Fixed
 -  fix issue in crossref xml format with related_item
@@ -160,8 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # Fixed
 - Dashboard: the number of papers assigned to the copy editor includes obsolete papers
 - Issue reported to support RT #148133 (fixed before this release):
-  * Some editors could see the reviewers names if they were also authors of the article
-  
+  * Some editors could see the reviewers names if they were also authors of the article  
+
 ## 1.0.26 - 2022-03-01
 # Fixed
 - Issue reported to support RT #148133:

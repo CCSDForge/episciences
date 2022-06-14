@@ -1277,7 +1277,7 @@ class Episciences_Tools
     public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false)
     {
 
-        $str = str_replace($separator, '', ucwords($string, $separator));
+        $str = str_replace($separator, '', ucwords(mb_strtolower($string), $separator));
 
         if (!$capitalizeFirstCharacter) {
             $str = lcfirst($str);
@@ -1496,5 +1496,18 @@ class Episciences_Tools
         $str =  preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|ring|slash);/','$1',$str);
         return html_entity_decode($str);
     }
+
+    /**
+     * @param $html
+     * @param array $allowedElements
+     * @return string
+     */
+
+    public static function epi_html_decode($html, array $allowedElements = ['HTML.AllowedElements' => ['p', 'b', 'u', 'i', 'a', 'strong', 'em', 'span']]): string
+    {
+        return (new Episciences_HTMLPurifier($allowedElements))->purifyHtml(html_entity_decode($html));
+
+    }
+
 
 }

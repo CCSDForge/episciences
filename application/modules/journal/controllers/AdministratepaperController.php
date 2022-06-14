@@ -553,7 +553,7 @@ class AdministratepaperController extends PaperDefaultController
         unset($volume);
         $this->view->volumes = $volumes;
 
-        // get paper/volumes relations (secondary volumes)
+        // get paper/volumes relations (secondary volumes)f
         $paper->loadOtherVolumes();
 
         $sections = $review->getSections();

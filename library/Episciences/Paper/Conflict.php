@@ -42,6 +42,9 @@ class Episciences_Paper_Conflict
      */
     protected $_date = 'CURRENT_TIMESTAMP';
 
+    /** @var string */
+    protected string $_screenName = '';
+
     public function __construct(array $options = null)
     {
         if (is_array($options)) {
@@ -74,10 +77,11 @@ class Episciences_Paper_Conflict
         return [
             'cid' => $this->getCid(),
             'paperId' => $this->getPaperId(),
-            'by' => $this->getBy(),
+            'by' => $this->getBy(), // uid
             'answer' => $this->getAnswer(),
             'message' => $this->getMessage(),
-            'date' => $this->getDate()
+            'date' => $this->getDate(),
+            'screenName' => $this->getscreenName()
         ];
     }
 
@@ -187,6 +191,24 @@ class Episciences_Paper_Conflict
     public function setDate(string $date = null): self
     {
         $this->_date = new DateTime($date);
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getScreenName(): string
+    {
+        return $this->_screenName;
+    }
+
+    /**
+     * @param string $screenName
+     * @return Episciences_Paper_Conflict
+     */
+    public function setScreenName(string $screenName = ''): self
+    {
+        $this->_screenName = $screenName;
         return $this;
     }
 

@@ -1,10 +1,11 @@
 <?php
 $log = $this->log;
 $conflictDetail = $log['detail']['conflict'];
+$isReverted = isset($this->isReverted) && $this->isReverted;
 ?>
 <table class="log-details">
     <tr>
-        <td class="td-label"><?= $this->translate("Rapporté le") ?></td>
+        <td class="td-label"><?= !$isReverted ? $this->translate("Rapporté le") : $this->translate("Annulé le") ?></td>
         <td class="small"><?= $this->Date($log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
     </tr>
     <tr>
@@ -20,6 +21,15 @@ $conflictDetail = $log['detail']['conflict'];
             <?= $conflictDetail['paperId'] ?>
         </td>
     </tr>
+
+    <?php if(isset($log['docid'])) : ?>
+        <tr>
+            <td class="td-label"><?= $this->translate('Id document') ?></td>
+            <td class="small">
+                <?= $log['docid'] ?>
+            </td>
+        </tr>
+    <?php endif;?>
 
     <?php if (!empty($conflictDetail['message'])) : ?>
         <tr>

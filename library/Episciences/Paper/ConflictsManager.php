@@ -14,7 +14,8 @@ class Episciences_Paper_ConflictsManager
         $oResult = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
-            ->from(self::TABLE)
+            ->from(['c' => self::TABLE])
+            ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME'])
             ->where('paper_id = ?', $paperId);
 
         $rows = $db->fetchAssoc($sql);
@@ -179,6 +180,39 @@ class Episciences_Paper_ConflictsManager
         return $form;
 
 
+    }
+
+    /**
+     * @param int $cId : conflict ID
+     * @return Episciences_Paper_Conflict|null
+     */
+    public static function findById(int $cId): ?Episciences_Paper_Conflict
+    {
+
+        $oResult = null;
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $sql = self::findQuery()->where('cid = ?', $cId);
+
+        $row = $db->fetchRow($sql);
+
+        if (!empty($row)) {
+            $oResult = new Episciences_Paper_Conflict($row);
+        }
+
+        return $oResult;
+    }
+
+    /**
+     * @return Zend_Db_Select
+     */
+    private static function findQuery(): \Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        return $db->select()
+            ->from(['c' => self::TABLE])
+            ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME']);
     }
 
 }

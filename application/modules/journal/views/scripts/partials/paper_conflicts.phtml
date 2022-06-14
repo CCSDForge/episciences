@@ -1,0 +1,97 @@
+<?php
+
+?>
+<?php if ($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) && Episciences_Auth::isSecretary()) : ?>
+    <?php
+    /** @var array $paperConflicts */
+    $paperConflicts = $this->paper->getConflicts();
+    ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Gestion des conflits') ?></h2>
+        </div>
+        <div class="panel-body in" id="conflict-content">
+            <?php if (!empty($paperConflicts)) : ?>
+
+                <table class="conflict-list" id="conflict-list">
+                    <thead>
+                    <tr>
+                        <th scope="col" class="text-center">UID</th>
+                        <th scope="col" class="text-center"><?= $this->translate("Nom d'utilisateur") ?></th>
+                        <th scope="col" class="text-center"><?= $this->translate('Détails') ?></th>
+                        <th scope="col" class="text-center"><?= $this->translate('Rapporté le') ?></th>
+                        <th scope="col" class="text-center"><?= $this->translate('Action') ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php
+                    /** @var Episciences_Paper_Conflict $conflict */
+                    foreach ($paperConflicts as $conflict) : ?>
+                        <?php $cId = $conflict->getCid(); ?>
+                        <tr id="tr-<?= $cId ?>">
+                            <td class="text-center"><code><?= $conflict->getBY() ?></code></td>
+                            <td class="text-center"><?= $this->escape($conflict->getScreenName()) ?></td>
+                            <td class="text-center"><?= Episciences_Tools::epi_html_decode($conflict->getMessage()) ?></td>
+                            <td class="text-center"><?= $this->Date($conflict->getDate()->format('Y-m-d')) ?></td>
+                            <td class="text-center">
+                                <?php if ($this->paper->isEditable()) : ?>
+                                    <a id="delete-conflict-<?= $conflict->getCid() ?>" data-paperId="<?= $this->paper->getDocid()?>">
+                                        <small class="darkgrey fas fa-trash" data-toggle="tooltip"
+                                               title="<?= $this->translate('Supprimer ce conflit') ?>"></small>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+
+            <?php else : ?>
+
+                <p><?= $this->translate('Aucun conflit enregistré') ?>.</p>
+
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+    <script>
+        $('a[id^="delete-conflict-"]').on('click', function () {
+
+            let conflictId = $(this).attr('id');
+            let docId = $(this).attr('data-paperId');
+            let countTr = $("#conflict-list tr").length
+            let cId = parseInt(conflictId.replace(/^\D+/g, ''));
+
+            bootbox.setDefaults({locale: locale});
+            bootbox.confirm(translate("Êtes-vous sûr ?"), function (isConfirmed) {
+                if (isConfirmed) {
+                    $.post(
+                        '/coi/delete/',
+                        {ajax: 1, conflictId: cId, docId: docId},
+                        function (respond) {
+                            if (parseInt(respond) === 1) {
+                                if (countTr > 2) {
+                                    $('#tr-' + cId).remove();
+                                } else {
+                                    $('#conflict-list').remove();
+                                    $('<p>' + translate('Aucun conflit enregistré.') + '</p>').appendTo('#conflict-content');
+                                }
+
+                                refreshPaperHistory(docId);
+
+                            } else {
+                                bootbox.alert(translate("La suppression a échoué : ") + respond);
+                            }
+                        }
+                    );
+                }
+            });
+        });
+    </script>
+
+<?php endif; ?>
+
+
