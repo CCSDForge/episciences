@@ -75,11 +75,12 @@
                             if (parseInt(respond) === 1) {
                                 if (countTr > 2) {
                                     $('#tr-' + cId).remove();
-                                    refreshPaperHistory(docId);
                                 } else {
                                     $('#conflict-list').remove();
                                     $('<p>' + translate('Aucun conflit enregistré.') + '</p>').appendTo('#conflict-content');
                                 }
+
+                                refreshPaperHistory(docId);
 
                             } else {
                                 bootbox.alert(translate("La suppression a échoué : ") + respond);
