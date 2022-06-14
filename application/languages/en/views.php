@@ -461,6 +461,8 @@ return [
     "Aller à la page publique de cet article" => "Go to the public page for this article",
     "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
     "son compte n'a pas encore été activé" => 'his account is not active yet',
+    'Supprimer ce conflit" => "Delete this conflict',
+    'Gestion des conflits' => 'Conflict management',
     "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences" => "At this point, the author coordinates with the copy editor and agree by exchanging emails outside or via Episciences",
     "La version actuelle est la version la plus récente." => "The current version is the most recent version.",
     "L'identifiant de la version la plus récente dans l’archive ouverte" => "The identifier of the most open archive version",
@@ -1023,6 +1025,8 @@ return [
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
     Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
+    Episciences_Paper_Logger::CODE_COI_REVERTED => 'Conflict Of Interest (COI): cancelled',
+
     Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Update',
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'New publication date',
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepted, ask author's final version",
@@ -1212,6 +1216,7 @@ return [
     'volume-view' => 'View a volume',
     'section-view' => 'View a section',
     'user-delete' => 'delete account',
+    'coi-delete' => 'Remove a conflict of interest',
     'administratepaper-acceptedaskauhorfinalversion' => "Accepted article - ask author's final version",
     'administratepaper-acceptedaskauthorvalidation' => "Accepted article - ask author's validation",
 
@@ -1856,6 +1861,7 @@ return [
     "Rapporté le" => "Reported on",
     'Feuille de route' => 'Roadmap',
     "Retours utilisateurs" => "User feedback",
+    'Annulé le' => 'Cancelled on',
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
     //review settings: final decision

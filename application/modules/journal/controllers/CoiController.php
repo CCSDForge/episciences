@@ -49,7 +49,7 @@ class CoiController extends PaperDefaultController
 
                 if (array_key_exists('coiReport', $post) && $request->isPost()) {
 
-                    if($form->isValid($post)){
+                    if ($form->isValid($post)) {
                         $this->conflictProcessing($post, $paper);
                         return;
                     }
@@ -94,7 +94,7 @@ class CoiController extends PaperDefaultController
 
             $message = trim($post['message']);
             $htmlPurifier = new Episciences_HTMLPurifier([
-                'HTML.AllowedElements' => ['p', 'b', 'u', 'i', 'a', 'strong', 'em','span']
+                'HTML.AllowedElements' => ['p', 'b', 'u', 'i', 'a', 'strong', 'em', 'span']
             ]);
 
             $decodedMessage = html_entity_decode($message);
@@ -166,5 +166,57 @@ class CoiController extends PaperDefaultController
         }
 
         $this->_helper->redirector->gotoUrl($url);
+    }
+
+    /**
+     * delete conflict
+     * @return void
+     */
+    public function deleteAction(): void
+    {
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        if (Episciences_Auth::isSecretary() && $request->isXmlHttpRequest() && $request->isPost()) {
+            $id = (int)$request->getPost('conflictId');
+            $docId = (int)$request->getPost('docId');
+
+            $currentConflict = Episciences_Paper_ConflictsManager::findById($id);
+            $respond = 0;
+
+            try {
+
+                $paper = Episciences_PapersManager::get($docId, false);
+                $respond = Episciences_Paper_ConflictsManager::deleteById($id);
+
+                if ($respond) {
+
+                    $details = ['user' => [
+                        'fullname' => Episciences_Auth::getFullName()
+                    ],
+                        'conflict' => $currentConflict ? $currentConflict->toArray() : [],
+                        'docid' => $paper->getDocid()
+                    ];
+
+                    $paper->log(Episciences_Paper_Logger::CODE_COI_REVERTED, Episciences_Auth::getUid(), $details);
+                }
+
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+
+            }
+
+            $this->_helper->viewRenderer->setNoRender();
+            $this->_helper->getHelper('layout')->disableLayout();
+            echo $respond;
+
+        } else {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->renderScript('index/notfound.phtml');
+
+        }
+
     }
 }

@@ -102,6 +102,7 @@ return [
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI mis à jour',
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'Nouvelle date de publication',
     Episciences_Paper_Logger::CODE_COI_REPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REPORTED],
+    Episciences_Paper_Logger::CODE_COI_REVERTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REVERTED],
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION ],
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED],
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION],
@@ -222,6 +223,7 @@ return [
     'volume-view' => 'Voir un volume',
     'section-view' => 'Voir une rubrique',
     'user-delete' => 'Supprimer un compte',
+    'coi-delete' => "Supprimer un conflit d'intérêt",
     'administratepaper-acceptedaskauhorfinalversion' => "Article accepté - demander à l'auteur la version finale",
     'administratepaper-acceptedaskauthorvalidation' => "Article accepté - demander à l'auteur la validation de la mise en forme",
 

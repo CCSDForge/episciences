@@ -61,6 +61,7 @@ class Episciences_Paper_Logger
     public const CODE_DOI_UPDATED = 'doi_updated';
 
     public const CODE_COI_REPORTED = "coi_reported";
+    public const CODE_COI_REVERTED= "coi_reverted";
 
     public const CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION = "accepted_ask_authors_final_version";
     public const CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION = "accepted_ask_for_author_validation";
@@ -121,6 +122,7 @@ class Episciences_Paper_Logger
         self::CODE_DOI_UPDATED => self::INFO,
         self::CODE_ALTER_PUBLICATION_DATE => self::WARNING,
         self::CODE_COI_REPORTED => self::DANGER,
+        self::CODE_COI_REVERTED => self::SUCCESS,
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => self::VIOLET,
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => self::VIOLET,
         self::CODE_VERSION_REPOSITORY_UPDATED => self::INFO
@@ -154,6 +156,7 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'éclaircissement (contributeur au relecteur)",
         self::CODE_DOI_ASSIGNED => 'DOI assigné',
         self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)",
+        self::CODE_COI_REVERTED => "Conflit d'intérêts (CI) : annulé",
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepté, demande de la version finale à l'auteur",
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur",
         self::CODE_VERSION_REPOSITORY_UPDATED => 'Re-pointage de version'
