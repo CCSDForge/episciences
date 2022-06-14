@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Added
+- It is now possible to manage conflicts on the article page: display & delete them
+
 ## 1.0.29.1 - 2022-06-13
 ### Changed
 - Revision requests: now we have an immediate visual feedback when changing the deadline

@@ -61,6 +61,7 @@ class Episciences_Paper_Logger
     public const CODE_DOI_UPDATED = 'doi_updated';
 
     public const CODE_COI_REPORTED = "coi_reported";
+    public const CODE_COI_REVERTED= "coi_reverted";
 
     // alert-
     const WARNING = 'warning';
@@ -115,7 +116,8 @@ class Episciences_Paper_Logger
         self::CODE_DOI_ASSIGNED => self::INFO,
         self::CODE_DOI_UPDATED => self::INFO,
         self::CODE_ALTER_PUBLICATION_DATE => self::WARNING,
-        self::CODE_COI_REPORTED => self::DANGER
+        self::CODE_COI_REPORTED => self::DANGER,
+        self::CODE_COI_REVERTED => self::SUCCESS,
     ];
 
     public static $_label = [
@@ -145,7 +147,8 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Demande d'éclaircissements (relecteur au contributeur)",
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'eclaicissement (contributeur au relecteur) ",
         self::CODE_DOI_ASSIGNED => 'DOI assigné',
-        self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)"
+        self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)",
+        self::CODE_COI_REVERTED => "Conflit d'intérêts (CI) : annulé",
     ];
 
     /**

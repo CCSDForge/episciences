@@ -454,6 +454,8 @@ return [
     "Aller à la page publique de cet article" => "Go to the public page for this article",
     "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
     "son compte n'a pas encore été activé" => 'his account is not active yet',
+    'Supprimer ce conflit" => "Delete this conflict',
+    'Gestion des conflits' => 'Conflict management',
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
@@ -1005,6 +1007,7 @@ return [
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
     Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
+    Episciences_Paper_Logger::CODE_COI_REVERTED => 'Conflict Of Interest (COI): cancelled',
 
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_REQUEST] => "request for clarification",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_ANSWER] => "response for clarification",
@@ -1191,6 +1194,7 @@ return [
     'volume-view' => 'View a volume',
     'section-view' => 'View a section',
     'user-delete' => 'delete account',
+    'coi-delete' => 'Remove a conflict of interest',
 
     // demande de revision
     'Optionnelle' => 'Optional',
@@ -1807,5 +1811,6 @@ return [
     'Commentaire facultatif' => 'Optional comments',
     "Rapporté le" => "Reported on",
     'Feuille de route' => 'Roadmap',
-    "Retours utilisateurs" => "User feedback"
+    "Retours utilisateurs" => "User feedback",
+    'Annulé le' => 'Cancelled on',
 ];

@@ -24,7 +24,8 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION,
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR,
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER,
-    Episciences_Paper_Logger::CODE_COI_REPORTED
+    Episciences_Paper_Logger::CODE_COI_REPORTED,
+    Episciences_Paper_Logger::CODE_COI_REVERTED,
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
@@ -111,6 +112,7 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_NEW_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER:
+                case  Episciences_Paper_Logger::CODE_COI_REVERTED:
                 ?>
                     <?php echo $this->translate(' :'); ?>
                     <?php echo $fullName; ?>
