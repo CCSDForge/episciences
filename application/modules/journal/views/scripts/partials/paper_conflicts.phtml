@@ -50,7 +50,7 @@
 
             <?php else : ?>
 
-                <p><?= $this->translate('Aucun conflit enregistré') ?>.</p>
+                <p><?= $this->translate('Aucun conflit pour le moment.') ?></p>
 
             <?php endif; ?>
 
@@ -77,7 +77,7 @@
                                     $('#tr-' + cId).remove();
                                 } else {
                                     $('#conflict-list').remove();
-                                    $('<p>' + translate('Aucun conflit enregistré.') + '</p>').appendTo('#conflict-content');
+                                    $('<p>' + translate('Aucun conflit pour le moment.') + '</p>').appendTo('#conflict-content');
                                 }
 
                                 refreshPaperHistory(docId);

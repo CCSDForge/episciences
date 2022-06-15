@@ -454,8 +454,9 @@ return [
     "Aller à la page publique de cet article" => "Go to the public page for this article",
     "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
     "son compte n'a pas encore été activé" => 'his account is not active yet',
-    'Supprimer ce conflit" => "Delete this conflict',
+    'Supprimer ce conflit' => 'Delete this conflict',
     'Gestion des conflits' => 'Conflict management',
+    'Aucun conflit pour le moment.' => 'No conflict yet.',
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
