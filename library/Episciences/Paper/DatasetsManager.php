@@ -13,7 +13,7 @@ class Episciences_Paper_DatasetsManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
             ->from(array('DS' => T_PAPER_DATASETS,['DS.id']))
-            ->joinLeft(array('DM' => T_PAPER_DATASETS_META), 'DS.id_paper_datasets_meta = DM.id',['DM.metatext'])
+            ->joinLeft(array('DM' => T_PAPER_DATASETS_META), 'DS.id = DM.id',['DM.metatext'])
             ->where('DS.doc_id = ?', $docId)->order('source_id');
         $rows = $db->fetchAll($sql);
         foreach ($rows as $value) {
