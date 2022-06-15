@@ -461,8 +461,9 @@ return [
     "Aller à la page publique de cet article" => "Go to the public page for this article",
     "cet utilisateur n'a pas encore de profil" => "this user has no profile yet",
     "son compte n'a pas encore été activé" => 'his account is not active yet',
-    'Supprimer ce conflit" => "Delete this conflict',
+    'Supprimer ce conflit' => 'Delete this conflict',
     'Gestion des conflits' => 'Conflict management',
+    'Aucun conflit pour le moment.' => 'No conflict yet.',
     "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences" => "At this point, the author coordinates with the copy editor and agree by exchanging emails outside or via Episciences",
     "La version actuelle est la version la plus récente." => "The current version is the most recent version.",
     "L'identifiant de la version la plus récente dans l’archive ouverte" => "The identifier of the most open archive version",
@@ -1350,7 +1351,6 @@ return [
     "Lettre d'accompagnement" => 'Cover letter',
     'Visible par : ' => 'Visible by: ',
     "Progression : " => "Progression:",
-    "" => "",
 
     "Vous n'êtes pas l'auteur de cet article." => "You are not the author of this article.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
