@@ -960,23 +960,15 @@ class Episciences_Volume
             $docId = $p->getDocid();
             $titles = $p->getAllTitles();
 
-            foreach ($titles as $lang => $title) {
-
-                if ($locale === $lang) {
-
-                     $pTitle = $titles[$locale];
-
-                } else {
-                    $pTitle  = $titles[array_key_first($titles)];
-                }
-
-                $paperList[$docId]['title'] = $pTitle;
-
-                continue 1;
-
-
+            if (array_key_exists($locale, $titles)) {
+                $pTitle = $titles[$locale];
+            } elseif (array_key_exists(Episciences_Review::DEFAULT_LANG, $titles)) {
+                $pTitle = $titles[Episciences_Review::DEFAULT_LANG];
+            } else {
+                $pTitle = $titles[array_key_first($titles)];
             }
 
+            $paperList[$docId]['title'] = $pTitle;
             $paperList[$docId]['docid'] = $docId;
             // RT#129760
             $paperList[$docId]['paperid'] = $p->getPaperid();
