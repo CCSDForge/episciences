@@ -3003,6 +3003,52 @@ class Episciences_PapersManager
         return $form;
     }
 
+
+    /**
+     * @param array $option
+     * @return Ccsd_Form
+     * @throws Zend_Form_Exception
+     */
+    public static function getAffiliationsForm(array $option = []): \Ccsd_Form
+    {
+
+        $form = new Ccsd_Form;
+        $form->setAttrib('id', 'form-affi-authors');
+        $form->setAction('/paper/addaffiliationsauthor');
+        $affiliationInfo = [
+            'id' => 'affiliations',
+            'label' => 'Affiliation(s)',
+            'description' => 'Description',
+            'display' => 'advanced',
+        ];
+        $affiliationInfo['value'] = [];
+        if (isset($option['affiliations'])) {
+            foreach ($option['affiliations'] as $value) {
+                $affiliationInfo['value'][] = $value;
+            }
+        }
+        $form->addElement('multiTextSimple', 'affiliations', $affiliationInfo);
+
+        // Button : validate
+        $form->addElement('submit', 'submit-affiliation-author', [
+            'label' => 'Valider',
+            'class' => 'btn btn-primary',
+            'decorators' => ['ViewHelper']
+        ]);
+
+        // index of the author in the json author from db -> they're sorted same way
+        if (isset($option['idAuthor'])) {
+            $form->addElement('hidden', 'id-author-in-json', ['id'=>'id-edited-affi-author','name'=>'id-edited-affi-author','value'=>$option['idAuthor']]);
+        } else {
+            $form->addElement('hidden', 'id-author-in-json', ['id'=>'id-edited-affi-author','name'=>'id-edited-affi-author']);
+        }
+
+
+        $form->addElement('hidden', 'paperid', ['id'=>'paper-id-authors','name'=>'paper-id-authors','value'=>$option['paperid']]);
+
+        return $form;
+    }
+
     /**
      * fetch a paper
      * @param $identifier
@@ -3025,5 +3071,4 @@ class Episciences_PapersManager
         return !$data ? null : new Episciences_Paper($data);
 
     }
-
 }
