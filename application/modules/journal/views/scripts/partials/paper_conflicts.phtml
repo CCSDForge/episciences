@@ -34,12 +34,13 @@
                             <td class="text-center"><?= Episciences_Tools::epi_html_decode($conflict->getMessage()) ?></td>
                             <td class="text-center"><?= $this->Date($conflict->getDate()->format('Y-m-d')) ?></td>
                             <td class="text-center">
-                                <?php if ($this->paper->isEditable()) : ?>
-                                    <a id="delete-conflict-<?= $conflict->getCid() ?>" data-paperId="<?= $this->paper->getDocid()?>">
-                                        <small class="darkgrey fas fa-trash" data-toggle="tooltip"
-                                               title="<?= $this->translate('Supprimer ce conflit') ?>"></small>
-                                    </a>
-                                <?php endif; ?>
+
+                                <a id="delete-conflict-<?= $conflict->getCid() ?>"
+                                   data-paperId="<?= $this->paper->getDocid() ?>">
+                                    <small class="darkgrey fas fa-trash" data-toggle="tooltip"
+                                           title="<?= $this->translate('Supprimer ce conflit') ?>"></small>
+                                </a>
+
                             </td>
                         </tr>
 
