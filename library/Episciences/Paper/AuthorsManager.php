@@ -185,6 +185,7 @@ class Episciences_Paper_AuthorsManager
         }
         return $resUpdate;
     }
+
     /**
      * @param $paper
      * @param $paperId
@@ -195,11 +196,13 @@ class Episciences_Paper_AuthorsManager
         $authors = $paper->getMetadata('authors');
         foreach ($authors as $author) {
             $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
-            [$familyName, $givenName] = explode(', ', $author);
+
+            $exploded = explode(', ', $author);
+
             $arrayAuthors[] = [
                 'fullname' => $authorsFormatted,
-                'given' => $givenName,
-                'family' => $familyName
+                'given' => $exploded[1] ?? null,
+                'family' => $exploded[0] ?? null
             ];
         }
         Episciences_Paper_AuthorsManager::insert([
