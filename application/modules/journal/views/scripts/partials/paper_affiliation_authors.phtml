@@ -1,6 +1,5 @@
 <?php
 $affiForm  = $this->affiliations;
-$versionCache =  APPLICATION_VERSION;
 ?>
 <div id="affiliations-body" class="panel panel-default collapsable">
     <div class="panel-heading">
@@ -11,11 +10,11 @@ $versionCache =  APPLICATION_VERSION;
         <div>
             <span><?php echo $this->translate('Choisissez un auteur');?></span>
             <label id="affiliations-label" for="affiliations"></label>
-            <div id="affi-body"><?php echo $affiForm; ?></div>
+            <div id="affi-body"><?= $affiForm ?></div>
         </div>
     </div>
 </div>
 <script>
-    let versionCache = <?= $versionCache ?>;
+    let versionCache = '<?= APPLICATION_VERSION ?>';
 </script>
 
