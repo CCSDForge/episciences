@@ -911,13 +911,16 @@ class Ccsd_Tools
      * @param string $replacement
      * @return mixed
      */
-    public static function truncate($string, $length = 100, $replacement = "...")
+    public static function truncate($string, int $length = 100, string $replacement = "...")
     {
-        if (strlen($string) <= $length) {
+        if (mb_strlen($string, 'UTF-8') <= $length) {
             return $string;
         }
 
-        return substr_replace($string, $replacement, $length);
+        // problème d'encodage avec "substr_replace" : on se retrouve avec des articles sans titre voir ici : https://slovo.episciences.org/volume/edit?id=652 (#9686)
+
+        return mb_substr($string, 0, $length,'UTF-8') . $replacement;
+
     }
 
     /**

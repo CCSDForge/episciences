@@ -2218,21 +2218,20 @@ class Episciences_Paper
      * @param string $language
      * @return string
      */
-    private function getTitleByLanguage(string $language)
+    private function getTitleByLanguage(string $language): string
     {
         $title = $this->getMetadata('title');
-        if ((is_array($title)) && (array_key_first($title) == 0)) {
-            $title = array_shift($title);
 
-            if (!is_array($title)) {
-                return $title;
-            }
+        if (is_array($title)) {
 
-            if (!array_key_exists($language, $title)) {
-                $title = '';
-            } else {
+            if (array_key_exists($language, $title)) {
                 $title = $title[$language];
+            } else {
+                $title = 'Document sans titre';
             }
+
+        } else {
+            $title = $title[$language];
         }
 
 
@@ -2805,7 +2804,7 @@ class Episciences_Paper
      * Return an array of title from metadata
      * @return array
      */
-    public function getAllTitles()
+    public function getAllTitles(): ?array
     {
         $titles = $this->getMetadata('title');
         if (!is_array($titles)) {
