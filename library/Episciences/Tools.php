@@ -1277,7 +1277,11 @@ class Episciences_Tools
     public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false)
     {
 
-        $str = str_replace($separator, '', ucwords(mb_strtolower($string), $separator));
+        if(self::isInUppercase($string)){
+            $string = strtolower($string);
+        }
+
+        $str = str_replace($separator, '', ucwords($string, $separator));
 
         if (!$capitalizeFirstCharacter) {
             $str = lcfirst($str);
@@ -1509,5 +1513,12 @@ class Episciences_Tools
 
     }
 
-
+    /**
+     * @param $string
+     * @return bool
+     */
+    public static function isInUppercase($string): bool
+    {
+        return (bool) preg_match('/[A-Z]/', $string);
+    }
 }

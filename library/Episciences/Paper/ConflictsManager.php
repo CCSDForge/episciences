@@ -16,7 +16,9 @@ class Episciences_Paper_ConflictsManager
         $sql = $db->select()
             ->from(['c' => self::TABLE])
             ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME'])
-            ->where('paper_id = ?', $paperId);
+            ->where('paper_id = ?', $paperId)
+            ->order('date DESC')
+        ;
 
         $rows = $db->fetchAssoc($sql);
 
