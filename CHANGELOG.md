@@ -77,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 
 ## Awaiting deployment
+Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO )
 ### Added
 - It is now possible to manage conflicts on the article page: display & delete them
 
