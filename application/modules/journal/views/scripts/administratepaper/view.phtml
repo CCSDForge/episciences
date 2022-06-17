@@ -47,13 +47,13 @@ $this->suggestedRevision = false;
     <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper,'metadata'=> $this->metadata]) ?>
 </div>
 
-<?php // conflict management section ?>
-
-<?= $this->render('partials/paper_conflicts.phtml') ?>
-
 <?php // affiliations *****************************************************
 echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' =>  $this->affiliationsForm]);
 ?>
+
+<?php // conflict management section ?>
+<?= $this->render('partials/paper_conflicts.phtml') ?>
+
 <?php // contributor section  ?>
 <?php if ($paper->getUid()): ?>
     <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor']) ?>
