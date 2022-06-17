@@ -24,7 +24,7 @@ class Episciences_Paper_AuthorsManager
                 $author = new Episciences_Paper_Authors($author);
             }
 
-            $values[] = '(' . $db->quote($author->getAuthors()) . ',' . $db->quote($author->getPaperid()) . ')';
+            $values[] = '(' . $db->quote($author->getAuthors()) . ',' . $db->quote($author->getPaperId()) . ')';
 
         }
 
@@ -172,7 +172,7 @@ class Episciences_Paper_AuthorsManager
         if ($authorId !== null) {
             $where['idauthors = ?'] = $authors->getAuthorId();
         }
-        $where['paperid = ?'] = $authors->getPaperid();
+        $where['paperid = ?'] = $authors->getPaperId();
 
         $values = [
                 'authors' => $authors->getAuthors()

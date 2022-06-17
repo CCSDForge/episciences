@@ -60,7 +60,7 @@ class Episciences_Paper_Authors
         return [
             'idAuthors' => $this->getAuthorId(),
             'authors'=> $this->getAuthors(),
-            'paperId' => $this->getPaperid(),
+            'paperId' => $this->getPaperId(),
             'dateUpdated' => $this->getDateUpdated(),
         ];
     }
@@ -99,7 +99,7 @@ class Episciences_Paper_Authors
         $this->_authors = $authors;
     }
 
-    public function getPaperid(): ?int
+    public function getPaperId(): ?int
     {
 
         return $this->_paperId;
@@ -111,7 +111,7 @@ class Episciences_Paper_Authors
      * @return $this
      */
 
-    public function setPaperid(int $paperId): self
+    public function setPaperId(int $paperId): self
     {
         $this->_paperId = $paperId;
         return $this;

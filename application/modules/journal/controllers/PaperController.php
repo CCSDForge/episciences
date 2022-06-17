@@ -447,7 +447,7 @@ class PaperController extends PaperDefaultController
             }
             $newAuthorInfos = new Episciences_Paper_Authors();
             $newAuthorInfos->setAuthors(json_encode($arrayAuthorDb,JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
-            $newAuthorInfos->setPaperid($data['paperid']);
+            $newAuthorInfos->setPaperId($data['paperid']);
             $updateAuthor = Episciences_Paper_AuthorsManager::update($newAuthorInfos);
             if ($updateAuthor>0) {
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
@@ -536,7 +536,7 @@ class PaperController extends PaperDefaultController
         $jsonAuthorDecoded[$authorKeyJson]["affiliation"] = $arrayAffi;
         $newAuthorInfos = new Episciences_Paper_Authors();
         $newAuthorInfos->setAuthors(json_encode($jsonAuthorDecoded,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
-        $newAuthorInfos->setPaperid($paperId);
+        $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
         $url = self::PAPER_URL_STR . $paperId;
