@@ -60,7 +60,11 @@ class getLicenceDataEnrichment extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])->where('REPOID != ? ', 0)->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)->order('REPOID DESC'); // prevent empty row
+        $select = $db
+            ->select()
+            ->from(T_PAPERS, ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])
+            ->where('REPOID != ? ', 0)
+            ->where('STATUS IN (?)', Episciences_Paper::$_canBeAssignedDOI)->order('REPOID DESC'); // prevent empty row
         foreach ($db->fetchAll($select) as $value) {
             $identifier = $value['IDENTIFIER'];
             $repoId = $value['REPOID'];
