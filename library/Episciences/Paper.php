@@ -2239,6 +2239,7 @@ class Episciences_Paper
     /**
      * @param string $language
      * @return string
+     * @throws Zend_Exception
      */
     private function getTitleByLanguage(string $language): string
     {
@@ -2248,14 +2249,13 @@ class Episciences_Paper
 
             if (array_key_exists($language, $title)) {
                 $title = $title[$language];
+            } elseif ((int)array_key_first($title) === 0) {
+                $title = array_shift($title);
             } else {
-                $title = 'Document sans titre';
+                $title = Zend_Registry::get('Zend_Translate')->translate('Document sans titre');
             }
 
-        } else {
-            $title = $title[$language];
         }
-
 
         return $title;
     }
