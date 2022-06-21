@@ -4,6 +4,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 /**
  * Class Episciences_Paper
+ * @property string | null $_revisionDeadline
  */
 class Episciences_Paper
 {

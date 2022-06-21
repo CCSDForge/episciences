@@ -413,20 +413,20 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php endif; ?>
 
             <!-- ask other editors -->
-            <?php if (!$paper->isEditable()) : ?>
-                <?php if (!empty($this->other_editors)) : ?>
-                    <!-- ASK OTHER EDITORS -->
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".ask-other-editors-modal"><?= $this->translate("Demander l'avis d'autres rédacteurs") ?></a>
-                    </li>
-                <?php else : ?>
-                    <li data-toggle="tooltip" data-placement="top"
-                        title="<?= $this->translate("Il n'y a pas d'autres rédacteurs à qui demander un avis.") ?>">
-                        <a class="disabled"><?= $this->translate("Demander l'avis d'autres rédacteurs") ?></a>
-                    </li>
-                <?php endif; ?>
+
+            <?php if (!empty($this->other_editors)) : ?>
+
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".ask-other-editors-modal"><?php echo $this->translate("Demander l'avis d'autres rédacteurs"); ?></a>
+                </li>
+            <?php else : ?>
+                <li data-toggle="tooltip" data-placement="top"
+                    title="<?php echo $this->translate("Il n'y a pas d'autres rédacteurs à qui demander un avis."); ?>">
+                    <a class="disabled"><?php echo $this->translate("Demander l'avis d'autres rédacteurs"); ?></a>
+                </li>
             <?php endif; ?>
+
         </ul>
     </div>
     <?php // Copy editor?>

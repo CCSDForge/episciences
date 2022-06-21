@@ -133,7 +133,22 @@ class AdministratepaperController extends PaperDefaultController
                         Episciences_User_Assignment::STATUS_DECLINED
                     ]
                 ); // environ 1s
+
+
+                $revision_requests = Episciences_CommentsManager::getRevisionRequests($paper->getDocid());
+
+                $revisionDeadline = null;
+
+                if (!empty($revision_requests) && !array_key_exists('replies', current($revision_requests))) {
+                    $currentDemand = array_shift($revision_requests);
+                    $revisionDeadline = $currentDemand['DEADLINE'];
+                }
+
+                $paper->_revisionDeadline = $revisionDeadline;
+
+
             }
+
             unset($paper);
 
             $tbody = ($papersFiltredCount > 0) ?
