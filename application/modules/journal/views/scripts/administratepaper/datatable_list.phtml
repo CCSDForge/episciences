@@ -12,6 +12,8 @@ foreach ($this->list as $paper) : ?>
 
     <?php
 
+    $href ='/' . $controller . '/view?id=' . $paper->getDocid();
+
     try {
         $editors = $paper->getEditors();
     } catch (Zend_Db_Statement_Exception $e) {
@@ -58,7 +60,14 @@ foreach ($this->list as $paper) : ?>
 
     <tr id="paper_<?= $paper->getDocid() ?>">
         <?php // permanent Id  ******************************************* ?>
-        <td class="text-center"><span data-toggle="tooltip" title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>" class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>"><?= $paper->getPaperid() ?></span></td>
+        <td class="text-center"><span data-toggle="tooltip" title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>" class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>">
+                <?php if($paper->_revisionDeadline) : ?>
+                <a href="<?= $href ?>#answer">
+                    <span data-toggle="tooltip" title="<?= $this->translate('Version révisée attendue avant le :') ?><?= ' '. $this->Date($paper->_revisionDeadline)?>" class="fas fa-clock" style="margin-right: 5px;"></span>
+                </a>
+                <?php endif; ?>
+                <?= $paper->getPaperid() ?></span>
+        </td>
         <?php // article id ******************************************* ?>
         <td class="text-center"><span data-toggle="tooltip" title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>" class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>"><?= $paper->getDocid() ?></span></td>
         <?php // article status icon ******************************************* ?>
@@ -83,7 +92,7 @@ foreach ($this->list as $paper) : ?>
         ?>
 
         <td>
-            <a href="/<?= $controller ?>/view?id=<?= $paper->getDocid() ?>"
+            <a href="<?= $href ?>>"
                data-toggle="tooltip"
                title="<?= Episciences_Tools::decodeLatex($title) ?>">
                 <strong><?= Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($title), 75) ?></strong>

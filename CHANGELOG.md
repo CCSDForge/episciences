@@ -42,7 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Administration page of a paper: new shortcut for administrators to allow to sign in as a copy-editor
 - Administration page of a paper: new shortcut for administrators to allow to sign in as an editor
 - Automatic mail detection
-- The revision deadline is now displayed below the article's status.
+- [227](https://github.com/CCSDForge/episciences/issues/227):
+  - The revision deadline is now displayed below the article's status. 
+  - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
 ## Changed
 - Workflow reviewing
