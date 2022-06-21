@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
 ### Fixed
 - [RT#158293]: article status is not correctly updated
@@ -77,7 +78,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 
 ## Awaiting deployment
-Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO )
+### Changed
+- [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
+### Fixed
+- Ask revision: possibility to backdate the deadline.
+
+## Unreleased ( see tag 1.0.30)
+### Fixed
+- Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO )
 ### Added
 - It is now possible to manage conflicts on the article page: display & delete them
 
