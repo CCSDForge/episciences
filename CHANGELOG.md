@@ -14,8 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
 
+## Unreleased
+### Changed
+- [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
+### Fixed
+- Ask revision: possibility to backdate the deadline.
+
+## Unreleased ( see tag 1.0.30)
 ### Fixed
 - Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO ) 
 ### Added
