@@ -410,7 +410,9 @@ class PaperController extends PaperDefaultController
                 (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor())
 
             );
-        $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
+        if (Episciences_Auth::isAllowedToManageOrcidAuthor()){
+            $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
+        }
     }
 
 

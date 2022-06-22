@@ -146,7 +146,7 @@ class Episciences_Paper_LicenceManager
         $sets = $cache->getItem($cleanID . "_licence.json");
         $sets->expiresAfter(self::ONE_MONTH);
         if ($callArrayResp !== ""){
-            if ($repoId === Episciences_Repositories::ARXIV_REPO_ID|| $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
+            if ($repoId === Episciences_Repositories::ARXIV_REPO_ID || $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
                 $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
                 if (isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
                     $sets->set(json_encode($licenceArray['data']['attributes']['rightsList'][0], JSON_THROW_ON_ERROR));
