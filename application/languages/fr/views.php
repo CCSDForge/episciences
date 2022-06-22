@@ -248,6 +248,10 @@ return [
 
     // COI
     'no' => 'non',
-    'yes' => 'oui'
+    'yes' => 'oui',
+
+    //Funding
+    "Funder" => "Financeur",
+    "Fundings :"=> "Financeurs :"
 
 ];

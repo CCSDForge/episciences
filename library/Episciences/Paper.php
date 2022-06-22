@@ -1893,6 +1893,15 @@ class Episciences_Paper
             $node->appendChild($dom->createElement('listAuthors', ""));
         }
 
+        // project Funding
+        $project = Episciences_Paper_ProjectsManager::formatProjectsForview($this->_paperId);
+        if (!empty($project)){
+            $node->appendChild($dom->createElement('funding', $project['funding']));
+        }else{
+            $node->appendChild($dom->createElement('funding', ""));
+        }
+
+
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
