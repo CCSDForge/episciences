@@ -36,7 +36,7 @@
 
                         <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $member->getAffiliations()]) ?>
 
-                        <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $member->getWebSites(), 'socialMedias' => $member->getSocialMedias()]) ?>
+                        <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $member->getWebSites(), 'socialMedias' => (array)$member->getSocialMedias()]) ?>
 
 
 

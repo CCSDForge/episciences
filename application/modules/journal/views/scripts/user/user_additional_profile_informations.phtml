@@ -2,9 +2,13 @@
 <?php if (!empty($this->socialMedias)) : ?>
     <?php foreach ($this->socialMedias as $socialMedia): ?>
         <?php if (!empty($socialMedia)) : ?>
+        <?php $socialMedia = $this->escape($socialMedia) ?>
             &nbsp;<small>
-                <span class="fas fa-hashtag" style="margin-right: 5px;"></span>
-                <?= $this->escape($socialMedia) ?></small>
+                <a href="https://twitter.com/hal_fr/<?= $socialMedia ?>" target="_blank">
+                    <span class="fa-brands fa-twitter" style="margin-right: 5px;"></span>
+                    <?= $socialMedia ?>
+                </a>
+            </small>
             <br>
         <?php endif; ?>
     <?php endforeach; ?>

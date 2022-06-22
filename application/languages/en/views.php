@@ -60,6 +60,7 @@ return [
     "Document sans titre" => "Untitled document",
     "connu" => "known",
     "et" => "and",
+    'anonyme' => 'anonymous',
 
     // Messages d'erreur
     'Fichier introuvable' => 'File not found',
@@ -892,9 +893,9 @@ return [
     "Télécopie" => 'Fax',
     "Photo" => 'Picture',
     "Complément de nom" => 'Middle Name',
-    'Réseaux Sociaux' => 'Social media(s)',
+    'Login Twitter' => 'Twitter username',
     'Site(s) Web' => 'Web Site(s)',
-    'Veuillez saisir le réseau social que vous souhaitez ajouter' => 'Please enter the social media you wish to add',
+    'Saisissez votre compte Twitter (par exemple @anonymous)' => 'Enter your Twitter account (e.g @anonymous)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
 
     // User activation

@@ -29,7 +29,6 @@ class Ccsd_Form extends Zend_Form
      */
     public function init()
     {
-        $view = $this->getView();
 
         $this->loadDefaultDecorators();
         
