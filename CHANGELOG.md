@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
 ### Fixed
 - Ask revision: possibility to backdate the deadline.
+- Fixed: RT #160301:
+  the tags [%%SENDER_FULL_NAME%%, %%SENDER_SCREEN_NAME%%, %%SENDER_EMAIL%%, %%SENDER_FIRST_NAME%%', %%SENDER_LAST_NAME%% ]
+  concerning the user of the action are filled with the data of the user connected at the time of the action.
+  Making these variables available in the automatic mails poses a real problem: they are filled with the data of the mail recipient.
+  So, from now on, the tags mentioned above will no longer be available in the automatic mail templates.
 
 ## Unreleased ( see tag 1.0.30)
 ### Fixed

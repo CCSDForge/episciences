@@ -119,4 +119,12 @@ class Episciences_Mail_Tags
     const TAG_VOL_BIBLIOG_REF = '%%TAG_VOL_BIBLIOG_REF%%';
     const TAG_VOLUME_EDITORS = '%%VOLUME_EDITORS%%';
 
+    public const SENDER_TAGS = [
+        self::TAG_SENDER_SCREEN_NAME,
+        self::TAG_SENDER_EMAIL,
+        self::TAG_SENDER_FULL_NAME,
+        self::TAG_SENDER_FIRST_NAME,
+        self::TAG_SENDER_LAST_NAME,
+    ];
+
 }

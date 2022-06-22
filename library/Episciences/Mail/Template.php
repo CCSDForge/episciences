@@ -1736,7 +1736,7 @@ class Episciences_Mail_Template
      * get available tags list description
      * @return string
      */
-    public function getAvailableTagsListDescription()
+    public function getAvailableTagsListDescription(): string
     {
         $tags = $this->_tags;
         $key = !$this->isCustom() ? $this->getKey() : substr($this->getKey(), 7); // Custom key = 'custom_' . $this->getKey();
@@ -1839,6 +1839,23 @@ class Episciences_Mail_Template
 
         if (array_key_exists($key, $map)) {
             $tags = array_merge($tags, $map[$key]);
+        }
+
+        /**
+         * * Fixed: RT #160301:
+         *    the tags [%%SENDER_FULL_NAME%%, %%SENDER_SCREEN_NAME%%, %%SENDER_EMAIL%%, %%SENDER_FIRST_NAME%%', %%SENDER_LAST_NAME%% ]
+         *    concerning the user of the action are filled with the data of the user connected at the time of the action.
+         *    Making these variables available in the automatic mails poses a real problem: they are filled with the data of the mail recipient.
+         *    So, from now on, the tags mentioned above will no longer be available in the automatic mail templates.
+         */
+
+        if(in_array($key, Episciences_Mail_TemplatesManager::AUTOMATIC_TEMPLATES, true)){
+            foreach (Episciences_Mail_Tags::SENDER_TAGS as $tag){
+                $key = array_search($tag, $tags, true);
+                if($key){
+                    unset( $tags[$key]);
+                }
+            }
         }
 
         return implode('; ', $tags);
