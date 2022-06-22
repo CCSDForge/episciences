@@ -65,7 +65,7 @@ class Episciences_Paper_Projects
         return [
             'idproject' => $this->getProjectId(),
             'funding'=> $this->getFunding(),
-            'paperId' => $this->getPaperid(),
+            'paperId' => $this->getPaperId(),
             'dateUpdated' => $this->getDateUpdated(),
         ];
     }
@@ -104,7 +104,7 @@ class Episciences_Paper_Projects
         $this->_funding = $funding;
     }
 
-    public function getPaperid(): ?int
+    public function getPaperId(): ?int
     {
 
         return $this->_paperId;
@@ -116,7 +116,7 @@ class Episciences_Paper_Projects
      * @return $this
      */
 
-    public function setPaperid(int $paperId): self
+    public function setPaperId(int $paperId): self
     {
         $this->_paperId = $paperId;
         return $this;
