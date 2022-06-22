@@ -98,6 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#247](https://github.com/CCSDForge/episciences/issues/247):
   HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute URLs.
 - Edition of a volume: The title of article might not be retrieved if the language was not managed by the platform.
+- Profile editing form does not display correctly when changing language.
 
 ## 1.0.29 - 2022-06-01
 ### Fixed
