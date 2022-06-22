@@ -629,7 +629,7 @@ class UserDefaultController extends Zend_Controller_Action
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
 
-        if(isset($userDefaults['AFFILIATIONS'])){
+        if (isset($userDefaults['AFFILIATIONS'])) {
             $userDefaults['AFFILIATIONS'] = Episciences_Tools::implodeOrExplode($userDefaults['AFFILIATIONS'], 'implode');
         }
 
@@ -643,65 +643,75 @@ class UserDefaultController extends Zend_Controller_Action
         $form->setDefaults($userDefaults);
 
         // update required
-        if ($request->isPost() && $form->isValid($request->getPost())) {
+        if ($request->isPost()) {
 
-            $values = $form->getValues();
+            $post = $request->getPost();
 
-            try {
-                $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
-                    $values['episciences']['AFFILIATIONS'],
-                    $values['episciences']['SOCIAL_MEDIAS'],
-                    $values['episciences']['WEB_SITES']
-                ], JSON_THROW_ON_ERROR);
-
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage());
-            }
-
-            $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
-
-            $user = new Episciences_User($updatedUserValues);
-
-            $subform = $form->getSubForm('ccsd');
-
-            if ($subform->PHOTO->isUploaded()) {
-
-                $photoFileName = $subform->PHOTO->getFileName();
-
-                try {
-                    $user->savePhoto($photoFileName);
-                    Episciences_Auth::incrementPhotoVersion();
-                } catch (Exception $e) {
-                    $this->_helper->FlashMessenger->setNamespace('danger')->addMessage($e->getMessage());
-                }
-            }
-
-            $user->setUsername(Episciences_Auth::getUsername()); //otherwise the username is removed from the identity: in modification it is not used in save() method.
-
-            if (!$user->save()) {
-                $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_EDIT_FAILURE;
-                $this->view->form = $form;
-                $this->render('edit');
+            if (!array_key_exists('submit', $post)) { // Profile editing form does not display correctly when changing language
+                $this->_helper->redirector('edit', 'user');
                 return;
             }
 
-            // Si on modifie son propre compte, on met à jour la session
-            if (Episciences_Auth::getUid() === $user->getUid()) {
-                $user->find(Episciences_Auth::getUid()); // Modification de l'affiliations: mettre à jour les infos.
-                //$user->setUsername(Episciences_Auth::getUsername()); //sinon le username est supprimé de l'identité : en modification il n'est pas utilisé dans la méthode save()
-                Episciences_Auth::setIdentity($user);
-                $localeSession = new Zend_Session_Namespace('Zend_Translate');
-                $localeSession->lang = Episciences_Auth::getLangueid();
+            if ($form->isValid($post)) {
+
+                $values = $form->getValues();
+
+                try {
+                    $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
+                        $values['episciences']['AFFILIATIONS'],
+                        $values['episciences']['SOCIAL_MEDIAS'],
+                        $values['episciences']['WEB_SITES']
+                    ], JSON_THROW_ON_ERROR);
+
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                }
+
+                $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
+
+                $user = new Episciences_User($updatedUserValues);
+
+                $subform = $form->getSubForm('ccsd');
+
+                if ($subform->PHOTO->isUploaded()) {
+
+                    $photoFileName = $subform->PHOTO->getFileName();
+
+                    try {
+                        $user->savePhoto($photoFileName);
+                        Episciences_Auth::incrementPhotoVersion();
+                    } catch (Exception $e) {
+                        $this->_helper->FlashMessenger->setNamespace('danger')->addMessage($e->getMessage());
+                    }
+                }
+
+                $user->setUsername(Episciences_Auth::getUsername()); //otherwise the username is removed from the identity: in modification it is not used in save() method.
+
+                if (!$user->save()) {
+                    $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_EDIT_FAILURE;
+                    $this->view->form = $form;
+                    $this->render('edit');
+                    return;
+                }
+
+                // Si on modifie son propre compte, on met à jour la session
+                if (Episciences_Auth::getUid() === $user->getUid()) {
+                    $user->find(Episciences_Auth::getUid()); // Modification de l'affiliations: mettre à jour les infos.
+                    //$user->setUsername(Episciences_Auth::getUsername()); //sinon le username est supprimé de l'identité : en modification il n'est pas utilisé dans la méthode save()
+                    Episciences_Auth::setIdentity($user);
+                    $localeSession = new Zend_Session_Namespace('Zend_Translate');
+                    $localeSession->lang = Episciences_Auth::getLangueid();
+                }
+
+                $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
+
+                if (Episciences_Auth::isSecretary() && Episciences_Auth::getUid() != $user->getUid()) {
+                    $this->_helper->redirector('list', 'user');
+                } else {
+                    $this->_helper->redirector('dashboard', 'user');
+                }
+
             }
-
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
-
-            if (Episciences_Auth::isSecretary() && Episciences_Auth::getUid() != $user->getUid()) {
-                $this->_helper->redirector('list', 'user');
-            } else {
-                $this->_helper->redirector('dashboard', 'user');
-            }
-
         }
 
         $this->view->form = $form;
