@@ -101,13 +101,6 @@ class Episciences_User extends Ccsd_User_Models_User
 
         foreach ($options as $key => $value) {
 
-            //because setScreen_name() has been renamed to setScreenName()
-            if ($key === 'SCREEN_NAME') {
-                $this->setScreenName($value);
-                continue;
-            }
-
-
             $key = strtolower($key); // les noms de champs sont en majuscules dans la BDD
 
             $method = 'set' . Episciences_Tools::convertToCamelCase($key, '_', true);
