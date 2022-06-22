@@ -23,7 +23,7 @@
                             <br>
                             <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => Episciences_Auth::getUser()->getAffiliations(), 'height' => 16]) ?>
                             <br>
-                            <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => Episciences_Auth::getUser()->getWebSites(), 'socialMedias' => Episciences_Auth::getUser()->getSocialMedias(), 'height' => 16]) ?>
+                            <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => Episciences_Auth::getUser()->getWebSites(), 'socialMedias' => (array)Episciences_Auth::getUser()->getSocialMedias(), 'height' => 16]) ?>
                             <br>
                             <a href="/user/edit"
                                class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon profil") ?></a>

@@ -646,9 +646,22 @@ class UserDefaultController extends Zend_Controller_Action
         if ($request->isPost() && $form->isValid($request->getPost())) {
 
             $values = $form->getValues();
+
+            try {
+                $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
+                    $values['episciences']['AFFILIATIONS'],
+                    $values['episciences']['SOCIAL_MEDIAS'],
+                    $values['episciences']['WEB_SITES']
+                ], JSON_THROW_ON_ERROR);
+
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
+
             $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
 
             $user = new Episciences_User($updatedUserValues);
+
             $subform = $form->getSubForm('ccsd');
 
             if ($subform->PHOTO->isUploaded()) {

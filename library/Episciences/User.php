@@ -36,25 +36,28 @@ class Episciences_User extends Ccsd_User_Models_User
     protected ?string $_orcid = null;
     protected ?array $_affiliations = null;
 
-    protected ?array $_socialMedias = null;
+    protected ?string $_socialMedias = null;
     protected ?array $_webSites = null;
 
 
     /**
-     * @return array
+     * @return string|null
      */
-    public function getSocialMedias(): ?array
+    public function getSocialMedias(): ?string
     {
         return $this->_socialMedias;
     }
 
     /**
-     * @param array|null $socialMedias
+     * @param string|null $socialMedias
+     * @return $this
      */
-    public function setSocialMedias(array $socialMedias = null): Episciences_User
+    public function setSocialMedias(string $socialMedias = null): Episciences_User
     {
+        if($socialMedias){
+            $this->_socialMedias = trim($socialMedias);
+        }
 
-        $this->_socialMedias = Episciences_Tools::arrayFilterString($socialMedias);
         return $this;
     }
 
@@ -1218,15 +1221,25 @@ class Episciences_User extends Ccsd_User_Models_User
         if ($addProfileInfo) {
 
             $affiliations = $addProfileInfo ['affiliations'] ?? null;
+
             $webSites = $addProfileInfo ['webSites'] ?? null;
-            $socialMedias = $addProfileInfo ['socialMedias'] ?? null;
+
+            if (!empty($addProfileInfo ['socialMedias'])) {
+
+                if (is_array($addProfileInfo ['socialMedias'])) {
+                    $socialMedias = implode(" ", $addProfileInfo ['socialMedias']);
+                } else {
+                    $socialMedias = $addProfileInfo ['socialMedias'];
+                }
+
+            } else {
+                $socialMedias = null;
+            }
 
             $this->setAffiliations($affiliations);
             $this->setWebSites($webSites);
             $this->setSocialMedias($socialMedias);
-
         }
-
     }
 
     /**
