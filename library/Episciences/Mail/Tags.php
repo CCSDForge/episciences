@@ -208,6 +208,4 @@ class Episciences_Mail_Tags
         self::TAG_VOLUME_ID => 'todo',
         self::TAG_VOLUME_NAME => 'todo',
     ];
-
-
 }
