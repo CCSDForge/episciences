@@ -943,7 +943,7 @@ class Episciences_Mail extends Zend_Mail
         $this->_templatePath = $templatePath;
         $this->_templateName = $templateName;
 
-        $templateKey = str_replace(Episciences_Mail_Send::TEMPLATE_EXTENSION, '', $templateName);
+        $templateKey = str_replace([Episciences_Mail_Send::TEMPLATE_EXTENSION, 'custom_'], '', $templateName);
 
         if (in_array($templateKey, Episciences_Mail_TemplatesManager::AUTOMATIC_TEMPLATES, true)) {
 
@@ -966,6 +966,11 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
+     * Fixed: RT #160301:
+     *    the tags [%%SENDER_FULL_NAME%%, %%SENDER_SCREEN_NAME%%, %%SENDER_EMAIL%%, %%SENDER_FIRST_NAME%%', %%SENDER_LAST_NAME%% ]
+     *    concerning the user of the action are filled with the data of the user connected at the time of the action.
+     *    Making these variables available in the automatic mails poses a real problem: they are filled with the data of the mail recipient.
+     *    So, from now on, the tags mentioned above will no longer be available in the automatic mail templates.
      * @param string $tag
      * @return void
      */
