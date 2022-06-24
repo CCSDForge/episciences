@@ -1507,7 +1507,7 @@ class Episciences_Tools
      * @return string
      */
 
-    public static function epi_html_decode($html, array $allowedElements = ['HTML.AllowedElements' => ['p', 'b', 'u', 'i', 'a', 'strong', 'em', 'span']]): string
+    public static function epi_html_decode($html, array $allowedElements = ['HTML.AllowedElements' => ['p', 'b', 'u', 'i', 'a', 'strong', 'em', 'span', 'br']]): string
     {
         return (new Episciences_HTMLPurifier($allowedElements))->purifyHtml(html_entity_decode($html));
 

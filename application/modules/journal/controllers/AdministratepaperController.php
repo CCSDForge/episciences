@@ -1,7 +1,6 @@
 <?php
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
-
 /**
  * Class AdministratepaperController
  */
@@ -509,7 +508,6 @@ class AdministratepaperController extends PaperDefaultController
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
-
         $isConflictDetected =
             !Episciences_Auth::isSecretary() && $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
             (
@@ -824,6 +822,12 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
 
         $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
+
+        //conflict management section
+        $this->view->paperConflicts = array_filter($paper->getConflicts(), static function ($oConflict) {
+            /** @var Episciences_Paper_Conflict $oConflict */
+            return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+        });
     }
 
     /**

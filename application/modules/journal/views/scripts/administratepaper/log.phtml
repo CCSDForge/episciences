@@ -183,7 +183,7 @@
         </table>
 
         <div>
-            <?= quoted_printable_decode($this->log['detail']['mail']['bodyHtml']) ?>
+            <?= Episciences_Tools::epi_html_decode($this->log['detail']['mail']['bodyHtml']) ?>
         </div>
 
         <?php if (!empty($this->log['detail']['mail']['attachments'])) : ?>
