@@ -1,7 +1,4 @@
-<?php
-
-?>
-<?php if ($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) && Episciences_Auth::isSecretary()) : ?>
+<?php if (isset($this->paperConflicts) && Episciences_Auth::isSecretary()) : ?>
     <?php
     /** @var array $paperConflicts */
     $paperConflicts = $this->paperConflicts;

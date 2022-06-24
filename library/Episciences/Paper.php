@@ -3989,8 +3989,16 @@ class Episciences_Paper
     /**
      * @return array [Episciences_Paper_Conflict]
      */
-    public function getConflicts(): array
+    public function getConflicts(bool $onlyConfirmed = false): array
     {
+        if($onlyConfirmed){
+
+            $this->_conflicts = array_filter($this->_conflicts, static function ($oConflict) {
+                /** @var Episciences_Paper_Conflict $oConflict */
+                return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+            });
+        }
+
         return $this->_conflicts;
     }
 
