@@ -80,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Awaiting deployment
 ### Changed
 - [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
+- Only confirmed conflicts will be displayed in the conflict management section
 ### Fixed
 - Ask revision: possibility to backdate the deadline.
 - Fixed: RT #160301:

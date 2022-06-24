@@ -819,6 +819,12 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
         $this->view->siteLocale = Episciences_Tools::getLocale();
         $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
+
+        //conflict management section
+        $this->view->paperConflicts = array_filter($paper->getConflicts(), static function ($oConflict) {
+            /** @var Episciences_Paper_Conflict $oConflict */
+            return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+        });
     }
 
     /**
