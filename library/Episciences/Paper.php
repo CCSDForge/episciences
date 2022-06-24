@@ -3277,11 +3277,11 @@ class Episciences_Paper
     }
 
     /**
-     * @param string $locale
+     * @param string|null $locale
      * @return string
      * @throws Zend_Exception
      */
-    public function formatAuthorsMetadata(string $locale = ''): string
+    public function formatAuthorsMetadata(string $locale = null): string
     {
         $translator = Zend_Registry::get('Zend_Translate');
 

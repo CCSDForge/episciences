@@ -92,9 +92,10 @@ foreach ($this->list as $paper) : ?>
         ?>
 
         <td>
-            <a href="<?= $href ?>>"
+            <a href="<?= $href ?>"
                data-toggle="tooltip"
-               title="<?= Episciences_Tools::decodeLatex($title) ?>">
+               title="<?= Episciences_Tools::decodeLatex($title) ?>"
+            >
                 <strong><?= Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($title), 75) ?></strong>
                 <?php if ($paper->getMetadata('version') && (int)$paper->getMetadata('version') !== 1) : ?>
                     (v<?= $paper->getMetadata('version') ?>)
