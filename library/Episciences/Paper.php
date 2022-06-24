@@ -4053,6 +4053,26 @@ class Episciences_Paper
     }
 
 
+    /**
+     * @return void
+     */
+    public function setRevisionDeadline(): void
+    {
+
+        $revisionDeadline = null;
+
+        $revision_requests = Episciences_CommentsManager::getRevisionRequests($this->getDocid());
+
+        if (!empty($revision_requests) && !array_key_exists('replies', current($revision_requests))) {
+            $currentDemand = array_shift($revision_requests);
+            $revisionDeadline = $currentDemand['DEADLINE'];
+        }
+
+        $this->_revisionDeadline = $revisionDeadline;
+    }
+
+
+
 
 
 }
