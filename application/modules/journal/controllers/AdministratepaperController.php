@@ -486,8 +486,10 @@ class AdministratepaperController extends PaperDefaultController
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
+        $isCoiEnabled= $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
         $isConflictDetected =
-            !Episciences_Auth::isSecretary() && $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
+            !Episciences_Auth::isSecretary() && $isCoiEnabled &&
             (
             in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
             );
@@ -778,11 +780,10 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->siteLocale = Episciences_Tools::getLocale();
         $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
 
-        //conflict management section
-        $this->view->paperConflicts = array_filter($paper->getConflicts(), static function ($oConflict) {
-            /** @var Episciences_Paper_Conflict $oConflict */
-            return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
-        });
+        if($isCoiEnabled){
+            //conflict management section
+            $this->view->paperConflicts = $paper->getConflicts(true);
+        }
     }
 
     /**
