@@ -463,7 +463,7 @@ class AdministratepaperController extends PaperDefaultController
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = $request->getParam('id');
+        $docId = (int)$request->getParam('id');
 
         // get journal details
         $review = Episciences_ReviewsManager::find(RVID);
@@ -480,6 +480,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate("Le document demande n’existe pas."));
             $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/' . $actionName);
         }
+        $docId = $paper->getDocid();
 
         $loggedUid = Episciences_Auth::getUid();
 
