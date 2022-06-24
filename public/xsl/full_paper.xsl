@@ -254,7 +254,12 @@
                     </div>
                 </xsl:if>
 
-                <br/>
+                <xsl:if test="episciences/funding/text() != ''">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Fundings :')"/>
+                        <xsl:value-of select="episciences/funding" disable-output-escaping="yes"/>
+                    </div>
+                </xsl:if>
 
                 <xsl:if test="(episciences/status = 0) and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = 0)">
                     <a>

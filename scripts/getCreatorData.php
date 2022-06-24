@@ -104,10 +104,10 @@ class getCreatorData extends JournalScript
 
         foreach ($db->fetchAll($select) as $value) {
             $paperId = $value['PAPERID'];
-            $pathOpenAireCreator = self::DIR . '/authors/openAire/' . explode("/", $value['DOI'])[1] . "_creator.json";
+            $pathOpenAireCreator = self::DIR . '/authors/openAire/' . trim(explode("/", $value['DOI'])[1]) . "_creator.json";
             echo PHP_EOL . "PAPERID " . $paperId;
             echo PHP_EOL . "DOCID " . $value['DOCID'];
-            echo PHP_EOL . "DOI " . $value['DOI'];
+            echo PHP_EOL . "DOI " . trim($value['DOI']);
 
             if (!empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId))) {
                 /**
@@ -133,15 +133,15 @@ class getCreatorData extends JournalScript
 
             // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
             if (!file_exists($pathOpenAireCreator)) {
-                $openAireCallArrayResp = $this->callOpenAireApi($client, $value['DOI']);
-                echo PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json';
+                $openAireCallArrayResp = $this->callOpenAireApi($client, trim($value['DOI']));
+                echo PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . trim($value['DOI']) . '&format=json';
                 // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                 try {
                     $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                    $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $value['DOI']);
+                    $this->putInFileResponseOpenAireCall($decodeOpenAireResp, trim($value['DOI']));
                 } catch (JsonException $e) {
                     // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                    self::logErrorMsg($e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json ');
+                    self::logErrorMsg($e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . trim($value['DOI']) . '&format=json ');
                     file_put_contents($pathOpenAireCreator, [""]);
                     continue;
                 }
