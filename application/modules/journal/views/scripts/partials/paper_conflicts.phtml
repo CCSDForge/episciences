@@ -4,7 +4,7 @@
 <?php if ($this->review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) && Episciences_Auth::isSecretary()) : ?>
     <?php
     /** @var array $paperConflicts */
-    $paperConflicts = $this->paper->getConflicts();
+    $paperConflicts = $this->paperConflicts;
     ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
