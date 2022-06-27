@@ -4003,8 +4003,16 @@ class Episciences_Paper
     /**
      * @return array [Episciences_Paper_Conflict]
      */
-    public function getConflicts(): array
+    public function getConflicts(bool $onlyConfirmed = false): array
     {
+        if($onlyConfirmed){
+
+            $this->_conflicts = array_filter($this->_conflicts, static function ($oConflict) {
+                /** @var Episciences_Paper_Conflict $oConflict */
+                return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+            });
+        }
+
         return $this->_conflicts;
     }
 
@@ -4065,6 +4073,26 @@ class Episciences_Paper
         return $this->getStatus() === self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION;
 
     }
+
+
+    /**
+     * @return void
+     */
+    public function setRevisionDeadline(): void
+    {
+
+        $revisionDeadline = null;
+
+        $revision_requests = Episciences_CommentsManager::getRevisionRequests($this->getDocid());
+
+        if (!empty($revision_requests) && !array_key_exists('replies', current($revision_requests))) {
+            $currentDemand = array_shift($revision_requests);
+            $revisionDeadline = $currentDemand['DEADLINE'];
+        }
+
+        $this->_revisionDeadline = $revisionDeadline;
+    }
+
 
 
 

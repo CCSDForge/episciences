@@ -120,6 +120,8 @@ class AdministratepaperController extends PaperDefaultController
             // La liste des articles, après filtrage
             $papers = $review->getPapers($settings, false, true);
 
+            $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
             foreach ($papers as &$paper) {
                 $paper->loadSubmitter(false);
                 $paper->getEditors();
@@ -133,18 +135,11 @@ class AdministratepaperController extends PaperDefaultController
                     ]
                 ); // environ 1s
 
+                $paper->setRevisionDeadline();
 
-                $revision_requests = Episciences_CommentsManager::getRevisionRequests($paper->getDocid());
-
-                $revisionDeadline = null;
-
-                if (!empty($revision_requests) && !array_key_exists('replies', current($revision_requests))) {
-                    $currentDemand = array_shift($revision_requests);
-                    $revisionDeadline = $currentDemand['DEADLINE'];
+                if($isCoiEnabled){
+                    $paper->getConflicts(true);
                 }
-
-                $paper->_revisionDeadline = $revisionDeadline;
-
 
             }
 
@@ -300,13 +295,22 @@ class AdministratepaperController extends PaperDefaultController
             // liste des articles à afficher
             $papers = $user->loadAssignedPapers($settings, true);
 
+            $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
+
             /** @var Episciences_Paper $paper */
             foreach ($papers as &$paper) {
                 $paper->loadSubmitter(false);
                 $paper->getEditors(true, true);
                 $paper->getRatings();
                 $paper->getReviewers([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING], true);
+                $paper->setRevisionDeadline();
             }
+
+            if($isCoiEnabled){
+                $paper->getConflicts(true);
+            }
+
             unset($paper);
             $tbody = (count($papers) > 0) ?
                 $this->view->partial('administratepaper/datatable_list.phtml', [
@@ -509,8 +513,10 @@ class AdministratepaperController extends PaperDefaultController
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
+        $isCoiEnabled= $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
         $isConflictDetected =
-            !Episciences_Auth::isSecretary() && $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
+            !Episciences_Auth::isSecretary() && $isCoiEnabled &&
             (
             in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
             );
@@ -824,11 +830,10 @@ class AdministratepaperController extends PaperDefaultController
 
         $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
 
-        //conflict management section
-        $this->view->paperConflicts = array_filter($paper->getConflicts(), static function ($oConflict) {
-            /** @var Episciences_Paper_Conflict $oConflict */
-            return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
-        });
+        if($isCoiEnabled){
+            //conflict management section
+            $this->view->paperConflicts = $paper->getConflicts(true);
+        }
     }
 
     /**

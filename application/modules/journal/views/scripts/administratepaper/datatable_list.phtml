@@ -56,15 +56,28 @@ foreach ($this->list as $paper) : ?>
         $disabled = 'disabled';
         $ariaDisabled = 'aria-disabled="true"';
     }
+    $confirmedConflictsNb = count($paper->getConflicts());
+    $coiTitle = ($confirmedConflictsNb > 1) ? 'conflits signalés' : 'conflit signalé';
     ?>
 
     <tr id="paper_<?= $paper->getDocid() ?>">
         <?php // permanent Id  ******************************************* ?>
-        <td class="text-center"><span data-toggle="tooltip" title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>" class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>">
-                <?php if($paper->_revisionDeadline) : ?>
-                <a href="<?= $href ?>#answer">
-                    <span data-toggle="tooltip" title="<?= $this->translate('Version révisée attendue avant le :') ?><?= ' '. $this->Date($paper->_revisionDeadline)?>" class="fas fa-clock" style="margin-right: 5px;"></span>
+        <td class="text-center"><span data-toggle="tooltip"
+                                      title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>"
+                                      class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>">
+                 <?php if ($confirmedConflictsNb > 0): ?>
+                     <a href="<?= $href ?>#conflict-content">
+                         <span data-toggle="tooltip"
+                               title="<?= $confirmedConflictsNb . ' ' . $this->translate($coiTitle) ?>"
+                               class="fas fa-exclamation-circle" style="margin-right: 5px; color: chocolate"></span>
                 </a>
+                 <?php endif; ?>
+                <?php if ($paper->_revisionDeadline) : ?>
+                    <a href="<?= $href ?>#answer">
+                    <span data-toggle="tooltip"
+                          title="<?= $this->translate('Version révisée attendue avant le :') ?><?= ' ' . $this->Date($paper->_revisionDeadline) ?>"
+                          class="fas fa-clock" style="margin-right: 5px;"></span>
+                    </a>
                 <?php endif; ?>
                 <?= $paper->getPaperid() ?></span>
         </td>
