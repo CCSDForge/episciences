@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [227](https://github.com/CCSDForge/episciences/issues/227):
   - The revision deadline is now displayed below the article's status. 
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
-
+  
 ## Changed
 - Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
@@ -79,6 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Awaiting deployment
 ### Changed
+### Added
+- A pictogram is added to indicate papers with conflicts in the article management table.
 - [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
 - Only confirmed conflicts will be displayed in the conflict management section
 ### Fixed

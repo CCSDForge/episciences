@@ -384,6 +384,8 @@ return [
     "Le document demande n’existe pas." => "The required document does not exist.",
     "Vous n'avez pas accès à cet article." => "You do not have access to this article.",
     'Volume principal' => 'Master volume',
+    'conflit signalé' => 'reported conflict',
+    'conflits signalés' => 'reported conflicts',
 
     // Gestion d'un article (administrateur)
     "L'auteur n'a pas encore répondu :" => "The author has not responded yet: ",
