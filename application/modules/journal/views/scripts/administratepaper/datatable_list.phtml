@@ -13,6 +13,7 @@ foreach ($this->list as $paper) : ?>
 
     <?php
 
+    $href = '/' . $controller . '/view?id=' . $paper->getDocid();
     $isConflictDetected = !$isSecretary && $isCoiEnabled &&
         (
                 $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
@@ -32,11 +33,20 @@ foreach ($this->list as $paper) : ?>
         $disabled = 'disabled';
         $ariaDisabled = 'aria-disabled="true"';
     }
+    $confirmedConflictsNb = count($paper->getConflicts());
+    $coiTitle = ($confirmedConflictsNb > 1) ? 'conflits signalés' : 'conflit signalé';
     ?>
 
     <tr id="paper_<?php echo $paper->getDocid(); ?>">
         <?php // article id ******************************************* ?>
-        <td class="text-center"><?php echo $paper->getPaperid(); ?></td>
+        <td class="text-center">
+            <?php if($confirmedConflictsNb > 0): ?>
+                <a href="<?= $href?>#conflict-content">
+                    <span data-toggle="tooltip" title="<?= $confirmedConflictsNb . ' ' . $this->translate($coiTitle) ?>" class="fas fa-exclamation-circle" style="margin-right: 5px; color: chocolate"></span>
+                </a>
+            <?php endif; ?>
+            <?= $paper->getPaperid() ?>
+        </td>
         <?php // article id ******************************************* ?>
         <td class="text-center"><?php echo $paper->getDocid(); ?></td>
         <?php // article status icon ******************************************* ?>
@@ -53,7 +63,7 @@ foreach ($this->list as $paper) : ?>
         </td>
         <?php // article title ******************************************* ?>
         <td>
-            <a href="/<?php echo $controller ?>/view?id=<?php echo $paper->getDocid(); ?>"
+            <a href="<?= $href ?>"
                data-toggle="tooltip"
                title="<?php echo Episciences_Tools::decodeLatex($paper->getTitle()); ?>">
                 <strong><?php echo Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($paper->getTitle()), 75); ?></strong>
@@ -183,7 +193,7 @@ foreach ($this->list as $paper) : ?>
                                         try {
                                             $reviewer->findWithCAS($uid); // not local data : warning: $reviewer->getUid is null
                                         } catch (Exception $e) {
-                                            error_log($e->getMessage());
+                                            trigger_error($e->getMessage());
                                         }
                                         echo $reviewer->getFullName();
                                     } else {

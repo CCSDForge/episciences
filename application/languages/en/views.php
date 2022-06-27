@@ -381,6 +381,8 @@ return [
     "Le document demande n’existe pas." => "The required document does not exist.",
     "Vous n'avez pas accès à cet article." => "You do not have access to this article.",
     'Volume principal' => 'Master volume',
+    'conflit signalé' => 'reported conflict',
+    'conflits signalés' => 'reported conflicts',
 
     // Gestion d'un article (administrateur)
     "Vous ne pouvez pas changer le statut de l'article : temporairement indisponible." => "You are not allowed to change article status: temporarily unavailable.",

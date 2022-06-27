@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Added
+- A pictogram is added to indicate papers with conflicts in the article management table.
 ### Changed
 - [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
 - Only confirmed conflicts will be displayed in the conflict management section

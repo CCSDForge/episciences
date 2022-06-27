@@ -116,6 +116,8 @@ class AdministratepaperController extends PaperDefaultController
             // La liste des articles, après filtrage
             $papers = $review->getPapers($settings, false, true);
 
+            $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
             foreach ($papers as &$paper) {
                 $paper->loadSubmitter(false);
                 $paper->getEditors();
@@ -128,7 +130,13 @@ class AdministratepaperController extends PaperDefaultController
                         Episciences_User_Assignment::STATUS_DECLINED
                     ]
                 ); // environ 1s
+
+                if($isCoiEnabled){
+                    $paper->getConflicts(true);
+                }
+
             }
+
             unset($paper);
 
             $tbody = ($papersFiltredCount > 0) ?
@@ -280,6 +288,9 @@ class AdministratepaperController extends PaperDefaultController
             // liste des articles à afficher
             $papers = $user->loadAssignedPapers($settings, true);
 
+            $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
+
             /** @var Episciences_Paper $paper */
             foreach ($papers as &$paper) {
                 $paper->loadSubmitter(false);
@@ -287,6 +298,11 @@ class AdministratepaperController extends PaperDefaultController
                 $paper->getRatings();
                 $paper->getReviewers([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING], true);
             }
+
+            if($isCoiEnabled){
+                $paper->getConflicts(true);
+            }
+
             unset($paper);
             $tbody = (count($papers) > 0) ?
                 $this->view->partial('administratepaper/datatable_list.phtml', [
