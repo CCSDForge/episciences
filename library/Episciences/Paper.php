@@ -3180,11 +3180,11 @@ class Episciences_Paper
     }
 
     /**
-     * @param string $locale
+     * @param string|null $locale
      * @return string
      * @throws Zend_Exception
      */
-    public function formatAuthorsMetadata(string $locale = ''): string
+    public function formatAuthorsMetadata(string $locale = null): string
     {
         $translator = Zend_Registry::get('Zend_Translate');
 
@@ -3888,8 +3888,16 @@ class Episciences_Paper
     /**
      * @return array [Episciences_Paper_Conflict]
      */
-    public function getConflicts(): array
+    public function getConflicts(bool $onlyConfirmed = false): array
     {
+        if($onlyConfirmed){
+
+            $this->_conflicts = array_filter($this->_conflicts, static function ($oConflict) {
+                /** @var Episciences_Paper_Conflict $oConflict */
+                return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+            });
+        }
+
         return $this->_conflicts;
     }
 

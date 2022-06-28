@@ -122,7 +122,7 @@ return [
     "Filtrer les utilisateurs" => "Filter users",
 
     # Tags
-    "Les noms des auteurs" => "The names of the authors",
+    "Auteur(s)" => "Authors",
     "Code de la revue" => "Journal code",
     "Nom de la revue" => "Journal name",
     "Id de l'article" => "Paper id",

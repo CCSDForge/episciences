@@ -15,6 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.31 - 2022-06-28
+### Added
+- A pictogram is added to indicate papers with conflicts in the article management table.
+### Changed
+- [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
+- Only confirmed conflicts will be displayed in the conflict management section
+### Fixed
+- Ask revision: possibility to backdate the deadline.
+- Fixed: RT #160301:
+  the tags [%%SENDER_FULL_NAME%%, %%SENDER_SCREEN_NAME%%, %%SENDER_EMAIL%%, %%SENDER_FIRST_NAME%%', %%SENDER_LAST_NAME%% ]
+  concerning the user of the action are filled with the data of the user connected at the time of the action.
+  Making these variables available in the automatic mails poses a real problem: they are filled with the data of the mail recipient.
+  So, from now on, the tags mentioned above will no longer be available in the automatic mail templates.
 
 ## 1.0.30 - 2022-06-20
 ### Fixed
@@ -29,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#247](https://github.com/CCSDForge/episciences/issues/247):
   HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute URLs.
 - Edition of a volume: The title of article might not be retrieved if the language was not managed by the platform.
+- Profile editing form does not display correctly when changing language.
 
 ## 1.0.29 - 2022-06-01
 ### Fixed

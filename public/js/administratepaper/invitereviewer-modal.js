@@ -445,7 +445,7 @@ function setInvitationValues(user, type) {
         {text: translate('Nom de la revue'), value: review['name']},
         {text: translate("Id de l'article"), value: paper.id.toString()},
         {text: translate("Titre de l'article"), value: paper_title},
-        {text: translate("Les noms des auteurs"), value: allAuthors},
+        {text: translate('Auteur(s)'), value: allAuthors},
         {text: translate('Nom complet du destinataire'), value: user.full_name},
         {text: translate('E-mail du destinataire'), value: user.email},
         {text: translate("Nom complet de l'expéditeur"), value: editor.full_name},

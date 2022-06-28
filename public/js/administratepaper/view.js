@@ -6,12 +6,8 @@ function getTags() {
     if ($.type(paper.title) === 'object') {
         if (paper.title[locale]) {
             paper_title = paper.title[locale];
-        }
-        else {
-            for (let i in paper.title) {
-                paper_title = paper.title[i];
-                break;
-            }
+        } else {
+            paper_title = paper.title[0];
         }
     } else {
         paper_title = paper.title;
