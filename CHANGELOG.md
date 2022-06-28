@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+### Unreleased
+### Fixed
+- Shifted display because of the error message (CSRF token)
 ## 1.0.31 - 2022-06-28
 ### Added
 - A pictogram is added to indicate papers with conflicts in the article management table.
