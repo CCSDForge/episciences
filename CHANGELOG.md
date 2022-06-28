@@ -14,9 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-### Unreleased
-### Fixed
-- Shifted display because of the error message (CSRF token)
+
 ## 1.0.31 - 2022-06-28
 ### Added
 - A pictogram is added to indicate papers with conflicts in the article management table.
@@ -30,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   concerning the user of the action are filled with the data of the user connected at the time of the action.
   Making these variables available in the automatic mails poses a real problem: they are filled with the data of the mail recipient.
   So, from now on, the tags mentioned above will no longer be available in the automatic mail templates.
+- Shifted display because of the error message (CSRF token)
 
 ## 1.0.30 - 2022-06-20
 ### Fixed
