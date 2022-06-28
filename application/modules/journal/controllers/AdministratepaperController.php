@@ -297,10 +297,11 @@ class AdministratepaperController extends PaperDefaultController
                 $paper->getEditors(true, true);
                 $paper->getRatings();
                 $paper->getReviewers([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING], true);
-            }
 
-            if($isCoiEnabled){
-                $paper->getConflicts(true);
+                if($isCoiEnabled){
+                    $paper->getConflicts(true);
+                }
+
             }
 
             unset($paper);
