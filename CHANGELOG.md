@@ -16,8 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
-### Fixed
-- [RT#158293]: article status is not correctly updated
 ## added
 - API to get a list of publishing journals: include accepted repositories.
 - New article status:
@@ -44,9 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Administration page of a paper: new shortcut for administrators to allow to sign in as an editor
 - Automatic mail detection
 - [227](https://github.com/CCSDForge/episciences/issues/227):
-  - The revision deadline is now displayed below the article's status. 
+  - The revision deadline is now displayed below the article's status.
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
-  
+
 ## Changed
 - Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
@@ -79,10 +77,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 
-## Awaiting deployment
-### Changed
+## 1.0.31 - 2022-06-28
 ### Added
 - A pictogram is added to indicate papers with conflicts in the article management table.
+### Changed
 - [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
 - Only confirmed conflicts will be displayed in the conflict management section
 ### Fixed
@@ -92,10 +90,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   concerning the user of the action are filled with the data of the user connected at the time of the action.
   Making these variables available in the automatic mails poses a real problem: they are filled with the data of the mail recipient.
   So, from now on, the tags mentioned above will no longer be available in the automatic mail templates.
+- Shifted display because of the error message (CSRF token)
 
-## Unreleased ( see tag 1.0.30)
+## 1.0.30 - 2022-06-20
 ### Fixed
-- Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO )
+- Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO ) 
 ### Added
 - It is now possible to manage conflicts on the article page: display & delete them
 

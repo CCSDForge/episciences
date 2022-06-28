@@ -131,7 +131,7 @@ class AdministratepaperController extends PaperDefaultController
                     [
                         Episciences_User_Assignment::STATUS_ACTIVE,
                         Episciences_User_Assignment::STATUS_PENDING,
-                        Episciences_User_Assignment::STATUS_DECLINED
+                                                Episciences_User_Assignment::STATUS_DECLINED
                     ]
                 ); // environ 1s
 
@@ -305,12 +305,11 @@ class AdministratepaperController extends PaperDefaultController
                 $paper->getRatings();
                 $paper->getReviewers([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING], true);
                 $paper->setRevisionDeadline();
-            }
 
-            if($isCoiEnabled){
-                $paper->getConflicts(true);
+                if($isCoiEnabled){
+                    $paper->getConflicts(true);
+                }
             }
-
             unset($paper);
             $tbody = (count($papers) > 0) ?
                 $this->view->partial('administratepaper/datatable_list.phtml', [
