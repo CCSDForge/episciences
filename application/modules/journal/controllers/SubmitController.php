@@ -180,6 +180,7 @@ class SubmitController extends DefaultController
         $this->view->repositories = implode(', ', $allowedRepositories);
         $this->view->examples = Zend_Json::encode($examples);
         $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
+        $this->view->zSubmitUrl = $this->getZSubmitUrl($allowedRepositories);
 
     }
 
@@ -302,5 +303,31 @@ class SubmitController extends DefaultController
         echo json_encode(!empty(Episciences_Repositories::hasHook($repoId)));
 
     }
+
+    /**
+     * @param array $allowedRepositories
+     * @return string
+     */
+    private function getZSubmitUrl(array $allowedRepositories): string
+    {
+
+        $zSubmitUrl = EPISCIENCES_Z_SUBMIT_URL;
+
+        if (array_key_exists(Episciences_Repositories::ZENODO_REPO_ID, $allowedRepositories)) {
+
+            try {
+                $zSubmitUrl .= '/' . Episciences_Tools::getLocale();
+
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
+            $zSubmitUrl .= '/deposit?rvcode=' . RVCODE;
+        }
+
+        return $zSubmitUrl;
+
+    }
+
 
 }

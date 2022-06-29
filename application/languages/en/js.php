@@ -116,6 +116,8 @@ return [
 
     "Code d'accès" => "Access code",
     "Filtrer les relecteurs" => "Filter reviewers",
+    "Si votre article n'a pas encore été publié dans l'archive sélectionnée :" => 'If your article has not yet been published in the selected repository:',
+    "Déposer dans Zenodo" => 'Submit in Zenodo',
     // Tableau de bord administrateur
     "La valeur saisie n'est pas correcte, l'identifiant doit être un nombre positif." => "The entered value is not correct, the identifier must be a positive number",
 
