@@ -598,9 +598,6 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * edit user account
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public function editAction(): void
