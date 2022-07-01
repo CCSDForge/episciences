@@ -40,4 +40,17 @@ $(function () {
 			$(this).closest('.replyForm').prev().find('.replyButton').fadeIn();
 		});
 	});
+
+
+	if (isFromZSubmit) {
+
+		$('#answer-request').click();
+		$('#new-version').click();
+
+		setTimeout(function () {
+			$('#new-version').click();
+		}, 0.1);
+
+	}
+
 });

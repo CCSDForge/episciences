@@ -117,4 +117,58 @@ class DefaultController extends Zend_Controller_Action
             }
         }
     }
+
+
+    /**
+     * @param array|null $allowedRepositories
+     * @param array $options
+     * @return string
+     * @throws Zend_Exception
+     */
+    protected function getZSubmitUrl(array $allowedRepositories = null, array $options = []): string
+    {
+
+        $zSubmitUrl = EPISCIENCES_Z_SUBMIT_URL;
+
+        if(empty($allowedRepositories)){
+            $settings = Zend_Registry::get('reviewSettings');
+            $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
+        }
+
+        if (array_key_exists(Episciences_Repositories::ZENODO_REPO_ID, $allowedRepositories)) {
+
+            try {
+                $zSubmitUrl .= '/' . Episciences_Tools::getLocale();
+
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
+            $zSubmitUrl .= '/deposit';
+
+            if (array_key_exists('newVersion', $options)) {
+
+                $zSubmitUrl .= '/newversionfromepisciences';
+
+                if (isset($options['epi-docid'])) {
+                    $zSubmitUrl .= '?epi-docid=' . $options['epi-docid'];
+                }
+
+                if (isset($options['epi-rvcode'])) {
+                    $zSubmitUrl .= '&epi-rvcode=' . $options['epi-rvcode'];
+                }
+
+                if (isset($options['epi-cdoi'])) {
+                    $zSubmitUrl .= '&epi-cdoi=' . $options['epi-cdoi'];
+                }
+
+                return $zSubmitUrl;
+
+            }
+            $zSubmitUrl .= '?rvcode=' . RVCODE;
+        }
+
+        return $zSubmitUrl;
+
+    }
 }

@@ -1,8 +1,22 @@
 <div id="showResult" style="display:none"></div>
 <?= $this->form ?>
 <script>
+    let isFromZSubmit = <?= $this->isFromZSubmit ?>;
     let src_url = "/js/submit/functions.js?_=v<?= APPLICATION_VERSION ?>";
     let visual_delete_url = "/js/common/visualDeleteFile.js?_=v<?= APPLICATION_VERSION ?>";
+    let zSubmitElement_url = "/js/submit/insertZSubmitElement.js?_=v<?= APPLICATION_VERSION ?>";
+
     $.getScript(src_url);
     $.getScript(visual_delete_url);
+
+    $.getScript(zSubmitElement_url)
+        .done(function () {
+            if (!isFromZSubmit && $('#search_doc-repoId').val() === '<?= $this->zenodoRepoId ?>') {
+                insertZSubmitElement('<?= $this->zSubmitUrl?>');
+            }
+        })
+        .fail(function (jqxhr, settings, exception) {
+            console.log(exception);
+        });
+
 </script>

@@ -9,7 +9,7 @@ $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
         !in_array($this->paper->getStatus(), Episciences_Paper::$_noEditableStatus, true))  :
         ?>
         <div class="btn-group">
-            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+            <a id="answer-request"  class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                 <?php echo $this->translate('Répondre à cette demande'); ?>
                 <span class="caret" style="margin-left: 5px;"></span>
             </a>
@@ -40,10 +40,19 @@ $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
                     </li>
                 <?php endif; ?>
                 <li>
-                    <a href="/paper/newversion?id=<?php echo $this->current_demand['PCID']; ?>"
-                       title="<?php echo $this->translate('Proposer une nouvelle version'); ?>"
+                    <?php
+
+                    $newVersionHref = '/paper/newversion?id=' . $this->current_demand['PCID'];
+
+                    if ($this->zIdentifier) {  // from z-submission: new version submission
+                        $newVersionHref .= '&z-identifier=' . $this->zIdentifier;
+                    }
+
+                    ?>
+                    <a id="new-version" href="<?= $newVersionHref ?>"
+                       title="<?= $this->translate('Proposer une nouvelle version') ?>"
                        class="modal-opener"
-                       data-target="#"><?php echo $this->translate('Proposer une nouvelle version'); ?>
+                       data-target="#"><?= $this->translate('Proposer une nouvelle version') ?>
                     </a>
                 </li>
             </ul>

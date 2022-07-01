@@ -474,8 +474,12 @@ class Episciences_Submit
      */
     public static function getNewVersionForm(Episciences_Paper $paper, array $settings = []): ?Ccsd_Form
     {
-        $options = [];
         $defaults = self::fetchNewVersionFormDefaultValues($paper);
+
+        if (array_key_exists('zIdentifier', $settings)) {
+            $defaults['docId'] = $settings['zIdentifier'];
+        }
+
         $hasHook = (array_key_exists('hasHook', $defaults) && $defaults['hasHook']) ? $defaults['hasHook'] : false;
         $isNewVersionOf = array_key_exists('newVersionOf', $settings);
 

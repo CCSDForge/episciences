@@ -260,7 +260,8 @@ if (
             <?= $this->partial('partials/answer_revision_request_form.phtml', [
                 'paper' => $paper,
                 'review' => $this->review,
-                'current_demand' => $this->currentDemand
+                'current_demand' => $this->currentDemand,
+                'zIdentifier' =>$this->zIdentifier
             ])
             ?>
 
@@ -383,4 +384,5 @@ $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
 <script>
     let hasHook = <?= json_encode($this->hasHook) ?>;
+    let isFromZSubmit = <?= $this->isFromZSubmit ?>;
 </script>

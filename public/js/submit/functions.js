@@ -1,5 +1,4 @@
 $(function () {
-
     let subform = 'search_doc';
     let $search_button = $('#' + subform + '-getPaper');
     let $search_form = $('#searchForm');
@@ -18,7 +17,6 @@ $(function () {
     let $secondDisclaimersDisclaimer = $('#disclaimers-disclaimer2');
     let $specialIssuesAccessCodeElement = $("#specialIssueAccessCode-element");
     let $searchDocVersion = $('#' + subform + '-version');
-
 
     // if it is a modal, disable submit button
     disableModalSubmitButton();
@@ -42,13 +40,6 @@ $(function () {
     $secondDisclaimersDisclaimer.on('change', function () {
         activateDeactivateSubmitButton();
     });
-
-
-    if (iSFromZSubmit) {
-        doSearching();
-    }else{
-
-    }
 
     $search_button.on('click', function () {
         doSearching();
@@ -91,6 +82,11 @@ $(function () {
             button.html('');
         }
     });
+
+    //Submission Zenodo
+    if (isFromZSubmit) {
+        doSearching();
+    }
 
     function valid_code(data) {
         // create volume selection menu
@@ -376,8 +372,6 @@ $(function () {
         search();
 
     }
-
-
 });
 
 /**

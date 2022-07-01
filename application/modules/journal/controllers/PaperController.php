@@ -115,6 +115,7 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $docId = $request->getParam('id');
+        $zIdentifier= $request->get('z-identifier');
 
         $papersManager = new Episciences_PapersManager();
         $paper = $papersManager::get($docId);
@@ -126,10 +127,12 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        $this->view->metadata = $paper->getDatasetsFromEnrichment();
-
         $loggedUid = Episciences_Auth::getUid();
         $isSecretary = Episciences_Auth::isSecretary();
+
+        $isFromZSubmit = false;
+
+        $this->view->metadata = $paper->getDatasetsFromEnrichment();
 
         if ($this->isRestrictedAccess($paper)) {
 
@@ -203,6 +206,7 @@ class PaperController extends PaperDefaultController
             $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid));
 
         }
+
 
         // COI
 
@@ -413,6 +417,15 @@ class PaperController extends PaperDefaultController
         if (Episciences_Auth::isAllowedToManageOrcidAuthor()){
             $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
         }
+
+        if ($zIdentifier && $paper->isRevisionRequested()) { // new version submitted from z-submit application
+
+            $this->view->zIdentifier = $zIdentifier;
+            $isFromZSubmit = $paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID;
+        }
+
+        $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
+
     }
 
 
@@ -1358,6 +1371,7 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $id = $request->getParam('id');
+        $zIdentifier = $request->getParam('z-identifier');
 
         // fetch revision request
         $oComment = new Episciences_Comment();
@@ -1367,10 +1381,43 @@ class PaperController extends PaperDefaultController
         // fetch paper
         $paper = Episciences_PapersManager::get($oComment->getDocid());
 
+        $options = ['newVersionOf' => $paper->getDocid()];
+
+        $isFromZSubmit = false;
+
+        $repoId = $paper->getRepoid();
+
+        if ($zIdentifier) {
+
+            $options['zIdentifier'] = $zIdentifier;
+
+            if ($paper->isRevisionRequested()) { // new version submitted from z-submit application
+                $isFromZSubmit = $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID;
+            }
+
+        }
+
         // load form
-        $form = Episciences_Submit::getNewVersionForm($paper, ['newVersionOf' => $paper->getDocid()]);
+        $form = Episciences_Submit::getNewVersionForm($paper, $options);
         $form->setAction('/paper/savenewversion?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+
         $this->view->form = $form;
+
+        $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
+        $this->view->zenodoRepoId = Episciences_Repositories::ZENODO_REPO_ID;
+
+        if (!$isFromZSubmit) {
+
+            $epiCDoi = Episciences_Repositories::getRepoDoiPrefix($repoId) . '/' . mb_strtolower(Episciences_Repositories::getLabel($repoId)) . '.';
+            $epiCDoi.= $paper->getConcept_identifier();
+
+            $this->view->zSubmitUrl = $this->getZSubmitUrl(null, [
+                'newVersion' => true,
+                'epi-docid' => $paper->getDocid(), 'epi-rvcode' => RVCODE,
+                'epi-cdoi' => $epiCDoi
+            ]);
+        }
+
     }
 
     /**

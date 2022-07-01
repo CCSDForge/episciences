@@ -17,14 +17,16 @@ class SubmitController extends DefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-
+        
         if ($request->isPost()) {
 
             $post = $request->getPost()['episciences_form'] ?? null;
 
+            $zConceptIdentifier = $post['ci'] ?? null;
+            $repoId = $post['repoid'] ?? null;
+            $zIdentifier = null;
+
             if($post){
-                $zConceptIdentifier = $post['ci'] ?? null;
-                $repoId = $post['repoid'] ?? null;
                 $zIdentifier = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['doi_show'], 'repoId' => $repoId])['identifier'];
                 $isFromZSubmit = $zIdentifier && $zConceptIdentifier && in_array($repoId, $settings['repositories'], true);
             }
@@ -39,15 +41,15 @@ class SubmitController extends DefaultController
 
                 }
 
-                $paper = Episciences_PapersManager::findByIdentifier($zConceptIdentifier);
+                $paper = Episciences_PapersManager::findByIdentifier($zConceptIdentifier); // latest version
 
                 $isFirstSubmission = !$paper || (
                         $paper->getConcept_identifier() === $zConceptIdentifier &&
                         in_array($paper->getStatus(), [Episciences_Paper::STATUS_SUBMITTED, Episciences_Paper::STATUS_OK_FOR_REVIEWING, Episciences_Paper::STATUS_REFUSED], true)
                     );
 
-                if (!$isFirstSubmission) {
-                    $this->redirect($this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()], null, true));
+                if (!$isFirstSubmission && $paper->isRevisionRequested()) {
+                    $this->redirect($this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid(), 'z-identifier' => $zIdentifier], null, true));
                     return;
                 }
 
@@ -179,8 +181,9 @@ class SubmitController extends DefaultController
 
         $this->view->repositories = implode(', ', $allowedRepositories);
         $this->view->examples = Zend_Json::encode($examples);
-        $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
-        $this->view->zSubmitUrl = $this->getZSubmitUrl($allowedRepositories);
+        $this->view->isFromZSubmit = $isFromZSubmit;
+        $this->view->zSubmitUrl = !$isFromZSubmit ? $this->getZSubmitUrl($allowedRepositories) : null;
+        $this->view->zenodoRepoId = Episciences_Repositories::ZENODO_REPO_ID;
 
     }
 
@@ -303,31 +306,4 @@ class SubmitController extends DefaultController
         echo json_encode(!empty(Episciences_Repositories::hasHook($repoId)));
 
     }
-
-    /**
-     * @param array $allowedRepositories
-     * @return string
-     */
-    private function getZSubmitUrl(array $allowedRepositories): string
-    {
-
-        $zSubmitUrl = EPISCIENCES_Z_SUBMIT_URL;
-
-        if (array_key_exists(Episciences_Repositories::ZENODO_REPO_ID, $allowedRepositories)) {
-
-            try {
-                $zSubmitUrl .= '/' . Episciences_Tools::getLocale();
-
-            } catch (Zend_Exception $e) {
-                trigger_error($e->getMessage());
-            }
-
-            $zSubmitUrl .= '/deposit?rvcode=' . RVCODE;
-        }
-
-        return $zSubmitUrl;
-
-    }
-
-
 }

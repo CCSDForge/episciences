@@ -1,5 +1,8 @@
 <?php
 $zSubmitUrl = EPISCIENCES_Z_SUBMIT_URL;
+
+$isFromZSubmitJson = Zend_Json::encode($this->isFromZSubmit);
+
 try {
     $zSubmitUrl .= '/' . Episciences_Tools::getLocale();
 } catch (Zend_Exception $e) {
@@ -31,6 +34,7 @@ $zSubmitUrl .= '/deposit?rvcode=' . RVCODE;
 <?php $this->jQuery()->addJavascriptFile('/js/submit/functions.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/submit/index.js'); ?>
+<?php $this->jQuery()->addJavascriptFile('/js/submit/insertZSubmitElement.js'); ?>
 
 <?php if ($this->error) : ?>
     <script type="text/javascript">error();</script>
@@ -39,6 +43,7 @@ $zSubmitUrl .= '/deposit?rvcode=' . RVCODE;
 <script>
     let examples = <?= $this->examples ?>;
     let hasHook = false;
-    let iSFromZSubmit = <?= $this->isFromZSubmit ?>;
+    let isFromZSubmit = <?= $isFromZSubmitJson ?>;
     let zSubmitUrl = '<?= $this->zSubmitUrl ?>';
+    let zenodoRepoId = '<?= $this->zenodoRepoId ?>';
 </script>
