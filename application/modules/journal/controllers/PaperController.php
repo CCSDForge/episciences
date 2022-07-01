@@ -1408,7 +1408,7 @@ class PaperController extends PaperDefaultController
 
         if (!$isFromZSubmit) {
 
-            $epiCDoi = Episciences_Repositories::getRepoDoiPrefix($repoId) . '/' . mb_strtolower(Episciences_Repositories::getLabel($repoId)) . '.';
+            $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
             $epiCDoi.= $paper->getConcept_identifier();
 
             $this->view->zSubmitUrl = $this->getZSubmitUrl(null, [
