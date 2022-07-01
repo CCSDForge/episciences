@@ -8,7 +8,9 @@
     "HAL_API": "https://api.example.org/",
     "SECRET_KEY": "YourSecretAuthKey",
     "API_URL": "https://host:8000/api/",
-    "API_SECRET_KEY": "YourSecretAuthKey"
+    "API_SECRET_KEY": "YourSecretAuthKey",
+    "Z_SUBMIT_URL": "https://zsubmit-env.domain.org"
+
   },
   "CAS": {
     "HOST": "a_db_host",
