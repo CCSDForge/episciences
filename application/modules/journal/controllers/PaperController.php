@@ -426,6 +426,22 @@ class PaperController extends PaperDefaultController
 
         $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
 
+        $zSubmitUrl = null;
+
+        if (!$isFromZSubmit) {
+
+            $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
+            $epiCDoi.= $paper->getConcept_identifier();
+
+            $zSubmitUrl = $this->getZSubmitUrl(null, [
+                'newVersion' => true,
+                'epi-docid' => $paper->getDocid(), 'epi-rvcode' => RVCODE,
+                'epi-cdoi' => $epiCDoi
+            ]);
+        }
+
+        $this->view->zSubmitUrl = $zSubmitUrl;
+
     }
 
 
@@ -1404,17 +1420,21 @@ class PaperController extends PaperDefaultController
         $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
         $this->view->zenodoRepoId = Episciences_Repositories::ZENODO_REPO_ID;
 
+        $zSubmitUrl = null;
+
         if (!$isFromZSubmit) {
 
             $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
             $epiCDoi.= $paper->getConcept_identifier();
 
-            $this->view->zSubmitUrl = $this->getZSubmitUrl(null, [
+            $zSubmitUrl = $this->getZSubmitUrl(null, [
                 'newVersion' => true,
                 'epi-docid' => $paper->getDocid(), 'epi-rvcode' => RVCODE,
                 'epi-cdoi' => $epiCDoi
             ]);
         }
+
+        $this->view->zSubmitUrl = $zSubmitUrl;
 
     }
 
