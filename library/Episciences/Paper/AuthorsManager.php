@@ -46,6 +46,7 @@ class Episciences_Paper_AuthorsManager
 
         return $affectedRows;
     }
+
     public static function getAuthorByPaperId($paperId): array {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_PAPER_AUTHORS)->where('PAPERID = ?',$paperId); // prevent empty row
@@ -193,25 +194,28 @@ class Episciences_Paper_AuthorsManager
      */
     public static function InsertAuthorsFromPapers($paper, $paperId): void
     {
-        $authors = $paper->getMetadata('authors');
-        foreach ($authors as $author) {
-            $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
+        if (empty(self::getAuthorByPaperId($paperId))){
+            $authors = $paper->getMetadata('authors');
+            foreach ($authors as $author) {
+                $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
 
-            $exploded = explode(', ', $author);
+                $exploded = explode(', ', $author);
 
-            $arrayAuthors[] = [
-                'fullname' => $authorsFormatted,
-                'given' => $exploded[1] ?? null,
-                'family' => $exploded[0] ?? null
-            ];
+                $arrayAuthors[] = [
+                    'fullname' => $authorsFormatted,
+                    'given' => $exploded[1] ?? null,
+                    'family' => $exploded[0] ?? null
+                ];
+            }
+
+            Episciences_Paper_AuthorsManager::insert([
+                [
+                    'authors' => json_encode($arrayAuthors, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    'paperId' => $paperId
+                ]
+            ]);
+            unset($arrayAuthors);
         }
-        Episciences_Paper_AuthorsManager::insert([
-            [
-                'authors' => json_encode($arrayAuthors, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                'paperId' => $paperId
-            ]
-        ]);
-        unset($arrayAuthors);
     }
 
 
