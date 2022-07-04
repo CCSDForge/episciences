@@ -430,13 +430,10 @@ class PaperController extends PaperDefaultController
 
         if (!$isFromZSubmit) {
 
-            $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
-            $epiCDoi.= $paper->getConcept_identifier();
-
             $zSubmitUrl = $this->getZSubmitUrl(null, [
                 'newVersion' => true,
                 'epi-docid' => $paper->getDocid(), 'epi-rvcode' => RVCODE,
-                'epi-cdoi' => $epiCDoi
+                'epi-cdoi' => $paper->getConcept_identifier()
             ]);
         }
 
@@ -1424,13 +1421,10 @@ class PaperController extends PaperDefaultController
 
         if (!$isFromZSubmit) {
 
-            $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
-            $epiCDoi.= $paper->getConcept_identifier();
-
             $zSubmitUrl = $this->getZSubmitUrl(null, [
                 'newVersion' => true,
                 'epi-docid' => $paper->getDocid(), 'epi-rvcode' => RVCODE,
-                'epi-cdoi' => $epiCDoi
+                'epi-cdoi' => $paper->getConcept_identifier()
             ]);
         }
 
