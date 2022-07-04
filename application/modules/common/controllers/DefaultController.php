@@ -159,7 +159,10 @@ class DefaultController extends Zend_Controller_Action
                 }
 
                 if (isset($options['epi-cdoi'])) {
-                    $zSubmitUrl .= '&epi-cdoi=' . $options['epi-cdoi'];
+
+                    $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
+                    $epiCDoi.= $options['epi-cdoi'];
+                    $zSubmitUrl .= '&epi-cdoi=' . $epiCDoi;
                 }
 
                 return $zSubmitUrl;
