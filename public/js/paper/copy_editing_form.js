@@ -59,6 +59,13 @@ $(function () {
         deleteAllAttachedFiles();
     });
 
+    console.log(isFromZSubmit);
+
+
+    if (isFromZSubmit) {
+        $('.auto-clickable').click();
+    }
+
 });
 
 

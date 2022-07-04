@@ -17,7 +17,7 @@ class SubmitController extends DefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        
+
         if ($request->isPost()) {
 
             $post = $request->getPost()['episciences_form'] ?? null;
@@ -48,8 +48,9 @@ class SubmitController extends DefaultController
                         in_array($paper->getStatus(), [Episciences_Paper::STATUS_SUBMITTED, Episciences_Paper::STATUS_OK_FOR_REVIEWING, Episciences_Paper::STATUS_REFUSED], true)
                     );
 
-                if (!$isFirstSubmission && $paper->isRevisionRequested()) {
-                    $this->redirect($this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid(), 'z-identifier' => $zIdentifier], null, true));
+                if (!$isFirstSubmission && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) {
+                    $rOptions = ['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid(), 'z-identifier' => $zIdentifier];
+                    $this->redirect($this->view->url($rOptions, null, true));
                     return;
                 }
 

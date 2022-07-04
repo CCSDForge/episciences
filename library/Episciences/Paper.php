@@ -56,12 +56,12 @@ class Episciences_Paper
     //Copy editing
     public const STATUS_CE_WAITING_FOR_AUTHOR_SOURCES = 18;
     public const STATUS_CE_AUTHOR_SOURCES_DEPOSED = 19;
-    public const STATUS_CE_REVIEW_FORMATTING_DEPOSED = 20;
+    public const STATUS_CE_REVIEW_FORMATTING_DEPOSED = 20; // Copy ed.: formatting by journal completed, waiting for a final version
     public const STATUS_CE_WAITING_AUTHOR_FINAL_VERSION = 21;
     // version finale déposée en attente de validation
     public const STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED = 22;
     public const STATUS_CE_READY_TO_PUBLISH = 23;
-    public const STATUS_CE_AUTHOR_FORMATTING_DEPOSED = 24; // la mise en forme par l'auteur a été validée
+    public const STATUS_CE_AUTHOR_FORMATTING_DEPOSED = 24; // Copy ed.: formatting by author completed, waiting for final version
     public const STATUS_TMP_VERSION_ACCEPTED = 25; // tmp version accepted
     public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  = 26;
     public const STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 27;
@@ -3026,7 +3026,6 @@ class Episciences_Paper
             self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
             self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
             self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
-            self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
             self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
             self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
             self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
@@ -4091,6 +4090,20 @@ class Episciences_Paper
         }
 
         $this->_revisionDeadline = $revisionDeadline;
+    }
+
+    /**
+     * has
+     * @return bool
+     */
+    public function isFromZenodo(): bool
+    {
+        return (($this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID) || ($this->isTmp() && $this->getConcept_identifier()));
+    }
+
+    public function isFormattingCompleted(): bool
+    {
+        return in_array($this->getStatus(), [self::STATUS_CE_REVIEW_FORMATTING_DEPOSED, self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED], true);
     }
 
 

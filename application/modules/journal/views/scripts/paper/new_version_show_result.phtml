@@ -1,7 +1,7 @@
 <div id="showResult" style="display:none"></div>
 <?= $this->form ?>
 <script>
-    let isFromZSubmit = <?= $this->isFromZSubmit ?>;
+    isFromZSubmit = <?= $this->isFromZSubmit ?>; // declared in /paper/view.phtml
     let src_url = "/js/submit/functions.js?_=v<?= APPLICATION_VERSION ?>";
     let visual_delete_url = "/js/common/visualDeleteFile.js?_=v<?= APPLICATION_VERSION ?>";
     let zSubmitElement_url = "/js/submit/insertZSubmitElement.js?_=v<?= APPLICATION_VERSION ?>";

@@ -36,6 +36,7 @@ foreach ($comments as $id => $comment) : ?>
             $commentType = (int)$comment['TYPE'];
             $replyBtnClass = 'btn-default';
             $btnTitle = '';
+            $autoClickable = '';
 
             $isDisabled = in_array($status, Episciences_Paper::$_noEditableStatus, true);
 
@@ -43,6 +44,7 @@ foreach ($comments as $id => $comment) : ?>
                 $replyBtnMsg = 'Soumettre la version finale';
                 $replyBtnClass = 'btn-primary';
                 $btnTitle = "Soumettre la version finale de l'archive ouverte";
+                $autoClickable = 'auto-clickable';
             } elseif ($commentType === Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST) {
                 $replyBtnMsg = 'Ajouter les fichiers sources';
                 $isDisabled = $isDisabled || $status === Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED;
@@ -61,7 +63,7 @@ foreach ($comments as $id => $comment) : ?>
             ?>
 
             <button id="replyFormBtn_<?= $id ?>" style="margin: 10px 0 20px 20px"
-                    class='btn btn <?= $replyBtnClass ?> btn-sm replyButton' <?= $disabled . ' ' . $toolTip ?>>
+                    class='btn btn <?= $replyBtnClass ?> btn-sm replyButton <?= $autoClickable ?>' <?= $disabled . ' ' . $toolTip ?>>
                 <span class="glyphicon glyphicon-edit "></span> <?= $this->translate($replyBtnMsg) ?>
             </button>
 
@@ -70,7 +72,8 @@ foreach ($comments as $id => $comment) : ?>
     <?php if (!empty($replyForms[$id])) : ?>
         <div id="replyForm_<?= $id ?>" class="replyForm small" style="margin: 20px 20px 10px 20px; display: none">
             <?php if ($isFinalVersionRequest) : ?>
-                <?= $this->partial('paper/new_version_show_result.phtml', ['form' => $replyForms[$id]]) ?>
+                <?= $this->partial('paper/new_version_show_result.phtml',
+                    ['form' => $replyForms[$id], 'isFromZSubmit' => $this->isFromZSubmit, 'zenodoRepoId' => $this->zenodoRepoId, 'zSubmitUrl' => $this->zSubmitUrl ]) ?>
             <?php else: ?>
                 <?= $replyForms[$id] ?>
             <?php endif; ?>

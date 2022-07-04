@@ -44,11 +44,16 @@ $(function () {
 
 	if (isFromZSubmit) {
 
-		$('#answer-request').click();
-		$('#new-version').click();
+		if ($('#answer-request').length > 0) {
+
+			$('#answer-request').click();
+		}
 
 		setTimeout(function () {
-			$('#new-version').click();
+
+			if ($('#new-version').length > 0) {
+				$('#new-version').click();
+			}
 		}, 0.1);
 
 	}

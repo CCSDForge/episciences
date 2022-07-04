@@ -357,7 +357,7 @@ class PaperController extends PaperDefaultController
 
         // reply copy editing answer form
         if ($isAllowedToAnswerNewVersion) {
-            $copyEditingReplyForms = Episciences_CommentsManager::getCopyEditingReplyForms($copyEditingDemands, $paper);
+            $copyEditingReplyForms = Episciences_CommentsManager::getCopyEditingReplyForms($copyEditingDemands, $paper, $zIdentifier);
             $this->view->copyEditingReplyForms = $copyEditingReplyForms;
         }
 
@@ -418,10 +418,10 @@ class PaperController extends PaperDefaultController
             $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
         }
 
-        if ($zIdentifier && $paper->isRevisionRequested()) { // new version submitted from z-submit application
+        if ($zIdentifier && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) { // new version submitted from z-submit application
 
             $this->view->zIdentifier = $zIdentifier;
-            $isFromZSubmit = $paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID;
+            $isFromZSubmit =$paper->isFromZenodo();
         }
 
         $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
@@ -1385,14 +1385,12 @@ class PaperController extends PaperDefaultController
 
         $isFromZSubmit = false;
 
-        $repoId = $paper->getRepoid();
-
         if ($zIdentifier) {
 
             $options['zIdentifier'] = $zIdentifier;
 
             if ($paper->isRevisionRequested()) { // new version submitted from z-submit application
-                $isFromZSubmit = $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID;
+                $isFromZSubmit = $paper->isFromZenodo();
             }
 
         }
