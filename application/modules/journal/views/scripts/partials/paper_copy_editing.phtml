@@ -73,7 +73,7 @@ foreach ($comments as $id => $comment) : ?>
         <div id="replyForm_<?= $id ?>" class="replyForm small" style="margin: 20px 20px 10px 20px; display: none">
             <?php if ($isFinalVersionRequest) : ?>
                 <?= $this->partial('paper/new_version_show_result.phtml',
-                    ['form' => $replyForms[$id], 'isFromZSubmit' => $this->isFromZSubmit, 'zenodoRepoId' => $this->zenodoRepoId, 'zSubmitUrl' => $this->zSubmitUrl ]) ?>
+                    ['form' => $replyForms[$id], 'isFromZSubmit' => $this->isFromZSubmit, 'zenodoRepoId' => Episciences_Repositories::ZENODO_REPO_ID, 'zSubmitUrl' => $this->zSubmitUrl ]) ?>
             <?php else: ?>
                 <?= $replyForms[$id] ?>
             <?php endif; ?>
