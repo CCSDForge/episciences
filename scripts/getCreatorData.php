@@ -124,17 +124,13 @@ class getCreatorData extends JournalScript
 
                 $this->displayInfo($info, true);
 
-                $pathOpenAireCreator = $dir . '/' . trim(explode("/", $value['DOI'])[1]) . "_creator.json";
+                $pathOpenAireCreator = $dir . trim(explode("/", $value['DOI'])[1]) . "_creator.json";
 
 
                 if (!empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId))) {
 
-
-
                     echo PHP_EOL;
                     $this->displayInfo('The authors for this paper [' . $paperId . '] already exist', true);
-
-                    continue;
 
                 }
 
@@ -391,18 +387,16 @@ class getCreatorData extends JournalScript
      */
     public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
     {
-        $dir = CACHE_PATH_METADATA.'enrichmentAuthors/';
+        $dir = CACHE_PATH_METADATA . 'enrichmentAuthors/';
 
         if (!file_exists($dir)) {
-
-            $result = mkdir($dir, 0775, true);
-
+            $result = mkdir($dir);
             if (!$result) {
                 die('Fatal error: Failed to create directory: ' . $dir);
             }
-
-            $pathCreator = $dir . '/' . trim(explode("/", $doi)[1]) . "_creator.json";
-
+        }
+        $pathCreator = $dir . trim(explode("/", $doi)[1]) . "_creator.json";
+        if (!file_exists($pathCreator)){
             if (!is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
                 if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
                     $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
@@ -411,9 +405,7 @@ class getCreatorData extends JournalScript
             } else {
                 file_put_contents($pathCreator, [""]);
             }
-
         }
-
     }
 }
 
