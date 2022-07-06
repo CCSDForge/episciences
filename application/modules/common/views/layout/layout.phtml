@@ -90,6 +90,9 @@ echo $this->doctype('HTML5');
         } ?>
     </div>
 
+    <?= $this->render('commons/alert-banner.phtml') ?>
+
+
     <div class="row<?php echo $this->containerClass; ?>">
         <?php if ($this->navigation == Ccsd_Website_Style::MENU_LIST || $this->navigation == Ccsd_Website_Style::MENU_ACCORDION) { ?>
         <div class="col-md-2">
