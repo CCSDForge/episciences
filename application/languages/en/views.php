@@ -1851,7 +1851,7 @@ return [
     "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",
     "Activer la déclaration CI" => "Enable declaring COI",
     "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles à un éditeur tant qu'il n'a pas déclaré l'absence de tout conflit d'intérêts" => "This mode will have the following effects: all non-public information about a submission is not accessible to an editor until he/she has declared the absence of any conflict of interest",
-    "Vous avez déclaré un conflit d'intérêts avec cette soumission." => "You have declared a conflict of interest with this submission.",
+    "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission." => "You've been redirected, because you have declared a conflict of interest with this submission.",
     "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission" => "You've been redirected, because you must confirm the lack of conflict of interest to access this submission",
     "Conflit d'intérêt" => 'Conflict of interest',
     "Merci de déclarer si vous avez un conflit avec cette soumission" => 'Please declare whether you have a conflict of interest with this submission',
@@ -1871,6 +1871,7 @@ return [
     'Feuille de route' => 'Roadmap',
     "Retours utilisateurs" => "User feedback",
     'Annulé le' => 'Cancelled on',
+    "Vous êtes maintenant connecté à votre compte :" => "You are now logged into your account:",
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
     //review settings: final decision

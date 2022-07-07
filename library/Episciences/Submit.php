@@ -845,10 +845,19 @@ class Episciences_Submit
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
+     * @throws Zend_Session_Exception|JsonException
      */
     public function saveDoc($data, $paperId = null, $vid = null, $sid = null): array
     {
+
+        $isCoiEnabled = false;
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
 
         // Initialisation
         $canReplace = (boolean)Ccsd_Tools::ifsetor($data['can_replace'], false); // remplacer ou pas la version V-1
@@ -975,6 +984,22 @@ class Episciences_Submit
 
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
+
+        if ($isCoiEnabled) {
+
+            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => 'no', 'paper_id' => $paper->getPaperid()]);
+
+            foreach ($recipients as $recipient) {
+
+                $rUid = $recipient->getUid();
+
+                if (!in_array($rUid, $cUidS, false)) {
+                    unset($recipients[$rUid]);
+                }
+            }
+
+        }
+
         unset($recipients[$paper->getUid()]);
 
         if (!empty($recipients)) {

@@ -131,13 +131,13 @@ class AdministratepaperController extends PaperDefaultController
                     [
                         Episciences_User_Assignment::STATUS_ACTIVE,
                         Episciences_User_Assignment::STATUS_PENDING,
-                                                Episciences_User_Assignment::STATUS_DECLINED
+                        Episciences_User_Assignment::STATUS_DECLINED
                     ]
                 ); // environ 1s
 
                 $paper->setRevisionDeadline();
 
-                if($isCoiEnabled){
+                if ($isCoiEnabled) {
                     $paper->getConflicts(true);
                 }
 
@@ -306,7 +306,7 @@ class AdministratepaperController extends PaperDefaultController
                 $paper->getReviewers([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING], true);
                 $paper->setRevisionDeadline();
 
-                if($isCoiEnabled){
+                if ($isCoiEnabled) {
                     $paper->getConflicts(true);
                 }
             }
@@ -512,38 +512,76 @@ class AdministratepaperController extends PaperDefaultController
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
-        $isCoiEnabled= $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+        $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
-        $isConflictDetected =
-            !Episciences_Auth::isSecretary() && $isCoiEnabled &&
-            (
-            in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
-            );
-
-        $isOwnSubmission = $loggedUid === $paper->getUid();
+        $isOwnSubmission = $paper->isOwner();
 
         // check if user has required permissions
-        if ($isConflictDetected || $isOwnSubmission) {
+        if ($isOwnSubmission || $this->isConflictDetected($paper, $review)) {
+
+            $su = Episciences_Auth::getOriginalIdentity();
+            $suUser = new Episciences_User();
+            $suUser->find($su);
+
+            $message = '';
 
             if ($isOwnSubmission) {
 
-                $message = 'Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé';
+                if ($su !== $loggedUid) {
+
+                    $message .= $suUser->getScreenName();
+                    $message .= ', ';
+                    $message .= '<br>';
+                    $message .= $this->view->translate("Vous êtes connecté en tant que : ");
+                    $message .= Episciences_Auth::getScreenName();
+                    $message .= '<br>';
+                }
+
+
+                $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
                 $url = '/paper/view?id=' . $docId;
 
             } else {
 
-                if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-                    $message = "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission";
+                $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+                if (isset($session->checkConflictResponseForSu) && in_array($session->checkConflictResponseForSu, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)) {
+
+                    $message .= $suUser->getScreenName();
+                    $message .= ', ';
+                    $message .= '<br>';
+
+                    if ($session->checkConflictResponseForSu === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+
+                        Episciences_Auth::getInstance()->clearIdentity();
+                        Episciences_Auth::setIdentity($suUser);
+                        $suUser->setScreenName();
+                        Episciences_Auth::incrementPhotoVersion();
+
+                        $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
+                        $message .= '<br>';
+                        $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
+
+                    } else {
+                        $message .= $this->view->translate("Vous êtes connecté en tant que : ");
+                        $message .= Episciences_Auth::getScreenName();
+                        $message .= '<br>';
+                        $message .= $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
+                    }
+
+
+                } else if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+                    $message = $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
 
                 } else {
-                    $message = "Vous avez déclaré un conflit d'intérêts avec cette soumission.";
+                    $message = $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
                 }
 
                 $url = '/coi/report?id=' . $docId;
 
             }
 
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate($message));
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector->gotoUrl($url);
 
         }
@@ -756,8 +794,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->acceptanceForm = Episciences_PapersManager::getAcceptanceForm($templates['accept']);
             $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
             $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse']);
-            $this->view->minorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['minorRevision'], 'minor', $review);
-            $this->view->majorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['majorRevision'], 'major', $review);
+            $this->view->minorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['minorRevision'], 'minor', $review, true, $docId);
+            $this->view->majorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['majorRevision'], 'major', $review, true, $docId);
             // waiting for author resources form request
             $this->view->authorSourcesRequestForm = Episciences_PapersManager::getWaitingForAuthorSourcesForm($templates['waitingAuthorSources']);
             // waiting for author formatting
@@ -827,9 +865,9 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->siteLocale = Episciences_Tools::getLocale();
         $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
 
-        $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
+        $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid' => $paper->getPaperid()]);
 
-        if($isCoiEnabled){
+        if ($isCoiEnabled) {
             //conflict management section
             $this->view->paperConflicts = $paper->getConflicts(true);
         }
@@ -1885,13 +1923,11 @@ class AdministratepaperController extends PaperDefaultController
                 $notification = new Episciences_Notify_Hal($paper, $journal);
 
                 try {
-                   $idAnnounce =  $notification->announceEndorsement();
+                    $idAnnounce = $notification->announceEndorsement();
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage(sprintf('Announcing publication to HAL with ID %s succeeded.', $idAnnounce));
                 } catch (Exception $exception) {
                     $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Announcing publication to HAL failed');
                 }
-
-
 
 
             }
@@ -3892,7 +3928,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     $comment->setFile(json_encode($attachments, JSON_THROW_ON_ERROR));
 
-                }catch (JsonException $e){
+                } catch (JsonException $e) {
 
                     trigger_error($e->getMessage());
 

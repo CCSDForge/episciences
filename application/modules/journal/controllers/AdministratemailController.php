@@ -218,26 +218,7 @@ class AdministratemailController extends Zend_Controller_Action
 
             $review = Episciences_ReviewsManager::find(RVID);
             $review->loadSettings();
-            $docIds = [];
-
-            if (!Episciences_Auth::isSecretary()) {
-
-                $editor = new Episciences_Editor();
-                $editor->find(Episciences_Auth::getUid());
-
-                if ($review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED)) {
-                    $docIds = $this->papersNotInConflictProcessing($editor);
-                    $options['isCoiEnabled'] = true;
-
-                } elseif ($review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS)) {
-                    $papers = $editor->getAssignedPapers();
-                    $docIds = array_keys($papers);
-                }
-
-            } else {
-                $docIds[] = array_keys($review->getPapers());
-            }
-
+            $docIds = $this->historyProcessing($review, $options);
             $mails = new Episciences_Mail();
             // Le nombre total d'enregistrements, avant filtrage
             $historyCount = $mails->getCountHistory($docIds, $options);
@@ -876,6 +857,125 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         return $compiledUsers;
+
+    }
+
+    /**
+     * @param Episciences_Review $review
+     * @param array $options
+     * @return array
+     */
+    private function historyProcessing(Episciences_Review $review, array &$options = []): array
+    {
+        $docIds = [];
+        $isCoiEnabled = (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
+        if (!$isCoiEnabled) {
+
+            if (Episciences_Auth::isSecretary()) {
+                try {
+                    $docIds = array_keys($review->getPapers());
+                } catch (Zend_Db_Select_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+
+            } else {
+
+                $editor = new Episciences_Editor();
+                try {
+                    $editor->find(Episciences_Auth::getUid());
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+
+                if ($review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS)) {
+                    try {
+                        $papers = $editor->getAssignedPapers();
+                    } catch (Zend_Exception $e) {
+                        trigger_error($e->getMessage());
+                        $papers = [];
+                    }
+
+                    $docIds = array_keys($papers);
+                }
+
+            }
+
+
+        } else {
+
+            $options['isCoiEnabled'] = true;
+
+            $editor = new Episciences_Editor();
+
+            $suUid = Episciences_Auth::getOriginalIdentity();
+            $loggedUid = Episciences_Auth::getUid();
+
+            if ($suUid !== $loggedUid) {
+
+                try {
+                    $editor->find($suUid);
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+
+                $docIds = $this->papersNotInConflictProcessing($editor);
+
+
+            } elseif (Episciences_Auth::isAllowedToDeclareConflict()) {
+
+                try {
+                    $editor->find($loggedUid);
+
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+
+                $docIds = $this->papersNotInConflictProcessing($editor);
+
+
+            } elseif (Episciences_Auth::isRoot() || Episciences_Auth::isAdministrator(RVID, true)) {
+                try {
+                    $docIds = array_diff(array_keys($review->getPapers()), $this->getPapersInConflit($loggedUid));
+                } catch (Zend_Db_Select_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+
+
+        }
+
+        return $docIds;
+
+    }
+
+    private function getPapersInConflit($uid): array
+    {
+
+        $docIds = [];
+
+        $oConflicts = Episciences_Paper_ConflictsManager::findByUidAndAnswer($uid, Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']);
+
+        foreach ($oConflicts as $oConflict) {
+
+            $pId = $oConflict->getPaperId();
+
+            try {
+                $oPaper = Episciences_PapersManager::get($pId, false);
+
+                $pVersionIds = $oPaper->getVersionsIds();
+
+                foreach ($pVersionIds as $id) {
+                    $docIds[] = $id;
+                }
+
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
+        }
+
+        return $docIds;
 
     }
 

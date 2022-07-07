@@ -348,6 +348,9 @@ class PaperDefaultController extends DefaultController
             );
 
         Episciences_Review::checkReviewNotifications($recipients, $strict);
+
+        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
@@ -507,6 +510,10 @@ class PaperDefaultController extends DefaultController
         }
 
         $principalRecipientUid = (null !== $principalRecipient) ? $principalRecipient->getUid() : null;
+
+        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+
+
         $CC = $paper->extractCCRecipients($recipients, $principalRecipientUid);
 
         if ($principalRecipientUid) {

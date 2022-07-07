@@ -67,7 +67,7 @@ class DefaultController extends Zend_Controller_Action
     protected function redirectsIfHaveNotEnoughPermissions(Episciences_Paper $paper): void
     {
 
-        if ($this->isRestrictedAccess($paper)){
+        if ($this->isRestrictedAccess($paper)) {
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
             $this->redirect('/');
@@ -130,7 +130,7 @@ class DefaultController extends Zend_Controller_Action
 
         $zSubmitUrl = EPISCIENCES_Z_SUBMIT_URL;
 
-        if(empty($allowedRepositories)){
+        if (empty($allowedRepositories)) {
             $settings = Zend_Registry::get('reviewSettings');
             $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
         }
@@ -161,7 +161,7 @@ class DefaultController extends Zend_Controller_Action
                 if (isset($options['epi-cdoi'])) {
 
                     $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
-                    $epiCDoi.= $options['epi-cdoi'];
+                    $epiCDoi .= $options['epi-cdoi'];
                     $zSubmitUrl .= '&epi-cdoi=' . $epiCDoi;
                 }
 
@@ -172,6 +172,89 @@ class DefaultController extends Zend_Controller_Action
         }
 
         return $zSubmitUrl;
+
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param Episciences_Review|null $journal
+     * @return bool
+     */
+    protected function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
+    {
+
+        if (!$journal) {
+
+            $review = Episciences_ReviewsManager::find(RVID);
+
+            if ($review) {
+                $review->loadSettings();
+            }
+
+        }
+
+        $loggedUid = Episciences_Auth::getUid();
+        $su = Episciences_Auth::getOriginalIdentity();
+
+        $isSignedInAs = $su !== $loggedUid;
+
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        if ($isSignedInAs) {
+
+            $checkConflictResponseForSu = $paper->checkConflictResponse($su);
+            $session->checkConflictResponseForSu = $checkConflictResponseForSu;
+
+        } else {
+
+            unset($session->checkConflictResponseForSu);
+        }
+
+        $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+
+        $isCoiEnabled = !$journal ? $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) : $journal->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
+        $conflictResponses = [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']];
+
+
+        return $isCoiEnabled &&
+            Episciences_Auth::isAllowedToDeclareConflict() &&
+            (
+                ($isSignedInAs && in_array($checkConflictResponseForSu, $conflictResponses, true)) ||
+                in_array($checkConflictResponse, $conflictResponses, true)
+            );
+
+    }
+
+
+    protected function keepOnlyUsersWithoutConflict(Episciences_Paper $paper, array &$recipients = []): void
+    {
+
+        $isCoiEnabled = false;
+
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+
+        if ($isCoiEnabled) {
+
+            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => 'no', 'paper_id' => $paper->getPaperid()]);
+
+            foreach ($recipients as $recipient) {
+                $rUid = $recipient->getUid();
+
+                if (!in_array($rUid, $cUidS, false)) {
+                    unset($recipients[$rUid]);
+                }
+            }
+
+        }
+
 
     }
 }

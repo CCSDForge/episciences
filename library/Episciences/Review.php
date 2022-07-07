@@ -410,19 +410,51 @@ class Episciences_Review
     }
 
     /**
+     * @param int|null $docId
      * @return string
      * @throws Zend_Db_Statement_Exception
      */
-    public static function forYourInformation(): string
+    public static function forYourInformation(int $docId = null): string
     {
+        $isCoiEnabled = false;
+
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        if ($isCoiEnabled) {
+
+            $cUidS = [];
+
+            if ($docId) {
+
+                $paper = Episciences_PapersManager::get($docId, false);
+
+                if ($paper) {
+                    $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => 'no', 'paper_id' => $paper->getPaperid()]);
+                }
+            }
+
+        }
+
         $cc = [];
         $FYI = '';
         self::checkReviewNotifications($cc);
         /** @var Episciences_User $recipient */
         foreach ($cc as $recipient) {
+
+            if ($isCoiEnabled && !in_array($recipient->getUid(), $cUidS, false)) {
+                continue;
+            }
+
             $FYI .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
             $FYI .= '; ';
         }
+
         return substr($FYI, 0, -2);
     }
 

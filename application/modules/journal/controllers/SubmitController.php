@@ -4,10 +4,15 @@ require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.p
 class SubmitController extends DefaultController
 {
     /**
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
+     * @throws Zend_Json_Exception
+     * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
      */
     public function indexAction(): void
     {

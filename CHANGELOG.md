@@ -76,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
+- [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest. 
 
 ## 1.0.31 - 2022-06-28
 ### Added

@@ -6,8 +6,13 @@ class CoiController extends PaperDefaultController
 {
 
     /**
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
      */
     public function reportAction(): void
     {
@@ -31,17 +36,7 @@ class CoiController extends PaperDefaultController
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
-        $journalSettings = Zend_Registry::get('reviewSettings');
-
-        $isConflictDetected =
-            !Episciences_Auth::isSecretary() && isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) &&
-            $journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === '1' &&
-            (
-            in_array($checkConflictResponse, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
-            );
-
-
-        if ($isConflictDetected) {
+        if ($this->isConflictDetected($paper)) {
 
             $form = Episciences_Paper_ConflictsManager::getCoiForm();
 

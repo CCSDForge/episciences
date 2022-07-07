@@ -1128,7 +1128,7 @@ class Episciences_PapersManager
 
         $form->addElement('text', 'bcc', [
             'label' => 'BCC',
-            'value' => Episciences_Review::forYourInformation(),
+            'value' => Episciences_Review::forYourInformation($docId),
             'class' => 'form-control'
         ]);
 
@@ -1822,12 +1822,13 @@ class Episciences_PapersManager
      * @param string $type
      * @param Episciences_Review|null $review
      * @param bool $withAutoReassignment
+     * @param int|null $docId
      * @return Ccsd_Form
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null, bool $withAutoReassignment = true): \Ccsd_Form
+    public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null, bool $withAutoReassignment = true, int $docId = null): \Ccsd_Form
     {
         $formId = $withAutoReassignment ? $type . '_revision-form' : 'accepted-ask-final-version-form';
 
@@ -1877,7 +1878,7 @@ class Episciences_PapersManager
         $form->addElement('text', 'bcc', [
             'id' => $formId . '-bcc',
             'label' => 'BCC',
-            'value' => Episciences_Review::forYourInformation()
+            'value' => Episciences_Review::forYourInformation($docId)
         ]);
 
         // from

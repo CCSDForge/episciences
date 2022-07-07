@@ -211,7 +211,7 @@ class PaperController extends PaperDefaultController
         // COI
 
         $isConflictDetected =
-            !$isSecretary &&
+            (!Episciences_Auth::isRoot() && !Episciences_Auth::isAdministrator(RVID, true)) &&
             $loggedUid !== $paper->getUid() &&
             !$paper->getReviewer($loggedUid) &&
             $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
@@ -856,6 +856,9 @@ class PaperController extends PaperDefaultController
 
         Episciences_Review::checkReviewNotifications($recipients);
 
+        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+
+
         $CC = $paper->extractCCRecipients($recipients, $requester->getUid());
 
         if ($requester->getUid()) {
@@ -1241,6 +1244,9 @@ class PaperController extends PaperDefaultController
 
         Episciences_Review::checkReviewNotifications($recipients);
         unset($recipients[$paper->getUid()]);
+
+        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {

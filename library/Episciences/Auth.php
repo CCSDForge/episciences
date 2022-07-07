@@ -284,4 +284,16 @@ class Episciences_Auth extends Ccsd_Auth
         return isset($session->realIdentities) ? $session->realIdentities[array_key_first($session->realIdentities)] : self::getUid();
     }
 
+
+    public static function isAllowedToDeclareConflict(): bool
+    {
+        return
+            self::isCopyEditor() ||
+            self::isGuestEditor(RVID, true) ||
+            self::isEditor(RVID, true) ||
+            self::isChiefEditor(RVID, true) ||
+            self::isSecretary(RVID, true);
+
+    }
+
 }
