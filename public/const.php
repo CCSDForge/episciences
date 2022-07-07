@@ -28,6 +28,10 @@ function define_app_constants()
         define('APPLICATION_PATH', dirname(__DIR__) . '/application');
     }
 
+    if (!defined('CACHE_PATH_METADATA')) {
+        define('CACHE_PATH_METADATA', dirname(APPLICATION_PATH) . '/cache/');
+    }
+
     if (!defined('APPLICATION_INI')) {
         define('APPLICATION_INI', APPLICATION_PATH . '/configs/application.ini');
     }
@@ -119,8 +123,6 @@ function define_review_constants()
         define('VOLUME_LANG_PATH', REVIEW_LANG_PATH . 'volumes/');
         define('SECTION_LANG_PATH', REVIEW_LANG_PATH . 'sections/');
         define('CACHE_PATH', REVIEW_PATH . "tmp/");
-        define('CACHE_PATH_METADATA', dirname(APPLICATION_PATH) . '/cache/');
-
     }
 }
 
@@ -262,6 +264,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('EPISCIENCES_SOLR_LOG_PATH', '');
         define('EPISCIENCES_API_URL', '');
         define('EPISCIENCES_API_SECRET_KEY', '');
-        define('EPISCIENCES_UID',  0);
+        define('EPISCIENCES_UID', 0);
     }
 }
