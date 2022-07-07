@@ -14,20 +14,40 @@ class SubmitController extends DefaultController
         $isFromZSubmit = false;
         $default = [];
         $settings = Zend_Registry::get('reviewSettings');
+        $post = [];
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if ($request->isPost()) {
+        $isPost = $request->isPost();
 
-            $post = $request->getPost()['episciences_form'] ?? null;
+        if ($isPost) {
 
-            $zConceptIdentifier = $post['ci'] ?? null;
-            $repoId = $post['repoid'] ?? null;
+            $post = $request->getPost();
+
+            if ($this->isPostMaxSizeReached()) {
+                $message = $this->view->translate('Ce formulaire comporte des erreurs.');
+                $message .= ' ';
+                $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
+                $message .= ' ';
+                $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
+                $message .= $this->view->translate('Merci de les corriger.');
+                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->redirector('index', 'submit');
+                return;
+            }
+        }
+
+        if (array_key_exists('episciences_form', $post)) { // posted from z-submit application
+
+            $zPost = $request->getPost()['episciences_form'] ?? null;
+
+            $zConceptIdentifier = $zPost['ci'] ?? null;
+            $repoId = $zPost['repoid'] ?? null;
             $zIdentifier = null;
 
-            if($post){
-                $zIdentifier = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['doi_show'], 'repoId' => $repoId])['identifier'];
+            if ($zPost) {
+                $zIdentifier = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $zPost['doi_show'], 'repoId' => $repoId])['identifier'];
                 $isFromZSubmit = $zIdentifier && $zConceptIdentifier && in_array($repoId, $settings['repositories'], true);
             }
 
@@ -59,15 +79,13 @@ class SubmitController extends DefaultController
 
             }
 
-
         }
 
         $submit = new Episciences_Submit();
 
         $form = $submit::getForm($settings, $default, $isFromZSubmit);
 
-        if ($request->isPost()) {
-            $post = $request->getPost();
+        if ($isPost && array_key_exists('submitPaper', $post)) { // form EPI
 
             if (isset($post['search_doc']['repoId'])) {
                 $repoId = (int)$post['search_doc']['repoId'];
@@ -77,99 +95,83 @@ class SubmitController extends DefaultController
                 }
             }
 
-            if ($this->isPostMaxSizeReached()) {
-                $message = $this->view->translate('Ce formulaire comporte des erreurs.');
-                $message .= ' ';
-                $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
-                $message .= ' ';
-                $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
-                $message .= $this->view->translate('Merci de les corriger.');
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
-                $this->_helper->redirector('index', 'submit');
-                return;
+            if ($request->getPost('suggestEditors') && $form->getElement('suggestEditors')) {
+                /** @var Zend_Form_Element_Multi | Zend_Form_Element_Select $suggestionsElement */
+                $suggestionsElement = $form->getElement('suggestEditors');
+                $suggestionsElement->setRegisterInArrayValidator(false);
             }
 
-            if (array_key_exists('submitPaper', $post)) {
-                if ($request->getPost('suggestEditors') && $form->getElement('suggestEditors')) {
-                    /** @var Zend_Form_Element_Multi | Zend_Form_Element_Select $suggestionsElement */
-                    $suggestionsElement = $form->getElement('suggestEditors');
-                    $suggestionsElement->setRegisterInArrayValidator(false);
-                }
+            if ($form->isValid($post)) {
+                $canReplace = (boolean)$request->getPost('can_replace');  // On force le remplacement d'une ancienne version dans certains cas
+                $form_values = $form->getValues();
 
-                if ($form->isValid($post)) {
-                    $canReplace = (boolean)$request->getPost('can_replace');  // On force le remplacement d'une ancienne version dans certains cas
-                    $form_values = $form->getValues();
-
-                    foreach ($post as $input => $value) {
-                        if (!array_key_exists($input, $form_values)) {
-                            $form_values[$input] = $value;
-                        }
-                    }
-
-                    if ($canReplace) { // Possibilité de remplacer un papier déjà été déposé
-
-                        $selfPaper = new Episciences_Paper([
-                            'identifier' => $form_values['old_identifier'],
-                            'version' => (int)$form_values['old_version'],
-                            'repoId' => (int)$form_values['old_repoid'],
-                            'status' => (int)$form_values['old_paper_status']
-                        ]);
-
-
-                        // Suppression de variables unitilisables
-                        unset(
-                            $form_values['old_identifier'],
-                            $form_values['old_repoid']
-                        );
-
-                        $result = $selfPaper->updatePaper($form_values);
-                        $message = '<strong>' . $result['message'] . '</strong>';
-
-                    } else {
-                        $result = $submit->saveDoc($form_values);
-                        $message = $result['message'];
-                    }
-
-                    if ($result['code'] === 0) {
-                        $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
-                    } else {
-                        $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-                    }
-
-                    $this->_helper->redirector('submitted', 'paper');
-                    return;
-                } // End isValid
-
-                $validationErrors = '<ol  type="i">';
-                foreach ($form->getMessages() as $val) {
-                    foreach ($val as $v) {
-                        $v = is_array($v) ? implode(' ', array_values($v)) : $v;
-                        $validationErrors .= '<li>';
-                        $validationErrors .= '<code>' . $v . '</code>';
-                        $validationErrors .= '</li>';
+                foreach ($post as $input => $value) {
+                    if (!array_key_exists($input, $form_values)) {
+                        $form_values[$input] = $value;
                     }
                 }
-                $validationErrors .= '</ol>';
 
-                $message = '<strong>';
-                $message .= $this->view->translate("Ce formulaire comporte des erreurs");
-                $message .= $this->view->translate(' :');
-                $message .= $validationErrors;
-                $message .= $this->view->translate('Merci de les corriger.');
-                $message .= '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
-                $this->view->form = $form;
-                $this->view->error = true;
+                if ($canReplace) { // Possibilité de remplacer un papier déjà été déposé
 
-            } // end isPost
+                    $selfPaper = new Episciences_Paper([
+                        'identifier' => $form_values['old_identifier'],
+                        'version' => (int)$form_values['old_version'],
+                        'repoId' => (int)$form_values['old_repoid'],
+                        'status' => (int)$form_values['old_paper_status']
+                    ]);
 
+
+                    // Deletion of unused variables
+                    unset(
+                        $form_values['old_identifier'],
+                        $form_values['old_repoid']
+                    );
+
+                    $result = $selfPaper->updatePaper($form_values);
+                    $message = '<strong>' . $result['message'] . '</strong>';
+
+                } else {
+                    $result = $submit->saveDoc($form_values);
+                    $message = $result['message'];
+                }
+
+                if ($result['code'] === 0) {
+                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                } else {
+                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                }
+
+                $this->_helper->redirector('submitted', 'paper');
+                return;
+            } // End isValid
+
+            $validationErrors = '<ol  type="i">';
+            foreach ($form->getMessages() as $val) {
+                foreach ($val as $v) {
+                    $v = is_array($v) ? implode(' ', array_values($v)) : $v;
+                    $validationErrors .= '<li>';
+                    $validationErrors .= '<code>' . $v . '</code>';
+                    $validationErrors .= '</li>';
+                }
+            }
+            $validationErrors .= '</ol>';
+
+            $message = '<strong>';
+            $message .= $this->view->translate("Ce formulaire comporte des erreurs");
+            $message .= $this->view->translate(' :');
+            $message .= $validationErrors;
+            $message .= $this->view->translate('Merci de les corriger.');
+            $message .= '</strong>';
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+
+            $this->view->error = true;
         }
 
         $this->view->form = $form;
 
         $examples = [];
 
-        // Liste des archives ouvertes disponibles pour la revue (string)
+        // available repositories (string)
         foreach (Episciences_Repositories::getRepositories() as $id => $repository) {
             if ((int)$id === 0) {
                 //remove episciences from repositories list
