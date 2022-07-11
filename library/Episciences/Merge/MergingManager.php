@@ -144,6 +144,7 @@ class Episciences_Merge_MergingManager
         $affected_rows['NEWS'] = 0;
         $affected_rows['PAPERS'] = 0;
         $affected_rows['USER'] = 0;
+        $affected_rows[T_PAPER_CONFLICTS] = 0;
 
         try { //USER_ROLES table
             $rowNb = Episciences_UsersManager::updateRolesUid($mergerUid, $keeperUid);
@@ -225,6 +226,11 @@ class Episciences_Merge_MergingManager
             $exception[] = self::showException($e);
         }
 
+        // COI tables
+        $rowNb = Episciences_Paper_ConflictsManager::updateRegistrant($mergerUid, $keeperUid);
+        $affected_rows[T_PAPER_CONFLICTS] += $rowNb;
+        $rowTotal += $rowNb;
+
         try { //USER table
             // if keeper not found: the account will be translated
             $keeperUser = new Episciences_User();
@@ -245,6 +251,8 @@ class Episciences_Merge_MergingManager
         } catch (Exception $e) {
             $exception[] = self::showException($e);
         }
+
+
         $affected_rows['Affected rows in database'] = $rowTotal;
         if ($rowTotal) {
             $result = self::SUCCESS;

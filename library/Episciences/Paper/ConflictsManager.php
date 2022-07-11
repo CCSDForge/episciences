@@ -217,4 +217,27 @@ class Episciences_Paper_ConflictsManager
             ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME']);
     }
 
+
+    public static function updateRegistrant(int $oldUid = 0, int $newUid = 0): int
+    {
+
+        if ($oldUid === 0 || $newUid === 0) {
+            return 0;
+        }
+
+        $nbAffectedRows = 0;
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $data['by'] = $newUid;
+        $where['by = ?'] = $oldUid;
+        try {
+            $nbAffectedRows = $db->update(self::TABLE, $data, $where);
+        } catch (Zend_Db_Adapter_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        return $nbAffectedRows;
+
+    }
+
 }
