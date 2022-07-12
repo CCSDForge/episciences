@@ -11,7 +11,7 @@ class ApiController extends Zend_Controller_Action
      *  see https://wiki.ccsd.cnrs.fr/wikis/ccsd/index.php/Fusion_de_comptes
      * @throws Zend_Db_Statement_Exception|Zend_Db_Select_Exception
      */
-    public function mergeAction()
+    public function mergeAction(): void
     {
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();

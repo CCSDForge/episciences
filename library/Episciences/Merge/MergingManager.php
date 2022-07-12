@@ -24,7 +24,7 @@ class Episciences_Merge_MergingManager
      * @param string $token
      * @param bool $doMerge
      * @return array
-     * @throws Zend_Db_Statement_Exception|Zend_Db_Select_Exception
+     * @throws Zend_Db_Statement_Exception
      */
     public static function mergeAccounts(int $merger = 0, int $keeper = 0, string $token = '', bool $doMerge = false): array
     {
@@ -69,7 +69,7 @@ class Episciences_Merge_MergingManager
      * Applique la fusion de deux comptes
      * @param string $token
      * @return array
-     * @throws Zend_Db_Statement_Exception|Zend_Db_Select_Exception
+     * @throws Zend_Db_Statement_Exception
      */
     public static function applyMerge(string $token = ''): array
     {
@@ -292,7 +292,7 @@ class Episciences_Merge_MergingManager
             $data['DETAIL'] = Zend_Json_Encoder::encode($detail);
             $data['DATE'] = new Zend_Db_Expr('NOW()');
             $data['TOKEN'] = null;
-            $where['MID = ?'] = (int)$mergerId;
+            $where['MID = ?'] = $mergerId;
             $db->update(self::TABLE, $data, $where);
             return true;
         } catch (Exception $e) {
@@ -395,8 +395,8 @@ class Episciences_Merge_MergingManager
             }
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $data['TOKEN'] = $token;
-            $data['KEEPER_UID'] = (int)$keeper_uid;
-            $data['MERGER_UID'] = (int)$merger_uid;
+            $data['KEEPER_UID'] = $keeper_uid;
+            $data['MERGER_UID'] = $merger_uid;
             $db->insert(self::TABLE, $data);
             return $db->lastInsertId(self::TABLE);
 
@@ -499,7 +499,7 @@ class Episciences_Merge_MergingManager
         $result = [self::RENAMED_GRID => false, 'logs' => []];
 
         if (!is_dir($mergerPath)) {
-            error_log('Merging APPLICATION PANIC: ' . $mergerPath . ' is invalid.');
+            trigger_error('Merging APPLICATION PANIC: ' . $mergerPath . ' is invalid.');
             return $result;
         }
 
@@ -526,7 +526,7 @@ class Episciences_Merge_MergingManager
         $review = Episciences_ReviewsManager::find($paper->getRvid());
 
         // not use report->getPath : (RVCODE == portal)
-        return realpath(APPLICATION_PATH . '/../data') . '/' . $review->getCode() . '/files/' . $docId . '/reports/';
+        return dirname(APPLICATION_PATH) . '/data' . '/' . $review->getCode() . '/files/' . $docId . '/reports/';
 
     }
 
