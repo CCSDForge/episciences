@@ -41,7 +41,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                 Zend_Registry::set('reviewSettingsDoi', $oReview->getDoiSettings());
                 defined('RVISSN') || define('RVISSN', $oReview->getSetting(Episciences_Review::SETTING_ISSN));
             } else {
-                exit("Configuration Error: This journal does not exists.");
+                exit(printf('Configuration Error: %s journal does not exists.', RVCODE));
             }
         }
 

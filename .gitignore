@@ -16,6 +16,7 @@
 
 # Private configs
 /config/pwd.json
+/tests/config/env-test.php
 # Mappings of Episicences journals Id HAL referential Ids
 /config/halJournalMappings.json
 
