@@ -14,9 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## 1.0.31.1 - 2022-07-13
 ### Changed
-- Accounts merging: take into account the COI table. 
+- User accounts merging procedure: take into account the Conflict Of Interests 
 
 ## 1.0.31 - 2022-06-28
 ### Added
