@@ -1872,6 +1872,7 @@ return [
     "Retours utilisateurs" => "User feedback",
     'Annulé le' => 'Cancelled on',
     "Vous êtes maintenant connecté à votre compte :" => "You are now logged into your account:",
+    "Vous avez vous-même signalé un conflit d'intérêts avec cette soumission." => "You yourself have reported a conflict of interest with this submission.",
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
     //review settings: final decision

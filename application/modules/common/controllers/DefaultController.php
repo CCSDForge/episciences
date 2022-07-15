@@ -180,8 +180,11 @@ class DefaultController extends Zend_Controller_Action
      * @param Episciences_Review|null $journal
      * @return bool
      */
-    protected function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
+    public static function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
     {
+        if(Episciences_Auth::isRoot()){
+            return false;
+        }
 
         if (!$journal) {
 
@@ -194,28 +197,31 @@ class DefaultController extends Zend_Controller_Action
         }
 
         $loggedUid = Episciences_Auth::getUid();
-        $su = Episciences_Auth::getOriginalIdentity();
 
-        $isSignedInAs = $su !== $loggedUid;
+        $suUser = Episciences_Auth::getOriginalIdentity();
+
+        $isSignedInAs = $suUser->getUid() !== $loggedUid;
 
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
 
         if ($isSignedInAs) {
-
-            $checkConflictResponseForSu = $paper->checkConflictResponse($su);
-            $session->checkConflictResponseForSu = $checkConflictResponseForSu;
+            if (!$suUser->isRoot()) {
+                $checkConflictResponseForSu = $paper->checkConflictResponse($suUser->getUid());
+                $session->checkConflictResponseForSu = $checkConflictResponseForSu;
+            } else {
+                $checkConflictResponseForSu = Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'];
+            }
 
         } else {
-
             unset($session->checkConflictResponseForSu);
         }
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
         $isCoiEnabled = !$journal ? $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) : $journal->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+        $isCoiEnabled = (boolean)$isCoiEnabled;
 
         $conflictResponses = [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']];
-
 
         return $isCoiEnabled &&
             Episciences_Auth::isAllowedToDeclareConflict() &&

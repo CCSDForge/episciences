@@ -152,7 +152,7 @@ class Episciences_Auth extends Ccsd_Auth
      * @param int $rvId
      * @return bool
      */
-    public static function isCopyEditor($rvId = RVID): bool
+    public static function isCopyEditor(int $rvId = RVID): bool
     {
         return self::is(Episciences_Acl::ROLE_COPY_EDITOR, $rvId);
     }
@@ -260,7 +260,8 @@ class Episciences_Auth extends Ccsd_Auth
     public static function saveRealIdentity(): void
     {
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        $realIdentities = isset($session->realIdentities) ? array_merge($session->realIdentities, [self::getUid()]) : [self::getUid()];
+        /** @var Episciences_User[] $realIdentities */
+        $realIdentities = isset($session->realIdentities) ? array_merge($session->realIdentities, [self::getUser()]) : [self::getUser()];
         $session->realIdentities = $realIdentities;
 
     }
@@ -272,28 +273,68 @@ class Episciences_Auth extends Ccsd_Auth
     public static function hasRealIdentity(): bool
     {
 
-        return self::isLogged() && self::getOriginalIdentity() === self::getUid();
+        return self::isLogged() && self::getOriginalIdentity()->getUid() === self::getUid();
     }
 
     /**
-     * @return int
+     * @return Episciences_User
      */
-    public static function getOriginalIdentity(): int
+    public static function getOriginalIdentity(): Episciences_User
     {
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        return isset($session->realIdentities) ? $session->realIdentities[array_key_first($session->realIdentities)] : self::getUid();
+        return isset($session->realIdentities) ? $session->realIdentities[array_key_first($session->realIdentities)] : self::getUser();
     }
 
-
+    /**
+     * @return bool
+     */
     public static function isAllowedToDeclareConflict(): bool
     {
-        return
+        $result =
             self::isCopyEditor() ||
             self::isGuestEditor(RVID, true) ||
             self::isEditor(RVID, true) ||
-            self::isChiefEditor(RVID, true) ||
-            self::isSecretary(RVID, true);
+            self::isSecretary(RVID, true) ||
+            self::isChiefEditor(RVID, true);
 
+        if (!self::hasRealIdentity()) {
+
+            $suUser = self::getOriginalIdentity();
+
+            if (!$suUser->isRoot()) {
+
+                $result =
+                    $suUser->isCopyEditor() ||
+                    $suUser->isGuestEditor() ||
+                    $suUser->isEditor() ||
+                    $suUser->isSecretary() ||
+                    $suUser->isChiefEditor();
+
+            }
+
+        }
+
+        return $result;
     }
 
+
+    public static function updateIdentity(Episciences_User $user): void
+    {
+        self::getInstance()->clearIdentity();
+        self::setIdentity($user);
+        $user->setScreenName();
+        self::incrementPhotoVersion();
+    }
+
+
+    public static function hasOnlyAdministratorRole(int $rvId = RVID): bool
+    {
+        return
+            self::isAdministrator($rvId, true) &&
+            !self::isChiefEditor($rvId, true) &&
+            !self::isSecretary($rvId, true) &&
+            !self::isEditor($rvId, true) &&
+            !self::isGuestEditor($rvId, true) &&
+            !self::isCopyEditor($rvId);
+    }
 }

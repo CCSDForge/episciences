@@ -6,7 +6,7 @@ class Episciences_Paper_ConflictsManager
 
     /**
      * @param int $paperId
-     * @return array [Episciences_Paper_Conflict]
+     * @return  Episciences_Paper_Conflict []
      */
     public static function findByPaperId(int $paperId): array
     {
@@ -32,7 +32,7 @@ class Episciences_Paper_ConflictsManager
     /**
      * @param int $uid
      * @param string|null $answer
-     * @return array [Episciences_Paper_Conflict]
+     * @return  Episciences_Paper_Conflict []
      */
     public static function findByUidAndAnswer(int $uid, string $answer = null): array
     {

@@ -813,6 +813,12 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this->hasRole(Episciences_Acl::ROLE_AUTHOR);
     }
 
+
+    public function isCopyEditor(): bool
+    {
+        return $this->hasRole(Episciences_Acl::ROLE_COPY_EDITOR);
+    }
+
     public function getReviews()
     {
         $reviewIds = array_keys($this->getAllRoles());
@@ -997,7 +1003,7 @@ class Episciences_User extends Ccsd_User_Models_User
                 if ($uid === Episciences_Auth::getUid()) {
                     $userRoles[RVID] = $roles;
                     $user->setRoles($userRoles);
-                    Episciences_Auth::setIdentity($user);
+                    Episciences_Auth::updateIdentity($user);
                 }
             }
         }
@@ -1273,7 +1279,6 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($uid = $this->getUid()) {
             $oConflicts = Episciences_Paper_ConflictsManager::findByUidAndAnswer($uid, Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']); // only confirmed: no conflict (answer = 'no')
-            /** @var  $oConflict Episciences_Paper_Conflict */
             foreach ($oConflicts as $oConflict) {
                 $paperId = $oConflict->getPaperId();
                 $result[$paperId] = Episciences_PapersManager::get($paperId, false);

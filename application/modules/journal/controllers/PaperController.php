@@ -210,28 +210,45 @@ class PaperController extends PaperDefaultController
 
         // COI
 
-        $isConflictDetected =
-            (!Episciences_Auth::isRoot() && !Episciences_Auth::isAdministrator(RVID, true)) &&
-            $loggedUid !== $paper->getUid() &&
-            !$paper->getReviewer($loggedUid) &&
-            $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) &&
-            (
-                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
-                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
-            );
+        $isConflictDetected = self::isConflictDetected($paper, $review);
 
         $this->view->isConflictDetected = $isConflictDetected;
 
-        $isAllowedToAnswerNewVersion = Episciences_Auth::isLogged() &&
+        try {
+
+            $commonTest =
+                $isSecretary ||
+                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
+                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
+                $paper->getEditor($loggedUid) ||
+                $paper->getCopyEditor($loggedUid);
+
+        } catch (Zend_Db_Statement_Exception $e) {
+            $commonTest = false;
+            trigger_error($e->getMessage());
+        }
+
+
+        $isAllowedToSeeNoPublicDetails = Episciences_Auth::isLogged() &&
             (
-                !$isConflictDetected && (
-                    $isSecretary ||
+                $paper->isOwner() ||
+                (
+                    !$isConflictDetected &&
                     (
-                        $paper->getCopyEditor($loggedUid) &&
-                        ($paper->isAlreadyAcceptedWaitingForAuthorFinalVersion() || $paper->isCopyEditingProcessStarted())
-                    ) ||
-                    $loggedUid === $paper->getUid()
+                        $commonTest ||
+                        $paper->getReviewer($loggedUid)
+                    )
                 )
+            );
+
+
+        $this->view->isAllowedToSeeNoPublicDetails = $isAllowedToSeeNoPublicDetails;
+
+        $isAllowedToAnswerNewVersion =
+            Episciences_Auth::isLogged() &&
+            (
+                $paper->isOwner() ||
+                (!$isConflictDetected && $commonTest)
             );
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
@@ -405,15 +422,8 @@ class PaperController extends PaperDefaultController
 
         $this->view->hasHook = $hasHook;
 
-        $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() &&
-            (
-                $isSecretary ||
-                $paper->getEditor($loggedUid) ||
-                $paper->getCopyEditor($loggedUid) ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor())
+        $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;
 
-            );
         if (Episciences_Auth::isAllowedToManageOrcidAuthor()){
             $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
         }

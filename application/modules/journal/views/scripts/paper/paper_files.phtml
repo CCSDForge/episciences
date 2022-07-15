@@ -40,8 +40,8 @@ $action = 'oafiles';
                         <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
                         <td>
                     <span class="pull-right">
-                        <a class="btn btn-xs btn-default" href="<?= $href ?>">
-                           <i class="fas fa-file-download"></i> <?= $this->translate('Télécharger le fichier') ?>
+                        <a class="btn btn-xs btn-default" href="<?= $href ?>" data-toggle="tooltip" title="<?= $this->translate('Télécharger le fichier') ?>">
+                           <i class="fas fa-file-download"></i>
                         </a>
                     </span>
                         </td>

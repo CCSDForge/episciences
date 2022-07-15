@@ -908,7 +908,7 @@ class AdministratemailController extends Zend_Controller_Action
 
             $editor = new Episciences_Editor();
 
-            $suUid = Episciences_Auth::getOriginalIdentity();
+            $suUid = Episciences_Auth::getOriginalIdentity()->getUid();
             $loggedUid = Episciences_Auth::getUid();
 
             if ($suUid !== $loggedUid) {
@@ -936,47 +936,15 @@ class AdministratemailController extends Zend_Controller_Action
 
             } elseif (Episciences_Auth::isRoot() || Episciences_Auth::isAdministrator(RVID, true)) {
                 try {
-                    $docIds = array_diff(array_keys($review->getPapers()), $this->getPapersInConflit($loggedUid));
+                    $docIds = !Episciences_Auth::isRoot() ? array_diff(array_keys($review->getPapers()), Episciences_PapersManager::getDocIdsInConflitByUid($loggedUid)) : array_keys($review->getPapers());
                 } catch (Zend_Db_Select_Exception $e) {
                     trigger_error($e->getMessage());
                 }
             }
 
-
         }
 
         return $docIds;
 
     }
-
-    private function getPapersInConflit($uid): array
-    {
-
-        $docIds = [];
-
-        $oConflicts = Episciences_Paper_ConflictsManager::findByUidAndAnswer($uid, Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']);
-
-        foreach ($oConflicts as $oConflict) {
-
-            $pId = $oConflict->getPaperId();
-
-            try {
-                $oPaper = Episciences_PapersManager::get($pId, false);
-
-                $pVersionIds = $oPaper->getVersionsIds();
-
-                foreach ($pVersionIds as $id) {
-                    $docIds[] = $id;
-                }
-
-            } catch (Zend_Db_Statement_Exception $e) {
-                trigger_error($e->getMessage());
-            }
-
-        }
-
-        return $docIds;
-
-    }
-
 }

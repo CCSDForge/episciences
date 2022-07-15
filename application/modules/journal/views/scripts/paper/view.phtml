@@ -6,22 +6,9 @@ $metadata = $this->metadata;
 $status = $paper->getStatus();
 $isSecretary = Episciences_Auth::isSecretary();
 $loggedUid = Episciences_Auth::getUid();
+
 $isConflictDetected = $this->isConflictDetected;
-
-$isAllowed = Episciences_Auth::isLogged() &&
-    (
-        $isSecretary ||
-            (
-                !$isConflictDetected &&
-                (
-                        Episciences_Auth::isEditor() ||
-                        Episciences_Auth::isCopyEditor() ||
-                        Episciences_Auth::isReviewer() ||
-                        $loggedUid === $paper->getUid()
-                )
-            )
-    );
-
+$isAllowedToSeeNoPublicDetails = $this->isAllowedToSeeNoPublicDetails;
 $isAllowedToAnswerNewVersion = $this->isAllowedToAnswerNewVersion;
 
 
@@ -164,7 +151,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
     <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper,'metadata'=> $metadata]) ?>
 </div>
 
-<?php if ($isAllowed): ?>
+<?php if ($isAllowedToSeeNoPublicDetails): ?>
     <?php // paper status ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
@@ -182,7 +169,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php endif; ?>
 
 <?php // préparation de copie?>
-<?php if ($isAllowed && ($this->copyEditingDemands) && !$paper->isPublished()) : ?>
+<?php if ($isAllowedToSeeNoPublicDetails && ($this->copyEditingDemands) && !$paper->isPublished()) : ?>
     <div id="copy-editing" class="panel panel-default collapsable">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Préparation de copie') ?></h2>
@@ -234,13 +221,13 @@ if (
 
 
 <?php // author's comments and cover letter ************************************************************************* ?>
-<?php if ($isAllowed && $this->author_comments && !$paper->isPublished()) : ?>
+<?php if ($isAllowedToSeeNoPublicDetails && $this->author_comments && !$paper->isPublished()) : ?>
     <?php // Author comments  *****************************************?>
     <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
 <?php endif; ?>
 
 <?php // reviewer comments ************************************** ?>
-<?php if ($isAllowed && $this->comments && !$paper->isPublished()) : ?>
+<?php if ($isAllowedToSeeNoPublicDetails && $this->comments && !$paper->isPublished()) : ?>
     <div id="comments" class="panel panel-default collapsable">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Commentaires des relecteurs') ?></h2>

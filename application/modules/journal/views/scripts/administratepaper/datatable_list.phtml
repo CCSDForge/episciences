@@ -32,11 +32,7 @@ foreach ($this->list as $paper) : ?>
 
     $isTmp = $paper->isTmp();
 
-    $isConflictDetected = (!Episciences_Auth::isRoot() && !Episciences_Auth::isAdministrator(RVID, true)) && $isCoiEnabled &&
-        (
-                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ||
-                $paper->checkConflictResponse($loggedUid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
-        );
+    $isConflictDetected = DefaultController::isConflictDetected($paper, $this->review);
 
     try {
         $isAllowed = (

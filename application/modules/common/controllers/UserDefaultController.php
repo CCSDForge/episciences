@@ -120,11 +120,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         Episciences_Auth::saveRealIdentity();
 
-
-        Episciences_Auth::getInstance()->clearIdentity();
-        Episciences_Auth::setIdentity($user);
-        $user->setScreenName();
-        Episciences_Auth::incrementPhotoVersion();
+        Episciences_Auth::updateIdentity($user);
 
         Ccsd_User_Models_UserMapper::suLog($uidFrom, $uidToSu, 'GRANTED', 'episciences');
 
@@ -1422,5 +1418,4 @@ class UserDefaultController extends Zend_Controller_Action
 
 
     }
-
 }

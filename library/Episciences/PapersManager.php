@@ -3072,4 +3072,34 @@ class Episciences_PapersManager
         return !$data ? null : new Episciences_Paper($data);
 
     }
+
+    public static  function getDocIdsInConflitByUid($uid): array
+    {
+
+        $docIds = [];
+
+        $oConflicts = Episciences_Paper_ConflictsManager::findByUidAndAnswer($uid, Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']);
+
+        foreach ($oConflicts as $oConflict) {
+
+            $pId = $oConflict->getPaperId();
+
+            try {
+                $oPaper = self::get($pId, false);
+
+                $pVersionIds = $oPaper->getVersionsIds();
+
+                foreach ($pVersionIds as $id) {
+                    $docIds[] = $id;
+                }
+
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
+        }
+
+        return $docIds;
+
+    }
 }

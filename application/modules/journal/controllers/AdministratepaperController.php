@@ -54,6 +54,8 @@ class AdministratepaperController extends PaperDefaultController
             $review = Episciences_ReviewsManager::find(RVID);
             $review->loadSettings();
 
+            $this->view->review = $review;
+
             $volumes = $review->getVolumes();
             // load volumes settings
             /** @var Episciences_Volume $volume */
@@ -473,7 +475,6 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * paper administration page
-     * TODO: split this into smaller functions
      * @throws JsonException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
@@ -512,22 +513,20 @@ class AdministratepaperController extends PaperDefaultController
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
-        $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+        $isCoiEnabled = (boolean)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
         $isOwnSubmission = $paper->isOwner();
 
         // check if user has required permissions
-        if ($isOwnSubmission || $this->isConflictDetected($paper, $review)) {
+        if ($isOwnSubmission || self::isConflictDetected($paper, $review)) {
 
-            $su = Episciences_Auth::getOriginalIdentity();
-            $suUser = new Episciences_User();
-            $suUser->find($su);
+            $suUser = Episciences_Auth::getOriginalIdentity();
 
             $message = '';
 
             if ($isOwnSubmission) {
 
-                if ($su !== $loggedUid) {
+                if ($suUser->getUid() !== $loggedUid) {
 
                     $message .= $suUser->getScreenName();
                     $message .= ', ';
@@ -553,22 +552,25 @@ class AdministratepaperController extends PaperDefaultController
 
                     if ($session->checkConflictResponseForSu === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
 
-                        Episciences_Auth::getInstance()->clearIdentity();
-                        Episciences_Auth::setIdentity($suUser);
-                        $suUser->setScreenName();
-                        Episciences_Auth::incrementPhotoVersion();
+                        Episciences_Auth::updateIdentity($suUser);
 
                         $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
                         $message .= '<br>';
                         $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
 
                     } else {
+                        $message .= $this->view->translate("Vous avez vous-même signalé un conflit d'intérêts avec cette soumission.");
+                        $message .= '<br>';
                         $message .= $this->view->translate("Vous êtes connecté en tant que : ");
                         $message .= Episciences_Auth::getScreenName();
                         $message .= '<br>';
-                        $message .= $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
-                    }
 
+
+                        if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+                            $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
+                        }
+
+                    }
 
                 } else if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
                     $message = $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
@@ -581,8 +583,13 @@ class AdministratepaperController extends PaperDefaultController
 
             }
 
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector->gotoUrl($url);
+            if (
+                !Episciences_Auth::hasOnlyAdministratorRole() ||
+                in_array($paper->getDocid(), Episciences_PapersManager::getDocIdsInConflitByUid($loggedUid), true)
+            ) {
+                $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+                $this->_helper->redirector->gotoUrl($url);
+            }
 
         }
 

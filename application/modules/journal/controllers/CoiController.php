@@ -36,7 +36,7 @@ class CoiController extends PaperDefaultController
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
 
-        if ($this->isConflictDetected($paper)) {
+        if (self::isConflictDetected($paper)) {
 
             $form = Episciences_Paper_ConflictsManager::getCoiForm();
 
