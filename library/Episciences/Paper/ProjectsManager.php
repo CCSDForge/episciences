@@ -40,36 +40,79 @@ class Episciences_Paper_ProjectsManager
     }
     public static function getProjectsByPaperId($paperId): array {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPER_PROJECTS)->where('PAPERID = ?',$paperId); // prevent empty row
+        $select = $db->select()->from(["project"=>T_PAPER_PROJECTS])->joinLeft(["source_paper" => T_PAPER_METADATA_SOURCES],"project.source_id = source_paper.id",["source_id_name"=>'source_paper.name'])->where('PAPERID = ?',$paperId); // prevent empty row
         return $db->fetchAssoc($select);
     }
-    // faire fonction pour le formatage en <ul> <li>
+
+    public static function getProjectsByPaperIdAndSourceId($paperId,$sourceId): array {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_PAPER_PROJECTS)->where('PAPERID = ?',$paperId)->where('source_id = ?',$sourceId); // prevent empty row
+        return $db->fetchAssoc($select);
+    }
+
+
+
+    public static function update($projects): int {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if (!($projects instanceof Episciences_Paper_Projects)) {
+            $projects = new Episciences_Paper_Projects($projects);
+        }
+        $where['paperid = ?'] = $projects->getPaperId();
+        $where['source_id = ?'] = $projects->getSourceId();
+        $values = [
+            'funding' => $projects->getFunding()
+        ];
+        try {
+            $resUpdate = $db->update(T_PAPER_PROJECTS, $values, $where);
+        } catch (Zend_Db_Adapter_Exception $exception) {
+            $resUpdate = 0;
+            trigger_error($exception->getMessage(), E_USER_ERROR);
+        }
+        return $resUpdate;
+
+    }
+
+
 
     public static function formatProjectsForview($paperId){
         $rawInfo = self::getProjectsByPaperId($paperId);
         if (!empty($rawInfo)){
-            $rawFunding = "";
+            $rawFunding = [];
             $templateProject = "";
             foreach ($rawInfo as $value) {
-                $rawFunding = json_decode($value['funding'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                $rawFunding[$value['source_id_name']][] = json_decode($value['funding'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
             }
-            $templateProject .= "<ul class=''>";
-            foreach ($rawFunding as $fundingInfo){
-                if ($fundingInfo['projectTitle'] !== "unidentified"){
-                    $templateProject.='<li><em>'.htmlspecialchars($fundingInfo['projectTitle'])."</em>";
-                    if ($fundingInfo['funderName'] !== "unidentified") {
-                        $templateProject.= "; ".Zend_Registry::get('Zend_Translate')->translate("Funder").": ".htmlspecialchars($fundingInfo['funderName']);
+            foreach ($rawFunding as $source_id_name => $fundingInfo){
+                $templateProject .= "<ul class='list-unstyled'>";
+                $templateProject .= " <small class='label label-info'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' .$source_id_name."</small>";
+                foreach ($fundingInfo as $counter => $funding){
+                    foreach ($funding as $kf => $vfunding){
+                        if ($vfunding['projectTitle'] !== "unidentified"){
+                            $templateProject.='<li><em>'.htmlspecialchars($vfunding['projectTitle'])."</em>";
+                        if ($vfunding['funderName'] !== "unidentified") {
+                            $templateProject.= "; ".Zend_Registry::get('Zend_Translate')->translate("Funder").": ".htmlspecialchars($vfunding['funderName']);
+                        }
+                        } elseif ($vfunding['funderName'] !== "unidentified"){
+                            $templateProject.= "<li>".Zend_Registry::get('Zend_Translate')->translate("Funder").": ".htmlspecialchars($vfunding['funderName']);
+                        }
+                        if ($vfunding['code'] !== "unidentified" && ($vfunding['funderName'] !== "unidentified" || $vfunding['projectTitle'] !== "unidentified")) {
+                            $templateProject.= "; Code: ".htmlspecialchars($vfunding['code']);
+                        }
+                        if (isset($vfunding['callId']) && $vfunding['callId'] !== "unidentified") {
+                            $templateProject.= "; ".Zend_Registry::get('Zend_Translate')->translate("callId").": ".htmlspecialchars($vfunding['callId']);
+                        }
+                        if (isset($vfunding['projectFinancing']) && $vfunding['projectFinancing'] !== "unidentified") {
+                            $templateProject.= "; ".Zend_Registry::get('Zend_Translate')->translate("projectFinancing").": ".htmlspecialchars($vfunding['projectFinancing']);
+                        }
+                        $templateProject.="</li>";
                     }
-                } elseif ($fundingInfo['funderName'] !== "unidentified"){
-                    $templateProject.= "<li>".Zend_Registry::get('Zend_Translate')->translate("Funder").",: ".htmlspecialchars($fundingInfo['funderName']);
+
                 }
-                if ($fundingInfo['code'] !== "unidentified" && ($fundingInfo['funderName'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified")) {
-                    $templateProject.= "; Code: ".htmlspecialchars($fundingInfo['code']);
-                }
-                $templateProject.="</li>";
+                $templateProject .= "</ul>";
             }
-            $templateProject .= "</ul>";
             return ['funding'=>$templateProject];
+
         }
         return "";
     }
