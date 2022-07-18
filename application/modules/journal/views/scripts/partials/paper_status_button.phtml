@@ -22,11 +22,14 @@ $waitingAuthorSources = "Demander à l'auteur ses sources (À mettre en forme pa
 $waitingFinalVersion = "Demander la version finale (À mettre en forme par l’auteur)";
 $reviewFormattingMsg = 'Mise en forme revue terminée, demander la version finale';
 $validFinalVersionMsg = 'Accepter comme version finale';
-$assignedCopyEditors = $paper->getCopyEditors();
-$isAssignedCopyEditors = !empty($assignedCopyEditors);
+try {
+    $assignedCopyEditors = $paper->getCopyEditors();
+} catch (Zend_Db_Statement_Exception $e) {
+    trigger_error($e->getMessage());
+    $assignedCopyEditors = [];
+}
 $copyEditingNotStarted = !$paper->isCopyEditingProcessStarted();
 $isInRevision = $paper->isRevisionRequested();
-$isNotTheFirstVersion = empty($paper->getPreviousVersions());
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 $acceptedWaitingForAuthorValidation = "Accepté - en attente de validation par l'auteur";
@@ -259,7 +262,6 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanPublishPapers')) :    // editors have permission to publish papers ?>
                     <?php if (
                         $this->isRequiredReviewersOk ||
-                        $isNotTheFirstVersion ||                         // if this is not the first version of this paper
                         !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
                     ) : ?>
 
@@ -327,7 +329,6 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php if (!$isInRevision && $copyEditingNotStarted && $this->review->getSetting('editorsCanAcceptPapers')) :    // editors have permission to accept papers ?>
                     <?php if (
                         $this->isRequiredReviewersOk ||
-                        $isNotTheFirstVersion ||                         // if this is not the first version of this paper
                         !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
 
                     ) : ?>
@@ -356,18 +357,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
             <?php // REJECT PAPER ************    ?>
             <?php if ($this->review->getSetting('editorsCanRejectPapers')) :    // editors have permission to reject papers ?>
-                <?php if ($isNotTheFirstVersion) : // if this is not the first version of this paper ?>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?>
-                        </a>
-                    </li>
-                <?php else : // display a notice ?>
-                    <li data-toggle="tooltip" data-placement="right"
-                        title="<?= $this->translate("Cet article n'est pas la première version de ce document, vous ne pouvez pas donc le refuser.") ?>">
-                        <a class="disabled"><?= $this->translate($refusalMsg) ?></a>
-                    </li>
-                <?php endif; ?>
+
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?>
+                    </a>
+                </li>
+
             <?php else : // editors do not have permission to reject papers, but can suggest to do it?>
                 <li onclick="showForm('refuse'); return false;"
                     data-toggle="tooltip"
@@ -382,7 +378,6 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanAskPaperRevisions')) :    // editors have permission to ask for a revision ?>
                 <?php if (
                     $this->isRequiredReviewersOk ||
-                    $isNotTheFirstVersion ||                         // if this is not the first version of this paper
                     !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
 
                 ) : ?>
