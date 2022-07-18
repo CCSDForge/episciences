@@ -252,6 +252,7 @@ return [
 
     //Funding
     "Funder" => "Financeur",
-    "Fundings :"=> "Financeurs :"
-
+    "Fundings :"=> "Financeurs :",
+    "callId" => "Call ID",
+    "projectFinancing" => "Projet Financeur"
 ];

@@ -64,69 +64,158 @@ class getFundingData extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['PAPERID', 'DOI'])->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)->where('DOI != ?','NULL')->where('DOI != ?','')->order('REPOID DESC'); // prevent empty row
+        $select = $db->select()->from(T_PAPERS, ['PAPERID', 'DOI','IDENTIFIER','VERSION','REPOID','STATUS'])->order('REPOID DESC'); // prevent empty row
         $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         foreach ($db->fetchAll($select) as $value) {
-            $fileName = trim(explode("/", $value['DOI'])[1]) . "_funding.json";
-            $sets = $cache->getItem($fileName);
-            $sets->expiresAfter(self::ONE_MONTH);
-            if (!$sets->isHit()) {
-                echo PHP_EOL. $fileName. PHP_EOL;
-                $openAireCallArrayResp = $this->callOpenAireApi(new Client(), trim($value['DOI']));
-                echo PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . trim($value['DOI']) . '&format=json'.PHP_EOL;
-                // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-                try {
-                    $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                    $this->putInFileResponseOpenAireCall($decodeOpenAireResp, trim($value['DOI']));
-                } catch (JsonException $e) {
-                    // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                    self::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $value['DOI'] . '&format=json ');
-                    $sets->set(json_encode([""]));
-                    $cache->save($sets);
-                    continue;
+            if (isset($value['DOI']) && $value['DOI'] !== '' && $value['STATUS'] === Episciences_Paper::STATUS_PUBLISHED) {
+                $doiTrim = trim($value['DOI']);
+                $fileName = trim(explode("/", $doiTrim)[1]) . "_funding.json";
+                $sets = $cache->getItem($fileName);
+                $sets->expiresAfter(self::ONE_MONTH);
+                if (!$sets->isHit()) {
+                    echo PHP_EOL. $fileName. PHP_EOL;
+                    $openAireCallArrayResp = $this->callOpenAireApi(new Client(), $doiTrim);
+                    echo PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json'. PHP_EOL;
+                    // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
+                    try {
+                        $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                        $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $doiTrim);
+                    } catch (JsonException $e) {
+                        // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
+                        self::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
+                        $sets->set(json_encode([""]));
+                        $cache->save($sets);
+                    }
+                    sleep('1');
                 }
-                sleep('1');
-            }
-            $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-            $sets = $cache->getItem($fileName);
-            $sets->expiresAfter(self::ONE_MONTH);
-            $fileFound = json_decode($sets->get() , true, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $globalfundingArray = [];
-            if (!empty($fileFound[0])) {
-                $fundingArray = [];
-                foreach ($fileFound as $openAireKey => $valueOpenAire){
-                    if(array_key_exists('to', $valueOpenAire) && array_key_exists('@type', $valueOpenAire['to']) && $valueOpenAire['to']['@type'] === "project") {
-                        if (array_key_exists('title',$valueOpenAire)){
-                            $fundingArray['projectTitle'] = $valueOpenAire['title']['$'];
-                        }
-                        if (array_key_exists('acronym',$valueOpenAire)){
-                            $fundingArray['acronym'] = $valueOpenAire['acronym']['$'];
-                        }
-                        if (array_key_exists( 'funder',$valueOpenAire['funding'])){
-                            $fundingArray['funderName']  = $valueOpenAire['funding']['funder']['@name'];
-                        }
-                        if (array_key_exists( 'code',$valueOpenAire)){
-                            $fundingArray['code']  = $valueOpenAire['code']['$'];
-                        }
+                $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+                $sets = $cache->getItem($fileName);
+                $sets->expiresAfter(self::ONE_MONTH);
+                $fileFound = json_decode($sets->get() , true, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $globalfundingArray = [];
+                $this->displayInfo('CALL CACHE OPENAIRE FOR '. $doiTrim , true);
+                if (!empty($fileFound[0])) {
+                    $fundingArray = [];
+                    foreach ($fileFound as $openAireKey => $valueOpenAire){
+                        if(array_key_exists('to', $valueOpenAire) && array_key_exists('@type', $valueOpenAire['to']) && $valueOpenAire['to']['@type'] === "project") {
+                            if (array_key_exists('title',$valueOpenAire)){
+                                $fundingArray['projectTitle'] = $valueOpenAire['title']['$'];
+                            }
+                            if (array_key_exists('acronym',$valueOpenAire)){
+                                $fundingArray['acronym'] = $valueOpenAire['acronym']['$'];
+                            }
+                            if (array_key_exists('funder',$valueOpenAire['funding'])){
+                                $fundingArray['funderName']  = $valueOpenAire['funding']['funder']['@name'];
+                            }
+                            if (array_key_exists('code',$valueOpenAire)){
+                                $fundingArray['code']  = $valueOpenAire['code']['$'];
+                            }
 
-                        $globalfundingArray[] = $fundingArray;
+                            $globalfundingArray[] = $fundingArray;
 
+                        }
+                    }
+                    $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($value['PAPERID'],Episciences_Repositories::GRAPH_OPENAIRE_ID);
+                    if (!empty($globalfundingArray) && empty($rowInDBGraph)){
+                        Episciences_Paper_ProjectsManager::insert(
+                            [
+                                'funding'=>json_encode($globalfundingArray,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                                'paperId'=> $value['PAPERID'],
+                                'source_id' => Episciences_Repositories::GRAPH_OPENAIRE_ID
+                            ]
+                        );
+                        $this->displayInfo('Project Founded '.json_encode($globalfundingArray,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), true);
+                    }elseif(!empty($globalfundingArray) && !empty($rowInDBGraph)){
+                        Episciences_Paper_ProjectsManager::update(
+                            [
+                                'funding'=>json_encode($globalfundingArray,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                                'paperId'=> $value['PAPERID'],
+                                'source_id' => Episciences_Repositories::GRAPH_OPENAIRE_ID
+                            ]
+                        );
                     }
                 }
-                if (!empty($globalfundingArray)){
-                    Episciences_Paper_ProjectsManager::insert(
-                        [
-                            'funding'=>json_encode($globalfundingArray,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-                            'paperId'=> $value['PAPERID'],
-                            'source_id' => Episciences_Repositories::GRAPH_OPENAIRE_ID
-                        ]
-                    );
-                    $this->displayInfo('Project Founded '.json_encode($globalfundingArray,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), true);
+            }
+            // add extra funding for hal identifier
+            if (($value['REPOID'] === Episciences_Repositories::HAL_REPO_ID) && !is_null(trim($value['IDENTIFIER']))) {
+                $trimIdentifier = trim($value['IDENTIFIER']);
+                $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+                $this->displayInfo('CALL HAL '. $trimIdentifier , true);
+                $arrayIdEuAnr =  self::CallHAlApiForIdEuAndAnrFunding($trimIdentifier,$value["VERSION"]);
+                $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
+                $globalArrayJson = [];
+                if (!empty($decodeHalIdsResp['response']['docs'])) {
+                    foreach ($decodeHalIdsResp['response']['docs'] as $halValue) {
+                        if (isset($halValue['europeanProjectId_i'])) {
+
+                            foreach ($halValue['europeanProjectId_i'] as $idEuro) {
+                                $this->displayInfo('Project EUROPEAN ON HAL FOUNDED '.$idEuro, true);
+                                $fileNameEuro = $trimIdentifier.'_'.$idEuro. "_EU_funding.json";
+                                $setsEU = $cache->getItem($fileNameEuro);
+                                $setsEU->expiresAfter(self::ONE_MONTH);
+                                if (!$setsEU->isHit()) {
+                                    $halEuroResp = self::CallHAlApiForEuroProject($idEuro);
+                                    $setsEU->set($halEuroResp);
+                                    $cache->save($setsEU);
+                                    $globalArrayJson[] = self::formatEuHalResp(json_decode($halEuroResp, true, 512, JSON_THROW_ON_ERROR));
+                                } else {
+                                    $globalArrayJson[] = self::formatEuHalResp(json_decode($setsEU->get(), true, 512, JSON_THROW_ON_ERROR));
+                                }
+                            }
+                        }
+                        if (isset($halValue['anrProjectId_i'])) {
+                            foreach ($halValue['anrProjectId_i'] as $idAnr) {
+                                $this->displayInfo('Project ANR ON HAL FOUNDED '.$idAnr, true);
+                                $fileNameAnr = $trimIdentifier.'_'.$idAnr. "_ANR_funding.json";
+                                $setsANR = $cache->getItem($fileNameAnr);
+                                $setsANR->expiresAfter(self::ONE_MONTH);
+                                if (!$setsANR->isHit()) {
+                                    $halAnrResp = self::CallHAlApiForAnrProject($idAnr);
+                                    $this->displayInfo('Project ANR ON HAL FOUNDED '.$idAnr, true);
+                                    $setsANR->set($halAnrResp);
+                                    $cache->save($setsANR);
+                                    $globalArrayJson[] = self::formatAnrHalResp(json_decode($halAnrResp, true, 512, JSON_THROW_ON_ERROR));
+                                } else {
+                                    $this->displayInfo('Project ANR IN CACHE FOUNDED', true);
+                                    $globalArrayJson[] = self::formatAnrHalResp(json_decode($setsANR->get(), true, 512, JSON_THROW_ON_ERROR));
+                                }
+                            }
+                        }
+                    }
+                }
+                $mergeArrayANREU = [];
+                if (!empty($globalArrayJson)) {
+                    foreach ($globalArrayJson as $globalPreJson) {
+                        $mergeArrayANREU[] = $globalPreJson[0];
+                    }
+                    $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($value['PAPERID'],Episciences_Repositories::HAL_REPO_ID);
+                    if (!empty($rowInDbHal) && !empty($mergeArrayANREU)) {
+                        Episciences_Paper_ProjectsManager::update(
+                            [
+                                'funding' => json_encode($mergeArrayANREU, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                                'paperId' => $value['PAPERID'],
+                                'source_id' => Episciences_Repositories::HAL_REPO_ID
+                            ]
+                        );
+                        $this->displayInfo('HAL PROJECT UPDATED', true);
+                    } elseif (!empty($mergeArrayANREU) && empty($rowInDbHal)) {
+                        Episciences_Paper_ProjectsManager::insert(
+                            [
+                                'funding' => json_encode($mergeArrayANREU, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                                'paperId' => $value['PAPERID'],
+                                'source_id' => Episciences_Repositories::HAL_REPO_ID
+                            ]
+                        );
+                        $this->displayInfo('NEW HAL PROJECT INSERTED', true);
+                    }
+
+                    if (empty($mergeArrayANREU)){
+                        $this->displayInfo('NO INFO FOUND FOR '.$trimIdentifier, true);
+                    }
                 }
             }
         }
         $this->displayInfo('Funding Data Enrichment completed. Good Bye ! =)', true);
-
     }
 
 
@@ -204,6 +293,125 @@ class getFundingData extends JournalScript
         $logger = new Logger('my_logger');
         $logger->pushHandler(new StreamHandler(__DIR__ . '/fundingEnrichment.log', Logger::INFO));
         $logger->info($msg);
+    }
+    public static function CallHAlApiForIdEuAndAnrFunding($identifier,$version) {
+        $client = new Client();
+        $halCallArrayResp = '';
+        $url = "https://api.archives-ouvertes.fr/search/?q=((halId_s:" . $identifier . " OR halIdSameAs_s:" . $identifier . ") AND version_i:" . $version . ")&fl=europeanProjectId_i,anrProjectId_i";
+        try {
+            return $client->get($url, [
+                'headers' => [
+                    'User-Agent' => 'CCSD Episciences support@episciences.org',
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ]
+            ])->getBody()->getContents();
+
+        } catch (GuzzleException $e) {
+
+            trigger_error($e->getMessage());
+
+        }
+        return $halCallArrayResp;
+    }
+
+    public static function CallHAlApiForEuroProject($halDocId){
+
+
+        $client = new Client();
+        $halCallArrayResp = '';
+        $url = "https://api.archives-ouvertes.fr/ref/europeanproject/?q=docid:".$halDocId."&fl=projectTitle:title_s,acronym:acronym_s,code:reference_s,callId:callId_s,projectFinancing:financing_s";
+        try {
+            return $client->get($url, [
+                'headers' => [
+                    'User-Agent' => 'CCSD Episciences support@episciences.org',
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ]
+            ])->getBody()->getContents();
+
+        } catch (GuzzleException $e) {
+
+            trigger_error($e->getMessage());
+
+        }
+        return $halCallArrayResp;
+    }
+
+    public static function CallHAlApiForAnrProject($halDocId){
+
+
+        $client = new Client();
+        $halCallArrayResp = '';
+        $url = "https://api.archives-ouvertes.fr/ref/anrproject/?q=docid:".$halDocId."&fl=projectTitle:title_s,acronym:acronym_s,code:reference_s";
+        try {
+            return $client->get($url, [
+                'headers' => [
+                    'User-Agent' => 'CCSD Episciences support@episciences.org',
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ]
+            ])->getBody()->getContents();
+
+        } catch (GuzzleException $e) {
+
+            trigger_error($e->getMessage());
+
+        }
+        return $halCallArrayResp;
+    }
+
+
+
+    public static function formatEuHalResp($respEuHAl){
+
+        $arrayAllValuesExpected = [
+            'projectTitle'=>'unidentified',
+            'acronym'=>'unidentified',
+            'funderName'=>'European Commission',
+            'code'=>'unidentified',
+            'callId'=>'unidentified',
+            'projectFinancing'=>'unidentified'
+        ];
+        $arrayEuropean = [];
+        if (!empty($respEuHAl['response']['docs'])){
+            $i = 0;
+            foreach ($respEuHAl['response']['docs'] as $key => $value){
+                $arrayEuropean[$key] = $value;
+                //add unidentified to all key not founded
+                if (!empty(array_diff_key($arrayAllValuesExpected, $value))) {
+                    foreach (array_diff_key($arrayAllValuesExpected,$value) as $keyDiff => $valueDiff) {
+                        $arrayEuropean[$i][$keyDiff] = $valueDiff;
+                    }
+                }
+                $i++;
+            }
+        }
+        return $arrayEuropean;
+    }
+    public static function formatAnrHalResp($respAnrHAl){
+
+        $arrayAllValuesExpected = [
+            'projectTitle'=>'unidentified',
+            'acronym'=>'unidentified',
+            'funderName'=>'French National Research Agency (ANR)',
+            'code'=>'unidentified',
+        ];
+        $arrayAnr = [];
+        if (!empty($respAnrHAl['response']['docs'])){
+            $i = 0;
+            foreach ($respAnrHAl['response']['docs'] as $key => $value){
+                $arrayAnr[$key] = $value;
+                //add unidentified to all key not founded
+                if (!empty(array_diff_key($arrayAllValuesExpected, $value))) {
+                    foreach (array_diff_key($arrayAllValuesExpected,$value) as $keyDiff => $valueDiff) {
+                        $arrayAnr[$i][$keyDiff] = $valueDiff;
+                    }
+                }
+                $i++;
+            }
+        }
+        return $arrayAnr;
     }
 
 
