@@ -11,12 +11,8 @@ $waitingAuthorSources = "Demander à l'auteur ses sources (À mettre en forme pa
 $waitingFinalVersion = "Demander la version finale (À mettre en forme par l’auteur)";
 $reviewFormattingMsg = 'Mise en forme revue terminée, demander la version finale';
 $validFinalVersionMsg = 'Accepter comme version finale';
-$suggestionInfoMsg = "Votre suggestion à déjà été enregistrée.";
-$assignedCopyEditors = $paper->getCopyEditors();
-$isAssignedCopyEditors = !empty($paper->getCopyEditors());
 $copyEditingNotStarted = !$paper->copyEditingProcessStarted();
-$isInRevision = in_array($status, [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION]);
-$isNotTheFirstVersion = empty($paper->getPreviousVersions());
+$isInRevision = in_array($status, [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION], true);
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 // **** CHIEF EDITORS, administrator and secretary (git #235) : can do whatever they want *****************************
@@ -68,7 +64,7 @@ if (Episciences_Auth::isSecretary()) : ?>
                     </li>
                 <?php endif; ?>
 
-            <?php elseif ($status == Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
+            <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
                 <?php // Copy ed. : mise en forme revue terminée?>
                 <li>
                     <a href="#" data-toggle="modal"
@@ -83,7 +79,7 @@ if (Episciences_Auth::isSecretary()) : ?>
                     </a>
                 </li>
 
-            <?php elseif ($status == Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED) : ?>
+            <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED) : ?>
 
                 <?php // Préparation de copie: prêt à publier ?>
                 <li>
@@ -163,9 +159,9 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 </li>
 
                 <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanPublishPapers')) :    // editors have permission to publish papers ?>
-                    <?php if ($isNotTheFirstVersion ||  // if this is not the first version of this paper
-                        !$this->review->getSetting('requiredReviewers') ||   // if there is no minimum number of rating reports, or it has been matched
-                        $this->isRequiredReviewersOk
+                    <?php if (
+                            $this->isRequiredReviewersOk ||
+                            !$this->review->getSetting('requiredReviewers') // if there is no minimum number of rating reports, or it has been matched
                     ) : ?>
 
                         <?php // PUBLISH PAPER?>
@@ -185,7 +181,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     <?php // recommandation de publier l'article?>
                 <?php endif; ?>
 
-            <?php elseif ($status == Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
+            <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
                 <?php // Copy ed. : mise en forme revue terminée?>
                 <li>
                     <a href="#" data-toggle="modal"
@@ -200,7 +196,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     </a>
                 </li>
 
-            <?php elseif ($status == Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED) : ?>
+            <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED) : ?>
 
                 <?php // Préparation de copie: prêt à publier ?>
                 <li>
@@ -229,9 +225,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php // ACCEPT PAPER ************    ?>
             <?php else: ?>
                 <?php if (!$isInRevision && $copyEditingNotStarted && $this->review->getSetting('editorsCanAcceptPapers')) :    // editors have permission to accept papers ?>
-                    <?php if ($isNotTheFirstVersion || // if this is not the first version of this paper
-                        !$this->review->getSetting('requiredReviewers') ||    // if there is no minimum number of rating reports, or it has been matched
-                        $this->isRequiredReviewersOk
+                    <?php if (
+                            $this->isRequiredReviewersOk ||
+                            !$this->review->getSetting('requiredReviewers')    // if there is no minimum number of rating reports, or it has been matched
+
                     ) : ?>
                         <li>
                             <a href="#" data-toggle="modal"
@@ -258,17 +255,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
             <?php // REJECT PAPER ************    ?>
             <?php if ($this->review->getSetting('editorsCanRejectPapers')) :    // editors have permission to reject papers ?>
-                <?php if ($isNotTheFirstVersion) : // if this is not the first version of this paper ?>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".refusal-modal"><?php echo $this->translate($refusedMsg); ?>
-                        </a>
-                    </li>
-                <?php else : // display a notice ?>
-                    <li data-toggle="tooltip" data-placement="right" title="<?php echo $this->translate("Cet article n'est pas la première version de ce document, vous ne pouvez pas donc le refuser."); ?>">
-                        <a class="disabled"><?php echo $this->translate($refusedMsg); ?></a>
-                    </li>
-                <?php endif; ?>
+
+                <li>
+                    <a href="#" data-toggle="modal"
+                       data-target=".refusal-modal"><?php echo $this->translate($refusedMsg); ?>
+                    </a>
+                </li>
+
             <?php else : // editors do not have permission to reject papers, but can suggest to do it?>
                 <li onclick="showForm('refuse'); return false;"
                     data-toggle="tooltip"
@@ -281,9 +274,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
             <?php // ASK FOR A REVISION ************    ?>
             <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanAskPaperRevisions')) :    // editors have permission to ask for a revision ?>
-                <?php if ($isNotTheFirstVersion || // if this is not the first version of this paper
-                    !$this->review->getSetting('requiredReviewers') ||    // if there is no minimum number of rating reports, or it has been matched
-                    $this->isRequiredReviewersOk
+                <?php if (
+                        $this->isRequiredReviewersOk ||
+                        !$this->review->getSetting('requiredReviewers')   // if there is no minimum number of rating reports, or it has been matched
+
                 ) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
@@ -345,7 +339,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 </li>
             </ul>
 
-        <?php elseif ($status == Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
+        <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
             <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                 <?= $this->translate($changeStatusMsg); ?> <span class="caret" style="margin-left: 5px"></span>
             </button>
@@ -366,7 +360,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 </li>
             </ul>
 
-        <?php elseif ($status == Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED) : ?>
+        <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED) : ?>
 
             <?php // Préparation de copie: prêt à publier ?>
 
