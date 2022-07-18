@@ -43,3 +43,4 @@ ALTER TABLE `paper_projects`
 ALTER TABLE `paper_projects`
   ADD CONSTRAINT `paper_projects_ibfk_1` FOREIGN KEY (`paperid`) REFERENCES `PAPERS` (`PAPERID`),
   ADD CONSTRAINT `paper_projects_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE `paper_projects` DROP INDEX `paperid`, ADD UNIQUE `unique_idx_paper_source` (`paperid`, `source_id`) USING BTREE;
