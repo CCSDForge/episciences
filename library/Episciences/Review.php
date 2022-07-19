@@ -1023,12 +1023,12 @@ class Episciences_Review
 
         // choix de sections
         $form->addElement('select', self::SETTING_CAN_PICK_SECTION, [
-                'label' => 'Choix de section',
+                'label' => 'Choix de rubrique',
                 'value' => 1,
                 'multioptions' => [
-                    '0' => "L'auteur ne peut pas choisir la section",
-                    '1' => "L'auteur peut choisir la section",
-                    '2' => "L'auteur doit choisir la section"
+                    '0' => "L'auteur ne peut pas choisir la rubrique",
+                    '1' => "L'auteur peut choisir la rubrique",
+                    '2' => "L'auteur doit choisir la rubrique"
                 ]]
         );
 
@@ -1305,7 +1305,7 @@ class Episciences_Review
         ];
 
         $chiefEditorsCheckBox = $translator->translate('Rédacteurs en chef');
-        $sectionCheckBox = $translator->translate("Rédacteurs de section");
+        $sectionCheckBox = $translator->translate("Rédacteurs de rubrique");
         $volumeCheckBox = $translator->translate("Rédacteurs de volume (hors volume spécial)");
         $suggestedEditorsCheckBox = $translator->translate("Rédacteurs suggérés par le contributeur");
         $specialVolumeCheckBox = $translator->translate("Rédacteurs de volume spécial");
@@ -1878,7 +1878,7 @@ class Episciences_Review
         }
 
         if ((int)$this->getSetting(self::SETTING_CAN_PICK_SECTION) > 0) {
-            $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]] = 'Assigner tous les rédacteurs de la section';
+            $assignmentOptionsLabels [self:: ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]] = 'Assigner tous les rédacteurs de la rubrique';
 
         }
 
@@ -1905,7 +1905,7 @@ class Episciences_Review
         }
 
         if ($this->getSetting(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS)) {
-            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]] = 'Assigner tous les rédacteurs de la section';
+            $selectedOptions[self::ASSIGNMENT_EDITORS_DETAIL[self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]] = 'Assigner tous les rédacteurs de la rubrique';
         }
 
         if ($this->getSetting(self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS)) {

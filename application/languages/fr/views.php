@@ -124,7 +124,7 @@ return [
     // log
     'Chief editor' => 'Rédacteur en chef',
 
-    Episciences_Editor::TAG_SECTION_EDITOR => 'Rédacteur de la section',
+    Episciences_Editor::TAG_SECTION_EDITOR => 'Rédacteur de la rubrique',
     Episciences_Editor::TAG_VOLUME_EDITOR => 'Rédacteur du volume',
     Episciences_Editor::TAG_SUGGESTED_EDITOR => "Rédacteur suggéré par l'auteur",
 
@@ -193,7 +193,7 @@ return [
     "search-index" => "Rechercher un article",
     "section-add" => "Créer une rubrique",
     "section-edit" => "Modifier une rubrique",
-    "section-saveeditors" => "Assigner des rédacteurs à une section",
+    "section-saveeditors" => "Assigner des rédacteurs à une rubrique",
     "submit-index" => "Soumettre un article",
     "user-create" => "Créer un nouveau compte",
     "user-changepassword" => "Modifier son mot de passe",
@@ -217,7 +217,7 @@ return [
     "browse-date" => "Consulter les articles : par date",
     "browse-latest" => "Consulter les derniers articles",
     "browse-regularissues" => "Consulter les volumes classiques",
-    "browse-section" => "Consulter les articles : par section",
+    "browse-section" => "Consulter les articles : par rubrique",
     "browse-specialissues" => "Consulter les volumes spéciaux",
     "browse-volumes" => "Consulter tous les volumes",
     'volume-view' => 'Voir un volume',
