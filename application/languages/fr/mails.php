@@ -47,7 +47,7 @@ return [
     "paper_editor_assign_tpl_name" => "Assignation d'un rédacteur",
     "paper_editor_assign_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un article vous a été assigné pour édition",
 
-    "paper_section_editor_assign_tpl_name" => "assignation d'un rédacteur -  choix de la section par l’auteur",
+    "paper_section_editor_assign_tpl_name" => "assignation d'un rédacteur -  choix de la rubrique par l’auteur",
     "paper_section_editor_assign_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You've been chosen to manage an article",
 
     "paper_volume_editor_assign_tpl_name" => "assignation d'un rédacteur - choix du volume par l’auteur",
