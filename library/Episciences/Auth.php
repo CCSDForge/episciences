@@ -279,7 +279,7 @@ class Episciences_Auth extends Ccsd_Auth
     /**
      * @return Episciences_User
      */
-    public static function getOriginalIdentity(): Episciences_User
+    public static function getOriginalIdentity(): ?Episciences_User
     {
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         return isset($session->realIdentities) ? $session->realIdentities[array_key_first($session->realIdentities)] : self::getUser();

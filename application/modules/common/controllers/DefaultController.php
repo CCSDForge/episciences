@@ -200,7 +200,7 @@ class DefaultController extends Zend_Controller_Action
 
         $suUser = Episciences_Auth::getOriginalIdentity();
 
-        $isSignedInAs = $suUser->getUid() !== $loggedUid;
+        $isSignedInAs = $suUser ? ($suUser->getUid() !== $loggedUid) : null;
 
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
 
