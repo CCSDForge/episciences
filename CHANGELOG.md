@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - [201](https://github.com/CCSDForge/episciences/issues/201): depending on journal settings, editor can accept, ask revision, reject and publish papers in every round.
 - [238](https://github.com/CCSDForge/episciences/issues/238): harmonization of terms 'sections/rubriques'.
+- [196](https://github.com/CCSDForge/episciences/issues/196) now,
+  - Only one 'name' field is available when creating a new reviewer
+  - Reviewers are sorted by lastname by default
+
 
 ## 1.0.31.1 - 2022-07-13
 ### Changed

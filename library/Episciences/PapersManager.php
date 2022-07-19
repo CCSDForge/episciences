@@ -1039,10 +1039,10 @@ class Episciences_PapersManager
             'required' => true,
         ]);
 
-        $form->addElement('text', 'firstname', [
+      /*  $form->addElement('text', 'firstname', [
             'label' => 'Prénom',
             'class' => 'form-control',
-        ]);
+        ]);*/
 
         $form->addElement('select', 'user_lang', [
             'label' => 'Langue',
