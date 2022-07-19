@@ -40,6 +40,7 @@ $autoloader = Zend_Loader_Autoloader::getInstance();
 $autoloader->setFallbackAutoloader(true);
 
 $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+$debug = $opts->debug;
 
 if ($debug) {
     println("Processing Date: " . $date);
@@ -70,6 +71,8 @@ try {
         //Sélection des lignes par tranche de PAS
         while (true) {
 
+            $gi = geoip_open(GEO_IP_DATABASE_PATH . GEO_IP_DB_NAME . '.' . GEO_IP_EXTENSION, GEOIP_STANDARD);
+
             $sqlStatTemp = $db->select()->from('STAT_TEMP', new Zend_Db_Expr('*, INET_NTOA(IP) as TIP'))->where("DATE_FORMAT(DHIT, '%Y-%m-%d') <= ?", $date)->order('DHIT ASC')->limit(STEP_OF_LINES);
 
             $values = $db->fetchAll($sqlStatTemp);
@@ -91,7 +94,7 @@ try {
                 }
 
                 $v = new Ccsd_Visiteurs($ip, $value['HTTP_USER_AGENT']);
-                $vData = $v->getLocalisation();
+                $vData = $v->getLocalisation($gi);
 
                 if ($v->isRobot()) {
                     // we do not keep robot hits
@@ -125,8 +128,8 @@ try {
                     $linesInError++;
                 }
 
-
             }
+
             if ($debug) {
                 println($linesProcessed . " lines were processed OK");
                 if ($linesIgnored > 0) {

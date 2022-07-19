@@ -379,29 +379,43 @@ class Ccsd_Visiteurs
     /**
      * Détermine les données de géolocalisation d'une IP via GeoIP
      */
-    public function getLocalisation() {
-        $data = array('domain'=>'', 'continent'=>'', 'country'=>'', 'city'=>'', 'lat'=>0, 'lon'=>0);
-        if ( $this->_ip != null ) {
-            if (! array_key_exists($this->_ip, self::$nonResolvedIps) ) {
+    public function getLocalisation(GeoIP $gi = null): array
+    {
+        $data = array('domain' => '', 'continent' => '', 'country' => '', 'city' => '', 'lat' => 0, 'lon' => 0);
+        if ($this->_ip != null) {
+            if (!array_key_exists($this->_ip, self::$nonResolvedIps)) {
                 # Pour une Ip, ne faire le gethostbyaddr qu'une seule fois si l'adresse ne se resoud pas pour eviter les timeout
                 $domain = @gethostbyaddr($this->_ip);
-                if ($domain  == $this->_ip) {
+                if ($domain == $this->_ip) {
                     # Non resolue, on cache
                     self::$nonResolvedIps[$this->_ip] = 1;
                 } else {
                     # Resolue
-                    if ( preg_match('/(?P<domain>[\w\-]{1,63}\.[a-z\.]{2,6})$/ui', $domain, $regs)) {
+                    if (preg_match('/(?P<domain>[\w\-]{1,63}\.[a-z\.]{2,6})$/ui', $domain, $regs)) {
                         $data['domain'] = $regs['domain'];
                     }
                 }
             }
-            if ( $record = @geoip_record_by_name($this->_ip) ) {
-                $data['continent'] = utf8_encode($record['continent_code']);
-                $data['country'] = utf8_encode($record['country_name']);
-                $data['city'] = utf8_encode($record['city']);
-                $data['lat'] = floatval(($record['latitude']!='')?$record['latitude']:0);
-                $data['lon'] = floatval(($record['longitude']!='')?$record['longitude']:0);
+
+            if (!$gi) {
+                $geoIp = geoip_open(GEO_IP_DATABASE_PATH . GEO_IP_DB_NAME . '.' . GEO_IP_EXTENSION, GEOIP_STANDARD);
+            } else {
+                $geoIp = $gi;
             }
+
+
+            if ($geoIp && $record = GeoIP_record_by_addr($geoIp, $this->_ip)) {
+                $data['continent'] = utf8_encode($record->continent_code);
+                $data['country'] = utf8_encode($record->country_name);
+                $data['city'] = utf8_encode($record->city);
+                $data['lat'] = (float)(($record->latitude) ?: 0);
+                $data['lon'] = (float)(($record->longitude) ?: 0);
+            }
+
+            if (!$gi) {
+                geoip_close($gi);
+            }
+
         }
         return $data;
     }
