@@ -14,15 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## Unreleased on the main branch
 ### Changed
 - [201](https://github.com/CCSDForge/episciences/issues/201): depending on journal settings, editor can accept, ask revision, reject and publish papers in every round.
 - [238](https://github.com/CCSDForge/episciences/issues/238): harmonization of terms 'sections/rubriques'.
-
-## 1.0.31.1 - 2022-07-13
-### Changed
-- User accounts merging procedure: take into account the Conflict Of Interests 
-
+- [196](https://github.com/CCSDForge/episciences/issues/196) now,
+  - Only one 'name' field is available when creating a new reviewer
+  - Reviewers are sorted by lastname by default
+  
 ## Unreleased
 ## added
 - API to get a list of publishing journals: include accepted repositories.
@@ -85,6 +84,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 - [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest. 
+
+## 1.0.31.1 - 2022-07-13
+### Changed
+- User accounts merging procedure: take into account the Conflict Of Interests
 
 ## 1.0.31 - 2022-06-28
 ### Added

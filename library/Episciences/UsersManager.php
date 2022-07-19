@@ -89,7 +89,13 @@ class Episciences_UsersManager
         } else if (!empty($without)) {
             $select->where('ROLEID != ?', $without);
         }
-        $select->order('SCREEN_NAME ASC');
+
+        if ($with === Episciences_Acl::ROLE_REVIEWER) {
+            $select->order('LASTNAME');
+        } else {
+            $select->order('SCREEN_NAME ASC');
+        }
+
         return $select;
     }
 
