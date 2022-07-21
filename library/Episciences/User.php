@@ -643,7 +643,13 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->find($uid);
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
 
-        return $ccsdUserMapper->find($uid, $this);
+        $row = $ccsdUserMapper->find($uid, $this);
+
+        if ($row && !$this->hasLocalData()) {
+            $this->setScreenName();
+        };
+
+        return $row;
     }
 
     /**
