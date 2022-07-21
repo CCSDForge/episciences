@@ -30,6 +30,7 @@ class Episciences_Repositories
     public const ZENODO_REPO_ID = '4';
     public const DATACITE_REPO_ID = '7';
     public const GRAPH_OPENAIRE_ID = '8';
+    public const OPENCITATIONS_ID = '13';
 
     // todo : to be converted to a database table
     private static array $_repositories = [

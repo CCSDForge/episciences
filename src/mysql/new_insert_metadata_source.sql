@@ -1,0 +1,1 @@
+INSERT INTO `metadata_sources` (`id`, `name`, `type`) VALUES ('13', 'OpenCitations', 'metadataRepository')
