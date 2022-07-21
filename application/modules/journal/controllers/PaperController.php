@@ -428,6 +428,9 @@ class PaperController extends PaperDefaultController
             $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
         }
 
+        $this->view->citations = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
+
+
         if ($zIdentifier && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) { // new version submitted from z-submit application
 
             $this->view->zIdentifier = $zIdentifier;
