@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [196](https://github.com/CCSDForge/episciences/issues/196) now,
   - Only one 'name' field is available when creating a new reviewer
   - Reviewers are sorted by lastname by default
-  
+- Empty TAG  %%RECIPIENT_SCREEN_NAME%% for users who do not have a local account in "Unanswered reviewer invitation (reviewer copy)" reminder.
+
 ## Unreleased
 ## added
 - API to get a list of publishing journals: include accepted repositories.
