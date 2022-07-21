@@ -99,7 +99,7 @@ try {
                     continue;
                 }
 
-                $hit = substr($value["DHIT"], 0, 7) . '-00';
+                $hit = substr($value["DHIT"], 0, 7) . '-01';
 
                 $bind = [];
                 $bind[':DOCID'] = $value["DOCID"];
