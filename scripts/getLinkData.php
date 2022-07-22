@@ -68,7 +68,7 @@ class getLinkData extends JournalScript
             ->where('DOI != ""'); // prevent empty row
         foreach ($db->fetchAll($select) as $value) {
             $docId = $value['DOCID'];
-            $doiTrim = $value['DOI'];
+            $doiTrim = trim($value['DOI']);
             $fileName = $dir . '/' . explode("/", $doiTrim)[1] . ".json";
 
             try {
