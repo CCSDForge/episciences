@@ -144,16 +144,16 @@ class getLinkData extends JournalScript
                         } catch (Exception $e) {
                             $message = 'data existing ' . $e->getMessage();
 
-                            $this->display('[:error] ' . $message, true, static::BASH_RED);
+                            $this->displayInfo('[:error] ' . $message, true, static::BASH_RED);
 
                             continue;
                         }
                     }
                 } else {
-                    $this->display( 'Found and already Inserted for ' . $doiTrim, true);
+                    $this->displayInfo( 'Found and already Inserted for ' . $doiTrim, true);
                 }
             } else {
-                $this->display('No match: ' . $doiTrim, true);
+                $this->displayInfo('No match: ' . $doiTrim, true);
             }
             sleep(1);
         }
