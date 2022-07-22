@@ -1,23 +1,13 @@
 <?php
-/**
- * This script will get the document metadata file and post the content to Crossref API
- * Only Crossref is supported. However, adding another agency should be easy.
- * Use --dry-run to use the test API
- */
+
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 
+
 $localopts = [
-    'paperid=i' => "Paper ID",
     'dry-run' => 'Work with Test API',
-    'check' => 'Check DOI submission status',
-    'rvid=i' => 'RVID of a journal',
-    'assign-accepted' => 'Assign DOI to all accepted papers',
-    'assign-published' => 'Assign DOI to all accepted papers',
-    'request' => 'Request all assigned DOI of a journal',
-    'journal-hostname=s' => 'Get XML files from an alternate journal hostname, eg: test.episciences.org'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -30,39 +20,17 @@ require_once "JournalScript.php";
 class getLinkData extends JournalScript
 {
     public const API_URL = 'http://api.scholexplorer.openaire.eu';
-    /**
-     * @var Episciences_Paper
-     */
-    protected $_paper;
-
-    /**
-     * @var Episciences_Review
-     */
-    protected $_review;
-    /**
-     * @var Episciences_Paper_DoiQueue
-     */
-    protected $_doiQueue;
-
-    /**
-     * @var Episciences_Review_DoiSettings
-     */
-    protected $_doiSettings;
 
     /**
      * @var bool
      */
-    protected $_dryRun = true;
-
-    /**
-     * @var string
-     */
-    protected $_journalHostname;
+    protected bool $_dryRun = true;
 
     /**
      * getDoi constructor.
      * @param $localopts
      */
+
     public function __construct($localopts)
     {
 
@@ -76,13 +44,6 @@ class getLinkData extends JournalScript
         } else {
             $this->setDryRun(false);
         }
-
-        $journalHostname = $this->getParam('journal-hostname');
-        if ($journalHostname === null) {
-            $journalHostname = '';
-        }
-        $this->setJournalHostname($journalHostname);
-
     }
 
     /**
@@ -92,18 +53,7 @@ class getLinkData extends JournalScript
     public
     function run()
     {
-
-        $dir = '../data/scholexplorer';
-
-        if (!file_exists($dir)) {
-
-            $result = mkdir($dir, 0770, true);
-
-            if (!$result) {
-                die('Fatal error: Failed to create directory: ' . $dir);
-            }
-        }
-
+        $dir = dirname(APPLICATION_PATH) . '/cache/scholexplorerLinkData';
 
         $this->initApp();
         $this->initDb();
@@ -118,11 +68,12 @@ class getLinkData extends JournalScript
             ->where('DOI != ""'); // prevent empty row
         foreach ($db->fetchAll($select) as $value) {
             $docId = $value['DOCID'];
-            $fileName = $dir . '/' . explode("/", $value['DOI'])[1] . ".json";
+            $doiTrim = $value['DOI'];
+            $fileName = $dir . '/' . explode("/", $doiTrim)[1] . ".json";
 
             try {
-
-                $apiResult = $client->get(self::API_URL . '/v1/linksFromPid?pid=' . $value['DOI'], [
+                $this->displayInfo('Call Scholexplorer '. self::API_URL . '/v1/linksFromPid?pid=' . $doiTrim, true);
+                $apiResult = $client->get(self::API_URL . '/v1/linksFromPid?pid=' . $doiTrim, [
                     'headers' => [
                         'User-Agent' => 'CCSD Episciences support@episciences.org',
                         'Content-Type' => 'application/json',
@@ -139,13 +90,13 @@ class getLinkData extends JournalScript
 
             $flagNew = 0;
             if (file_exists($fileName) && !empty(json_decode($apiResult, true, 512, JSON_THROW_ON_ERROR))) {
-                $fileNameNew = $dir . '/' . explode("/", $value['DOI'])[1] . ".new.json";
+                $fileNameNew = $dir . '/' . explode("/", $doiTrim)[1] . ".new.json";
                 file_put_contents($fileNameNew, $apiResult);
                 if (md5_file($fileNameNew) !== md5_file($fileName)) {
                     unlink($fileName);
                     rename($fileNameNew, str_replace('.new.json', '.json', $fileNameNew));
                     $flagNew = 1;
-                    echo PHP_EOL . 'File updated for ' . $value['DOI'];
+                    $this->displayInfo('File updated for ' . $doiTrim, true);
                 } else {
                     unlink($fileNameNew);
                 }
@@ -158,19 +109,19 @@ class getLinkData extends JournalScript
                     ->distinct('DOI')
                     ->from('paper_datasets', ['id_paper_datasets_meta'])
                     ->where('doc_id IS NOT NULL')
-                    ->where('source_id = 5')
+                    ->where('source_id = ?',Episciences_Repositories::SCHOLEXPLORER_ID)
                     ->where('doc_id = ? ', $docId);
                 $idToDelete = $db->fetchOne($getTargetId);
                 if (is_string($idToDelete)) {
                     Episciences_Paper_DatasetsMetadataManager::deleteMetaDataAndDatasetsByIdMd($idToDelete);
-                    echo PHP_EOL . 'Old values deleted for ' . $value['DOI'] . 'id: ' . $idToDelete;
+                    $this->displayInfo('Old values deleted for ' . $doiTrim . 'id: ' . $idToDelete, true);
                 }
 
             }
 
             if (file_exists($fileName)) {
                 if ($flagNew === 1) {
-                    echo PHP_EOL . 'Search Information in File : ' . $value['DOI'];
+                    $this->displayInfo('Search Information in File : ' . $doiTrim, true);
                     $arrayResult = json_decode(file_get_contents($fileName), true, 512, JSON_THROW_ON_ERROR);
                     $relationship = $arrayResult[0]['relationship']['name'];
                     $targetString = json_encode($arrayResult[0]['target'], JSON_THROW_ON_ERROR);
@@ -183,12 +134,12 @@ class getLinkData extends JournalScript
                                 'name' => $identifier['schema'],
                                 'value' => $identifier['identifier'],
                                 'link' => $identifier['schema'],
-                                'sourceId' => '5',
+                                'sourceId' => Episciences_Repositories::SCHOLEXPLORER_ID,
                                 'relationship' => $relationship,
                                 'idPaperDatasetsMeta' => $lastMetatextInserted
                             ]]);
                             if ($enrichment >= 1) {
-                                echo PHP_EOL . 'DB info inserted for ' . $value['DOI'];
+                                $this->displayInfo('DB info inserted for ' . $doiTrim, true);
                             }
                         } catch (Exception $e) {
                             $message = 'data existing ' . $e->getMessage();
@@ -199,10 +150,10 @@ class getLinkData extends JournalScript
                         }
                     }
                 } else {
-                    echo PHP_EOL . 'Found and already Inserted for ' . $value['DOI'];
+                    $this->display( 'Found and already Inserted for ' . $doiTrim, true);
                 }
             } else {
-                echo PHP_EOL . 'No match: ' . $value['DOI'];
+                $this->display('No match: ' . $doiTrim, true);
             }
             sleep(1);
         }
@@ -228,76 +179,6 @@ class getLinkData extends JournalScript
     {
         $this->_dryRun = $dryRun;
     }
-
-    /**
-     * @return Episciences_Paper
-     */
-    public
-    function getPaper(): Episciences_Paper
-    {
-        return $this->_paper;
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     */
-    public
-    function setPaper($paper)
-    {
-        $this->_paper = $paper;
-    }
-
-    /**
-     * @return string
-     */
-    public function getJournalHostname(): string
-    {
-        return $this->_journalHostname;
-    }
-
-    /**
-     * @param string $journalDomain
-     */
-    public function setJournalHostname(string $journalDomain)
-    {
-        $this->_journalHostname = $journalDomain;
-    }
-
-    /**
-     * @return Episciences_Review
-     */
-    public
-    function getReview(): Episciences_Review
-    {
-        return $this->_review;
-    }
-
-    /**
-     * @param Episciences_Review $review
-     */
-    public
-    function setReview($review)
-    {
-        $this->_review = $review;
-    }
-
-    public
-    function getDoiQueue(): Episciences_Paper_DoiQueue
-    {
-        return $this->_doiQueue;
-    }
-
-    /**
-     * @param mixed $doiQueue
-     */
-    public
-    function setDoiQueue($doiQueue)
-    {
-        $this->_doiQueue = $doiQueue;
-    }
-
 }
-
-
 $script = new getLinkData($localopts);
 $script->run();
