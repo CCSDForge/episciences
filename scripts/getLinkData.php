@@ -66,6 +66,14 @@ class getLinkData extends JournalScript
             ->from('PAPERS', ['DOI', 'DOCID'])
             ->where('DOI IS NOT NULL')
             ->where('DOI != ""'); // prevent empty row
+
+        if (!file_exists($dir)) {
+            $result = mkdir($dir);
+            if (!$result) {
+                die('Fatal error: Failed to create directory: ' . $dir);
+            }
+        }
+
         foreach ($db->fetchAll($select) as $value) {
             $docId = $value['DOCID'];
             $doiTrim = trim($value['DOI']);
