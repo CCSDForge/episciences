@@ -72,11 +72,11 @@ class Ccsd_Form_Decorator_Lang extends Zend_Form_Decorator_HtmlTag
         
         $function = $this->init . "(this, '" . $element->getFullyQualifiedName(). "');";
 
-        $values = $element->getUnprocessedValues();
+        $values = !$element->getUnprocessedValues() ? [] : $element->getUnprocessedValues();
         
        
         if ($element->isPluriValues()) {
-        	$values = array_map('array_filter', $values ? $values : array ());
+        	$values = array_map('array_filter', $values);
         }
          
         $values = array_filter($values);
