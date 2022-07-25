@@ -174,6 +174,19 @@ $(document).ready(function () {
         updateDeadlineTag(oBody, 'revision_deadline', deadline, locale);
 
     }));
+
+    // show and hide citations to avoid big listing page
+    $('button[id^="btn-show-citations"]').click(function () {
+        $("div#list-citations").show();
+        $("#btn-hide-citations").show();
+        $("#btn-show-citations").hide();
+    });
+    $('button[id^="btn-hide-citations"]').click(function () {
+        $("div#list-citations").hide();
+        $("#btn-hide-citations").hide();
+        $("#btn-show-citations").show();
+    });
+
 });
 
 // filter logs 

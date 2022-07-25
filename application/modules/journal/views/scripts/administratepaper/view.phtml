@@ -52,7 +52,9 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 ?>
 
 <?php // citations *****************************************************
-echo $this->partial('partials/paper_citations.phtml', ['citations' =>  $this->citations]);
+    if ($this->citations !== '') {
+        echo $this->partial('partials/paper_citations.phtml', ['citations' =>  $this->citations]);
+    }
 ?>
 
 <?php // conflict management section ?>

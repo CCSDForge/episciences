@@ -254,5 +254,11 @@ return [
     "Funder" => "Financeur",
     "Fundings :"=> "Financeurs :",
     "callId" => "Call ID",
-    "projectFinancing" => "Projet Financeur"
+    "projectFinancing" => "Projet Financeur",
+
+    //citations
+    "Display citations" => "Afficher les citations",
+    "Hide citations" => "Reduire les citations",
+
+
 ];

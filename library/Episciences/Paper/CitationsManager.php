@@ -52,7 +52,9 @@ class Episciences_Paper_CitationsManager
             $decodeCitations = json_decode($value['citation'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
             $decodeCitations = self::sortAuthorAndYear($decodeCitations);
             foreach ($decodeCitations as $citationMetadataArray){
-                $templateCitation.="<div><p>";
+                $templateCitation.="<ul class='list-unstyled'>";
+                $templateCitation.="<li>";
+                $citationMetadataArray = array_map('strip_tags',$citationMetadataArray);
                 foreach ($citationMetadataArray as $keyMetadata => $metadata) {
                     if ($metadata !== ""){
                         if ($keyMetadata === 'source_title') {
@@ -68,8 +70,11 @@ class Episciences_Paper_CitationsManager
                     }
                 }
                 $templateCitation = substr_replace($templateCitation,".",-2);
-                $templateCitation.= "</p></div>";
+                $templateCitation.= "</li>";
+
             }
+            $templateCitation.="</ul>";
+            $templateCitation.="<br>";
         }
         return $templateCitation;
     }
