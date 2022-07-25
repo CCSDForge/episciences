@@ -1,9 +1,14 @@
 $(function () {
+
+    if (typeof paperCommentId  === 'undefined' || paperCommentId === 0 ) {
+        paperCommentId = null;
+    }
+
     let formData = {};
     let idCpt = 0;
 
     // comment
-    if (typeof paperCommentId !== 'undefined' || paperCommentId !== 0 || paperCommentId != null) {
+    if (null !== paperCommentId) {
         formData.pcId = paperCommentId;
         // to change  comment path
         let $hiddenPath = $('#attachments_path_type_' + paperCommentId);
@@ -11,8 +16,6 @@ $(function () {
         formData.path = isHiddenPath ? $hiddenPath.val() : ''
         formData.docId = isHiddenPath ? $hiddenPath.attr('docId') : 0;
         formData.paperId = (isHiddenPath && $hiddenPath.attr('paperId')) ? $hiddenPath.attr('paperId') : 0;
-    } else {
-        paperCommentId = null;
     }
 
     $('.upload_button').on('click',function () {

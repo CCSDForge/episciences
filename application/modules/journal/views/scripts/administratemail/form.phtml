@@ -50,8 +50,7 @@ $suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
 </form>
 <?php // à l'ouverture d'une modal : Charger un fichier JavaScript à partir du serveur?>
 <script>
-    // init paper comment Id, see es.fileupload.js
-    paperCommentId = null;
+
     $(document).ready(function () {
         if (modalStructureExists()) {
             $.ajaxSetup({
