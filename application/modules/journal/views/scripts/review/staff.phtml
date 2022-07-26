@@ -78,3 +78,14 @@
         <?php endif; ?>
     <?php endforeach; ?>
 </div>
+
+<?php
+
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+$this->jQuery()->addJavascriptFile('/js/library/es.fileupload.js');
+$this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
+$this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
+
+?>

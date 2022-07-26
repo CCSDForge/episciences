@@ -203,7 +203,7 @@ class FileController extends DefaultController
             /** @var Zend_Controller_Request_Http $request */
             $request = $this->getRequest();
             // Copy editing : modifier le path
-            $path = $request->getPost('path');
+            $path = (string)$request->getPost('path');
             $pcId = (int)$request->getPost('pcId');
             $docId = (int)$request->getPost('docId');
             $paperId = (int)$request->getPost('paperId');
@@ -415,7 +415,7 @@ class FileController extends DefaultController
      * @param int $pcId
      * @return string
      */
-    private function buildStorageFolder(string $path, int $paperId, int $docId, int $pcId): string
+    private function buildStorageFolder(string $path = "", int $paperId = 0, int $docId = 0, int $pcId = 0): string
     {
         if ($path === 'tmp_attachments') {
             $folder = $paperId . '/tmp/';
