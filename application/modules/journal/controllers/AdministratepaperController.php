@@ -873,7 +873,10 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
 
         $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid' => $paper->getPaperid()]);
-        $this->view->citations = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
+
+        $getterCiting = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
+        $this->view->citations = $getterCiting['template'];
+        $this->view->counterCitations = $getterCiting['counterCitations'];
 
         if ($isCoiEnabled) {
             //conflict management section

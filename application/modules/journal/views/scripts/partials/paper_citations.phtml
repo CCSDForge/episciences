@@ -1,15 +1,16 @@
 <?php
 $citations  = $this->citations;
+$counterCitations = $this->counterCitations;
 ?>
 <div id="citations-body" class="panel panel-default collapsable">
     <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Citations') ?></h2>
+        <h2 class="panel-title"><?php echo ($counterCitations > 1) ? sprintf($this->translate('%s Documents citant cet article'),$counterCitations) : sprintf($this->translate('%s Document citant cet article'),$counterCitations); ?></h2>
     </div>
     <div class="panel-body in" style="overflow: visible">
         <div>
             <label id="citations-label" for="citations"></label>
-            <button type="button" id="btn-show-citations" class="btn btn-default btn-sm"><i class="fa-solid fa-quote-left"></i> <?= $this->translate('Display citations') ?></button>
-            <button type="button" id="btn-hide-citations" class="btn btn-default btn-sm" style="display:none;"><i class="fa-solid fa-quote-left"></i> <?= $this->translate('Hide citations') ?></button>
+            <button type="button" id="btn-show-citations" class="btn btn-default btn-sm"><i class="fa-solid fa-quote-left"></i> <?php echo ($counterCitations > 1) ? $this->translate('Afficher les documents') : $this->translate('Afficher le document'); ?></button>
+            <button type="button" id="btn-hide-citations" class="btn btn-default btn-sm" style="display:none;"><i class="fa-solid fa-quote-left"></i> <?php echo ($counterCitations > 1) ? $this->translate('Cacher les documents') : $this->translate('Cacher le document'); ?></button>
             <div id="list-citations" style="display:none;"><?= $citations ?></div>
         </div>
     </div>

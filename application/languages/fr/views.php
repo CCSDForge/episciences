@@ -256,9 +256,4 @@ return [
     "callId" => "Call ID",
     "projectFinancing" => "Projet Financeur",
 
-    //citations
-    "Display citations" => "Afficher les citations",
-    "Hide citations" => "Reduire les citations",
-
-
 ];

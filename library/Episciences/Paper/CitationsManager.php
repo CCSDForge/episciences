@@ -47,9 +47,12 @@ class Episciences_Paper_CitationsManager
     public static function formatCitationsForViewPaper($docId){
         $allCitation = self::getCitationByDocId($docId);
         $templateCitation = "";
+        $counterCitations = 0;
+        $doiOrgDomain = 'https://doi.org/';
         foreach ($allCitation as $value) {
             $templateCitation .= "<small class='label label-info'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . htmlspecialchars($value['source_id_name']) ."</small>";
             $decodeCitations = json_decode($value['citation'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+            $counterCitations += count($decodeCitations);
             $decodeCitations = self::sortAuthorAndYear($decodeCitations);
             foreach ($decodeCitations as $citationMetadataArray){
                 $templateCitation.="<ul class='list-unstyled'>";
@@ -63,6 +66,12 @@ class Episciences_Paper_CitationsManager
                             $templateCitation.= "<b>".self::formatAuthors(htmlspecialchars($metadata)).'</b>';
                         } elseif ($keyMetadata === 'page') {
                             $templateCitation.= "pp.&nbsp".trim(htmlspecialchars($metadata));
+                        } elseif ($keyMetadata === 'doi') {
+                            $templateCitation.= "<a rel='noopener' target='_blank' href=".$doiOrgDomain.$metadata.">".htmlspecialchars($metadata)."</a>";
+                        } elseif ($keyMetadata === 'oa_link' && $citationMetadataArray['doi'] !== $metadata){
+                            $templateCitation.= "<i class='fas fa-lock-open'></i>"." <a rel='noopener' target='_blank' href=".htmlspecialchars($metadata).">".htmlspecialchars($metadata)."</a>";
+                        } elseif ($keyMetadata === 'oa_link' && $citationMetadataArray['doi'] === $metadata){
+                            continue;
                         } else {
                             $templateCitation.= htmlspecialchars($metadata);
                         }
@@ -76,7 +85,7 @@ class Episciences_Paper_CitationsManager
             $templateCitation.="</ul>";
             $templateCitation.="<br>";
         }
-        return $templateCitation;
+        return ['template'=>$templateCitation,'counterCitations'=>$counterCitations];
     }
 
     public static function sortAuthorAndYear($arrayMetadata) {

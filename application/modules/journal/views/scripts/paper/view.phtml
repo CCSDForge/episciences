@@ -206,7 +206,7 @@ if (
 ?>
 <?php // Citations *****************************************************
     if ($this->citations !=='') {
-        echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations]);
+        echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations,'counterCitations'=> $this->counterCitations]);
     }
 ?>
 <?php // rating reports ************************************************************************* ?>

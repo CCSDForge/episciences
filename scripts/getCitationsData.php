@@ -116,6 +116,8 @@ class getCitationsData extends JournalScript
                             $globalInfoMetadata[$i]['volume'] = $infoCitation['volume'];
                             $globalInfoMetadata[$i]['issue'] = $infoCitation['issue'];
                             $globalInfoMetadata[$i]['page'] = $infoCitation['page'];
+                            $globalInfoMetadata[$i]['doi'] = $infoCitation['doi'];
+                            $globalInfoMetadata[$i]['oa_link'] = $infoCitation['oa_link'];
                             $i++;
                         }
                     }
