@@ -51,6 +51,12 @@ $this->suggestedRevision = false;
 echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' =>  $this->affiliationsForm]);
 ?>
 
+<?php // citations *****************************************************
+    if ($this->citations !== '') {
+        echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations,'counterCitations'=> $this->counterCitations]);
+    }
+?>
+
 <?php // conflict management section ?>
 <?= $this->render('partials/paper_conflicts.phtml') ?>
 

@@ -874,6 +874,10 @@ class AdministratepaperController extends PaperDefaultController
 
         $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid' => $paper->getPaperid()]);
 
+        $getterCiting = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
+        $this->view->citations = $getterCiting['template'];
+        $this->view->counterCitations = $getterCiting['counterCitations'];
+
         if ($isCoiEnabled) {
             //conflict management section
             $this->view->paperConflicts = $paper->getConflicts(true);

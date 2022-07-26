@@ -172,6 +172,7 @@ function define_table_constants()
     define('T_PAPER_CONFLICTS', 'paper_conflicts');
     define('T_PAPER_METADATA_SOURCES', 'metadata_sources');
     define('T_PAPER_PROJECTS', 'paper_projects');
+    define('T_PAPER_CITATIONS', 'paper_citations');
 }
 
 /**

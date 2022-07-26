@@ -1901,6 +1901,13 @@ return [
 
     //funding
     "callId" => "Call ID",
-    "projectFinancing" => "Projet Financing"
+    "projectFinancing" => "Projet Financing",
 
+    //citations
+    "%s Document citant cet article" => "%s Document citing this article",
+    "%s Documents citant cet article" => "%s Documents citing this article",
+    "Afficher le document" => "Display document",
+    "Afficher les documents" => "Display documents",
+    "Cacher le document" => "Hide document",
+    "Cacher les documents" => "Hide documents"
 ];
