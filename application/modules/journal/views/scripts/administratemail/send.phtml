@@ -8,7 +8,12 @@
 
 <?php if ($this->ajax) : // if in ajax, js are loaded in parent page ?>
     <div id="add_contacts_box" style="display:none"></div>
-    <script><?php echo file_get_contents(APPLICATION_PUBLIC_PATH . '/js/administratemail/send.js'); ?></script>
+    <script>
+        $.getScript("/js/administratemail/send.js?_=v<?= APPLICATION_VERSION ?>")
+            .fail(function (jqxhr, settings, exception) {
+                console.log(exception);
+            });
+    </script>
     <script>__initMCE(".tinymce");</script>
 <?php else : ?>
     <?php

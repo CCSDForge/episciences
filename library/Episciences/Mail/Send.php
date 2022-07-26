@@ -137,6 +137,10 @@ class Episciences_Mail_Send
             $form->addElement('hidden', self::getElementName('docid', $prefix), ['value' => $docId]);
         }
 
+        if (!$button_enabled && !$to_enabled) {
+            $form->addElement('hidden', self::getElementName('in_modal', $prefix), ['value' => true]);
+        }
+
         // submit button
         if ($button_enabled) {
 

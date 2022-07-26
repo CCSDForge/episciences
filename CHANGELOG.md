@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reviewers are sorted by lastname by default
 - Empty TAG  %%RECIPIENT_SCREEN_NAME%% for users who do not have a local account in "Unanswered reviewer invitation (reviewer copy)" reminder.
 
+### Fixed
+- [RT#163166]: Problem sending mail from staff page.
+
 ## 1.0.31.1 - 2022-07-13
 ### Changed
 - User accounts merging procedure: take into account the Conflict Of Interests 

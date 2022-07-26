@@ -222,7 +222,6 @@ function updateModalButton(step) {
             $modal_body.html(getLoader());
             let request = ajaxRequest('/administratemail/send', form_values );
             request.done(function(result){
-                console.log(result);
                 $modal_body.html(translate(result));
                 $modal_footer.hide();
             });

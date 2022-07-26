@@ -102,7 +102,9 @@ $(document).ready(function () {
 
     // refresh parent page on close modal
     $('button.close').on('click', function () {
-        refreshPaperHistory($jsDocId);
+        if($jsDocId){
+            refreshPaperHistory($jsDocId);
+        }
     });
 });
 
