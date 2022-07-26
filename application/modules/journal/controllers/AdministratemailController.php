@@ -377,7 +377,7 @@ class AdministratemailController extends Zend_Controller_Action
     private function sendMail(array $post)
     {
 
-        $isInModal = isset($post['docid']); // true: sent from the paper administration page
+        $isInModal = isset($post['in_modal']) && $post['in_modal']; // true: sent from the paper administration page
 
         /** @var Zend_View $selfView */
         $selfView = $this->view;
@@ -516,7 +516,7 @@ class AdministratemailController extends Zend_Controller_Action
 
             $message = '<strong>' . $selfView->translate("Votre e-mail a bien été envoyé.") . '</strong>';
 
-            if ($isInModal) {
+            if (isset($post['docid'])) {
                 /** @var Episciences_Paper $paper */
                 $paper = Episciences_PapersManager::get((int)$post['docid']);
                 if ($paper) {

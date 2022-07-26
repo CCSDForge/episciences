@@ -55,7 +55,7 @@ function __destroyActiveMCE() {
 };
 
 function __removeAttrOnclick(e) {
-    var fct = $(e).attr('onclick');
+    let fct = $(e).attr('onclick');
     $(e).removeAttr('onclick');
     return fct;
 };
@@ -63,7 +63,7 @@ function __removeAttrOnclick(e) {
 function __initAction(context) {
 
     $('.glyphicon-plus', context).parent().each(function (i) {
-        var fct = __removeAttrOnclick(this);
+        let fct = __removeAttrOnclick(this);
 
         $(this).click(function (event) {
             __pasteContentMCE();
@@ -79,14 +79,14 @@ function __initAction(context) {
     });
 
     function __initModifications(context) {
-        var textarea = $(context).find('textarea');
+        let textarea = $(context).find('textarea');
         $('.glyphicon-pencil', context).parent().each(function (i) {
-            var fct = __removeAttrOnclick(this);
+            let fct = __removeAttrOnclick(this);
             $(this).click(function (event) {
                 tinyMCE.activeEditor.setContent(textarea[0].value);
                 eval(fct);
                 $('.glyphicon-ok', $(context).parent().find('.textarea-group:last')).parent().each(function (i) {
-                    var fct = __removeAttrOnclick(this);
+                    let fct = __removeAttrOnclick(this);
                     $(this).click(function (event) {
                         __pasteContentMCE();
                         eval(fct);
