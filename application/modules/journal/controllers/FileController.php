@@ -270,8 +270,7 @@ class FileController extends DefaultController
         $request = $this->getRequest();
 
         // attachments path
-        $path = $request->getPost('path');
-
+        $path = (string)$request->getPost('path');
         $filename = $request->getPost('file');
         $docId = (int)$request->get('docId');
         $pcId = (int)$request->getPost('pcId');
