@@ -67,11 +67,13 @@ try {
         println("Date to process is <= " . $date);
         println("Total of lines : " . $count);
     }
+
+    $giReader = new GeoIp2\Database\Reader(GEO_IP_DATABASE_PATH . GEO_IP_DATABASE);
+
     if ($count > 0) {
+
         //Sélection des lignes par tranche de PAS
         while (true) {
-
-            $gi = geoip_open(GEO_IP_DATABASE_PATH . GEO_IP_DB_NAME . '.' . GEO_IP_EXTENSION, GEOIP_STANDARD);
 
             $sqlStatTemp = $db->select()->from('STAT_TEMP', new Zend_Db_Expr('*, INET_NTOA(IP) as TIP'))->where("DATE_FORMAT(DHIT, '%Y-%m-%d') <= ?", $date)->order('DHIT ASC')->limit(STEP_OF_LINES);
 
@@ -94,7 +96,7 @@ try {
                 }
 
                 $v = new Ccsd_Visiteurs($ip, $value['HTTP_USER_AGENT']);
-                $vData = $v->getLocalisation($gi);
+                $vData = $v->getLocalisation($giReader);
 
                 if ($v->isRobot()) {
                     // we do not keep robot hits
@@ -164,6 +166,9 @@ try {
 
         }
     }
+
+    // Closes the GeoIP database
+    $giReader->close();
 } catch (Exception $e) {
     println("> Errors in script : ");
     println("Message : " . $e->getMessage());

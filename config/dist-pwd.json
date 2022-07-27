@@ -112,8 +112,7 @@
     "DB_PASSWORD": "four random common words"
   },
   "GEO_IP": {
-    "DATABASE_PATH": "/usr/share/GeoIP/",
-    "DB_NAME": "GeoLiteCity",
-    "EXTENSION": "dat"
+    "DATABASE_PATH": "/fullPathTo/scripts/geoip/",
+    "DATABASE": "GeoLite2-City.mmdb"
   }
 }

@@ -46,7 +46,7 @@
     "ezyang/htmlpurifier": "^4.14",
     "cottagelabs/coar-notifications": "dev-main",
     "smalot/pdfparser": "^2.2",
-    "geoip/geoip": "^1.17"
+    "geoip2/geoip2": "~2.0"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
