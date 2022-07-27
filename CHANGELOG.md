@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Only one 'name' field is available when creating a new reviewer
   - Reviewers are sorted by lastname by default
 - Empty TAG  %%RECIPIENT_SCREEN_NAME%% for users who do not have a local account in "Unanswered reviewer invitation (reviewer copy)" reminder.
+- transition to PHP 8: refactoring: "MaxMind GeoIP2 PHP API" is now used.
 
 ### Fixed
 - [RT#163166]: Problem sending mail from staff page.

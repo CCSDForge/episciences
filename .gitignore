@@ -47,3 +47,6 @@ assets/node_modules/
 !.yarn/sdks
 !.yarn/versions
 /version.php
+
+#geoip
+/scripts/geoip/*
