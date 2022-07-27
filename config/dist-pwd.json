@@ -97,5 +97,9 @@
     "TESTAPI": "https://test.crossref.org/servlet/deposit",
     "API": "https://doi.crossref.org/servlet/deposit",
     "EMAIL_CONTACT": "feedback@example.org"
+  },
+  "GEO_IP": {
+    "DATABASE_PATH": "/fullPathTo/scripts/geoip/",
+    "DATABASE": "GeoLite2-City.mmdb"
   }
 }

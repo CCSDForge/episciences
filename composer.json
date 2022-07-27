@@ -9,7 +9,7 @@
   ],
 
   "require": {
-    "php": "^7.4",
+    "php": ">=7.4",
     "ext-json": "*",
     "ext-curl": "*",
     "ext-iconv": "*",
@@ -22,7 +22,6 @@
     "ext-fileinfo": "*",
     "ext-posix": "*",
     "ext-pdo": "*",
-    "ext-geoip": "*",
     "ext-imagick": "*",
     "ext-zip": "*",
     "geertw/ip-anonymizer": "^1.1",
@@ -30,7 +29,7 @@
     "guzzlehttp/guzzle": "^7.3",
     "html2text/html2text": "^4.3",
     "jasig/phpcas": "1.3.8",
-    "laravolt/avatar": "<4",
+    "laravolt/avatar": "^4.1",
     "neverbehave/hcaptcha": "~0.0.5",
     "phpmailer/phpmailer": "^6.4",
     "shardj/zf1-future": "1.20",
@@ -43,7 +42,8 @@
     "symfony/cache": "^5.3",
     "ezyang/htmlpurifier": "^4.13",
     "cottagelabs/coar-notifications": "^0.9.6",
-    "smalot/pdfparser": "^2.2"
+    "smalot/pdfparser": "^2.2",
+    "geoip2/geoip2": "~2.0"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
