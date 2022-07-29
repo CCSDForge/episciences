@@ -240,23 +240,30 @@ class AdministratemailController extends Zend_Controller_Action
 
     /**
      * mail detail (shown in modal)
+     * @return void
      * @throws Zend_Mail_Exception
      */
     public function viewAction()
     {
-        $this->_helper->layout->disableLayout();
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $id = $request->getParam('id');
 
-        $oMail = new Episciences_Mail('UTF-8');
-        $oMail->find($id);
-        $mail = $oMail->toArray(true);
+        if ($request->isXmlHttpRequest()) {
+            $this->_helper->layout->disableLayout();
+            $id = (int)$request->getParam('id');
+            $oMail = new Episciences_Mail('UTF-8');
 
-        $this->view->mail = $mail;
+            $mail = $oMail->find($id) ? $oMail->toArray(true) : [];
 
-        return;
+            $this->view->mail = $mail;
+
+
+        } else {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->renderScript('index/notfound.phtml');
+        }
+
     }
 
     /**
