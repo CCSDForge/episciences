@@ -65,7 +65,7 @@ class Ccsd_User_Models_UserTokensMapper
         $result = $this->getDbTable()->find($token);
         $aResult = $result->toArray();
 
-        if (0 === count($result->toArray()[Episciences_Tools::epi_array_key_first($aResult)])) {
+        if (empty($aResult) || 0 === count($aResult[array_key_first($aResult)])) {
             return null;
         }
 
