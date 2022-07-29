@@ -1,92 +1,94 @@
-<style>
-    table.mail-details {
-        width: 100%;
-        margin-bottom: 20px;
-    }
-
-    table.mail-details td {
-        padding: 5px;
-        border-bottom: 1px solid #ddd;
-    }
-
-    table.mail-details .td-label {
-        color: #666;
-        width: 100px;
-    }
-</style>
-
-<table class="mail-details">
-
-    <tr>
-        <td class="td-label"><?php echo $this->translate("Date d'envoi"); ?></td>
-        <td class="small"><?php echo $this->Date($this->mail['sendDate'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
-    </tr>
-
-    <tr>
-        <td class="td-label"><?php echo $this->translate("De"); ?></td>
-        <td class="small"><?php echo htmlentities(implode(', ', $this->mail['From'])); ?></td>
-    </tr>
-
-    <?php if ($this->mail['Reply-To'] != $this->mail['From']) : ?>
-        <tr>
-            <td class="td-label"><?php echo $this->translate("Répondre à"); ?></td>
-            <td class="small"><?php echo htmlentities(implode(', ', $this->mail['Reply-To'])); ?></td>
-        </tr>
-    <?php endif; ?>
-
-    <tr>
-        <td class="td-label"><?php echo $this->translate('À'); ?></td>
-        <td class="small"><?php echo (!isset($this->mail['To'])) ? '' : htmlentities(implode(', ', $this->mail['To'])); ?></td>
-    </tr>
-
-    <?php if (array_key_exists('Cc', $this->mail)) : ?>
-        <tr>
-            <td class="td-label"><?php echo $this->translate('Cc'); ?></td>
-            <td class="small"><?php echo htmlentities(implode(', ', $this->mail['Cc'])); ?></td>
-        </tr>
-    <?php endif; ?>
-
-    <?php if (array_key_exists('Bcc', $this->mail)) : ?>
-        <tr>
-            <td class="td-label"><?php echo $this->translate('Bcc'); ?></td>
-            <td class="small"><?php echo htmlentities(implode(', ', $this->mail['Bcc'])); ?></td>
-        </tr>
-    <?php endif; ?>
-
-    <tr>
-        <td class="td-label"><?php echo $this->translate('Sujet'); ?></td>
-        <td class="small"><?= !(empty($this->mail['Subject'])) ? $this->mail['Subject'] : $this->translate('Aucun sujet'); ?></td>
-    </tr>
-
-</table>
-
-
-<div><?php echo quoted_printable_decode($this->mail['bodyHtml']); ?></div>
-
-<?php if ($this->mail['attachments']) : ?>
-    <hr/>
-
-    <p class="small">
-        <strong><?php echo $this->translate(array('Fichier joint', 'Fichiers joints', count($this->mail['attachments']))) ?>
-            :</strong></p>
-
-    <?php
-    foreach ($this->mail['attachments'] as $attachment) {
-
-        $filepath = (is_array($attachment)) ? $attachment['path'] : $attachment;
-        $path_info = pathinfo($filepath);
-        $filepath = $path_info['dirname'];
-        $filename = $path_info['basename'];
-        if (!$filename || !$filepath) {
-            continue;
+<?php if (!empty($this->mail)): ?>
+    <style>
+        table.mail-details {
+            width: 100%;
+            margin-bottom: 20px;
         }
-        $filepath = str_replace(REVIEW_FILES_PATH, '', $filepath . '/' . urlencode($filename));
 
-        echo '<div class="small">';
-        echo '<a target="_blank" href="/' . $filepath . '">';
-        echo $filename;
-        echo '</a>';
-        echo '</div>';
-    }
-    ?>
+        table.mail-details td {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table.mail-details .td-label {
+            color: #666;
+            width: 100px;
+        }
+    </style>
+
+    <table class="mail-details">
+
+        <tr>
+            <td class="td-label"><?php echo $this->translate("Date d'envoi"); ?></td>
+            <td class="small"><?php echo $this->Date($this->mail['sendDate'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+        </tr>
+
+        <tr>
+            <td class="td-label"><?php echo $this->translate("De"); ?></td>
+            <td class="small"><?php echo htmlentities(implode(', ', $this->mail['From'])); ?></td>
+        </tr>
+
+        <?php if ($this->mail['Reply-To'] != $this->mail['From']) : ?>
+            <tr>
+                <td class="td-label"><?php echo $this->translate("Répondre à"); ?></td>
+                <td class="small"><?php echo htmlentities(implode(', ', $this->mail['Reply-To'])); ?></td>
+            </tr>
+        <?php endif; ?>
+
+        <tr>
+            <td class="td-label"><?php echo $this->translate('À'); ?></td>
+            <td class="small"><?php echo (!isset($this->mail['To'])) ? '' : htmlentities(implode(', ', $this->mail['To'])); ?></td>
+        </tr>
+
+        <?php if (array_key_exists('Cc', $this->mail)) : ?>
+            <tr>
+                <td class="td-label"><?php echo $this->translate('Cc'); ?></td>
+                <td class="small"><?php echo htmlentities(implode(', ', $this->mail['Cc'])); ?></td>
+            </tr>
+        <?php endif; ?>
+
+        <?php if (array_key_exists('Bcc', $this->mail)) : ?>
+            <tr>
+                <td class="td-label"><?php echo $this->translate('Bcc'); ?></td>
+                <td class="small"><?php echo htmlentities(implode(', ', $this->mail['Bcc'])); ?></td>
+            </tr>
+        <?php endif; ?>
+
+        <tr>
+            <td class="td-label"><?php echo $this->translate('Sujet'); ?></td>
+            <td class="small"><?= !(empty($this->mail['Subject'])) ? $this->mail['Subject'] : $this->translate('Aucun sujet'); ?></td>
+        </tr>
+
+    </table>
+
+
+    <div><?php echo quoted_printable_decode($this->mail['bodyHtml']); ?></div>
+
+    <?php if ($this->mail['attachments']) : ?>
+        <hr/>
+
+        <p class="small">
+            <strong><?php echo $this->translate(array('Fichier joint', 'Fichiers joints', count($this->mail['attachments']))) ?>
+                :</strong></p>
+
+        <?php
+        foreach ($this->mail['attachments'] as $attachment) {
+
+            $filepath = (is_array($attachment)) ? $attachment['path'] : $attachment;
+            $path_info = pathinfo($filepath);
+            $filepath = $path_info['dirname'];
+            $filename = $path_info['basename'];
+            if (!$filename || !$filepath) {
+                continue;
+            }
+            $filepath = str_replace(REVIEW_FILES_PATH, '', $filepath . '/' . urlencode($filename));
+
+            echo '<div class="small">';
+            echo '<a target="_blank" href="/' . $filepath . '">';
+            echo $filename;
+            echo '</a>';
+            echo '</div>';
+        }
+        ?>
+    <?php endif; ?>
 <?php endif; ?>
