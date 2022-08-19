@@ -53,7 +53,9 @@
     "squizlabs/php_codesniffer": "3.*",
     "friendsofphp/php-cs-fixer": "@stable",
     "roave/security-advisories": "dev-latest",
-    "phpmetrics/phpmetrics": "^2.7"
+    "phpmetrics/phpmetrics": "^2.7",
+    "rector/rector": "^0.13.10",
+    "phpstan/phpstan": "^1.8"
   },
   "license": "GNU GENERAL PUBLIC LICENSE Version 3",
   "support": {

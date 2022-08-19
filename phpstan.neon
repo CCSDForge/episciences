@@ -1,0 +1,7 @@
+parameters:
+	level: 6
+	paths:
+		- application
+		- library
+		- public
+		- script
