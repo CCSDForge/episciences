@@ -828,6 +828,10 @@ class Episciences_Paper
         if (empty($this->_submitter) && $this->getUid()) {
             $this->loadSubmitter();
         }
+        if (!$this->_submitter) {
+            // this is to handle development and test databases inconsistencies
+            $this->_submitter = new Episciences_User();
+        }
         return $this->_submitter;
     }
 
@@ -2241,7 +2245,7 @@ class Episciences_Paper
             }
         }
 
-        return $result;
+        return trim($result);
     }
 
     /**
