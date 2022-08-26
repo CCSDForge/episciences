@@ -12,11 +12,11 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     public static $dbConfName = 'episciences';
 
-    private $_reviews = [];
+    private array $_reviews = [];
 
-    private $_volumes = [];
+    private array $_volumes = [];
 
-    private $_sections = [];
+    private array $_sections = [];
 
     public function __construct(array $options)
     {
@@ -77,21 +77,27 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
                 $author_sort[] = $author;
             }
             $author_fullname_sort = substr(implode(' ', $author_sort), 0, 50);
+            $ndx->addField('author_fullname_sort', $author_fullname_sort);
 
         } elseif (is_string($authors)) {
             $this->indexOneAuthor($authors, $ndx);
             $author_fullname_sort = self::cleanAuthorName($authors);
+            $ndx->addField('author_fullname_sort', $author_fullname_sort);
         }
-        $ndx->addField('author_fullname_sort', $author_fullname_sort);
+
 
         // Récupération des mots-clés
-        $keywords = $paperData->getMetadata('subjects');
-        if (is_array($keywords)) {
-            foreach ($keywords as $keyword) {
-                $ndx->addField('keyword_t', $keyword);
+        $subjects = $paperData->getMetadata('subjects');
+        if (is_array($subjects)) {
+            foreach ($subjects as $keyword) {
+                if (is_array($keyword)) {
+                    foreach ($keyword as $kwd) {
+                        $ndx->addField('keyword_t', $kwd);
+                    }
+                } else {
+                    $ndx->addField('keyword_t', $keyword);
+                }
             }
-        } else {
-            $ndx->addField('keyword_t', $keywords);
         }
 
         // Date de soumission
@@ -99,7 +105,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         // Date de publication
         if ($paperData->getPublication_date()) {
-            // $publication_date = date_format(new DateTime(Ccsd_Tools::xpath($paperData['RECORD'], '//publication_date')), "Y-m-d\Th:i:s\Z");
             $publication_date = date_format(new DateTime($paperData->getPublication_date()), "Y-m-d\Th:i:s\Z");
             $publication_date_array = explode('-', $publication_date);
             $publication_year = $publication_date_array[0];
@@ -174,12 +179,12 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         foreach ($dataToIndex as $fieldName => $fieldValue) {
             if ($fieldValue) {
-               /* if (is_array($fieldValue)) {
-                   $fieldValue= array_map('trim', $fieldValue);
+                if (is_array($fieldValue)) {
+                    $fieldValue = array_map('trim', $fieldValue);
                 } else {
                     $fieldValue = trim($fieldValue);
                 }
-               */
+
                 $ndx->addField($fieldName, $fieldValue);
             }
         }
@@ -244,7 +249,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $ndx->addField('indexing_date_tdate', date("Y-m-d\Th:i:s\Z"));
 
         // Facets ************************
-        $ndx->addField('revue_title_fs', $paperData->getVid() . parent::SOLR_FACET_SEPARATOR . $review_title);
+        $ndx->addField('revue_title_fs', $paperData->getRvid() . parent::SOLR_FACET_SEPARATOR . $review_title);
 
 
         return $ndx;
@@ -360,7 +365,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return trim($outputString);
     }
 
-
     private function getVolume($vid)
     {
         if (array_key_exists($vid, $this->_volumes)) {
@@ -443,23 +447,4 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return trim($inputString);
     }
 
-    /**
-     * @param $sid
-     * @return mixed
-     */
-    private function getSection($sid)
-    {
-        if (array_key_exists($sid, $this->_sections)) {
-            return $this->_sections[$sid];
-        }
-
-// Data ***
-        $select = $this->getDb()
-            ->select()
-            ->from('SECTION')
-            ->where('SID = ?', $sid);
-        $section = $this->getDb()->fetchRow($select);
-        $this->_sections[$sid] = $section;
-        return $section;
-    }
 }
