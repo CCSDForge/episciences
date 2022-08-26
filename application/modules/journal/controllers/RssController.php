@@ -10,15 +10,15 @@ class RssController extends Zend_Controller_Action
     public function init(): void
     {
         $params = $this->getRequest()->getParams();
-        if (!array_key_exists('max', $params) || !is_numeric($params['max'])) {
-            $page = new Episciences_Website_Navigation_Page_Rss;
-            $page->load();
-            $params['max'] = $page->getNbResults();
-        }
 
         if (($params['action'] === 'papers' || $params['action'] === 'news')) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
+            if (!array_key_exists('max', $params) || !is_numeric($params['max'])) {
+                $page = new Episciences_Website_Navigation_Page_Rss;
+                $page->load();
+                $params['max'] = $page->getNbResults();
+            }
             new Episciences_Rss($params);
         }
 
@@ -31,12 +31,11 @@ class RssController extends Zend_Controller_Action
 
     public function papersAction(): void
     {
-// view here
+        // render feed here
     }
 
     public function newsAction(): void
     {
-        // view here
+        // render feed here
     }
-
 }

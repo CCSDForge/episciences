@@ -906,10 +906,11 @@ return [
     // RSS
     "RSS" => "RSS",
     "Derniers articles" => "Latest papers",
+    'Dernières publications'=>'Latest Publications',
     "Dernières actualités" => "Latest news",
     "Flux des articles" => "Papers feed",
     "Flux des actualités" => "News feed",
-    "Consulter le flux" => "See the feed",
+    "Consulter le flux des dernières actualités" => "See the feed of latest publications",
     "Retrouvez les derniers articles publiés." => "Check the latest published articles.",
     "Retrouvez les dernières actualités." => "Check the latest news.",
     'plus' => 'more',
