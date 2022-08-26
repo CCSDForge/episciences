@@ -6,11 +6,11 @@ use Solarium\QueryType\Update\Query\Document\Document;
 class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 {
 
-    public static $_coreName = 'episciences';
+    public static string $_coreName = 'episciences';
 
-    public static $_maxDocsInBuffer = 50;
+    public static int $_maxDocsInBuffer = 50;
 
-    public static $dbConfName = 'episciences';
+    public static string $dbConfName = 'episciences';
 
     private array $_reviews = [];
 
@@ -122,6 +122,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $dataToIndex = [
             'docid' => $docId,
+            'doi_s' => $paperData->getDoi(),
             'paperid' => $paperData->getPaperid(),
             'language_s' => Ccsd_Tools::xpath($paperData->getRecord(), '//dc:language'),
             'identifier_s' => $paperData->getIdentifier(),

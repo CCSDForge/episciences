@@ -10,11 +10,11 @@ use Solarium\QueryType\Update\Result;
  */
 abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
 {
-    const O_UPDATE = 'UPDATE';
-    const O_DELETE = 'DELETE';
-    public static $_maxSelectFromIndexQueue = 1000;
-    public static $_maxDocsInBuffer = 1;
-    public static $_coreName;
+    public const O_UPDATE = 'UPDATE';
+    public const O_DELETE = 'DELETE';
+    public static int $_maxSelectFromIndexQueue = 1000;
+    public static int $_maxDocsInBuffer = 1;
+    public static string $_coreName;
     /**
      * @var Solarium\QueryType\Update\Query\Query
      */
