@@ -1905,6 +1905,13 @@ class Episciences_Paper
             $node->appendChild($dom->createElement('funding', ""));
         }
 
+        $classification = Episciences_Paper_ClassificationsManager::formatClassificationForview($this->_paperId);
+
+        if (!empty($classification)){
+            $node->appendChild($dom->createElement('classification', $classification));
+        }else{
+            $node->appendChild($dom->createElement('funding', ""));
+        }
 
         // fetch volume data
         if ($this->getVid()) {
