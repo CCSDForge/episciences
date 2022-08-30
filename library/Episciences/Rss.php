@@ -1,5 +1,4 @@
 <?php
-error_reporting(0);
 use Laminas\Feed\Writer\Feed;
 
 class Episciences_Rss
