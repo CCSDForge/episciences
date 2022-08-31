@@ -796,7 +796,7 @@ class Episciences_Review
 
         // global settings **********************************************
         $form->addElement('text', self::SETTING_ISSN, [
-                'label' => '<abbr title="International Standard Serial Number">ISSN</abbr> (online)',
+                'label' => '<abbr title="International Standard Serial Number">eISSN</abbr> (online)',
                 'description' => 'Format attendu : <code>1234-5678</code>',
                 'validators' => [new Zend_Validate_StringLength(['max' => 9, 'min' => 9])]
             ]
