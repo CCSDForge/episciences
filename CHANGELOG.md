@@ -26,9 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [RT#163166]: Problem sending mail from staff page.
+- Fixed #165: Line breaks in paper titles in API
+- Fixed #251 : conform to ISO 3297 for displaying ISSNs
 
 ## Unreleased
 ## added
+- Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
+- Added 'journals news' RSS feed
 - API to get a list of publishing journals: include accepted repositories.
 - New article status:
 * Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
@@ -58,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
 ## Changed
+- Upgraded publication RSS Feeds with DOIs
 - Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
 - Make it possible to update the metadata on the article page
