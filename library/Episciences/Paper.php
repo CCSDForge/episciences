@@ -2181,8 +2181,13 @@ class Episciences_Paper
                 $result = $metadata[$name];
             }
         }
-
+        if (is_array($result)) {
+            $result = array_map('Ccsd_Tools::space_clean', $result);
+        } else {
+            $result = Ccsd_Tools::space_clean($result);
+        }
         return $result;
+
     }
 
     /**
