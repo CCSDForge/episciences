@@ -5,6 +5,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 
 $localopts = [
@@ -28,6 +29,8 @@ require_once "JournalScript.php";
 
 class getCreatorData extends JournalScript
 {
+
+    public const ONE_MONTH = 3600 * 24 * 31;
 
     /**
      * @var Episciences_Paper
@@ -96,11 +99,8 @@ class getCreatorData extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
-        define('RVCODE', getenv('RVCODE')); //RVCODE NEEDED TO HAVE PATH TO CACHE
         define_review_constants();
-        $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $dir = CACHE_PATH_METADATA . 'enrichmentAuthors/';
         $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID'])->order('DOCID DESC'); // prevent empty row
 
         foreach ($db->fetchAll($select) as $value) {
@@ -109,8 +109,8 @@ class getCreatorData extends JournalScript
             $info .= PHP_EOL . "DOCID " . $value['DOCID'];
 
             $this->displayInfo($info, true);
-
-            if (empty(trim($value['DOI']))) {
+            $doiTrim = trim($value['DOI']);
+            if (empty($doiTrim)) {
                 $this->displayTrace('EMPTY DOI', true);
                 $this->displayInfo('COPY PASTE AUTHOR FROM PAPER TO AUTHOR', true);
 
@@ -120,12 +120,9 @@ class getCreatorData extends JournalScript
 
             } else {
 
-                $info = PHP_EOL . "DOI " . trim($value['DOI']);
+                $info = PHP_EOL . "DOI " . $doiTrim;
 
                 $this->displayInfo($info, true);
-
-                $pathOpenAireCreator = $dir . trim(explode("/", $value['DOI'])[1]) . "_creator.json";
-
 
                 if (!empty(Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId))) {
 
@@ -143,29 +140,49 @@ class getCreatorData extends JournalScript
                 Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $paperId);
 
                 // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
-                if (!file_exists($pathOpenAireCreator)) {
-                    $openAireCallArrayResp = $this->callOpenAireApi($client, trim($value['DOI']));
-                    $info = PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . trim($value['DOI']) . '&format=json';
-                    $this->displayTrace($info, true);
+                // BUT BEFORE CHECK GLOBAL CACHE
+                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim,$paperId);
+                ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+                ////// CACHE GLOBAL RESEARCH GRAPH
+                $fileOpenAireGlobalResponse = trim(explode("/", $doiTrim)[1]) . ".json";
+                $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+                $setsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
+
+                ////// CACHE CREATOR ONLY
+                $cacheCreator = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+                $pathOpenAireCreator = trim(explode("/", $doiTrim)[1]) . "_creator.json";
+                $setsOpenAireCreator = $cacheCreator->getItem($pathOpenAireCreator);
+
+                if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
+                    //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
                     // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                     try {
-                        $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                        $this->putInFileResponseOpenAireCall($decodeOpenAireResp, trim($value['DOI']));
+                        $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                        $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $doiTrim);
+                        $this->displayInfo('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim, true);
                     } catch (JsonException $e) {
 
-                        $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . trim($value['DOI']) . '&format=json ';
+                        $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
                         $this->displayError($eMsg, true);
 
                         // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
                         self::logErrorMsg($eMsg);
-                        file_put_contents($pathOpenAireCreator, [""]);
+                        $setsOpenAireCreator->set(json_encode([""]));
+                        $cacheCreator->save($setsOpenAireCreator);
                         continue;
                     }
                     sleep('1');
                 }
-                if (file_exists($pathOpenAireCreator) && (filesize($pathOpenAireCreator) !== 0)) {
-                    $fileFound = json_decode(file_get_contents($pathOpenAireCreator), true, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+                //we need to refresh cache creator to get the new file
+                ////// CACHE CREATOR ONLY
+                $cacheCreator = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+                $pathOpenAireCreator = trim(explode("/", $doiTrim)[1]) . "_creator.json";
+                $setsOpenAireCreator = $cacheCreator->getItem($pathOpenAireCreator);
+
+                if ($setsOpenAireCreator->isHit() && !empty($fileFound = json_decode($setsOpenAireCreator->get(), true,512 , JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) && $fileFound !== [""]) {
                     $reformatFileFound = [];
                     if (!array_key_exists(0, $fileFound)) {
                         $reformatFileFound[] = $fileFound;
@@ -345,38 +362,8 @@ class getCreatorData extends JournalScript
     public static function logErrorMsg($msg)
     {
         $logger = new Logger('my_logger');
-        $logger->pushHandler(new StreamHandler(__DIR__ . '/creatorEnrichment.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(__DIR__ . '/creatorEnrichment'.date('Y-m-d').'.log', Logger::INFO));
         $logger->info($msg);
-    }
-
-
-    /**
-     * @param Client $client
-     * @param $doi
-     * @return string
-     */
-    public function callOpenAireApi(Client $client, $doi): string
-    {
-
-        $openAireCallArrayResp = '';
-
-        try {
-
-            return $client->get('https://api.openaire.eu/search/publications/?doi=' . $doi . '&format=json', [
-                'headers' => [
-                    'User-Agent' => 'CCSD Episciences support@episciences.org',
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ]
-            ])->getBody()->getContents();
-
-        } catch (GuzzleException $e) {
-
-            trigger_error($e->getMessage());
-
-        }
-
-        return $openAireCallArrayResp;
     }
 
     /**
@@ -387,24 +374,19 @@ class getCreatorData extends JournalScript
      */
     public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
     {
-        $dir = CACHE_PATH_METADATA . 'enrichmentAuthors/';
-
-        if (!file_exists($dir)) {
-            $result = mkdir($dir);
-            if (!$result) {
-                die('Fatal error: Failed to create directory: ' . $dir);
+        $cache = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        $fileName = trim(explode("/", $doi)[1]) . "_creator.json";
+        $sets = $cache->getItem($fileName);
+        $sets->expiresAfter(self::ONE_MONTH);
+        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !empty($decodeOpenAireResp['response']['results'])) {
+            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
+                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
+                $sets->set(json_encode($creatorArrayOpenAire,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                $cache->save($sets);
             }
-        }
-        $pathCreator = $dir . trim(explode("/", $doi)[1]) . "_creator.json";
-        if (!file_exists($pathCreator)){
-            if (!is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
-                if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
-                    $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
-                    file_put_contents($pathCreator, json_encode($creatorArrayOpenAire, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
-                }
-            } else {
-                file_put_contents($pathCreator, [""]);
-            }
+        } else {
+            $sets->set(json_encode([""]));
+            $cache->save($sets);
         }
     }
 }

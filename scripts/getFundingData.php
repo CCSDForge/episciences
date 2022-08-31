@@ -67,19 +67,26 @@ class getFundingData extends JournalScript
         $select = $db->select()->from(T_PAPERS, ['PAPERID', 'DOI','IDENTIFIER','VERSION','REPOID','STATUS'])->order('REPOID DESC'); // prevent empty row
         $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         foreach ($db->fetchAll($select) as $value) {
-            if (isset($value['DOI']) && $value['DOI'] !== '' && $value['STATUS'] === Episciences_Paper::STATUS_PUBLISHED) {
+            if (isset($value['DOI']) && $value['DOI'] !== '' && $value['STATUS'] === (string) Episciences_Paper::STATUS_PUBLISHED) {
                 $doiTrim = trim($value['DOI']);
+                // CHECK IF GLOBAL OPENAIRE RESEARCH GRAPH EXIST
+                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi(trim($value['DOI']),$value['PAPERID']);
+                $fileOpenAireGlobalResponse = trim(explode("/", trim($value['DOI']))[1]) . ".json";
+                $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+                $setsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
+                // cache system only for fundings
                 $fileName = trim(explode("/", $doiTrim)[1]) . "_funding.json";
                 $sets = $cache->getItem($fileName);
                 $sets->expiresAfter(self::ONE_MONTH);
-                if (!$sets->isHit()) {
+                //////////////////////////////////////
+                if ($setsGlobalOARG->isHit() && !$sets->isHit()) {
                     echo PHP_EOL. $fileName. PHP_EOL;
-                    $openAireCallArrayResp = $this->callOpenAireApi(new Client(), $doiTrim);
-                    echo PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json'. PHP_EOL;
                     // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                     try {
-                        $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                        $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
                         $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $doiTrim);
+                        //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
+                        $this->displayInfo('Create Cache from Global openAireResearchGraph cache file for ' . trim($value['DOI']), true);
                     } catch (JsonException $e) {
                         // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
                         self::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
@@ -91,7 +98,7 @@ class getFundingData extends JournalScript
                 $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
                 $sets = $cache->getItem($fileName);
                 $sets->expiresAfter(self::ONE_MONTH);
-                $fileFound = json_decode($sets->get() , true, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $fileFound = json_decode($sets->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
                 $globalfundingArray = [];
                 $this->displayInfo('CALL CACHE OPENAIRE FOR '. $doiTrim , true);
                 if (!empty($fileFound[0])) {
@@ -218,8 +225,6 @@ class getFundingData extends JournalScript
         $this->displayInfo('Funding Data Enrichment completed. Good Bye ! =)', true);
     }
 
-
-
     /**
      * @return bool
      */
@@ -237,36 +242,13 @@ class getFundingData extends JournalScript
     {
         $this->_dryRun = $dryRun;
     }
-    public function callOpenAireApi(Client $client, $doi): string
-    {
-
-        $openAireCallArrayResp = '';
-
-        try {
-
-            return $client->get('https://api.openaire.eu/search/publications/?doi=' . $doi . '&format=json', [
-                'headers' => [
-                    'User-Agent' => 'CCSD Episciences support@episciences.org',
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ]
-            ])->getBody()->getContents();
-
-        } catch (GuzzleException $e) {
-
-            trigger_error($e->getMessage());
-
-        }
-
-        return $openAireCallArrayResp;
-    }
 
     public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
     {
         $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         $fileName = trim(explode("/", $doi)[1]) . "_funding.json";
         $sets = $cache->getItem($fileName);
-        if (!is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
+        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
             if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
                 $preFundingArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result'];
                 if (array_key_exists('rels',$preFundingArrayOpenAire)) {
@@ -291,7 +273,7 @@ class getFundingData extends JournalScript
     public static function logErrorMsg($msg)
     {
         $logger = new Logger('my_logger');
-        $logger->pushHandler(new StreamHandler(__DIR__ . '/fundingEnrichment.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(__DIR__ . '/fundingEnrichment_'.date('Y-m-d').'.log', Logger::INFO));
         $logger->info($msg);
     }
     public static function CallHAlApiForIdEuAndAnrFunding($identifier,$version) {
