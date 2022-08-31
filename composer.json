@@ -43,7 +43,7 @@
     "ezyang/htmlpurifier": "^4.13",
     "cottagelabs/coar-notifications": "^0.9.6",
     "smalot/pdfparser": "^2.2",
-    "geoip2/geoip2": "~2.0"
+    "geoip2/geoip2": "~2.0",
     "laminas/laminas-feed": "^2.18"
   },
   "require-dev": {
