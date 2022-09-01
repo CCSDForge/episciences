@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.32.1 - 2022-09-01
+### Fixed
+- Fixed bug introduced with [196] "Name" => "Last Name" when creating a new reviewer
+- Fixed release notes links to issues
+
 ## 1.0.32 - 2022-08-31
 ### Changed
 - [201](https://github.com/CCSDForge/episciences/issues/201): depending on journal settings, editor can accept, ask revision, reject and publish papers in every round.
@@ -26,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [RT#163166]: Problem sending mail from staff page.
-- Fixed [#165](https://github.com/CCSDForge/episciences/issues/196): Line breaks in paper titles in API
-- Fixed [#251](https://github.com/CCSDForge/episciences/issues/196): conform to ISO 3297 for displaying ISSNs
+- Fixed [#165](https://github.com/CCSDForge/episciences/issues/165): Line breaks in paper titles in API
+- Fixed [#251](https://github.com/CCSDForge/episciences/issues/251): conform to ISO 3297 for displaying ISSNs
 
 ## Added
 - Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
