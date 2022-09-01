@@ -1112,7 +1112,7 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
-     * retourne tous les utilisateurs ayant le même nom et prénom
+     * Get users with the same lastname
      * @throws Exception
      */
 
@@ -1126,14 +1126,13 @@ class UserDefaultController extends Zend_Controller_Action
         $request = $this->getRequest();
 
         if ($request) {
-            $firstName = $request->getPost('firstname');
+            $lastname = $request->getPost('lastName');
 
-            $name = $request->getPost('name');
 
             if ($request->isXmlHttprequest()) {
                 $userMapper = new Episciences_User_UserMapper();
                 /** @var Zend_Db_Table_Rowset_Abstract $rowSet */
-                $rowSet = $userMapper->findUserByFirstNameAndName($name, $firstName);
+                $rowSet = $userMapper->findUserByFirstNameAndName($lastname);
                 if ($rowSet) {
                     $result = $rowSet->toArray();
                 }
