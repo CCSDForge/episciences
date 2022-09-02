@@ -199,11 +199,6 @@ if (
 }
 ?>
 
-<?php // affiliations *****************************************************
-    if (Episciences_Auth::isAllowedToManageOrcidAuthor()) {
-        echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' => $this->affiliationsForm]);
-    }
-?>
 <?php // Citations *****************************************************
     if ($this->citations !=='') {
         echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations,'counterCitations'=> $this->counterCitations]);

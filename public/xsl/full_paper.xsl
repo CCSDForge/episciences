@@ -331,14 +331,6 @@
                                             select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
                                 </button>
 
-                                <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
-                                    <xsl:attribute name="onclick">
-                                        <xsl:value-of select="'updateOrcidAuthors()'"/>
-                                    </xsl:attribute>
-                                    <span class="fab fa-orcid" style="margin-right: 5px"></span>
-                                    <xsl:value-of
-                                            select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
-                                </button>
                             </xsl:if>
                         </xsl:otherwise>
                     </xsl:choose>

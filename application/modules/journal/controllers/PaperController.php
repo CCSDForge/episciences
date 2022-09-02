@@ -424,17 +424,6 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;
 
-        if (Episciences_Auth::isAllowedToManageOrcidAuthor()){
-            $affiForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
-
-            foreach ($affiForm->getElements() as $element) {
-                if ($element->getDecorator('HtmlTag')) {
-                    $element->getDecorator('HtmlTag')->setOption("class", "col-md-12");
-                }
-            }
-            $this->view->affiliationsForm = $affiForm;
-        }
-
         $getterCiting = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
         $this->view->citations = $getterCiting['template'];
         $this->view->counterCitations = $getterCiting['counterCitations'];
@@ -593,7 +582,7 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
-        $url = self::PAPER_URL_STR . $paperId;
+        $url = self::ADMINPAPER_URL_STR . $paperId;
         $this->_helper->redirector->gotoUrl($url);
     }
 
