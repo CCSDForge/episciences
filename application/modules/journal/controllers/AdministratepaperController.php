@@ -872,7 +872,15 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->siteLocale = Episciences_Tools::getLocale();
         $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
 
-        $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid' => $paper->getPaperid()]);
+        $affiForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
+
+        foreach ($affiForm->getElements() as $element) {
+            if ($element->getDecorator('HtmlTag')) {
+                $element->getDecorator('HtmlTag')->setOption("class", "col-md-12");
+            }
+
+        }
+        $this->view->affiliationsForm = $affiForm;
 
         $getterCiting = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
         $this->view->citations = $getterCiting['template'];
