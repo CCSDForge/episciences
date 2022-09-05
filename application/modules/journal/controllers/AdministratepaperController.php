@@ -877,6 +877,7 @@ class AdministratepaperController extends PaperDefaultController
         foreach ($affiForm->getElements() as $element) {
             if ($element->getDecorator('HtmlTag')) {
                 $element->getDecorator('HtmlTag')->setOption("class", "col-md-12");
+                break;
             }
 
         }
