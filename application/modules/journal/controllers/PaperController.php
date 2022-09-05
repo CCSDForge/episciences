@@ -498,6 +498,12 @@ class PaperController extends PaperDefaultController
         }
     }
 
+    /**
+     * @return void
+     * @throws JsonException
+     * @throws Zend_Form_Exception
+     */
+
     public function getaffiliationsbyauthorAction(){
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -517,13 +523,7 @@ class PaperController extends PaperDefaultController
                 $arrayFormOption['affiliations'] = $formattedAffiliationForInput;
             }
             $affiForm = Episciences_PapersManager::getAffiliationsForm($arrayFormOption);
-            foreach ($affiForm->getElements() as $element) {
 
-                if ($element->getDecorator('HtmlTag')) {
-                    $element->getDecorator('HtmlTag')->setOption("class", "col-md-12");
-                }
-
-            }
             echo $affiForm;
         }
     }

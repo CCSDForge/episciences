@@ -3014,6 +3014,7 @@ class Episciences_PapersManager
     {
 
         $form = new Ccsd_Form;
+
         $form->setAttrib('id', 'form-affi-authors');
         $form->setAction('/paper/addaffiliationsauthor');
         $affiliationInfo = [
@@ -3039,15 +3040,26 @@ class Episciences_PapersManager
 
         // index of the author in the json author from db -> they're sorted same way
         if (isset($option['idAuthor'])) {
-            $form->addElement('hidden', 'id-author-in-json', ['id'=>'id-edited-affi-author','name'=>'id-edited-affi-author','value'=>$option['idAuthor']]);
+            $form->addElement('hidden', 'id-author-in-json', ['id' => 'id-edited-affi-author', 'name' => 'id-edited-affi-author', 'value' => $option['idAuthor']]);
         } else {
-            $form->addElement('hidden', 'id-author-in-json', ['id'=>'id-edited-affi-author','name'=>'id-edited-affi-author']);
+            $form->addElement('hidden', 'id-author-in-json', ['id' => 'id-edited-affi-author', 'name' => 'id-edited-affi-author']);
         }
 
 
-        $form->addElement('hidden', 'paperid', ['id'=>'paper-id-authors','name'=>'paper-id-authors','value'=>$option['paperid']]);
+        $form->addElement('hidden', 'paperid', ['id' => 'paper-id-authors', 'name' => 'paper-id-authors', 'value' => $option['paperid']]);
+
+
+        foreach ($form->getElements() as $element) {
+
+            if ($element->getDecorator('HtmlTag')) {
+                $element->getDecorator('HtmlTag')->setOption("class", "col-md-12");
+                break; // found
+            }
+
+        }
 
         return $form;
+
     }
 
     /**

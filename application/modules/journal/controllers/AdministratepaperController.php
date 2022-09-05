@@ -874,13 +874,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $affiForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
 
-        foreach ($affiForm->getElements() as $element) {
-            if ($element->getDecorator('HtmlTag')) {
-                $element->getDecorator('HtmlTag')->setOption("class", "col-md-12");
-                break;
-            }
 
-        }
         $this->view->affiliationsForm = $affiForm;
 
         $getterCiting = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
