@@ -424,10 +424,6 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;
 
-        if (Episciences_Auth::isAllowedToManageOrcidAuthor()){
-            $this->view->affiliationsForm = Episciences_PapersManager::getAffiliationsForm(['paperid'=>$paper->getPaperid()]);
-        }
-
         $getterCiting = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
         $this->view->citations = $getterCiting['template'];
         $this->view->counterCitations = $getterCiting['counterCitations'];
@@ -502,6 +498,12 @@ class PaperController extends PaperDefaultController
         }
     }
 
+    /**
+     * @return void
+     * @throws JsonException
+     * @throws Zend_Form_Exception
+     */
+
     public function getaffiliationsbyauthorAction(){
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -520,10 +522,9 @@ class PaperController extends PaperDefaultController
                 $formattedAffiliationForInput = Episciences_Paper_AuthorsManager::formatAffiliationForInputRor($affi);
                 $arrayFormOption['affiliations'] = $formattedAffiliationForInput;
             }
+            $affiForm = Episciences_PapersManager::getAffiliationsForm($arrayFormOption);
 
-
-            echo Episciences_PapersManager::getAffiliationsForm($arrayFormOption);
-
+            echo $affiForm;
         }
     }
 
@@ -581,7 +582,7 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
-        $url = self::PAPER_URL_STR . $paperId;
+        $url = self::ADMINPAPER_URL_STR . $paperId;
         $this->_helper->redirector->gotoUrl($url);
     }
 

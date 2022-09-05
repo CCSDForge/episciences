@@ -199,11 +199,6 @@ if (
 }
 ?>
 
-<?php // affiliations *****************************************************
-    if (Episciences_Auth::isAllowedToManageOrcidAuthor()) {
-        echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' => $this->affiliationsForm]);
-    }
-?>
 <?php // Citations *****************************************************
     if ($this->citations !=='') {
         echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations,'counterCitations'=> $this->counterCitations]);
@@ -368,8 +363,6 @@ $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
-$this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
-$this->jQuery()->addJavascriptFile('/js/paper/paperAffiAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
