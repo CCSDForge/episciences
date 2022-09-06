@@ -856,8 +856,17 @@ class PaperController extends PaperDefaultController
             }
 
             if ($type !== Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
+
+
+                $journalSettings = Zend_Registry::get('reviewSettings');
+
+                if ($paper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION && isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) && $journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) {
+                    $newStatus = Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING;
+                } else {
+                    $newStatus = Episciences_Paper::STATUS_NO_REVISION;
+                }
+
                 // update paper status
-                $newStatus = Episciences_Paper::STATUS_NO_REVISION;
 
                 if ($paper->getStatus() !== $newStatus) {
                     $paper->setStatus($newStatus);
