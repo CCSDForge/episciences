@@ -1782,6 +1782,8 @@ return [
     "articles mis en forme par l'auteur, en attente de la version définitive" => "articles with copy editing by the author, waiting for final version",
     "article en attente de la publication" => "article waiting to be published",
     "articles en attente de la publication" => "articles waiting to be published",
+    "article accepté, en attente de la validation par l'auteur" => "accepted article, waiting validation by the author",
+    "articles acceptés, en attente de validation par l'auteur" => "accepted articles, waiting validation by the author",
 
     /**
      * DOI
