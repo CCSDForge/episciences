@@ -15,32 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## 1.0.32.1 - 2022-09-01
-### Fixed
-- Fixed bug introduced with [196] "Name" => "Last Name" when creating a new reviewer
-- Fixed release notes links to issues
-
-## 1.0.32 - 2022-08-31
-### Changed
-- [201](https://github.com/CCSDForge/episciences/issues/201): depending on journal settings, editor can accept, ask revision, reject and publish papers in every round.
-- [238](https://github.com/CCSDForge/episciences/issues/238): harmonization of terms 'sections/rubriques'.
-- [196](https://github.com/CCSDForge/episciences/issues/196) now,
-  - Only one 'name' field is available when creating a new reviewer
-  - Reviewers are sorted by lastname by default
-- Empty TAG  %%RECIPIENT_SCREEN_NAME%% for users who do not have a local account in "Unanswered reviewer invitation (reviewer copy)" reminder.
-- (Internal/refactoring) transition to PHP 8: refactoring: "MaxMind GeoIP2 PHP API" is now used instead of PHP module.
-
-### Fixed
-- [RT#163166]: Problem sending mail from staff page.
-- Fixed [#165](https://github.com/CCSDForge/episciences/issues/165): Line breaks in paper titles in API
-- Fixed [#251](https://github.com/CCSDForge/episciences/issues/251): conform to ISO 3297 for displaying ISSNs
-
-## Added
-- Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
-- Added 'journals news' RSS feed
-- Fixed #165: Line breaks in paper titles in API
-- Fixed #251 : conform to ISO 3297 for displaying ISSNs
-
 ## Unreleased
 ## added
 - Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
@@ -106,6 +80,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 - [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest. 
+
+## 1.0.32.1 - 2022-09-01
+### Fixed
+- Fixed bug introduced with [196] "Name" => "Last Name" when creating a new reviewer
+- Fixed release notes links to issues
+
+## 1.0.32 - 2022-08-31
+### Changed
+- [201](https://github.com/CCSDForge/episciences/issues/201): depending on journal settings, editor can accept, ask revision, reject and publish papers in every round.
+- [238](https://github.com/CCSDForge/episciences/issues/238): harmonization of terms 'sections/rubriques'.
+- [196](https://github.com/CCSDForge/episciences/issues/196) now,
+  - Only one 'name' field is available when creating a new reviewer
+  - Reviewers are sorted by lastname by default
+- Empty TAG  %%RECIPIENT_SCREEN_NAME%% for users who do not have a local account in "Unanswered reviewer invitation (reviewer copy)" reminder.
+- (Internal/refactoring) transition to PHP 8: refactoring: "MaxMind GeoIP2 PHP API" is now used instead of PHP module.
+
+### Fixed
+- [RT#163166]: Problem sending mail from staff page.
+- Fixed [#165](https://github.com/CCSDForge/episciences/issues/165): Line breaks in paper titles in API
+- Fixed [#251](https://github.com/CCSDForge/episciences/issues/251): conform to ISO 3297 for displaying ISSNs
+
+## Added
+- Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
+- Added 'journals news' RSS feed
 
 ## 1.0.31.1 - 2022-07-13
 ### Changed
