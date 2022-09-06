@@ -282,16 +282,15 @@ function findUserByMail(email) {
 
 /**
  * Retourne tous les utilisateurs qui ont le même prénom et nom
- * @param firstName
- * @param name
+ * @param lastName
  * @returns {*}
  */
-function findUsers(firstName, name) {
+function findUsers(lastName) {
     return $.ajax({
         url: '/user/findusersbyfirstnameandname',
         type: 'POST',
         dataType: 'json',
-        data: {firstname: firstName, name: name}
+        data: {lastName: lastName}
     });
 
 }
@@ -657,7 +656,7 @@ function checkHomonyms(values) {
 
         // Détection d'homonymes(recherche par prénom et nom)
         $invite_this_reviewer_btn.prop('disabled', true);
-        findUsers($firstName.val().trim(), $lastName.val().trim()).done(function (result) {
+        findUsers($lastName.val().trim()).done(function (result) {
             if (result.length === 0) { // Nouvel utilisateur (compte temporaire)
                 validate_step1();
                 $loading_container.hide();
@@ -681,7 +680,7 @@ function checkHomonyms(values) {
             }
         });
 
-        findUsers($firstName.val().trim(), $lastName.val().trim()).fail(function (jqXHR, textStatus) {
+        findUsers($lastName.val().trim()).fail(function (jqXHR, textStatus) {
             ajaxAlertFail();
             console.log('FIND_USERS_FAIL:' + textStatus);
         });

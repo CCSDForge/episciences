@@ -38,7 +38,6 @@
     "shardj/zf1-future": "^1.20",
     "shardj/zf1-extras-future": "^1.12",
     "solarium/solarium": "<5.0",
-    "symfony/polyfill-php73": "*",
     "symfony/polyfill-php74": "*",
     "symfony/polyfill-php80": "*",
     "symfony/polyfill-mbstring": "*",
@@ -46,7 +45,8 @@
     "ezyang/htmlpurifier": "^4.14",
     "cottagelabs/coar-notifications": "dev-main",
     "smalot/pdfparser": "^2.2",
-    "geoip2/geoip2": "~2.0"
+    "geoip2/geoip2": "~2.0",
+    "laminas/laminas-feed": "^2.18"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",

@@ -17,10 +17,10 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                         echo sprintf('<li><i class="fas fa-address-book" ></i >&nbsp;<a href="%s" >%s </a ></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL], $this->translate('Contact'));
                     }
                     if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') {
-                        echo ' <li><abbr title = "International Standard Serial Number" > ISSN</abbr > ' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]) . '</a ></li>';
+                        echo ' <li><abbr title = "International Standard Serial Number" > eISSN</abbr > ' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]) . '</a ></li>';
                     }
                     if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') {
-                        echo ' <li><abbr title = "International Standard Serial Number" > ISSN(print)</abbr > ' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) . '</a ></li>';
+                        echo ' <li><abbr title = "International Standard Serial Number" > ISSN</abbr > ' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) . '</a ></li>';
                     }
                     ?>
                 </ul>
