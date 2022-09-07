@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Changed
+- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer to fill in) 
+
 ## 1.0.32.1 - 2022-09-01
 ### Fixed
 - Fixed bug introduced with [196] "Name" => "Last Name" when creating a new reviewer
