@@ -218,7 +218,14 @@ class Episciences_Paper_AuthorsManager
         }
     }
 
+    public static function getArrayAuthorsAffi(int $paperId) {
+        $decodedauthors = [];
+        foreach (self::getAuthorByPaperId($paperId) as $value){
+            $decodedauthors = json_decode($value['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        }
 
+        return $decodedauthors;
+    }
     public static function findAffiliationsOneAuthorByPaperId(int $paperId, int $idAuthorInJson) {
 
         $authors = self::getAuthorByPaperId($paperId);
