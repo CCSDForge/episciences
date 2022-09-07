@@ -103,14 +103,14 @@ class ReviewerController extends PaperDefaultController
 
             if ($assignment->isTmp_user()) {
                 $this->view->jQuery()->addJavascriptFile("/js/user/affiliations.js");
-                $tmp_user->generateScreen_name();
                 $user_form = Episciences_ReviewersManager::acceptInvitationForm();
-                $user_form->setDefaults(array(
-                    'SCREEN_NAME' => $tmp_user->getScreenName(),
-                    'LASTNAME' => $tmp_user->getLastname(),
-                    'FIRSTNAME' => $tmp_user->getFirstname(),
+                $user_form->setDefaults([
+                    'SCREEN_NAME' => '',
+                    'LASTNAME' => '',
+                    'FIRSTNAME' => '',
                     'EMAIL' => $tmp_user->getEmail(),
-                    'LANGUEID' => $tmp_user->getLangueid(true)));
+                    'LANGUEID' => $tmp_user->getLangueid(true)
+                ]);
                 $this->view->user_form = $user_form;
             }
 
