@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
 ## Changed
+
+- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer to fill in)
+
 - Upgraded publication RSS Feeds with DOIs
 - Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
