@@ -29,7 +29,6 @@ class Episciences_Mail_TemplatesManager
     const TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION = 'paper_new_version_reviewer_reinvitation';
     const TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN = 'paper_tmp_version_reviewer_reassign';
     const TYPE_PAPER_TMP_VERSION_SUBMITTED = 'paper_tmp_version_submitted';
-    const TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN = 'paper_new_version_reviewer_reassign';
     const TYPE_PAPER_NEW_VERSION_SUBMITTED = 'paper_new_version_submitted';
     const TYPE_PAPER_REVIEWED_REVIEWER_COPY = 'paper_reviewed_reviewer_copy';
     const TYPE_PAPER_REVIEWED_EDITOR_COPY = 'paper_reviewed_editor_copy';

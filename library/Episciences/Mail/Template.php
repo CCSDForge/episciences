@@ -1759,7 +1759,6 @@ class Episciences_Mail_Template
             Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN => $this->_paper_editor_unassign_tags,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST => $this->_paper_major_revision_request_tags,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST => $this->_paper_minor_revision_request_tags,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN => $this->_paper_new_version_reviewer_reassign_tags,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => $this->_paper_new_version_reviewer_re_invitation,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMITTED => $this->_paper_new_version_submitted_tags,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_AUTHOR_COPY => $this->_paper_published_author_copy_tags,
