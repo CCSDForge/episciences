@@ -1633,21 +1633,26 @@ class Episciences_Review
     {
         $autoAssignation = $this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
 
-        if (empty(self::getChiefEditors()) && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)) {
-            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)]);
+        if (!empty($autoAssignation)) {
+
+            if (empty(self::getChiefEditors()) && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)) {
+                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)]);
+            }
+
+            if ((int)$this->getSetting(self::SETTING_CAN_PICK_SECTION) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)) {
+                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)]);
+            }
+
+            if ((int)$this->getSetting(self::SETTING_CAN_CHOOSE_VOLUME) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)) {
+                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)]);
+            }
+
+            if ((int)$this->getSetting(self::SETTING_CAN_PICK_EDITOR) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true)) {
+                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true)]);
+            }
+
         }
 
-        if ((int)$this->getSetting(self::SETTING_CAN_PICK_SECTION) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)) {
-            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)]);
-        }
-
-        if ((int)$this->getSetting(self::SETTING_CAN_CHOOSE_VOLUME) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)) {
-            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)]);
-        }
-
-        if ((int)$this->getSetting(self::SETTING_CAN_PICK_EDITOR) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true)) {
-            unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true)]);
-        }
         $settingsValues[self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT] = $autoAssignation;
     }
 
