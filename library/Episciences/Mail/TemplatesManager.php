@@ -29,7 +29,6 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION = 'paper_new_version_reviewer_reinvitation';
     public const TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN = 'paper_tmp_version_reviewer_reassign';
     public const TYPE_PAPER_TMP_VERSION_SUBMITTED = 'paper_tmp_version_submitted';
-    public const TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN = 'paper_new_version_reviewer_reassign';
     public const TYPE_PAPER_NEW_VERSION_SUBMITTED = 'paper_new_version_submitted';
     public const TYPE_PAPER_REVIEWED_REVIEWER_COPY = 'paper_reviewed_reviewer_copy';
     public const TYPE_PAPER_REVIEWED_EDITOR_COPY = 'paper_reviewed_editor_copy';
@@ -1333,7 +1332,6 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
         self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
         self::TYPE_PAPER_TMP_VERSION_SUBMITTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
         self::TYPE_PAPER_NEW_VERSION_SUBMITTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
         self::TYPE_PAPER_REVIEWED_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
         self::TYPE_PAPER_REVIEWED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
@@ -1710,7 +1708,6 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_EDITOR_UNASSIGN => self::paper_editor_unassign_tags,
             self::TYPE_PAPER_MAJOR_REVISION_REQUEST => self::paper_major_revision_request_tags,
             self::TYPE_PAPER_MINOR_REVISION_REQUEST => self::paper_minor_revision_request_tags,
-            self::TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN => self::paper_new_version_reviewer_reassign_tags,
             self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => self::paper_new_version_reviewer_re_invitation,
             self::TYPE_PAPER_NEW_VERSION_SUBMITTED => self::paper_new_version_submitted_tags,
             self::TYPE_PAPER_PUBLISHED_AUTHOR_COPY => self::paper_published_author_copy_tags,

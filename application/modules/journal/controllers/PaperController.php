@@ -1076,7 +1076,7 @@ class PaperController extends PaperDefaultController
             if (!$sender->findWithCAS($requestComment->getUid())) {
                 $sender = null;
             }
-            $this->reinviteReviewers($reviewers, $paper, $tmpPaper, $sender);
+            $this->reinviteReviewers($reviewers, $paper, $tmpPaper, $sender, self::TMP_VERSION_TYPE);
         }
 
         $recipients = [];
@@ -1135,15 +1135,27 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper1
      * @param Episciences_Paper $paper2
      * @param Episciences_User|null $sender : user who reassigned the reviewers
+     * @param string $submissionType
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
-    private function reinviteReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, Episciences_User $sender = null): void
+    private function reinviteReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, Episciences_User $sender = null, string $submissionType = self::NEW_VERSION_TYPE): bool
     {
+
+
         // mail template init
         $template = new Episciences_Mail_Template();
-        $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION);
+        if ($submissionType === self::NEW_VERSION_TYPE) {
+            $template_key = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION;
+        } elseif ($submissionType === self::TMP_VERSION_TYPE) {
+            $template_key = Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN;
+        } else {
+            return false;
+        }
+
+        $template->findByKey($template_key);
         $template->loadTranslations();
 
         // link to previous version page
@@ -1220,6 +1232,8 @@ class PaperController extends PaperDefaultController
             $paper2->log(Episciences_Paper_Logger::CODE_MAIL_SENT, null, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
 
         }
+
+        return true;
     }
 
     /**
@@ -3086,140 +3100,6 @@ class PaperController extends PaperDefaultController
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
         $this->render('answerrequest');
-    }
-
-    /**
-     * reassign reviewers from a paper to another
-     * @param array $reviewers
-     * @param Episciences_Paper $paper1
-     * @param Episciences_Paper $paper2
-     * @param $submissionType
-     * @param Episciences_User|null $sender
-     * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Mail_Exception
-     */
-    private function reassignReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, $submissionType, Episciences_User $sender = null): bool
-    {
-        // mail template init
-        $template = new Episciences_Mail_Template();
-        if ($submissionType === self::NEW_VERSION_TYPE) {
-            $template_key = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REASSIGN;
-        } elseif ($submissionType === self::TMP_VERSION_TYPE) {
-            $template_key = Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN;
-        } else {
-            return false;
-        }
-        $template->findByKey($template_key);
-        $template->loadTranslations();
-
-        // link to previous version page
-        $paper1_url = $this->view->url([
-            self::CONTROLLER => self::CONTROLLER_NAME,
-            self::ACTION => 'view',
-            'id' => $paper1->getDocid()]);
-        $paper1_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper1_url;
-
-        // link to tmp version page
-        $paper2_url = $this->view->url([
-            self::CONTROLLER => self::CONTROLLER_NAME,
-            self::ACTION => self::RATING_ACTION,
-            'id' => $paper2->getDocid()]);
-        $paper2_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper2_url;
-
-        // settings for new invitation / assignment$invitation_url
-        $oReview = Episciences_ReviewsManager::find(RVID);
-        $oReview->loadSettings();
-        // new deadline is today + default deadline interval (journal setting)
-        $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting(Episciences_Review::SETTING_RATING_DEADLINE));
-        $sender_uid = ($sender && is_a($sender, self::CLASS_EPI_USER_NAME)) ? $sender->getUid() : 666;
-
-        // loop through each reviewer
-        /** @var Episciences_Reviewer $reviewer */
-        foreach ($reviewers as $reviewer) {
-
-            // assign reviewer to tmp version (replicate invitation and acceptation process)
-            // reviewer invitation ******************************
-            // save assignment (pending status)
-            /** @var Episciences_User_Assignment $oAssignment */
-            $oAssignment = $reviewer->assign($paper2->getDocid(), [self::DEADLINE_STR => $deadline, self::STATUS => Episciences_User_Assignment::STATUS_PENDING])[0];
-
-            // save invitation (pending status)
-            $oInvitation = new Episciences_User_Invitation(['aid' => $oAssignment->getId(), 'sender_uid' => $sender_uid]);
-            $oInvitation->save();
-
-            // update assignment with invitation_id
-            $oAssignment->setInvitation_id($oInvitation->getId());
-            $oAssignment->save();
-
-            // auto-accept invitation ******************************
-            // save invitation (accepted status)
-            $oInvitation->setStatus($oInvitation::STATUS_ACCEPTED);
-            $oInvitation->save();
-
-            // save assignment (accepted status)
-            /** @var Episciences_User_Assignment $newAssignment */
-            $newAssignment = $reviewer->assign($paper2->getDocid(), [self::DEADLINE_STR => $deadline])[0];
-            $newAssignment->setInvitation_id($oInvitation->getId());
-            $newAssignment->save();
-
-            // save invitation answer
-            $oInvitationAnswer = new Episciences_User_InvitationAnswer(['id' => $oInvitation->getId(), 'answer' => Episciences_User_InvitationAnswer::ANSWER_YES]);
-            $oInvitationAnswer->save();
-
-            $docId1 = $paper1->getDocid();
-
-            // save alias
-            if ($paper1->getPaperid() !== $docId1) { // new version
-                if ($reviewer->hasAlias($docId1, false)) { // already has an alias for at least one version
-                    $reviewer->createAlias($docId1, $reviewer->getAlias($docId1, false));
-                } else {
-                    $reviewer->createAlias($docId1);
-                }
-            } elseif (!$reviewer->hasAlias($docId1)) {  // first submission
-                $reviewer->createAlias($docId1);
-            }
-
-            // create rating report
-            $this->createRatingReport($paper2, $reviewer->getUid());
-
-            // log assignment
-            $paper2->log(Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT, null, ["aid" => $newAssignment->getId(), "user" => $reviewer->toArray()]);
-
-            // mail init
-            $locale = $reviewer->getLangueid();
-            $template->setLocale($locale);
-
-            $mail = new Episciences_Mail(self::ENCODING_TYPE);
-            $mail->setDocid($paper2->getDocid());
-            $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
-            $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
-            $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, $reviewer->getUsername());
-            $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME, $reviewer->getScreenName());
-            $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $reviewer->getFullName());
-            $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_ID, $paper2->getDocid());
-            $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $paper2->getTitle($locale, true));
-            $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $paper2->formatAuthorsMetadata());
-            $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE, $this->view->Date($paper1->getWhen(), $locale));
-            $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, $paper1_url);
-            $mail->addTag(Episciences_Mail_Tags::TAG_TMP_PAPER_URL, $paper2_url);
-            if (is_a($sender, self::CLASS_EPI_USER_NAME)) {
-                $mail->setFromWithTags($sender);
-            } else {
-                $mail->setFrom(RVCODE . '@' . DOMAIN);
-            }
-            $mail->setTo($reviewer);
-            $mail->setSubject($template->getSubject());
-            $mail->setTemplate($template->getPath(), $template->getKey() . self::TEMPLATE_EXTENSION);
-            $mail->writeMail();
-
-
-            // log mail
-            $paper2->log(Episciences_Paper_Logger::CODE_MAIL_SENT, null, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
-
-        }
-        return true;
     }
 
     /**
