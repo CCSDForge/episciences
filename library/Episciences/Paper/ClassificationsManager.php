@@ -21,7 +21,7 @@ class Episciences_Paper_ClassificationsManager
             $values[] = '(' . $db->quote($classification->getPaperId()) . ',' . $db->quote($classification->getClassification()) .  ',' . $db->quote($classification->getType()) . ',' . $db->quote($classification->getSourceId()) . ')';
 
         }
-        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_CLASSIFICATIONS) . ' (`paperid`,`classification`,`type`,`source_id`) VALUES ';
+        $sql = 'INSERT IGNORE INTO ' . $db->quoteIdentifier(T_PAPER_CLASSIFICATIONS) . ' (`paperid`,`classification`,`type`,`source_id`) VALUES ';
 
         if (!empty($values)) {
             try {

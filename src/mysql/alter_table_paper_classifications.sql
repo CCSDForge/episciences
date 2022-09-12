@@ -69,8 +69,12 @@ ALTER TABLE `paper_classifications`
 ALTER TABLE `paper_classifications`
     ADD CONSTRAINT `paper_classifications_ibfk_1` FOREIGN KEY (`paperid`) REFERENCES `PAPERS` (`PAPERID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   ADD CONSTRAINT `paper_classifications_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-COMMIT;
 
+ALTER TABLE `paper_classifications` ADD UNIQUE (`classification`, `paperid`, `source_id`, `type`);
+
+COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
