@@ -1492,7 +1492,7 @@ class Episciences_Paper
             $sqlResult = $db->fetchAssoc($sql);
 
             foreach ($sqlResult as $docId => $value) {
-                $version = $value['VERSION'];
+                $version = (string)$value['VERSION'];
                 $versionsIds[$version] = $docId;
             }
         }
