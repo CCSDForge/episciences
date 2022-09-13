@@ -1893,5 +1893,11 @@ return [
     "articles acceptés - versions finales soumises, en attente de la mise en forme par la revue" => "accepted articles - final versions submitted, waiting for formatting by copy editors",
     "Attention, il n'y a aucun suivi effectué pour" => "Please note that there is no tracking for",
     "ces articles" => "these articles",
-    "Aucun rédacteur assigné pour le moment" => "No assigned editor yet"
+    "Aucun rédacteur assigné pour le moment" => "No assigned editor yet",
+
+    // tags list
+    "Liste de Tags" => "Tags list",
+    "TAGS disponibles" => "Available TAGS",
+    "Retour en haut" => "Back to top",
+  
 ];

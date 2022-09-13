@@ -12,7 +12,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_PUBLISHED_EDITOR_COPY = 'paper_published_editor_copy';
     public const TYPE_PAPER_REFUSED = 'paper_refused'; // author copy
     public const TYPE_PAPER_REFUSED_EDITORS_COPY = 'paper_refused_editors_copy'; // editors copy
-    public const TYPE_PAPER_REVISION_REQUEST = 'paper_revision_request';
+    public const TYPE_PAPER_REVISION_REQUEST = 'paper_revision_request'; // not used
     public const TYPE_PAPER_MINOR_REVISION_REQUEST = 'paper_minor_revision_request';
     public const TYPE_PAPER_MAJOR_REVISION_REQUEST = 'paper_major_revision_request';
     public const TYPE_PAPER_UPDATED_RATING_DEADLINE = 'paper_updated_rating_deadline';
@@ -128,7 +128,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION = 'paper_formatted_by_journal_waiting_author_validation';
 
     // available in all templates
-    public const COMMON_TAGS  = [
+    public const COMMON_TAGS = [
         Episciences_Mail_Tags::TAG_REVIEW_CODE,
         Episciences_Mail_Tags::TAG_REVIEW_NAME,
         Episciences_Mail_Tags::TAG_SENDER_EMAIL,
@@ -137,6 +137,11 @@ class Episciences_Mail_TemplatesManager
 
     public const DESCRIPTION = 'description';
     public const RECIPIENT = 'recipient';
+    public const AUTHOR_RECEP_EXP = "l'auteur de l'article";
+    public const MANAGERS_RECEP_EXP = "tous les rédacteurs et préparateurs de copie assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction";
+    public const EDITORS_RECEP_EXP = "tous les rédacteurs assignés à l'article";
+
+    public const REVIEWERS_RECEP_EXP = "tous les relecteurs assignés à l'article";
 
 
     // obsolete templates ?
@@ -1307,101 +1312,100 @@ class Episciences_Mail_TemplatesManager
     ];
 
     public const TEMPLATE_DESCRIPTION_AND_RECIPIENT = [
-        self::TYPE_USER_REGISTRATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_USER_LOST_PASSWORD => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_USER_LOST_LOGIN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ACCEPTED_TMP_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ACCEPTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_PUBLISHED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_PUBLISHED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REFUSED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'], // author copy
-        self::TYPE_PAPER_REFUSED_EDITORS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'], // editors copy
-        self::TYPE_PAPER_REVISION_REQUEST => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_MINOR_REVISION_REQUEST => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_MAJOR_REVISION_REQUEST => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_UPDATED_RATING_DEADLINE => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_EDITOR_UNASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ASK_OTHER_EDITORS => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVISION_ANSWER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_TMP_VERSION_SUBMITTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_NEW_VERSION_SUBMITTED => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWED_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_DELETED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_DELETED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_DELETED_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_REMOVAL => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUBMISSION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUGGEST_ACCEPTATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUGGEST_REFUSAL => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUGGEST_NEW_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COPY_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COPY_EDITOR_UNASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ACCEPTED_EDITORS_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_EDITOR_REFUSED_MONITORING => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SECTION_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_VOLUME_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo'],
-        self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => [self::DESCRIPTION => 'todo', self::RECIPIENT => 'todo']
+        self::TYPE_USER_REGISTRATION => [self::DESCRIPTION => '', self::RECIPIENT => "l'utilisateur qui vient de se créer un compte"],
+        self::TYPE_USER_LOST_PASSWORD => [self::DESCRIPTION => '', self::RECIPIENT => "l'utilisateur qui a oublié son mot de passe"],
+        self::TYPE_USER_LOST_LOGIN => [self::DESCRIPTION => '', self::RECIPIENT => "l'utilisateur qui a oublié ses identifiants"],
+        self::TYPE_PAPER_ACCEPTED_TMP_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_ACCEPTED => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_PUBLISHED_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_PUBLISHED_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_REFUSED => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP], // author copy
+        self::TYPE_PAPER_REFUSED_EDITORS_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP], // editors copy
+        self::TYPE_PAPER_REVISION_REQUEST => [self::DESCRIPTION => "non utilisé", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_MINOR_REVISION_REQUEST => [self::DESCRIPTION => '', self::RECIPIENT => "l'auteur de l'article comme destinataire principal et en BCC (selon le paramétrage de la revue), les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_MAJOR_REVISION_REQUEST => [self::DESCRIPTION => '', self::RECIPIENT => "l'auteur de l'article comme destinataire principal et en BCC (selon le paramétrage de la revue), les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_UPDATED_RATING_DEADLINE => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur'],
+        self::TYPE_PAPER_EDITOR_ASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => "rédacteur assigné à l'article"],
+        self::TYPE_PAPER_EDITOR_UNASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => "le rédacteur dont l'assignation a été supprimée"],
+        self::TYPE_PAPER_ASK_OTHER_EDITORS => [self::DESCRIPTION => '', self::RECIPIENT => 'rédacteurs'],
+        self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "relecteur à l'origine de la demande"],
+        self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_REVISION_ANSWER => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => "tous les relecteurs assignés à l'article si l'option 'Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise' est activé)"],
+        self::TYPE_PAPER_TMP_VERSION_SUBMITTED => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs et l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_NEW_VERSION_SUBMITTED => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs et l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_REVIEWED_REVIEWER_COPY => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur'],
+        self::TYPE_PAPER_REVIEWED_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs de l'article"],
+        self::TYPE_PAPER_DELETED_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_DELETED_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs de l'article"],
+        self::TYPE_PAPER_DELETED_REVIEWER_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les relecteurs assignés à l'article"],
+        self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur (connu par la revue)'],
+        self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER => [self::DESCRIPTION => '', self::RECIPIENT => "nouveau relecteur (utilisateur de l'une des plateforme du CCSD)"],
+        self::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER => [self::DESCRIPTION => '', self::RECIPIENT => "nouveau relecteur (compte temporaire)"],
+        self::TYPE_PAPER_REVIEWER_REMOVAL => [self::DESCRIPTION => '', self::RECIPIENT => "relecteur"],
+        self::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur'],
+        self::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur'],
+        self::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_SUBMISSION_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés"],
+        self::TYPE_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "l'auteur (déposant) de l'article"],
+        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur'],
+        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur'],
+        self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => 'relecteur'],
+        self::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs (rédacteurs en chefs) de l'article"],
+        self::TYPE_PAPER_SUGGEST_ACCEPTATION => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_SUGGEST_REFUSAL => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_SUGGEST_NEW_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL => [self::DESCRIPTION => '', self::RECIPIENT => "tous les relecteurs assignés à l'article dont la relecture n'est pas encore achevée"],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS => [self::DESCRIPTION => '', self::RECIPIENT => "selon le paramétrage de la revue, l'un des (rédacteurs en chef, administrateurs et secrétaires de rédaction) comme destinataire principal, les autres seront en CC"],
+        self::TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs de l'article"],
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => "préparateur de copie assigné à l'article"],
+        self::TYPE_PAPER_COPY_EDITOR_UNASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => "le préparateur de copie dont l'assignation a été supprimée"],
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaire de rédaction"],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => [self::DESCRIPTION => 'excepté le posteur', self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaire de rédaction"],
+        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING => [self::DESCRIPTION => '', self::RECIPIENT => "tous les relecteurs assignés à l'article dont la relecture n'est pas encore achevée"],
+        self::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => '', self::RECIPIENT => "tous les relecteurs assignés à l'article dont la relecture n'est pas encore achevée"],
+        self::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => '', self::RECIPIENT => "tous les relecteurs assignés à l'article dont la relecture n'est pas encore achevée"],
+        self::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING => [self::DESCRIPTION => '', self::RECIPIENT => "tous les relecteurs assignés à l'article dont la relecture n'est pas encore achevée"],
+        self::TYPE_PAPER_ACCEPTED_EDITORS_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_EDITOR_REFUSED_MONITORING => [self::DESCRIPTION => '', self::RECIPIENT => "tous les rédacteurs et préparateurs de copie assignés à l'article; en CC, les rédacteurs en chef, administrateurs et secrétaire de rédaction"],
+        self::TYPE_PAPER_SECTION_EDITOR_ASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_VOLUME_EDITOR_ASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN => [self::DESCRIPTION => '', self::RECIPIENT => self::MANAGERS_RECEP_EXP],
+        self::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY => [self::DESCRIPTION => '', self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY => [self::DESCRIPTION => '', self::RECIPIENT => 'selon le paramétrage de la revue, tous les rédacteurs en chef, administrateurs et secrétaire de rédaction'],
+        self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => [self::DESCRIPTION => '', self::RECIPIENT => self::AUTHOR_RECEP_EXP]
 
     ];
 
@@ -1682,7 +1686,7 @@ class Episciences_Mail_TemplatesManager
      */
     public static function getAvailableTagsByKey(string $key, bool $withoutCommunTags = false): array
     {
-        $key = str_replace('custom_' , '', $key); // Custom key = 'custom_' . $this->getKey();
+        $key = str_replace('custom_', '', $key); // Custom key = 'custom_' . $this->getKey();
 
         if (!$withoutCommunTags) {
             $tags = self::COMMON_TAGS;
