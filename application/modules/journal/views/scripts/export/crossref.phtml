@@ -21,6 +21,19 @@ $journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
 $enrichmentAuthors = $paper->getAuthors();
 $enrichmentLicence = $paper->getLicence();
 $enrichmentFundings = $paper->getFundings();
+$enrichmentLinkedData = $paper->getLinkedData();
+
+
+$interWorkRelationship = [
+    "isDerivedFrom","hasDerivation","isReviewOf",'hasReview',
+    "isCommentOn","hasComment","isReplyTo","hasReply","basedOnData",
+    "isDataBasisFor","hasRelatedMaterial","isRelatedMaterial",
+    "isCompiledBy","compiles","isDocumentedBy","documents",
+    "isSupplementTo","isSupplementedBy","isContinuedBy",
+    "continues","isPartOf","hasPart","references",
+    "isReferencedBy","isBasedOn","isBasisFor","requires","isRequiredBy","finances","isFinancedBy"
+];
+
 
 if (defined('RVISSN')) {
     $issn = $this->FormatIssn(RVISSN);
@@ -216,6 +229,17 @@ $timestamp = time();
                         </related_item>
                     <?php } ?>
                 <?php endif; ?>
+
+                <?php if (!empty($enrichmentLinkedData)) : ?>
+                    <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
+                        <?php if (in_array(lcfirst($linkedData['relationship']), $interWorkRelationship, true)) :?>
+                            <related_item>
+                                <inter_work_relation identifier-type="<?= $this->escape(strtolower($linkedData['link'])) ?>" relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo $this->escape($linkedData['value']); ?></inter_work_relation>
+                            </related_item>
+                        <?php endif; ?>
+                    <?php } ?>
+                <?php endif; ?>
+
             </program>
 
             <doi_data>

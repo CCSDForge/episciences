@@ -358,7 +358,9 @@ class Episciences_Paper
     /** @var Episciences_Paper_Projects $_fundings */
     private $_fundings;
 
+    /** @var Episciences_Paper_Dataset $_linkedData */
 
+    private array $_linkedData;
 
 
     /**
@@ -4160,6 +4162,15 @@ class Episciences_Paper
         return $this->_fundings;
     }
 
+    /**
+     * @return array [Episciences_Paper_Dataset]
+     */
+
+    public function getLinkedData() : array
+    {
+        $this->_linkedData = Episciences_Paper_DatasetsManager::getByDocId($this->getDocid());
+        return $this->_linkedData;
+    }
 
 
 
