@@ -24,6 +24,9 @@ $publicationYear = new DateTime($paper->getPublication_date());
 /** @var $journal Episciences_Review */
 $journal = $this->journal;
 $journalUrl = $journal->getUrl();
+$enrichmentAuthors = $paper->getAuthors();
+$enrichmentLicence = $paper->getLicence();
+$enrichmentFundings = $paper->getFundings();
 
 if (defined('RVISSN')) {
     $issn = $this->FormatIssn(RVISSN);
@@ -45,7 +48,7 @@ if (defined('RVISSN')) {
     <datacite:creators>
         <?php
         if (is_array($authors)) {
-            foreach ($authors as $creatorName) {
+            foreach ($authors as $key => $creatorName) {
                 $givenName= '';
                 $familyName= '';
                 if (str_contains($creatorName, ',')) {
@@ -60,6 +63,19 @@ if (defined('RVISSN')) {
                         <datacite:givenName><?= $this->escape($givenName) ?></datacite:givenName>
                     <?php endif; ?>
                     <datacite:familyName><?= $this->escape($familyName) ?></datacite:familyName>
+                    <?php if (!empty($enrichmentAuthors)):?>
+                        <?php if (!empty($enrichmentAuthors[$key]['affiliation'])): ?>
+                                <?php foreach ($enrichmentAuthors[$key]['affiliation'] as $affiliationAuthor) { ?>
+                                     <datacite:affiliation><?= $this->escape($affiliationAuthor['name']) ?></datacite:affiliation>
+                                        <?php if (isset($affiliationAuthor['id'])): ?>
+                                            <datacite:nameIdentifier nameIdentifierScheme="ROR" schemeURI="http://ror.org/"><?= $this->escape($affiliationAuthor['id'][0]['id']) ?></datacite:nameIdentifier>
+                                        <?php endif; ?>
+                                <?php } ?>
+                            <?php endif; ?>
+                        <?php if (isset($enrichmentAuthors[$key]['orcid'])):?>
+                            <datacite:nameIdentifier nameIdentifierScheme="ORCID" schemeURI="http://orcid.org"><?= $this->escape($enrichmentAuthors[$key]['orcid']) ?></datacite:nameIdentifier>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </datacite:creator>
                 <?php
             }
@@ -67,6 +83,25 @@ if (defined('RVISSN')) {
         ?>
     </datacite:creators>
 
+    <?php if (!empty($enrichmentFundings)):?>
+        <?php foreach ($enrichmentFundings as $fundingInfo) { ?>
+            <?php if ($fundingInfo['funderName'] !== "unidentified" || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
+                <oaire:fundingReferences>
+                    <oaire:fundingReference>
+                <?php if ($fundingInfo['funderName'] !== "unidentified") : ?>
+                            <oaire:funderName><?= $this->escape($fundingInfo['funderName']) ?></oaire:funderName>
+                <?php endif; ?>
+                <?php if ($fundingInfo['code'] !== "unidentified") : ?>
+                        <oaire:awardNumber><?= $this->escape($fundingInfo['code']) ?></oaire:awardNumber>
+                <?php endif; ?>
+                <?php if ($fundingInfo['projectTitle'] !== "unidentified") : ?>
+                        <oaire:awardTitle><?= $this->escape($fundingInfo['projectTitle']) ?></oaire:awardTitle>
+                <?php endif; ?>
+                        </oaire:fundingReference>
+                    </oaire:fundingReferences>
+            <?php endif; ?>
+        <?php } ?>
+    <?php endif; ?>
 
     <datacite:titles>
         <?php
@@ -130,6 +165,9 @@ if (defined('RVISSN')) {
         </datacite:subjects>
     <?php endif; ?>
 
+    <?php if ($enrichmentLicence !== ""): ?>
+        <oaire:licenseCondition startDate="<?= $paper->getPublication_date()?>" uri="<?= $enrichmentLicence ?>"><?= $this->escape(Ccsd_Tools::translate($enrichmentLicence)) ?></oaire:licenseCondition>
+    <?php endif; ?>
     <datacite:dates>
         <datacite:date dateType="Accepted"><?= $dateAccepted->format('Y-m-d') ?></datacite:date>
         <datacite:date dateType="Issued"><?= $dateIssued->format('Y-m-d') ?></datacite:date>

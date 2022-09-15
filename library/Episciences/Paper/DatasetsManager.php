@@ -35,6 +35,15 @@ class Episciences_Paper_DatasetsManager
         return $oResult;
     }
 
+    public static function getByDocId(int $docId): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()
+            ->from(T_PAPER_DATASETS)
+            ->where('doc_id = ?', $docId)->order('source_id');
+        return $db->fetchAll($sql);
+    }
+
     /**
      *
      * @param int $docId

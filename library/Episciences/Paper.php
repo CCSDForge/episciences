@@ -347,6 +347,22 @@ class Episciences_Paper
 
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats', 'json'];
 
+    // variable for the export Enrichment
+
+    /** @var Episciences_Paper_Authors[] $_authors */
+    private $_authors;
+
+    /** @var Episciences_Paper_Licence $_licence */
+    private $_licence;
+
+    /** @var Episciences_Paper_Projects $_fundings */
+    private $_fundings;
+
+    /** @var Episciences_Paper_Dataset $_linkedData */
+
+    private array $_linkedData;
+
+
     /**
      * Episciences_Paper constructor.
      * @param array|null $options
@@ -4122,7 +4138,46 @@ class Episciences_Paper
         return in_array($this->getStatus(), [self::STATUS_CE_REVIEW_FORMATTING_DEPOSED, self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED, self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION], true);
     }
 
+    /**
+     * @return array [Episciences_Paper_Authors]
+     * @throws JsonException
+     */
+    public function getAuthors() : array
+    {
+        $this->_authors = Episciences_Paper_AuthorsManager::getArrayAuthorsAffi($this->getPaperid());
 
+        return $this->_authors;
+    }
+
+    /**
+     * @return string Episciences_Paper_Licence
+     */
+    public function getLicence() : string
+    {
+        $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        return $this->_licence;
+    }
+
+    /**
+     * @return array [Episciences_Paper_Projects]
+     * @throws JsonException
+     */
+    public function getFundings() : array
+    {
+        $this->_fundings = Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($this->getPaperid());
+
+        return $this->_fundings;
+    }
+
+    /**
+     * @return array [Episciences_Paper_Dataset]
+     */
+
+    public function getLinkedData() : array
+    {
+        $this->_linkedData = Episciences_Paper_DatasetsManager::getByDocId($this->getDocid());
+        return $this->_linkedData;
+    }
 
 
 

@@ -50,6 +50,30 @@ class Episciences_Paper_ProjectsManager
         return $db->fetchAssoc($select);
     }
 
+    /**
+     * @throws JsonException
+     */
+    public static function getProjectWithDuplicateRemoved($paperId) {
+        $allProjects = self::getProjectsByPaperId($paperId);
+        $rawFunding = [];
+        foreach ($allProjects as $project) {
+            $decodeProject  = json_decode($project['funding'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+            $rawFunding[] = $decodeProject;
+
+        }
+        $rawFunding = array_unique($rawFunding,SORT_REGULAR);
+
+        //reorganise to simply the array
+        $finalFundingArray = [];
+        foreach ($rawFunding as $fundings){
+            foreach ($fundings as $funding){
+                $finalFundingArray[] = $funding;
+
+            }
+        }
+        return $finalFundingArray;
+    }
+
 
 
     public static function update($projects): int {
