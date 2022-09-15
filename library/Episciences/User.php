@@ -1125,7 +1125,7 @@ class Episciences_User extends Ccsd_User_Models_User
         if (null === $value) {
 
             $paper = Episciences_PapersManager::get($docId, false);
-            $versionIdsValues = $paper->getVersionsIds();
+            $versionIdsValues = array_values($paper->getVersionsIds());
 
             $select = $this->_db
                 ->select()

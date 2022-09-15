@@ -5,9 +5,10 @@ $title .= '  |  ';
 $title .= $this->translate('Templates');
 $title .= '  |  ';
 $title .= ' [<code>' . count($this->oTemplates) . '</code>]';
-$this->layout()->pageTitle = $title;
-?>
 
+$this->layout()->pageTitle = $title
+
+?>
 
 <div id="tags-list">
 
@@ -26,20 +27,20 @@ $this->layout()->pageTitle = $title;
                 <?= $this->translate($key . '_tpl_name') ?> </strong>
             <em>(<?= $key ?>)</em>
             <?php if ($oTemplate->isAutomatic()): ?>
-                <br>
-                <mark><?= $this->translate('Type :') . ' ' ?><?= $this->translate('Mail automatique') ?> </mark>
+                <span class="badge"><?= $this->translate('Mail automatique') ?> </span><br>
             <?php endif; ?>
-            <br>
             <?php
 
             if (array_key_exists($key, $tab = Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT)) :?>
-                <?php if ($description = $tab[$key][Episciences_Mail_TemplatesManager::DESCRIPTION]): ?>
-                    <?= $this->translate('Description :') . ' ' . $this->translate($description) ?>
-                <?php endif; ?>
 
                 <?php if ($recipient = $tab[$key][Episciences_Mail_TemplatesManager::RECIPIENT]): ?>
                     <br>
                     <?= $this->translate('Destinataire :') . ' ' . $this->translate($recipient) ?>
+                <?php endif; ?>
+
+                <?php if ($description = $tab[$key][Episciences_Mail_TemplatesManager::DESCRIPTION]): ?>
+                    <br>
+                    <?= $this->translate('N.B.') . ' ' . $this->translate($description) ?>
                 <?php endif; ?>
 
             <?php else: ?>
@@ -74,5 +75,18 @@ $this->layout()->pageTitle = $title;
     <?php ?>
 
 </div>
+
+<div class="form-actions">
+    <a href="#tags-list" class="btn btn-default btn-sm form-control" aria-label="Back to Top">
+        <span class="fa-solid fa-arrow-up" style="margin-right: 5px;"></span>
+        <?= $this->translate('Retour en haut')?>
+    </a>
+</div>
+
+
+
+
+
+
 
 

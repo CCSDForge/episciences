@@ -1913,5 +1913,10 @@ return [
     "Afficher le document" => "Display document",
     "Afficher les documents" => "Display documents",
     "Cacher le document" => "Hide document",
-    "Cacher les documents" => "Hide documents"
+    "Cacher les documents" => "Hide documents",
+
+    // tags list
+    "Liste de Tags" => "Tags list",
+    "TAGS disponibles" => "Available TAGS",
+    "Retour en haut" => "Back to top",
 ];

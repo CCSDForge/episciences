@@ -292,7 +292,7 @@ class Episciences_Rating_Manager
         $reports = [];
         $versionsIds = $paper->getVersionsIds();
         foreach ($versionsIds as $version => $docId) {
-            if ((int)$paper->getVersion() <= (int)$version) {
+            if ((float)$paper->getVersion() <= (float)$version) {
                 unset($versionsIds[$version]);
             }
         }

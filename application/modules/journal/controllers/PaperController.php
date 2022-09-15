@@ -1325,9 +1325,6 @@ class PaperController extends PaperDefaultController
     private function reinviteReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, Episciences_User $sender = null, string $submissionType = self::NEW_VERSION_TYPE): bool
     {
 
-
-        // mail template init
-        $template = new Episciences_Mail_Template();
         if ($submissionType === self::NEW_VERSION_TYPE) {
             $template_key = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION;
         } elseif ($submissionType === self::TMP_VERSION_TYPE) {
@@ -1335,6 +1332,9 @@ class PaperController extends PaperDefaultController
         } else {
             return false;
         }
+
+        // mail template init
+        $template = new Episciences_Mail_Template();
 
         $template->findByKey($template_key);
         $template->loadTranslations();
@@ -1398,6 +1398,19 @@ class PaperController extends PaperDefaultController
             $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, $invitation_url);
             $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_DEADLINE, $this->view->Date($invitation_deadline, $locale));
             $mail->addTag(Episciences_Mail_Tags::TAG_RATING_DEADLINE, $this->view->Date($rating_deadline, $locale));
+
+            if($submissionType === self::TMP_VERSION_TYPE) {
+
+                // link to tmp version page
+                $tmpUrl = $this->view->url([
+                    self::CONTROLLER => self::CONTROLLER_NAME,
+                    self::ACTION => 'view',
+                    'id' => $paper2->getDocid()]);
+                $tmpUrl = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $tmpUrl;
+
+                $mail->addTag(Episciences_Mail_Tags::TAG_TMP_PAPER_URL, $tmpUrl);
+            }
+
             if (is_a($sender, self::CLASS_EPI_USER_NAME)) {
                 $mail->setFromWithTags($sender);
             } else {
