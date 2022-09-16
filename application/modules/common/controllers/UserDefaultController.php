@@ -143,10 +143,31 @@ class UserDefaultController extends Zend_Controller_Action
     {
         $localUser = new Episciences_User();
 
-        $casAuthAdapter = new Ccsd_Auth_Adapter_Cas();
-        $casAuthAdapter->setIdentityStructure($localUser);
-        $casAuthAdapter->setServiceURL($this->_request->getParams());
-        $result = Episciences_Auth::getInstance()->authenticate($casAuthAdapter);
+        $adapter = new Ccsd_Auth_Adapter_Cas(); // default auth adapter
+
+        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
+
+            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
+
+                $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+
+            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
+                $adapter = null;
+            }
+
+            if(!$adapter){
+                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
+
+            }
+
+            $adapter->setIdentityStructure($localUser);
+            $adapter->setServiceURL($this->_request->getParams());
+
+        }
+
+
+        $result = Episciences_Auth::getInstance()->authenticate($adapter);
+
 
         switch ($result->getCode()) {
 
@@ -164,7 +185,7 @@ class UserDefaultController extends Zend_Controller_Action
                 // Instance singleton de Episciences_Auth
                 $auth = Episciences_Auth::getInstance();
 
-                if ($auth && $auth->hasIdentity()) {
+                if ($auth->hasIdentity()) {
                     /* @var $identity Episciences_User */
                     $identity = $auth->getIdentity();
 
@@ -186,7 +207,7 @@ class UserDefaultController extends Zend_Controller_Action
                     $localUser->setScreenName();
                 }
 
-                $casAuthAdapter->setIdentityStructure($localUser);
+                $adapter->setIdentityStructure($localUser);
 
                 // pas de données dans la table de Episciences, formulaire pour
                 // compléter données utilisateur
@@ -238,9 +259,10 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
-     * user logout
+     * User logout
+     * @return void
      */
-    public function logoutAction()
+    public function logoutAction(): void
     {
 
         $scheme = (!isset($_SERVER['HTTPS']) || strtolower($_SERVER['HTTPS']) != 'on') ? "http://" : "https://";
@@ -257,6 +279,25 @@ class UserDefaultController extends Zend_Controller_Action
         $url = $scheme . $_SERVER['HTTP_HOST'] . $this->view->url($urlParams);
 
         $auth = new Ccsd_Auth_Adapter_Cas();
+
+        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
+
+            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
+
+                $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+
+
+            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
+                $auth = null;
+            }
+
+            if(!$auth){
+                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
+
+            }
+
+        }
+
         $auth->logout($url);
     }
 
