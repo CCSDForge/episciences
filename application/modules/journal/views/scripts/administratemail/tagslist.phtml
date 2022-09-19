@@ -22,7 +22,7 @@ $this->layout()->pageTitle = $title
             <h3><?= $this->translate($current_group . '_tpl_group') ?></h3>
         <?php endif; ?>
         <?php $key = $oTemplate->getKey(); ?>
-        <p>
+        <p id="<?= $key ?>">
             <strong>
                 <?= $this->translate($key . '_tpl_name') ?> </strong>
             <em>(<?= $key ?>)</em>
@@ -35,12 +35,12 @@ $this->layout()->pageTitle = $title
 
                 <?php if ($recipient = $tab[$key][Episciences_Mail_TemplatesManager::RECIPIENT]): ?>
                     <br>
-                    <?= $this->translate('Destinataire :') . ' ' . $this->translate($recipient) ?>
+                    <?= $this->translate('Destinataire(s) :') . ' ' . $this->translate($recipient) ?>
                 <?php endif; ?>
 
                 <?php if ($description = $tab[$key][Episciences_Mail_TemplatesManager::DESCRIPTION]): ?>
                     <br>
-                    <?= $this->translate('N.B.') . ' ' . $this->translate($description) ?>
+                    <?= $this->translate('Description :') . ' ' . $this->translate($description) ?>
                 <?php endif; ?>
 
             <?php else: ?>

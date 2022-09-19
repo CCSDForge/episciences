@@ -2,6 +2,9 @@
     <?php
     $editTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour modifier ce template";
     $deleteTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour supprimer le template personnalisé";
+
+    $tagsListUrl = '/administratemail/tagslist';
+
     ?>
 
     <div id="templates">
@@ -30,6 +33,7 @@
                 <?php else: ?>
                     <span class="text-info"><?= $this->translate($template['KEY'] . '_tpl_name') ?></span>
                 <?php endif; ?>
+                <a href="<?= $tagsListUrl?>#<?= str_replace('custom_', '', $template['KEY']) ?>" target="_blank"><span class="fa-solid fa-circle-question" style="margin-left: 5px;"></span></a>
 
                 <div style="float: right">
                     <?php if ($this->editorsCanEditTmplates): ?>
