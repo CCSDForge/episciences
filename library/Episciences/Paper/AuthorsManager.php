@@ -226,6 +226,28 @@ class Episciences_Paper_AuthorsManager
 
         return $decodedauthors;
     }
+
+    public static function filterAuthorsAndAffiNumeric(int $paperId) {
+            $allauthors = self::getArrayAuthorsAffi($paperId);
+            $arrayAllAffi = [];
+            foreach ($allauthors as $key => $author) {
+                if (isset($author['affiliation'])){
+                    foreach ($author['affiliation'] as $affiliation){
+                        if (!in_array($affiliation['name'], $arrayAllAffi, true)){
+                            $arrayAllAffi[] = $affiliation['name'];
+                            $allauthors[$key]['idAffi'][array_key_last($arrayAllAffi)] = $arrayAllAffi[array_key_last($arrayAllAffi)];
+                        } else {
+                            $searching = array_search($affiliation['name'],$arrayAllAffi,true);
+                            $allauthors[$key]['idAffi'][$searching] = $arrayAllAffi[$searching] ;
+                        }
+                        ksort($allauthors[$key]['idAffi']);
+                    }
+                }
+            }
+            return ['affiliationNumeric' => $arrayAllAffi, 'authors' => $allauthors];
+
+    }
+
     public static function findAffiliationsOneAuthorByPaperId(int $paperId, int $idAuthorInJson) {
 
         $authors = self::getAuthorByPaperId($paperId);

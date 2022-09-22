@@ -232,6 +232,9 @@ class ExportController extends Zend_Controller_Action
             case 'crossref':
                 $output = $this->view->render('export/crossref.phtml');
                 break;
+            case 'doaj':
+                $output = $this->view->render('export/doaj.phtml');
+                break;
             case 'zbjats':
                 $output = $this->view->render('export/zbjats.phtml');
                 break;
@@ -270,6 +273,16 @@ class ExportController extends Zend_Controller_Action
     {
         return $this->xmlExport('crossref');
     }
+
+
+    /**
+     * Export to doaj
+     */
+    public function doajAction()
+    {
+        return $this->xmlExport('doaj');
+    }
+
 
     /**
      * Export to ZbJats
