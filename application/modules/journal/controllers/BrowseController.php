@@ -290,4 +290,9 @@ class BrowseController extends Zend_Controller_Action
         $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
     }
 
+    public function volumesdoajAction()
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $allVolumeOnReview = $review->getVolumes();
+    }
 }
