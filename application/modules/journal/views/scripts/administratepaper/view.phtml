@@ -32,12 +32,9 @@ $this->suggestedRevision = false;
 
 <?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $paper]) ?>
 
+
 <?php if ($paper->isObsolete()) : ?>
-    <div class="alert alert-info" style="margin-top: 20px">
-        <strong><?php echo $this->translate('Attention, cet article est obsolète.'); ?></strong><br/>
-        <?php echo $this->translate("Il s'agit d'une ancienne version de "); ?>
-        <a href="/administratepaper/view?id=<?php echo $paper->getLatestVersionId() ?>"><?php echo $this->translate('cet article'); ?></a>.
-    </div>
+    <?= $this->partial('partials/old_version.phtml', ['url' => $this->linkToLatestDocId]) ?>
 <?php endif; ?>
 
 <?php // Bloc "Papier" ***************************************************** ?>

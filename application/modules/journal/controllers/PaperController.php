@@ -2182,7 +2182,8 @@ class PaperController extends PaperDefaultController
             $result['message'] = $translator->translate("Cet article a été refusé, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
         } elseif ($paper->isObsolete()) { // paper is obsolete: display a notice
-            $paper->getLatestVersionId();
+            $latestDocId = $paper->getLatestVersionId();
+            $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
             $result['displayNotice'] = true;
         }
 

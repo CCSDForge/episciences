@@ -6,17 +6,8 @@ $previousRatings = $this->previousRatings;
 ?>
 
 <?php // obsolete paper notice ********************************************* ?>
-<?php if ($this->paper->getStatus() == Episciences_Paper::STATUS_OBSOLETE) : ?>
-    <div class="alert alert-info" style="margin-top: 20px">
-        <strong><?php echo $this->translate('Attention, cet article est obsolète.'); ?></strong><br/>
-        <?php
-        $url = $this->url(array(
-            'controller' => Zend_Controller_Front::getInstance()->getRequest()->getControllerName(),
-            'action' => Zend_Controller_Front::getInstance()->getRequest()->getActionName(),
-            'id' => $this->paper->getLatestVersionId()));
-        ?>
-        <?php echo $this->translate("Il s'agit d'une ancienne version de %s cet article %s", '<a href="' . $url . '">', '</a>'); ?>
-    </div>
+<?php if ($this->paper->isObsolete()) : ?>
+    <?= $this->partial('partials/old_version.phtml', ['url' => $this->linkToLatestDocId]) ?>
 <?php endif; ?>
 
 
