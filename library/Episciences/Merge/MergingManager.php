@@ -321,8 +321,8 @@ class Episciences_Merge_MergingManager
             return ['message' => $message, 'code' => $code, 'httpStatusCode' => self::HTTP_ERROR_SERVER];
         }
 
-        if ($merger === EPISCIENCES_UID || $merger === ROOT_UID ||
-            $keeper === EPISCIENCES_UID || $keeper === ROOT_UID) {
+        if ($merger === EPISCIENCES_UID || $merger === EPISCIENCES_ROOT_UID ||
+            $keeper === EPISCIENCES_UID || $keeper === EPISCIENCES_ROOT_UID) {
             $code = self::FORBIDDEN_UID;
             $message = 'UID forbidden, do not merge it';
 
