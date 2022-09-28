@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
 ## Changed
+- [#237](https://github.com/CCSDForge/episciences/issues/237) Editor comments div is now bigger 
 - Upgraded publication RSS Feeds with DOIs
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
 - It is now possible to update the metadata on the document's page
