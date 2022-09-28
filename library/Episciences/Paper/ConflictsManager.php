@@ -265,8 +265,7 @@ class Episciences_Paper_ConflictsManager
         $mergerConflicts = self::findByUidAndAnswer($oldUid, null, 'array');
 
         foreach ($mergerConflicts as $row) {
-            $row['message'] = empty($row['message']) ? null : $row['message']; // to avoid the SQL query execution failure when $row['message'] = ''
-            $values[] = '(' . $row['cid'] . ',' . $row['paper_id'] . ',' . $newUid . ',' . $row['answer'] . ',' . $row['message'] . ',' . $row['date'] . ')';
+            $values[] = '(' . $row['cid'] . ',' . $row['paper_id'] . ',' . $newUid . ',' . $db->quote($row['answer']) . ',' . $db->quote($row['message']) . ',' . $db->quote($row['date']) . ')';
         }
 
         if (!empty($values)) {
