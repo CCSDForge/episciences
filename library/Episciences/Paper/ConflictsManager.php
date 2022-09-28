@@ -3,6 +3,7 @@
 class Episciences_Paper_ConflictsManager
 {
     public const TABLE = T_PAPER_CONFLICTS;
+    public const DEFAULT_MODE = 'object';
 
     /**
      * @param int $paperId
@@ -17,8 +18,7 @@ class Episciences_Paper_ConflictsManager
             ->from(['c' => self::TABLE])
             ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME'])
             ->where('paper_id = ?', $paperId)
-            ->order('date DESC')
-        ;
+            ->order('date DESC');
 
         $rows = $db->fetchAssoc($sql);
 
@@ -32,11 +32,12 @@ class Episciences_Paper_ConflictsManager
     /**
      * @param int $uid
      * @param string|null $answer
-     * @return array [Episciences_Paper_Conflict]
+     * @param string $mode
+     * @param string $mode
+     * @return  array | Episciences_Paper_Conflict[]
      */
-    public static function findByUidAndAnswer(int $uid, string $answer = null): array
+    public static function findByUidAndAnswer(int $uid, string $answer = null, string $mode = self::DEFAULT_MODE): array
     {
-        $oConflicts = [];
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -48,7 +49,13 @@ class Episciences_Paper_ConflictsManager
             $sql->where('answer = ?', $answer);
         }
 
-        $rows = $db->fetchAll($sql);
+        $rows = $db->fetchAll(self::findByUidAndAnswerQuery($uid, $answer));
+
+        if ($mode !== self::DEFAULT_MODE) {
+            return $rows;
+        }
+
+        $oConflicts = [];
 
         foreach ($rows as $row) {
             $oConflicts [] = new Episciences_Paper_Conflict($row);
@@ -168,7 +175,7 @@ class Episciences_Paper_ConflictsManager
             'id' => 'coi-message',
             'label' => 'Commentaire facultatif',
             'tiny' => true,
-            'class'=> 'form-control',
+            'class' => 'form-control',
             'rows' => '3',
             'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]]
         ]);
@@ -217,7 +224,32 @@ class Episciences_Paper_ConflictsManager
             ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME']);
     }
 
+    /**
+     * @param int $uid
+     * @param string|null $answer
+     * @return Zend_Db_Select
+     */
+    public static function findByUidAndAnswerQuery(int $uid, string $answer = null): Zend_Db_Select
+    {
 
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $sql = $db->select()
+            ->from(self::TABLE)
+            ->where("`by` = ?", $uid);
+
+        if ($answer) {
+            $sql->where('answer = ?', $answer);
+        }
+
+        return $sql;
+    }
+
+    /**
+     * @param int $oldUid  // keeper UID
+     * @param int $newUid // merger UID
+     * @return int // affected rows
+     */
     public static function updateRegistrant(int $oldUid = 0, int $newUid = 0): int
     {
 
@@ -225,19 +257,59 @@ class Episciences_Paper_ConflictsManager
             return 0;
         }
 
-        $nbAffectedRows = 0;
+        $values = [];
+        $updatedRows = 0;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $data['by'] = $newUid;
-        $where['by = ?'] = $oldUid;
-        try {
-            $nbAffectedRows = $db->update(self::TABLE, $data, $where);
-        } catch (Zend_Db_Adapter_Exception $e) {
-            trigger_error($e->getMessage());
+
+        $mergerConflicts = self::findByUidAndAnswer($oldUid, null, 'array');
+
+        foreach ($mergerConflicts as $row) {
+            $row['message'] = empty($row['message']) ? null : $row['message']; // to avoid the SQL query execution failure when $row['message'] = ''
+            $values[] = '(' . $row['cid'] . ',' . $row['paper_id'] . ',' . $newUid . ',' . $row['answer'] . ',' . $row['message'] . ',' . $row['date'] . ')';
         }
 
-        return $nbAffectedRows;
+        if (!empty($values)) {
 
+            $where['`by` = ?'] = $oldUid;
+            $db->delete(self::TABLE, $where);
+
+            $sql = 'INSERT INTO ';
+            $sql .= $db->quoteIdentifier(self::TABLE);
+            $sql .= ' (';
+            $sql .= $db->quoteIdentifier('cid');
+            $sql .= ', ';
+            $sql .= $db->quoteIdentifier('paper_id');
+            $sql .= ', ';
+            $sql .= $db->quoteIdentifier('by');
+            $sql .= ', ';
+            $sql .= $db->quoteIdentifier('answer');
+            $sql .= ', ';
+            $sql .= $db->quoteIdentifier('message');
+            $sql .= ', ';
+            $sql .= $db->quoteIdentifier('date');
+            $sql .= ') VALUES ';
+            $sql .= implode(',', $values);
+            $sql .= ' ON DUPLICATE KEY UPDATE ';
+            $sql .= $db->quoteIdentifier('by');
+            $sql .= ' = VALUES(';
+            $sql .= $db->quoteIdentifier('by');
+            $sql .= ')';
+
+
+            $statement = $db->prepare($sql);
+
+            try {
+                if ($statement->execute()) {
+                    $updatedRows = $statement->rowCount();
+                }
+            } catch (Exception $e) {
+                error_log($e->getMessage());
+            }
+        }
+
+
+        return $updatedRows;
     }
 
 }
