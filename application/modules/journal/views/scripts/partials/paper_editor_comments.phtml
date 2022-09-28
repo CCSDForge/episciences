@@ -4,7 +4,7 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 
 <?php if (!empty($this->editor_comments)) : ?>
     <?php $first = key($this->editor_comments); ?>
-    <div id="editor_comments" style="max-height: 200px; overflow: auto">
+    <div id="editor_comments" style="max-height: 800px; overflow: auto">
     <?php foreach ($this->editor_comments as $id=>$comment) : ?>
         <?php $margin = ($id == $first) ? '0' : '20px'; ?>
         <div style="margin-top: <?php echo $margin;?>" class="small">
