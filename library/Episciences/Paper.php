@@ -2346,6 +2346,7 @@ class Episciences_Paper
      * @param string $doc_type
      * @param array|false|string $rvcode
      * @throws Zend_Exception
+     * @deprecated TODO Replace by COAR Notify
      */
     public function updateHALMetadata($publication_date = null, $doc_type = 'ART', $rvcode = RVCODE)
     {

@@ -1878,9 +1878,11 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setPublication_date(date("Y-m-d H:i:s"));
 
             // if HAL, update paper metadata in repository
+            /*
             if (APPLICATION_ENV === 'production' && $paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal')) {
-                $paper->updateHALMetadata();
+               // TODO use COAR Notify to update meta on HAL
             }
+            */
 
             // update paper status
             $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
