@@ -67,10 +67,10 @@ class Episciences_Repositories
     /*  self::CWI_REPO_ID => [
             self::REPO_LABEL => 'CWI',
             self::REPO_EXAMPLE => '22211',
-            self::REPO_BASEURL => 'http://oai.cwi.nl/oai',
+            self::REPO_BASEURL => 'https://ir.cwi.nl/oai/',
             self::REPO_IDENTIFIER => 'oai:cwi.nl:%%ID',
             self::REPO_DOCURL => 'http://persistent-identifier.org/?identifier=urn:nbn:nl:ui:18-%%ID',
-            self::REPO_PAPERURL => 'https://repository.cwi.nl/noauth/directaccess.php?publnr=%%ID',
+            self::REPO_PAPERURL => 'https://ir.cwi.nl/pub/%%ID/%%ID.pdf',
             self::REPO_TYPE => self::TYPE_PAPERS
         ],*/
 

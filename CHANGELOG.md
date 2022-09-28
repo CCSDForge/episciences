@@ -48,13 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
 ## Changed
-
-- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer to fill in)
-- [RT#164153]: refactoring: now obsolete template "paper_new_version_reviewer_reassign" (Reviewer assignment to a new version of an article) is removed.
-### Fixed:
-- account merging incomplete due to sql error when updating 'paper_conflicts' table.
-
-
 - Upgraded publication RSS Feeds with DOIs
 - Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
@@ -87,6 +80,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 - [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest. 
+
+
+## 1.0.32.2 - 2022-09-28
+### Changed
+- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer to fill in)
+- [RT#164153]: refactoring: now obsolete template "paper_new_version_reviewer_reassign" (Reviewer assignment to a new version of an article) is removed.
+
+### Fixed:
+- account merging incomplete due to sql error when updating 'paper_conflicts' table.
+
 
 ## 1.0.32.1 - 2022-09-01
 ### Fixed
