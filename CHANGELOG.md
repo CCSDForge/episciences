@@ -17,68 +17,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ## added
-- Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
-- Added 'journals news' RSS feed
-- API to get a list of publishing journals: include accepted repositories.
-- New article status:
-* Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
-* Accepted - waiting for author's final version
-* Accepted, waiting for major revision
-* Accepted article - final version submitted, waiting for formatting by copy editors
-* Accepted temporary version after author's modifications
-* Accepted temporary version, waiting for minor revision
-* Accepted temporary version, waiting for major revision
-* Accepted - waiting validation by the author
-* Approved by author, waiting for final publication
+- New page listing all email templates and available tags for each journal at /administratemail/tagslist 
+  (- Mail -> TagList)
+- Episciences portal:
+  - New Feed RSS + Atom : latest published documents, 2 docs per journal
+  - API to get a list of publishing journals: include accepted repositories.
+- Episciences journals
+  - Added 'journals news' RSS feed for each journal 
 
-- Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
-- New review parameter: Allow post-acceptance revisions of articles + refactoring.
-- 'Author' role
-- Script to clean the "USER_ROLES" table
-- 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
-- Paper list: temporary versions are now labeled
-- Alert administrators on the existence of papers without assigned editors
-- Social Medias & Websites profile informations.
-- Display the origin of a linked data.
-- Administration page of a paper: new shortcut for administrators to allow to sign in as a copy-editor
-- Administration page of a paper: new shortcut for administrators to allow to sign in as an editor
-- Automatic mail detection
+- New journal settings parameter: Allow post-acceptance revisions of articles
+- 9 article statuses, available for journals allowing 'post-acceptance revisions of articles':
+  * Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
+  * Accepted - waiting for author's final version
+  * Accepted, waiting for major revision
+  * Accepted article - final version submitted, waiting for formatting by copy editors
+  * Accepted temporary version after author's modifications
+  * Accepted temporary version, waiting for minor revision
+  * Accepted temporary version, waiting for major revision
+  * Accepted - waiting validation by the author
+  * Approved by author, waiting for final publication
+
+- User profiles:
+  - Adding ORCID and affiliation to your profile is now possible + this information is diplayed on the 
+    "editorial staff member" (gitlab #410) & dashboard pages.
+  - Social Medias & Websites profile informations.
+
+
+- New 'Author' role automatically added to users that have submitted a document
+- Paper list: temporary versions now have a specific label
+- Dashboard: Alert for administrators on the existence of papers without assigned editors
+
+- Display the origin of a linked data when papers are linked to a dataset
+- Administration page of a paper: new shortcut for administrators :
+  - to allow to sign in as a copy-editor
+  - to allow to sign in as an editor
+
 - [227](https://github.com/CCSDForge/episciences/issues/227):
   - The revision deadline is now displayed below the article's status.
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
 ## Changed
 - Upgraded publication RSS Feeds with DOIs
-- Workflow reviewing
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
-- Make it possible to update the metadata on the article page
+- It is now possible to update the metadata on the document's page
 - Request a new version of an article that has already been accepted
-- [#166] (https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action
-- The "status" filter is now dynamically created.
+- [#166](https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action
+- The "paper status" filter is now dynamically created.
 - Prevent "Add sources files" and "Add the formatted version" buttons JS reactivation
-- Move "copy editing" section
+- Moved "copy editing" section to a more usable place on the same page
 - Dashboard improvements: ability to reach an article from sections: my submissions and assigned articles
 - [#187](https://github.com/CCSDForge/episciences/issues/187): change the default templates: 'new version submitted' and 'tmp version submitted'
 - [#188](https://github.com/CCSDForge/episciences/issues/188 ): force notifications
-- CWI is removed now: OAI is down.
-- Code Refactoring fixing of warning
-- It is now possible to re-point the version in Episciences to the most recent version in the open archive.
+- It is now possible to update the document version in Episciences to the most recent version in the open archive.
 - [#164](https://github.com/CCSDForge/episciences/issues/164): harmonization of roles/privileges.
-  ##Fixed
-- Multiple roles: ignore the "member" role when merging two accounts.
-- [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names + refactoring
-- Templates updating
+- CWI open repository has been temporarily removed now until we adapt to their new OAI server 
+  
+## Fixed
+- [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names
 - [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
-- Update Episciences_User::getScreenName()
-- User Table: merge AFFILIATIONS" filed in "ADDITIONAL_PROFILE_INFORMATION"
 - [#169](https://github.com/CCSDForge/episciences/issues/169): reports become visible on the article web page:
   * according to the parameters of the journal for published articles
   * for the owner, only if the paper is refused, waiting for revision, already accepted or published
-
 - Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 - If the journal allows revision of articles after acceptance, the response to a request for a final version (without any changes) is similar to the proposal of a new version. 
 
+## Internal refactoring
+  - Code Refactoring fixing of warning
+  - Update Episciences_User::getScreenName()
+  - User Table: merge AFFILIATIONS" filed in "ADDITIONAL_PROFILE_INFORMATION"
+  - Multiple roles: ignore the "member" role when merging two accounts.
+  - Email Templates updates
+  - Script to clean the "USER_ROLES" table
+  - Parameter to detect automatic emails
 
 ## 1.0.32.2 - 2022-09-28
 ### Changed
