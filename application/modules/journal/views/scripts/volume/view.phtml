@@ -120,4 +120,5 @@ $this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
+    <a class="btn btn-default btn-sm" target="_blank" href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>">Export papers from volumes</a>
 </div>

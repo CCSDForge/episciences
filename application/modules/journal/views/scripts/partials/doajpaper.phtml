@@ -1,0 +1,152 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$authors = $paper->getMetadata('authors');
+$subjects = $paper->getMetadata('subjects');
+
+$titles = $paper->getAllTitles();
+
+$abstracts = $paper->getAllAbstracts();
+
+$dateSubmitted = new DateTime($paper->getSubmission_date());
+$dateUpdated = new DateTime($paper->getModification_date());
+$dateIssued = new DateTime($paper->getPublication_date());
+$publicationYear = new DateTime($paper->getPublication_date());
+
+/** @var $journal Episciences_Review */
+$journal = $this->journal;
+$journalUrl = $journal->getUrl();
+$journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
+
+$enrichmentAuthors = $paper->getAuthorsWithAffiNumeric();
+$enrichmentAuthorsWithAffiNum = $enrichmentAuthors['authors'];
+$arrayAffiliation = $enrichmentAuthors['affiliationNumeric'];
+$enrichmentLicence = $paper->getLicence();
+$enrichmentFundings = $paper->getFundings();
+$enrichmentLinkedData = $paper->getLinkedData();
+
+if ($eissn = $journal->getSetting(Episciences_Review::SETTING_ISSN)){
+    $eissn = $this->FormatIssn($eissn);
+}else{
+    $eissn = '';
+}
+if ($issn = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT)) {
+    $issn = $this->FormatIssn($issn);
+} else {
+    $issn = '';
+}
+
+$timestamp = time();
+?>
+<record>
+    <language><?= $this->paperLanguage ?></language>
+    <publisher><?= DOMAIN; ?></publisher>
+    <journalTitle><?=  $this->escape($journal->getName()) ?></journalTitle>
+
+    <?php if ($issn !== '') : ?>
+        <issn><?= $this->escape($issn) ?></issn>
+    <?php endif; ?>
+    <?php if ($eissn !== '') : ?>
+        <eissn><?= $this->escape($eissn) ?></eissn>
+    <?php endif; ?>
+
+    <publicationDate><?= $this->escape($paper->getPublication_date()) ?></publicationDate>
+    <?php if ($this->volume !== '') : ?>
+        <volume><?php echo Ccsd_Tools_String::truncate($this->escape($this->volume), 29, '...'); ?></volume>
+    <?php endif; ?>
+    <?php if ($this->section !== '') : ?>
+        <issue><?php echo Ccsd_Tools_String::truncate($this->escape($this->section), 29, '...'); ?></issue>
+    <?php endif; ?>
+    <?php if($this->doi !== ''): ?>
+        <doi><?= htmlentities($this->doi, ENT_XML1) ?></doi>
+    <?php endif;?>
+    <publisherRecordId><?php echo $paper->getPaperid(); ?></publisherRecordId>
+    <documentType>journal article</documentType>
+    <?php $titleCount = 0; ?>
+    <?php foreach ($titles as $lang => $title) : ?>
+        <?php
+        if ($titleCount == 0): ?>
+            <title><?php echo $this->escape($title) ?></title>
+            <?php $titleCount++; ?>
+        <?php elseif ($titleCount == 1) : ?>
+            <title language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></title>
+            <?php $titleCount++; ?>
+        <?php endif; ?>
+    <?php endforeach; ?>
+    <?php
+    if (is_array($authors)) { ?>
+        <authors>
+            <?php
+            foreach ($authors as $order => $creatorName) {
+                $givenName= '';
+                $familyName= '';
+                if (str_contains($creatorName, ',')) {
+                    [$familyName, $givenName] = explode(', ', $creatorName);
+                } else {
+                    $familyName = $creatorName;
+                }
+                ?>
+                <author>
+                    <name><?php if($givenName !=='') :?><?=$this->escape($givenName)." " ?><?php endif; ?><?php echo $this->escape($familyName) ?></name>
+                    <?php if (!empty($enrichmentAuthorsWithAffiNum)): ?>
+                        <?php if (isset($enrichmentAuthorsWithAffiNum[$order]['idAffi'])): ?>
+                            <?php foreach ($enrichmentAuthorsWithAffiNum[$order]['idAffi'] as $index => $affiNum){ ?>
+                                <affiliationId><?php echo $this->escape($index) ?></affiliationId>
+                            <?php } ?>
+                        <?php endif; ?>
+                        <?php if (isset($enrichmentAuthorsWithAffiNum[$order]['orcid'])): ?>
+                            <orcid_id><?= "https://orcid.org/" . $this->escape($enrichmentAuthorsWithAffiNum[$order]['orcid']) ?></orcid_id>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </author>
+                <?php
+            }
+            ?>
+        </authors>
+        <?php
+    }
+    ?>
+    <?php if (!empty($arrayAffiliation)) : ?>
+        <affiliationsList>
+            <?php foreach ($arrayAffiliation as $affiIndex => $affiName) { ?>
+                <affiliationName affiliationId="<?=$this->escape($affiIndex) ?>"><?=$this->escape($affiName) ?></affiliationName>
+            <?php } ?>
+        </affiliationsList>
+    <?php endif;?>
+    <?php if ($abstracts): ?>
+        <?php
+        foreach ($abstracts as $lang => $abstract) {
+            $abstract = trim($abstract);
+
+            if (('International audience' === $abstract) || (preg_match("/^Comment:/", $abstract))) {
+                continue;
+            }
+            if ($lang && Zend_Locale::isLocale($lang)) {
+                $langId = $lang;
+                echo '<abstract language="'. $langId . '">';
+            } else {
+                echo '<abstract>';
+            }
+
+
+            echo $this->escape($abstract);
+            echo '</abstract>';
+        }
+        ?>
+    <?php endif; ?>
+    <keywords>
+        <?php if (is_array($subjects)): ?>
+            <?php
+            foreach ($subjects as $lang => $keyword) {
+                if (is_array($keyword)) {
+                    foreach ($keyword as $kwdLang => $kwd) {
+                        echo PHP_EOL . '<keyword>' . $this->escape($kwd) . '</keyword>';
+                    }
+                } else {
+                    echo PHP_EOL . '<keyword>' . $this->escape($keyword) . '</keyword>';
+                }
+            }
+            ?>
+        <?php endif; ?>
+    </keywords>
+</record>

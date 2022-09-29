@@ -155,8 +155,37 @@ class ExportController extends Zend_Controller_Action
      */
     protected function xmlExport($format = ''): bool
     {
-        $paper = $this->getPaperToExport();
 
+        if ($format === 'voldoaj') {
+            $request = $this->getRequest();
+            $params = $request->getParams();
+            $getVolume = Episciences_VolumesManager::find($params['vid']);
+            $review = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
+            $volume = '';
+            $section = '';
+
+            $listOfPaper = $getVolume->getPaperListFromVolume();
+            foreach ($listOfPaper as $key => $value) {
+                if (!$value->isPublished()) {
+                    unset($listOfPaper[$key]);
+                }
+            }
+
+            $journal = $review;
+            $journal->loadSettings();
+
+            $this->view->listOfPaper = $listOfPaper;
+            $this->view->journal = $journal;
+            $this->view->volume = $getVolume->getName('en', true);
+            
+            header('Content-Type: text/xml; charset: utf-8');
+            
+            $output = $this->view->render('export/volumesdoaj.phtml');
+
+            return $this->displayXml($output);
+        }
+
+        $paper = $this->getPaperToExport();
 
         $previousVersionsUrl = [];
         $previousVersions = $paper->getPreviousVersions(false, false);
@@ -247,23 +276,8 @@ class ExportController extends Zend_Controller_Action
         }
 
 
-        $dom = new DOMDocument();
-        $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = true;
+        return $this->displayXml($output);
 
-        $loadResult = $dom->loadXML($output);
-
-        $dom->encoding = 'utf-8';
-        $dom->xmlVersion = '1.0';
-
-        if ($loadResult) {
-            $output = $dom->saveXML();
-            echo $output;
-            return true;
-        }
-
-        echo '<error>Error loading XML source. Please report to Journal Support.</error>';
-        return false;
     }
 
     /**
@@ -281,6 +295,16 @@ class ExportController extends Zend_Controller_Action
     public function doajAction()
     {
         return $this->xmlExport('doaj');
+    }
+
+    /**
+     * Export to DOAJ from a volume
+     */
+    public function volumesdoajAction()
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        $this->xmlExport('voldoaj');
     }
 
 
@@ -386,6 +410,31 @@ class ExportController extends Zend_Controller_Action
             }
         }
         return $nbPages;
+    }
+
+    /**
+     * @param string $output
+     * @return bool
+     */
+    public function displayXml(string $output): bool
+    {
+        $dom = new DOMDocument();
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+
+        $loadResult = $dom->loadXML($output);
+
+        $dom->encoding = 'utf-8';
+        $dom->xmlVersion = '1.0';
+
+        if ($loadResult) {
+            $output = $dom->saveXML();
+            echo $output;
+            return true;
+        }
+
+        echo '<error>Error loading XML source. Please report to Journal Support.</error>';
+        return false;
     }
 
 }
