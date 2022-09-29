@@ -74,6 +74,7 @@ class Episciences_Paper_ConflictsManager
 
         $sql = $db
             ->select()
+            ->distinct()
             ->from(['pc' => self::TABLE])
             ->joinLeft(['p' => T_PAPERS], 'pc.paper_id = p.PAPERID', ['RVID'])
             ->where('p.RVID = ?', $rvId);
