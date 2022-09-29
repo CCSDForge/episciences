@@ -4180,5 +4180,46 @@ class Episciences_Paper
     }
 
 
+    /**
+     * @param null $publication_date
+     * @param string $doc_type
+     * @param array|false|string $rvcode
+     * @throws Zend_Exception
+     * @deprecated TODO Replace by COAR Notify
+     */
+    public function updateHALMetadata($publication_date = null, $doc_type = 'ART', $rvcode = RVCODE)
+    {
+        $identifier = $this->getIdentifier();
+        $version = $this->getVersion();
+        $volume = null;
+        if ($this->getVid()) {
+            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            if ($oVolume) {
+                $volume = $oVolume->getName('en', true);
+            }
+        }
+        $token = hash('sha256', EPISCIENCES_SECRET_KEY . $rvcode . $volume . $identifier . $version);
+
+        $curl = curl_init(EPISCIENCES_HAL_API . "/episciences/publication");
+        // result is returned instead of being displayed
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        $params = [
+            'identifier' => $identifier,
+            'version' => $version,
+            'rvcode' => $rvcode,
+            'volume' => $volume,
+            'date' => ($publication_date) ?: $this->getPublication_date(),
+            'token' => $token
+        ];
+        if ($doc_type) {
+            $params['typdoc'] = $doc_type;
+        }
+        curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
+        curl_exec($curl);
+        curl_close($curl);
+    }
+
+
+
 
 }

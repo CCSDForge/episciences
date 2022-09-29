@@ -16,247 +16,347 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
-## added
-- Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
-- Added 'journals news' RSS feed
-- API to get a list of publishing journals: include accepted repositories.
-- New article status:
-* Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have this new status instead of "pending minor revision" (git #372)
-* Accepted - waiting for author's final version
-* Accepted, waiting for major revision
-* Accepted article - final version submitted, waiting for formatting by copy editors
-* Accepted temporary version after author's modifications
-* Accepted temporary version, waiting for minor revision
-* Accepted temporary version, waiting for major revision
-* Accepted - waiting validation by the author
-* Approved by author, waiting for final publication
 
-- Adding ORCID and affiliation to your profile is now possible + display this information on the "editorial staff member" (gitlab #410) & dashboard pages.
-- New review parameter: Allow post-acceptance revisions of articles + refactoring.
-- 'Author' role
-- Script to clean the "USER_ROLES" table
-- 3 new article statutes: Accepted temporary version after author's modification, Accepted temporary version, waiting for minor revision and Accepted temporary version, waiting for major revision
-- Paper list: temporary versions are now labeled
-- Alert administrators on the existence of papers without assigned editors
-- Social Medias & Websites profile informations.
-- Display the origin of a linked data.
-- Administration page of a paper: new shortcut for administrators to allow to sign in as a copy-editor
-- Administration page of a paper: new shortcut for administrators to allow to sign in as an editor
-- Automatic mail detection
+### Added
+
+- Sign in an admin as another user: real identity is now saved.
+- Submission from episciences-zenodo: first submission.
+- [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest.
+- Metadata Enrichment
+
+## 1.0.33 - 2022-09-28
+
+## added
+
+- New page listing all email templates and available tags for each journal at /administratemail/tagslist
+  (- Mail -> TagList)
+- Episciences portal:
+    - New Feed RSS + Atom : latest published documents, 2 docs per journal
+    - API to get a list of publishing journals: include accepted repositories.
+- Episciences journals
+    - Added 'journals news' RSS feed for each journal
+- New journal settings parameter: Allow post-acceptance revisions of articles
+- 9 article statuses, available for journals allowing 'post-acceptance revisions of articles':
+    * Accepted temporary version, waiting for author's final version: now, temporary versions that are accepted have
+      this new status instead of "pending minor revision" (git #372)
+    * Accepted - waiting for author's final version
+    * Accepted, waiting for major revision
+    * Accepted article - final version submitted, waiting for formatting by copy editors
+    * Accepted temporary version after author's modifications
+    * Accepted temporary version, waiting for minor revision
+    * Accepted temporary version, waiting for major revision
+    * Accepted - waiting validation by the author
+    * Approved by author, waiting for final publication
+- User profiles:
+    - Adding ORCID and affiliation to your profile is now possible + this information is diplayed on the
+      "editorial staff member" (gitlab #410) & dashboard pages.
+    - Social Medias & Websites profile informations.
+- New 'Author' role automatically added to users that have submitted a document
+- Paper list: temporary versions now have a specific label
+- Dashboard: Alert for administrators on the existence of papers without assigned editors
+- Display the origin of a linked data when papers are linked to a dataset
+- Administration page of a paper: new shortcut for administrators :
+    - to allow to sign in as a copy-editor
+    - to allow to sign in as an editor
 - [227](https://github.com/CCSDForge/episciences/issues/227):
-  - The revision deadline is now displayed below the article's status.
-  - A pictogram is added to indicate the date of the revision deadline in the article management table.
+    - The revision deadline is now displayed below the article's status.
+    - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
 ## Changed
+
+- [#237](https://github.com/CCSDForge/episciences/issues/237) Editor comments div is now bigger
 - Upgraded publication RSS Feeds with DOIs
-- Workflow reviewing
-- [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
-- Make it possible to update the metadata on the article page
+- [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy
+  editing requests
+- It is now possible to update the metadata on the document's page
 - Request a new version of an article that has already been accepted
-- [#166] (https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action
-- The "status" filter is now dynamically created.
+- [#166](https://github.com/CCSDForge/episciences/issues/116): hide "guest" role and doi-settings action
+- The "paper status" filter is now dynamically created.
 - Prevent "Add sources files" and "Add the formatted version" buttons JS reactivation
-- Move "copy editing" section
+- Moved "copy editing" section to a more usable place on the same page
 - Dashboard improvements: ability to reach an article from sections: my submissions and assigned articles
-- [#187](https://github.com/CCSDForge/episciences/issues/187): change the default templates: 'new version submitted' and 'tmp version submitted'
+- [#187](https://github.com/CCSDForge/episciences/issues/187): change the default templates: 'new version submitted'
+  and 'tmp version submitted'
 - [#188](https://github.com/CCSDForge/episciences/issues/188 ): force notifications
-- CWI is removed now: OAI is down.
-- Code Refactoring fixing of warning
-- It is now possible to re-point the version in Episciences to the most recent version in the open archive.
+- It is now possible to update the document version in Episciences to the most recent version in the open archive.
 - [#164](https://github.com/CCSDForge/episciences/issues/164): harmonization of roles/privileges.
-- Submission from episciences-zenodo: first submission.
-  ##Fixed
-- Multiple roles: ignore the "member" role when merging two accounts.
-- [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names + refactoring
-- Templates updating
+- CWI open repository has been temporarily removed until we adapt to their new OAI server
+
+## Fixed
+
+- [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names
 - [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
-- Sign in an admin as another user: real identity is now saved.
+- [#169](https://github.com/CCSDForge/episciences/issues/169): reports become visible on the article web page:
+    * according to the parameters of the journal for published articles
+    * for the owner, only if the paper is refused, waiting for revision, already accepted or published
+- Another status (Revision request answer: without any modifications) is used when responding to a revision request:
+  without any modifications.
+- Revision requests: now we have an immediate visual feedback when changing the deadline.
+- If the journal allows revision of articles after acceptance, the response to a request for a final version (without
+  any changes) is similar to the proposal of a new version.
+
+## Internal refactoring
+
+- Code Refactoring fixing of warning
 - Update Episciences_User::getScreenName()
 - User Table: merge AFFILIATIONS" filed in "ADDITIONAL_PROFILE_INFORMATION"
-- [#169](https://github.com/CCSDForge/episciences/issues/169): reports become visible on the article web page:
-  * according to the parameters of the journal for published articles
-  * for the owner, only if the paper is refused, waiting for revision, already accepted or published
-
-- Another status (Revision request answer: without any modifications) is used when responding to a revision request: without any modifications.
-- Revision requests: now we have an immediate visual feedback when changing the deadline.
-- [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest. 
-
+- Multiple roles: ignore the "member" role when merging two accounts.
+- Email Templates updates
+- Script to clean the "USER_ROLES" table
+- Parameter to detect automatic emails
 
 ## 1.0.32.2 - 2022-09-28
+
 ### Changed
-- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer to fill in)
-- [RT#164153]: refactoring: now obsolete template "paper_new_version_reviewer_reassign" (Reviewer assignment to a new version of an article) is removed.
+
+- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a
+  temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer
+  to fill in)
+- [RT#164153]: refactoring: now obsolete template "paper_new_version_reviewer_reassign" (Reviewer assignment to a new
+  version of an article) is removed.
 
 ### Fixed:
+
 - account merging incomplete due to sql error when updating 'paper_conflicts' table.
 
-
 ## 1.0.32.1 - 2022-09-01
+
 ### Fixed
+
 - Fixed bug introduced with [196] "Name" => "Last Name" when creating a new reviewer
 - Fixed release notes links to issues
 
 ## 1.0.32 - 2022-08-31
+
 ### Changed
-- [201](https://github.com/CCSDForge/episciences/issues/201): depending on journal settings, editor can accept, ask revision, reject and publish papers in every round.
+
+- [201](https://github.com/CCSDForge/episciences/issues/201): depending on journal settings, editor can accept, ask
+  revision, reject and publish papers in every round.
 - [238](https://github.com/CCSDForge/episciences/issues/238): harmonization of terms 'sections/rubriques'.
 - [196](https://github.com/CCSDForge/episciences/issues/196) now,
-  - Only one 'name' field is available when creating a new reviewer
-  - Reviewers are sorted by lastname by default
-- Empty TAG  %%RECIPIENT_SCREEN_NAME%% for users who do not have a local account in "Unanswered reviewer invitation (reviewer copy)" reminder.
+    - Only one 'name' field is available when creating a new reviewer
+    - Reviewers are sorted by lastname by default
+- Empty TAG %%RECIPIENT_SCREEN_NAME%% for users who do not have a local account in "Unanswered reviewer invitation (
+  reviewer copy)" reminder.
 - (Internal/refactoring) transition to PHP 8: refactoring: "MaxMind GeoIP2 PHP API" is now used instead of PHP module.
 
 ### Fixed
+
 - [RT#163166]: Problem sending mail from staff page.
 - Fixed [#165](https://github.com/CCSDForge/episciences/issues/165): Line breaks in paper titles in API
 - Fixed [#251](https://github.com/CCSDForge/episciences/issues/251): conform to ISO 3297 for displaying ISSNs
 
 ## Added
+
 - Episciences portal: New Feed RSS + Atom : latest published documents, 2 docs per journal
 - Added 'journals news' RSS feed
 
 ## 1.0.31.1 - 2022-07-13
+
 ### Changed
+
 - User accounts merging procedure: take into account the Conflict Of Interests
 
 ## 1.0.31 - 2022-06-28
+
 ### Added
+
 - A pictogram is added to indicate papers with conflicts in the article management table.
+
 ### Changed
+
 - [192](https://github.com/CCSDForge/episciences/issues/192): allow editors to "Ask for other editors opinion".
 - Only confirmed conflicts will be displayed in the conflict management section
+
 ### Fixed
+
 - Ask revision: possibility to backdate the deadline.
 - Fixed: RT #160301:
-  the tags [%%SENDER_FULL_NAME%%, %%SENDER_SCREEN_NAME%%, %%SENDER_EMAIL%%, %%SENDER_FIRST_NAME%%', %%SENDER_LAST_NAME%% ]
+  the
+  tags [%%SENDER_FULL_NAME%%, %%SENDER_SCREEN_NAME%%, %%SENDER_EMAIL%%, %%SENDER_FIRST_NAME%%', %%SENDER_LAST_NAME%% ]
   concerning the user of the action are filled with the data of the user connected at the time of the action.
-  Making these variables available in the automatic mails poses a real problem: they are filled with the data of the mail recipient.
+  Making these variables available in the automatic mails poses a real problem: they are filled with the data of the
+  mail recipient.
   So, from now on, the tags mentioned above will no longer be available in the automatic mail templates.
 - Shifted display because of the error message (CSRF token)
 
 ## 1.0.30 - 2022-06-20
+
 ### Fixed
-- Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO ) 
+
+- Titles do not appear in the correct language when more than one language has been entered (e.g. SLOVO )
+
 ### Added
+
 - It is now possible to manage conflicts on the article page: display & delete them
 
 ## 1.0.29.1 - 2022-06-13
+
 ### Changed
+
 - Revision requests: now we have an immediate visual feedback when changing the deadline
+
 ### Fixed
+
 - [#247](https://github.com/CCSDForge/episciences/issues/247):
-  HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute URLs.
+  HTML links in outgoing emails are made relative [#247]: TinyMCE configuration: convert all relative URLs to absolute
+  URLs.
 - Edition of a volume: The title of article might not be retrieved if the language was not managed by the platform.
 - Profile editing form does not display correctly when changing language.
 
 ## 1.0.29 - 2022-06-01
+
 ### Fixed
-- Failed 'Not enough reviewers - editor copy' reminders. 
+
+- Failed 'Not enough reviewers - editor copy' reminders.
 - But leading to load journal translations from '/'.
 - PHP Warning:  Use of undefined constant RVID - assumed 'RVID' (this will throw an Error in a future version of PHP)
-- Not enough review reminders: articles without invitations escape reminders because the function that retrieves invitations is not used properly.
+- Not enough review reminders: articles without invitations escape reminders because the function that retrieves
+  invitations is not used properly.
 
 ### Added
+
 - User list: make it easier to locate accounts that have not been activated.
 - Addes Roadmap link + User survey/feedback on portal
 - Make EU grants and OpenAIRE support more visible at the bottom of the page
 
 ## 1.0.28.5 - 2022-05-25
+
 ### Fixed
+
 - [RT#158293]: article status is not correctly updated
 
 ## 1.0.28.4 - 2022-05-09
+
 ### Fixed
+
 - File not found for Temporary Versions without attached files + refactoring.
 
 ## 1.0.28.3 - 2022-04-13
+
 ### Changed
+
 - Updated error message when using a HAL identifier without any file.
 - [#142](https://github.com/CCSDForge/episciences/issues/142)
 
 ## 1.0.28.2 - 2022-04-06
+
 ### Fixed
+
 - Empty records from HAL repository: error message improved.
 - Improvements and fixes on Datacite and Crossref XML exports
 
 ## 1.0.28.1 - 2022-03-23
+
 ### Fixed
--  fix issue in crossref xml format with related_item
+
+- fix issue in crossref xml format with related_item
 
 ## 1.0.28 - 2022-03-23
+
 ### Changed
+
 - Bump crossref schema to ver 4.8.1
 - arXiv URLs now links to https version instead of http
 
 ### Added
+
 - Crossref metadata export format for DOI:
-  - add previous version URLs, link with relationship 'hasPreprint' to link preprints versions with the published version
-  - add arXiv DOIs, link to journal's published DOI with 'isSameAs' relationship
-  - add full text PDF URLs for Crossref 'Similarity Check' service
-  
+    - add previous version URLs, link with relationship 'hasPreprint' to link preprints versions with the published
+      version
+    - add arXiv DOIs, link to journal's published DOI with 'isSameAs' relationship
+    - add full text PDF URLs for Crossref 'Similarity Check' service
+
 ## 1.0.27.5 - 2022-03-21
+
 ### Fixed
+
 - Fixes and enhancements for zbMATH Open format
 - Adding Polyfill PHP 8.0
 
 ## 1.0.27.4 - 2022-03-21
+
 ### Fixed
+
 - Fixes and enhancements for zbMATH Open format
 
 ## 1.0.27.3 - 2022-03-18
+
 ### Fixed
-- Ratings submitted late after the start of the layout process caused the status of the article to be updated (rolled back).
+
+- Ratings submitted late after the start of the layout process caused the status of the article to be updated (rolled
+  back).
 - There is no need to review an article while it is being formatted by the author.
 
 ## 1.0.27.2 - 2022-03-18
+
 ### Fixed
+
 - "Copy editor" role not authorized accessing to the public page of the paper
- and report a conflict of interest, if the option has been activated by the journal
- 
+  and report a conflict of interest, if the option has been activated by the journal
+
 ## 1.0.27.1 - 2022-03-16
+
 ### Fixed
+
 - Exclude the "paper-status" directory from the journal's resources.
 - Content that is copied and pasted when reviewing an article may lose end of line.
 - The linked data to an article is not deleted when the author deletes his own article
 
-##  1.0.27 - 2022-03-14
+## 1.0.27 - 2022-03-14
+
 # Changed
+
 - Reviewer invitation: Users are now sorted by Name, First Name instead of First Name
 
 # Fixed
+
 - Dashboard: the number of papers assigned to the copy editor includes obsolete papers
 - Issue reported to support RT #148133 (fixed before this release):
-  * Some editors could see the reviewers names if they were also authors of the article  
+    * Some editors could see the reviewers names if they were also authors of the article
 
 ## 1.0.26 - 2022-03-01
+
 # Fixed
+
 - Issue reported to support RT #148133:
-   * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between the date the reminder was sent and the date the invitation was sent.
+    * Incorrect "Reminder Delay: The "Reminder Delay" should correspond, in number of days, to the difference between
+      the date the reminder was sent and the date the invitation was sent.
 - Issue reported to support RT #148466:
-   * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
+    * Sorting by date in the Dashboard is wrong: Enabling the conflict of interest (COI) option distorts the pagination
 
 ## 1.0.25.1 - 2022-02-15
+
 # Changed
+
 [#152](https://github.com/CCSDForge/episciences/issues/152): page footer modifications.
 
 ## 1.0.25 - 2022-02-15
+
 # Fixed
+
 - All submissions are accessible to "guest editor" roles.
 - Language bar missing when editing a mail template, including reminders.
 
 ## 1.0.24.2 - 2022-02-10
+
 # Fixed
-- [RT#146987] "search" button no longer works 
+
+- [RT#146987] "search" button no longer works
 - application error: syntax error or access violation if CAS user not found
- 
+
 ## 1.0.24.1 - 2022-02-08
+
 # Fixed
- - A bug in the reminders code triggered emails with unusable HTTP links
+
+- A bug in the reminders code triggered emails with unusable HTTP links
 
 ## 1.0.24 - 2022-02-08
+
 # Fixed
+
 - Inability to delete a volume (RT#145178): reset the volume of the previous version when submitting a new version.
-- [#117](https://github.com/CCSDForge/episciences/issues/117) Improvements in emailing 
+- [#117](https://github.com/CCSDForge/episciences/issues/117) Improvements in emailing
 - Undetected inactive accounts: Invite a reviewer > new reviewer > Invite a new user.
 - Not allowing the author to be invited: Invite a reviewer > new reviewer > Invite a new user.
 - The attachments to the rating report are not available [RT#145473]
@@ -265,130 +365,192 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.23 - 2022-01-19
 
 ### Added
-- [#116](https://github.com/CCSDForge/episciences/issues/116) Release version is displayed on the interface (dashboard and page footer)
+
+- [#116](https://github.com/CCSDForge/episciences/issues/116) Release version is displayed on the interface (dashboard
+  and page footer)
 - Editors' choice at time of submission: informative text added. (gitlab #369)
-- [#143](https://github.com/CCSDForge/episciences/issues/143) New DOI setting: Allow switching off manual or automatic DOI assignation (disabled mode)
+- [#143](https://github.com/CCSDForge/episciences/issues/143) New DOI setting: Allow switching off manual or automatic
+  DOI assignation (disabled mode)
 - [#37](https://github.com/CCSDForge/episciences/issues/37)
-  - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
-  - On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to return json instead of html (only published content)
-  - On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but including all statuses of articles ; an authenticated and allowed user is required
-  - JSON added to the list of public export formats
+    - Browse by Volume or Sections : Handle new content type 'application/json' to return json instead of html
+    - On URLs like /volume/view/id/314159 and /section/view/id/314159 Handle new content type 'application/json' to
+      return json instead of html (only published content)
+    - On URLs like /volume/edit?id=314159 Handle new content type 'application/json' to return json instead of html but
+      including all statuses of articles ; an authenticated and allowed user is required
+    - JSON added to the list of public export formats
 - Enhanced information message for statistics
 
 ### Changed
+
 - UI/UX: Make the version number more explicit when proposing a new version
 - Code Refactoring fixing of warning
 - Dumping default data for table `MAIL_TEMPLATE`
 
 ### Fixed
-- [#126](https://github.com/CCSDForge/episciences/issues/126) Clicking outside the window to compose an email closes the window with no confirmation #126
-- [#117](https://github.com/CCSDForge/episciences/issues/117) Mailing bug: loss of the mail when you forget to put a recipient (gitlab #343)
-- [#149](https://github.com/CCSDForge/episciences/issues/149) Emails and default language selection: language of the sender and the recipient could be a problem if the language of the sender is different from the language of the recipient (gitlab #402)
-- Inconsistent REMINDER_DELAY: the displayed value is the "delay" parameter of the reminder instead of the calculated value (interval in number of days between the time the reminder was sent and the deadline).
+
+- [#126](https://github.com/CCSDForge/episciences/issues/126) Clicking outside the window to compose an email closes the
+  window with no confirmation #126
+- [#117](https://github.com/CCSDForge/episciences/issues/117) Mailing bug: loss of the mail when you forget to put a
+  recipient (gitlab #343)
+- [#149](https://github.com/CCSDForge/episciences/issues/149) Emails and default language selection: language of the
+  sender and the recipient could be a problem if the language of the sender is different from the language of the
+  recipient (gitlab #402)
+- Inconsistent REMINDER_DELAY: the displayed value is the "delay" parameter of the reminder instead of the calculated
+  value (interval in number of days between the time the reminder was sent and the deadline).
 - New submission: if the "submission date" metadata is empty: do not display it anymore.
-- [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning submission
+- [#124](https://github.com/CCSDForge/episciences/issues/124): refining automatic notifications when abandoning
+  submission
 - RT#144252: better cleaning of attached file names
-- RT#144246: an inactive account could still be visible on the Editorial Staff members page. 
+- RT#144246: an inactive account could still be visible on the Editorial Staff members page.
 - [#117](https://github.com/CCSDForge/episciences/issues/117): An empty e-mail is not sent or received
-- [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing happens.
+- [#129](https://github.com/CCSDForge/episciences/issues/129): when you do a search from the mail history page nothing
+  happens.
 - [#141](https://github.com/CCSDForge/episciences/issues/141): visibility of pages menu is wrong inside menu editing.
 
 ### Changed
-- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the modal area and by pressing Esc
+
+- [#126](https://github.com/CCSDForge/episciences/issues/126): prevent modal closure: disabling the click outside the
+  modal area and by pressing Esc
 - Enabling the "COI" option overrides the "Encapsulate editors" option
 
 ## 1.0.22.3 - 2021-11-30
+
 ### Changed
+
 - New SVG logo + PNG fallback
 
 ## 1.0.22.2 - 2021-11-24
+
 ### Changed
+
 - Renamed logo file to prevent browser cache ; cleaned commented HTML Code
 
 ## 1.0.22.1 - 2021-11-24
+
 ### Changed
+
 - New logos and favicons
 
 ## 1.0.22 - 2021-11-16
+
 ### Added
+
 - Reviewers invitations: identify the account with which the user has been invited.
 - [#115](https://github.com/CCSDForge/episciences/issues/115) Set CAS UI language according to journal's language
 - [#110](https://github.com/CCSDForge/episciences/issues/110) Add missing translations
 
 ### Fixed
-- Fixed: "Cancel" and "Submit" buttons when selecting the details of an item in an article's history: [106](https://github.com/CCSDForge/episciences/issues/106): replaced by a single "Close" button
-- Fixed:  non-localized text when setting a reviewing deadline which is too large: [112](https://github.com/CCSDForge/episciences/issues/112)
+
+- Fixed: "Cancel" and "Submit" buttons when selecting the details of an item in an article's
+  history: [106](https://github.com/CCSDForge/episciences/issues/106): replaced by a single "Close" button
+- Fixed:  non-localized text when setting a reviewing deadline which is too
+  large: [112](https://github.com/CCSDForge/episciences/issues/112)
 - Reviewers invitations: identify the account with which the user has been invited.
 - Fixed: pending invitations are not displayed in the user's dashboard if they are not already a reviewer.
 - Fixed: [#107](https://github.com/CCSDForge/episciences/issues/107) Small grammar problem
 
 ## 1.0.21 - 2021-11-03
+
 ### Added
+
 - Support new file extensions and mimetypes: RAR (with additional mimetype), GZ, DVI, EPS, PS
 
 ## 1.0.20.3 - 2021-11-03
+
 ### Fixed
+
 - Fixed: incorrect Grammar: [107](https://github.com/CCSDForge/episciences/issues/107)
 - Fixed: "support mail alias" more visible on the portal (gitlab #404) + making it configurable.
- 
+
 ## 1.0.20.2 - 2021-10-28
+
 ### Fixed
+
 - Fixed bug: linked Data: conflict between DOI and SWHID: [97](https://github.com/CCSDForge/episciences/issues/97)
 
 ## 1.0.20.1 - 2021-10-28
+
 ### Fixed
+
 - Fixed bug: automatic designations of editors who answer "no" to the presence of a conflict of interest (gitlab #406)
 
 ## 1.0.20 - 2021-10-26
+
 ### Fixed
+
 - fixed bug: inability to continue reviewing (RT#138067)
 - fixed typo ; add missing translation
 
 ## 1.0.19.2 - 2021-10-19
+
 ### Fixed
+
 - Fixed bug: possibility to assign the article to the author himself
 
 ## 1.0.19.1 - 2021-10-15
+
 ### Fixed
+
 - [COI]: fixed bug: author's does not have full access to his/her own submission
 
 ### Changed
+
 - [COI] #83: label "Enable/Disable COI" changed to "Enable declaring COI".
 
 ## 1.0.19 - 2021-10-14
+
 ### Added
+
 - Develop an option to handle conflict of interest (COI) [81](https://github.com/CCSDForge/episciences/issues/81):
-- Journal settings: new setting to Enable/disable COI for journal managers: [83](https://github.com/CCSDForge/episciences/issues/83) 
-- DB table and manager for CRUD of COI Information: [84](https://github.com/CCSDForge/episciences/issues/84) 
-- For editors : Filtering 'Emails' in email history: [85](https://github.com/CCSDForge/episciences/issues/85) 
-- For editors : Filtering 'paper status' information on dashboard: [86](https://github.com/CCSDForge/episciences/issues/86) 
-- For editors: Filtering 'Reviewer information' on dashboard: [87](https://github.com/CCSDForge/episciences/issues/87) 
-- When assigning an editor/Copy editor ; do not propose editors/Copy editor that have reported a COI in the user list: [89](https://github.com/CCSDForge/episciences/issues/89) 
-- Design a Form to request user consent about access to private submission information: [88](https://github.com/CCSDForge/episciences/issues/88)
-- Notify editors-in-chief/secretaries when an editor assigned to a paper declares a conflict with this paper: [90](https://github.com/CCSDForge/episciences/issues/90)
-- Fixed bug: redirection problem with an editor's own submission: [92](https://github.com/CCSDForge/episciences/issues/92)
+- Journal settings: new setting to Enable/disable COI for journal
+  managers: [83](https://github.com/CCSDForge/episciences/issues/83)
+- DB table and manager for CRUD of COI Information: [84](https://github.com/CCSDForge/episciences/issues/84)
+- For editors : Filtering 'Emails' in email history: [85](https://github.com/CCSDForge/episciences/issues/85)
+- For editors : Filtering 'paper status' information on
+  dashboard: [86](https://github.com/CCSDForge/episciences/issues/86)
+- For editors: Filtering 'Reviewer information' on dashboard: [87](https://github.com/CCSDForge/episciences/issues/87)
+- When assigning an editor/Copy editor ; do not propose editors/Copy editor that have reported a COI in the user
+  list: [89](https://github.com/CCSDForge/episciences/issues/89)
+- Design a Form to request user consent about access to private submission
+  information: [88](https://github.com/CCSDForge/episciences/issues/88)
+- Notify editors-in-chief/secretaries when an editor assigned to a paper declares a conflict with this
+  paper: [90](https://github.com/CCSDForge/episciences/issues/90)
+- Fixed bug: redirection problem with an editor's own
+  submission: [92](https://github.com/CCSDForge/episciences/issues/92)
 - Other improvements
-- Choose one and only one editor parameter: the editors field is not pre-completed when this choice is imposed by the journal (git #392)
+- Choose one and only one editor parameter: the editors field is not pre-completed when this choice is imposed by the
+  journal (git #392)
+
 ### Fixed
-- Editing site headers: fixed bug: drag and drop does not work. 
+
+- Editing site headers: fixed bug: drag and drop does not work.
 
 ## 1.0.18 - 2021-09-30
+
 ### Added
+
 - Add 'FLAG' attribute to Episciences::Paper class
-- Alter table PAPERS: add new field to identify imported articles, to ignore them from journal statistics and report them as 'imported' and not submitted
+- Alter table PAPERS: add new field to identify imported articles, to ignore them from journal statistics and report
+  them as 'imported' and not submitted
 - New script to update papers table to report imported article
 - Linked data: links to related resources are extracted from the open archives and displayed on the article's page
 - Version block: indicate the date of submission/import of the different versions of the document
-- Addition of the "acceptance rate" indicator [(A/S)x100 with A a number of accepted articles and S a number of submissions] on the statistics page
+- Addition of the "acceptance rate"
+  indicator [(A/S)x100 with A a number of accepted articles and S a number of submissions] on the statistics page
 - Changing the publication date of a paper already published: [50](https://github.com/CCSDForge/episciences/issues/50)
 
 ## 1.0.17.1 - 2021-09-28
+
 ### Added
+
 - Add new document metadata: "Accepted" date
 
 ### Fixed
-- Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to intervene when the document is in the copy editing process if this one has already been started
-- Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers are disabled)
+
+- Fixed issue: [77](https://github.com/CCSDForge/episciences/issues/77): It is not possible for the reviewer to
+  intervene when the document is in the copy editing process if this one has already been started
+- Fixed bug: "obsolete invitations" on the paper management page are not labeled (when a paper is obsolete, reviewers
+  are disabled)
 - Update paper stats only if paper is published and user is not the contributor
 - Do not display the document meta. 'keywords' if its value is empty
 - Report score rounding (RT#135523): propagate the fix (git#389)
@@ -397,76 +559,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed bug in account merge module
 
 ## 1.0.16 - 2021-09-13
+
 ### Fixed
+
 - Fixed issue: [64](https://github.com/CCSDForge/episciences/issues/64): Layout of mails with reviewers' comments
 - Improvement of the process of accounts merging
- 
+
 ### Changed
-- Improvements for displaying when a document has been imported. E.g. for journals coming to the platform with previous content 
-- Switch to paperIds as Episciences public PIDs for export formats and OAI-PMH. The switch from the docIds to paperIds was incomplete. One unique paperId is assigned to each version of a document. Each version of a document has a different unique docid.
+
+- Improvements for displaying when a document has been imported. E.g. for journals coming to the platform with previous
+  content
+- Switch to paperIds as Episciences public PIDs for export formats and OAI-PMH. The switch from the docIds to paperIds
+  was incomplete. One unique paperId is assigned to each version of a document. Each version of a document has a
+  different unique docid.
 
 ## 1.0.15.1 - 2021-08-31
+
 ### Fixed
+
 - Fixed issue: [62](https://github.com/CCSDForge/episciences/issues/62): String not localized
 
 ## 1.0.15 - 2021-08-30
 
 ### Added
+
 - New API: JSON Feed of published articles hosted by HAL and their metadata (Call /hal/bibfeed on portal hostname)
-- Published documents metadata : Submission Date: Add a different label for imported documents because for these documents submission date may be >= publication date. It only happens with imported documents previously published on another platform.
+- Published documents metadata : Submission Date: Add a different label for imported documents because for these
+  documents submission date may be >= publication date. It only happens with imported documents previously published on
+  another platform.
 - New script to import volumes with a CSV file
 - OAI-PMH: Adding Datacite metadata format to OAI-PMH repository with metadataPrefix oai_openaire
 
 ### Fixed
-- Fixed bug: [56](https://github.com/CCSDForge/episciences/issues/56): when entering a comment and saving it, the text also remains in the comment box leaving the impression that the comment did not go through.
-- Fixed bug: [48](https://github.com/CCSDForge/episciences/issues/48): moving the article to other volumes, creates an entry in the 'History' + improvements.
+
+- Fixed bug: [56](https://github.com/CCSDForge/episciences/issues/56): when entering a comment and saving it, the text
+  also remains in the comment box leaving the impression that the comment did not go through.
+- Fixed bug: [48](https://github.com/CCSDForge/episciences/issues/48): moving the article to other volumes, creates an
+  entry in the 'History' + improvements.
 - Fixed bug: 'script' tag in TinyMCE is removed
 - Fixed bug:  script in charge of updating the consultation statistics was broken
 - OAI-PMH: Return a real earliestDatestamp with Identify response
 - Export formats:  use Variables instead of Constants for journal URLs
 
 ### Removed
+
 - Do not display the search bar on the portal (no content available for search)
 - Remove the possibility to create an account on the portal (RT #133571) (no features available for users)
 
 ### Changed
+
 - Expire metadata of published articles after 1 month (previously 1 week)
 
 ## 1.0.14 - 2021-07-28
+
 ### Fixed
+
 - Reviewer report: if the article is under review, access to its already completed report is broken
 - [48](https://github.com/CCSDForge/episciences/issues/48): Assigned secondary volume is lost on article update
 
 ## 1.0.13 - 2021-07-23
+
 ### Fixed
+
 - [46](https://github.com/CCSDForge/episciences/issues/46): Paper order within a volume is broken
 
 ### Added
+
 New field in solr schema: paperid
 
 ## 1.0.12 - 2021-07-15
 
 ### Added
+
 - OAI-PMH endpoint: cache metadata to improve response time
 - new translations + fixed typo
 
 #### Rating status
-- New "obsolete rating" status for reviews no longer needed. The reviewing on an obsolete version is no longer possible (when a new version has been requested).
-- It's not possible to invite reviewers on an obsolete version  
-- New flash message when a user tries to review an article under revision (a new version has been requested to the authors)
 
-
+- New "obsolete rating" status for reviews no longer needed. The reviewing on an obsolete version is no longer
+  possible (when a new version has been requested).
+- It's not possible to invite reviewers on an obsolete version
+- New flash message when a user tries to review an article under revision (a new version has been requested to the
+  authors)
 
 ### Changed
+
 - Users list: invalid accounts are no longer listed
 
 ### Fixed
-- [38](https://github.com/CCSDForge/episciences/issues/38): article versions may be listed in wrong order for some articles
+
+- [38](https://github.com/CCSDForge/episciences/issues/38): article versions may be listed in wrong order for some
+  articles
 - Reviewer report: if the article is under review, access to its already completed report is broken
 
 #### Rating grids
+
 - Reviewing grids rating status were sometimes not mentioned in the grid list on article's management page
 - Reviewing grids editing: fixed incorrect display of criteria in multilingual reviewing grids
 
 #### Emails
+
 - Fixed an empty tag `%%SENDER_FULL_NAME%%` in "updated rating deadline" template.

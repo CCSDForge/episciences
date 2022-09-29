@@ -1932,18 +1932,18 @@ return [
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE_ISO] => "date d'acceptation d'un article in ISO format",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACTION_DATE] => "action date",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACTION_TIME] => "action time",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK] => "link to journal's resources (EX: https://dmtcs.episciences.org/website/public)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK] => "link to journal's resources (e.g. https://dmtcs.episciences.org/website/public)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ANSWER] => "text of the answer to a request for modifications",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_ID] => 'article ID',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_LINK] => "link to the article's management page",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK] => "link to the form to fill in for the article's rating",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] => 'article title',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] => "the authors of the article (Ex: Rodney, Hartman ;  Bryan, Daniel and John, Walls)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] => "the authors of the article (e.g. Rodney, Hartman ;  Bryan, Daniel and John, Walls)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_COMMENT] => 'reviewer comment',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_COMMENT_DATE] => 'reviewer comments date',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME] => "tenderer First Name and Last Name",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_CURRENT_YEAR] => "current year (Ex: 2022)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_DOI] => "article's DOI: DOI_prefix/DOI_format (Ex: 10.46298/jdmdh.9251)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_CURRENT_YEAR] => "current year (e.g. 2022)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_DOI] => "article's DOI: DOI_prefix/DOI_format (e.g. 10.46298/jdmdh.9251)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] => "editor's Screen Name at the origin of the action (add a comment)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EXPIRATION_DATE] => "expiration date of invitation",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DATE] => "date of sending the invitation",
@@ -1961,17 +1961,17 @@ return [
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME] => "position de l'article dans un volume",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_RATING] => "article's reviewer",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_RATINGS] => "article's reviewers",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_REPO_URL] => "link to the open access repository (Ex: https://hal.archives-ouvertes.fr/hal-03242823v2)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_REPO_URL] => "link to the open access repository (e.g. https://hal.archives-ouvertes.fr/hal-03242823v2)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE] => 'submission date',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE_ISO] => "submission date at ISO format",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_URL] => "Link to article URL",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID] => "permanent article ID (links all versions)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RATING_DEADLINE] => 'date limite de rendu de relecture (traduite dans la langue du destinataire)',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL] => "adresse mail du destinataire",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN] => "Link used for login recovery (Ex: https://jtcam.episciences.org/user/lostlogin)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME] => "recipient First Name and Last Name (Ex: Gaëlle Rivérieux)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME] => "Recipient Screen Name (Ex: Gaëlle R.)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME] => "recipient ID (Ex: gaelle_riverieux)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN] => "Link used for login recovery (e.g. https://jtcam.episciences.org/user/lostlogin)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME] => "recipient First Name and Last Name (e.g. Gaëlle Sample)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME] => "Recipient Screen Name (e.g. Gaëlle Sample)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME] => "recipient ID (e.g. gaelle_sample)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REFUSAL_REASON] => "motifs de refus d'un invitation à relire un article",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] => "contient ce message : Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : ",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] => "lien vers la version refusée de l'article",
@@ -1985,10 +1985,10 @@ return [
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME] => "reviewer's First Name and Last Name",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME] => "reviewer's Screen Name",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION] => "reviewer's suggestions (text)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_NAME] => "zipped folder name of the set of style files and the rules for copy editing(EX: dmtcs_episciences.zip)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_NAME] => "zipped folder name of the set of style files and the rules for copy editing(e.g. dmtcs_episciences.zip)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL] => "link to style files and document preparation rules",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CODE] => "journal code (Ex: JDMDH)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_NAME] => "Journal name (Ex: Journal of Data Mining and Digital Humanities)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CODE] => "journal code (e.g. JDMDH)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_NAME] => "Journal name (e.g. Journal of Data Mining and Digital Humanities)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVISION_DATES] => 'revision dates',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVISION_DATES_ISO] => 'revision deadline in ISO format',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVISION_DEADLINE] => 'revision deadline',
@@ -2003,7 +2003,7 @@ return [
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_TMP_PAPER_URL] => "link to the article's temporary version management page",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK] => "account activation link",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_UPDATED_DEADLINE] => "new reviewing deadline",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_EDITORS] => "all editors assigned to the volume of the article (Ex: Hartman Rodney, Daniel Bryan, Walls John)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_EDITORS] => "all editors assigned to the volume of the article (e.g. Hartman Rodney, Daniel Bryan, Walls John)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_ID] => "volume ID",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_NAME] => "volume name",
 
@@ -2012,10 +2012,10 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION][Episciences_Mail_TemplatesManager::RECIPIENT] => "User who’s just created an account",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_PASSWORD][Episciences_Mail_TemplatesManager::DESCRIPTION] => "password reset",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_PASSWORD][Episciences_Mail_TemplatesManager::RECIPIENT] => "user who forgot his password",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_PASSWORD][Episciences_Mail_TemplatesManager::RECIPIENT] => "user who forgot his/her password",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "login ID reminder",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN][Episciences_Mail_TemplatesManager::RECIPIENT] => "user who forgot his login",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN][Episciences_Mail_TemplatesManager::RECIPIENT] => "user who forgot his/her login",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of acceptance of article's temporary version",
 
@@ -2052,13 +2052,13 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that has been assigned to an article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "editor assigned to the article",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that his assignment to an article has been removed",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that his/her assignment to an article has been removed",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "the editor whose assignment was removed",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ASK_OTHER_EDITORS][Episciences_Mail_TemplatesManager::DESCRIPTION] => "request for an editor's opinion on the article",
 
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewer of the author's response to his comment",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewer of the author's response to his/her comment",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "reviewer (applicant)",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee when an editor comments on an article",
@@ -2085,15 +2085,15 @@ return [
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of removal of an article by its author",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editors that an author has deleted his article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editors that an author has deleted his/her article",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewers that an author has deleted his article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewers that an author has deleted his/her article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned reviewers",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation notification from a reviewer (already known to the journal, i.e. they have already accepted at least one reviewing invitation) to rate an article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::RECIPIENT] => 'reviewer (known by the journal)',
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer (the user does not yet have a profile in the journal's website, but he is known by the CCSD authentication system)",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer (the user does not yet have a profile in the journal's website, but he/she is known by the CCSD authentication system)",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER][Episciences_Mail_TemplatesManager::RECIPIENT] => "new reviewer",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer with a temporary account. In this specific case and precise moment of the acceptance of the invitation, the user will be invited to create a new account to access the rating grid",
@@ -2148,7 +2148,7 @@ return [
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the interruption of the publication process of the article",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his reviewing",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her reviewing",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation to the author of their decision to abandon the publication process",
 
@@ -2161,18 +2161,18 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the copy editor that it has been assigned to an article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "assigned copy editor",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the copy editor that his assignment to an article has been removed",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the copy editor that his/her assignment to an article has been removed",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "the copy editor whose assignment was removed",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author that his article is assigned for copy editing",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author that his/her article is assigned for copy editing",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an article has just been assigned for copy editing",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the article is awaiting author sources",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to submit his sources",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to submit his/her sources",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author of the procedure to follow and the rules for preparing his document",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author of the procedure to follow and the rules for preparing his/her document",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the article is awaiting copy editing by the author",
 
@@ -2180,7 +2180,7 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors (except the one at the origin of the comment) and according to the journal's settings, the editors in chief, administrators and secretaries",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "sources submission conformation",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the author has just submitted his sources for copy editing by the journal",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the author has just submitted his/her sources for copy editing by the journal",
 
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of submission of the version formatted to the journal's standards",
@@ -2201,25 +2201,25 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the acceptance of the version to the standards of the journal of the article (formatted by the author)",
 
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his reviewing following acceptance of the article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her reviewing following acceptance of the article",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his reviewing following the request for revision of the article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her reviewing following the request for revision of the article",
 
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his reviewing following the rejection of the article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her reviewing following the rejection of the article",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his reviewing following the publication of the article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her reviewing following the publication of the article",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an editor refuses to manage the article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors and copy editors; in CC, the editors in chief, administrators and secretaries",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SECTION_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he has been automatically assigned to the article (as editor of the section)",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SECTION_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he/she has been automatically assigned to the article (as editor of the section)",
 
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_VOLUME_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he has been automatically assigned to the article (as editor of the volume)",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_VOLUME_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he/she has been automatically assigned to the article (as editor of the volume)",
 
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he has been chosen by the author to manage his article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he/she has been chosen by the author to manage his/her article",
 
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of the article version update: if the rating process has not yet started (article without any reviewer, article waiting for reviewing), the author will have the opportunity to replace a previously submitted version with a new one",

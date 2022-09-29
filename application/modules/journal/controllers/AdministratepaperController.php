@@ -475,6 +475,7 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * paper administration page
+     * TODO: split this into smaller functions
      * @throws JsonException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
@@ -1933,7 +1934,9 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setPublication_date(date("Y-m-d H:i:s"));
 
             // if HAL, update paper metadata in repository
-            if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal')) {
+
+            if (APPLICATION_ENV === 'production' && $paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
+
                 $notification = new Episciences_Notify_Hal($paper, $journal);
 
                 try {
@@ -1942,7 +1945,6 @@ class AdministratepaperController extends PaperDefaultController
                 } catch (Exception $exception) {
                     $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Announcing publication to HAL failed');
                 }
-
 
             }
 
@@ -3942,7 +3944,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     $comment->setFile(json_encode($attachments, JSON_THROW_ON_ERROR));
 
-                } catch (JsonException $e) {
+                }catch (JsonException $e){
 
                     trigger_error($e->getMessage());
 
