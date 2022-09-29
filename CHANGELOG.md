@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### fixed
+
+- Allow editors to view the list of conflicts on the article management page
+- The number of conflicts indicated on the article management page is incorrect if the article has several versions
 
 ### Added
 
