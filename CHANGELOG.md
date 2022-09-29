@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+- Allow editors to view the list of conflicts on the article management page
+- The number of conflicts indicated on the article management page is incorrect if the article has several versions
+
 ## 1.0.33 - 2022-09-28
 ## added
 - New page listing all email templates and available tags for each journal at /administratemail/tagslist 

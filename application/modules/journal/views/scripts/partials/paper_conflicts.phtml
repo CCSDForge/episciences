@@ -1,4 +1,4 @@
-<?php if (isset($this->paperConflicts) && Episciences_Auth::isSecretary()) : ?>
+<?php if (isset($this->paperConflicts) && Episciences_Auth::isAllowedToManagePaper()) : ?>
     <?php
     /** @var array $paperConflicts */
     $paperConflicts = $this->paperConflicts;
