@@ -15,12 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.33.1 - 2022-09-29
+### Fixed
 - Allow editors to view the list of conflicts on the article management page
 - The number of conflicts indicated on the article management page is incorrect if the article has several versions
 
 ## 1.0.33 - 2022-09-28
-## added
+### Added
 - New page listing all email templates and available tags for each journal at /administratemail/tagslist 
   (- Mail -> TagList)
 - Episciences portal:
@@ -54,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The revision deadline is now displayed below the article's status.
   - A pictogram is added to indicate the date of the revision deadline in the article management table.
 
-## Changed
+### Changed
 - [#237](https://github.com/CCSDForge/episciences/issues/237) Editor comments div is now bigger 
 - Upgraded publication RSS Feeds with DOIs
 - [#142](https://github.com/CCSDForge/episciences/issues/142): allow that administrators answer revision and copy editing requests
@@ -71,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#164](https://github.com/CCSDForge/episciences/issues/164): harmonization of roles/privileges.
 - CWI open repository has been temporarily removed until we adapt to their new OAI server 
   
-## Fixed
+### Fixed
 - [#212](https://github.com/CCSDForge/episciences/issues/212): capitalization of names
 - [#207](https://github.com/CCSDForge/episciences/issues/207): editing the translation of Chief Editors
 - [#169](https://github.com/CCSDForge/episciences/issues/169): reports become visible on the article web page:
@@ -81,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Revision requests: now we have an immediate visual feedback when changing the deadline.
 - If the journal allows revision of articles after acceptance, the response to a request for a final version (without any changes) is similar to the proposal of a new version. 
 
-## Internal refactoring
+### Internal refactoring
   - Code Refactoring fixing of warning
   - Update Episciences_User::getScreenName()
   - User Table: merge AFFILIATIONS" filed in "ADDITIONAL_PROFILE_INFORMATION"
