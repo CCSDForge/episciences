@@ -209,10 +209,12 @@ class PaperController extends PaperDefaultController
 
 
         // COI
-
-        $isConflictDetected = self::isConflictDetected($paper, $review);
-
-        $this->view->isConflictDetected = $isConflictDetected;
+        if (Episciences_Auth::isLogged()) {
+            $isConflictDetected = self::isConflictDetected($paper, $review);
+            $this->view->isConflictDetected = $isConflictDetected;
+        } else {
+            $this->view->isConflictDetected = false;
+        }
 
         try {
 
