@@ -6,7 +6,6 @@ class Episciences_Volume
     const TRANSLATION_PATH = REVIEW_LANG_PATH;
     const TRANSLATION_FILE = 'volumes.php';
     const SETTING_STATUS = 'status';
-    public const DEFAULT_FETCH_MODE = 'array';
 
     // Volume settings names
     const SETTING_CURRENT_ISSUE = 'current_issue';
@@ -943,12 +942,11 @@ class Episciences_Volume
 
     /**
      * Returns a list of sorted papers for current volume
-     * @param string $fetchMode
      * @return array
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Exception
      */
-    public function getSortedPapersFromVolume(string $fetchMode = self::DEFAULT_FETCH_MODE): array
+    public function getSortedPapersFromVolume(): array
     {
         $paperList = [];
         $sorted_papers = [];
@@ -957,39 +955,30 @@ class Episciences_Volume
 
         $papers = $this->getPaperListFromVolume([Episciences_Paper::STATUS_OBSOLETE]);
 
-        $positions = $this->getPaperPositions();
+        /* @var $p Episciences_paper */
+        foreach ($papers as $p) {
+            $docId = $p->getDocid();
+            $titles = $p->getAllTitles();
 
-        $isDefaultFetch = $fetchMode === self::DEFAULT_FETCH_MODE;
-
-        if ($isDefaultFetch) {
-
-            /* @var $p Episciences_paper */
-            foreach ($papers as $p) {
-                $docId = $p->getDocid();
-                $titles = $p->getAllTitles();
-
-                if (array_key_exists($locale, $titles)) {
-                    $pTitle = $titles[$locale];
-                } elseif (array_key_exists(Episciences_Review::DEFAULT_LANG, $titles)) {
-                    $pTitle = $titles[Episciences_Review::DEFAULT_LANG];
-                } else {
-                    $pTitle = $titles[array_key_first($titles)];
-                }
-
-                $paperList[$docId]['title'] = $pTitle;
-                $paperList[$docId]['docid'] = $docId;
-                // RT#129760
-                $paperList[$docId]['paperid'] = $p->getPaperid();
-                $paperList[$docId]['status'] = $p->getStatus();
-                $paperList[$docId]['identifier'] = $p->getIdentifier();
-                $paperList[$docId]['version'] = $p->getVersion();
+            if (array_key_exists($locale, $titles)) {
+                $pTitle = $titles[$locale];
+            } elseif (array_key_exists(Episciences_Review::DEFAULT_LANG, $titles)) {
+                $pTitle = $titles[Episciences_Review::DEFAULT_LANG];
+            } else {
+                $pTitle = $titles[array_key_first($titles)];
             }
 
-
-        } else {
-            $paperList = $papers;
+            $paperList[$docId]['title'] = $pTitle;
+            $paperList[$docId]['docid'] = $docId;
+            // RT#129760
+            $paperList[$docId]['paperid'] = $p->getPaperid();
+            $paperList[$docId]['status'] = $p->getStatus();
+            $paperList[$docId]['identifier'] = $p->getIdentifier();
+            $paperList[$docId]['version'] = $p->getVersion();
         }
 
+
+        $positions = $this->getPaperPositions();
 
         if (!empty($positions)) {
             /** @var array $positions [paperId, position] */
@@ -1000,32 +989,20 @@ class Episciences_Volume
 
             /**
              * @var  $docId
-             * @var  array | object $paper
+             * @var  array $paper [title, docid, status, self::PAPER_POSITION_NEEDS_TO_BE_SAVED]
              */
             foreach ($paperList as $docId => $paper) {
-
                 /** @var Episciences_Paper $currentOPaper */
                 $currentOPaper = $papers[$docId];
                 $paperId = $currentOPaper->getPaperid();
-
-                if ($isDefaultFetch) {
-                    $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = false;
-                }
-
-
+                $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = false;
                 if (array_key_exists($currentOPaper->getPaperId(), $positions)) {
                     $sorted_papers[$positions[$paperId]] = $paper;
                 } else if ($currentOPaper->getPosition() === null) {
                     $maxPosition++;
                     $paperPosition = $maxPosition;
-
-                    if ($isDefaultFetch) {
-                        $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
-
-                    }
-
+                    $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
                     $sorted_papers[$paperPosition] = $paper;
-
                 } else {
                     $sorted_papers[$currentOPaper->getPosition()] = $paper;
                 }
@@ -1039,11 +1016,7 @@ class Episciences_Volume
 
             ksort($paperList);
             foreach ($paperList as $paper) {
-
-                if ($isDefaultFetch) {
-                    $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
-                }
-
+                $paper[self::PAPER_POSITION_NEEDS_TO_BE_SAVED] = true;
                 $sorted_papers[] = $paper;
             }
         }

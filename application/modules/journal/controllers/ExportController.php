@@ -155,38 +155,6 @@ class ExportController extends Zend_Controller_Action
      */
     protected function xmlExport($format = ''): bool
     {
-<<<<<<< Updated upstream
-=======
-
-        if ($format === 'voldoaj') {
-            $request = $this->getRequest();
-            $params = $request->getParams();
-            $getVolume = Episciences_VolumesManager::find($params['vid']);
-            $review = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
-
-            $listOfPaper = $getVolume->getSortedPapersFromVolume('object');
-
-            foreach ($listOfPaper as $key => $value) {
-                if (!$value->isPublished()) {
-                    unset($listOfPaper[$key]);
-                }
-            }
-
-            $journal = $review;
-            $journal->loadSettings();
-
-            $this->view->listOfPaper = $listOfPaper;
-            $this->view->journal = $journal;
-            $this->view->volume = $getVolume->getName('en', true);
-            
-            header('Content-Type: text/xml; charset: utf-8');
-            
-            $output = $this->view->render('export/volumesdoaj.phtml');
-
-            return $this->displayXml($output);
-        }
-
->>>>>>> Stashed changes
         $paper = $this->getPaperToExport();
 
 
