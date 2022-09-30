@@ -1,22 +1,11 @@
 <?php
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use Psr\Http\Message\ResponseInterface;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 
 $localopts = [
-    'paperid=i' => "Paper ID",
-    'dry-run' => 'Work with Test API',
-    'check' => 'Check DOI submission status',
-    'rvid=i' => 'RVID of a journal',
-    'assign-accepted' => 'Assign DOI to all accepted papers',
-    'assign-published' => 'Assign DOI to all accepted papers',
-    'request' => 'Request all assigned DOI of a journal',
-    'journal-hostname=s' => 'Get XML files from an alternate journal hostname, eg: test.episciences.org'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -32,34 +21,11 @@ class getCreatorData extends JournalScript
 
     public const ONE_MONTH = 3600 * 24 * 31;
 
-    /**
-     * @var Episciences_Paper
-     */
-    protected $_paper;
-
-    /**
-     * @var Episciences_Review
-     */
-    protected $_review;
-    /**
-     * @var Episciences_Paper_DoiQueue
-     */
-    protected $_doiQueue;
-
-    /**
-     * @var Episciences_Review_DoiSettings
-     */
-    protected $_doiSettings;
 
     /**
      * @var bool
      */
     protected $_dryRun = true;
-
-    /**
-     * @var string
-     */
-    protected $_journalHostname;
 
     /**
      * getCreatorData constructor.
@@ -78,12 +44,6 @@ class getCreatorData extends JournalScript
         } else {
             $this->setDryRun(false);
         }
-
-        $journalHostname = $this->getParam('journal-hostname');
-        if ($journalHostname === null) {
-            $journalHostname = '';
-        }
-        $this->setJournalHostname($journalHostname);
 
     }
 
@@ -141,7 +101,7 @@ class getCreatorData extends JournalScript
 
                 // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
                 // BUT BEFORE CHECK GLOBAL CACHE
-                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim,$paperId);
+                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
                 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -182,7 +142,7 @@ class getCreatorData extends JournalScript
                 $pathOpenAireCreator = trim(explode("/", $doiTrim)[1]) . "_creator.json";
                 $setsOpenAireCreator = $cacheCreator->getItem($pathOpenAireCreator);
 
-                if ($setsOpenAireCreator->isHit() && !empty($fileFound = json_decode($setsOpenAireCreator->get(), true,512 , JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) && $fileFound !== [""]) {
+                if ($setsOpenAireCreator->isHit() && !empty($fileFound = json_decode($setsOpenAireCreator->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) && $fileFound !== [""]) {
                     $reformatFileFound = [];
                     if (!array_key_exists(0, $fileFound)) {
                         $reformatFileFound[] = $fileFound;
@@ -217,88 +177,76 @@ class getCreatorData extends JournalScript
     }
 
     /**
-     * @return bool
+     * @param $decodeOpenAireResp
+     * @param $doi
+     * @return void
+     * @throws JsonException
      */
-    public
-    function isDryRun(): bool
+    public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
     {
-        return $this->_dryRun;
+        $cache = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        $fileName = trim(explode("/", $doi)[1]) . "_creator.json";
+        $sets = $cache->getItem($fileName);
+        $sets->expiresAfter(self::ONE_MONTH);
+        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !empty($decodeOpenAireResp['response']['results'])) {
+            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
+                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
+                $sets->set(json_encode($creatorArrayOpenAire, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                $cache->save($sets);
+            }
+        } else {
+            $sets->set(json_encode([""]));
+            $cache->save($sets);
+        }
+    }
+
+    public static function logErrorMsg($msg)
+    {
+        $logger = new Logger('my_logger');
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'creatorEnrichment' . date('Y-m-d') . '.log', Logger::INFO));
+        $logger->info($msg);
     }
 
     /**
-     * @param bool $dryRun
+     * @param $needleFullName
+     * @param $authorInfoFromApi
+     * @param $decodeAuthor
+     * @param $keyDbJson
+     * @param int $flagNewOrcid
+     * @return array
      */
-    public
-    function setDryRun(bool $dryRun)
+    public function getOrcidApiForDb($needleFullName, $authorInfoFromApi, $decodeAuthor, $keyDbJson, int $flagNewOrcid): array
     {
-        $this->_dryRun = $dryRun;
-    }
+        /*
+         * FIRST IF PRETTY RAW SEARCHING
+         * SECOND IF REPLACE ALL ACCENT IN BOTH FULLNAME
+         */
+        $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true);
+        if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
+            self::logErrorMsg($msgLogAuthorFound);
+            if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
+                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
+                $flagNewOrcid = 1;
+            }
 
-    /**
-     * @return Episciences_Paper
-     */
-    public
-    function getPaper(): Episciences_Paper
-    {
-        return $this->_paper;
-    }
+        } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
+            self::logErrorMsg($msgLogAuthorFound);
+            if (array_key_exists("@orcid", $authorInfoFromApi)) {
+                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
+                $flagNewOrcid = 1;
+            }
+        } else {
+            self::logErrorMsg("No matching : API " . $authorInfoFromApi['$'] . " #DB# " . $needleFullName);
+        }
+        //SOME LOGGING TO KNOW IF OCCURENCE WAS FOUND EACH LOOP OF ARRAYS
+        if (!isset($decodeAuthor[$keyDbJson]['orcid'])) {
+            self::logErrorMsg("ORCID not found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true));
+        }
+        if ($flagNewOrcid === 1) {
+            self::logErrorMsg("ORCID found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true));
 
-    /**
-     * @param Episciences_Paper $paper
-     */
-    public
-    function setPaper($paper)
-    {
-        $this->_paper = $paper;
-    }
-
-    /**
-     * @return string
-     */
-    public function getJournalHostname(): string
-    {
-        return $this->_journalHostname;
-    }
-
-    /**
-     * @param string $journalDomain
-     */
-    public function setJournalHostname(string $journalDomain)
-    {
-        $this->_journalHostname = $journalDomain;
-    }
-
-    /**
-     * @return Episciences_Review
-     */
-    public
-    function getReview(): Episciences_Review
-    {
-        return $this->_review;
-    }
-
-    /**
-     * @param Episciences_Review $review
-     */
-    public
-    function setReview($review)
-    {
-        $this->_review = $review;
-    }
-
-    public
-    function getDoiQueue(): Episciences_Paper_DoiQueue
-    {
-        return $this->_doiQueue;
-    }
-
-    /**
-     * @param mixed $doiQueue
-     */
-    public
-    function setDoiQueue($doiQueue)
-    {
-        $this->_doiQueue = $doiQueue;
+        }
+        return [$decodeAuthor, $flagNewOrcid];
     }
 
     /**
@@ -318,76 +266,21 @@ class getCreatorData extends JournalScript
     }
 
     /**
-     * @param $needleFullName
-     * @param $authorInfoFromApi
-     * @param $decodeAuthor
-     * @param $keyDbJson
-     * @param int $flagNewOrcid
-     * @return array
+     * @return bool
      */
-    public function getOrcidApiForDb($needleFullName, $authorInfoFromApi, $decodeAuthor, $keyDbJson, int $flagNewOrcid): array
+    public
+    function isDryRun(): bool
     {
-        /*
-         * FIRST IF PRETTY RAW SEARCHING
-         * SECOND IF REPLACE ALL ACCENT IN BOTH FULLNAME
-         */
-        $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, TRUE) . "\n API: \n" . print_r($authorInfoFromApi, TRUE) . " DB DATA:\n " . print_r($decodeAuthor, true);
-        if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
-            self::logErrorMsg($msgLogAuthorFound);
-            if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
-                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
-                $flagNewOrcid = 1;
-            }
-
-        } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
-            self::logErrorMsg($msgLogAuthorFound);
-            if (array_key_exists("@orcid", $authorInfoFromApi)) {
-                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
-                $flagNewOrcid = 1;
-            }
-        } else {
-            self::logErrorMsg("No matching : API " . $authorInfoFromApi['$'] . " #DB# " . $needleFullName);
-        }
-        //SOME LOGGING TO KNOW IF OCCURENCE WAS FOUND EACH LOOP OF ARRAYS
-        if (!isset($decodeAuthor[$keyDbJson]['orcid'])) {
-            self::logErrorMsg("ORCID not found \n Searching :\n" . print_r($needleFullName, TRUE) . "\n API: \n" . print_r($authorInfoFromApi, TRUE) . " DB DATA:\n " . print_r($decodeAuthor, true));
-        }
-        if ($flagNewOrcid === 1) {
-            self::logErrorMsg("ORCID found \n Searching :\n" . print_r($needleFullName, TRUE) . "\n API: \n" . print_r($authorInfoFromApi, TRUE) . " DB DATA:\n " . print_r($decodeAuthor, true));
-
-        }
-        return array($decodeAuthor, $flagNewOrcid);
-    }
-
-    public static function logErrorMsg($msg)
-    {
-        $logger = new Logger('my_logger');
-        $logger->pushHandler(new StreamHandler(__DIR__ . '/creatorEnrichment'.date('Y-m-d').'.log', Logger::INFO));
-        $logger->info($msg);
+        return $this->_dryRun;
     }
 
     /**
-     * @param $decodeOpenAireResp
-     * @param $doi
-     * @return void
-     * @throws JsonException
+     * @param bool $dryRun
      */
-    public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
+    public
+    function setDryRun(bool $dryRun)
     {
-        $cache = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $fileName = trim(explode("/", $doi)[1]) . "_creator.json";
-        $sets = $cache->getItem($fileName);
-        $sets->expiresAfter(self::ONE_MONTH);
-        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !empty($decodeOpenAireResp['response']['results'])) {
-            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
-                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
-                $sets->set(json_encode($creatorArrayOpenAire,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
-                $cache->save($sets);
-            }
-        } else {
-            $sets->set(json_encode([""]));
-            $cache->save($sets);
-        }
+        $this->_dryRun = $dryRun;
     }
 }
 
