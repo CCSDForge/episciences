@@ -273,7 +273,7 @@ class getFundingData extends JournalScript
     public static function logErrorMsg($msg)
     {
         $logger = new Logger('my_logger');
-        $logger->pushHandler(new StreamHandler(__DIR__ . '/fundingEnrichment_'.date('Y-m-d').'.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_'.date('Y-m-d').'.log', Logger::INFO));
         $logger->info($msg);
     }
     public static function CallHAlApiForIdEuAndAnrFunding($identifier,$version) {
