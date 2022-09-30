@@ -4,6 +4,7 @@
     "UID": 1984,
     "USER_PHOTO_PATH": "/userPhoto/path/",
     "MAIL_PATH": "/data/mail/path/",
+    "LOG_PATH": "/logs/file/path/",
     "EXCEPTIONS_LOG_PATH": "/logs/mail/path/",
     "SOLR_LOG_PATH": "/logs/file/path/",
     "HAL_API": "https://api.example.org/",

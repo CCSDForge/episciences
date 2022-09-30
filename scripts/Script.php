@@ -458,7 +458,7 @@ abstract class Script {
             return false;
         }
 
-        $filename = strtolower(get_class($this)) . '_' . date("Y-m-d") . '.log';
+        $filename = EPISCIENCES_LOG_PATH . strtolower(get_class($this)) . '_' . date("Y-m-d") . '.log';
 
         $file = fopen($filename, 'ab');
         $message = '[' . date("Y-m-d H:i:s") . '] '

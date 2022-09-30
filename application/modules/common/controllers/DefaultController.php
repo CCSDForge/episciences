@@ -182,6 +182,11 @@ class DefaultController extends Zend_Controller_Action
      */
     public static function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
     {
+
+        if(!Episciences_Auth::isLogged()){
+            return true;
+        }
+
         if(Episciences_Auth::isRoot()){
             return false;
         }

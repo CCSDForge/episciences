@@ -83,7 +83,7 @@ class Episciences_OpenAireResearchGraphTools
     public static function logErrorMsg($msg): void
     {
         $logger = new Logger('my_logger');
-        $logger->pushHandler(new StreamHandler(APPLICATION_PATH . '/../scripts/openAireResearchGraph_'.date('Y-m-d').'.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'openAireResearchGraph_'.date('Y-m-d').'.log', Logger::INFO));
 
         $logger->info($msg);
     }

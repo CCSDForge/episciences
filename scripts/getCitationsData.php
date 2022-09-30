@@ -97,7 +97,10 @@ class getCitationsData extends JournalScript
                     $setsMetadata->expiresAfter(self::ONE_MONTH);
                     if (!$setsMetadata->isHit()) {
                         $this->displayInfo('CALL API FOR METADATA ' . $doiWhoCite, true);
-                        $respCitationMetadataApi = self::getMetadataByDoiCite($doiWhoCite);
+                        $respCitationMetadataApi = '';
+                        if (!empty($doiWhoCite)) {
+                            $respCitationMetadataApi = self::getMetadataByDoiCite($doiWhoCite);
+                        }
                         if ($respCitationMetadataApi !== '') {
                             $setsMetadata->set($respCitationMetadataApi);
                         } else {
@@ -123,9 +126,10 @@ class getCitationsData extends JournalScript
                     }
                 }
                 if (!empty($globalInfoMetadata)){
-                    var_dump(json_encode($globalInfoMetadata,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                    $globalInfoMetaAsJson = json_encode($globalInfoMetadata, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                    echo $globalInfoMetaAsJson;
                     $citationObject = new Episciences_Paper_Citations();
-                    $citationObject->setCitation(json_encode($globalInfoMetadata,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                    $citationObject->setCitation($globalInfoMetaAsJson);
                     $citationObject->setDocId($value['DOCID']);
                     $citationObject->setSourceId(Episciences_Repositories::OPENCITATIONS_ID);
                     if (Episciences_Paper_CitationsManager::insert([$citationObject]) >= 1){
