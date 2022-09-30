@@ -161,10 +161,8 @@ class ExportController extends Zend_Controller_Action
             $params = $request->getParams();
             $getVolume = Episciences_VolumesManager::find($params['vid']);
             $review = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
-            $volume = '';
-            $section = '';
 
-            $listOfPaper = $getVolume->getPaperListFromVolume();
+            $listOfPaper = $getVolume->getSortedPapersFromVolume('object');
             foreach ($listOfPaper as $key => $value) {
                 if (!$value->isPublished()) {
                     unset($listOfPaper[$key]);
