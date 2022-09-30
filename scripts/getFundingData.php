@@ -98,7 +98,12 @@ class getFundingData extends JournalScript
                 $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
                 $sets = $cache->getItem($fileName);
                 $sets->expiresAfter(self::ONE_MONTH);
-                $fileFound = json_decode($sets->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+                try {
+                    $fileFound = json_decode($sets->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+                } catch (JsonException $jsonException) {
+                    self::logErrorMsg(sprintf( 'Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+                }
+
                 $globalfundingArray = [];
                 $this->displayInfo('CALL CACHE OPENAIRE FOR '. $doiTrim , true);
                 if (!empty($fileFound[0])) {
