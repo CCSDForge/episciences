@@ -289,5 +289,4 @@ class BrowseController extends Zend_Controller_Action
         $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
         $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
     }
-
 }

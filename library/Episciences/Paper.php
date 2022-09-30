@@ -345,7 +345,7 @@ class Episciences_Paper
     private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
     public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
-    public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'zbjats', 'json'];
+    public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref','doaj', 'zbjats', 'json'];
 
     // variable for the export Enrichment
 
@@ -4148,6 +4148,20 @@ class Episciences_Paper
 
         return $this->_authors;
     }
+
+    /**
+     * @return array [Episciences_Paper_Authors]
+     * @throws JsonException
+     */
+    public function getAuthorsWithAffiNumeric() : array
+    {
+        $this->_authors = Episciences_Paper_AuthorsManager::filterAuthorsAndAffiNumeric($this->getPaperid());
+
+        return $this->_authors;
+    }
+
+
+
 
     /**
      * @return string Episciences_Paper_Licence

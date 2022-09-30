@@ -1,0 +1,13 @@
+<import namespace="http://doaj.org/schemas/iso_639-2b/1.1" schemaLocation="http://doaj.org/static/doaj/iso_639-2b.xsd">
+    <records>
+        <?php echo $this->partial('partials/doajpaper.phtml',[
+                'paper'=> $this->paper,
+                'journal'=>$this->journal,
+                'section'=>$this->section,
+                'volume' => $this->volume,
+                'previousVersionsUrl' => $this->previousVersionsUrl,
+                'doi' => $this->doi,
+                'paperLanguage' => $this->paperLanguage,
+        ]); ?>
+    </records>
+</import>
