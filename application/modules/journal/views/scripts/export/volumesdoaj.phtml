@@ -10,12 +10,8 @@
             }
 
             $section = "";
-            if ($value->getDoi() === '') {
-                $journalDoi = $this->journal->getDoiSettings();
-                $doi = $journalDoi->createDoiWithTemplate($value);
-            } else {
-                $doi = $value->getDoi();
-            }
+            $doi = $value->getDoi();
+
             if ($value->getSid()) {
                 /* @var $oSection Episciences_Section */
                 $oSection = Episciences_SectionsManager::find($value->getSid());
