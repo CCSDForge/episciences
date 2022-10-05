@@ -27,6 +27,26 @@ $journalUrl = $journal->getUrl();
 $enrichmentAuthors = $paper->getAuthors();
 $enrichmentLicence = $paper->getLicence();
 $enrichmentFundings = $paper->getFundings();
+$enrichmentLinkedData = $paper->getLinkedData();
+
+$authorizedRelationType = [
+    "IsCitedBy","Cites","IsSupplementTo","IsSupplementedBy",
+    "IsContinuedBy","Continues","IsDescribedBy",
+    "Describes","HasMetadata","IsMetadataFor",
+    "HasVersion","IsVersionOf","IsNewVersionOf","IsPreviousVersionOf",
+    "IsPartOf","HasPart","IsReferencedBy","References","IsDocumentedBy","Documents","IsCompiledBy","Compiles",
+    "IsVariantFormOf","IsOriginalFormOf","IsIdenticalTo","IsReviewedBy",
+    "Reviews","IsDerivedFrom","IsSourceOf","IsRequiredBy","Requires"
+];
+
+$authorizedRelatedIndentifier = [
+    "ARK","arXiv","bibcode","DOI",
+    "EAN13","EISSN","Handle",
+    "IGSN","ISBN","ISSN",
+    "ISTC","LISSN","LSID","PISSN",
+    "PMID","PURL","UPC",
+    "URL","URN","WOS"
+];
 
 if (defined('RVISSN')) {
     $issn = $this->FormatIssn(RVISSN);
@@ -192,6 +212,20 @@ if (defined('RVISSN')) {
         <?php if (isset($issn) && $issn !== '') : ?>
             <datacite:relatedIdentifier relatedIdentifierType="ISSN" relationType="IsPartOf"><?= $this->escape($issn) ?></datacite:relatedIdentifier>
         <?php endif; ?>
+        <?php if (!empty($enrichmentLinkedData)) : ?>
+            <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
+                <?php if (in_array((strtoupper($linkedData['link'])), $authorizedRelatedIndentifier, true) || $linkedData['link'] === 'handle' || $linkedData['link'] === 'doi' || $linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode') : ?>
+                    <?php if (in_array($linkedData['relationship'], $authorizedRelationType, true)) : ?>
+                        <datacite:relatedIdentifier relatedIdentifierType="<?php
+                        if ($linkedData['link'] === 'handle') { echo $this->escape(ucfirst($linkedData['link'])); }
+                        elseif ($linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode') { echo $this->escape($linkedData['link']); }
+                        else { echo $this->escape(strtoupper($linkedData['link'])); }
+                        ?>" relationType="<?= $this->escape($linkedData['relationship']) ?>"><?php echo $this->escape($linkedData['value']); ?></datacite:relatedIdentifier>
+                    <?php endif; ?>
+                <?php endif; ?>
+            <?php } ?>
+        <?php endif; ?>
+
     </datacite:relatedIdentifiers>
 
     <oaire:file accessRightsURI="http://purl.org/coar/access_right/c_abf2" mimeType="application/pdf" objectType="fulltext"><?= $journalUrl . '/' . $paper->getPaperid() . '/pdf' ?></oaire:file>
