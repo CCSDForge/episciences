@@ -494,7 +494,13 @@ function setInvitationValues(user, type) {
 }
 
 
-// replace template tags with their real value
+/**
+ * replace all occurrences of a template tags by their real values
+ * @param string
+ * @param reviewer
+ * @param locale
+ * @returns {string}
+ */
 function replaceTags(string, reviewer, locale) {
 
     let language = locale;
@@ -512,21 +518,21 @@ function replaceTags(string, reviewer, locale) {
         paper_title = paper.title;
     }
 
-    string = string.replace("%%RATING_DEADLINE%%", getLocaleDate(review['rating_deadline'], {language, country}));
-    string = string.replace("%%INVITATION_DEADLINE%%", translateInvitationDeadline(review['invitation_deadline'], locale));
-    string = string.replace("%%REVIEW_CODE%%", review['code']);
-    string = string.replace("%%REVIEW_NAME%%", review['name']);
+    string = string.replaceAll("%%RATING_DEADLINE%%", getLocaleDate(review['rating_deadline'], {language, country}));
+    string = string.replaceAll("%%INVITATION_DEADLINE%%", translateInvitationDeadline(review['invitation_deadline'], locale));
+    string = string.replaceAll("%%REVIEW_CODE%%", review['code']);
+    string = string.replaceAll("%%REVIEW_NAME%%", review['name']);
     // if we don't have a screen_name, we use the full_name
-    string = (reviewer.screen_name) ? string.replace("%%RECIPIENT_SCREEN_NAME%%", reviewer.screen_name) : string.replace("%%RECIPIENT_SCREEN_NAME%%", reviewer.full_name);
-    string = string.replace("%%RECIPIENT_USERNAME%%", reviewer.user_name);
-    string = string.replace("%%RECIPIENT_FULL_NAME%%", reviewer.full_name);
-    string = string.replace("%%SENDER_FULL_NAME%%", editor.full_name);
-    string = string.replace("%%SENDER_EMAIL%%", editor.email);
-    string = string.replace("%%ARTICLE_ID%%", paper.id);
-    string = string.replace("%%ARTICLE_TITLE%%", paper_title);
-    string = string.replace("%%CONTRIBUTOR_FULL_NAME%%", contributor.full_name);
-    string = string.replace("%%CONTRIBUTOR_EMAIL%%", contributor.email);
-    string = string.replace("%%AUTHORS_NAMES%%", allAuthors);
+    string = (reviewer.screen_name) ? string.replaceAll("%%RECIPIENT_SCREEN_NAME%%", reviewer.screen_name) : string.replaceAll("%%RECIPIENT_SCREEN_NAME%%", reviewer.full_name);
+    string = string.replaceAll("%%RECIPIENT_USERNAME%%", reviewer.user_name);
+    string = string.replaceAll("%%RECIPIENT_FULL_NAME%%", reviewer.full_name);
+    string = string.replaceAll("%%SENDER_FULL_NAME%%", editor.full_name);
+    string = string.replaceAll("%%SENDER_EMAIL%%", editor.email);
+    string = string.replaceAll("%%ARTICLE_ID%%", paper.id);
+    string = string.replaceAll("%%ARTICLE_TITLE%%", paper_title);
+    string = string.replaceAll("%%CONTRIBUTOR_FULL_NAME%%", contributor.full_name);
+    string = string.replaceAll("%%CONTRIBUTOR_EMAIL%%", contributor.email);
+    string = string.replaceAll("%%AUTHORS_NAMES%%", allAuthors);
 
     return string;
 }

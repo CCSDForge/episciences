@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+## Unreleased
+### Fixed
+- RT#167820: all occurrences of tags in a template will be replaced by their real values.  
 ## 1.0.33.1 - 2022-09-29
 ### Fixed
 - Allow editors to view the list of conflicts on the article management page
