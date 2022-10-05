@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased (Main branch)
+### Fixed
+- RT#167820: all occurrences of tags in a template will be replaced by their real values.
 
 ## Unreleased
 ### Added
