@@ -15,10 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased (Main branch)
-### Fixed
-- RT#167820: all occurrences of tags in a template will be replaced by their real values.
-
 ## Unreleased
 ### Added
 
@@ -26,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Submission from episciences-zenodo: first submission.
 - [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest.
 - Metadata Enrichment
+
+## 1.0.33.2 - 2022-10-05
+### Fixed
+- RT#167820: all occurrences of tags in a template will be replaced by their real values.
 
 ## 1.0.33.1 - 2022-09-29
 ### Fixed
