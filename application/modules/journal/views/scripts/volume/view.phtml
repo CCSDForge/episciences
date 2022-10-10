@@ -5,7 +5,9 @@ $this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
 
     <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($this->volume->getDescriptionKey())) : ?>
         <div id="description">
-            <?php echo $this->translate($this->volume->getDescriptionKey()); ?>
+            <p>
+                <?php echo $this->translate($this->volume->getDescriptionKey()); ?>
+            </p>
         </div>
     <?php endif; ?>
 
@@ -14,7 +16,8 @@ $this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
             <?php foreach ($this->volume->getMetadatas() as $metadata) : ?>
 
                 <?php if ($metadata->hasFile() && $metadata->isPicture()) : ?>
-                    <img src="<?php echo $metadata->getFileUrl() ?>" style="max-width: 100%"/>
+                    <img src="<?php echo $metadata->getFileUrl() ?>" class="img-rounded center-block" style="max-width: 100%"
+                         alt="image"/>
                 <?php endif; ?>
 
                 <?php if ($metadata->getContent()) : ?>
@@ -67,22 +70,22 @@ $this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
                             $multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
 
                             foreach ($multiArraysOfAuthors[0] as $authorName) {
-                                $url = $this->url(array(
+                                $url = $this->url([
                                     'controller' => 'search',
                                     'action' => 'index',
                                     'q' => '*',
-                                    'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+                                    'author_fullname_t' => $this->escape($authorName)], null, true);
                                 $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
                         } else {
 
                             foreach ($arrayOfAuthors as $authorName) {
-                                $url = $this->url(array(
+                                $url = $this->url([
                                     'controller' => 'search',
                                     'action' => 'index',
                                     'q' => '*',
-                                    'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+                                    'author_fullname_t' => $this->escape($authorName)], null, true);
                                 $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
@@ -120,5 +123,9 @@ $this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-    <a class="btn btn-default btn-sm" target="_blank" href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>"><?= $this->translate('Exporter le volume au format DOAJ')?></a>
+    <?php if (Episciences_Auth::isAdministrator() || Episciences_Auth::isChiefEditor() || Episciences_Auth::isSecretary()) : ?>
+    <a class="btn btn-default btn-sm" target="_blank"
+       href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>"><?= $this->translate('Exporter le volume au format DOAJ') ?></a>
+    <?php endif; ?>
+
 </div>
