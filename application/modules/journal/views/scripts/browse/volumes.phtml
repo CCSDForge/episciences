@@ -5,16 +5,42 @@
 
         <?php foreach ($this->volumes as $volume) : ?>
 
-            <h2 class="volume-title">
-                <a href="/volume/view/id/<?php echo $volume->getVid() ?>">
-                    <span><strong><?php echo $this->translate($volume->getNameKey()) ?></strong></span>
-                </a>
-                <span>(<?php echo count($volume->getIndexedPapers()) . ' ' . $this->translate('articles') ?>)</span>
-            </h2>
+            <?php
+            $volume->loadMetadatas();
+            $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
+            ?>
 
-            <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>
-                <p><?php echo $this->translate($volume->getDescriptionKey()); ?></p>
-            <?php endif; ?>
+
+            <div class="media">
+                <div class="media-left">
+                    <a href="<?= $volumeUrl ?>">
+                        <?php if ($volume->getMetadatas()) : ?>
+                            <?php foreach ($volume->getMetadatas() as $metadata) : ?>
+                                <?php if ($metadata->hasFile() && $metadata->isPicture()) : ?>
+                                    <img src="<?php echo $metadata->getFileUrl() ?>"
+                                         class="media-object img-thumbnail"
+                                         style="max-width: 10em"
+                                         alt="image"/>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </a>
+                </div>
+                <div class="media-body">
+                    <h4 class="media-heading">
+                        <a href="<?= $volumeUrl ?>">
+                            <?php echo $this->translate($volume->getNameKey()) ?>
+                        </a>
+                        <span class="text-muted">(<?php echo count($volume->getIndexedPapers()) . ' ' . $this->translate('articles') ?>)</span>
+                    </h4>
+                    <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>
+
+                            <p><?php echo $this->translate($volume->getDescriptionKey()); ?></p>
+
+                    <?php endif; ?>
+                </div>
+            </div>
+
 
             <hr/>
 
@@ -26,20 +52,23 @@
                 <ul class="pagination">
 
                     <?php if ($this->page - 1 > 0) : ?>
-                        <li><a href="<?= '/'. $controller . '/' . $action ?>/page/<?php echo $this->page - 1; ?>" aria-label="Previous"><span
-                                    aria-hidden="true">&laquo;</span></a></li>
+                        <li><a href="<?= '/' . $controller . '/' . $action ?>/page/<?php echo $this->page - 1; ?>"
+                               aria-label="Previous"><span
+                                        aria-hidden="true">&laquo;</span></a></li>
                     <?php else: ?>
                         <li class="disabled"><span aria-hidden="true">&laquo;</span></li>
                     <?php endif; ?>
 
                     <?php for ($i = 1; $i <= $nbpages; $i++) : ?>
                         <li<?php if ($this->page == $i) echo ' class="active"' ?>><a
-                                href="<?php echo '/'.$controller . '/'. $action; ?>/page/<?php echo $i; ?>"><?php echo $i; ?></a></li>
+                                    href="<?php echo '/' . $controller . '/' . $action; ?>/page/<?php echo $i; ?>"><?php echo $i; ?></a>
+                        </li>
                     <?php endfor; ?>
 
                     <?php if ($this->page < $this->total) : ?>
-                        <li><a href="<?= '/'. $controller . '/' . $action ?>/page/<?php echo $this->page + 1; ?>" aria-label="Next"><span
-                                    aria-hidden="true">&raquo;</span></a></li>
+                        <li><a href="<?= '/' . $controller . '/' . $action ?>/page/<?php echo $this->page + 1; ?>"
+                               aria-label="Next"><span
+                                        aria-hidden="true">&raquo;</span></a></li>
                     <?php else: ?>
                         <li class="disabled"><span aria-hidden="true">&raquo;</span></li>
                     <?php endif; ?>
