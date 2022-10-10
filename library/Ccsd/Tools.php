@@ -1,5 +1,8 @@
 <?php
 
+use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Filesystem\Filesystem;
+
 class Ccsd_Tools
 {
 
@@ -769,23 +772,24 @@ class Ccsd_Tools
     }
 
     /**
-     * retourne le nom du fichier à enregistrer
-     * Si un fichier du même nom existe déjà, on renommera le nouveau fichier
-     *
+     * Return a unique filename
      * @param string $filename
      * @param string $dir
      * @return string
      */
-    public static function getNewFileName($filename, $dir): string
+    public static function getNewFileName(string $filename, string $dir): string
     {
-        // Nettoyage du nom du fichier
+
         $filename = self::cleanFileName($filename);
-        if (strpos($filename, '.')) {
-            while (is_file($dir . $filename)) {
-                $filename = preg_replace('/_?(\d*)(\.\w{0,4})$/e', "'_'.('\\1'+1).'\\2'", $filename);
-            }
+        $filesystem = new Filesystem();
+
+        try {
+            $filenameUniq = $filesystem->tempnam($dir, '', '-' . $filename);
+        } catch (IOException $IOException) {
+            return '';
         }
-        return $filename;
+
+        return basename($filenameUniq);
     }
 
     /**
