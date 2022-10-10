@@ -83,8 +83,6 @@ class Episciences_Volume_Metadata
         $this->setTitle($title);
     }
 
-    // Charge les traaductions du contenu de la metadata
-
     public function getNameKey()
     {
         return 'volume_' . $this->getVid() . '_md_' . $this->getId() . '_name';
@@ -146,9 +144,9 @@ class Episciences_Volume_Metadata
         }
         if (is_array($this->_title) && array_key_exists($lang, $this->_title)) {
             return $this->_title[$lang];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     // Renvoie true si la métadonnée a un fichier
@@ -166,9 +164,9 @@ class Episciences_Volume_Metadata
         }
         if (is_array($this->_content) && array_key_exists($lang, $this->_content)) {
             return $this->_content[$lang];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     public function setContent($content)
