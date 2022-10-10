@@ -29,7 +29,9 @@ $(document).ready(function () {
                 $versionBloc.hide();
 
                 if($searchDocRepoId.val() === zenodoRepoId){
-                    insertZSubmitElement(zSubmitUrl);
+                    if(zSubmitStatus){ // to be enabled : @ see /config/dist-pwd.json
+                        insertZSubmitElement(zSubmitUrl);
+                    }
                 }
 
             } else {

@@ -53,7 +53,7 @@ class SubmitController extends DefaultController
 
             if ($zPost) {
                 $zIdentifier = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $zPost['doi_show'], 'repoId' => $repoId])['identifier'];
-                $isFromZSubmit = $zIdentifier && $zConceptIdentifier && in_array($repoId, $settings['repositories'], true);
+                $isFromZSubmit = EPISCIENCES_Z_SUBMIT['STATUS'] && $zIdentifier && $zConceptIdentifier && in_array($repoId, $settings['repositories'], true);
             }
 
             if ($isFromZSubmit) {

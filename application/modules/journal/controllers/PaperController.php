@@ -445,6 +445,7 @@ class PaperController extends PaperDefaultController
         }
 
         $this->view->zSubmitUrl = $zSubmitUrl;
+        $this->view->zSubmitStatus = EPISCIENCES_Z_SUBMIT['STATUS']; /** @see /config/dist-pwd.json */
 
     }
 

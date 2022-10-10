@@ -11,7 +11,10 @@
     "SECRET_KEY": "YourSecretAuthKey",
     "API_URL": "https://host:8000/api/",
     "API_SECRET_KEY": "YourSecretAuthKey",
-    "Z_SUBMIT_URL": "https://zsubmit-env.domain.org"
+    "Z_SUBMIT": {
+      "URL": "https://zsubmit-env.domain.org",
+      "STATUS": 0
+    }
   },
   "CAS": {
     "HOST": "a_db_host",

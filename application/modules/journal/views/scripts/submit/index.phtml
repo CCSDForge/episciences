@@ -1,5 +1,6 @@
 <?php
-$zSubmitUrl = EPISCIENCES_Z_SUBMIT_URL;
+$zSubmitStatus = (boolean)EPISCIENCES_Z_SUBMIT['STATUS'];
+$zSubmitUrl = EPISCIENCES_Z_SUBMIT['URL'];
 
 $isFromZSubmitJson = Zend_Json::encode($this->isFromZSubmit);
 
@@ -46,4 +47,5 @@ $zSubmitUrl .= '/deposit?rvcode=' . RVCODE;
     let isFromZSubmit = <?= $isFromZSubmitJson ?>;
     let zSubmitUrl = '<?= $this->zSubmitUrl ?>';
     let zenodoRepoId = '<?= $this->zenodoRepoId ?>';
+    let zSubmitStatus = <?= json_encode($zSubmitStatus)?> ;
 </script>

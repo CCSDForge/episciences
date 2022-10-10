@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+
+## changed: 
+- new parameter for enabling submission from the archive to the application and vice versa.
 ### Added
 
 - Sign in an admin as another user: real identity is now saved.

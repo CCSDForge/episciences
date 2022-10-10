@@ -12,7 +12,9 @@
     $.getScript(zSubmitElement_url)
         .done(function () {
             if (!isFromZSubmit && $('#search_doc-repoId').val() === '<?= $this->zenodoRepoId ?>') {
-                insertZSubmitElement('<?= $this->zSubmitUrl?>');
+                if(zSubmitStatus){ // initialised in /paper/view.phtml
+                    insertZSubmitElement('<?= $this->zSubmitUrl?>');
+                }
             }
         })
         .fail(function (jqxhr, settings, exception) {

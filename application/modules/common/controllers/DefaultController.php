@@ -128,7 +128,7 @@ class DefaultController extends Zend_Controller_Action
     protected function getZSubmitUrl(array $allowedRepositories = null, array $options = []): string
     {
 
-        $zSubmitUrl = EPISCIENCES_Z_SUBMIT_URL;
+        $zSubmitUrl = EPISCIENCES_Z_SUBMIT['URL'];
 
         if (empty($allowedRepositories)) {
             $settings = Zend_Registry::get('reviewSettings');
