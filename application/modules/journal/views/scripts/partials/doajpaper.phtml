@@ -90,8 +90,8 @@ $timestamp = time();
                     <name><?php if($givenName !=='') :?><?=$this->escape($givenName)." " ?><?php endif; ?><?php echo $this->escape($familyName) ?></name>
                     <?php if (!empty($enrichmentAuthorsWithAffiNum)): ?>
                         <?php if (isset($enrichmentAuthorsWithAffiNum[$order]['idAffi'])): ?>
-                            <?php foreach ($enrichmentAuthorsWithAffiNum[$order]['idAffi'] as $index => $affiNum){ ?>
-                                <affiliationId><?php echo $this->escape($index) ?></affiliationId>
+                            <?php foreach ($enrichmentAuthorsWithAffiNum[$order]['idAffi'] as $index => $affiNum) { ?>
+                                <affiliationId><?php echo array_search($this->escape($index), array_keys($arrayAffiliation)); ?></affiliationId>
                             <?php } ?>
                         <?php endif; ?>
                         <?php if (isset($enrichmentAuthorsWithAffiNum[$order]['orcid'])): ?>
@@ -109,7 +109,7 @@ $timestamp = time();
     <?php if (!empty($arrayAffiliation)) : ?>
         <affiliationsList>
             <?php foreach ($arrayAffiliation as $affiIndex => $affiName) { ?>
-                <affiliationName affiliationId="<?=$this->escape($affiIndex) ?>"><?=$this->escape($affiName) ?></affiliationName>
+                <affiliationName affiliationId="<?=array_search($this->escape($affiIndex), array_keys($arrayAffiliation))?>"><?=$this->escape($affiName['name']) ?></affiliationName>
             <?php } ?>
         </affiliationsList>
     <?php endif;?>
