@@ -37,10 +37,14 @@ class Episciences_Paper_ClassificationsManager
         return $affectedRows;
     }
 
+
     public static function getClassificationByPaperId($paperId){
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()->from(['paper_classification'=>T_PAPER_CLASSIFICATIONS])->joinLeft(['source_paper'=>T_PAPER_METADATA_SOURCES],"paper_classification.source_id = source_paper.id",["source_id_name"=>'source_paper.name'])->where('paperId = ? ', $paperId)->order("source_id");
+        $sql = $db->select()->from(['pc'=>T_PAPER_CLASSIFICATIONS])
+            ->joinLeft(['sp'=>T_PAPER_METADATA_SOURCES],"pc.source_id = sp.id",["pc.source_id_name"=>'sp.name'])
+            ->where('paperId = ? ', $paperId)
+            ->order("source_id");
         return $db->fetchAssoc($sql);
     }
 
