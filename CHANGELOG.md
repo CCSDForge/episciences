@@ -14,9 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-- display bug on the portal in connected mode
-
 ## 1.0.33.2 - 2022-10-05
 ### Fixed
 - RT#167820: all occurrences of tags in a template will be replaced by their real values.
