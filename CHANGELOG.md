@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## fixed: 
+- display bug on the portal in connected mode
+
 ## changed: 
 - new parameter for enabling submission from the archive to the application and vice versa.
 ### Added
