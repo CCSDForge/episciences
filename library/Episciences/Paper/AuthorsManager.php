@@ -231,19 +231,31 @@ class Episciences_Paper_AuthorsManager
             $allauthors = self::getArrayAuthorsAffi($paperId);
             $arrayAllAffi = [];
             foreach ($allauthors as $key => $author) {
-                if (isset($author['affiliation'])){
-                    foreach ($author['affiliation'] as $affiliation){
-                        if (!in_array($affiliation['name'], $arrayAllAffi, true)){
-                            $arrayAllAffi[] = $affiliation['name'];
-                            $allauthors[$key]['idAffi'][array_key_last($arrayAllAffi)] = $arrayAllAffi[array_key_last($arrayAllAffi)];
+                if (isset($author['affiliation'])) {
+                    foreach ($author['affiliation'] as $affiliation) {
+                        // we need to distinct all affiliations because we can't know which is which even if is the same string affiliation
+                        // it might be not the same affiliation
+                        $md5nameKey = $affiliation['name'];
+                        if (isset($affiliation['id'])) {
+                            $md5nameKey .= $affiliation['id'][0]['id'].$affiliation['id'][0]['id-type'];
+                        }
+                        if (array_key_exists(md5($md5nameKey), $arrayAllAffi)) {
+                            $allauthors[$key]['idAffi'][md5($md5nameKey)] = $arrayAllAffi[md5($md5nameKey)];
                         } else {
-                            $searching = array_search($affiliation['name'],$arrayAllAffi,true);
-                            $allauthors[$key]['idAffi'][$searching] = $arrayAllAffi[$searching] ;
+                            $arrayAllAffi[md5($md5nameKey)] = [
+                                "name"=> $affiliation['name'],
+                            ];
+                            if (isset($affiliation['id'])) {
+                                $arrayAllAffi[array_key_last($arrayAllAffi)]['url'] = $affiliation['id'][0]['id'];
+                                $arrayAllAffi[array_key_last($arrayAllAffi)]['type'] = $affiliation['id'][0]['id-type'];
+                            }
+                            $allauthors[$key]['idAffi'][array_key_last($arrayAllAffi)] = $arrayAllAffi[array_key_last($arrayAllAffi)];
                         }
                         ksort($allauthors[$key]['idAffi']);
                     }
                 }
             }
+            ksort($arrayAllAffi);
             return ['affiliationNumeric' => $arrayAllAffi, 'authors' => $allauthors];
 
     }
