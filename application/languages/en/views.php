@@ -1606,6 +1606,7 @@ return [
     "Lien permanent" => "Permanent link",
 
     "Afficher les volumes vides"=> "Show empty volumes",
+    'Ce volume ne contient pas encore de documents.'=>'This volume does not yet contain any documents.',
 
 
     // NEWS
