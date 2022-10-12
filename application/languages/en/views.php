@@ -389,7 +389,7 @@ return [
 
     // Gestion d'un article (administrateur)
     "L'auteur n'a pas encore répondu :" => "The author has not responded yet: ",
-    "Il n'est donc pas possible de modifier le statut de l'article." => "hence, it is not possible to change article status.",
+    "Il n'est donc pas possible de modifier le statut de l'article." => "Hence, it is not possible to change article status.",
     "Aucune action n'est requise de votre part" => 'No action is required on your part',
     "Répondre au nom de l'auteur" => 'Answer on behalf of author',
     "Gérer un article" => 'Manage an article',
@@ -1598,6 +1598,9 @@ return [
     "Personnalisée" => "Custom",
 
     "Lien permanent" => "Permanent link",
+
+    "Afficher les volumes vides"=> "Show empty volumes",
+
 
     // NEWS
     "Ajout / modifications d'actualités pour le site" => "Add / edit the website news",
