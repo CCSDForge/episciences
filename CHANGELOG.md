@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed a display bug on the portal in connected mode (used by Episciences staff only)
+- Failed to edit another account's profile from the user management page.
+
 
 ## changed: 
 - new parameter for enabling submission from the archive to the application and vice versa.
