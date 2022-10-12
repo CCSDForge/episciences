@@ -474,7 +474,7 @@ return [
     'Aucun conflit pour le moment.' => 'No conflict yet.',
     "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences" => "At this point, the author coordinates with the copy editor and agree by exchanging emails outside or via Episciences",
     "La version actuelle est la version la plus récente." => "The current version is the most recent version.",
-    "L'identifiant de la version la plus récente dans l’archive ouverte" => "The identifier of the most open archive version",
+    "L'identifiant de la version la plus récente dans l’archive ouverte" => "The identifier of the most recent open archive version",
     "La version la plus récente dans l’archive ouverte" => "The most recent open archive version",
 
     // Tableau de bord
