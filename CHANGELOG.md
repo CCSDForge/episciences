@@ -33,20 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The new collected metadata have been added to Datacite, [Crossref](https://www.crossref.org/) and DOAJ export formats
 - Browse by volume: new parameter to allow to display empty volumes. Default value is still no (only show volumes 
   with papers published in the volume)
+- Sign in an admin as another user: the real identity is now saved.
+- [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest.
 
 ### Fixed
 - Fixed a display bug on the portal in connected mode (used by Episciences staff only)
 - Failed to edit another account's profile from the user management page.
 
-
-## changed: 
-- new parameter for enabling submission from the archive to the application and vice versa.
-### Added
-
-- Sign in an admin as another user: real identity is now saved.
-- Submission from episciences-zenodo: first submission.
-- [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest.
-- Metadata Enrichment
+## Changed: 
+- new parameter for enabling/disabling submission from the archive to the application and vice versa.
 
 ## 1.0.33.2 - 2022-10-05
 ### Fixed
