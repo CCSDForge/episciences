@@ -652,6 +652,7 @@ class UserDefaultController extends Zend_Controller_Action
             if ($form->isValid($post)) {
 
                 $values = $form->getValues();
+                $values['ccsd']['USERNAME'] =  $userDefaults['USERNAME'];  //otherwise the username is removed from the identity: in modification it is not used in save() method.
 
                 try {
                     $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
@@ -681,9 +682,7 @@ class UserDefaultController extends Zend_Controller_Action
                         $this->_helper->FlashMessenger->setNamespace('danger')->addMessage($e->getMessage());
                     }
                 }
-
-               // $user->setUsername(Episciences_Auth::getUsername()); //otherwise the username is removed from the identity: in modification it is not used in save() method.
-
+                
                 if (!$user->save()) {
                     $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_EDIT_FAILURE;
                     $this->view->form = $form;
