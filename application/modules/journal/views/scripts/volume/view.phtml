@@ -119,5 +119,13 @@ $this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
 
             <?php endforeach; ?>
         </div>
+        <?php if (Episciences_Auth::isAdministrator()
+            || Episciences_Auth::isChiefEditor()
+            || Episciences_Auth::isSecretary()) : ?>
+            <a class="btn btn-default btn-sm" target="_blank"
+               href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>"><?= $this->translate('Exporter le volume au format DOAJ') ?></a>
+        <?php endif; ?>
+    <?php else: ?>
+        <blockquote style="padding:1em;"><?= $this->translate('Ce volume ne contient pas encore de documents.') ?></blockquote>
     <?php endif; ?>
 </div>
