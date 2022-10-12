@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Linked Datasets: [Scholexplorer](https://scholexplorer.openaire.eu/), [HAL](https://hal.archives-ouvertes.fr/): Datasets linked to Episciences 
     publications
   - Funding: Research projects from [OpenAIRE Research Graph](https://graph.openaire.eu/) and [HAL](https://hal.archives-ouvertes.fr/)
-  - Citations: Citations of published document retrieved by [OpenCitations](https://opencitations.net/)
+  - Citations: Citations of published document retrieved with [OpenCitations](https://opencitations.net/) APIs
 - Exports formats:
   - [DOAJ](https://doaj.org/about/) (export one document or a whole published volume) using DOAJ Schema 
   - The new collected metadata have been added to Datacite, [Crossref](https://www.crossref.org/) and DOAJ export formats
