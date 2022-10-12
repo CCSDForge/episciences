@@ -9,7 +9,14 @@
                 <a href="/volume/view/id/<?php echo $volume->getVid() ?>">
                     <span><strong><?php echo $this->translate($volume->getNameKey()) ?></strong></span>
                 </a>
-                <span>(<?php echo count($volume->getIndexedPapers()) . ' ' . $this->translate('articles') ?>)</span>
+                <?php
+                    $countOfPublishedArticles = count($volume->getIndexedPapers());
+                    if ($countOfPublishedArticles > 1) {
+                        echo '<span>(' . $countOfPublishedArticles . ' ' . $this->translate('articles') . ')</span>';
+                    } elseif ($countOfPublishedArticles === 1) {
+                        echo '<span>(' . $countOfPublishedArticles . ' ' . $this->translate('article'). ')</span>';
+                    }
+                    ?>
             </h2>
 
             <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>

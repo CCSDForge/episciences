@@ -15,12 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-- display bug on the portal in connected mode
+### Added
+- Browse by volume: new parameter to allow to display empty volumes. Default value is still no (only show volumes 
+  with papers published in the volume)
+
+### Fixed
+- Fixed a display bug on the portal in connected mode (used by Episciences staff only)
 
 ## 1.0.33.2 - 2022-10-05
 ### Fixed
 - RT#167820: all occurrences of tags in a template will be replaced by their real values.
-- 
+ 
 ## 1.0.33.1 - 2022-09-29
 ### Fixed
 - Allow editors to view the list of conflicts on the article management page
