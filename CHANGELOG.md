@@ -33,8 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The new collected metadata have been added to Datacite, [Crossref](https://www.crossref.org/) and DOAJ export formats
 - Browse by volume: new parameter to allow to display empty volumes. Default value is still no (only show volumes 
   with papers published in the volume)
-- Sign in an admin as another user: the real identity is now saved.
-- [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of interest.
+- [#186](https://github.com/CCSDForge/episciences/issues/186): Editors-in-chief can now report a conflict of 
+  interest. (Sign in an admin as another user: the real identity is now saved.)
 
 ### Fixed
 - Fixed a display bug on the portal in connected mode (used by Episciences staff only)
