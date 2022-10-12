@@ -40,7 +40,11 @@ class Episciences_VolumesManager
         $select = $db->select()->from(T_VOLUMES)->order('POSITION', 'ASC');
         if ($options) {
             foreach ($options as $cmd => $params) {
-                $select->$cmd($params);
+                if (is_array($params)  && $cmd === 'limit' && count($params) === 2) {
+                    $select->limit($params[0], $params[1]);
+                } else {
+                    $select->$cmd($params);
+                }
             }
         } else {
             $select->where('RVID = ?', RVID);

@@ -133,6 +133,21 @@ class BrowseController extends Zend_Controller_Action
 
     }
 
+    /**
+     * @param array $volumesOrSections
+     * @param string $objectType
+     * @return void
+     * @throws Zend_Exception
+     */
+    protected function volumesOrSectionsToJson(array $volumesOrSections, string $objectType): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray($volumesOrSections, $objectType);
+        $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
+        $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
+    }
+
     public function volumesAction()
     {
         $review = Episciences_ReviewsManager::find(RVID);
@@ -145,9 +160,14 @@ class BrowseController extends Zend_Controller_Action
             $limit = 10;
         }
         $offset = ($pageNb - 1) * $limit;
-        $total = count($review->getVolumesWithPapers());
-        $volumes = $review->getVolumesWithPapers([$limit, $offset]);
 
+        if ($page->isDisplayEmptyVolumes() === Episciences_Website_Navigation_Page_BrowseByVolume::DISPLAY_EMPTY_VOLUMES) {
+            $total = count($review->getVolumes());
+            $volumes = $review->getVolumes(['limit' => [$limit, $offset]]);
+        } else {
+            $total = count($review->getVolumesWithPapers());
+            $volumes = $review->getVolumesWithPapers([$limit, $offset]);
+        }
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === self::JSON_MIMETYPE) {
             $this->volumesOrSectionsToJson($volumes, 'Episciences_Volume');
             return;
@@ -256,7 +276,6 @@ class BrowseController extends Zend_Controller_Action
         }
     }
 
-
     public function currentissuesAction()
     {
         $review = Episciences_ReviewsManager::find(RVID);
@@ -275,18 +294,4 @@ class BrowseController extends Zend_Controller_Action
         $this->renderScript('browse/volumes.phtml');
     }
 
-    /**
-     * @param array $volumesOrSections
-     * @param string $objectType
-     * @return void
-     * @throws Zend_Exception
-     */
-    protected function volumesOrSectionsToJson(array $volumesOrSections, string $objectType): void
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-        $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray($volumesOrSections, $objectType);
-        $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
-        $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
-    }
 }

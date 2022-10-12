@@ -16,9 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Added
+- Browse by volume: new parameter to allow to display empty volumes. Default value is still no (only show volumes 
+  with papers published in the volume)
 
-## fixed: 
-- display bug on the portal in connected mode
+### Fixed
+- Fixed a display bug on the portal in connected mode (used by Episciences staff only)
 
 ## changed: 
 - new parameter for enabling submission from the archive to the application and vice versa.
@@ -111,12 +114,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.0.32.2 - 2022-09-28
 ### Changed
-
-- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a
-  temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer
-  to fill in)
-- [RT#164153]: refactoring: now obsolete template "paper_new_version_reviewer_reassign" (Reviewer assignment to a new
-  version of an article) is removed.
+- [196](https://github.com/CCSDForge/episciences/issues/196): Creation of an account following an invitation with a temporary account: from now on, the Last Name, First Name and Screen Name fields will be left empty (for the reviewer to fill in)
+- [RT#164153]: refactoring: now obsolete template "paper_new_version_reviewer_reassign" (Reviewer assignment to a new version of an article) is removed.
 
 ### Fixed:
 - account merging incomplete due to sql error when updating 'paper_conflicts' table.

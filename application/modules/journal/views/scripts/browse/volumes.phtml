@@ -31,7 +31,14 @@
                         <a href="<?= $volumeUrl ?>">
                             <?php echo $this->translate($volume->getNameKey()) ?>
                         </a>
-                        <span class="text-muted">(<?php echo count($volume->getIndexedPapers()) . ' ' . $this->translate('articles') ?>)</span>
+                        <?php
+                        $countOfPublishedArticles = count($volume->getIndexedPapers());
+                        if ($countOfPublishedArticles > 1) {
+                            echo '<span class="text-muted">(' . $countOfPublishedArticles . ' ' . $this->translate('articles') . ')</span>';
+                        } elseif ($countOfPublishedArticles === 1) {
+                            echo '<span class="text-muted">(' . $countOfPublishedArticles . ' ' . $this->translate('article'). ')</span>';
+                        }
+                        ?>
                     </h4>
                     <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>
 
