@@ -87,7 +87,7 @@ class Episciences_Notify_Hal
     {
         $cn_logger = new Logger('NotifyCOARLogger');
 
-        $handler = new RotatingFileHandler(APPLICATION_PATH . '/../log/NotifyCOARLogger.log',
+        $handler = new RotatingFileHandler(EPISCIENCES_LOG_PATH . 'NotifyCOARLogger.log',
             0, Logger::DEBUG, true, 0664);
         $formatter = new LineFormatter(null, null, false, true);
         $handler->setFormatter($formatter);
