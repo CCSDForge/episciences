@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed a display bug on the portal in connected mode (used by Episciences staff only)
 - Failed to edit another account's profile from the user management page.
+- impossibility to validate the profile if the user does not have an account in the application
 
 
 ## 1.0.33.2 - 2022-10-05
