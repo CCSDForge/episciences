@@ -402,6 +402,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * @return bool|string
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
+     * @throws JsonException
      * @see Ccsd_User_Models_User::save()
      */
     public function save($forceInsert = false)
@@ -506,7 +507,15 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         // Mise à jour des données locales
-        $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+        try {
+            $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+
+        } catch (EXception $e) {
+
+            error_log($e->getMessage());
+            throw $e;
+
+        }
         return $this->getUid();
 
     }
