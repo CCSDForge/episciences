@@ -17,6 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Article managers (authors, editors, etc.) may add new optional - but recommended - metadata to the documents
+  - [ORCID](https://orcid.org/)
+  - Affiliations: for affiliations the [ROR](https://ror.org/) or a free text may be used. If an institution is not available in the ROR, a 
+    simple text entry may be used.
+- Automatic enrichment of metadata:
+  - Licenses: retrieved from [Datacite](https://datacite.org/), [OpenAIRE Research Graph](https://graph.openaire.eu/), [HAL](https://hal.archives-ouvertes.fr/)
+  - ORCID: retrieved from [OpenAIRE Research Graph](https://graph.openaire.eu/)
+  - Linked Datasets: [Scholexplorer](https://scholexplorer.openaire.eu/), [HAL](https://hal.archives-ouvertes.fr/): Datasets linked to Episciences 
+    publications
+  - Funding: Research projects from [OpenAIRE Research Graph](https://graph.openaire.eu/) and [HAL](https://hal.archives-ouvertes.fr/)
+  - Citations: Citations of published document retrieved by [OpenCitations](https://opencitations.net/)
+- Exports formats:
+  - [DOAJ](https://doaj.org/about/) (export one document or a whole published volume) using DOAJ Schema 
+  - The new collected metadata have been added to Datacite, [Crossref](https://www.crossref.org/) and DOAJ export formats
 - Browse by volume: new parameter to allow to display empty volumes. Default value is still no (only show volumes 
   with papers published in the volume)
 
