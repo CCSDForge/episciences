@@ -18,7 +18,7 @@
     "RENDER_ALERT_BANNER": {
       "STATUS" : 0,
       "MESSAGE": {
-        "FR": "ALERT DE MAINTENANCE : Arrêt de service {date} de {h1} à {h2}, la plateforme EPIsciences sera inaccessible ({plus d'informations}).",
+        "FR": "ALERTE DE MAINTENANCE : Arrêt de service {date} de {h1} à {h2}, la plateforme EPIsciences sera inaccessible ({plus d'informations}).",
         "DEFAULT_LANG": "MAINTENANCE ALERT: Service interruption on {date} from {1} to {h2}, EPIsciences platform will be inaccessible (more information)"
       }
     }
