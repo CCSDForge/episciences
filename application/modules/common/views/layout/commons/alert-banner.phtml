@@ -1,18 +1,18 @@
 <style>
-    .alert-banner{
+    .alert-banner {
         background-color: rgb(255, 106, 0);
-        color: white ;
-        font-family: Montserrat,sans-serif;
+        color: white;
+        font-family: Montserrat, sans-serif;
         font-size: 18px;
         font-weight: 500;
         margin-top: 5px;
     }
 </style>
 <?php
-$message = 'ALERT DE MAINTENANCE : Arrêt de service lundi 11 juillet de 12h30 à 13h, la plateforme EPIsciences sera inaccessible (branchement réseau à modifier).';
+$message = EPISCIENCES_RENDER_ALERT_BANNER['MESSAGE']['FR'];
 
 if (Episciences_Tools::getLocale() === Episciences_Review::DEFAULT_LANG) {
-    $message = 'MAINTENANCE ALERT: Service interruption on Monday 11 July from 12:30 to 13:00, EPIsciences platform will be inaccessible (network hardware connection).';
+    $message = EPISCIENCES_RENDER_ALERT_BANNER['MESSAGE']['DEFAULT_LANG'];
 }
 ?>
 <div class="alert alert-warning text-center alert-banner">

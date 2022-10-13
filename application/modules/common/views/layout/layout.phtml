@@ -81,7 +81,6 @@ echo $this->doctype('HTML5');
 <div id="container" class="container<?php echo $this->containerClass; ?>">
 
 
-
     <div class="logo">
         <?php
         if (is_file(REVIEW_PATH . 'layout/' . 'header.' . Zend_Registry::get('lang') . '.html')) {
@@ -90,7 +89,13 @@ echo $this->doctype('HTML5');
         } ?>
     </div>
 
-    <?php // $this->render('commons/alert-banner.phtml') ?>
+    <?php if (EPISCIENCES_RENDER_ALERT_BANNER['STATUS']): ?>
+
+        <?= $this->render('commons/alert-banner.phtml') ?>
+
+    <?php endif; ?>
+
+    <?php ?>
 
 
     <div class="row<?php echo $this->containerClass; ?>">
