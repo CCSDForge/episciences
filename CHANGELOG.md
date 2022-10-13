@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.34 - 2022-10-13
 ### Added
 - Article managers (authors, editors, etc.) may add new optional - but recommended - metadata to the documents
   - [ORCID](https://orcid.org/)
