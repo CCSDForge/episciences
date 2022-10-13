@@ -1934,6 +1934,7 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setPublication_date(date("Y-m-d H:i:s"));
 
             // if HAL, send coar notify message
+            /*
             if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
                 $notification = new Episciences_Notify_Hal($paper, $journal);
                 try {
@@ -1943,6 +1944,7 @@ class AdministratepaperController extends PaperDefaultController
                     trigger_error('Announcing publication to HAL failed', E_USER_WARNING);
                 }
             }
+            */
 
             // update paper status
             $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
