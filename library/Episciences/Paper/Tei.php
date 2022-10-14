@@ -528,7 +528,15 @@ class Episciences_Paper_Tei
             $doi->setAttribute('type', 'doi');
             $biblStruct->appendChild($doi);
         }
-
+        $enrichmentLinkedData = $this->getPaper()->getLinkedData();
+        foreach ($enrichmentLinkedData as $linkedData) {
+            $relatedItem = $xml->createElement('relatedItem');
+            if (!is_null($linkedData['relationship'])) {
+                $relatedItem->setAttribute('type', $linkedData['relationship']);
+            }
+            $relatedItem->setAttribute('target', $linkedData['value']);
+            $biblStruct->appendChild($relatedItem);
+        }
         $sourceDesc->appendChild($biblStruct);
 
         return $sourceDesc;
