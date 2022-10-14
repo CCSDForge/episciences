@@ -27,6 +27,9 @@ class Episciences_Paper_DatasetsManager
                 case 'SWHID':
                     $value['link'] = "https://archive.softwareheritage.org/".$value['value'];
                     break;
+                case 'handle':
+                    $value['link'] = "https://hdl.handle.net/".$value['value'];
+                    break;
                 default:
                     break;
             endswitch;

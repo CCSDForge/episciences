@@ -1929,6 +1929,9 @@ return [
     // volume export
     "Exporter le volume au format DOAJ" => "Export the volume to DOAJ format",
 
+    // affiliation desc
+    "Affiliation en texte libre ou issue du " => "Free text affiliation or from the ",
+
     Episciences_Mail_TemplatesManager::AUTHOR_RECEP_EXP => 'Article’s tenderer',
     Episciences_Mail_TemplatesManager::MANAGERS_RECEP_EXP => "all editors and copy editors assigned to the article and, depending on the journal's settings, editors, administrators and editorial secretaries",
     Episciences_Mail_TemplatesManager::EDITORS_RECEP_EXP => "all editors assigned to the article",

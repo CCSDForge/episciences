@@ -3020,7 +3020,7 @@ class Episciences_PapersManager
         $affiliationInfo = [
             'id' => 'affiliations',
             'label' => 'Affiliation(s)',
-            'description' => 'Description',
+            'description' => Ccsd_Tools::translate('Affiliation en texte libre ou issue du ')."<a target='_blank' rel='noopener' href='https://ror.org/'>ROR</a>",
             'display' => 'advanced',
         ];
         $affiliationInfo['value'] = [];
