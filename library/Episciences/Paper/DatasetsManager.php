@@ -122,41 +122,66 @@ class Episciences_Paper_DatasetsManager
 
 
     /**
-     * @param array $datasets
+     * @param array | Episciences_Paper_Dataset[] $datasets
      * @return int
      */
-
-    public static function insert(array $datasets): int
+    public static function insert(array $datasets = []): int
     {
+        $affectedRows = 0;
+
+        if (empty($datasets)) {
+            return $affectedRows;
+        }
+
+        $separator = ',';
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $values = [];
 
-        $affectedRows = 0;
 
         foreach ($datasets as $dataset) {
 
-            if (!($dataset instanceof Episciences_Paper_Dataset)) {
-                $dataset = new Episciences_Paper_Dataset($dataset);
-            }
+            $oDataset = !($dataset instanceof Episciences_Paper_Dataset) ? new Episciences_Paper_Dataset($dataset) : $dataset;
 
-            $values[] = '(' . $db->quote($dataset->getDocId()) . ',' . $db->quote($dataset->getCode()) . ',' . $db->quote($dataset->getName()) . ',' . $db->quote($dataset->getValue()) . ',' . $db->quote($dataset->getLink()) . ',' . $db->quote($dataset->getSourceId()) . ',' . $db->quote($dataset->getRelationship()) . ',' . $db->quote($dataset->getIdPaperDatasetsMeta()) . ')';
+            $currentValue = '(';
+            $currentValue .= $oDataset->getDocId();
+            $currentValue .= $separator;
+            $currentValue .= $db->quote($oDataset->getCode());
+            $currentValue .= $separator;
+            $currentValue .= $db->quote($oDataset->getName());
+            $currentValue .= $separator;
+            $currentValue .= $db->quote($oDataset->getValue());
+            $currentValue .= $separator;
+            $currentValue .= $db->quote($oDataset->getLink());
+            $currentValue .= $separator;
+            $currentValue .= $db->quote($oDataset->getSourceId());
+            $currentValue .= $separator;
+            $currentValue .= $oDataset->getRelationship() === null ? 'NULL' : $db->quote($oDataset->getRelationship()); // Insert NULL rather than empty string
+            $currentValue .= $separator;
+            $currentValue .= $oDataset->getIdPaperDatasetsMeta() === null ? 'NULL' : $db->quote($oDataset->getIdPaperDatasetsMeta()); // Insert NULL rather than empty string: MySql insert 0 instead of empty string
+            $currentValue .= ')';
+
+            $values[] = $currentValue;
+
         }
 
-        $sql = 'INSERT IGNORE INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS) . ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`, `relationship`, `id_paper_datasets_meta`) VALUES ';
 
-        if (!empty($values)) {
-            try {
-                //Prepares and executes an SQL
-                /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values));
+        $sql = 'INSERT IGNORE INTO ';
+        $sql .= $db->quoteIdentifier(T_PAPER_DATASETS);
+        $sql .= ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`, `relationship`, `id_paper_datasets_meta`) VALUES ';
 
-                $affectedRows = $result->rowCount();
+        try {
+            //Prepares and executes an SQL
+            /** @var Zend_Db_Statement_Interface $result */
+            $result = $db->query($sql . implode(', ', $values));
 
-            } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_ERROR);
-            }
+            $affectedRows = $result->rowCount();
+
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
         }
+
 
         return $affectedRows;
 

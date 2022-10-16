@@ -32,13 +32,13 @@ class Episciences_Paper_Dataset
      */
     protected $_sourceId;
 
-    /** @var string */
-    protected $_relationship;
+    /** @var string|null */
+    protected ?string $_relationship = null;
 
     /**
-     * @var int
+     * @var int|null
      */
-    protected $_idPaperDatasetsMeta;
+    protected ?int $_idPaperDatasetsMeta = null;
 
 
     /** @var DateTime */
