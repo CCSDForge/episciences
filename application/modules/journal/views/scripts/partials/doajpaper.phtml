@@ -82,6 +82,7 @@ $timestamp = time();
                 $familyName= '';
                 if (str_contains($creatorName, ',')) {
                     [$familyName, $givenName] = explode(', ', $creatorName);
+                    $givenName = trim($givenName, ',');
                 } else {
                     $familyName = $creatorName;
                 }

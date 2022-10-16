@@ -111,6 +111,7 @@ $timestamp = time();
                         $familyName= '';
                         if (str_contains($creatorName, ',')) {
                             [$familyName, $givenName] = explode(', ', $creatorName);
+                            $givenName = trim($givenName, ',');
                         } else {
                             $familyName = $creatorName;
                         }
@@ -142,7 +143,7 @@ $timestamp = time();
 
             <?php endif; ?>
             <?php if ($this->section !== '') : ?>
-                <issue><?php echo $this->escape($this->section); ?>></issue>
+                <issue><?php echo $this->escape($this->section); ?></issue>
             <?php endif; ?>
 
 
@@ -160,7 +161,7 @@ $timestamp = time();
                         //default to paper language
                     }
                     $abstract = trim($abstract);
-                    if (($abstract === 'International audience') || (str_starts_with($abstract, 'Comment:'))) {
+                    if (($abstract === 'International audience') || $abstract === 'soumission à Episciences' || (str_starts_with($abstract, 'Comment:'))) {
                         continue;
                     }
                     if ($abstractCount === 0): ?>
@@ -183,6 +184,10 @@ $timestamp = time();
                 foreach ($subjects as $keyword) {
                     if (is_array($keyword)) {
                         foreach ($keyword as $kwdLang => $kwd) {
+                            if (!Zend_Locale::isLocale($kwdLang)) {
+                                $kwdLang = $this->paperLanguage;
+                                //default to paper language
+                            }
                             $keywordByLang[$kwdLang][] = '<kwd>' . $this->escape($kwd) . '</kwd>';
                         }
                     }
