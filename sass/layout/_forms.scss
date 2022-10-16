@@ -1,3 +1,7 @@
+.btn.disabled, .btn[disabled] {
+  background-color: steelblue;
+}
+
 .btn-group .dropdown-toggle:active, .btn-group.open .dropdown-toggle {
   box-shadow: none !important;
 }
