@@ -1302,8 +1302,7 @@ class AdministratepaperController extends PaperDefaultController
             $invitationForm->setDefault('deadline', $review['rating_deadline']);
             $this->view->invitation_form = $invitationForm;
             $this->view->user_form = Episciences_PapersManager::getTmpReviewerForm();
-            //git #180 : ajout d'un nouveau tag : les noms des auteurs
-            $this->view->js_allAuthors = $oPaper->formatAuthorsMetadata();
+            $this->view->js_allAuthors = json_encode($oPaper->formatAuthorsMetadata());
 
         } else {
             Episciences_Tools::header('HTTP/1.1 405 Method Not Allowed');

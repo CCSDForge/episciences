@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.34.1 - 2022-10-16
+### Fixed
+- Fixed bad JS escape of authors in reviewer invitation form
+- Fixed Handle URLs links adding https://hdl.handle.net/
+- Fixed display of disabled buttons
+- Fixed 'Description of affiliation block'
+
+### Added
+- The activation of maintenance alerts is now configurable
+
+
+
 ## 1.0.34 - 2022-10-13
 ### Added
 - Article managers (authors, editors, etc.) may add new optional - but recommended - metadata to the documents
