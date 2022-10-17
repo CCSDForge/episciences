@@ -68,16 +68,16 @@ $timestamp = time();
     <?php endif;?>
     <publisherRecordId><?php echo $paper->getPaperid(); ?></publisherRecordId>
     <documentType>journal article</documentType>
-    <?php $titleCount = 0; ?>
     <?php foreach ($titles as $lang => $title) : ?>
         <?php
-        if ($titleCount == 0): ?>
-            <title><?php echo $this->escape($title) ?></title>
-            <?php $titleCount++; ?>
-        <?php elseif ($titleCount == 1) : ?>
-            <title language="<?= Episciences_Tools::translateToIso6392b($this->escape($lang)) ?>"><?php echo $this->escape($title) ?></title>
-            <?php $titleCount++; ?>
-        <?php endif; ?>
+        if ($lang === 'en' || $lang === 'fr'|| $lang === 'eng') {
+            if ($lang === 'eng') { echo '<title language='.$this->escape($lang).'>'.$this->escape($title).'</title>';}
+            elseif ($lang === 'en'|| $lang === 'fr') {
+                echo '<title language="'.$this->escape(Episciences_Tools::translateToIso6392b($lang)).'">'.$this->escape($title).'</title>';
+            }
+        } else {
+            echo '<title>'. $this->escape($title) .'</title>';
+        } ?>
     <?php endforeach; ?>
     <?php
     if (is_array($authors)) { ?>
@@ -129,13 +129,19 @@ $timestamp = time();
                 continue;
             }
             if ($lang && Zend_Locale::isLocale($lang)) {
-                $langId = Episciences_Tools::translateToIso6392b($lang);
-                echo '<abstract language="'. $langId . '">';
+                if ($lang === 'en' || $lang === 'fr'|| $lang === 'eng') {
+                    if ($lang === 'eng') {
+                        $langId = 'eng';
+                    } elseif ($lang === 'en'|| $lang === 'fr') {
+                        $langId = $this->escape(Episciences_Tools::translateToIso6392b($lang));
+                    }
+                    echo '<abstract language="' . $langId . '">';
+                } else {
+                    echo '<abstract>';
+                }
             } else {
                 echo '<abstract>';
             }
-
-
             echo $this->escape($abstract);
             echo '</abstract>';
         }
