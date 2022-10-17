@@ -1537,4 +1537,17 @@ class Episciences_Tools
 
 
     }
+
+    public static function translateToIso6392b(string $string): string {
+        /*
+         * Temporary code
+         * TODO: add lib / find way to translate lang in iso639_2-b
+         */
+        $dict = [
+            'en'=>'eng',
+            'fr'=>'fre'
+        ];
+        return $dict[$string];
+    }
+
 }
