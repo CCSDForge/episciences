@@ -191,7 +191,7 @@ $(document).ready(function () {
             isValidDate(deadline) &&
             dateIsBetween(deadline, $(this).attr("attr-mindate"), $(this).attr("attr-maxdate"))) {
             let msg = tinymce.get('body').getContent();
-            msg = msg.replace(/<span class="rating_deadline">(.*?)<\/span>/, '<span class="rating_deadline">' + getLocaleDate(deadline, {language: locale, country: locale}) + '</span>');
+            msg = msg.replaceAll(/<span class="rating_deadline">(.*?)<\/span>/g, '<span class="rating_deadline">' + getLocaleDate(deadline, {language: locale, country: locale}) + '</span>');
             tinymce.get('body').setContent(msg);
         }
     });
@@ -395,7 +395,6 @@ function setInvitationValues(user, type) {
     // Selection de la langue du template
 
     let locale = (user.locale !== siteLocale ) ? defaultLocale : user.locale;
-    console.log(locale);
 
     // Si la langue préférée de l'utilisateur n'existe pas dans les langues disponibles du site
     if (!(locale in available_languages)) {
