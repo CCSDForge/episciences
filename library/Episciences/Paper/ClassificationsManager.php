@@ -55,7 +55,7 @@ class Episciences_Paper_ClassificationsManager
             $rawClassification = [];
             $templateClassification = "";
             foreach ($rawInfo as $value) {
-                $rawClassification[$value['source_id_name']][] = ['classification' => htmlspecialchars($value['classification']),'type'=>$value['type']];
+                $rawClassification[$value['source_id']][] = ['classification' => htmlspecialchars($value['classification']),'type'=>$value['type']];
             }
             foreach ($rawClassification as $source_id_name => $classificationInfo) {
                 $templateClassification .= "<ul class='list-unstyled'>";

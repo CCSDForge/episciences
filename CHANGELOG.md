@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Added
 - It is now possible to use Lemon LDAP authentication.
-
+### Fixed
+- Insert data in 'T_PAPER_DATASETS' table: MySql insert 0 instead of NULL
+[#273](https://github.com/CCSDForge/episciences/issues/273): if the editor changes the rating due date, then this is not reflected in the message.
 
 ## 1.0.34.1 - 2022-10-16
 ### Fixed

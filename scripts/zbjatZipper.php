@@ -2,8 +2,6 @@
 
 
 use GuzzleHttp\Client as client;
-use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 $localopts = [
     'rvid=i' => 'RVID of a journal',
@@ -51,7 +49,7 @@ class zbjatZipper extends JournalScript
             $tabvolRepoName = [];
             foreach ($volumes as $volume) {
 
-                echo PHP_EOL."Volume ".$volume->getVid().PHP_EOL;
+                echo PHP_EOL . "Volume " . $volume->getVid() . PHP_EOL;
 
                 /*
                  * @var $paperList Episciences_paper
@@ -65,55 +63,55 @@ class zbjatZipper extends JournalScript
                      */
 
 
-                        $client = new client();
-                        $dirnameVol = $dirApp.'/data/'.$review->getCode().'/zbjats/volume'.$ivol.'/';
-                        if (!is_dir($dirnameVol) && !mkdir($dirnameVol, 0776, true) && !is_dir($dirnameVol)) {
-                            throw new \RuntimeException(sprintf('Directory "%s" was not created', $dirnameVol));
-                        }
-                        if ($paper->isPublished()) {
-                            $resourcexml = \GuzzleHttp\Psr7\Utils::tryFopen($dirnameVol . "article" . $iArticle . '.xml', 'w');
-                            $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/zbjats", ['sink' => $resourcexml]);
-                            echo PHP_EOL.'get Zbjats for '.$paper->getDocid().PHP_EOL;
+                    $client = new client();
+                    $dirnameVol = $dirApp . '/data/' . $review->getCode() . '/zbjats/volume' . $ivol . '/';
+                    if (!is_dir($dirnameVol) && !mkdir($dirnameVol, 0776, true) && !is_dir($dirnameVol)) {
+                        throw new \RuntimeException(sprintf('Directory "%s" was not created', $dirnameVol));
+                    }
+                    if ($paper->isPublished()) {
+                        $resourcexml = \GuzzleHttp\Psr7\Utils::tryFopen($dirnameVol . "article" . $iArticle . '.xml', 'w');
+                        $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/zbjats", ['sink' => $resourcexml]);
+                        echo PHP_EOL . 'get Zbjats for ' . $paper->getDocid() . PHP_EOL;
 
-                            $resourcepdf = \GuzzleHttp\Psr7\Utils::tryFopen($dirnameVol . "article" . $iArticle . '.pdf', 'w');
-                            $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/pdf", ['sink' => $resourcepdf]);
-                            echo PHP_EOL.'get PDF for '.$paper->getDocid().PHP_EOL;
+                        $resourcepdf = \GuzzleHttp\Psr7\Utils::tryFopen($dirnameVol . "article" . $iArticle . '.pdf', 'w');
+                        $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/pdf", ['sink' => $resourcepdf]);
+                        echo PHP_EOL . 'get PDF for ' . $paper->getDocid() . PHP_EOL;
 
-                            $iArticle++;
-                        }
+                        $iArticle++;
+                    }
                 }
-                $tabvolRepoName[] = "volume".$ivol;
+                $tabvolRepoName[] = "volume" . $ivol;
                 $ivol++;
             }
 
-            $pathdir = $dirApp.'/data/'.$review->getCode().'/zbjats/';
+            $pathdir = $dirApp . '/data/' . $review->getCode() . '/zbjats/';
 
-            if ($this->getParam('zo')){
-                $zipcreated = $this->getParam('zo').$review->getCode().".zip";
-            }else{
-                $zipcreated = "./".$review->getCode().".zip";
+            if ($this->getParam('zo')) {
+                $zipcreated = $pathdir . $this->getParam('zo') . $review->getCode() . ".zip";
+            } else {
+                $zipcreated = $pathdir . $review->getCode() . ".zip";
             }
 
             $zip = new ZipArchive;
 
             if ($zip->open($zipcreated, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
-                echo PHP_EOL.'ZIP ... '.PHP_EOL;
+                echo PHP_EOL . 'ZIP ... ' . PHP_EOL;
 
                 // Store the path into the variable
                 foreach ($tabvolRepoName as $value) {
-                    $dir = opendir($pathdir.$value);
+                    $dir = opendir($pathdir . $value);
                     while ($file = readdir($dir)) {
-                        if (is_file($pathdir.'/'.$value.'/'.$file)) {
-                            $zip->addFile($pathdir.'/'.$value.'/'.$file, $value."/".$file);
+                        if (is_file($pathdir . '/' . $value . '/' . $file)) {
+                            $zip->addFile($pathdir . '/' . $value . '/' . $file, $value . "/" . $file);
                         }
                     }
                 }
                 $zip->close();
             }
-            echo PHP_EOL.'DONE ... '.PHP_EOL;
+            echo PHP_EOL . 'DONE ... ' . PHP_EOL;
             exit;
         } else {
-            echo 'Rvid missing !'.PHP_EOL;
+            echo 'Rvid missing !' . PHP_EOL;
         }
     }
 }

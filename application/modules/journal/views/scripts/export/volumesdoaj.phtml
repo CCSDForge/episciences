@@ -1,34 +1,31 @@
-<import namespace="http://doaj.org/schemas/iso_639-2b/1.1" schemaLocation="http://doaj.org/static/doaj/iso_639-2b.xsd">
-    <records>
-        <?php foreach ($this->listOfPaper as $value): ?>
-            <?php
-            // Create new DOI if none exist
-            $paperLanguage = $value->getMetadata('language');
-            if ($paperLanguage == '') {
-                $paperLanguage = 'eng';
-                // TODO temporary fix see https://gitlab.ccsd.cnrs.fr/ccsd/episciences/issues/215
-            }
+<records>
+    <?php foreach ($this->listOfPaper as $value): ?>
+        <?php
+        $paperLanguage = $value->getMetadata('language');
+        if ($paperLanguage == '') {
+            $paperLanguage = 'eng';
+            // TODO temporary fix see https://gitlab.ccsd.cnrs.fr/ccsd/episciences/issues/215
+        }
 
-            $section = "";
-            $doi = $value->getDoi();
+        $section = "";
+        $doi = $value->getDoi();
 
-            if ($value->getSid()) {
-                /* @var $oSection Episciences_Section */
-                $oSection = Episciences_SectionsManager::find($value->getSid());
-                if ($oSection) {
-                    $section = $oSection->getName('en', true);
-                }
+        if ($value->getSid()) {
+            /* @var $oSection Episciences_Section */
+            $oSection = Episciences_SectionsManager::find($value->getSid());
+            if ($oSection) {
+                $section = $oSection->getName('en', true);
             }
-            ?>
-            <?php echo $this->partial('partials/doajpaper.phtml',[
-                'paper'=> $value,
-                'journal'=> $this->journal,
-                'doi'=>$doi,
-                'volume'=> $this->volume,
-                'section'=>$section,
-                'paperLanguage'=>$paperLanguage
-                ]
-            ); ?>
-        <?php endforeach; ?>
-    </records>
-</import>
+        }
+        ?>
+        <?php echo $this->partial('partials/doajpaper.phtml',[
+            'paper'=> $value,
+            'journal'=> $this->journal,
+            'doi'=>$doi,
+            'volume'=> $this->volume,
+            'section'=>$section,
+            'paperLanguage'=>$paperLanguage
+            ]
+        ); ?>
+    <?php endforeach; ?>
+</records>

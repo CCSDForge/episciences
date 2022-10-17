@@ -12,6 +12,8 @@ $dateSubmitted = new DateTime($paper->getSubmission_date());
 $dateUpdated = new DateTime($paper->getModification_date());
 $dateIssued = new DateTime($paper->getPublication_date());
 $publicationYear = new DateTime($paper->getPublication_date());
+$publicationDate = new DateTime($paper->getPublication_date());
+
 
 /** @var $journal Episciences_Review */
 $journal = $this->journal;
@@ -39,9 +41,13 @@ if ($issn = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT)) {
 $timestamp = time();
 ?>
 <record>
-    <language><?= $this->paperLanguage ?></language>
+    <?php if ($this->paperLanguage === 'en' || $this->paperLanguage === 'fr'|| $this->paperLanguage === 'eng'): ?>
+    <language><?php
+        if ($this->paperLanguage === 'eng') {echo $this->paperLanguage;}
+        elseif ($this->paperLanguage === 'en'|| $this->paperLanguage === 'fr'){echo Episciences_Tools::translateToIso6392b($this->paperLanguage);} ?></language>
+    <?php endif;?>
     <publisher><?= DOMAIN; ?></publisher>
-    <journalTitle><?=  $this->escape($journal->getName()) ?></journalTitle>
+    <journalTitle><?= $this->escape($journal->getName()) ?></journalTitle>
 
     <?php if ($issn !== '') : ?>
         <issn><?= $this->escape($issn) ?></issn>
@@ -50,7 +56,7 @@ $timestamp = time();
         <eissn><?= $this->escape($eissn) ?></eissn>
     <?php endif; ?>
 
-    <publicationDate><?= $this->escape($paper->getPublication_date()) ?></publicationDate>
+    <publicationDate><?= $this->escape($publicationDate->format('Y-m-d')) ?></publicationDate>
     <?php if ($this->volume !== '') : ?>
         <volume><?php echo Ccsd_Tools_String::truncate($this->escape($this->volume), 29, '...'); ?></volume>
     <?php endif; ?>
@@ -69,7 +75,7 @@ $timestamp = time();
             <title><?php echo $this->escape($title) ?></title>
             <?php $titleCount++; ?>
         <?php elseif ($titleCount == 1) : ?>
-            <title language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></title>
+            <title language="<?= Episciences_Tools::translateToIso6392b($this->escape($lang)) ?>"><?php echo $this->escape($title) ?></title>
             <?php $titleCount++; ?>
         <?php endif; ?>
     <?php endforeach; ?>
@@ -82,6 +88,7 @@ $timestamp = time();
                 $familyName= '';
                 if (str_contains($creatorName, ',')) {
                     [$familyName, $givenName] = explode(', ', $creatorName);
+                    $givenName = trim($givenName, ',');
                 } else {
                     $familyName = $creatorName;
                 }
@@ -122,7 +129,7 @@ $timestamp = time();
                 continue;
             }
             if ($lang && Zend_Locale::isLocale($lang)) {
-                $langId = $lang;
+                $langId = Episciences_Tools::translateToIso6392b($lang);
                 echo '<abstract language="'. $langId . '">';
             } else {
                 echo '<abstract>';
@@ -134,6 +141,7 @@ $timestamp = time();
         }
         ?>
     <?php endif; ?>
+    <fullTextUrl format="pdf"><?= $journalUrl . '/' . $paper->getPaperid() . '/pdf' ?></fullTextUrl>
     <keywords>
         <?php if (is_array($subjects)): ?>
             <?php
