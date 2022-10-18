@@ -534,8 +534,11 @@ class Episciences_Paper_Tei
             if (!is_null($linkedData['relationship'])) {
                 $relatedItem->setAttribute('type', $linkedData['relationship']);
             }
-            $relatedItem->setAttribute('target', $linkedData['value']);
-            $biblStruct->appendChild($relatedItem);
+            $urlTargetLinkedData = Episciences_Paper_DatasetsManager::getUrlLinkedData($linkedData['value'],$linkedData['link']);
+            if ($urlTargetLinkedData !== '') {
+                $relatedItem->setAttribute('target', $urlTargetLinkedData);
+                $biblStruct->appendChild($relatedItem);
+            }
         }
         $sourceDesc->appendChild($biblStruct);
 
