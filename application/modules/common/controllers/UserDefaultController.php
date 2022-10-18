@@ -160,11 +160,10 @@ class UserDefaultController extends Zend_Controller_Action
 
             }
 
-            $adapter->setIdentityStructure($localUser);
-            $adapter->setServiceURL($this->_request->getParams());
-
         }
 
+        $adapter->setIdentityStructure($localUser);
+        $adapter->setServiceURL($this->_request->getParams());
 
         $result = Episciences_Auth::getInstance()->authenticate($adapter);
 
