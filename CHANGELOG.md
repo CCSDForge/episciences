@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Changed
+- [#255](https://github.com/CCSDForge/episciences/issues/255)
+
 ## 1.0.34.2 - 2022-10-18
 ### Fixed
 - temporary fix: TinyMCE: loss of formatting for successive mailings
