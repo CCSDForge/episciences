@@ -212,7 +212,8 @@ return [
     "Permettre aux rédacteurs d'assigner des relecteurs à un article" => "Editors can assign reviewers to articles",
     //"Permettre aux rédacteurs de choisir les rédacteurs d'un article" => "Editors can choose editors for an article",
     "Je ne souhaite plus être rédacteur de cet article" => "I don't want to manage this article anymore",
-    "Afficher les rapports de relecture sur la page de consultation d'un article" => "Display ratings reports on the article page",
+    "Afficher les rapports de relecture sur la page de consultation d'un article" => "Display rating reports on the article's consultation page",
+    "Concerne seulement les articles publiés" => "Concerns only published articles",
     // reassignation auto de relecteurs à la nouvelle version
     "Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise" => "Automatically reassign the same reviewers when a new version is submitted",
     "En cas de demande de modifications majeures" => "In the event of a request for major modifications",
