@@ -16,12 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Changed
+- [#255](https://github.com/CCSDForge/episciences/issues/255)
+
 ### Added
 - It is now possible to use Lemon LDAP authentication.
+
+## 1.0.34.2 - 2022-10-18
 ### Fixed
 - temporary fix: TinyMCE: loss of formatting for successive mailings
 - Insert data in 'T_PAPER_DATASETS' table: MySql insert 0 instead of NULL
-[#273](https://github.com/CCSDForge/episciences/issues/273): if the editor changes the rating due date, then this is not reflected in the message.
+- [#273](https://github.com/CCSDForge/episciences/issues/273): if the editor changes the rating due date, then this 
+  is not reflected in the message.
+- Fixes in exports format related to trailing ',' and language codes
 
 ## 1.0.34.1 - 2022-10-16
 ### Fixed
