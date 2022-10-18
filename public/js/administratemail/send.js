@@ -93,7 +93,8 @@ $(document).ready(function () {
 
         $('#modal-box').on('hidden.bs.modal', function () {
             // restore default button behaviour
-            $('#modal-box .modal-footer').show();
+            //$('#modal-box .modal-footer').show();
+            location.reload();
         })
     }
 
