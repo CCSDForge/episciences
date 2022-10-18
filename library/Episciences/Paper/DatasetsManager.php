@@ -220,16 +220,22 @@ class Episciences_Paper_DatasetsManager
     {
         switch ($linkType):
             case 'doi':
-                return "https://doi.org/".$linkedValue;
+                $url = "https://doi.org/".$linkedValue;
+                break;
             case 'arXiv':
-                return "https://arxiv.org/abs/".$linkedValue;
+                $url = "https://arxiv.org/abs/".$linkedValue;
+                break;
             case 'SWHID':
-                return "https://archive.softwareheritage.org/".$linkedValue;
+                $url = "https://archive.softwareheritage.org/".$linkedValue;
+                break;
             case 'handle':
-                return "https://hdl.handle.net/".$linkedValue;
+                $url = "https://hdl.handle.net/".$linkedValue;
+                break;
             default:
-                return '';
+                $url = '';
+                break;
         endswitch;
+        return $url;
     }
 
 
