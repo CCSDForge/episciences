@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Added
+- new option: do not allow the selection of an editor in chief when the author has the option to propose an editor at the time of submission.
 ### Changed
 - [#255](https://github.com/CCSDForge/episciences/issues/255)
 

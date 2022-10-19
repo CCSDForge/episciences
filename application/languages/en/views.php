@@ -200,6 +200,8 @@ return [
     "Permettre aux auteurs de suggérer des relecteurs" => 'Contributors can suggest reviewers',
     "Permettre aux auteurs d'indiquer par qui ils ne souhaitent pas être relus" => 'Contributors can specify unwanted reviewers',
     "Permettre aux auteurs de choisir un rédacteur" => 'Contributors can choose an editor',
+    "Quand l'auteur a la possibilité de proposer un auteur lors de la soumission" => "When the author has the option to propose an editor at the time of submission",
+    "Ne pas permettre le choix d'un rédacteur en chef" => "Do not allow the selection of an editor in chief",
     "Permettre aux relecteurs d'envoyer des messages à l'auteur" => "Reviewers can send messages to the author",
     "Permettre aux auteurs de répondre à une demande de modifications par une version temporaire" => "Contributors can answer revision requests with a temporary version",
     "Cloisonner les rédacteurs" => "Encapsulate editors",

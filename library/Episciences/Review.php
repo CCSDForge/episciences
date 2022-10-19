@@ -71,6 +71,13 @@ class Episciences_Review
     public const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
     const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
 
+    /**
+     * Do not allow the selection of an editor in chief when the author has the option to
+     * propose an editor at the time of submission
+     */
+
+    public const SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION = 'doNotAllowEditorInChiefSelection';
+
 
     // Notifications
     public const SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS = 'systemCanNotifyChiefEditors';
@@ -189,7 +196,8 @@ class Episciences_Review
             self::SETTING_ENCAPSULATE_COPY_EDITORS,
             self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
             self::SETTING_SYSTEM_IS_COI_ENABLED,
-            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION
+            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
+            self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION
         ];
 
 
@@ -920,12 +928,13 @@ class Episciences_Review
             self::SETTING_REPOSITORIES,
             self::SETTING_CAN_PICK_SECTION,
             self::SETTING_CAN_PICK_EDITOR,
+            self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_CAN_SUGGEST_REVIEWERS,
             self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
             self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
             self::SETTING_CAN_CHOOSE_VOLUME,
             self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
-            self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+            self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS
         ], 'publication', ["legend" => "Paramètres de soumission"]);
         $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
 
@@ -1312,6 +1321,21 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
+
+        $form->addElement('checkbox', self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, [
+                'label' => "Ne pas permettre le choix d'un rédacteur en chef",
+                'description' => "Quand l'auteur a la possibilité de proposer un auteur lors de la soumission",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => [
+                    'ViewHelper',
+                    'Description',
+                    ['Label', ['placement' => 'APPEND']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-10 col-md-offset-2']],
+                    ['Errors', ['placement' => 'APPEND']]
+                ]
+            ]
+        );
+
         // TODO
         // editor can reassign paper to another editor
 
@@ -1531,6 +1555,9 @@ class Episciences_Review
 
         // contributor can pick editors
         $settingsValues[self::SETTING_CAN_PICK_EDITOR] = $this->getSetting(self::SETTING_CAN_PICK_EDITOR);
+
+        // Do not allow the selection of an editor in chief when the author has the option to propose an editor at the time of submission
+        $settingsValues[self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION] = $this->getSetting(self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION);
 
         // contributor can answer a revision request with a temporary version
         $settingsValues[self::SETTING_CAN_ANSWER_WITH_TMP_VERSION] = $this->getSetting(self::SETTING_CAN_ANSWER_WITH_TMP_VERSION);

@@ -207,7 +207,16 @@ class Episciences_Submit
             if (array_key_exists('canPickEditors', $settings) && $settings['canPickEditors'] > 0) {
                 // Récupération et tri des valeurs du select
                 $options = [];
-                $users = Episciences_UsersManager::getUsersWithRoles([Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR]);
+
+                $with = (
+                    array_key_exists(Episciences_Review::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, $settings) &&
+                    $settings[Episciences_Review::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION]
+                )
+                    ? Episciences_Acl::ROLE_EDITOR :
+                    [Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR];
+
+
+                $users = Episciences_UsersManager::getUsersWithRoles($with);
 
                 /* @var  $user Episciences_User */
                 foreach ($users as $uid => $user) {
