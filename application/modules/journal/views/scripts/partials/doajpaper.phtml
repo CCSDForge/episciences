@@ -41,10 +41,8 @@ if ($issn = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT)) {
 $timestamp = time();
 ?>
 <record>
-    <?php if ($this->paperLanguage === 'en' || $this->paperLanguage === 'fr'|| $this->paperLanguage === 'eng'): ?>
-    <language><?php
-        if ($this->paperLanguage === 'eng') {echo $this->paperLanguage;}
-        elseif ($this->paperLanguage === 'en'|| $this->paperLanguage === 'fr'){echo Episciences_Tools::translateToIso6392b($this->paperLanguage);} ?></language>
+    <?php if ($this->paperLanguage !== ''): ?>
+        <language><?= Episciences_Tools::translateToIso6392b($this->paperLanguage) ?></language>
     <?php endif;?>
     <publisher><?= DOMAIN; ?></publisher>
     <journalTitle><?= $this->escape($journal->getName()) ?></journalTitle>
@@ -68,17 +66,14 @@ $timestamp = time();
     <?php endif;?>
     <publisherRecordId><?php echo $paper->getPaperid(); ?></publisherRecordId>
     <documentType>journal article</documentType>
-    <?php foreach ($titles as $lang => $title) : ?>
-        <?php
-        if ($lang === 'en' || $lang === 'fr'|| $lang === 'eng') {
-            if ($lang === 'eng') { echo '<title language='.$this->escape($lang).'>'.$this->escape($title).'</title>';}
-            elseif ($lang === 'en'|| $lang === 'fr') {
+    <?php foreach ($titles as $lang => $title) {
+            if ($lang && Zend_Locale::isLocale($lang)) {
                 echo '<title language="'.$this->escape(Episciences_Tools::translateToIso6392b($lang)).'">'.$this->escape($title).'</title>';
+            } else {
+                echo '<title>'.$this->escape($title).'</title>';
             }
-        } else {
-            echo '<title>'. $this->escape($title) .'</title>';
-        } ?>
-    <?php endforeach; ?>
+        }
+    ?>
     <?php
     if (is_array($authors)) { ?>
         <authors>
@@ -129,16 +124,8 @@ $timestamp = time();
                 continue;
             }
             if ($lang && Zend_Locale::isLocale($lang)) {
-                if ($lang === 'en' || $lang === 'fr'|| $lang === 'eng') {
-                    if ($lang === 'eng') {
-                        $langId = 'eng';
-                    } elseif ($lang === 'en'|| $lang === 'fr') {
-                        $langId = $this->escape(Episciences_Tools::translateToIso6392b($lang));
-                    }
-                    echo '<abstract language="' . $langId . '">';
-                } else {
-                    echo '<abstract>';
-                }
+                $langId = $this->escape(Episciences_Tools::translateToIso6392b($lang));
+                echo '<abstract language="' . $langId . '">';
             } else {
                 echo '<abstract>';
             }
