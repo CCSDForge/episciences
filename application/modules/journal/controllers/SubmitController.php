@@ -116,7 +116,7 @@ class SubmitController extends DefaultController
                     }
                 }
 
-                if ($canReplace) { // Possibilité de remplacer un papier déjà été déposé
+                if ($canReplace) { // Possibility to replace a paper
 
                     $selfPaper = new Episciences_Paper([
                         'identifier' => $form_values['old_identifier'],
