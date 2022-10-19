@@ -994,10 +994,10 @@ class Episciences_Submit
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
 
-        if ($isCoiEnabled) {
+        if ($isCoiEnabled) { 
 
-            // conflict UIDs
-            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
+            // conflicts UIDs
+            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]);
 
             foreach ($recipients as $recipient) {
 
