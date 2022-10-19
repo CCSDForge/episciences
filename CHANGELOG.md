@@ -15,15 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.35 - 2022-10-19
 ### Added
-- [RT#169107]: new option: do not allow the selection of an editor in chief when the author has the option to propose an editor at the time of submission.
+- [RT#169107]: Feature - new option: do not allow the selection of an editor-in-chief when the author has the option to 
+  propose an editor at the time of submission.
+
 ### Changed
-- [#255](https://github.com/CCSDForge/episciences/issues/255)
+- [#255](https://github.com/CCSDForge/episciences/issues/255) Display ratings reports on the article page: Label updated
 
 ### Fixed
-- [RT#169088]: Editors in chief and editorial secretaries are no longer notified of new submissions.
-
+- [RT#169088]: Editors-in-chief and editorial secretaries are no longer notified of new submissions.
 
 ## 1.0.34.2 - 2022-10-18
 ### Fixed
