@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - [#255](https://github.com/CCSDForge/episciences/issues/255)
 
+### Fixed
+- [RT#169088]: Editors in chief and editorial secretaries are no longer notified of new submissions.
+
+
 ## 1.0.34.2 - 2022-10-18
 ### Fixed
 - temporary fix: TinyMCE: loss of formatting for successive mailings
