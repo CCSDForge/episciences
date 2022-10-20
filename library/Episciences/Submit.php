@@ -181,7 +181,7 @@ class Episciences_Submit
             }
 
             // Choix des relecteurs par l'auteur (si la revue l'autorise) ********
-            if (array_key_exists('canSuggestReviewers', $settings) && $settings['canSuggestReviewers']) {
+            if (array_key_exists(Episciences_Review::SETTING_CAN_SUGGEST_REVIEWERS, $settings) && $settings[Episciences_Review::SETTING_CAN_SUGGEST_REVIEWERS]) {
 
                 $form->addElement('multiTextSimple', 'suggestReviewers', [
                     'style' => 'width: 33%',
@@ -193,7 +193,7 @@ class Episciences_Submit
 
 
             // Relecteurs non désirés par l'auteur (si la revue l'autorise) ********
-            if (array_key_exists('canSpecifyUnwantedReviewers', $settings) && $settings['canSpecifyUnwantedReviewers']) {
+            if (array_key_exists(Episciences_Review::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS, $settings) && $settings[Episciences_Review::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS]) {
 
                 $form->addElement('multiTextSimple', 'unwantedReviewers', [
                     'label' => 'Je ne souhaite pas être relu par : ',
@@ -204,7 +204,7 @@ class Episciences_Submit
             }
 
             // Choix des rédacteurs par l'auteur (si la revue l'autorise)
-            if (array_key_exists('canPickEditors', $settings) && $settings['canPickEditors'] > 0) {
+            if (array_key_exists(Episciences_Review::SETTING_CAN_PICK_EDITOR, $settings) && $settings[Episciences_Review::SETTING_CAN_PICK_EDITOR] > 0) {
                 // Récupération et tri des valeurs du select
                 $options = [];
 
