@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Optimization: there is no need to check for conflicts at the time of submission
 
+### Fixed
+- Empty %%REQUESTER_EXPRESSION%% tag (related to [#187](https://github.com/CCSDForge/episciences/issues/187)
+
 ## 1.0.35 - 2022-10-19
 ### Added
 - [RT#169107]: Feature - new option: do not allow the selection of an editor-in-chief when the author has the option to 
