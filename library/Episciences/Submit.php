@@ -861,18 +861,20 @@ class Episciences_Submit
 
         $isCoiEnabled = false;
 
-        try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
         // Initialisation
         $canReplace = (boolean)Ccsd_Tools::ifsetor($data['can_replace'], false); // remplacer ou pas la version V-1
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $oldVersion = (int)Ccsd_Tools::ifsetor($data['old_version'], 1);
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
+
+        if($canReplace){
+            try {
+                $journalSettings = Zend_Registry::get('reviewSettings');
+                $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
 
         /**Zend_Translate $translator */
         $translator = Zend_Registry::get('Zend_Translate');
