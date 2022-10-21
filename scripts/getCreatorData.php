@@ -225,14 +225,14 @@ class getCreatorData extends JournalScript
         if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
             self::logErrorMsg($msgLogAuthorFound);
             if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
-                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
+                $decodeAuthor[$keyDbJson]['orcid'] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
                 $flagNewOrcid = 1;
             }
 
         } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
             self::logErrorMsg($msgLogAuthorFound);
             if (array_key_exists("@orcid", $authorInfoFromApi)) {
-                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
+                $decodeAuthor[$keyDbJson]['orcid'] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
                 $flagNewOrcid = 1;
             }
         } else {

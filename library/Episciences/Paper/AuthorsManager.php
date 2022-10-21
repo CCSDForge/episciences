@@ -294,4 +294,14 @@ class Episciences_Paper_AuthorsManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return ($db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0);
     }
+
+    public static function cleanLowerCaseOrcid(string $orcid): string
+    {
+        $orcidReg = '/\d{4}-\d{4}-\d{4}-\d{3}x+$/'; //wrong pattern for orcid
+        preg_match($orcidReg, $orcid, $matches);
+        if (!empty($matches)) {
+            $orcid = str_replace('x', 'X', $orcid);
+        }
+        return $orcid;
+    }
 }
