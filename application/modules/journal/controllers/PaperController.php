@@ -189,12 +189,14 @@ class PaperController extends PaperDefaultController
 
         $this->view->versions = array_reverse($versions, true);
 
-
-        // ratings **************************************************
+        // review settings
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
         $this->view->review = $review;
 
+
+
+        // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
         $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
             $paper->isReportsVisibleToAuthor() ||
@@ -241,12 +243,35 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToSeeNoPublicDetails = $isAllowedToSeeNoPublicDetails;
 
+
+
         $isAllowedToAnswerNewVersion =
             Episciences_Auth::isLogged() &&
             (
                 $paper->isOwner() ||
                 (!$isConflictDetected && $commonTest)
             );
+
+
+        // paper password bloc
+
+        $displayPaperPasswordBloc = (
+            in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
+            $review->getSetting($review::SETTING_CAN_SHARE_PAPER_PASSWORD) &&
+            $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
+            !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
+            $isAllowedToAnswerNewVersion
+        );
+
+        if($displayPaperPasswordBloc){
+            $plainPaperPassword =  $this->getPlainPaperPassword($paper);
+            $this->view->paperPassword = $plainPaperPassword;
+        }
+
+
+        $this->view->displayPaperPasswordBloc = $displayPaperPasswordBloc;
+
+        $this->savePaperPassword($request, $paper, $displayPaperPasswordBloc);
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
@@ -1506,6 +1531,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
+
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -1519,6 +1545,7 @@ class PaperController extends PaperDefaultController
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
+
         $paper = Episciences_PapersManager::get($docId, false);
 
         $paper->loadOtherVolumes(); // github #48
@@ -1688,6 +1715,7 @@ class PaperController extends PaperDefaultController
             $paper->setStatus($paper::STATUS_OBSOLETE);
             $paper->setVid();
             $paper->setOtherVolumes();
+            $paper->setPassword();
             $paper->save();
             // log status change
             $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => $paper->getStatus()]);
@@ -3345,6 +3373,45 @@ class PaperController extends PaperDefaultController
         // Only paper is published and user is not the contributor
         if ($paper->isPublished() && Episciences_Auth::getUid() !== $paper->getUid()) {
             Episciences_Paper_Visits::add($paper->getDocid(), $consultType);
+        }
+
+    }
+
+    private function savePaperPassword(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $displayPaperPasswordBloc = false): void
+    {
+
+        if ($request->isPost() && $displayPaperPasswordBloc && $paper->isOwner()) {
+
+            $params = $request->getPost();
+
+            if (!empty($params['savePaperPassword'])) {
+
+                $isErrors = true;
+                $message = $this->view->translate("Le mot de passe papier n'a pas été enregistré");
+
+                $postedPwd = trim($params['paperPassword']);
+
+                if (empty($postedPwd)) {
+                    $message .= $this->view->translate(': ');
+                    $message .= $this->view->translate('le champ est vide.');
+                } elseif ($this->getPlainPaperPassword($paper) === $postedPwd) {
+                    $message .= ', ';
+                    $message .= $this->view->translate('car il est identique à celui déjà enregistré.');
+                } else {
+                    $paper->setPassword($postedPwd);
+
+                    if ($this->saveCipherPaperPassword($paper)) {
+                        $message = $this->view->translate("Votre mot de passe papier a bien été enregistré.");
+                    }
+
+
+                }
+
+                $isErrors ? $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message) : $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+
+
+            }
         }
 
     }

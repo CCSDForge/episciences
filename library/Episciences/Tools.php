@@ -1,5 +1,9 @@
 <?php
 
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
+use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
+use Defuse\Crypto\Key;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -1548,6 +1552,38 @@ class Episciences_Tools
             'fr'=>'fre'
         ];
         return $dict[$string];
+    }
+
+
+    /**
+     * @param string $plainText
+     * @param Key $key
+     * @return string
+     * @throws EnvironmentIsBrokenException
+     */
+    public static function encryptWithKey(string $plainText, key $key): string
+    {
+        return Crypto::encrypt($plainText, $key);
+    }
+
+    /**
+     * @param string $cipherText
+     * @param Key $key
+     * @return string
+     * @throws EnvironmentIsBrokenException
+     * @throws WrongKeyOrModifiedCiphertextException
+     */
+    public static function decryptWithKey(string $cipherText, Key $key): string
+    {
+        return Crypto::decrypt($cipherText, $key);
+
+    }
+
+
+    public static  function loadFromPath(string $path){
+
+
+
     }
 
 }

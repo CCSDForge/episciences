@@ -757,4 +757,105 @@ class PaperDefaultController extends DefaultController
 
         return $report;
     }
+
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return string
+     */
+
+    protected function getPlainPaperPassword(Episciences_Paper $paper): string
+    {
+
+        $sKey = '';
+        $plainText = '';
+        $cipherText = $paper->getPassword();
+
+        if(empty($cipherText)){
+            return '';
+        }
+
+        $path =  $this->getCryptoFile();
+
+        if (!empty($path)) {
+
+            $cryptoFile = json_decode(file_get_contents($path), true);
+
+            if(array_key_exists('key', $cryptoFile)){
+                $sKey = $cryptoFile['key'];
+            }
+
+            try {
+                $plainText = Episciences_Tools::decryptWithKey($cipherText, Defuse\Crypto\Key::loadFromAsciiSafeString($sKey) );
+            } catch (\Defuse\Crypto\Exception\EnvironmentIsBrokenException|\Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException | \Defuse\Crypto\Exception\BadFormatException $e) {
+                $eMsg = 'paper-' . $paper->getDocid() . '_decryptWithPassword: ';
+                $eMsg .= $e->getMessage();
+                error_log($eMsg);
+            }
+
+        } else {
+            error_log('Fatal error: missing file: ' . $path);
+        }
+
+
+        return $plainText;
+
+
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return bool
+     */
+    protected function saveCipherPaperPassword(Episciences_Paper $paper): bool
+    {
+
+
+        $sKey = '';
+        $result = false;
+        $plainText = $paper->getPassword();
+        $cipherText = '';
+
+        $path = $this->getCryptoFile();
+
+        if (!empty($path)) {
+
+            $cryptoFile = json_decode(file_get_contents($path), true);
+
+            if(array_key_exists('key', $cryptoFile)){
+                $sKey = $cryptoFile['key'];
+            }
+
+            try {
+                $cipherText = Episciences_Tools::encryptWithKey($plainText, Defuse\Crypto\Key::loadFromAsciiSafeString($sKey) );
+            } catch (\Defuse\Crypto\Exception\EnvironmentIsBrokenException|\Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException | \Defuse\Crypto\Exception\BadFormatException | JsonException $e) {
+                $eMsg = 'paper-' . $paper->getDocid() . '_encryptWithKey: ';
+                $eMsg .= $e->getMessage();
+                error_log($eMsg);
+            }
+
+        } else {
+            error_log('Fatal error: missing file: ' . $path);
+        }
+
+        if(!empty($cipherText)){
+            $paper->setPassword($cipherText);
+            try {
+                $result = $paper->save();
+            } catch (JsonException | Zend_Db_Adapter_Exception $e) {
+                error_log($e->getMessage());
+            }
+        }
+
+        return $result;
+
+
+    }
+
+    protected function getCryptoFile(): string
+    {
+        $file = 'crypto.json';
+        return file_exists(REVIEW_FILES_PATH . $file) ? REVIEW_FILES_PATH . $file : '';
+
+    }
 }
