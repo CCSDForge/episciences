@@ -12,12 +12,16 @@ $this->layout()->pageTitle = $this->translate($this->volume->getNameKey()); ?>
     <?php endif; ?>
 
     <?php if ($this->volume->getMetadatas()) : ?>
-        <div id="metadatas">
+        <div id="metadatas" style="position: ">
             <?php foreach ($this->volume->getMetadatas() as $metadata) : ?>
 
                 <?php if ($metadata->hasFile() && $metadata->isPicture()) : ?>
+                <?php
+                    $mTitles = $metadata->getTitles();
+                    $locale = Episciences_Tools::getLocale();
+                    ?>
                     <img src="<?php echo $metadata->getFileUrl() ?>" class="img-rounded center-block" style="max-width: 100%"
-                         alt="image"/>
+                         alt="<?= array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)]?>"/>
                 <?php endif; ?>
 
                 <?php if ($metadata->getContent()) : ?>
