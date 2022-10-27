@@ -2257,7 +2257,8 @@ return [
     'Votre mot de passe papier a bien été enregistré.' => 'Paper password has been saved.',
     "Si vous le souhaitez, vous pouvez partager le mot de passe papier permettant ainsi à la revue de mettre à jour ou de remplacer ce papier dans l'archive ouverte." => 'If you wish, you can share the paper password allowing the journal to update or replace this paper in the open archive.',
     'L’auteur peut déléguer à la revue la mise à jour ou le remplacement de sa soumission publiée sur arXiv' => 'The author can delegate to the journal the updating or replacement of his submission published on arXiv',
-    'Copier' => 'Copy'
+    'Copier' => 'Copy',
+    "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password"
 
 
 ];
