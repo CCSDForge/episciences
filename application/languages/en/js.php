@@ -190,6 +190,9 @@ return [
     'Veuillez indiquer une date valide !' => 'Please enter a valid date!',
 
     //COI
-    'Aucun conflit pour le moment.' => 'No conflict yet.'
+    'Aucun conflit pour le moment.' => 'No conflict yet.',
+
+    //paper password
+    'Copié !' => 'copied!'
 
 ];

@@ -362,6 +362,8 @@ class Episciences_Paper
 
     private array $_linkedData;
 
+    private ?string $_password = null;
+
 
     /**
      * Episciences_Paper constructor.
@@ -2944,7 +2946,8 @@ class Episciences_Paper
                 'WHEN' => new Zend_Db_Expr('NOW()'),
                 'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
                 'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
-                'FLAG' => $this->getFlag()
+                'FLAG' => $this->getFlag(),
+                'PASSWORD' => $this->getPassword()
             ];
 
             if ($this->getPublication_date()) {
@@ -2989,7 +2992,8 @@ class Episciences_Paper
             'RECORD' => $this->getRecord(),
             'SUBMISSION_DATE' => $this->getSubmission_date(),
             'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
-            'FLAG' => $this->getFlag()
+            'FLAG' => $this->getFlag(),
+            'PASSWORD' => $this->getPassword()
         ];
         if ($this->getIdentifier()) {
             $data['IDENTIFIER'] = $this->getIdentifier();
@@ -4233,6 +4237,27 @@ class Episciences_Paper
         curl_exec($curl);
         curl_close($curl);
     }
+
+    /**
+     * @return string | null
+     */
+    public function getPassword(): ?string
+    {
+        return $this->_password;
+    }
+
+    /**
+     * @param string|null $paperPassword
+     * @return Episciences_Paper
+     */
+    public function setPassword(string $paperPassword = null): self
+    {
+        $this->_password = $paperPassword;
+        return $this;
+    }
+
+
+  
 
 
 

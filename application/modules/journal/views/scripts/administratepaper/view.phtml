@@ -42,6 +42,8 @@ $this->suggestedRevision = false;
     <?= $paper->getXslt() ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
     <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper,'metadata'=> $this->metadata]) ?>
+    <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+
 </div>
 
 <?php // affiliations *****************************************************

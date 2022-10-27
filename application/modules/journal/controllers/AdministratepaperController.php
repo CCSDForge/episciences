@@ -886,6 +886,31 @@ class AdministratepaperController extends PaperDefaultController
             //conflict management section
             $this->view->paperConflicts = $paper->getConflicts(true);
         }
+
+        // paper password bloc
+
+        $displayPaperPasswordBloc = (
+            in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
+            $review->getSetting($review::SETTING_CAN_SHARE_PAPER_PASSWORD) &&
+            $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
+            !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
+            (
+                Episciences_Auth::isSecretary() ||
+                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
+                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
+                $paper->getEditor($loggedUid) ||
+                $paper->getCopyEditor($loggedUid)
+            )
+        );
+
+        if($displayPaperPasswordBloc){
+            $plainPaperPassword =  $this->getPlainPaperPassword($paper);
+            $this->view->paperPassword = $plainPaperPassword;
+        }
+
+        $this->view->displayPaperPasswordBloc = $displayPaperPasswordBloc;
+
+
     }
 
     /**
@@ -1947,6 +1972,8 @@ class AdministratepaperController extends PaperDefaultController
 
             // update paper status
             $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
+            //delete paper password
+            $paper->setPassword();
             if ($paper->save()) {
                 $resOfIndexing = $paper->indexUpdatePaper();
 

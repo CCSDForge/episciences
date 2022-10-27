@@ -131,7 +131,7 @@ class Episciences_Paper_ConflictsManager
      * @param array $option // default: answer = no (without conflicts)
      * @return array
      */
-    public static function fetchSelectedCol(string $col, array $option = ['answer' => 'no'], bool $distinct = true): array
+    public static function fetchSelectedCol(string $col, array $option = ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']], bool $distinct = true): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
