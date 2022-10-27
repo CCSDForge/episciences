@@ -47,7 +47,8 @@
     "cottagelabs/coar-notifications": "dev-main",
     "smalot/pdfparser": "^2.2",
     "geoip2/geoip2": "~2.0",
-    "laminas/laminas-feed": "^2.18"
+    "laminas/laminas-feed": "^2.18",
+    "defuse/php-encryption": "^2.3"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
