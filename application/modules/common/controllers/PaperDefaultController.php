@@ -854,8 +854,8 @@ class PaperDefaultController extends DefaultController
 
     protected function getCryptoFile(): string
     {
-        $file = 'crypto.json';
-        return file_exists(REVIEW_FILES_PATH . $file) ? REVIEW_FILES_PATH . $file : '';
+        $filePah = Episciences_Review::getCryptoFilePath();
+        return file_exists($filePah) ? $filePah : '';
 
     }
 }

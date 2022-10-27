@@ -1711,7 +1711,7 @@ class Episciences_Review
         // Enregistrement des traductions
         Episciences_Tools::writeTranslations($translations, $path, $file);
 
-        $this->checkCreateOrDeleteCryptoFile();
+        $this->checkAndCreateIfNotExistsCryptoFile();
 
         return true;
     }
@@ -2253,13 +2253,13 @@ class Episciences_Review
     /**
      * @return void
      */
-    private function  checkCreateOrDeleteCryptoFile(): void
+    private function  checkAndCreateIfNotExistsCryptoFile(): void
     {
 
 
         if(in_array(Episciences_Repositories::ARXIV_REPO_ID, self::getSetting(self::SETTING_REPOSITORIES)) && $this->getSetting(self::SETTING_CAN_SHARE_PAPER_PASSWORD)){
 
-            $path = REVIEW_FILES_PATH . 'crypto.json';
+            $path = self::getCryptoFilePath();
 
             if (!file_exists($path)) {
                 try {
@@ -2270,10 +2270,17 @@ class Episciences_Review
                     error_log($e->getMessage());
                 }
 
-                @chmod($path , 0444); // read only
+                @chmod($path, 0444); // read only
             }
 
         }
+    }
+
+    /**
+     * @return string
+     */
+    public static function getCryptoFilePath(): string{
+        return REVIEW_FILES_PATH . RVCODE . '-crypto.json';
     }
 
 
