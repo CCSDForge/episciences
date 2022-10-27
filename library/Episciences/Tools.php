@@ -1578,12 +1578,4 @@ class Episciences_Tools
         return Crypto::decrypt($cipherText, $key);
 
     }
-
-
-    public static  function loadFromPath(string $path){
-
-
-
-    }
-
 }
