@@ -181,7 +181,7 @@ class Episciences_Submit
             }
 
             // Choix des relecteurs par l'auteur (si la revue l'autorise) ********
-            if (array_key_exists('canSuggestReviewers', $settings) && $settings['canSuggestReviewers']) {
+            if (array_key_exists(Episciences_Review::SETTING_CAN_SUGGEST_REVIEWERS, $settings) && $settings[Episciences_Review::SETTING_CAN_SUGGEST_REVIEWERS]) {
 
                 $form->addElement('multiTextSimple', 'suggestReviewers', [
                     'style' => 'width: 33%',
@@ -193,7 +193,7 @@ class Episciences_Submit
 
 
             // Relecteurs non désirés par l'auteur (si la revue l'autorise) ********
-            if (array_key_exists('canSpecifyUnwantedReviewers', $settings) && $settings['canSpecifyUnwantedReviewers']) {
+            if (array_key_exists(Episciences_Review::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS, $settings) && $settings[Episciences_Review::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS]) {
 
                 $form->addElement('multiTextSimple', 'unwantedReviewers', [
                     'label' => 'Je ne souhaite pas être relu par : ',
@@ -204,7 +204,7 @@ class Episciences_Submit
             }
 
             // Choix des rédacteurs par l'auteur (si la revue l'autorise)
-            if (array_key_exists('canPickEditors', $settings) && $settings['canPickEditors'] > 0) {
+            if (array_key_exists(Episciences_Review::SETTING_CAN_PICK_EDITOR, $settings) && $settings[Episciences_Review::SETTING_CAN_PICK_EDITOR] > 0) {
                 // Récupération et tri des valeurs du select
                 $options = [];
 
@@ -861,18 +861,20 @@ class Episciences_Submit
 
         $isCoiEnabled = false;
 
-        try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
         // Initialisation
         $canReplace = (boolean)Ccsd_Tools::ifsetor($data['can_replace'], false); // remplacer ou pas la version V-1
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $oldVersion = (int)Ccsd_Tools::ifsetor($data['old_version'], 1);
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
+
+        if($canReplace){
+            try {
+                $journalSettings = Zend_Registry::get('reviewSettings');
+                $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
 
         /**Zend_Translate $translator */
         $translator = Zend_Registry::get('Zend_Translate');

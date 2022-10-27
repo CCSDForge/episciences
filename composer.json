@@ -48,7 +48,8 @@
     "smalot/pdfparser": "^2.2",
     "geoip2/geoip2": "~2.0",
     "laminas/laminas-feed": "^2.18",
-    "whitecube/lingua": "^1.1"
+    "whitecube/lingua": "^1.1",
+    "defuse/php-encryption": "^2.3"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",

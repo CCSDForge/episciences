@@ -43,6 +43,8 @@ class Episciences_Review
     public const SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'canAbandonContinuePublicationProcess';
     // git #155
     public const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
+    public const SETTING_CAN_SHARE_PAPER_PASSWORD = 'canSharePaperPassword';
+
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
     public const SETTING_EDITORS_CAN_ACCEPT_PAPERS = 'editorsCanAcceptPapers';
@@ -197,7 +199,8 @@ class Episciences_Review
             self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
             self::SETTING_SYSTEM_IS_COI_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
-            self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION
+            self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
+            self::SETTING_CAN_SHARE_PAPER_PASSWORD
         ];
 
 
@@ -443,7 +446,7 @@ class Episciences_Review
                 $paper = Episciences_PapersManager::get($docId, false);
 
                 if ($paper) {
-                    $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => 'no', 'paper_id' => $paper->getPaperid()]);
+                    $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
                 }
             }
 
@@ -934,7 +937,8 @@ class Episciences_Review
             self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
             self::SETTING_CAN_CHOOSE_VOLUME,
             self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
-            self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS
+            self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+            self::SETTING_CAN_SHARE_PAPER_PASSWORD
         ], 'publication', ["legend" => "Paramètres de soumission"]);
         $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
 
@@ -1119,6 +1123,14 @@ class Episciences_Review
         // possibilité de soumettre une nouvelle version d'un article refusé
         $form->addElement('checkbox', self::SETTING_CAN_RESUBMIT_REFUSED_PAPER, [
                 'label' => "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        // Possibility to share the paper password for arxiv submissions
+        $form->addElement('checkbox', self::SETTING_CAN_SHARE_PAPER_PASSWORD, [
+                'label' => 'Permettre aux auteurs de partager le mot de passe papier arXiv',
+                'description' => "L’auteur peut déléguer à la revue la mise à jour ou le remplacement de sa soumission publiée sur arXiv",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
@@ -1653,6 +1665,8 @@ class Episciences_Review
         // Article - final decision
         $settingsValues[self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] = $this->getSetting(self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
 
+        $settingsValues[self::SETTING_CAN_SHARE_PAPER_PASSWORD] = $this->getSetting(self::SETTING_CAN_SHARE_PAPER_PASSWORD);
+
         $values = [];
 
         // Enregistrement des paramètres
@@ -1696,6 +1710,8 @@ class Episciences_Review
 
         // Enregistrement des traductions
         Episciences_Tools::writeTranslations($translations, $path, $file);
+
+        $this->checkAndCreateIfNotExistsCryptoFile();
 
         return true;
     }
@@ -2232,6 +2248,39 @@ class Episciences_Review
         }
 
         return $mappingsArray;
+    }
+
+    /**
+     * @return void
+     */
+    private function  checkAndCreateIfNotExistsCryptoFile(): void
+    {
+
+
+        if(in_array(Episciences_Repositories::ARXIV_REPO_ID, self::getSetting(self::SETTING_REPOSITORIES)) && $this->getSetting(self::SETTING_CAN_SHARE_PAPER_PASSWORD)){
+
+            $path = self::getCryptoFilePath();
+
+            if (!file_exists($path)) {
+                try {
+                    if (!file_put_contents($path, json_encode(['key' => Defuse\Crypto\Key::createNewRandomKey()->saveToAsciiSafeString()]), LOCK_EX)) {
+                        die('Fatal error: unable to create file: ' . $path);
+                    }
+                } catch (\Defuse\Crypto\Exception\EnvironmentIsBrokenException $e) {
+                    error_log($e->getMessage());
+                }
+
+                @chmod($path, 0444); // read only
+            }
+
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public static function getCryptoFilePath(): string{
+        return REVIEW_FILES_PATH . RVCODE . '-crypto.json';
     }
 
 

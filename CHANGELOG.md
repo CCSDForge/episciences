@@ -18,13 +18,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - It is now possible to use Lemon LDAP authentication.
-- [RT#169107]: new option: do not allow the selection of an editor in chief when the author has the option to propose an editor at the time of submission.
+- authors can now enter their paper password provided by the open archive on the article page.
+- alt attribute to volume's image.
+
 ### Changed
-- [#255](https://github.com/CCSDForge/episciences/issues/255)
+- Optimization: there is no need to check for conflicts at the time of submission
 
 ### Fixed
-- [RT#169088]: Editors in chief and editorial secretaries are no longer notified of new submissions.
+- Empty %%REQUESTER_EXPRESSION%% tag (related to [#187](https://github.com/CCSDForge/episciences/issues/187)
 
+## 1.0.35 - 2022-10-19
+### Added
+- [RT#169107]: Feature - new option: do not allow the selection of an editor-in-chief when the author has the option to 
+  propose an editor at the time of submission.
+
+### Changed
+- [#255](https://github.com/CCSDForge/episciences/issues/255) Display ratings reports on the article page: Label updated
+
+### Fixed
+- [RT#169088]: Editors-in-chief and editorial secretaries are no longer notified of new submissions.
 
 ## 1.0.34.2 - 2022-10-18
 ### Fixed

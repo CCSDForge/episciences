@@ -16,11 +16,15 @@
                     <a href="<?= $volumeUrl ?>">
                         <?php if ($volume->getMetadatas()) : ?>
                             <?php foreach ($volume->getMetadatas() as $metadata) : ?>
+                            <?php
+                                $mTitles = $metadata->getTitles();
+                                $locale = Episciences_Tools::getLocale();
+                            ?>
                                 <?php if ($metadata->hasFile() && $metadata->isPicture()) : ?>
                                     <img src="<?php echo $metadata->getFileUrl() ?>"
                                          class="media-object img-thumbnail"
                                          style="max-width: 10em"
-                                         alt="image"/>
+                                         alt="<?= array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)]?>"/>
                                 <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
