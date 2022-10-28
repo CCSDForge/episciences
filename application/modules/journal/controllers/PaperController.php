@@ -1615,12 +1615,19 @@ class PaperController extends PaperDefaultController
 
         $isAssignedReviewers = $reassignReviewers && $reviewers;
 
-        if (isset($post['copyEditingNewVersion'])) {
+        if (isset($post['copyEditingNewVersion'])) { // new formatted version
             $status = ($newPaper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) ?
                 Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION :
                 Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
         } elseif ($isAlreadyAccepted && !$isAssignedReviewers) {
-            $status = Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING;
+
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $status = (
+                isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) &&
+                (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] === 1
+            ) ?
+                Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING :
+                Episciences_Paper::STATUS_ACCEPTED;
         } else {
             $status = $isAssignedReviewers ? $newPaper::STATUS_OK_FOR_REVIEWING : $newPaper::STATUS_SUBMITTED;
         }
