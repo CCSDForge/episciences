@@ -1,5 +1,9 @@
 <?php
 
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Logger;
+
 /**
  * Adapter Zend_Auth pour l'authentification via CAS
  *
@@ -8,7 +12,7 @@
  * @author ccsd
  *
  */
-class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
+class Ccsd_Auth_Adapter_Cas implements  \Ccsd\Auth\Adapter\AdapterInterface
 {
 
     /**
@@ -380,13 +384,8 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
 
         }
 
-        if (defined('CAS_SERVICE_LOG_PATH')) {
-            if (CAS_SERVICE_LOG_PATH !== '') {
-                phpCAS::setDebug(CAS_SERVICE_LOG_PATH);
-            } else {
-                phpCAS::setDebug(realpath(sys_get_temp_dir()) . '/cas.log');
-            }
-        }
+        $this->setLogger();
+
 
         if (!$this->getCasSslValidation()) {
             // no SSL validation for the CAS server
@@ -543,4 +542,27 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
     {
         // TODO: Implement post_login() method.
     }
+
+    private function setLogger(): void{
+
+
+        if (defined('CAS_SERVICE_LOG_PATH')) {
+            if (CAS_SERVICE_LOG_PATH !== '') {
+                $logPath = CAS_SERVICE_LOG_PATH;
+            } else {
+                $logPath = realpath(sys_get_temp_dir()) . '/cas.log';
+            }
+        }
+
+        $casLogger = new Logger('CASLogger');
+        $handler = new RotatingFileHandler($logPath,0, Logger::DEBUG, true, 0664);
+
+        $formatter = new LineFormatter(null, null, false, true);
+        $handler->setFormatter($formatter);
+        $casLogger->pushHandler($handler);
+
+        phpCAS::setLogger($casLogger);
+
+    }
+
 }

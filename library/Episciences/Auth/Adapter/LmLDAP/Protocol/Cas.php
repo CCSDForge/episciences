@@ -1,4 +1,7 @@
 <?php
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Logger;
 
 /**
  * Adapter Zend_Auth for authentication via LemonLDAP using the CAS protocol
@@ -379,13 +382,7 @@ class Episciences_Auth_Adapter_LmLDAP_Protocol_Cas implements \Ccsd\Auth\Adapter
 
         }
 
-        if (defined('LEMON_LDAP_SERVICE_LOG_PATH')) {
-            if (LEMON_LDAP_SERVICE_LOG_PATH !== '') {
-                phpCAS::setDebug(LEMON_LDAP_SERVICE_LOG_PATH);
-            } else {
-                phpCAS::setDebug(realpath(sys_get_temp_dir()) . '/cas.log');
-            }
-        }
+        $this->setLogger();
 
         if (!$this->getCasSslValidation()) {
             // no SSL validation for the CAS server
@@ -541,5 +538,28 @@ class Episciences_Auth_Adapter_LmLDAP_Protocol_Cas implements \Ccsd\Auth\Adapter
     public function post_login($loginUser, $array_attr)
     {
         // TODO: Implement post_login() method.
+    }
+
+
+    private function setLogger(): void{
+
+
+        if (defined('LEMON_LDAP_SERVICE_LOG_PATH')) {
+            if (LEMON_LDAP_SERVICE_LOG_PATH  !== '') {
+                $logPath = LEMON_LDAP_SERVICE_LOG_PATH;
+            } else {
+                $logPath = realpath(sys_get_temp_dir()) . '/lm-cas.log';
+            }
+        }
+
+        $casLogger = new Logger('lmCASLogger');
+        $handler = new RotatingFileHandler($logPath,0, Logger::DEBUG, true, 0664);
+
+        $formatter = new LineFormatter(null, null, false, true);
+        $handler->setFormatter($formatter);
+        $casLogger->pushHandler($handler);
+
+        phpCAS::setLogger($casLogger);
+
     }
 }
