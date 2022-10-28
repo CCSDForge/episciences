@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Empty %%REQUESTER_EXPRESSION%% tag (related to [#187](https://github.com/CCSDForge/episciences/issues/187)
+- Incorrect status jdmdh#10203 (related with git#372)
 
 ## 1.0.35 - 2022-10-19
 ### Added
