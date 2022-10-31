@@ -122,6 +122,7 @@ function applyMultipleFilters(controller, action, get = {}, filter_status = [], 
     let oTable = $(".dataTable").DataTable({
         fnPreDrawCallback: function () {
             $("div[id$='_processing']").removeAttr("class");
+            $(this).closest('.dataTables_wrapper').find( "input[type='search']").prop('spellcheck', false);
         },
         fnDrawCallback: function () {
             activateTooltips();

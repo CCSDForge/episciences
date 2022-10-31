@@ -1,6 +1,9 @@
 $(document).ready(function() {
 
 	$(".dataTable").dataTable({
+		fnPreDrawCallback: function () {
+			$(this).closest('.dataTables_wrapper').find( "input[type='search']").prop('spellcheck', false);
+		},
 		stateSave: true,
 		"dom": "<'dt-header row'<'left col-xs-6'l><'right col-xs-6'f>r>t<'dt-footer row'<'left col-xs-6'i><'right col-xs-6'p>>",
 		// "dom": "<\'row-fluid\'<\'span6\'l><\'span6\'f>r>t<\'row-fluid\'<\'span6\'i><\'span6\'p>>",
