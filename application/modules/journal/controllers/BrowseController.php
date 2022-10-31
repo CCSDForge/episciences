@@ -175,7 +175,10 @@ class BrowseController extends Zend_Controller_Action
 
         foreach ($volumes as &$volume) {
             $volume->loadIndexedPapers();
+            $volume->loadMetadatas();
         }
+
+        unset($volume);
 
         $this->view->volumes = $volumes;
         $this->view->page = $pageNb;

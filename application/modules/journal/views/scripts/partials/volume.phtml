@@ -1,0 +1,50 @@
+<?php
+$volume = $this->volume;
+$volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
+?>
+
+<div class="media">
+    <div id="metadatas" class="media-left">
+        <a href="<?= $volumeUrl ?>">
+            <?php if ($volume->getMetadatas()) : ?>
+                <?php foreach ($volume->getMetadatas() as $metadata) : ?>
+
+                    <?php if ($metadata->hasFile() && $metadata->isPicture()) : ?>
+
+                        <?php
+                        $mTitles = $metadata->getTitles();
+                        $locale = Episciences_Tools::getLocale();
+                        ?>
+
+                        <img src="<?= $metadata->getFileUrl() ?>"
+                             class="media-object img-thumbnail"
+                             style="max-width: 10em"
+                             alt="<?= array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)] ?>"/>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </a>
+    </div>
+    <div class="media-body">
+        <h4 class="media-heading">
+            <a href="<?= $volumeUrl ?>">
+                <?= $this->translate($volume->getNameKey()) ?>
+            </a>
+            <?php
+            $countOfPublishedArticles = count($volume->getIndexedPapers());
+            if ($countOfPublishedArticles > 1) {
+                echo '<span class="text-muted">(' . $countOfPublishedArticles . ' ' . $this->translate('articles') . ')</span>';
+            } elseif ($countOfPublishedArticles === 1) {
+                echo '<span class="text-muted">(' . $countOfPublishedArticles . ' ' . $this->translate('article') . ')</span>';
+            }
+            ?>
+        </h4>
+        <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>
+
+            <p><?= $this->translate($volume->getDescriptionKey()) ?></p>
+
+        <?php endif; ?>
+    </div>
+</div>
+
+<hr/>
