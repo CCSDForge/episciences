@@ -13,8 +13,7 @@
                 <a href="/section/view/id/<?php echo $section->getSid() ?>">
                     <span><strong><?php echo $this->translate($section->getNameKey()) ?></strong></span>
                 </a>
-                <span>(<?php echo $section->getCountOfPapers() . ' ' . $this->translate(['article', 'articles', $section->getCountOfPapers()]) ?>
-                    )</span>
+                <span>(<?= $section->getCountOfPapers() . ' ' . $this->translate(['article', 'articles', $section->getCountOfPapers()]) ?>)</span>
             </h2>
 
             <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($section->getDescriptionKey())) : ?>
