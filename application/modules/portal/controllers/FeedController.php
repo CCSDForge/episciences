@@ -21,6 +21,7 @@ class FeedController extends Zend_Controller_Action
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+        header('Content-Type: text/xml');
         $this->getFeedOutput('rss');
     }
 
@@ -140,6 +141,7 @@ class FeedController extends Zend_Controller_Action
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+        header('Content-Type: text/xml');
         $this->getFeedOutput('atom');
     }
 
