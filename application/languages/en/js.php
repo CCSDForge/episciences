@@ -193,6 +193,7 @@ return [
     'Aucun conflit pour le moment.' => 'No conflict yet.',
 
     //paper password
-    'Copié !' => 'copied!'
+    'Copié !' => 'copied!',
+    'Copier' => 'Copy'
 
 ];
