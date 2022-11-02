@@ -17,13 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Improved rendering of the volume page
 - It is now possible to use Lemon LDAP authentication.
 - authors can now enter their paper password provided by the open archive on the article page.
-- alt attribute to volume's image.
 - Added an API method to get the number of users accounts
 
 ### Changed
 - Optimization: there is no need to check for conflicts at the time of submission
+-  [#280](https://github.com/CCSDForge/episciences/issues/280): set spellcheck to false in dynamic datatable search boxes.
 
 ### Fixed
 - Empty %%REQUESTER_EXPRESSION%% tag (related to [#187](https://github.com/CCSDForge/episciences/issues/187)

@@ -4,57 +4,7 @@
     <?php if (count($this->volumes)) : ?>
 
         <?php foreach ($this->volumes as $volume) : ?>
-
-            <?php
-            $volume->loadMetadatas();
-            $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
-            ?>
-
-
-            <div class="media">
-                <div class="media-left">
-                    <a href="<?= $volumeUrl ?>">
-                        <?php if ($volume->getMetadatas()) : ?>
-                            <?php foreach ($volume->getMetadatas() as $metadata) : ?>
-                            <?php
-                                $mTitles = $metadata->getTitles();
-                                $locale = Episciences_Tools::getLocale();
-                            ?>
-                                <?php if ($metadata->hasFile() && $metadata->isPicture()) : ?>
-                                    <img src="<?php echo $metadata->getFileUrl() ?>"
-                                         class="media-object img-thumbnail"
-                                         style="max-width: 10em"
-                                         alt="<?= array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)]?>"/>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </a>
-                </div>
-                <div class="media-body">
-                    <h4 class="media-heading">
-                        <a href="<?= $volumeUrl ?>">
-                            <?php echo $this->translate($volume->getNameKey()) ?>
-                        </a>
-                        <?php
-                        $countOfPublishedArticles = count($volume->getIndexedPapers());
-                        if ($countOfPublishedArticles > 1) {
-                            echo '<span class="text-muted">(' . $countOfPublishedArticles . ' ' . $this->translate('articles') . ')</span>';
-                        } elseif ($countOfPublishedArticles === 1) {
-                            echo '<span class="text-muted">(' . $countOfPublishedArticles . ' ' . $this->translate('article'). ')</span>';
-                        }
-                        ?>
-                    </h4>
-                    <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>
-
-                            <p><?php echo $this->translate($volume->getDescriptionKey()); ?></p>
-
-                    <?php endif; ?>
-                </div>
-            </div>
-
-
-            <hr/>
-
+            <?= $this->partial('partials/volume.phtml', ['volume' => $volume]) ?>
         <?php endforeach; ?>
 
         <?php if ($this->total > count($this->volumes)) : ?>

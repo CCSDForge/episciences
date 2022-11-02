@@ -1,0 +1,55 @@
+<style>
+    .attachment-metadata-volume {
+        float: left;
+        margin-right: 10px;
+        max-width: 16vw;
+        max-height: 16vh;
+
+    }
+</style>
+<?php $metadatas = $this->metadatas; ?>
+
+<?php
+/** @var Episciences_Volume_Metadata $metadata */
+foreach ($metadatas as $metadata) : ?>
+    <?php
+    $content = $metadata->getContent();
+    $metaId = $metadata->getId();
+    $hasFile = $metadata->hasFile();
+    $hasContent = !empty($metadata->getContent());
+    ?>
+
+    <div id="meta-<?= $metaId ?>">
+
+        <?php if ($hasFile): ?>
+
+            <?php if ($metadata->isPicture()) : ?>
+
+                <?php
+                $mTitles = $metadata->getTitles();
+                $locale = Episciences_Tools::getLocale();
+                $alt = array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)];
+
+                ?>
+                <img class="attachment-metadata-volume" src="<?= $metadata->getFileUrl() ?>" alt="<?= $alt ?>" data-toggle="tooltip" title="<?= $alt ?>"/>
+
+            <?php else: ?>
+
+                <a href="<?= $metadata->getFileUrl() ?>" target="_blank">
+                    <button class="btn btn-default btn-sm attachment-metadata-volume">
+                        <span class="glyphicon glyphicon-file"></span>
+                        <?= $metadata->getTitle() ?>
+                    </button>
+                </a>
+
+            <?php endif; ?>
+
+        <?php endif; ?>
+
+        <?php if ($hasContent) : ?>
+            <p class="text-justify small"><?= $content ?></p>
+        <?php endif; ?>
+
+    </div>
+
+<?php endforeach; ?>

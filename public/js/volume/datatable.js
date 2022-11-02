@@ -1,6 +1,9 @@
 $(document).ready(function () {
 
     $(".dataTable").dataTable({
+        fnPreDrawCallback: function () {
+            $(this).closest('.dataTables_wrapper').find( "input[type='search']").prop('spellcheck', false);
+        },
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, translate("all")]],
         stateSave: true,
         "pagingType": "numbers",
