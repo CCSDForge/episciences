@@ -60,7 +60,14 @@ class FeedController extends Zend_Controller_Action
                 $entry->setLink($link);
 
                 $entry->setTitle($docEntry['paper_title_t'][0]);
-                $entry->setDescription($docEntry['abstract_t'][0]);
+                if (empty($docEntry['abstract_t'][0])) {
+                    $abstract = '...';
+                } else {
+                    $abstract =$docEntry['abstract_t'][0];
+                }
+
+                $entry->setDescription($abstract);
+
 
                 foreach ($docEntry['author_fullname_s'] as $oneAuthor) {
                     $entry->addAuthor(['name' => $oneAuthor]);
