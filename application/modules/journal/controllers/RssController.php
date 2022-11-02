@@ -19,6 +19,7 @@ class RssController extends Zend_Controller_Action
                 $page->load();
                 $params['max'] = $page->getNbResults();
             }
+            header('Content-Type: text/xml');
             new Episciences_Rss($params);
         }
 

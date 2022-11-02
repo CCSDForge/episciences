@@ -52,6 +52,29 @@ class ApiController extends Zend_Controller_Action
             ->setBody(Zend_Json_Encoder::encode($response));
     }
 
+    public function ccsdMetricsAction() {
+        $this->_helper->layout->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        // Count of Users for the current year, at the time of request
+        try {
+            $nbOfUsers = Episciences_User_UserMapper::getUserCountAfterDate('1970-01-01 00:00:00');
+        } catch (Zend_Db_Statement_Exception $e) {
+            $nbOfUsers = 0;
+        }
+
+        header('Content-Type: application/json');
+
+        try {
+            echo json_encode(['nbOfEpisciencesUsers' => $nbOfUsers], JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $timeOut = 1800;
+            header('HTTP/1.0 503 Service Unavailable');
+            header('Retry-After: ' . $timeOut);
+            printf("Sorry, this service is not available at the moment. We must be busy fixing a problem, please try again in %s seconds", $timeOut);
+        }
+    }
+
     /**
      * Metrics for OpenAIRE formatted as Openmetrics
      */
