@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - authors can now enter their paper password provided by the open archive on the article page.
 - alt attribute to volume's image.
+- Added an API method to get the number of users accounts
 
 ### Changed
 - Optimization: there is no need to check for conflicts at the time of submission
