@@ -1,0 +1,90 @@
+<div id="papers" class="row">
+    <hr/>
+    <?php $locale = Episciences_Tools::getLocale(); ?>
+    <?php foreach ($this->indexedPapers as $i => $doc) : ?>
+
+        <?php // Titre de l'article ******************************** ?>
+        <h3>
+            <?= $i + 1 ?>.
+            <a href="/<?= $this->escape($doc['docid']); ?>"><?= htmlspecialchars(Episciences_Tools::decodeLatex(Episciences_Tools::getTitleFromIndexedPaper($doc, $locale))) ?></a>
+        </h3>
+
+        <?php // Noms des auteurs *********************************** ?>
+        <?php if ($doc['author_fullname_s']) : ?>
+            <span class="authors">
+                        <?php
+                        $arrayOfAuthors = [];
+                        $authorSeparator = '&nbsp;;&nbsp;';
+                        $maxNumberOfAuthors = 10;
+                        $outputFormat = '<a data-toggle="tooltip" data-placement="bottom" title="' . $this->translate("Articles de l'auteur") . '" href="%s">%s</a>';
+                        $arrayOfAuthorsWithURL = [];
+
+                        foreach ($doc['author_fullname_s'] as $author) {
+                            $tab = Ccsd_Search_Solr::facetStringResultAsArray($author);
+                            $arrayOfAuthors[] = $tab[0];
+                        }
+
+                        if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
+                            $multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
+
+                            foreach ($multiArraysOfAuthors[0] as $authorName) {
+                                $url = $this->url([
+                                    'controller' => 'search',
+                                    'action' => 'index',
+                                    'q' => '*',
+                                    'author_fullname_t' => $this->escape($authorName)], null, true);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                            }
+                            $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
+                        } else {
+
+                            foreach ($arrayOfAuthors as $authorName) {
+                                $url = $this->url([
+                                    'controller' => 'search',
+                                    'action' => 'index',
+                                    'q' => '*',
+                                    'author_fullname_t' => $this->escape($authorName)], null, true);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                            }
+                            $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
+                            if (substr($authorList, -1) != '.') {
+                                $authorList .= '.';
+                            }
+                        }
+
+                        echo $authorList;
+
+                        ?></span>
+        <?php endif; ?>
+
+        <?php // Résumé de l'article *********************************** ?>
+        <?php
+        $abstract = Episciences_Tools::getAbstractFromIndexedPaper($doc, $locale);
+        if ($abstract) {
+            echo '<blockquote class="abstract">';
+            echo Episciences_Tools::decodeLatex(Ccsd_Tools_String::truncate(htmlspecialchars($abstract), ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]'));
+            echo '</blockquote>';
+        }
+        ?>
+
+        <?php // Rubrique *********************************************** ?>
+        <?php $section = Episciences_Tools::getSectionFromIndexedPaper($doc, $locale); ?>
+        <?php if ($section) : ?>
+            <div class="small">
+                <span><?= $this->translate('Rubrique : ') ?></span>
+                <span><?= $section ?></span>
+            </div>
+        <?php endif; ?>
+
+        <hr/>
+
+    <?php endforeach; ?>
+</div>
+
+<div class="row">
+    <?php if (Episciences_Auth::isSecretary()) : ?>
+        <a class="btn btn-default btn-sm" target="_blank"
+           href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>"><?= $this->translate('Exporter le volume au format DOAJ') ?></a>
+    <?php endif; ?>
+
+</div>

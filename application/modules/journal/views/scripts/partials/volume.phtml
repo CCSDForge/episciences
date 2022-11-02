@@ -14,12 +14,13 @@ $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
                         <?php
                         $mTitles = $metadata->getTitles();
                         $locale = Episciences_Tools::getLocale();
+                        $alt = array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)];
                         ?>
 
                         <img src="<?= $metadata->getFileUrl() ?>"
                              class="media-object img-thumbnail"
                              style="max-width: 10em"
-                             alt="<?= array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)] ?>"/>
+                             alt="<?= $alt ?>" data-toggle="tooltip" title="<?= $alt ?>"/>
                     <?php endif; ?>
                 <?php endforeach; ?>
             <?php endif; ?>
