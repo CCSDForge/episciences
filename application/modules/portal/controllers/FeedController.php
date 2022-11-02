@@ -119,7 +119,7 @@ class FeedController extends Zend_Controller_Action
         $client = new Client($cHeaders);
 
         $solrHost = sprintf('%s://%s:%s/solr/%s/select/?', ENDPOINTS_SEARCH_PROTOCOL, ENDPOINTS_SEARCH_HOST, ENDPOINTS_SEARCH_PORT, ENDPOINTS_CORENAME);
-        $solrQuery = $solrHost . 'indent=true&q=*:*&group=true&group.field=revue_title_s&group.limit=2&fl=paper_title_t,abstract_t,author_fullname_s,revue_code_t,publication_date_tdate,keyword_t,revue_title_s,doi_s,es_doc_url_s,paperid&sort=publication_date_tdate asc';
+        $solrQuery = $solrHost . 'indent=true&q=*:*&group=true&group.field=revue_title_s&group.limit=2&fl=paper_title_t,abstract_t,author_fullname_s,revue_code_t,publication_date_tdate,keyword_t,revue_title_s,doi_s,es_doc_url_s,paperid&sort=publication_date_tdate desc';
 
 
         try {
