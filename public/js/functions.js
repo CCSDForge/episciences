@@ -812,3 +812,15 @@ function enableModalSubmitButton(){
 function isBackDated(input, locale){
     return new Date().toLocaleDateString(locale) > new Date(input).toLocaleDateString(locale);
 }
+
+/**
+ *
+ * @param $element
+ * @param newTitle
+ */
+function updateTooltipTitle($element, newTitle = ''){
+
+    $element.attr('title', translate(newTitle))
+        .tooltip('fixTitle')
+        .tooltip('show');
+}

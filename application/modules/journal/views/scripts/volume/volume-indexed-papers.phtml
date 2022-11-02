@@ -81,10 +81,11 @@
     <?php endforeach; ?>
 </div>
 
-<div class="row">
-    <?php if (Episciences_Auth::isSecretary()) : ?>
-        <a class="btn btn-default btn-sm" target="_blank"
-           href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>"><?= $this->translate('Exporter le volume au format DOAJ') ?></a>
-    <?php endif; ?>
-
-</div>
+<?php if (Episciences_Auth::isSecretary()) : ?>
+    <div class="row">
+        <div class="col-sm-12">
+            <a class="btn btn-default btn-sm" target="_blank"
+               href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>"><?= $this->translate('Exporter le volume au format DOAJ') ?></a>
+        </div>
+    </div>
+<?php endif; ?>

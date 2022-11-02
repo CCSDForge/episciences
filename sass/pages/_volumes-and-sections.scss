@@ -9,7 +9,7 @@
 #volume h3, #volume h3 a,
 #section h1, #section h1 a,
 #section h2, #section h2 a,
-#section h3, #section h3 a  {
+#section h3, #section h3 a {
   color: #007cba;
   font-weight: bold;
 }
@@ -47,7 +47,7 @@
 
 
 .alert-violet {
-  color: #86708A;;
+  color: #86708A;
   background-color: #E3D9E5;
   border-color: #C9BFCB;
 }
@@ -55,13 +55,22 @@
 .alert-violet h4 {
   color: #ce5c00;
 }
+
 /* label violet */
 .label-violet,
 .badge-violet {
-  background-color: #86708A;;
+  background-color: #86708A;
 }
 
 .label-violet[href],
 .badge-violet[href] {
   background-color: #356635;
+}
+
+.attachment-metadata-volume {
+  float: left;
+  margin-right: 10px;
+  max-width: 16vw;
+  max-height: 16vh;
+
 }

@@ -12,7 +12,7 @@ use Monolog\Logger;
  * @author ccsd
  *
  */
-class Ccsd_Auth_Adapter_Cas implements  \Ccsd\Auth\Adapter\AdapterInterface
+class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
 {
 
     /**
@@ -400,7 +400,7 @@ class Ccsd_Auth_Adapter_Cas implements  \Ccsd\Auth\Adapter\AdapterInterface
 
 
         try {
-           $userLanguage = Zend_Registry::get('lang');
+            $userLanguage = Zend_Registry::get('lang');
         } catch (Zend_Exception $exception) {
             $userLanguage = Episciences_Translation_Plugin::LANG_EN;
         }
@@ -543,7 +543,8 @@ class Ccsd_Auth_Adapter_Cas implements  \Ccsd\Auth\Adapter\AdapterInterface
         // TODO: Implement post_login() method.
     }
 
-    private function setLogger(): void{
+    private function setLogger(): void
+    {
 
 
         if (defined('CAS_SERVICE_LOG_PATH')) {
@@ -555,7 +556,7 @@ class Ccsd_Auth_Adapter_Cas implements  \Ccsd\Auth\Adapter\AdapterInterface
         }
 
         $casLogger = new Logger('CASLogger');
-        $handler = new RotatingFileHandler($logPath,0, Logger::DEBUG, true, 0664);
+        $handler = new RotatingFileHandler($logPath, 0, Logger::DEBUG, true, 0664);
 
         $formatter = new LineFormatter(null, null, false, true);
         $handler->setFormatter($formatter);
