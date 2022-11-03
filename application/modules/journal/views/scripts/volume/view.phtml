@@ -27,7 +27,7 @@ $indexedPapers = $this->volume->getIndexedPapers();
 
     <?php if ($indexedPapers) : ?>
 
-        <?= $this->partial('volume/volume-indexed-papers.phtml', ['indexedPapers' => $indexedPapers]) ?>
+        <?= $this->partial('volume/volume-indexed-papers.phtml', ['indexedPapers' => $indexedPapers, 'volume' => $this->volume]) ?>
 
     <?php else: ?>
         <div class="row">
