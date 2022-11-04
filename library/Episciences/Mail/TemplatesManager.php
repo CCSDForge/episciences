@@ -282,7 +282,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_RATING
     ];
 
-    public const paper_commnet_by_edditor_copy_tags = [
+    public const paper_comment_by_edditor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME,
@@ -1707,7 +1707,7 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => self::paper_comment_from_reviewer_to_contributor_editor_copy_tags,
             self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => self::paper_comment_answer_reviewer_copy_tags,
             self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => self::paper_comment_answer_reviewer_copy_tags,
-            self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => self::paper_commnet_by_edditor_copy_tags,
+            self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => self::paper_comment_by_edditor_copy_tags,
             self::TYPE_PAPER_DELETED_AUTHOR_COPY => self::paper_deleted_author_copy_tags,
             self::TYPE_PAPER_DELETED_EDITOR_COPY => self::paper_deleted_editor_copy_tags,
             self::TYPE_PAPER_DELETED_REVIEWER_COPY => self::paper_deleted_reviewer_copy_tags,
