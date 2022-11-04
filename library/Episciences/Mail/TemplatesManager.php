@@ -285,6 +285,7 @@ class Episciences_Mail_TemplatesManager
     public const paper_commnet_by_edditor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME,
         Episciences_Mail_Tags::TAG_ARTICLE_ID,
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_COMMENT,
@@ -639,12 +640,13 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
     ];
     public const paper_suggest_new_version_tags = [
+        Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
         Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
-        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME,  // editor screen name (sender screen name)
         Episciences_Mail_Tags::TAG_ARTICLE_ID,
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
@@ -653,6 +655,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_URL,    // paper management page url
     ];
     public const paper_suggest_refusal_tags = [
+        Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,  // recipient screen name
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,    // recipient full name
