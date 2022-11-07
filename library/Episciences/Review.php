@@ -1130,7 +1130,7 @@ class Episciences_Review
         // Possibility to share the paper password for arxiv submissions
         $form->addElement('checkbox', self::SETTING_CAN_SHARE_PAPER_PASSWORD, [
                 'label' => 'Permettre aux auteurs de partager le mot de passe papier arXiv',
-                'description' => "L’auteur peut déléguer à la revue la mise à jour ou le remplacement de sa soumission publiée sur arXiv",
+                'description' => "L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );

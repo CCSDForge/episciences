@@ -3387,6 +3387,7 @@ class PaperController extends PaperDefaultController
     private function savePaperPassword(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $displayPaperPasswordBloc = false): void
     {
 
+
         if ($request->isPost() && $displayPaperPasswordBloc && $paper->isOwner()) {
 
             $params = $request->getPost();
@@ -3397,10 +3398,18 @@ class PaperController extends PaperDefaultController
                 $message = $this->view->translate("Le mot de passe papier n'a pas été enregistré");
 
                 $postedPwd = trim($params['paperPassword']);
-
+                $detectedSize = mb_strlen($postedPwd);
                 if (empty($postedPwd)) {
                     $message .= $this->view->translate(': ');
                     $message .= $this->view->translate('le champ est vide.');
+
+                } elseif ($detectedSize > MAX_PWD_INPUT_SIZE) {
+                    $message .= ', ';
+                    $message .= $this->view->translate('car');
+                    $message .= ' ';
+                    $message .= sprintf($this->view->translate("le nombre maximum de caractères autorisé est de <code>%u</code>"), MAX_PWD_INPUT_SIZE);
+                    $message .= ' ';
+                    $message .= sprintf($this->view->translate('mais </code>%u</code> a été détecté.'), $detectedSize);
                 } elseif ($this->getPlainPaperPassword($paper) === $postedPwd) {
                     $message .= ', ';
                     $message .= $this->view->translate('car il est identique à celui déjà enregistré.');
@@ -3410,8 +3419,6 @@ class PaperController extends PaperDefaultController
                     if ($this->saveCipherPaperPassword($paper)) {
                         $message = $this->view->translate("Votre mot de passe papier a bien été enregistré.");
                     }
-
-
                 }
 
                 $isErrors ? $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message) : $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);

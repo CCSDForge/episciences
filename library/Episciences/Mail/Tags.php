@@ -83,6 +83,7 @@ class Episciences_Mail_Tags
     public const TAG_ACTION_TIME = '%%ACTION_TIME%%';
 
     public const TAG_EDITOR_SCREEN_NAME = '%%EDITOR_SCREEN_NAME%%';
+    public const TAG_EDITOR_FULL_NAME = '%%EDITOR_FULL_NAME%%';
     //git #180
     public const TAG_AUTHORS_NAMES = '%%AUTHORS_NAMES%%';
 
@@ -145,7 +146,8 @@ class Episciences_Mail_Tags
         self::TAG_CONTRIBUTOR_FULL_NAME => 'nom complet du déposant',
         self::TAG_CURRENT_YEAR => "l'année en cours (e.g. : 2022)",
         self::TAG_DOI => "DOI de l'article : DOI_prefix/DOI_format (e.g. : 10.46298/jdmdh.9251)",
-        self::TAG_EDITOR_SCREEN_NAME => "nom d’affichage du rédacteur à l'origine de l'action (ajouter un commentaire)",
+        self::TAG_EDITOR_SCREEN_NAME => "nom d’affichage du rédacteur à l'origine de l'action (ajouter un commentaire / suggestion)",
+        self::TAG_EDITOR_FULL_NAME => "nom complet du rédacteur à l'origine de l'action (ajouter un commentaire / suggestion)",
         self::TAG_EXPIRATION_DATE => "date d'expiration de l'invitation",
         self::TAG_INVITATION_DATE => "date d'envoi de l'invitation",
         self::TAG_INVITATION_DEADLINE => "date d'expiration de l'invitation",

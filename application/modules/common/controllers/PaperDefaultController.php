@@ -368,7 +368,9 @@ class PaperDefaultController extends DefaultController
             Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId),
             Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
-            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail()
+            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
+            Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME => $commentator->getScreenName(),
+            Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME=> $commentator->getFullName()
         ];
 
         if ($oComment->getFile()) { //  attachment file
@@ -396,7 +398,6 @@ class PaperDefaultController extends DefaultController
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY;
                 break;
             default:
-                $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] = $commentator->getScreenName();
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
         }
 

@@ -2899,7 +2899,7 @@ class Episciences_Paper
             self::STATUS_WAITING_FOR_MAJOR_REVISION
         ];
 
-        $ignoredStatus += self::$_canBeAssignedDOI;
+        $ignoredStatus = array_merge($ignoredStatus, self::$_canBeAssignedDOI);
 
         if (!in_array($oldStatus, $ignoredStatus, true)) {
 

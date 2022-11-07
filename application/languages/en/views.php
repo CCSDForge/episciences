@@ -1957,7 +1957,8 @@ return [
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME] => "tenderer First Name and Last Name",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_CURRENT_YEAR] => "current year (e.g. 2022)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_DOI] => "article's DOI: DOI_prefix/DOI_format (e.g. 10.46298/jdmdh.9251)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] => "editor's Screen Name at the origin of the action (add a comment)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] => "editor's Screen Name at the origin of the action (add a comment / suggestion)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] => "editor's First Name and Last Name at the origin of the action (add a comment / suggestion)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EXPIRATION_DATE] => "expiration date of invitation",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DATE] => "date of sending the invitation",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DEADLINE] => "expiration date of invitation",
@@ -2249,16 +2250,17 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to confirm the version to the journal's standards (formatted by the copy preparer)",
 
     // Mot de passe papier
-    'Mot de passe papier' => 'Paper password',
+    'Mot de passe papier arXiv' => "arXiv's paper password",
     'Afficher le mot de passe' => 'Show Password',
     "Le mot de passe papier n'a pas été enregistré" => 'Paper password has not been saved',
     'le champ est vide.' => 'the field is blank.',
     'car il est identique à celui déjà enregistré.' => 'because it is identical to the one already registered.',
     'Votre mot de passe papier a bien été enregistré.' => 'Paper password has been saved.',
-    "Si vous le souhaitez, vous pouvez partager le mot de passe papier permettant ainsi à la revue de mettre à jour ou de remplacer ce papier dans l'archive ouverte." => 'If you wish, you can share the paper password allowing the journal to update or replace this paper in the open archive.',
-    'L’auteur peut déléguer à la revue la mise à jour ou le remplacement de sa soumission publiée sur arXiv' => 'The author can delegate to the journal the updating or replacement of his submission published on arXiv',
+    "Si vous le souhaitez, vous pouvez partager le mot de passe papier permettant ainsi à la revue de mettre à jour ce papier dans l'archive ouverte." => 'If you wish, you can share the paper password allowing the journal to update this paper in the open archive.',
+    'L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv' => 'The author can delegate to the journal the updating of his submission published on arXiv',
     'Copier' => 'Copy',
-    "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password"
-
-
+    "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
+    'car' => 'because',
+    "le nombre maximum de caractères autorisé est de <code>%u</code>" => "the total number of characters allowed is <code>%u</code>",
+    'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.'
 ];
