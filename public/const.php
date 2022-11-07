@@ -193,6 +193,7 @@ function define_simple_constants()
     define('CE_RESOURCES_NAME', 'episciences.zip');
     define('DUPLICATE_ENTRY_SQLSTATE', 23000);
     define('TINYMCE_DIR', '/js/tinymce/');
+    define('MAX_PWD_INPUT_SIZE', 40);
 
 }
 
