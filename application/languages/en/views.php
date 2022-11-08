@@ -2263,6 +2263,6 @@ return [
     'Copier' => 'Copy',
     "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
     'car' => 'because',
-    "le nombre maximum de caractères autorisé est de <code>%u</code>" => "the total number of characters allowed is <code>%u</code>",
+    "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.'
 ];
