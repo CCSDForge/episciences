@@ -214,7 +214,8 @@ class Episciences_Paper_LicenceManager
         if (isset($xmlString->teiHeader->fileDesc->publicationStmt->availability->licence, $xmlString->teiHeader->fileDesc->publicationStmt->availability->licence->attributes()->target)) {
                 $licence = (string) $xmlString->teiHeader->fileDesc->publicationStmt->availability->licence->attributes()->target;
                 //very specific ~~> try to replace bad url licence by
-                $licence = str_replace("http://creativecommons.org/licenses/by/","https://creativecommons.org/licenses/by/1.0",$licence);
+                $badby = "/http:\/\/creativecommons.org\/licenses\/by\/$/";
+                $licence = preg_replace($badby, "https://creativecommons.org/licenses/by/1.0", $licence);
                 return self::cleanLicence(str_replace('http://', 'https://', $licence));
         }
         return $licence;
