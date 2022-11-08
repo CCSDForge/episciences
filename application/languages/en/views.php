@@ -2256,7 +2256,7 @@ return [
     'le champ est vide.' => 'the field is blank.',
     'car il est identique à celui déjà enregistré.' => 'because it is identical to the one already registered.',
     'Votre mot de passe papier a bien été enregistré.' => 'Paper password has been saved.',
-    "Si vous le souhaitez, vous pouvez partager le mot de passe papier permettant ainsi à la revue de mettre à jour ce papier dans l'archive ouverte." => 'If you wish, you can share the paper password allowing the journal to update this paper in the open archive.',
+    "Si vous le souhaitez et si la revue vous le demande, vous pouvez partager ici le mot de passe papier lui permettant de mettre à jour ce papier dans arXiv, en particulier pour mettre en ligne la version finale mise en page de votre article. Ce mot de passe est chiffré et sera automatiquement supprimé à la publication de l'article. Seuls les gestionnaires de votre article ont accès à ce mot de passe." => 'If you wish, and if the journal asks you to, you can share here the paper password that will allow it to update this paper in arXiv, in particular to put the formatted version of your paper online. This password is encrypted and will be automatically deleted when the paper is published. Only the managers of your paper have access to this password.',
     'L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv' => 'The author can delegate to the journal the updating of his submission published on arXiv',
     'Copier' => 'Copy',
     "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
