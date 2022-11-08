@@ -256,15 +256,28 @@ class PaperController extends PaperDefaultController
         // paper password bloc
 
         $displayPaperPasswordBloc = (
+            Episciences_Auth::isLogged() &&
             in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
             $review->getSetting($review::SETTING_CAN_SHARE_PAPER_PASSWORD) &&
             $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
             !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
-            $isAllowedToAnswerNewVersion
+
+            (
+                $paper->isOwner() ||
+                (
+                    !$isConflictDetected &&
+                    (
+                        $isSecretary ||
+                        $paper->getEditor($loggedUid) ||
+                        $paper->getCopyEditor($loggedUid)
+
+                    )
+                )
+            )
         );
 
-        if($displayPaperPasswordBloc){
-            $plainPaperPassword =  $this->getPlainPaperPassword($paper);
+        if ($displayPaperPasswordBloc) {
+            $plainPaperPassword = $this->getPlainPaperPassword($paper);
             $this->view->paperPassword = $plainPaperPassword;
         }
 

@@ -896,8 +896,6 @@ class AdministratepaperController extends PaperDefaultController
             !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
             (
                 Episciences_Auth::isSecretary() ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
                 $paper->getEditor($loggedUid) ||
                 $paper->getCopyEditor($loggedUid)
             )
