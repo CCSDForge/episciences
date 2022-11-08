@@ -1840,6 +1840,10 @@ class AdministratepaperController extends PaperDefaultController
                 // Une fois la version acceptée, les relecteurs devraient être notifiés (leurs éviter de poursuivre un travail inutile).
                 $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING);
 
+                //delete unanswered rating invitations
+
+                $this->deleteUnansweredInvitations($paper);
+
                 //Notification de rédcateurs + autres, si le bon paramétrage a été choisi
 
                 if (!$paper->isTmp()) {

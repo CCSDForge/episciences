@@ -859,4 +859,74 @@ class PaperDefaultController extends DefaultController
         return file_exists($filePah) ? $filePah : '';
 
     }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return void
+     */
+    protected function deleteUnansweredInvitations(Episciences_Paper $paper): void
+    {
+
+        try {
+            $unansweredInvitations = $paper->getInvitations([Episciences_User_Assignment::STATUS_PENDING], true)[Episciences_User_Assignment::STATUS_PENDING];
+
+            foreach ($unansweredInvitations as $uInvitation) {
+
+                $oAssignment = Episciences_User_AssignmentsManager::findById($uInvitation['ASSIGNMENT_ID']);
+
+
+                if ($oAssignment->isTmp_user()) {
+                    $reviewer = Episciences_TmpUsersManager::findById($oAssignment->getUid());
+                    if ($reviewer) {
+                        $reviewer->generateScreen_name();
+                    }
+                } else {
+                    $reviewer = new Episciences_Reviewer;
+                    $reviewer->findWithCAS($oAssignment->getUid());
+                }
+
+                $oInvitation = Episciences_User_InvitationsManager::findById($oAssignment->getInvitation_id());
+                $params = [
+                    'itemid' => $oAssignment->getItemid(),
+                    'item' => Episciences_User_Assignment::ITEM_PAPER,
+                    'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
+                    'status' => Episciences_User_Assignment::STATUS_CANCELLED,
+                    'tmp_user' => $oAssignment->isTmp_user()
+                ];
+
+                /** @var Episciences_User_Assignment $newAssignment */
+                $newAssignment = Episciences_UsersManager::unassign($oAssignment->getUid(), $params)[0];
+                $newAssignment->setInvitation_id($oInvitation->getId());
+
+                $newAssignment->save();
+
+                $logOptions = [
+                    'aid' => $oAssignment->getId(),
+                    'invitation_id' => $oInvitation->getId(),
+                    'tmp_user' => $oAssignment->isTmp_user(),
+                    'uid' => $oAssignment->getUid(),
+                    'user' => $reviewer->toArray(),
+                    'reason' =>  'accepted paper'
+                ];
+
+
+                $paper->log(Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT, Episciences_Auth::getUid(), $logOptions);
+
+
+                $tags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($reviewer->getLangueid(), true);
+                $tags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata();
+                $tags[Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME] = $reviewer->getScreenName();
+                $tags[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME] = $reviewer->getUsername();
+
+                Episciences_Mail_Send::sendMailFromReview($reviewer, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING, $tags, $paper);
+
+
+            }
+
+
+        } catch (Zend_Exception $e) {
+            error_log($e->getMessage);
+        }
+    }
+
 }
