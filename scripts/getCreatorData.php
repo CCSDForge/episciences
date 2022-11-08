@@ -61,13 +61,14 @@ class getCreatorData extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID'])->order('DOCID DESC'); // prevent empty row
+        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID','IDENTIFIER','REPOID','VERSION'])->order('DOCID DESC'); // prevent empty row
 
         foreach ($db->fetchAll($select) as $value) {
             $paperId = $value['PAPERID'];
             $info = PHP_EOL . "PAPERID " . $paperId;
             $info .= PHP_EOL . "DOCID " . $value['DOCID'];
-
+            $identifier = trim($value['IDENTIFIER']);
+            $version = trim($value['VERSION']);
             $this->displayInfo($info, true);
             $doiTrim = trim($value['DOI']);
             if (empty($doiTrim)) {
@@ -164,14 +165,44 @@ class getCreatorData extends JournalScript
                             }
                             if ($flagNewOrcid === 1) {
                                 $this->insertAuthors($decodeAuthor, $paperId, $key);
+                                echo PHP_EOL . 'new Orcid for id ' . $key . ' and paper ' . $paperId . PHP_EOL;
                             }
-
                         }
                     }
                 }
             }
-        }
+            if ($value['REPOID'] === Episciences_Repositories::HAL_REPO_ID) {
+                $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+                $decodeAuthor = '';
+                foreach ($selectAuthor as $authorsDb) {
+                    $decodeAuthor = json_decode($authorsDb['authors'], true, 512, JSON_THROW_ON_ERROR);
+                }
+                $insertCacheTei = Episciences_Paper_AuthorsManager::putHalTeiCache($identifier, $version);
+                if ($insertCacheTei === true) {
+                    $this->displayInfo('Call Hal Tei ... put in cache '. $identifier, true);
+                }
+                $this->displayInfo('get Hal Tei from cache '. $identifier, true);
+                $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($identifier, $version);
+                $xmlString = simplexml_load_string($cacheTeiHal);
+                if ($xmlString->count() > 0) {
+                    $authorTei = Episciences_Paper_AuthorsManager::getAuthorsFromHalTei($xmlString);
+                    if (!empty($authorTei)) {
+                        $this->displayInfo('Get Author from the TEI', true);
+                        $affiInfo = Episciences_Paper_AuthorsManager::getAffiFromHalTei($xmlString);
+                        $this->displayInfo('Get Affiliations from the TEI', true);
+                        $authorTei = Episciences_Paper_AuthorsManager::mergeAuthorInfoAndAffiTei($authorTei, $affiInfo);
+                        $this->displayInfo('Format TEI informations before merge for DB', true);
+                        $this->displayInfo('Trying to merge TEI informations with those in Database for '.$identifier,true);
+                        $FormattedAuthorsForDb = Episciences_Paper_AuthorsManager::mergeInfoDbAndInfoTei($decodeAuthor, $authorTei);
+                        $this->insertAuthors($FormattedAuthorsForDb, $paperId, array_key_first($selectAuthor));
+                    } else {
+                        $this->displayError('Author not found in TEI '.$identifier.' supposed not the lastest version ->'.$version);
+                        self::logErrorMsg('NO AUTHOR IN TEI FOR '.$identifier);
+                    }
 
+                }
+            }
+        }
         $this->displayInfo('Authors Enrichment completed. Good Bye ! =)', true);
 
     }
@@ -262,7 +293,6 @@ class getCreatorData extends JournalScript
         $newAuthorInfos->setPaperId($paperId);
         $newAuthorInfos->setAuthorsId($key);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
-        echo PHP_EOL . 'new Orcid for id ' . $key . ' and paper ' . $paperId . PHP_EOL;
     }
 
     /**

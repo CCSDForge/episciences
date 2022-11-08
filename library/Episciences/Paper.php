@@ -2971,6 +2971,28 @@ class Episciences_Paper
                     $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
                     Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
 
+                    // Try to insert orcid and affiliations from hal TEI
+
+                    if ((string) $this->_repoId === Episciences_Repositories::HAL_REPO_ID) {
+                        $decodeAuthor = '';
+                        $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($this->_paperId);
+                        foreach ($selectAuthor as $authorsDb){
+                            $decodeAuthor = json_decode($authorsDb['authors'], true, 512, JSON_THROW_ON_ERROR);
+                        }
+                        Episciences_Paper_AuthorsManager::putHalTeiCache($this->_identifier, $this->_version);
+                        $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($this->_identifier, $this->_version);
+                        $xmlString = simplexml_load_string($cacheTeiHal);
+                        if ($xmlString->count() > 0) {
+                            $authorTei = Episciences_Paper_AuthorsManager::getAuthorsFromHalTei($xmlString);
+                            $affiInfo = Episciences_Paper_AuthorsManager::getAffiFromHalTei($xmlString);
+                            $authorTei = Episciences_Paper_AuthorsManager::mergeAuthorInfoAndAffiTei($authorTei, $affiInfo);
+                            $FormattedAuthorsForDb = Episciences_Paper_AuthorsManager::mergeInfoDbAndInfoTei($decodeAuthor,$authorTei);
+                            $newAuthorInfos = new Episciences_Paper_Authors();
+                            $newAuthorInfos->setAuthors(json_encode($FormattedAuthorsForDb, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
+                            $newAuthorInfos->setPaperId($this->_paperId);
+                            Episciences_Paper_AuthorsManager::update($newAuthorInfos);
+                        }
+                    }
                 } else {
                     $this->setPosition($this->applyPositioningStrategy());
                 }
