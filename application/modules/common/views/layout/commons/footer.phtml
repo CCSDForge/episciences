@@ -11,16 +11,20 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                     <li><i class="fas fa-rss"></i>&nbsp;<a href="<?php echo APPLICATION_URL; ?>/rss/papers">RSS</a></li>
                     <?php
                     if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL] !== '') {
-                        echo sprintf('<li><i class="fas fa-envelope"></i>&nbsp;<a href="mailto:%s" >%s </a ></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL], $this->translate('Courriel'));
+                        printf('<li><i class="fas fa-envelope"></i>&nbsp;<a href="mailto:%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL], $this->translate('Courriel'));
                     }
                     if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL] !== '') {
-                        echo sprintf('<li><i class="fas fa-address-book" ></i >&nbsp;<a href="%s" >%s </a ></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL], $this->translate('Contact'));
+                        printf('<li><i class="fas fa-address-book"></i >&nbsp;<a href="%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL], $this->translate('Contact'));
                     }
                     if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') {
-                        echo ' <li><abbr title = "International Standard Serial Number" > eISSN</abbr > ' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]) . '</a ></li>';
+                        $eissnOfJournal = $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]);
+                    } else {
+                        $eissnOfJournal = $this->translate('en cours');
                     }
+                    printf(' <li><abbr title = "International Standard Serial Number" >eISSN</abbr>&nbsp;%s</li>', $eissnOfJournal);
+
                     if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') {
-                        echo ' <li><abbr title = "International Standard Serial Number" > ISSN</abbr > ' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) . '</a ></li>';
+                        echo ' <li><abbr title = "International Standard Serial Number" >ISSN</abbr >&nbsp;' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) . '</li>';
                     }
                     ?>
                 </ul>
