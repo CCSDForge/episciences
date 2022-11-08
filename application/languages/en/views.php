@@ -462,8 +462,8 @@ return [
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED] => 'Copy ed.: formatting by journal completed, waiting for a final version',
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED] => "Copy ed.: formatting by author completed, waiting for final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_READY_TO_PUBLISH] => 'Copy ed.: ready to publish',
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION] =>"Accepted - waiting for author's validation",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION] =>'Accepted - waiting for final publication',
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION] => "Accepted - waiting for author's validation",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION] => 'Accepted - waiting for final publication',
     "Demander des sources auteur" => "Ask author's sources",
     "Demander la mise en forme par l'auteur (version finale)" => "Ask copy editing by the author (final version)",
     "Accepter et passer à la préparation de copie" => "Accept and proceed to copy editing",
@@ -1608,8 +1608,8 @@ return [
 
     "Lien permanent" => "Permanent link",
 
-    "Afficher les volumes vides"=> "Show empty volumes",
-    'Ce volume ne contient pas encore de documents.'=>'This volume does not yet contain any documents.',
+    "Afficher les volumes vides" => "Show empty volumes",
+    'Ce volume ne contient pas encore de documents.' => 'This volume does not yet contain any documents.',
 
 
     // NEWS
@@ -1822,8 +1822,8 @@ return [
     'Mentions légales' => 'Legal mentions',
     'Vie privée' => 'Privacy',
     'Remerciements' => 'Acknowledgements',
-    'Paramètres généraux (affichés dans le pied de page)'=>'General settings (displayed in the footer)',
-    'en cours'=>'pending',
+    'Paramètres généraux (affichés dans le pied de page)' => 'General settings (displayed in the footer)',
+    'en cours' => 'pending',
 
     //stats
     "toutes les soumissions" => "all submissions",
@@ -1886,12 +1886,12 @@ return [
     "Vous êtes maintenant connecté à votre compte :" => "You are now logged into your account:",
     "Vous avez vous-même signalé un conflit d'intérêts avec cette soumission." => "You yourself have reported a conflict of interest with this submission.",
     // ORCID
-    "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above"  ,
+    "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above",
     //review settings: final decision
     "Permettre la demande de revision" => "Allow post-acceptance revisions of articles",
     "Article - décision finale" => "Post-acceptance revisions of articles",
     "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post-acceptance revisions of articles, e.g. requesting new versions of accepted preprints",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ] => "accepted - waiting for author's final version",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION] => "accepted - waiting for author's final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for
     formatting by copy editors",
@@ -2259,9 +2259,10 @@ return [
     'Votre mot de passe papier a bien été enregistré.' => 'Paper password has been saved.',
     "Si vous le souhaitez et si la revue vous le demande, vous pouvez partager ici le mot de passe papier lui permettant de mettre à jour ce papier dans arXiv, en particulier pour mettre en ligne la version finale mise en page de votre article. Ce mot de passe est chiffré et sera automatiquement supprimé à la publication de l'article. Seuls les gestionnaires de votre article ont accès à ce mot de passe." => 'If you wish, and if the journal asks you to, you can share here the paper password that will allow it to update this paper in arXiv, in particular to put the formatted version of your paper online. This password is encrypted and will be automatically deleted when the paper is published. Only the managers of your paper have access to this password.',
     'L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv' => 'The author can delegate to the journal the updating of his submission published on arXiv',
+    "Ce champ contient le mot de passe arXiv de l'article si les auteurs/autrices ont accepté de le partager avec la revue. Il peut servir à mettre en ligne une nouvelle version de l'article à la place de l'auteur." => "This field contains the arXiv password of the article if the authors have agreed to share it with the journal. It can be used to upload a new version of the article on behalf of the author.",
     'Copier' => 'Copy',
     "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
     'car' => 'because',
-    "le nombre maximum de caractères autorisé est de <code>%u</code>" => "the total number of characters allowed is <code>%u</code>",
+    "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.'
 ];
