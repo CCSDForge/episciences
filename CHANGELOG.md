@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#281](https://github.com/CCSDForge/episciences/issues/281): Submit an article > Guidelines section: harmonization of journal/review terms [FR]
 
 ### Fixed
+- Incorrect paper status LMCS #10145 (related to https://github.com/CCSDForge/episciences/blob/main/CHANGELOG.md#10273---2022-03-18)
 - Empty %%REQUESTER_EXPRESSION%% tag (related to [#187](https://github.com/CCSDForge/episciences/issues/187)
 - Incorrect status jdmdh#10203 (related with git#372)
 - Fixed [#RT169943]: the tag %%SENDER_SCREEN_NAME%% (obsolete) that should have contained the editor's screen name has not been replaced:
