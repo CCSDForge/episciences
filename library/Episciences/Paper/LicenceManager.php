@@ -103,10 +103,7 @@ class Episciences_Paper_LicenceManager
         $communUrlArXZen = 'https://api.datacite.org/dois/';
         switch ($repoId) {
             case "1": //HAL
-                $url = "https://api.archives-ouvertes.fr/search/?q=((halId_s:" . $identifier . " OR halIdSameAs_s:" . $identifier . ") AND version_i:" . $version . ")&rows=1&wt=json&fl=licence_s";
-                $callArrayResp = self::callApiForLicenceByRepoId($url);
-                echo PHP_EOL . 'CALL: ' . $url;
-                echo PHP_EOL . 'API RESPONSE ' . $callArrayResp;
+                $callArrayResp = self::getLicenceFromTeiHal($identifier, $version);
                 break;
             case "2": //ARXIV
                 $url = $communUrlArXZen . $prefixArxiv . $identifier;
@@ -145,7 +142,7 @@ class Episciences_Paper_LicenceManager
         $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         $sets = $cache->getItem($cleanID . "_licence.json");
         $sets->expiresAfter(self::ONE_MONTH);
-        if ($callArrayResp !== ""){
+        if ($callArrayResp !== "") {
             if ($repoId === Episciences_Repositories::ARXIV_REPO_ID || $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
                 $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
                 if (isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
@@ -167,25 +164,17 @@ class Episciences_Paper_LicenceManager
                     $cache->save($sets);
                 }
             } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
-                $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
-                if ($licenceArray['response']['numFound'] !== 0 && array_key_exists('licence_s', $licenceArray['response']['docs'][0])) {
-                    $licenceGetter = $licenceArray['response']['docs'][0]['licence_s'];
-                    $licenceGetter = self::cleanLicence($licenceGetter);
-                    echo PHP_EOL . $licenceGetter;
-                    $sets->set(json_encode($licenceArray['response'], JSON_THROW_ON_ERROR));
-                    $cache->save($sets);
-                    self::insert([
-                        [
-                            'licence' => $licenceGetter,
-                            'docId' => (int) $docId,
-                            'sourceId' => Episciences_Repositories::HAL_REPO_ID
-                        ]
-                    ]);
-                    echo PHP_EOL . 'INSERT DONE ';
-                } else {
-                    $sets->set(json_encode([""]));
-                    $cache->save($sets);
-                }
+                echo PHP_EOL . $callArrayResp;
+                $sets->set(json_encode($callArrayResp, JSON_THROW_ON_ERROR));
+                $cache->save($sets);
+                self::insert([
+                    [
+                        'licence' => $callArrayResp,
+                        'docId' => (int) $docId,
+                        'sourceId' => Episciences_Repositories::HAL_REPO_ID
+                    ]
+                ]);
+                echo PHP_EOL . 'INSERT DONE ';
             }
         }
     }
@@ -209,6 +198,26 @@ class Episciences_Paper_LicenceManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return ($db->delete(T_PAPER_LICENCES, ['docid = ?' => $docId]) > 0);
 
+    }
+
+    /**
+     * @param $identifier
+     * @param $version
+     * @return void
+     */
+    public static function getLicenceFromTeiHal($identifier, $version): string
+    {
+        Episciences_Paper_AuthorsManager::putHalTeiCache($identifier, $version);
+        $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($identifier, $version);
+        $xmlString = simplexml_load_string($cacheTeiHal);
+        $licence = '';
+        if (isset($xmlString->teiHeader->fileDesc->publicationStmt->availability->licence, $xmlString->teiHeader->fileDesc->publicationStmt->availability->licence->attributes()->target)) {
+                $licence = (string) $xmlString->teiHeader->fileDesc->publicationStmt->availability->licence->attributes()->target;
+                //very specific ~~> try to replace bad url licence by
+                $licence = str_replace("http://creativecommons.org/licenses/by/","https://creativecommons.org/licenses/by/1.0",$licence);
+                return self::cleanLicence(str_replace('http://', 'https://', $licence));
+        }
+        return $licence;
     }
 
 }
