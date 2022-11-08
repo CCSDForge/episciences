@@ -1823,6 +1823,7 @@ return [
     'Vie privée' => 'Privacy',
     'Remerciements' => 'Acknowledgements',
     'Paramètres généraux (affichés dans le pied de page)'=>'General settings (displayed in the footer)',
+    'en cours'=>'pending',
 
     //stats
     "toutes les soumissions" => "all submissions",
