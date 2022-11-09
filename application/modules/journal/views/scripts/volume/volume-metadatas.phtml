@@ -3,16 +3,20 @@
 <?php
 /** @var Episciences_Volume_Metadata $metadata */
 foreach ($metadatas as $metadata) : ?>
-    <?php
-    $content = $metadata->getContent();
-    $metaId = $metadata->getId();
-    $hasFile = $metadata->hasFile();
-    $hasContent = !empty($metadata->getContent());
-    ?>
+<?php
+$content = $metadata->getContent();
+$metaId = $metadata->getId();
+$hasFile = $metadata->hasFile();
+$hasContent = !empty($metadata->getContent());
+?>
 
-    <div id="meta-<?= $metaId ?>">
+<div id="meta-<?= $metaId ?>">
 
-        <?php if ($hasFile): ?>
+    <?php if ($hasFile): ?>
+
+    <div class="row">
+        <div class="col-sm-2">
+
 
             <?php if ($metadata->isPicture()) : ?>
 
@@ -22,11 +26,17 @@ foreach ($metadatas as $metadata) : ?>
                 $alt = array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)];
 
                 ?>
-                <img class="attachment-metadata-volume" src="<?= $metadata->getFileUrl() ?>" alt="<?= $alt ?>" data-toggle="tooltip" title="<?= $alt ?>"/>
+
+
+                <img class="attachment-metadata-volume" src="<?= $metadata->getFileUrl() ?>" alt="<?= $alt ?>"
+                     data-toggle="tooltip" title="<?= $alt ?>"/>
+
 
             <?php else: ?>
 
-                <a href="<?= $metadata->getFileUrl() ?>" target="_blank">
+            <?php $download = !$metadata->isPDF() ? 'download="' . $metadata->getFile() . '"' : ''; ?>
+
+                <a href="<?= $metadata->getFileUrl() ?>" <?= $download ?> target="_blank">
                     <button class="btn btn-default btn-sm attachment-metadata-volume">
                         <span class="glyphicon glyphicon-file"></span>
                         <?= $metadata->getTitle() ?>
@@ -35,12 +45,18 @@ foreach ($metadatas as $metadata) : ?>
 
             <?php endif; ?>
 
-        <?php endif; ?>
+            <?php endif; ?>
 
-        <?php if ($hasContent) : ?>
-            <p class="text-justify small"><?= $content ?></p>
-        <?php endif; ?>
+        </div>
+
+        <div class="col-sm-10">
+
+            <?php if ($hasContent) : ?>
+                <p class="attachment-metadata-volume small"><?= $content ?></p>
+            <?php endif; ?>
+
+        </div>
 
     </div>
 
-<?php endforeach; ?>
+    <?php endforeach; ?>
