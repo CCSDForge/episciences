@@ -175,11 +175,15 @@ class Episciences_Volume_Metadata
         return $this;
     }
 
-    public function isPDF()
+    public function isPDF(): bool
     {
         $type = $this->getFileType();
-        return (is_array($type) && $type[1] == 'pdf') ? 1 : 0;
+        return (is_array($type) && $type[1] === 'pdf');
     }
+
+    /**
+     * @return false|string[]|null
+     */
 
     public function getFileType()
     {
@@ -188,7 +192,12 @@ class Episciences_Volume_Metadata
         }
 
         $mime = Episciences_Tools::getMimeType($this->getFilePath());
-        list($fileinfo, $charset) = explode(' ', $mime);
+        list($fileinfo) = explode(' ', $mime);
+
+        if (mb_substr($fileinfo, -1, 1) === ';') {
+            $fileinfo = mb_substr($fileinfo, 0, -1);
+        }
+
         return explode('/', $fileinfo);
     }
 
@@ -213,10 +222,10 @@ class Episciences_Volume_Metadata
         return (!$this->hasFile()) ? null : REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/' . $this->getFile();
     }
 
-    public function isPicture()
+    public function isPicture(): bool
     {
         $type = $this->getFileType();
-        return (is_array($type) && $type[0] == 'image') ? 1 : 0;
+        return (is_array($type) && $type[0] === 'image');
     }
 
     public function getFileUrl()

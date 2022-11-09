@@ -10,7 +10,7 @@ $indexedPapers = $this->volume->getIndexedPapers();
         <div class="col-sm-12">
             <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($this->volume->getDescriptionKey())) : ?>
 
-                <div id="description">
+                <div id="description" class="col-sm-12">
                     <p class="text-justify text-primary"><?= $this->translate($this->volume->getDescriptionKey()) ?></p>
                 </div>
 
