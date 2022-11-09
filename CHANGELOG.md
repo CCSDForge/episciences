@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.36 - 2022-11-09
 ### Added
 - Improved rendering of the volume page
 - authors can now enter their paper password provided by the open archive on the article page.
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#280](https://github.com/CCSDForge/episciences/issues/280): set spellcheck to false in dynamic datatable search boxes.
 - [#281](https://github.com/CCSDForge/episciences/issues/281): Submit an article > Guidelines section: harmonization of journal/review terms [FR]
 - Now, when an article is accepted, all unanswered invitations are deleted. The reviewer is informed of this action.
-- Add ISSN pending until the ISSN is actually issued
+- Add 'ISSN pending' until the ISSN is actually issued
 
 ### Fixed
 - Fix incorrect HTML in footer
