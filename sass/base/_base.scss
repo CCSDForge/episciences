@@ -150,3 +150,7 @@ table.table {
 input[type="radio"] {
   width: auto;
 }
+
+abbr[data-original-title], abbr[title] {
+  border-bottom: none;
+}
