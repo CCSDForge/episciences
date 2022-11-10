@@ -1,86 +1,136 @@
 <?php
+
+use Episciences\View\Osl;
+
 $journalSettings = Zend_Registry::get('reviewSettings');
 ?>
 
-<footer>
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
-                <ul class="contact">
-                    <span><?php echo $this->translate('À propos'); ?></span>
-                    <li><i class="fas fa-rss"></i>&nbsp;<a href="<?php echo APPLICATION_URL; ?>/rss/papers">RSS</a></li>
-                    <?php
-                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL] !== '') {
-                        printf('<li><i class="fas fa-envelope"></i>&nbsp;<a href="mailto:%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL], $this->translate('Courriel'));
-                    }
-                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL] !== '') {
-                        printf('<li><i class="fas fa-address-book"></i >&nbsp;<a href="%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL], $this->translate('Contact'));
-                    }
-                    if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') {
-                        $eissnOfJournal = $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]);
-                    } else {
-                        $eissnOfJournal = $this->translate('en cours');
-                    }
-                    printf(' <li><abbr title = "International Standard Serial Number" >eISSN</abbr>&nbsp;%s</li>', $eissnOfJournal);
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+                    <ul class="contact">
+                        <span><?php echo $this->translate('À propos'); ?></span>
+                        <li><i class="fas fa-rss"></i>&nbsp;<a href="<?php echo APPLICATION_URL; ?>/rss/papers">RSS</a>
+                        </li>
+                        <?php
+                        if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL] !== '') {
+                            printf('<li><i class="fas fa-envelope"></i>&nbsp;<a href="mailto:%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL], $this->translate('Courriel'));
+                        }
+                        if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL] !== '') {
+                            printf('<li><i class="fas fa-address-book"></i >&nbsp;<a href="%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL], $this->translate('Contact'));
+                        }
+                        if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') {
+                            $eissnOfJournal = $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]);
+                        } else {
+                            $eissnOfJournal = $this->translate('en cours');
+                        }
+                        printf(' <li><abbr title = "International Standard Serial Number" >eISSN</abbr>&nbsp;%s</li>', $eissnOfJournal);
 
-                    if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') {
-                        echo ' <li><abbr title = "International Standard Serial Number" >ISSN</abbr >&nbsp;' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) . '</li>';
-                    }
-                    ?>
-                </ul>
+                        if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') {
+                            echo ' <li><abbr title = "International Standard Serial Number" >ISSN</abbr >&nbsp;' . $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) . '</li>';
+                        }
+                        ?>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-3 col-sm-4 col-xs-12">
+                    <ul class="social">
+                        <span><?php echo $this->translate('Support'); ?></span>
+                        <li>
+                            <i class="fas fa-book"></i>&nbsp;<a
+                                    href="https://doc.episciences.org/"><?php echo $this->translate('Documentation'); ?></a>
+                        </li>
+                        <?php
+                        if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== '') {
+                            echo sprintf('<li><i class="fas fa-life-ring"></i>&nbsp;<a href="mailto:%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL], $this->translate('Courriel support technique'));
+                        }
+                        if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT] !== '') {
+                            echo sprintf('<li><i class="fas fa-life-ring" ></i >&nbsp;<a href="%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT], $this->translate('Support technique'));
+                        }
+                        ?>
+                        <li>
+                            <i class="fas fa-balance-scale"></i>&nbsp;<a
+                                    href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
+                        </li>
+                        <li>
+                            <i class="fas fa-cookie-bite"></i>&nbsp;<a
+                                    href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-lg-5 col-md-5 col-sm-4 col-xs-12">
+                    <ul class="about">
+                        <span><?php echo $this->translate("À propos d'Episciences"); ?></span>
+
+                        <li>
+                            <a href="https://www.episciences.org/"> Episciences</a>
+                        </li>
+
+                        <li>
+                            <a href="https://www.episciences.org/page/journals"><?php echo $this->translate('Revues hébergées'); ?> </a>
+                        </li>
+                        <li>
+                            <a href="https://www.episciences.org/page/acknowledgements"><?php echo $this->translate('Remerciements'); ?> </a>
+                        </li>
+                        <li><small><?php
+                                $versions = Episciences_Settings::getApplicationVersion();
+                                if ($versions['gitBranch'] !== '') {
+                                    printf('Episciences <a target="_blank" rel="noopener" href="%s">%s-%s</a>', Episciences_Settings::$githubChangeLogURL, $versions['gitBranch'], $versions['gitHash']);
+                                }
+                                ?>
+                            </small>
+                        </li>
+
+                        <?php $isOslAvailable = Osl::isOslAvailable(); ?>
+                        <?php if ($isOslAvailable): ?>
+                            <?php $enableOsl = Osl::getOslWantedStatus(); ?>
+                            <li>
+                                <form id="toggleOsl" class="form" method="POST">
+                                    <i class="fa-solid fa-flask"></i>&nbsp;<a href="https://www.opensciencelens.eu/"
+                                                                              rel="noopener" target="_blank"><abbr
+                                                title="Open Science Lens">OSL</abbr></a>
+                                    <div class="btn-group btn-toggle" data-toggle="buttons">
+
+                                        <?php if ($enableOsl === 'on') {
+                                            $buttonType = 'btn-primary active';
+                                            $isChecked = 'checked="checked"';
+                                        } else {
+                                            $buttonType = 'btn-default';
+                                            $isChecked = 'checked=""';
+                                        }
+                                        ?>
+                                        <label class="btn btn-xs <?= $buttonType ?>">
+                                            <input type="radio" name="enableOsl" value="on" <?= $isChecked ?>>On</label>
+
+                                        <?php if ($enableOsl === 'off') {
+                                            $buttonType = 'btn-primary active';
+                                            $isChecked = 'checked="checked"';
+                                        } else {
+                                            $buttonType = 'btn-default';
+                                            $isChecked = 'checked=""';
+                                        }
+                                        ?>
+                                        <label class="btn btn-xs <?= $buttonType ?>">
+                                            <input type="radio" name="enableOsl"
+                                                   value="off" <?= $isChecked ?>>Off</label>
+                                    </div>
+                                </form>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
             </div>
-
-            <div class="col-lg-3 col-md-3 col-sm-4 col-xs-12">
-                <ul class="social">
-                    <span><?php echo $this->translate('Support'); ?></span>
-                    <li>
-                        <i class="fas fa-book"></i>&nbsp;<a
-                                href="https://doc.episciences.org/"><?php echo $this->translate('Documentation'); ?></a>
-                    </li>
-                    <?php
-                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== '') {
-                        echo sprintf('<li><i class="fas fa-life-ring"></i>&nbsp;<a href="mailto:%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL], $this->translate('Courriel support technique'));
-                    }
-                    if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT] !== '') {
-                        echo sprintf('<li><i class="fas fa-life-ring" ></i >&nbsp;<a href="%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT], $this->translate('Support technique'));
-                    }
-                    ?>
-                    <li>
-                        <i class="fas fa-balance-scale"></i>&nbsp;<a
-                                href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
-                    </li>
-                    <li>
-                        <i class="fas fa-cookie-bite"></i>&nbsp;<a
-                                href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
-                    </li>
-                </ul>
-            </div>
-            <div class="col-lg-5 col-md-5 col-sm-4 col-xs-12">
-                <ul class="about">
-                    <span><?php echo $this->translate("À propos d'Episciences"); ?></span>
-
-                    <li>
-                        <a href="https://www.episciences.org/"> Episciences</a>
-                    </li>
-
-                    <li>
-                        <a href="https://www.episciences.org/page/journals"><?php echo $this->translate('Revues hébergées'); ?> </a>
-                    </li>
-                    <li>
-                        <a href="https://www.episciences.org/page/acknowledgements"><?php echo $this->translate('Remerciements'); ?> </a>
-                    </li>
-                    <li><small><?php
-                            $versions = Episciences_Settings::getApplicationVersion();
-                            if ($versions['gitBranch'] !== '') {
-                                printf('Episciences <a target="_blank" rel="noopener" href="%s">%s-%s</a>', Episciences_Settings::$githubChangeLogURL, $versions['gitBranch'], $versions['gitHash']);
-                            }
-                            ?>
-                        </small>
-                    </li>
-                </ul>
-            </div>
-
-
         </div>
-    </div>
-</footer>
+
+        <?php if ($enableOsl === 'on' && $isOslAvailable) {
+            echo Osl::getOslScript();
+        } ?>
+    </footer>
+<?php if ($isOslAvailable) : ?>
+    <script>
+        jQuery("input[name='enableOsl']").change(function () {
+            jQuery('form#toggleOsl').submit();
+        })
+    </script>
+<?php endif; ?>
