@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.37 - 2022-11-10
+### Added
+- New feature: [Open Science Lens](https://www.opensciencelens.eu/) feature available as a preview on selected journals
+
+### Changed
+- Improved rendering of volumes
+
 ## 1.0.36 - 2022-11-09
 ### Added
 - Improved rendering of the volume page
