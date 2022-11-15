@@ -15,11 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ### Fixed
-- [RT#171463]: 
+- [RT#171463]: the reviews should not be seen by someone with a CoI declaration with
+  the pape: this fix concerns all the paper's details.
 ### Improved
 -  rendering of the "conflict management" section
 ### Changed
-- Confirmation of the absence of conflict of interest: it is now possible to cancel this type of response.
+- [RT#170200]: confirmation of the absence of conflict of interest: it is now possible to cancel this type of response.
 
 ## 1.0.37 - 2022-11-10
 ### Added
