@@ -27,9 +27,9 @@ $enrichmentLicence = $paper->getLicence();
 $enrichmentFundings = $paper->getFundings();
 $enrichmentLinkedData = $paper->getLinkedData();
 
-if ($eissn = $journal->getSetting(Episciences_Review::SETTING_ISSN)){
+if ($eissn = $journal->getSetting(Episciences_Review::SETTING_ISSN)) {
     $eissn = $this->FormatIssn($eissn);
-}else{
+} else {
     $eissn = '';
 }
 if ($issn = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT)) {
@@ -41,11 +41,14 @@ if ($issn = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT)) {
 $timestamp = time();
 ?>
 <record>
-    <?php if ($this->paperLanguage === 'en' || $this->paperLanguage === 'fr'|| $this->paperLanguage === 'eng'): ?>
-    <language><?php
-        if ($this->paperLanguage === 'eng') {echo $this->paperLanguage;}
-        elseif ($this->paperLanguage === 'en'|| $this->paperLanguage === 'fr'){echo Episciences_Tools::translateToIso6392b($this->paperLanguage);} ?></language>
-    <?php endif;?>
+    <?php if ($this->paperLanguage === 'en' || $this->paperLanguage === 'fr' || $this->paperLanguage === 'eng'): ?>
+        <language><?php
+            if ($this->paperLanguage === 'eng') {
+                echo $this->paperLanguage;
+            } elseif ($this->paperLanguage === 'en' || $this->paperLanguage === 'fr') {
+                echo Episciences_Tools::translateToIso6392b($this->paperLanguage);
+            } ?></language>
+    <?php endif; ?>
     <publisher><?= DOMAIN; ?></publisher>
     <journalTitle><?= $this->escape($journal->getName()) ?></journalTitle>
 
@@ -63,20 +66,21 @@ $timestamp = time();
     <?php if ($this->section !== '') : ?>
         <issue><?php echo Ccsd_Tools_String::truncate($this->escape($this->section), 29, '...'); ?></issue>
     <?php endif; ?>
-    <?php if($this->doi !== ''): ?>
+    <?php if ($this->doi !== ''): ?>
         <doi><?= htmlentities($this->doi, ENT_XML1) ?></doi>
-    <?php endif;?>
+    <?php endif; ?>
     <publisherRecordId><?php echo $paper->getPaperid(); ?></publisherRecordId>
     <documentType>journal article</documentType>
     <?php foreach ($titles as $lang => $title) : ?>
         <?php
-        if ($lang === 'en' || $lang === 'fr'|| $lang === 'eng') {
-            if ($lang === 'eng') { echo '<title language='.$this->escape($lang).'>'.$this->escape($title).'</title>';}
-            elseif ($lang === 'en'|| $lang === 'fr') {
-                echo '<title language="'.$this->escape(Episciences_Tools::translateToIso6392b($lang)).'">'.$this->escape($title).'</title>';
+        if ($lang === 'en' || $lang === 'fr' || $lang === 'eng') {
+            if ($lang === 'eng') {
+                echo '<title language=' . $this->escape($lang) . '>' . $this->escape($title) . '</title>';
+            } elseif ($lang === 'en' || $lang === 'fr') {
+                echo '<title language="' . $this->escape(Episciences_Tools::translateToIso6392b($lang)) . '">' . $this->escape($title) . '</title>';
             }
         } else {
-            echo '<title>'. $this->escape($title) .'</title>';
+            echo '<title>' . $this->escape($title) . '</title>';
         } ?>
     <?php endforeach; ?>
     <?php
@@ -84,8 +88,8 @@ $timestamp = time();
         <authors>
             <?php
             foreach ($authors as $order => $creatorName) {
-                $givenName= '';
-                $familyName= '';
+                $givenName = '';
+                $familyName = '';
                 if (str_contains($creatorName, ',')) {
                     [$familyName, $givenName] = explode(', ', $creatorName);
                     $givenName = trim($givenName, ',');
@@ -94,7 +98,7 @@ $timestamp = time();
                 }
                 ?>
                 <author>
-                    <name><?php if($givenName !=='') :?><?=$this->escape($givenName)." " ?><?php endif; ?><?php echo $this->escape($familyName) ?></name>
+                    <name><?php if ($givenName !== '') : ?><?= $this->escape($givenName) . " " ?><?php endif; ?><?php echo $this->escape($familyName) ?></name>
                     <?php if (!empty($enrichmentAuthorsWithAffiNum)): ?>
                         <?php if (isset($enrichmentAuthorsWithAffiNum[$order]['idAffi'])): ?>
                             <?php foreach ($enrichmentAuthorsWithAffiNum[$order]['idAffi'] as $index => $affiNum) { ?>
@@ -116,10 +120,11 @@ $timestamp = time();
     <?php if (!empty($arrayAffiliation)) : ?>
         <affiliationsList>
             <?php foreach ($arrayAffiliation as $affiIndex => $affiName) { ?>
-                <affiliationName affiliationId="<?=array_search($this->escape($affiIndex), array_keys($arrayAffiliation))?>"><?=$this->escape($affiName['name']) ?></affiliationName>
+                <affiliationName
+                        affiliationId="<?= array_search($this->escape($affiIndex), array_keys($arrayAffiliation)) ?>"><?= $this->escape($affiName['name']) ?></affiliationName>
             <?php } ?>
         </affiliationsList>
-    <?php endif;?>
+    <?php endif; ?>
     <?php if ($abstracts): ?>
         <?php
         foreach ($abstracts as $lang => $abstract) {
@@ -129,10 +134,10 @@ $timestamp = time();
                 continue;
             }
             if ($lang && Zend_Locale::isLocale($lang)) {
-                if ($lang === 'en' || $lang === 'fr'|| $lang === 'eng') {
+                if ($lang === 'en' || $lang === 'fr' || $lang === 'eng') {
                     if ($lang === 'eng') {
                         $langId = 'eng';
-                    } elseif ($lang === 'en'|| $lang === 'fr') {
+                    } elseif ($lang === 'en' || $lang === 'fr') {
                         $langId = $this->escape(Episciences_Tools::translateToIso6392b($lang));
                     }
                     echo '<abstract language="' . $langId . '">';
