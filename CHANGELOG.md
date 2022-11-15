@@ -14,7 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## Unreleased
+
+### Added
+- Term of use for the platform and users
+
 ### Fixed
+- Fixed ORCID 'X' in DOAJ export format, make it compliant with specification
 - [RT#171463]: the reviews should not be seen by someone with a CoI declaration with
   the pape: this fix concerns all the paper's details.
 ### Improved
