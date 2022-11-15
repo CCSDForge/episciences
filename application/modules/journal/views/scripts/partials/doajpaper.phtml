@@ -106,7 +106,7 @@ $timestamp = time();
                             <?php } ?>
                         <?php endif; ?>
                         <?php if (isset($enrichmentAuthorsWithAffiNum[$order]['orcid'])): ?>
-                            <orcid_id><?= "https://orcid.org/" . $this->escape($enrichmentAuthorsWithAffiNum[$order]['orcid']) ?></orcid_id>
+                            <orcid_id><?= "https://orcid.org/" . strtoupper($this->escape($enrichmentAuthorsWithAffiNum[$order]['orcid'])) ?></orcid_id>
                         <?php endif; ?>
                     <?php endif; ?>
                 </author>
