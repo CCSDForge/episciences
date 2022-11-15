@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- [RT#171463]: 
 ### Improved
 -  rendering of the "conflict management" section
 ### Changed

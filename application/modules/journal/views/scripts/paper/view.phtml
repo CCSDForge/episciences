@@ -138,13 +138,12 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <div>
     <?= $paper->getXslt() ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
-    <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper,'metadata'=> $metadata]) ?>
+    <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $metadata]) ?>
     <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
 
 </div>
 
 <?php if ($isAllowedToSeeNoPublicDetails): ?>
-
 
     <?php // paper status ?>
     <div class="panel panel-default collapsable">
@@ -160,108 +159,109 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
             </p>
         </div>
     </div>
-<?php endif; ?>
 
-<?php // préparation de copie?>
-<?php if ($isAllowedToSeeNoPublicDetails && ($this->copyEditingDemands) && !$paper->isPublished()) : ?>
-    <div id="copy-editing" class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Préparation de copie') ?></h2>
-        </div>
-        <div class="panel-body in" style="overflow: visible">
-            <?= $this->partial('partials/paper_copy_editing.phtml', [
-                    'copyEditingDemands' => $this->copyEditingDemands,
-                    'copyEditingReplyForms' => $this->copyEditingReplyForms,
-                    'paperStatus' => $status,
-                    'latestDocId' => $this->latestDocId,
-                    'linkToLatestDocId' => $this->linkToLatestDocId,
-                    'isFromZSubmit' => $this->isFromZSubmit,
-                    'zSubmitUrl' => $this->zSubmitUrl
-                ]
-            ) ?>
-        </div>
-    </div>
-<?php endif; ?>
+    <?php // préparation de copie?>
 
-<?php // versions *****************************************************
-if (
+    <?php if ($this->copyEditingDemands && !$paper->isPublished()) : ?>
+        <div id="copy-editing" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Préparation de copie') ?></h2>
+            </div>
+            <div class="panel-body in" style="overflow: visible">
+                <?= $this->partial('partials/paper_copy_editing.phtml', [
+                        'copyEditingDemands' => $this->copyEditingDemands,
+                        'copyEditingReplyForms' => $this->copyEditingReplyForms,
+                        'paperStatus' => $status,
+                        'latestDocId' => $this->latestDocId,
+                        'linkToLatestDocId' => $this->linkToLatestDocId,
+                        'isFromZSubmit' => $this->isFromZSubmit,
+                        'zSubmitUrl' => $this->zSubmitUrl
+                    ]
+                ) ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php // versions *****************************************************
+    if (
         Episciences_Auth::isLogged() &&
-    (
-        array_key_exists($loggedUid, $paper->getReviewers()) || // nor reviewer
-        $paper->getUid() === $loggedUid
-    )
-) {
-    echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]);
-}
-?>
+        (
+            array_key_exists($loggedUid, $paper->getReviewers()) || // nor reviewer
+            $paper->getUid() === $loggedUid
+        )
+    ) {
+        echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]);
+    }
+    ?>
+
+    <?php // rating reports ************************************************************************* ?>
+    <?php if ($this->reports) : ?>
+        <div id="ratings" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Evaluations') ?></h2>
+            </div>
+            <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+                <?= $this->partial('partials/paper_reports.phtml', ['paper' => $paper, 'reports' => $this->reports, 'isAllowedToSeeReportDetails' => $this->isAllowedToSeeReportDetails]) ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php // author's comments and cover letter ************************************************************************* ?>
+    <?php if ($this->author_comments && !$paper->isPublished()) : ?>
+        <?php // Author comments  *****************************************?>
+        <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
+    <?php endif; ?>
+
+    <?php // reviewer comments ************************************** ?>
+    <?php if ($this->comments && !$paper->isPublished()) : ?>
+        <div id="comments" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Commentaires des relecteurs') ?></h2>
+            </div>
+            <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+                <?= $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->comments, 'replyForms' => $this->replyForms, 'paperContributorUid' => $this->paper->getUid()]) ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php // revision requests ***************************************************** ?>
+    <?php if ($isAllowedToAnswerNewVersion && ($this->revision_requests || $this->currentDemand || $this->previousVersionsDemands) && !$paper->isPublished()) : ?>
+        <div id="answer" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Demandes de modifications') ?></h2>
+            </div>
+            <div class="panel-body in" style="overflow: visible">
+                <?= $this->partial('partials/answer_revision_request_form.phtml', [
+                    'paper' => $paper,
+                    'review' => $this->review,
+                    'current_demand' => $this->currentDemand,
+                    'zIdentifier' => $this->zIdentifier
+                ])
+                ?>
+
+                <?= !empty($this->currentDemand) ? '<hr>' : '' ?>
+
+                <?= $this->partial('partials/paper_demands.phtml', [
+                    'paper' => $paper,
+                    'review' => $this->review,
+                    'current_demand' => $this->currentDemand,
+                    'previous_demands' => $this->revision_requests,
+                    'previousVersions' => $this->previousVersions,
+                    'previousVersionsDemands' => $this->previousVersionsDemands
+                ])
+                ?>
+            </div>
+
+        </div>
+    <?php endif; ?>
+
+<?php endif; // end if $isAllowedToSeeNoPublicDetails ?>
 
 <?php // Citations *****************************************************
-    if ($this->citations !=='') {
-        echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations,'counterCitations'=> $this->counterCitations]);
-    }
+if ($this->citations !== '') {
+    echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations, 'counterCitations' => $this->counterCitations]);
+}
 ?>
-<?php // rating reports ************************************************************************* ?>
-<?php if ($this->reports) : ?>
-    <div id="ratings" class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Evaluations') ?></h2>
-        </div>
-        <div class="panel-body in" style="max-height: 350px; overflow: auto;">
-            <?= $this->partial('partials/paper_reports.phtml', ['paper' => $paper, 'reports' => $this->reports, 'isAllowedToSeeReportDetails' => $this->isAllowedToSeeReportDetails]) ?>
-        </div>
-    </div>
-<?php endif; ?>
-
-
-<?php // author's comments and cover letter ************************************************************************* ?>
-<?php if ($isAllowedToSeeNoPublicDetails && $this->author_comments && !$paper->isPublished()) : ?>
-    <?php // Author comments  *****************************************?>
-    <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
-<?php endif; ?>
-
-<?php // reviewer comments ************************************** ?>
-<?php if ($isAllowedToSeeNoPublicDetails && $this->comments && !$paper->isPublished()) : ?>
-    <div id="comments" class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Commentaires des relecteurs') ?></h2>
-        </div>
-        <div class="panel-body in" style="max-height: 350px; overflow: auto;">
-            <?= $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->comments, 'replyForms' => $this->replyForms, 'paperContributorUid' => $this->paper->getUid()]) ?>
-        </div>
-    </div>
-<?php endif; ?>
-
-
-<?php // revision requests ***************************************************** ?>
-<?php if ($isAllowedToAnswerNewVersion && ($this->revision_requests || $this->currentDemand || $this->previousVersionsDemands) && !$paper->isPublished()) : ?>
-    <div id="answer" class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Demandes de modifications') ?></h2>
-        </div>
-        <div class="panel-body in" style="overflow: visible">
-            <?= $this->partial('partials/answer_revision_request_form.phtml', [
-                'paper' => $paper,
-                'review' => $this->review,
-                'current_demand' => $this->currentDemand,
-                'zIdentifier' =>$this->zIdentifier
-            ])
-            ?>
-
-            <?= !empty($this->currentDemand) ? '<hr>' : '' ?>
-
-            <?= $this->partial('partials/paper_demands.phtml', [
-                'paper' => $paper,
-                'review' => $this->review,
-                'current_demand' => $this->currentDemand,
-                'previous_demands' => $this->revision_requests,
-                'previousVersions' => $this->previousVersions,
-                'previousVersionsDemands' => $this->previousVersionsDemands
-            ])
-            ?>
-        </div>
-
-    </div>
-<?php endif; ?>
 
 <?php // export options ***************************************************** ?>
 <?php if ($paper->isPublished()) : ?>
