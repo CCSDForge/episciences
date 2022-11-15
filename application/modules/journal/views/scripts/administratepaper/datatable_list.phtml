@@ -62,7 +62,7 @@ foreach ($this->list as $paper) : ?>
                                       title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>"
                                       class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>">
                  <?php if ($confirmedConflictsNb > 0): ?>
-                     <a href="<?= $href ?>#conflict-content">
+                     <a href="<?= $href ?>#coi-answers-<?= Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ?>">
                          <span data-toggle="tooltip"
                                title="<?= $confirmedConflictsNb . ' ' . $this->translate($coiTitle) ?>"
                                class="fas fa-exclamation-circle" style="margin-right: 5px; color: chocolate"></span>

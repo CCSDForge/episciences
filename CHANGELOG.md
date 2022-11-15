@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Improved
+-  rendering of the "conflict management" section
+### Changed
+- Confirmation of the absence of conflict of interest: it is now possible to cancel this type of response.
 
 ## 1.0.37 - 2022-11-10
 ### Added

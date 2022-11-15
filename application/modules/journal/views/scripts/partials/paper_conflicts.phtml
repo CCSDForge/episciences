@@ -1,4 +1,8 @@
-<?php if (isset($this->paperConflicts) && Episciences_Auth::isAllowedToManagePaper()) : ?>
+<?php
+$displayConflictsSection = isset($this->paperConflicts) && Episciences_Auth::isAllowedToManagePaper();
+?>
+
+<?php if ($displayConflictsSection) : ?>
     <?php
     /** @var array $paperConflicts */
     $paperConflicts = $this->paperConflicts;
@@ -8,42 +12,60 @@
             <h2 class="panel-title"><?= $this->translate('Gestion des conflits') ?></h2>
         </div>
         <div class="panel-body in" id="conflict-content">
-            <?php if (!empty($paperConflicts)) : ?>
 
-                <table class="table table-striped table-hover conflict-list" id="conflict-list">
-                    <thead>
-                    <tr>
-                        <th scope="col" class="text-center">UID</th>
-                        <th scope="col" class="text-center"><?= $this->translate("Nom d'utilisateur") ?></th>
-                        <th scope="col" class="text-center"><?= $this->translate('Détails') ?></th>
-                        <th scope="col" class="text-center"><?= $this->translate('Rapporté le') ?></th>
-                        <th scope="col" class="text-center"><?= $this->translate('Action') ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php
-                    /** @var Episciences_Paper_Conflict $conflict */
-                    foreach ($paperConflicts as $conflict) : ?>
-                        <?php $cId = $conflict->getCid(); ?>
-                        <tr id="tr-<?= $cId ?>">
-                            <td class="text-center"><code><?= $conflict->getBY() ?></code></td>
-                            <td class="text-center"><?= $this->escape($conflict->getScreenName()) ?></td>
-                            <td><?= Episciences_Tools::epi_html_decode($conflict->getMessage()) ?></td>
-                            <td class="text-center"><?= $this->Date($conflict->getDate()->format('Y-m-d')) ?></td>
-                            <td class="text-center">
+            <ul class="list-group">
+                <?php if (
+                !empty($paperConflicts[Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']]) ||
+                !empty($paperConflicts[Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']])
+                ) : ?>
 
-                                <a id="delete-conflict-<?= $conflict->getCid() ?>"
-                                   data-paperId="<?= $this->paper->getDocid() ?>">
-                                    <small class="darkgrey fas fa-trash" data-toggle="tooltip"
-                                           title="<?= $this->translate('Supprimer ce conflit') ?>"></small>
-                                </a>
+                <?php
+                /**
+                 * @var  $key string
+                 * @var  $aConflicts Episciences_Paper_Conflict
+                 */
+                foreach ($paperConflicts as $key => $aConflicts): ?>
 
-                            </td>
-                        </tr>
+                    <?php $count = count($aConflicts); ?>
 
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                    <?php if ($count > 0): ?>
+
+                        <div id="coi-<?= $key ?>">
+
+                            <?php
+                            $list = '<code id="nb-' . $key . '">' . $count . '</code>';
+                            $list .= ' ';
+                            ?>
+
+
+                            <?php if ($key === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']) : ?>
+
+                                <?php $list .= $count > 1 ? $this->translate("conflits d'intérêt confirmés") : $this->translate("conflit d'intérêt confirmé"); ?>
+
+                            <?php elseif ($key === Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']) : ?>
+
+                                <?php $list .= $count > 1 ? $this->translate("réponses : absence d'un conflit d'intérêt") : $this->translate("réponse : absence d'un conflit d'intérêt"); ?>
+
+                            <?php endif; ?>
+
+                            <li class="list-group-item text-center help-block"
+                                id="answers-wrapper-<?= $key ?>"><?= $list ?></li>
+
+
+                            <?= $this->partial('partials/paper_conflicts_table.phtml', [
+                                'docId' => $this->paper->getDocid(),
+                                'answer' => $key,
+                                'aConflicts' => $aConflicts
+                            ]) ?>
+
+                        </div>
+
+                    <?php endif; ?>
+
+
+                <?php endforeach; ?>
+
+            </ul>
 
 
             <?php else : ?>
@@ -56,40 +78,71 @@
     </div>
 
     <script>
-        $('a[id^="delete-conflict-"]').on('click', function () {
 
-            let conflictId = $(this).attr('id');
-            let docId = $(this).attr('data-paperId');
-            let countTr = $("#conflict-list tr").length
-            let cId = parseInt(conflictId.replace(/^\D+/g, ''));
 
-            bootbox.setDefaults({locale: locale});
-            bootbox.confirm(translate("Êtes-vous sûr ?"), function (isConfirmed) {
-                if (isConfirmed) {
-                    $.post(
-                        '/coi/delete/',
-                        {ajax: 1, conflictId: cId, docId: docId},
-                        function (respond) {
-                            if (parseInt(respond) === 1) {
-                                if (countTr > 2) {
-                                    $('#tr-' + cId).remove();
-                                } else {
-                                    $('#conflict-list').remove();
-                                    $('<p>' + translate('Aucun conflit pour le moment.') + '</p>').appendTo('#conflict-content');
-                                }
+        $('.dataTable').on('click', 'a[id^="delete-"]', function (){
 
-                                refreshPaperHistory(docId);
+        let data = $(this).attr('id').substring(7).split('_');
+
+        let answer = data[1];
+
+        let $currentTable = $('#' + data[0] + '_' + answer);
+
+        let cId = data[2]; // current conflict ID
+
+        let docId = $(this).attr('data-docId');
+
+
+        bootbox.setDefaults({locale: locale});
+        bootbox.confirm(translate("Êtes-vous sûr ?"), function (isConfirmed) {
+            if (isConfirmed) {
+                $.post(
+                    '/coi/delete/',
+                    {ajax: 1, conflictId: cId, docId: docId},
+                    function (respond) {
+                        if (parseInt(respond) === 1) {
+
+                            let updatedNb = getNbConflictsByAnswer(answer) - 1;
+                            let allAnswersNb = updatedNb;
+
+                            if (answer === 'yes') {
+                                allAnswersNb += getNbConflictsByAnswer('no');
 
                             } else {
-                                bootbox.alert(translate("La suppression a échoué : ") + respond);
+                                allAnswersNb += getNbConflictsByAnswer('yes');
                             }
+
+                            $('#nb-' + answer).text(updatedNb);
+
+                            $currentTable.dataTable().fnDeleteRow($('#tr-' + cId));
+
+                            if (updatedNb === 0) {
+                                $('#coi-' + answer).remove();
+                            }
+
+                            if (allAnswersNb === 0) {
+
+                                $('<p>' + translate('Aucun conflit pour le moment.') + '</p>').appendTo('#conflict-content');
+
+                            }
+
+                            refreshPaperHistory(docId);
+
+                        } else {
+                            bootbox.alert(translate("La suppression a échoué : ") + respond);
                         }
-                    );
-                }
-            });
+                    }
+                );
+            }
         });
+        });
+
+
+        function getNbConflictsByAnswer(answer) {
+            let $answerElement = $('#nb-' + answer);
+            return $answerElement.length ? parseInt($answerElement.text()) : 0;
+        }
+
     </script>
 
 <?php endif; ?>
-
-

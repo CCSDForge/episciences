@@ -4037,16 +4037,41 @@ class Episciences_Paper
     }
 
     /**
+     * @param bool $onlyConfirmed
+     * @param bool $sortedByAnswer
      * @return array [Episciences_Paper_Conflict]
      */
-    public function getConflicts(bool $onlyConfirmed = false): array
+    public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
-        if($onlyConfirmed){
+        if ($onlyConfirmed) {
 
             $this->_conflicts = array_filter($this->_conflicts, static function ($oConflict) {
                 /** @var Episciences_Paper_Conflict $oConflict */
                 return $oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
             });
+        }
+
+        if ($sortedByAnswer) {
+            $result = [
+                Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] => [],
+                Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'] => []
+            ];
+
+            /**
+             * @var  $index int
+             * @var  $oConflict Episciences_Paper_Conflict
+             */
+            foreach ($this->_conflicts as $oConflict) {
+
+                if ($oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']) {
+                    $result[Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']][] = $oConflict;
+                } elseif ($oConflict->getAnswer() === Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']) {
+                    $result[Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']][] = $oConflict;
+                }
+
+            }
+
+            return $result;
         }
 
         return $this->_conflicts;

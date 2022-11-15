@@ -1885,6 +1885,10 @@ return [
     'Annulé le' => 'Cancelled on',
     "Vous êtes maintenant connecté à votre compte :" => "You are now logged into your account:",
     "Vous avez vous-même signalé un conflit d'intérêts avec cette soumission." => "You yourself have reported a conflict of interest with this submission.",
+    "conflit d'intérêt confirmé" => 'confirmed conflict of interest',
+    "conflits d'intérêt confirmés" => 'confirmed conflicts of interest',
+    "réponse : absence d'un conflit d'intérêt" => "answer: no conflict of interest",
+    "réponses : absence d'un conflit d'intérêt" => 'answers: no conflict of interest',
     // ORCID
     "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above",
     //review settings: final decision
