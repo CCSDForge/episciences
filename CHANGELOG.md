@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.38.1 - 2022-11-16
+### Fixed
+- Added missing translation for conflict of interest
+
+### Changed
+- Footer: replaced TOS with Term Of Use 
+
 ## 1.0.38 - 2022-11-16
 
 ### Added
