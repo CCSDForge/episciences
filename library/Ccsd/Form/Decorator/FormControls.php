@@ -32,7 +32,7 @@ class Ccsd_Form_Decorator_FormControls extends Zend_Form_Decorator_HtmlTag
                     $name = $element->getName();
                     $js = <<<JAVASCRIPT
 __initMCE ('#$name:first', undefined, {
-    theme: "modern",
+    theme: 'silver',
     plugins: "link image code fullscreen table",
     toolbar1: "bold italic underline"
 });     

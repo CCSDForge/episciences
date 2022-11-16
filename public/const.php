@@ -230,8 +230,8 @@ function defineVendorJsLibraries()
     define('VENDOR_JQUERY_UI', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js');
     define('VENDOR_JQUERY_URL_PARSER', 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js');
     define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
-    define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
-    define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
+    define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.2.0/tinymce.min.js');
+    define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.2.0/tinymce.min.js');
     define('VENDOR_CHART', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js');
     define('VENDOR_CHART_PLUGIN_DATALABELS', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js');
 }

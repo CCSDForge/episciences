@@ -66,7 +66,7 @@ $(document).ready(function () {
         menubar: false,
         tags: getTags(),
         height: 400,
-        plugins: "link image code fullscreen table textcolor",
+        plugins: "link image code fullscreen table",
         external_plugins: {"inserttag": "/js/tinymce/plugins/es_tags/plugin.min.js"},
         toolbar1: "bold italic underline | inserttag | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image | code "
     };

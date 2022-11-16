@@ -884,7 +884,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($isCoiEnabled) {
             //conflict management section
-            $this->view->paperConflicts = $paper->getConflicts(true);
+            $this->view->paperConflicts = $paper->getConflicts(false, true);
         }
 
         // paper password bloc
