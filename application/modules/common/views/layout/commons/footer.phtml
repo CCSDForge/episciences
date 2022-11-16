@@ -117,7 +117,11 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                                     </div>
                                 </form>
                             </li>
+                        <?php else: $enableOsl = 'off' ?>
                         <?php endif; ?>
+                        <li><i class="fa-solid fa-handshake"></i>&nbsp;<a href="https://www.episciences.org/page/tou"><abbr
+                                        title="<?= $this->translate("Conditions Générales d'Utilisation") ?>"><?= $this->translate('CGU') ?></abbr></a>
+                        </li>
                     </ul>
                 </div>
             </div>

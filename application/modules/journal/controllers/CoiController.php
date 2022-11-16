@@ -179,7 +179,7 @@ class CoiController extends PaperDefaultController
             $docId = (int)$request->getPost('docId');
 
             $currentConflict = Episciences_Paper_ConflictsManager::findById($id);
-            $respond = 0;
+            $respond = false;
 
             try {
 
@@ -208,7 +208,11 @@ class CoiController extends PaperDefaultController
             $this->_helper->getHelper('layout')->disableLayout();
             echo $respond;
 
+        } elseif ($request->isXmlHttpRequest()) {
+            echo false;
+
         } else {
+
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
 

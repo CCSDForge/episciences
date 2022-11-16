@@ -1824,6 +1824,8 @@ return [
     'Remerciements' => 'Acknowledgements',
     'Paramètres généraux (affichés dans le pied de page)' => 'General settings (displayed in the footer)',
     'en cours' => 'pending',
+    'CGU' => 'TOS',
+    "Conditions Générales d'Utilisation" => 'Term Of Use',
 
     //stats
     "toutes les soumissions" => "all submissions",
@@ -1843,8 +1845,8 @@ return [
     'Indicateurs de statistiques pour la revue' => 'Statistical indicators for the journal',
     'La répartition des <code>soumissions</code> par <code>statut</code>' => 'The breakdown of <code>submissions</code> by <code>status</code>',
     'Répartition des soumissions par <code>archive</code>' => 'The breakdown of submissions by <code>repository</code>',
-    "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support.",
-    "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations." => "This feature is a work is progress and not yet available, please retry later or contact support for more information.",
+    "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support . ",
+    "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations . " => "This feature is a work is progress and not yet available, please retry later or contact support for more information . ",
     "Le nombre d'utilisateurs par <code>rôles</code>" => "Number of users by <code>roles</code>",
     "Nombre total d'utilisateurs : " => "Total number of users: ",
     "Nombre d'utilisateurs" => "Users number",
@@ -1860,10 +1862,10 @@ return [
     'Voir' => 'View',
     //COI
     "Votre réponse à bien été enregistrée." => "Your answer has been saved.",
-    "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",
+    "Conflit d'intérêts(CI)" => "Conflict Of Interest(COI)",
     "Activer la déclaration CI" => "Enable declaring COI",
     "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles à un éditeur tant qu'il n'a pas déclaré l'absence de tout conflit d'intérêts" => "This mode will have the following effects: all non-public information about a submission is not accessible to an editor until he/she has declared the absence of any conflict of interest",
-    "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission." => "You've been redirected, because you have declared a conflict of interest with this submission.",
+    "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission . " => "You've been redirected, because you have declared a conflict of interest with this submission.",
     "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission" => "You've been redirected, because you must confirm the lack of conflict of interest to access this submission",
     "Conflit d'intérêt" => 'Conflict of interest',
     "Merci de déclarer si vous avez un conflit avec cette soumission" => 'Please declare whether you have a conflict of interest with this submission',
@@ -1871,12 +1873,12 @@ return [
     "J'ai un conflit d'intérêt" => 'I do have a conflict of interest',
     'Décider plus tard' => 'Decide later',
     "Continuer et accéder à la soumission. Vous n'avez pas de conflit d'intérêt à déclarer.
-                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Continue and access the submission. You do not have a conflict of interest to declare. Your action will be recorded in the submission event log.',
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'continue and access the submission . You do not have a conflict of interest to declare. Your action will be recorded in the submission event log . ',
     "Ne pas accéder à la soumission. Les informations sur cette soumission resteront masquées pour vous.
-                            Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt. Le commentaire sera visible par les gestionnaires de l'article.
-                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Do not access the submission. Information about this submission will remain hidden from you.
-                            You may add an optional comment to explain the nature of your conflict of interest. The comment will be visible to the managers of the article.
-                            Your action will be recorded in the submission event log',
+                            Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt . Le commentaire sera visible par les gestionnaires de l'article.
+                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'do not access the submission . Information about this submission will remain hidden from you .
+You may add an optional comment to explain the nature of your conflict of interest . The comment will be visible to the managers of the article .
+Your action will be recorded in the submission event log',
     "Vous pouvez décider plus tard, aucune action ne sera enregistrée." => 'You can decide later, no action will be recorded',
     'Commentaire facultatif' => 'Optional comments',
     "Rapporté le" => "Reported on",
@@ -1884,13 +1886,17 @@ return [
     "Retours utilisateurs" => "User feedback",
     'Annulé le' => 'Cancelled on',
     "Vous êtes maintenant connecté à votre compte :" => "You are now logged into your account:",
-    "Vous avez vous-même signalé un conflit d'intérêts avec cette soumission." => "You yourself have reported a conflict of interest with this submission.",
+    "Vous avez vous-même signalé un conflit d'intérêts avec cette soumission . " => "You yourself have reported a conflict of interest with this submission . ",
+    "conflit d'intérêt confirmé" => 'confirmed conflict of interest',
+    "conflits d'intérêt confirmés" => 'confirmed conflicts of interest',
+    "réponse : absence d'un conflit d'intérêt" => "answer: no conflict of interest",
+    "réponses : absence d'un conflit d'intérêt" => 'answers: no conflict of interest',
     // ORCID
-    "'%value%' ne correspond pas au format ORCID indiqué ci-dessus" => "'%value%' does not fit the ORCID format above",
+    "'%value%' ne correspond pas au format ORCID indiqué ci - dessus" => "'%value%' does not fit the ORCID format above",
     //review settings: final decision
-    "Permettre la demande de revision" => "Allow post-acceptance revisions of articles",
-    "Article - décision finale" => "Post-acceptance revisions of articles",
-    "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post-acceptance revisions of articles, e.g. requesting new versions of accepted preprints",
+    "Permettre la demande de revision" => "Allow post - acceptance revisions of articles",
+    "Article - décision finale" => "Post - acceptance revisions of articles",
+    "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post - acceptance revisions of articles, e . g . requesting new versions of accepted preprints",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION] => "accepted - waiting for author's final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for
@@ -1946,7 +1952,7 @@ return [
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE_ISO] => "date d'acceptation d'un article in ISO format",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACTION_DATE] => "action date",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACTION_TIME] => "action time",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK] => "link to journal's resources (e.g. https://dmtcs.episciences.org/website/public)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK] => "link to journal's resources(e . g . https://dmtcs.episciences.org/website/public)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ANSWER] => "text of the answer to a request for modifications",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_ID] => 'article ID',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_LINK] => "link to the article's management page",

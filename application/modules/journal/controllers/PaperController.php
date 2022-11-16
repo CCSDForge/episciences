@@ -212,6 +212,7 @@ class PaperController extends PaperDefaultController
 
         // COI
         $isConflictDetected = self::isConflictDetected($paper, $review);
+        $this->view->isConflictDetected = $isConflictDetected;
 
         try {
 
