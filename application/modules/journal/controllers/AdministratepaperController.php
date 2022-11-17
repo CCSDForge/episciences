@@ -512,87 +512,9 @@ class AdministratepaperController extends PaperDefaultController
 
         $loggedUid = Episciences_Auth::getUid();
 
-        $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
-
         $isCoiEnabled = (boolean)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
-        $isOwnSubmission = $paper->isOwner();
-
-        // check if user has required permissions
-        if ($isOwnSubmission || self::isConflictDetected($paper, $review)) {
-
-            $suUser = Episciences_Auth::getOriginalIdentity();
-
-            $message = '';
-
-            if ($isOwnSubmission) {
-
-                if ($suUser->getUid() !== $loggedUid) {
-
-                    $message .= $suUser->getScreenName();
-                    $message .= ', ';
-                    $message .= '<br>';
-                    $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-                    $message .= Episciences_Auth::getScreenName();
-                    $message .= '<br>';
-                }
-
-
-                $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
-                $url = '/paper/view?id=' . $docId;
-
-            } else {
-
-                $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-
-                if (isset($session->checkConflictResponseForSu) && in_array($session->checkConflictResponseForSu, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)) {
-
-                    $message .= $suUser->getScreenName();
-                    $message .= ', ';
-                    $message .= '<br>';
-
-                    if ($session->checkConflictResponseForSu === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-
-                        Episciences_Auth::updateIdentity($suUser);
-
-                        $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
-                        $message .= '<br>';
-                        $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-
-                    } else {
-                        $message .= $this->view->translate("Vous avez vous-même signalé un conflit d'intérêts avec cette soumission.");
-                        $message .= '<br>';
-                        $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-                        $message .= Episciences_Auth::getScreenName();
-                        $message .= '<br>';
-
-
-                        if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-                            $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-                        }
-
-                    }
-
-                } else if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-                    $message = $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-
-                } else {
-                    $message = $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
-                }
-
-                $url = '/coi/report?id=' . $docId;
-
-            }
-
-            if (
-                !Episciences_Auth::hasOnlyAdministratorRole() ||
-                in_array($paper->getDocid(), Episciences_PapersManager::getDocIdsInConflitByUid($loggedUid), true)
-            ) {
-                $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-                $this->_helper->redirector->gotoUrl($url);
-            }
-
-        }
+        $this->redirectWithFlashMessageIfConflictDetected($paper, $review);
 
         // get contributor details
         $contributor = new Episciences_User();
@@ -4614,6 +4536,99 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         return Episciences_PapersManager::getApprovedForm($docId);
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param Episciences_Review $review
+     * @return void
+     */
+    private function redirectWithFlashMessageIfConflictDetected(Episciences_Paper $paper, Episciences_Review $review): void
+    {
+        $docId = $paper->getDocid();
+        $loggedUid = Episciences_Auth::getUid();
+
+        $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+
+        $isOwnSubmission = $paper->isOwner();
+        $isConflictDetected = self::isConflictDetected($paper, $review);
+
+        // check if user has required permissions
+        if ($isOwnSubmission || $isConflictDetected) {
+
+            $suUser = Episciences_Auth::getOriginalIdentity();
+
+            $message = '';
+
+            if ($isOwnSubmission) {
+
+                if ($suUser && ($suUser->getUid() !== $loggedUid)) {
+
+                    $message .= $suUser->getScreenName();
+                    $message .= ', ';
+                    $message .= '<br>';
+                    $message .= $this->view->translate("Vous êtes connecté en tant que : ");
+                    $message .= Episciences_Auth::getScreenName();
+                    $message .= '<br>';
+                }
+
+
+                $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
+                $url = '/paper/view?id=' . $docId;
+
+            } else {
+
+                $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+                if (
+                    isset($session->checkConflictResponseForSu) &&
+                    in_array($session->checkConflictResponseForSu, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
+                ) {
+
+                    $message .= $suUser->getScreenName();
+                    $message .= ', ';
+                    $message .= '<br>';
+
+                    if ($session->checkConflictResponseForSu === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+
+                        Episciences_Auth::updateIdentity($suUser);
+
+                        $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
+                        $message .= '<br>';
+                        $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
+
+                    } else {
+                        $message .= $this->view->translate("Vous avez vous-même signalé un conflit d'intérêts avec cette soumission.");
+                        $message .= '<br>';
+                        $message .= $this->view->translate("Vous êtes connecté en tant que : ");
+                        $message .= Episciences_Auth::getScreenName();
+                        $message .= '<br>';
+
+
+                        if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+                            $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
+                        }
+
+                    }
+
+                } elseif ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+                    $message = $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
+
+                } else {
+                    $message = $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
+                }
+
+                $url = '/coi/report?id=' . $docId;
+
+            }
+
+
+
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+            $this->_helper->redirector->gotoUrl($url);
+
+        }
+
     }
 
 }
