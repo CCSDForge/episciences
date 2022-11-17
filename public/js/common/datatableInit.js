@@ -3,7 +3,7 @@ let columnDefs;
 
 $(document).ready(function () {
 
-    let $lengthMenu = (typeof lengthMenu === 'undefined') ? [[1, 2, 5, 10, 25, 50, -1], [1, 2, 5, 10, 25, 50, translate("all")]] : lengthMenu;
+    let $lengthMenu = (typeof lengthMenu === 'undefined') ? [[5, 1, 2, 10, 25, 50, -1], [5, 1, 2, 10, 25, 50, translate("all")]] : lengthMenu;
     let $columnDefs = (typeof columnDefs === 'undefined') ? [{"searchable": false, "targets": [1]}, {
         "orderable": false,
         "targets": [4]
