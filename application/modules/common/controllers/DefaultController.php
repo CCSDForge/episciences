@@ -168,7 +168,7 @@ class DefaultController extends Zend_Controller_Action
                 return $zSubmitUrl;
 
             }
-            $zSubmitUrl .= '?rvcode=' . RVCODE;
+            $zSubmitUrl .= '?epi-rvcode=' . RVCODE;
         }
 
         return $zSubmitUrl;
