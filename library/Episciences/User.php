@@ -834,6 +834,18 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this->hasRole(Episciences_Acl::ROLE_COPY_EDITOR);
     }
 
+
+    public function hasOnlyAdministratorRole(): bool
+    {
+        return
+            $this->isAdministrator() &&
+            !$this->isChiefEditor() &&
+            !$this->isSecretary() &&
+            !$this->isEditor() &&
+            !$this->isGuestEditor() &&
+            !$this->isCopyEditor();
+    }
+
     public function getReviews()
     {
         $reviewIds = array_keys($this->getAllRoles());

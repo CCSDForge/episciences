@@ -324,11 +324,13 @@ class AdministratemailController extends Zend_Controller_Action
                         $js_recipient = [
                             'uid' => $user->getUid(),
                             'fullname' => $user->getFullName(),
+                            'screenName' => $user->getScreenName(),
                             'username' => $user->getUsername(),
                             'mail' => $user->getEmail(),
-                            'label' => $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>',
-                            'htmlLabel' => '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
-                                . '<div class="grey">' . $user->getEmail() . '</div>'];
+                            'label' => $user->getScreenName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>',
+                            'htmlLabel' => '<div>' . $user->getScreenName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
+                                . '<div class="grey">' . $user->getEmail() . '</div>'
+                        ];
                     }
                 } else {
                     $user = new Episciences_User_Tmp;
@@ -336,10 +338,11 @@ class AdministratemailController extends Zend_Controller_Action
                         $user->generateScreen_name();
                         $js_recipient = [
                             'uid' => $user->getId(),
+                            'screenName' => $user->getScreenName(),
                             'fullname' => $user->getFullName(),
                             'mail' => $user->getEmail(),
-                            'label' => $user->getFullName() . '<' . $user->getEmail() . '>',
-                            'htmlLabel' => '<div>' . $user->getFullName() . '</div>' . '<div class="grey">' . $user->getEmail() . '</div>'
+                            'label' => $user->getScreenName() . '<' . $user->getEmail() . '>',
+                            'htmlLabel' => '<div>' . $user->getScreenName() . '</div>' . '<div class="grey">' . $user->getEmail() . '</div>'
                         ];
                     }
                 }
@@ -347,7 +350,7 @@ class AdministratemailController extends Zend_Controller_Action
                     $this->view->js_recipient = Zend_Json::encode($js_recipient);
                 }
                 if ($ajax && isset($js_recipient)) {
-                    $form->setDefaults(['to' => $user->getFullName() . ' <' . $user->getEmail() . '>']);
+                    $form->setDefaults(['to' => $user->getScreenName() . ' <' . $user->getEmail() . '>']);
                 }
             }
 

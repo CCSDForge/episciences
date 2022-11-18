@@ -1234,6 +1234,7 @@ return [
     'coi-delete' => 'Remove a conflict of interest',
     'administratepaper-acceptedaskauhorfinalversion' => "Accepted article - ask author's final version",
     'administratepaper-acceptedaskauthorvalidation' => "Accepted article - ask author's validation",
+    "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission." => "You have been redirected because you declared a conflict of interest with this submission.",
 
     // demande de revision
     'Optionnelle' => 'Optional',

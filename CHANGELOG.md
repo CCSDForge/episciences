@@ -16,17 +16,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+- [#212](https://github.com/CCSDForge/episciences/issues/212):
+There is a difference between the capitalization of the first and last names in the user's profile 
+and the first and last names of the user in the email recipient field [RT#148137]
+- administrator role prevents testing for conflict of interest
+### Improved
+- Conflict management section: set default display lines to 5.
+- refactoring
+## 1.0.38.1 - 2022-11-16
+### Fixed
+- Added missing translation for conflict of interest
+
+### Changed
+- Footer: replaced TOS with Term Of Use 
+
+## 1.0.38 - 2022-11-16
 
 ### Added
-- Term of use for the platform and users
+- New footer link to the Term of use (between the platform and users)
 
 ### Fixed
-- Fixed ORCID 'X' in DOAJ export format, make it compliant with specification
+- Fixed ORCID 'X' in DOAJ export format, make it compliant with ORCID specification
 - [RT#171463]: the reviews should not be seen by someone with a CoI declaration with
-  the pape: this fix concerns all the paper's details.
-### Improved
--  rendering of the "conflict management" section
+  the paper: this fix concerns all the paper's details.
+
 ### Changed
+- UI/UX: Improved rendering of the "conflict management" section
 - [RT#170200]: confirmation of the absence of conflict of interest: it is now possible to cancel this type of response.
 
 ## 1.0.37 - 2022-11-10
@@ -56,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Empty %%REQUESTER_EXPRESSION%% tag (related to [#187](https://github.com/CCSDForge/episciences/issues/187)
 - Incorrect status jdmdh#10203 (related with git#372)
 - Fixed [#RT169943]: the tag %%SENDER_SCREEN_NAME%% (obsolete) that should have contained the editor's screen name has not been replaced:
-  to be replaced in custom templates by %%EDITOR_FULL_NAME%% or %%EDITOR_FULL_NAME%%
+  to be replaced in custom templates by %%EDITOR_FULL_NAME%% or %%EDITOR_SCREEN_NAME%%
  (@see https://github.com/CCSDForge/episciences/blob/main/CHANGELOG.md#fixed-11 [RT##160301])
 
 ## 1.0.35 - 2022-10-19
