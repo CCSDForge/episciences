@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Fixed
+- [#212](https://github.com/CCSDForge/episciences/issues/212):
+There is a difference between the capitalization of the first and last names in the user's profile 
+and the first and last names of the user in the email recipient field [RT#148137]
+- administrator role prevents testing for conflict of interest
+### Improved
+- Conflict management section: set default display lines to 5.
+- refactoring
 ## 1.0.38.1 - 2022-11-16
 ### Fixed
 - Added missing translation for conflict of interest
