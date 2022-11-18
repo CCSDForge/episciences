@@ -277,12 +277,22 @@ class Episciences_Auth extends Ccsd_Auth
     }
 
     /**
-     * @return Episciences_User
+     * @return Episciences_User | null
      */
     public static function getOriginalIdentity(): ?Episciences_User
     {
+        $identities = self::getAllIdentities();
+        return $identities[array_key_first($identities)];
+    }
+
+    /**
+     * @return Episciences_User []
+     */
+    public static function getAllIdentities(): array
+    {
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        return isset($session->realIdentities) ? $session->realIdentities[array_key_first($session->realIdentities)] : self::getUser();
+        return $session->realIdentities ?? [self::getUser()];
+
     }
 
     /**
@@ -301,9 +311,9 @@ class Episciences_Auth extends Ccsd_Auth
 
             $suUser = self::getOriginalIdentity();
 
-            if (!$suUser->isRoot()) {
+            if ($suUser && !$suUser->isRoot()) {
 
-                $result =
+                $result = $result ||
                     $suUser->isCopyEditor() ||
                     $suUser->isGuestEditor() ||
                     $suUser->isEditor() ||

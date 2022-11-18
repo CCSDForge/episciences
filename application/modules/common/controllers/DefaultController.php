@@ -168,7 +168,7 @@ class DefaultController extends Zend_Controller_Action
                 return $zSubmitUrl;
 
             }
-            $zSubmitUrl .= '?rvcode=' . RVCODE;
+            $zSubmitUrl .= '?epi-rvcode=' . RVCODE;
         }
 
         return $zSubmitUrl;
@@ -183,11 +183,11 @@ class DefaultController extends Zend_Controller_Action
     public static function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
     {
 
-        if(!Episciences_Auth::isLogged()){
+        if (!Episciences_Auth::isLogged()) {
             return true;
         }
 
-        if(Episciences_Auth::isRoot()){
+        if (Episciences_Auth::isRoot()) {
             return false;
         }
 
@@ -205,12 +205,13 @@ class DefaultController extends Zend_Controller_Action
 
         $suUser = Episciences_Auth::getOriginalIdentity();
 
-        $isSignedInAs = $suUser ? ($suUser->getUid() !== $loggedUid) : null;
+        $isSignedInAs = $suUser && $suUser->getUid() !== $loggedUid;
 
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
 
+
         if ($isSignedInAs) {
-            if (!$suUser->isRoot()) {
+            if (!$suUser->isRoot() && !$suUser->hasOnlyAdministratorRole()) {
                 $checkConflictResponseForSu = $paper->checkConflictResponse($suUser->getUid());
                 $session->checkConflictResponseForSu = $checkConflictResponseForSu;
             } else {
@@ -226,14 +227,29 @@ class DefaultController extends Zend_Controller_Action
         $isCoiEnabled = !$journal ? $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) : $journal->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
         $isCoiEnabled = (boolean)$isCoiEnabled;
 
-        $conflictResponses = [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']];
+        $conflictResponses = [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']];
 
-        return $isCoiEnabled &&
-            Episciences_Auth::isAllowedToDeclareConflict() &&
-            (
-                ($isSignedInAs && in_array($checkConflictResponseForSu, $conflictResponses, true)) ||
-                in_array($checkConflictResponse, $conflictResponses, true)
+        if (!Episciences_Auth::hasOnlyAdministratorRole()) {
+            $conflictResponses[] = Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'];
+        }
+
+        $isAuthHasConflict = in_array($checkConflictResponse, $conflictResponses, true);
+
+
+        return $isCoiEnabled && (
+
+                (
+                    Episciences_Auth::isAllowedToDeclareConflict() &&
+                    (
+                        ($isSignedInAs && in_array($checkConflictResponseForSu, $conflictResponses, true))||
+                        $isAuthHasConflict
+                    )
+                ) ||
+
+                (Episciences_Auth::hasOnlyAdministratorRole() && $isAuthHasConflict) // admin not allowed to declare a conflict
+
             );
+
 
     }
 

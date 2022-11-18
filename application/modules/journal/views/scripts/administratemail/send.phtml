@@ -1,7 +1,7 @@
 <script>
     var users = <?php echo $this->js_users; ?>;
     var sender_uid = <?php echo Episciences_Auth::getUid(); ?>;
-    var recipient = <?php echo ($this->js_recipient) ? $this->js_recipient : "null" ?>;
+    var recipient = <?php echo ($this->js_recipient) ?: "null" ?>;
     var in_modal = <?php echo ($this->ajax) ? 'true' : 'false' ?>;
 </script>
 <?php echo $this->form; ?>
