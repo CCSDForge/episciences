@@ -2,8 +2,9 @@ $(function () {
 
     $('#cc-element').find('label').click(function() {
 
-        var $form = $(this).closest('form');
-        var $contacts_container = $form.next('.contacts_container');
+
+        let $form = $(this).closest('form');
+        let $contacts_container = $form.next('.contacts_container');
 
         $form.hide();
         $contacts_container.show();

@@ -21,9 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 There is a difference between the capitalization of the first and last names in the user's profile 
 and the first and last names of the user in the email recipient field [RT#148137]
 - administrator role prevents testing for conflict of interest
+- Error: $(...).fileupload is not a function for published articles.
 ### Improved
 - Conflict management section: set default display lines to 5.
 - refactoring
+- Mailing > getContacts: add 'Authors' filter.
 ## 1.0.38.1 - 2022-11-16
 ### Fixed
 - Added missing translation for conflict of interest
