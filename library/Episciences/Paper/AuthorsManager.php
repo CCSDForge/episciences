@@ -225,6 +225,11 @@ class Episciences_Paper_AuthorsManager
         }
     }
 
+    /**
+     * @param int $paperId
+     * @return array|mixed
+     * @throws JsonException
+     */
     public static function getArrayAuthorsAffi(int $paperId) {
         $decodedauthors = [];
         foreach (self::getAuthorByPaperId($paperId) as $value){
@@ -234,6 +239,11 @@ class Episciences_Paper_AuthorsManager
         return $decodedauthors;
     }
 
+    /**
+     * @param int $paperId
+     * @return array
+     * @throws JsonException
+     */
     public static function filterAuthorsAndAffiNumeric(int $paperId) {
             $allauthors = self::getArrayAuthorsAffi($paperId);
             $arrayAllAffi = [];
@@ -267,6 +277,12 @@ class Episciences_Paper_AuthorsManager
 
     }
 
+    /**
+     * @param int $paperId
+     * @param int $idAuthorInJson
+     * @return mixed|string
+     * @throws JsonException
+     */
     public static function findAffiliationsOneAuthorByPaperId(int $paperId, int $idAuthorInJson) {
 
         $authors = self::getAuthorByPaperId($paperId);
@@ -279,8 +295,13 @@ class Episciences_Paper_AuthorsManager
         return "";
     }
 
-    //Format for the ROR input in paper View
 
+
+    /**
+     * Format for the ROR input in paper View
+     * @param array $affiliation
+     * @return array
+     */
     public static function formatAffiliationForInputRor(array $affiliation) {
         $affiliationFormatted = [];
         foreach ($affiliation as $value){
@@ -293,6 +314,10 @@ class Episciences_Paper_AuthorsManager
         return $affiliationFormatted;
     }
 
+    /**
+     * @param int $paperId
+     * @return bool
+     */
     public static function deleteAuthorsByPaperId(int $paperId){
         if ($paperId < 1) {
             return false;
@@ -302,6 +327,10 @@ class Episciences_Paper_AuthorsManager
         return ($db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0);
     }
 
+    /**
+     * @param string $orcid
+     * @return string
+     */
     public static function cleanLowerCaseOrcid(string $orcid): string
     {
         $orcidReg = '/\d{4}-\d{4}-\d{4}-\d{3}x+$/'; //wrong pattern for orcid
@@ -312,17 +341,28 @@ class Episciences_Paper_AuthorsManager
         return $orcid;
     }
 
-    public static function getTeiHalByIdentifier($identifier,$version) {
+    /**
+     * @param string $identifier
+     * @param int $version
+     * @return string
+     */
+    public static function getTeiHalByIdentifier(string $identifier, int $version): string
+    {
         $client = new guzzleClient();
         $url = "https://api.archives-ouvertes.fr/search/?q=((halId_s:" . $identifier . " OR halIdSameAs_s:" . $identifier . ") AND version_i:" . $version . ")&wt=xml-tei";
         $teiHalResp = '';
+        $timeOut = 3;
+        if (PHP_SAPI === 'cli') {
+            $timeOut = 40;
+        }
         try {
             return $client->get($url, [
                 'headers' => [
                     'User-Agent' => 'CCSD Episciences support@episciences.org',
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
-                ]
+                ],
+                'timeout' => $timeOut
             ])->getBody()->getContents();
 
         } catch (GuzzleException $e) {
@@ -332,7 +372,14 @@ class Episciences_Paper_AuthorsManager
         }
         return $teiHalResp;
     }
-    public static function putHalTeiCache(string $identifier, string $version) : bool
+
+    /**
+     * @param string $identifier
+     * @param int $version
+     * @return bool
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function getHalTei(string $identifier, int $version) : bool
     {
         $fileTeiHal = 'hal-tei-'.$identifier.'-'.$version. ".xml";
         $cacheTei = new FilesystemAdapter('halTei', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
@@ -346,7 +393,15 @@ class Episciences_Paper_AuthorsManager
         }
         return false;
     }
-    public static function getHalTeiCache(string $identifier, string $version) : string
+
+    /**
+     * @param string $identifier
+     * @param int $version
+     * @return string
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+
+    public static function getHalTeiCache(string $identifier, int $version) : string
     {
         $fileTeiHal = 'hal-tei-'.$identifier.'-'.$version. ".xml";
         $cacheTei = new FilesystemAdapter('halTei', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
@@ -358,9 +413,13 @@ class Episciences_Paper_AuthorsManager
         return $setsGlobalTei->get();
     }
 
+    /**
+     * @param simpleXMLElement $xmlString
+     * @return array
+     */
 
-    public static function getAuthorsFromHalTei(simpleXMLElement $xmlString): array {
-
+    public static function getAuthorsFromHalTei(simpleXMLElement $xmlString): array
+    {
         if (!isset($xmlString->text->body->listBibl->biblFull->titleStmt->author)) {
             return [];
         }
@@ -369,33 +428,24 @@ class Episciences_Paper_AuthorsManager
         foreach ($authors as $author) {
             foreach ($author->persName as $infoName) {
                 //NAME
-                $globalAuthorArray[] = [
-                    'given_name'=> (string) $infoName->forename,
-                    'family'=> (string) $infoName->surname,
-                    'fullname'=> rtrim($infoName->forename." ".$infoName->surname),
-                ];
+                $globalAuthorArray = self::getAuthorInfoFromXmlTei($infoName, $globalAuthorArray);
             }
-            //ROR
+            //AFFI
             if (isset($author->affiliation)) {
-                $i = 0;
-                foreach ($author->affiliation as $aff) {
-                    $globalAuthorArray[array_key_last($globalAuthorArray)]['affiliations'][$i] = (string) str_replace("#",'',$aff->attributes()->ref);
-                    $i++;
-                }
+                $globalAuthorArray = self::getAuthorStructureFromXmlTei($author, $globalAuthorArray);
             }
             //ORCID
             if (isset($author->idno)) {
-                foreach ($author->idno as $idno) {
-                    if ((string)$idno->attributes()->type === "ORCID") {
-                        $filterOrcid = substr((string)$idno, strrpos((string)$idno, '/') + 1);
-                        $filterOrcid = str_replace('/', '', $filterOrcid);
-                        $globalAuthorArray[array_key_last($globalAuthorArray)]['orcid'] = trim($filterOrcid);
-                    }
-                }
+                $globalAuthorArray = self::getOrcidAuthorFromXmlTei($author, $globalAuthorArray);
             }
         }
         return $globalAuthorArray;
     }
+
+    /**
+     * @param simpleXMLElement $xmlString
+     * @return array
+     */
     public static function getAffiFromHalTei(simpleXMLElement $xmlString): array {
         $back = $xmlString->text->back;
         $orgInfo = [];
@@ -414,6 +464,11 @@ class Episciences_Paper_AuthorsManager
         return $orgInfo;
     }
 
+    /**
+     * @param array $authorTei
+     * @param array $affiliationTei
+     * @return array
+     */
     public static function mergeAuthorInfoAndAffiTei(array $authorTei, array $affiliationTei): array {
         foreach ($authorTei as $index => $author) {
             if (isset($author["affiliations"])) {
@@ -430,9 +485,9 @@ class Episciences_Paper_AuthorsManager
     /**
      * @param array $authorDb
      * @param array $authorTei
-     * @return mixed
+     * @return array
      */
-    public static function mergeInfoDbAndInfoTei(array $authorDb, array $authorTei)
+    public static function mergeInfoDbAndInfoTei(array $authorDb, array $authorTei): array
     {
 
         foreach ($authorDb as $indexAuthor => $authorInfoDb) {
@@ -450,15 +505,7 @@ class Episciences_Paper_AuthorsManager
                         foreach ($authorInfoTei['affiliations'] as $affiliation) {
                             if (!in_array($affiliation['name'],array_column($authorInfoDb['affiliation'],'name'), true)) {
                                 if (array_key_exists('ROR', $affiliation)) {
-                                    $authorDb[$indexAuthor]['affiliation'][] = [
-                                        "name" => $affiliation['name'],
-                                        "id" => [
-                                            [
-                                                'id' => $affiliation['ROR'],
-                                                'id-type' => 'ROR'
-                                            ]
-                                        ]
-                                    ];
+                                    $authorDb[$indexAuthor]['affiliation'][] = self::putAffiliationWithRORinArray($affiliation);
                                 } else {
                                     $authorDb[$indexAuthor]['affiliation'][] = [
                                         "name" => $affiliation['name']
@@ -487,15 +534,7 @@ class Episciences_Paper_AuthorsManager
                     } elseif (array_key_exists('affiliations', $authorInfoTei) && !array_key_exists('affiliation', $authorInfoDb)) {
                         foreach ($authorInfoTei['affiliations'] as $affiliation) {
                             if (array_key_exists('ROR', $affiliation)) {
-                                $authorDb[$indexAuthor]['affiliation'][] = [
-                                    "name" => $affiliation['name'],
-                                    "id" => [
-                                        [
-                                            'id' => $affiliation['ROR'],
-                                            'id-type' => 'ROR'
-                                        ]
-                                    ]
-                                ];
+                                $authorDb[$indexAuthor]['affiliation'][] = self::putAffiliationWithRORinArray($affiliation);
                                 if (PHP_SAPI === 'cli') {
                                     echo PHP_EOL.'New Affiliation with ROR Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name'].PHP_EOL;
                                     self::logInfoMessage('New Affiliation with ROR Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name']);
@@ -517,6 +556,10 @@ class Episciences_Paper_AuthorsManager
         return $authorDb;
     }
 
+    /**
+     * @param array $affiliationOfAuthor
+     * @return bool
+     */
     private static function affiliationRorExistbyAffi(array $affiliationOfAuthor): bool {
         if (isset($affiliationOfAuthor['id'])) {
             foreach ($affiliationOfAuthor['id'] as $affiliation) {
@@ -528,10 +571,115 @@ class Episciences_Paper_AuthorsManager
         return false;
     }
 
+    /**
+     * @param string $msg
+     * @return void
+     * @throws Exception
+     */
     public static function logInfoMessage(string $msg): void
     {
         $logger = new Logger('AuthorsManager');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'getcreatordata_' . date('Y-m-d') . '.log', Logger::INFO));
         $logger->info($msg);
+    }
+
+    /**
+     * @param SimpleXMLElement|null $author
+     * @param array $globalAuthorArray
+     * @return array
+     */
+    public static function getOrcidAuthorFromXmlTei(?SimpleXMLElement $author, array $globalAuthorArray): array
+    {
+        foreach ($author->idno as $idno) {
+            if ((string)$idno->attributes()->type === "ORCID") {
+                $filterOrcid = substr((string)$idno, strrpos((string)$idno, '/') + 1);
+                $filterOrcid = str_replace('/', '', $filterOrcid);
+                $globalAuthorArray[array_key_last($globalAuthorArray)]['orcid'] = trim($filterOrcid);
+            }
+        }
+        return $globalAuthorArray;
+    }
+
+    /**
+     * @param SimpleXMLElement|null $infoName
+     * @param array $globalAuthorArray
+     * @return array
+     */
+    public static function getAuthorInfoFromXmlTei(?SimpleXMLElement $infoName, array $globalAuthorArray): array
+    {
+        $globalAuthorArray[] = [
+            'given_name' => (string)$infoName->forename,
+            'family' => (string)$infoName->surname,
+            'fullname' => rtrim($infoName->forename . " " . $infoName->surname),
+        ];
+        return $globalAuthorArray;
+    }
+
+    /**
+     * @param SimpleXMLElement|null $author
+     * @param array $globalAuthorArray
+     * @return array
+     */
+    public static function getAuthorStructureFromXmlTei(?SimpleXMLElement $author, array $globalAuthorArray): array
+    {
+        $i = 0;
+        foreach ($author->affiliation as $aff) {
+            $globalAuthorArray[array_key_last($globalAuthorArray)]['affiliations'][$i] = (string)str_replace("#", '', $aff->attributes()->ref);
+            $i++;
+        }
+        return $globalAuthorArray;
+    }
+
+    /**
+     * Try to catch information related to author like ORCID or AFFILIATION structure with or without ROR From HAL TEI when paper is an HAL paper
+     * @param int $repoId
+     * @param int $paperId
+     * @param string $identifier
+     * @param int $version
+     * @return void
+     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function enrichAffiOrcidFromTeiHalInDB(int $repoId, int $paperId, string $identifier, int $version): void 
+    {
+        if ((string) $repoId === Episciences_Repositories::HAL_REPO_ID) {
+            $decodeAuthor = '';
+            $selectAuthor = self::getAuthorByPaperId($paperId);
+            foreach ($selectAuthor as $authorsDb){
+                $decodeAuthor = json_decode($authorsDb['authors'], true, 512, JSON_THROW_ON_ERROR);
+            }
+            self::getHalTei($identifier, $version);
+            $cacheTeiHal = self::getHalTeiCache($identifier, $version);
+            if ($cacheTeiHal !== '') {
+                $xmlString = simplexml_load_string($cacheTeiHal);
+                if (is_object($xmlString) && $xmlString->count() > 0) {
+                    $authorTei = self::getAuthorsFromHalTei($xmlString);
+                    $affiInfo = self::getAffiFromHalTei($xmlString);
+                    $authorTei = self::mergeAuthorInfoAndAffiTei($authorTei, $affiInfo);
+                    $FormattedAuthorsForDb = self::mergeInfoDbAndInfoTei($decodeAuthor,$authorTei);
+                    $newAuthorInfos = new Episciences_Paper_Authors();
+                    $newAuthorInfos->setAuthors(json_encode($FormattedAuthorsForDb, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
+                    $newAuthorInfos->setPaperId($paperId);
+                    self::update($newAuthorInfos);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param $affiliation
+     * @return array
+     */
+    public static function putAffiliationWithRORinArray($affiliation): array
+    {
+        return [
+            "name" => $affiliation['name'],
+            "id" => [
+                [
+                    'id' => $affiliation['ROR'],
+                    'id-type' => 'ROR'
+                ]
+            ]
+        ];
     }
 }

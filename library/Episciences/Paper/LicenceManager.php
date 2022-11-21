@@ -95,7 +95,7 @@ class Episciences_Paper_LicenceManager
      * @return string
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public static function getApiResponseByRepoId($repoId, $identifier, $version): string
+    public static function getApiResponseByRepoId($repoId, $identifier, int $version): string
     {
         $callArrayResp = '';
         $prefixArxiv = '10.48550/arxiv.';
@@ -108,7 +108,10 @@ class Episciences_Paper_LicenceManager
             case "2": //ARXIV
                 $url = $communUrlArXZen . $prefixArxiv . $identifier;
                 $callArrayResp = self::callApiForLicenceByRepoId($url);
-                echo PHP_EOL . 'CALL: ' . $url;
+
+                if (PHP_SAPI === 'cli'){
+                    echo PHP_EOL . 'CALL: ' . $url;
+                }
                 //echo PHP_EOL . 'API RESPONSE ' . $callArrayResp;
                 sleep(1);
                 break;
@@ -116,7 +119,9 @@ class Episciences_Paper_LicenceManager
                 $url = $communUrlArXZen . $prefixZen . $identifier;
 
                 $callArrayResp = self::callApiForLicenceByRepoId($url);
-                echo PHP_EOL . 'CALL: ' . $url;
+                if (PHP_SAPI === 'cli') {
+                    echo PHP_EOL . 'CALL: ' . $url;
+                }
                 //echo PHP_EOL . 'API RESPONSE ' . $callArrayResp;
                 sleep(1);
                 break;
@@ -150,7 +155,9 @@ class Episciences_Paper_LicenceManager
                     $cache->save($sets);
                     $licenceGetter = $licenceArray['data']['attributes']['rightsList'][0]['rightsUri'];
                     $licenceGetter = self::cleanLicence($licenceGetter);
-                    echo PHP_EOL . $licenceGetter;
+                    if (PHP_SAPI === 'cli'){
+                        echo PHP_EOL . $licenceGetter;
+                    }
                     self::insert([
                         [
                             'licence' => $licenceGetter,
@@ -158,13 +165,17 @@ class Episciences_Paper_LicenceManager
                             'sourceId' => Episciences_Repositories::DATACITE_REPO_ID
                         ]
                     ]);
-                    echo PHP_EOL . 'INSERT DONE ';
+                    if (PHP_SAPI === 'cli'){
+                        echo PHP_EOL . 'INSERT DONE ';
+                    }
                 } else {
                     $sets->set(json_encode([""]));
                     $cache->save($sets);
                 }
             } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
-                echo PHP_EOL . $callArrayResp;
+                if (PHP_SAPI === 'cli'){
+                    echo PHP_EOL . $callArrayResp;
+                }
                 $sets->set(json_encode($callArrayResp, JSON_THROW_ON_ERROR));
                 $cache->save($sets);
                 self::insert([
@@ -174,7 +185,9 @@ class Episciences_Paper_LicenceManager
                         'sourceId' => Episciences_Repositories::HAL_REPO_ID
                     ]
                 ]);
-                echo PHP_EOL . 'INSERT DONE ';
+                if (PHP_SAPI === 'cli'){
+                    echo PHP_EOL . 'INSERT DONE ';
+                }
             }
         }
     }
@@ -201,13 +214,13 @@ class Episciences_Paper_LicenceManager
     }
 
     /**
-     * @param $identifier
-     * @param $version
-     * @return void
+     * @param string $identifier
+     * @param int $version
+     * @return string
      */
-    public static function getLicenceFromTeiHal($identifier, $version): string
+    public static function getLicenceFromTeiHal(string $identifier, int $version): string
     {
-        Episciences_Paper_AuthorsManager::putHalTeiCache($identifier, $version);
+        Episciences_Paper_AuthorsManager::getHalTei($identifier, $version);
         $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($identifier, $version);
         $xmlString = simplexml_load_string($cacheTeiHal);
         $licence = '';

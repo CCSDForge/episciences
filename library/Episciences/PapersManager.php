@@ -2505,6 +2505,13 @@ class Episciences_PapersManager
         $identifier = $result['IDENTIFIER'];
         $repoId = (int)$result['REPOID'];
         $version = (int)$result['VERSION'];
+        $paperId = (int)$result['PAPERID'];
+        $doiTrim = [];
+        if (!empty($result['DOI'])){
+            $doiTrim = trim($result['DOI']);
+        }
+
+        $status = (int)$result['STATUS'];
 
         $repoIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier, $version);
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
@@ -2538,6 +2545,50 @@ class Episciences_PapersManager
 
         }
 
+        //insert licence when save paper
+        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
+        Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
+
+        $strRepoId = (string)$repoId;
+        if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
+
+            Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($repoId, $paperId, $identifier, $version);
+
+        } elseif (($strRepoId === Episciences_Repositories::ARXIV_REPO_ID || $strRepoId === Episciences_Repositories::ZENODO_REPO_ID)
+            && !empty($doiTrim)
+            && $status === Episciences_Paper::STATUS_PUBLISHED) {
+            // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
+            // BUT BEFORE CHECK GLOBAL CACHE
+            Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::setsGlobalOARGCache($doiTrim);
+            list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+            if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
+                //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
+                // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
+                try {
+                    $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                    Episciences_OpenAireResearchGraphTools::putInFileResponseOpenAireCall($decodeOpenAireResp, $doiTrim);
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
+                } catch (JsonException $e) {
+
+                    $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
+                    // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg($eMsg);
+                    $setsOpenAireCreator->set(json_encode([""]));
+                    $cacheCreator->save($setsOpenAireCreator);
+                }
+            }
+
+            //we need to refresh cache creator to get the new file
+            ////// CACHE CREATOR ONLY
+            [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+
+            Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
+
+
+        }
+
         // Mise à jour des données
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;
@@ -2560,7 +2611,7 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_PAPERS, ['IDENTIFIER', 'REPOID', 'VERSION'])
+            ->from(T_PAPERS, ['IDENTIFIER', 'REPOID', 'VERSION','PAPERID','STATUS','DOI'])
             ->where('DOCID = ?', $docId);
         return $db->fetchRow($select);
     }
