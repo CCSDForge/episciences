@@ -961,6 +961,8 @@ return [
 
     "Souhaitez-vous supprimer la page ?" => "Do you want to delete this page?",
     "Suppression de la page" => "Deleting the page",
+    // get contacts
+    "Auteurs / Autrices" => 'Authors',
 
 
     // Relances automatiques
