@@ -28,6 +28,7 @@ class Episciences_Acl extends Ccsd_Acl
     public const ROLE_WEBMASTER_PLURAL = 'webmasters';
     public const ROLE_REVIEWER_PLURAL = 'reviewers';
     public const ROLE_MEMBER_PLURAL = 'members';
+    public const ROLE_AUTHOR_PLURAL = 'authors';
     public const ROLE_GUEST_PLURAL = 'guests';
     public const CONFIGURABLE_RESOURCE = true; // configurable by review
     public const NOT_CONFIGURABLE_RESOURCE = false; //  public resource but restricted to certain roles

@@ -318,6 +318,8 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 </script>
 
 <?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+
 //datatable (for reviewer invitation modal)
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);

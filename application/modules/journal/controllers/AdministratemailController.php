@@ -597,6 +597,7 @@ class AdministratemailController extends Zend_Controller_Action
             'secretaries' => Episciences_Acl::ROLE_SECRETARY,
             'webmasters' => Episciences_Acl::ROLE_WEBMASTER,
             'reviewers' => Episciences_Acl::ROLE_REVIEWER,
+            'authors' => Episciences_Acl::ROLE_AUTHOR,
             'members' => Episciences_Acl::ROLE_MEMBER
         ];
 

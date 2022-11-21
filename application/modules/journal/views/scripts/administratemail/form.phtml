@@ -52,12 +52,14 @@ $suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
 <script>
 
     $(document).ready(function () {
+
         if (modalStructureExists()) {
             $.ajaxSetup({
                 cache: true
             });
-            $.getScript('/js/library/es.fileupload.js').fail(function () {
-                console.log('loading failed');
+
+            $.getScript('/js/library/es.fileupload.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
+                console.log('loading failed:' + error);
             });
         }
     });
