@@ -507,9 +507,7 @@ class Episciences_Paper_AuthorsManager
                                 if (array_key_exists('ROR', $affiliation)) {
                                     $authorDb[$indexAuthor]['affiliation'][] = self::putAffiliationWithRORinArray($affiliation);
                                 } else {
-                                    $authorDb[$indexAuthor]['affiliation'][] = [
-                                        "name" => $affiliation['name']
-                                    ];
+                                    $authorDb[$indexAuthor]['affiliation'][] = self::putOnlyNameAffiliation($affiliation['name']);
                                 }
 
                                 if (PHP_SAPI === 'cli') {
@@ -519,12 +517,7 @@ class Episciences_Paper_AuthorsManager
                             } elseif (in_array($affiliation['name'],array_column($authorInfoDb['affiliation'],'name'))
                                 && array_key_exists('ROR', $affiliation)
                                 && self::affiliationRorExistbyAffi($authorInfoDb['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]) === false) {
-                                $authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]['id'] = [
-                                    [
-                                        'id' => $affiliation['ROR'],
-                                        'id-type' => 'ROR'
-                                    ]
-                                ];
+                                $authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]['id'] = self::putOnlyRORAffiliation($affiliation['ROR']);
                                 if (PHP_SAPI === 'cli') {
                                     echo PHP_EOL."ROR to Affiliation Added for ".$authorDb[$indexAuthor]['fullname']." - ".$authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])].PHP_EOL;
                                     self::logInfoMessage("ROR to Affiliation Added for ".$authorDb[$indexAuthor]['fullname']." - ".$authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]);
@@ -540,9 +533,7 @@ class Episciences_Paper_AuthorsManager
                                     self::logInfoMessage('New Affiliation with ROR Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name']);
                                 }
                             } else {
-                                $authorDb[$indexAuthor]['affiliation'][] = [
-                                    "name" => $affiliation['name']
-                                ];
+                                $authorDb[$indexAuthor]['affiliation'][] = self::putOnlyNameAffiliation($affiliation['name']);
                                 if (PHP_SAPI === 'cli') {
                                     echo PHP_EOL.'New Affiliation without ROR founded, Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name'].PHP_EOL;
                                     self::logInfoMessage('New Affiliation without ROR founded, Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name']);
@@ -667,10 +658,10 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param $affiliation
+     * @param array $affiliation
      * @return array
      */
-    public static function putAffiliationWithRORinArray($affiliation): array
+    public static function putAffiliationWithRORinArray(array $affiliation): array
     {
         return [
             "name" => $affiliation['name'],
@@ -680,6 +671,31 @@ class Episciences_Paper_AuthorsManager
                     'id-type' => 'ROR'
                 ]
             ]
+        ];
+    }
+
+    /**
+     * @param string $ror
+     * @return array[]
+     */
+    public static function putOnlyRORAffiliation(string $ror): array
+    {
+        return [
+            [
+                'id' => $ror,
+                'id-type' => 'ROR'
+            ]
+        ];
+    }
+
+    /**
+     * @param string $name
+     * @return array
+     */
+    public static function putOnlyNameAffiliation(string $name): array
+    {
+        return [
+            "name" => $name
         ];
     }
 }
