@@ -307,6 +307,70 @@ class Episciences_Review
     }
 
     /**
+     * @param int|null $docId
+     * @param string|null $role
+     * @return string
+     * @throws Zend_Db_Statement_Exception
+     */
+    private static function buildFyiStr(?int $docId, ?string $role = null): string
+    {
+        $isCoiEnabled = false;
+        $paper = null;
+        $cc = [];
+        $fyi = '';
+
+
+        if ($docId) {
+            $paper = Episciences_PapersManager::get($docId, false);
+        }
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+
+        if ($paper) {
+
+            if ($isCoiEnabled) {
+                $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
+            }
+
+            if ($role === Episciences_Acl::ROLE_REVIEWER) {
+                $cc = $paper->getReviewers(null, true);
+            }
+
+        }
+
+
+        if (!$role) {
+            self::checkReviewNotifications($cc);
+        }
+
+
+        /** @var Episciences_User $recipient */
+        foreach ($cc as $recipient) {
+
+            if (
+                $isCoiEnabled &&
+                !$role &&
+                !in_array($recipient->getUid(), $cUidS, false)
+            ) {
+                continue;
+            }
+
+            $fyi .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
+            $fyi .= '; ';
+        }
+
+        $fyi = substr($fyi, 0, -2);
+
+        return !$fyi ? '' : $fyi;
+    }
+
+    /**
      * fetch review editors
      * if strict is true, only fetch editors.
      * if strict is false, fetch editors and chief editors
@@ -422,51 +486,23 @@ class Episciences_Review
 
     /**
      * @param int|null $docId
+     * @param string|null $role
      * @return string
-     * @throws Zend_Db_Statement_Exception
+     *
      */
-    public static function forYourInformation(int $docId = null): string
+    public static function forYourInformation(?int $docId = null, ?string $role = null): string
     {
-        $isCoiEnabled = false;
-
+        $fyi = '';
 
         try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
-        }
+            $fyi = self::buildFyiStr($docId, $role);
 
-        if ($isCoiEnabled) {
-
-            $cUidS = [];
-
-            if ($docId) {
-
-                $paper = Episciences_PapersManager::get($docId, false);
-
-                if ($paper) {
-                    $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
-                }
-            }
+        } catch (Exception $e) {
+            error_log($e->getMessage());
 
         }
 
-        $cc = [];
-        $FYI = '';
-        self::checkReviewNotifications($cc);
-        /** @var Episciences_User $recipient */
-        foreach ($cc as $recipient) {
-
-            if ($isCoiEnabled && !in_array($recipient->getUid(), $cUidS, false)) {
-                continue;
-            }
-
-            $FYI .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
-            $FYI .= '; ';
-        }
-
-        return substr($FYI, 0, -2);
+        return $fyi;
     }
 
     /**

@@ -723,7 +723,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->other_editors = $all_editors;
             $this->view->acceptanceForm = Episciences_PapersManager::getAcceptanceForm($templates['accept']);
             $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
-            $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse']);
+            $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse'], $docId);
             $this->view->minorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['minorRevision'], 'minor', $review, true, $docId);
             $this->view->majorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['majorRevision'], 'major', $review, true, $docId);
             // waiting for author resources form request

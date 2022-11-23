@@ -28,6 +28,9 @@ and the first and last names of the user in the email recipient field [RT#148137
 - Mailing > getContacts: add 'Authors' filter.
 - resolved [#282]: C:\fakepath:
 This is the security implementation of the browser: the browser is protecting you from accessing your disk structure.
+
+- [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
+
 ## 1.0.38.1 - 2022-11-16
 ### Fixed
 - Added missing translation for conflict of interest

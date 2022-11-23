@@ -1700,7 +1700,11 @@ class Episciences_PapersManager
         $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
+        $form->addElement('text', 'bcc', [
+            'label' => 'BCC',
+            'id' => $formId . '-bcc',
+            'value' => Episciences_Review::forYourInformation($default['id'], Episciences_Acl::ROLE_REVIEWER)
+        ]);
 
         // from
         $form->addElement('text', 'from', [
