@@ -26,6 +26,8 @@ and the first and last names of the user in the email recipient field [RT#148137
 - Conflict management section: set default display lines to 5.
 - refactoring
 - Mailing > getContacts: add 'Authors' filter.
+- resolved [#282]: C:\fakepath:
+This is the security implementation of the browser: the browser is protecting you from accessing your disk structure.
 ## 1.0.38.1 - 2022-11-16
 ### Fixed
 - Added missing translation for conflict of interest
