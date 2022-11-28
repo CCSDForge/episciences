@@ -15,21 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
-### Fixed
-- [#212](https://github.com/CCSDForge/episciences/issues/212):
-There is a difference between the capitalization of the first and last names in the user's profile 
-and the first and last names of the user in the email recipient field [RT#148137]
-- administrator role prevents testing for conflict of interest
-- Error: $(...).fileupload is not a function for published articles.
-### Improved
-- Conflict management section: set default display lines to 5.
-- refactoring
-- Mailing > getContacts: add 'Authors' filter.
-- resolved [#282]: C:\fakepath:
-This is the security implementation of the browser: the browser is protecting you from accessing your disk structure.
-
+### Changed
 - [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
+- It is now possible to use Lemon LDAP authentication.
+
+
+## 1.0.38.2 - 2022-11-24
+### Fixed
+- [#212](https://github.com/CCSDForge/episciences/issues/212): There is a difference between the capitalization of the first and last names in the user's profile 
+and the first and last names of the user in the email recipient field [RT#148137]
+- Fixed the fact that the Administrator role prevents testing for conflict of interest
+- Error: $(...).fileupload is not a function for published articles.
+
+### Changed
+- Conflict management section: set default display lines to 5.
+- Mailing > getContacts: add 'Authors' filter.
+- resolved [#282](https://github.com/CCSDForge/episciences/issues/282): C:\fakepath: This is the security 
+  implementation of the browser: the browser is protecting you from accessing your disk structure.
+- Code review / refactoring
+
 
 ## 1.0.38.1 - 2022-11-16
 ### Fixed
@@ -62,8 +66,8 @@ This is the security implementation of the browser: the browser is protecting yo
 ## 1.0.36 - 2022-11-09
 ### Added
 - Improved rendering of the volume page
-- It is now possible to use Lemon LDAP authentication.
 - authors can now enter their paper password provided by the open archive on the article page.
+- alt attribute to volume's image.
 - Added an API method to get the number of users accounts
 
 ### Changed
