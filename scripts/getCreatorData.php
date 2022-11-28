@@ -104,7 +104,7 @@ class getCreatorData extends JournalScript
                 // BUT BEFORE CHECK GLOBAL CACHE
                 Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
                 ///////////////////////////////////////////////////////////////////////////////////////////////////
-                $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::setsGlobalOARGCache($doiTrim);
+                $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
                 list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
 
 

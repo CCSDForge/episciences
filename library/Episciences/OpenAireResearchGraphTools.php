@@ -96,13 +96,13 @@ class Episciences_OpenAireResearchGraphTools
      * @return mixed
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function setsGlobalOARGCache(string $doiTrim)
+    public static function getsGlobalOARGCache(string $doiTrim)
     {
         ////// CACHE GLOBAL RESEARCH GRAPH
         $fileOpenAireGlobalResponse = trim(explode("/", $doiTrim)[1]) . ".json";
         $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $setsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
-        return $setsGlobalOARG;
+        $getsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
+        return $getsGlobalOARG;
     }
 
     /**
@@ -122,11 +122,12 @@ class Episciences_OpenAireResearchGraphTools
     /**
      * @param $setsOpenAireCreator
      * @param $paperId
-     * @return void
+     * @return int
      * @throws JsonException
      */
-    public static function insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId): void
+    public static function insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId): int
     {
+        $affectedRow = 0;
         if ($setsOpenAireCreator->isHit() && !empty($fileFound = json_decode($setsOpenAireCreator->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) && $fileFound !== [""]) {
             $reformatFileFound = [];
             if (!array_key_exists(0, $fileFound)) {
@@ -149,6 +150,7 @@ class Episciences_OpenAireResearchGraphTools
                     }
                     if ($flagNewOrcid === 1) {
                         self::insertAuthors($decodeAuthor, $paperId, $key);
+                        $affectedRow++;
                         if (PHP_SAPI ==='cli') {
                             echo PHP_EOL . 'new Orcid for id ' . $key . ' and paper ' . $paperId . PHP_EOL;
                         }
@@ -156,6 +158,7 @@ class Episciences_OpenAireResearchGraphTools
                 }
             }
         }
+        return $affectedRow;
     }
 
     /**
@@ -164,7 +167,7 @@ class Episciences_OpenAireResearchGraphTools
      * @return void
      * @throws JsonException
      */
-    public static function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
+    public static function putCreatorInCache($decodeOpenAireResp, $doi): void
     {
         $cache = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         $fileName = trim(explode("/", $doi)[1]) . "_creator.json";
@@ -186,15 +189,15 @@ class Episciences_OpenAireResearchGraphTools
      * @param $decodeAuthor
      * @param $paperId
      * @param $key
-     * @return void
+     * @return int
      */
-    public static function insertAuthors($decodeAuthor, $paperId, $key): void
+    public static function insertAuthors($decodeAuthor, $paperId, $key): int
     {
         $newAuthorInfos = new Episciences_Paper_Authors();
         $newAuthorInfos->setAuthors(json_encode($decodeAuthor, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
         $newAuthorInfos->setPaperId($paperId);
         $newAuthorInfos->setAuthorsId($key);
-        Episciences_Paper_AuthorsManager::update($newAuthorInfos);
+        return Episciences_Paper_AuthorsManager::update($newAuthorInfos);
     }
     /**
      * @param $needleFullName
@@ -236,6 +239,47 @@ class Episciences_OpenAireResearchGraphTools
 
         }
         return [$decodeAuthor, $flagNewOrcid];
+    }
+
+    public static function putFundingsInCache($decodeOpenAireResp, $doi): void
+    {
+        $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        $fileName = trim(explode("/", $doi)[1]) . "_funding.json";
+        $sets = $cache->getItem($fileName);
+        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
+            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
+                $preFundingArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result'];
+                if (array_key_exists('rels',$preFundingArrayOpenAire)) {
+                    if (!empty($preFundingArrayOpenAire['rels']) && array_key_exists('rel',$preFundingArrayOpenAire['rels'])){
+                        $arrayFunding = $preFundingArrayOpenAire['rels']['rel'];
+                        $sets->set(json_encode($arrayFunding,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                        $cache->save($sets);
+                    }else{
+                        $sets->set(json_encode([""]));
+                        $cache->save($sets);
+                    }
+                } else {
+                    $sets->set(json_encode([""]));
+                    $cache->save($sets);
+                }
+            }
+        } else {
+            $sets->set(json_encode([""]));
+            $cache->save($sets);
+        }
+    }
+    /**
+     * @param string $doiTrim
+     * @return array
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function getFundingCacheOA(string $doiTrim): array
+    {
+        $cacheFundingOA = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        $pathOpenAireFunding = trim(explode("/", $doiTrim)[1]) . "_funding.json";
+        $sets = $cacheFundingOA->getItem($pathOpenAireFunding);
+        $sets->expiresAfter(self::ONE_MONTH);
+        return array($cacheFundingOA, $pathOpenAireFunding, $sets);
     }
 
 }

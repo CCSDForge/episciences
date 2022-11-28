@@ -136,10 +136,10 @@ class Episciences_Paper_LicenceManager
      * @param $callArrayResp
      * @param $docId
      * @param $identifier
-     * @return void
+     * @return int
      * @throws JsonException
      */
-    public static function InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier): void
+    public static function InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier): int
     {
         $pathFile =  APPLICATION_PATH . '/../data/enrichmentLicences/';
         $cleanID = str_replace('/', '', $identifier); // ARXIV CAN HAVE "/" in ID
@@ -158,16 +158,13 @@ class Episciences_Paper_LicenceManager
                     if (PHP_SAPI === 'cli'){
                         echo PHP_EOL . $licenceGetter;
                     }
-                    self::insert([
+                    return self::insert([
                         [
                             'licence' => $licenceGetter,
                             'docId' => (int) $docId,
                             'sourceId' => Episciences_Repositories::DATACITE_REPO_ID
                         ]
                     ]);
-                    if (PHP_SAPI === 'cli'){
-                        echo PHP_EOL . 'INSERT DONE ';
-                    }
                 } else {
                     $sets->set(json_encode([""]));
                     $cache->save($sets);
@@ -178,18 +175,16 @@ class Episciences_Paper_LicenceManager
                 }
                 $sets->set(json_encode($callArrayResp, JSON_THROW_ON_ERROR));
                 $cache->save($sets);
-                self::insert([
+                return self::insert([
                     [
                         'licence' => $callArrayResp,
                         'docId' => (int) $docId,
                         'sourceId' => Episciences_Repositories::HAL_REPO_ID
                     ]
                 ]);
-                if (PHP_SAPI === 'cli'){
-                    echo PHP_EOL . 'INSERT DONE ';
-                }
             }
         }
+        return 0;
     }
 
 

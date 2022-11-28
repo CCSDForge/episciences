@@ -627,11 +627,11 @@ class Episciences_Paper_AuthorsManager
      * @param int $paperId
      * @param string $identifier
      * @param int $version
-     * @return void
+     * @return int
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function enrichAffiOrcidFromTeiHalInDB(int $repoId, int $paperId, string $identifier, int $version): void 
+    public static function enrichAffiOrcidFromTeiHalInDB(int $repoId, int $paperId, string $identifier, int $version): int
     {
         if ((string) $repoId === Episciences_Repositories::HAL_REPO_ID) {
             $decodeAuthor = '';
@@ -651,10 +651,11 @@ class Episciences_Paper_AuthorsManager
                     $newAuthorInfos = new Episciences_Paper_Authors();
                     $newAuthorInfos->setAuthors(json_encode($FormattedAuthorsForDb, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
                     $newAuthorInfos->setPaperId($paperId);
-                    self::update($newAuthorInfos);
+                    return self::update($newAuthorInfos);
                 }
             }
         }
+        return 0;
     }
 
     /**

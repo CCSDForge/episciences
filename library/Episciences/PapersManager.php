@@ -2547,28 +2547,47 @@ class Episciences_PapersManager
 
         //insert licence when save paper
         $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
-        Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
+        $affectedRows+= Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
 
+        ////////Creator OA and HAL
         $strRepoId = (string)$repoId;
         if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
 
-            Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($repoId, $paperId, $identifier, $version);
+            $affectedRows+= Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($repoId, $paperId, $identifier, $version);
+            //FUNDING
+            $arrayIdEuAnr =  Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
+            $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
+            $globalArrayJson = [];
+            if (!empty($decodeHalIdsResp['response']['docs'])) {
+                $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray($decodeHalIdsResp['response']['docs'], $identifier, $globalArrayJson);
+            }
+            $mergeArrayANREU = [];
+            if (!empty($globalArrayJson)) {
+                foreach ($globalArrayJson as $globalPreJson) {
+                    $mergeArrayANREU[] = $globalPreJson[0];
+                }
+                $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId,Episciences_Repositories::HAL_REPO_ID);
+                $affectedRows+= Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
+            }
 
-        } elseif (($strRepoId === Episciences_Repositories::ARXIV_REPO_ID || $strRepoId === Episciences_Repositories::ZENODO_REPO_ID)
+
+        }
+        if (($strRepoId === Episciences_Repositories::ARXIV_REPO_ID || $strRepoId === Episciences_Repositories::ZENODO_REPO_ID || $strRepoId === Episciences_Repositories::HAL_REPO_ID)
             && !empty($doiTrim)
             && $status === Episciences_Paper::STATUS_PUBLISHED) {
             // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
             // BUT BEFORE CHECK GLOBAL CACHE
             Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
             ///////////////////////////////////////////////////////////////////////////////////////////////////
-            $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::setsGlobalOARGCache($doiTrim);
+            $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
             list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+
             if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
                 //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
                 // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                 try {
                     $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                    Episciences_OpenAireResearchGraphTools::putInFileResponseOpenAireCall($decodeOpenAireResp, $doiTrim);
+                    Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
                     Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
                 } catch (JsonException $e) {
 
@@ -2584,9 +2603,41 @@ class Episciences_PapersManager
             ////// CACHE CREATOR ONLY
             [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
 
-            Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
+            $affectedRows += Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
 
+            ////////Funding OA and HAL
+            list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
 
+            if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
+                // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
+                try {
+                    $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                    Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
+                    //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
+
+                } catch (JsonException $e) {
+                    // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
+                    $setOAFunding->set(json_encode([""]));
+                    $cacheFundingOA->save($setOAFunding);
+                }
+            }
+            list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
+
+            try {
+                $fileFound = json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            } catch (JsonException $jsonException) {
+                Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf( 'Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+            }
+
+            $globalfundingArray = [];
+            if (!empty($fileFound[0])) {
+                $fundingArray = [];
+                $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
+                $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId,Episciences_Repositories::GRAPH_OPENAIRE_ID);
+                $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+            }
         }
 
         // Mise à jour des données
