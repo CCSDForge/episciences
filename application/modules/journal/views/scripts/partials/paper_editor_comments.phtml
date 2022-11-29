@@ -10,7 +10,7 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
         <div style="margin-top: <?php echo $margin;?>" class="small">
             <strong><?php echo $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG.' - '.Zend_Date::TIME_SHORT); ?> : </strong>
             (<?php echo ($comment['UID'] == Episciences_Auth::getUid()) ? $this->translate('vous') : $comment['SCREEN_NAME']; ?>)
-            <div><?php echo Episciences_Tools::formatText($this->escape($comment['MESSAGE'])); ?></div>
+            <div><?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?></div>
             <?php if ($comment['FILE']) :?>
                 <div class="col-sm-10">
                     <a href="/docfiles/comments/<?php echo $comment['DOCID'].'/'.$comment['FILE']?>" target="_blank">

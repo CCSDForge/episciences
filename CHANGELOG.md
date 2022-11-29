@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Fixed
+- Html filtering problem that breaks the display in the comments
+
 ## 1.0.38.2 - 2022-11-24
 ### Fixed
 - [#212](https://github.com/CCSDForge/episciences/issues/212): There is a difference between the capitalization of the first and last names in the user's profile 
