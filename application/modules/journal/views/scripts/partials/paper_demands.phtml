@@ -23,7 +23,7 @@ $paper = $this->paper;
             </div>
         <?php endif; ?>
     </div>
-    <div class="small"><?= Episciences_Tools::cleanBody($this->current_demand['MESSAGE']); ?></div>
+    <div class="small"><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($this->current_demand['MESSAGE'])) ?></div>
 
     <?php //TODO Remettre en place après le copy editing, voir (RT 89076 & commit ad1a32223c41eea459f9246a9e195eea4e9a64b4) ?>
 
@@ -59,7 +59,7 @@ $paper = $this->paper;
             }
             echo ')';
             */ ?>
-            <div><?= Episciences_Tools::cleanBody($comment['MESSAGE']); ?></div>
+            <div><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($comment['MESSAGE'])) ?></div>
             <?php if ($comment['FILE']) : ?>
                 <div class="col-sm-10">
                     &gt; <a href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE']; ?>"
@@ -138,7 +138,7 @@ $paper = $this->paper;
                     }
                     echo ')';
                     */ ?>
-                    <div><?= $comment['MESSAGE']; ?></div>
+                    <div><?= Episciences_Tools::epi_html_decode($comment['MESSAGE']) ?></div>
                     <?php if ($comment['FILE']) : ?>
                         <div class="col-sm-10">
                             &gt; <a href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE']; ?>"
@@ -158,7 +158,7 @@ $paper = $this->paper;
                         <div style="background: #efeff3; padding: 0 5px; margin: 10px 0 10px 30px;" class="small">
                             <?php if ($reply['MESSAGE'] || $reply['FILE']) : ?>
                                 <span><strong><?php echo $this->Date($reply['WHEN']); ?> : </strong></span>
-                                <div><?= $reply['MESSAGE']; ?></div>
+                                <div><?= Episciences_Tools::epi_html_decode($reply['MESSAGE'])?></div>
                                 <?php if ($reply['FILE']) : ?>
                                     <?php $files = Episciences_Tools::isJson($reply['FILE']) ? json_decode($reply['FILE'], true) : (array)$reply['FILE']; ?>
                                     <?php foreach ($files as $index => $file): ?>
