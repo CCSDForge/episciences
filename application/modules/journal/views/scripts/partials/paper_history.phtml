@@ -2,7 +2,7 @@
     <div class="history-filters">
         <a class="popover-button" data-title="<?= $this->translate("Filtrer les logs par date") ?>">
             <button type="button" class="history-datepicker-button btn btn-default btn-sm"><span
-                    class="glyphicon glyphicon-calendar"></span></button>
+                        class="glyphicon glyphicon-calendar"></span></button>
         </a>
         <div style="display: inline-block">
             <input type="search" class="form-control input-sm history-search"
@@ -95,7 +95,8 @@
                 <li role="presentation"
                     <?php if ($version['docid'] == $this->docid) : ?>class="active current"<?php endif; ?>>
                     <?php // le point (.) n'est pas interprété dans l'ID => son remplacement par un tiret (-) ?>
-                    <a href="#history-version-<?= str_replace('.','-', $i) ?>" aria-controls="version-<?= $i ?>" role="tab"
+                    <a href="#history-version-<?= str_replace('.', '-', $i) ?>" aria-controls="version-<?= $i ?>"
+                       role="tab"
                        data-toggle="tab">
                         <?= $this->translate('Version ') . $i ?>
                     </a>
@@ -109,7 +110,7 @@
                 <?php // le point (.) n'est pas interprété dans l'ID => son remplacement par un tiret (-) ?>
                 <div role="tabpanel"
                      class="tab-pane<?php if ($version['docid'] == $this->docid) : ?> active<?php endif; ?>"
-                     id="history-version-<?= str_replace('.','-', $i) ?>">
+                     id="history-version-<?= str_replace('.', '-', $i) ?>">
                     <?= $this->partial('partials/paper_history_logs.phtml', ['logs' => $version['logs']]) ?>
                 </div>
             <?php endforeach; ?>

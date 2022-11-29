@@ -305,7 +305,7 @@ class Episciences_Comment
      */
     public function getMessage()
     {
-        return html_entity_decode($this->_message);
+        return Episciences_Tools::epi_html_decode(html_entity_decode($this->_message));
     }
 
     /**
@@ -430,7 +430,7 @@ class Episciences_Comment
      */
     public function setMessage(string $message): Episciences_Comment
     {
-        $this->_message = htmlspecialchars($message);
+        $this->_message = htmlspecialchars(Episciences_Tools::epi_html_decode($message));
         return $this;
     }
 
