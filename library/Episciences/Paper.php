@@ -2968,9 +2968,10 @@ class Episciences_Paper
                     // insert author dc:creator to json author in the database
                     Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($this, $this->getPaperid());
                     //insert licence when save paper
-                    $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
+                    $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int) $this->getVersion());
                     Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
-
+                    // try to enrich with TEI HAL
+                    Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB((string) $this->getRepoid(),$this->getPaperid(),$this->getIdentifier(),(int) $this->getVersion());
                 } else {
                     $this->setPosition($this->applyPositioningStrategy());
                 }
