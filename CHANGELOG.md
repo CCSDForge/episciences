@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
 - It is now possible to use Lemon LDAP authentication.
 
+### fixed
+- Add %%PAPER_REP_URL%% tag to the description of the invitation templates.
+
 
 ## 1.0.38.2 - 2022-11-24
 ### Fixed
