@@ -484,7 +484,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
-        Episciences_Mail_Tags::TAG_SENDER_EMAIL
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL
     ];
     public const paper_reviewer_invitation2_tags = [
         Episciences_Mail_Tags::TAG_RATING_DEADLINE,
@@ -498,7 +499,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
-        Episciences_Mail_Tags::TAG_SENDER_EMAIL
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL
     ];
     public const paper_reviewer_invitation3_tags = [
         Episciences_Mail_Tags::TAG_RATING_DEADLINE,
@@ -512,7 +514,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
-        Episciences_Mail_Tags::TAG_SENDER_EMAIL
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL
     ];
     public const paper_reviewer_refusal_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,

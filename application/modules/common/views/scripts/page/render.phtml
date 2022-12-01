@@ -29,10 +29,15 @@ if ($this->mode === 'edit') {
             menubar: false,
             valid_elements : '*[*]',
             extended_valid_elements: 'script[language|type]',
-            <?php if ($locale === 'fr') : ?>
-            language: 'fr_FR'
-            <?php endif; ?>
         });
+
+        <?php if ($locale === 'fr') : ?>
+
+        $.getScript('/js/tinymce/langs/<?= $locale ?>_<?= mb_strtoupper($locale)?>.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
+            console.log('loading failed:' + error);
+        });
+
+        <?php endif; ?>
     </script>
 
     <?php
