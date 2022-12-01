@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - Html filtering problem that breaks the display in the comments
+- JS error: Failed to load plugin url: https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/langs/fr_FR.js
+  @see https://www.tiny.cloud/docs-4x/configure/localization/#language
+### Changed
+- [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
+- It is now possible to use Lemon LDAP authentication.
+
 
 ## 1.0.38.2 - 2022-11-24
 ### Fixed
