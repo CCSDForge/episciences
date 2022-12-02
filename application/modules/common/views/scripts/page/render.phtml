@@ -21,7 +21,8 @@ if ($this->mode === 'edit') {
 
     echo $this->form; ?>
     <script>
-        __initMCE('textarea:last', undefined, {
+        let selectorName = $( 'textarea' ).last()[0].localName;
+        __initMCE(selectorName, undefined, {
             convert_urls: false,
             theme: 'silver',
             plugins: "link image code fullscreen table visualblocks paste",
