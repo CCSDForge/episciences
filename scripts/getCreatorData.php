@@ -61,7 +61,7 @@ class getCreatorData extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID','IDENTIFIER','REPOID','VERSION'])->order('DOCID DESC'); // prevent empty row
+        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID','IDENTIFIER','REPOID','VERSION'])->where('PAPERID = ?',7485)->order('DOCID DESC'); // prevent empty row
 
         foreach ($db->fetchAll($select) as $value) {
             $paperId = $value['PAPERID'];
@@ -113,7 +113,7 @@ class getCreatorData extends JournalScript
                     // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                     try {
                         $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                        Episciences_OpenAireResearchGraphTools::putInFileResponseOpenAireCall($decodeOpenAireResp, $doiTrim);
+                        Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
                         $this->displayInfo('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim, true);
                     } catch (JsonException $e) {
 
