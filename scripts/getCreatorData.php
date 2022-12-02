@@ -61,7 +61,7 @@ class getCreatorData extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID','IDENTIFIER','REPOID','VERSION'])->where('PAPERID = ?',7485)->order('DOCID DESC'); // prevent empty row
+        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID','IDENTIFIER','REPOID','VERSION'])->order('DOCID DESC'); // prevent empty row
 
         foreach ($db->fetchAll($select) as $value) {
             $paperId = $value['PAPERID'];
