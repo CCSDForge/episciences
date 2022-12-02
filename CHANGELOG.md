@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JS error: Failed to load plugin url: https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/langs/fr_FR.js
   @see https://www.tiny.cloud/docs-4x/configure/localization/#language
 - Add %%PAPER_REP_URL%% tag to the description of the invitation templates.
+- Change password: redirect to authentication if user is not logged in
 
 ## 1.0.38.3 - 2022-11-30
 ### Fixed
