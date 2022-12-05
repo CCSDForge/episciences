@@ -3922,9 +3922,8 @@ class AdministratepaperController extends PaperDefaultController
 
         $tags = [
             Episciences_Mail_Tags::TAG_COMMENT => $oComment->getMessage(),
-            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
-            Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
-            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName()
+            Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME => Episciences_Auth::getScreenName(),
+            Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME => Episciences_Auth::getFullName()
         ];
 
         $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->buildPublicPaperUrl($docId));
