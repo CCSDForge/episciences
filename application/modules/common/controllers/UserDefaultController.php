@@ -613,7 +613,10 @@ class UserDefaultController extends Zend_Controller_Action
 
         // Données par défaut du compte CAS
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
+
         $casUserDefaults = $ccsdUserMapper->find($userId, $user);
+
+        $oldEmail = $user->getEmail();
 
         if (!$casUserDefaults) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage('No user');
@@ -669,6 +672,8 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $user = new Episciences_User($updatedUserValues);
 
+
+
                 $subform = $form->getSubForm('ccsd');
 
                 if ($subform->PHOTO->isUploaded()) {
@@ -682,6 +687,8 @@ class UserDefaultController extends Zend_Controller_Action
                         $this->_helper->FlashMessenger->setNamespace('danger')->addMessage($e->getMessage());
                     }
                 }
+
+                $user->setEmail($oldEmail);
                 
                 if (!$user->save()) {
                     $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_EDIT_FAILURE;
