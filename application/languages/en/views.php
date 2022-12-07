@@ -2284,6 +2284,7 @@ Your action will be recorded in the submission event log',
     "en spécifiant le compte que vous souhaitez conserver et l'identifiant auteur IdHAL à conserver (si vous en avez plusieurs)" => 'by specifying the account you want to keep and the author IdHAL to keep (if you have several)',
     "Voici la liste des noms d'utilisateur trouvés pour votre compte :" => "Here is the list of usernames found for your account:",
     "Échec du changement de courriel" => "Failed to change email",
-    "Changement de courriel réussi" => "Successful email change"
+    "Changement de courriel réussi" => "Successful email change",
+    'Confirmer la modification' => 'Confirm change'
 
 ];
