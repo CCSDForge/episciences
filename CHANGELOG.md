@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add %%PAPER_REP_URL%% tag to the description of the invitation templates.
 - Change password: redirect to authentication if user is not logged in
 - The '%%SENDER_SCREEN_NAME%%' tag is always present in the 'paper_paper_editor_refused_monitoring' template
+- It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an email
 
 ## 1.0.38.3 - 2022-11-30
 ### Fixed

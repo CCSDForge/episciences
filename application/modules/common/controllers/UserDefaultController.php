@@ -7,6 +7,9 @@ use ReCaptcha\ReCaptcha;
 class UserDefaultController extends Zend_Controller_Action
 {
 
+    public const SUCCESS = 'success';
+    public const ERROR = 'error';
+
     public const DEFAULT_IMG_PATH = '/../public/img/user.png';
 
     public function indexAction(): void
@@ -653,7 +656,10 @@ class UserDefaultController extends Zend_Controller_Action
 
         // Données par défaut du compte CAS
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
+
         $casUserDefaults = $ccsdUserMapper->find($userId, $user);
+
+        $oldEmail = $user->getEmail();
 
         if (!$casUserDefaults) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage('No user');
@@ -692,7 +698,7 @@ class UserDefaultController extends Zend_Controller_Action
             if ($form->isValid($post)) {
 
                 $values = $form->getValues();
-                $values['ccsd']['USERNAME'] =  $userDefaults['USERNAME'];  //otherwise the username is removed from the identity: in modification it is not used in save() method.
+                $values['ccsd']['USERNAME'] = $userDefaults['USERNAME'];  //otherwise the username is removed from the identity: in modification it is not used in save() method.
 
                 try {
                     $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
@@ -709,6 +715,7 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $user = new Episciences_User($updatedUserValues);
 
+
                 $subform = $form->getSubForm('ccsd');
 
                 if ($subform->PHOTO->isUploaded()) {
@@ -722,7 +729,9 @@ class UserDefaultController extends Zend_Controller_Action
                         $this->_helper->FlashMessenger->setNamespace('danger')->addMessage($e->getMessage());
                     }
                 }
-                
+
+                $user->setEmail($oldEmail);
+
                 if (!$user->save()) {
                     $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_EDIT_FAILURE;
                     $this->view->form = $form;
@@ -881,6 +890,41 @@ class UserDefaultController extends Zend_Controller_Action
             $this->render('lostpassword');
             return;
         }
+
+        $this->view->form = $form;
+    }
+
+    /**
+     * @return void
+     * @throws Zend_Form_Exception
+     */
+
+    public function changeaccountemailAction(): void
+    {
+
+
+        if (!Episciences_Auth::isLogged()) {
+            $this->redirect('user/login?forward-controller=user&forward-action=' . $this->getRequest()->getActionName());
+        }
+
+        /** @var Zend_Controller_Request_Http $request */
+
+        $request = $this->getRequest();
+
+        $form = new Ccsd_User_Form_AccountEditEmail();
+        $form->setAction($this->view->url());
+        $form->setActions(true)->createSubmitButton('submit', [
+            'label' => 'Confirmer la modification',
+            'class' => 'btn btn-primary'
+        ]);
+
+
+        $form->setDefault('EMAIL', Episciences_Auth::getEmail());
+
+        if ($request) {
+            $this->processChangeEmail($request, $form);
+        }
+
 
         $this->view->form = $form;
     }
@@ -1164,7 +1208,7 @@ class UserDefaultController extends Zend_Controller_Action
         try {
             $result = json_encode($detailByLogin, JSON_THROW_ON_ERROR);
 
-        }catch (Exception $e){
+        } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
@@ -1459,6 +1503,137 @@ class UserDefaultController extends Zend_Controller_Action
             ->setHeader('Content-Length', $size, true)
             ->setBody($data);
 
+
+    }
+
+    /**
+     * @param Zend_Controller_Request_Http $request
+     * @param Ccsd_User_Form_AccountEditEmail $form
+     * @return void
+     * @throws Zend_Form_Exception
+     * @throws Exception
+     */
+
+    private function processChangeEmail(Zend_Controller_Request_Http $request, Ccsd_User_Form_AccountEditEmail $form): void
+    {
+
+        $userMapper = new Ccsd_User_Models_UserMapper();
+
+        $userLogins = $userMapper->findLoginByEmail($form->getValue('EMAIL'));
+
+        $isNotAllowedToChangeEmail = isset($userLogins) && count($userLogins) > 1;
+
+
+        if ($isNotAllowedToChangeEmail) {
+
+            $infoMsg = '';
+
+            $journalSettings = Zend_Registry::get('reviewSettings');
+
+            $technicalSupportEmail = (
+                isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) &&
+                $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== ''
+            ) ? $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] : '';
+
+            $infoMsg .= $this->view->translate('Plusieurs comptes ont été crées avec cette adresse email.');
+            
+            $infoMsg .= '<blockquote>';
+            $infoMsg .= $this->view->translate('Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes.');
+            $infoMsg .= '<br>';
+            $infoMsg .= $this->view->translate('Merci de contacter');
+            $infoMsg .= ' ';
+            $infoMsg .= sprintf("<a href='mailto:%s'>%s", $technicalSupportEmail, $this->view->translate('le support technique'));
+            $infoMsg .= '</a>';
+            $infoMsg .= ' ';
+            $infoMsg .= $this->view->translate("en spécifiant le compte que vous souhaitez conserver et l'identifiant auteur IdHAL à conserver (si vous en avez plusieurs)");
+            $infoMsg .= '</blockquote>';
+            $infoMsg .= $this->view->translate("Voici la liste des noms d'utilisateur trouvés pour votre compte :");
+
+
+            $this->view->userloginsStr = $this->foundLoginsAndIsValidatedMentionAccount($userLogins->toArray());
+
+            $this->view->infoMsg = $infoMsg;
+
+        }
+
+        $this->view->isNotAllowedToChangeEmail = $isNotAllowedToChangeEmail;
+
+
+        $post = $request->getPost();
+
+        $fController = $request->getParam('forward-controller', 'user');
+        $fAction = $request->getParam('forward-action', 'change_account_email');
+
+
+        if ($request->isPost() && $form->isValid($post)) {
+
+            $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE;
+
+
+            if (!$isNotAllowedToChangeEmail) {
+
+                /** @var Episciences_User $user */
+
+                $user = Episciences_Auth::getUser();
+
+                $user->setEmail($form->getValue('EMAIL'));
+
+                if ($user->save()) {
+                    $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS;
+                }
+
+            }
+
+            $alertType = ($resultMessage === Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS) ? self::SUCCESS : self::ERROR;
+
+
+            $message = $this->view->translate($resultMessage);
+            $this->_helper->FlashMessenger->setNamespace($alertType)->addMessage($message);
+
+
+            if ($alertType === self::SUCCESS) {
+                $this->redirect($fController . '/' . $fAction);
+            }
+
+
+        }
+
+    }
+
+
+    /**
+     * @param array $userLogins
+     * @return string
+     */
+    private function foundLoginsAndIsValidatedMentionAccount(array $userLogins = []): string
+    {
+
+        try {
+            $unValidatedAccount = Zend_Registry::get('Zend_Translate')->translate(" (Vous n'avez pas encore validé ce compte par le courriel de validation)");
+        } catch (Zend_Exception $e) {
+            $unValidatedAccount = " (You haven't yet validated this account with the validation e-mail)";
+        }
+
+        $count = count($userLogins);
+
+        $loginsListStr = $count > 0 ? '<ul>' : '';
+
+        foreach ($userLogins as $login) {
+
+
+            $loginsListStr .= '<li>';
+            $loginsListStr .= $login['USERNAME'];
+
+            if ($login['VALID'] === 0) {
+                $loginsListStr .= $unValidatedAccount;
+            }
+
+            $loginsListStr .= '</li>';
+        }
+
+        $loginsListStr .= $count > 0 ? '</ul>' : '';
+
+        return $loginsListStr;
 
     }
 }
