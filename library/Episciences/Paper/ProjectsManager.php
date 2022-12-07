@@ -150,7 +150,7 @@ class Episciences_Paper_ProjectsManager
      * @param array $globalfundingArray
      * @return array
      */
-    public function formatFundingOAForDB($fileFound, array $fundingArray, array $globalfundingArray): array
+    public static function formatFundingOAForDB($fileFound, array $fundingArray, array $globalfundingArray): array
     {
         foreach ($fileFound as $openAireKey => $valueOpenAire) {
             if (array_key_exists('to', $valueOpenAire) && array_key_exists('@type', $valueOpenAire['to']) && $valueOpenAire['to']['@type'] === "project") {
