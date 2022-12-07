@@ -1,0 +1,19 @@
+<h2><?= $this->translate("Changement de l'adresse mail") ?></h2>
+
+<?php if ($this->isNotAllowedToChangeEmail): ?>
+
+    <div class="alert alert-warning text-justify" role="alert"><i class="fas fa-info-circle"></i>&nbsp;
+        <?= $this->translate($this->infoMsg) ?>
+        <br>
+        <?= $this->userloginsStr ?>
+    </div>
+
+
+<?php endif; ?>
+
+
+<?php
+if ($this->form) {
+    $this->form->setAction($this->url());
+    echo $this->form;
+}
