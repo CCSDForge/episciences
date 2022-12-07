@@ -2273,5 +2273,17 @@ Your action will be recorded in the submission event log',
     "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
-    'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.'
+    'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
+
+    //Chanage email address
+
+    'Modifier mon courriel' => 'Change my email address',
+    "Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes." => "As a first step, you should proceed to merge all your accounts.",
+    "Merci de contacter" => 'Please contact',
+    "le support technique" => 'the support',
+    "en spécifiant le compte que vous souhaitez conserver et l'identifiant auteur IdHAL à conserver (si vous en avez plusieurs)" => 'by specifying the account you want to keep and the author IdHAL to keep (if you have several)',
+    "Voici la liste des noms d'utilisateur trouvés pour votre compte :" => "Here is the list of usernames found for your account:",
+    "Échec du changement de courriel" => "Failed to change email",
+    "Changement de courriel réussi" => "Successful email change"
+
 ];
