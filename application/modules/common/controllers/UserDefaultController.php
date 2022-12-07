@@ -1565,7 +1565,7 @@ class UserDefaultController extends Zend_Controller_Action
         $fAction = $request->getParam('forward-action', 'change_account_email');
 
 
-        if ($request->isPost() && $form->isValid($post)) {
+        if ($request->isPost() && $request->get('submit') && $form->isValid($post)) {
 
             $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE;
 
