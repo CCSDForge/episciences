@@ -2285,6 +2285,7 @@ Your action will be recorded in the submission event log',
     "Voici la liste des noms d'utilisateur trouvés pour votre compte :" => "Here is the list of usernames found for your account:",
     "Échec du changement de courriel" => "Failed to change email",
     "Changement de courriel réussi" => "Successful email change",
-    'Confirmer la modification' => 'Confirm change'
+    'Confirmer la modification' => 'Confirm change',
+    "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Modifier mon courriel</a>" => "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Change my email address</a>"
 
 ];

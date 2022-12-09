@@ -1850,7 +1850,7 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * publish paper
+         * publish paper
      * @throws JsonException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
@@ -1881,18 +1881,6 @@ class AdministratepaperController extends PaperDefaultController
 
             $paper->setPublication_date(date("Y-m-d H:i:s"));
 
-            // if HAL, send coar notify message
-            /*
-            if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
-                $notification = new Episciences_Notify_Hal($paper, $journal);
-                try {
-                    $idAnnounce = $notification->announceEndorsement();
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage(sprintf('Announcing publication to HAL with ID %s succeeded.', $idAnnounce));
-                } catch (Exception $exception) {
-                    trigger_error('Announcing publication to HAL failed', E_USER_WARNING);
-                }
-            }
-            */
 
             // update paper status
             $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
@@ -1921,6 +1909,17 @@ class AdministratepaperController extends PaperDefaultController
                 // Notifier les rédacteurs + préparateurs de copie de l'article + selon les pramètres de la revue: red. en chef, admins et secrétaires de red.
                 $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY, Episciences_Auth::getUser());
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+                // if HAL, send coar notify message
+
+                if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
+                    $notification = new Episciences_Notify_Hal($paper, $journal);
+                    try {
+                        $idAnnounce = $notification->announceEndorsement();
+                        $this->_helper->FlashMessenger->setNamespace('success')->addMessage(sprintf('Announcing publication to HAL with ID %s succeeded.', $idAnnounce));
+                    } catch (Exception $exception) {
+                        trigger_error('Announcing publication to HAL failed', E_USER_WARNING);
+                    }
+                }
 
             } else {
                 $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué');

@@ -1081,11 +1081,6 @@ class UserDefaultController extends Zend_Controller_Action
     public function changepasswordAction(): void
     {
 
-        if (!Episciences_Auth::isLogged()) {
-            $this->redirect('user/login?forward-controller=user&forward-action=' . $this->getRequest()->getActionName());
-            return;
-        }
-
         // Retour de l'activation OK
         if ($this->getRequest()->getParam('change') == 'done') {
             $this->render('changepassword');
