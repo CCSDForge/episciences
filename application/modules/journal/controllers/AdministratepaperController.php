@@ -1962,6 +1962,10 @@ class AdministratepaperController extends PaperDefaultController
 
             // update status
             $paper->setStatus(Episciences_Paper::STATUS_REFUSED);
+
+            // reset paper password
+            $paper->setPassword();
+
             if ($paper->save()) {
 
                 // log new status
