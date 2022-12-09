@@ -17,6 +17,8 @@ $(function () {
     let $secondDisclaimersDisclaimer = $('#disclaimers-disclaimer2');
     let $specialIssuesAccessCodeElement = $("#specialIssueAccessCode-element");
     let $searchDocVersion = $('#' + subform + '-version');
+    let $searchPaperPassword = $('#' + subform + '-paperPassword');
+    let $searchRequiredPwd = $('#' + subform + '-h_requiredPwd');
 
     // if it is a modal, disable submit button
     disableModalSubmitButton();
@@ -366,6 +368,12 @@ $(function () {
 
         if ($isRequiredVersion && !hasHook && ('' === version || isNaN(version))) {
             alert(translate("Veuillez indiquer la version du document (nombre uniquement)."));
+            return;
+        }
+
+
+        if ($searchPaperPassword.length > 0 && $searchRequiredPwd.length > 0 && $searchRequiredPwd.val() === '1' && $searchPaperPassword.val() === ''  ) {
+            alert(translate("Veuillez indiquer le mot de passe arXiv du document."));
             return;
         }
 

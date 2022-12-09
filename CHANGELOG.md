@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Added
+- Three options for sharing the paper password:
+  * No (default): do not share
+  * Optional: possibility to share
+  * Required: sharing is required when submitting a new version and responding to a revision request without any changes
 
 ## 1.0.38.5 - 2022-12-14
 ### Fixed
