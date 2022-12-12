@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The '%%SENDER_SCREEN_NAME%%' tag is always present in the 'paper_paper_editor_refused_monitoring' template
 - It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an email
 
+### Added
+- [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites
+
+
 ## 1.0.38.3 - 2022-11-30
 ### Fixed
 - Html filtering problem that breaks the display in the comments

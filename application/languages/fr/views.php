@@ -47,6 +47,9 @@ return [
     "Episciences_Website_Navigation_Page_BrowseSpecialIssues" => "Consulter les volumes spéciaux",
     "Episciences_Website_Navigation_Page_Search" => "Rechercher un article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Membres du comité éditorial",
+    "Episciences_Website_Navigation_Page_Credits" => "Crédits",
+    "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
+    "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte d'éthique",
 
     //Recherche : facettes
     "year" => "Année",
