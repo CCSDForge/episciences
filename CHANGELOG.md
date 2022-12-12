@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites
+- Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
 
 
 ## 1.0.38.3 - 2022-11-30
