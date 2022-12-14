@@ -52,9 +52,18 @@ class ApiController extends Zend_Controller_Action
             ->setBody(Zend_Json_Encoder::encode($response));
     }
 
-    public function ccsdMetricsAction() {
+    public function ccsdMetricsAction()
+    {
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+
+        // Count of published documents
+        try {
+            $nbOfPublications = Episciences_PapersManager::getPublishedPapersCount();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $nbOfPublications = 0;
+        }
+
 
         // Count of Users for the current year, at the time of request
         try {
@@ -66,7 +75,7 @@ class ApiController extends Zend_Controller_Action
         header('Content-Type: application/json');
 
         try {
-            echo json_encode(['nbOfEpisciencesUsers' => $nbOfUsers], JSON_THROW_ON_ERROR);
+            echo json_encode(['nbOfEpisciencesUsers' => $nbOfUsers, 'nbOfEpisciencesPublications' => $nbOfPublications], JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             $timeOut = 1800;
             header('HTTP/1.0 503 Service Unavailable');

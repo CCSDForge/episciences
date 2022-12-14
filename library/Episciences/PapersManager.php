@@ -2855,6 +2855,25 @@ class Episciences_PapersManager
     }
 
     /**
+     * @return false|int
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getPublishedPapersCount() {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, [new Zend_Db_Expr("COUNT('DOCID') AS NbPublished")])
+            ->where(T_PAPERS . '.STATUS = ' . Episciences_Paper::STATUS_PUBLISHED);
+
+        $result = $select->query()->fetch();
+
+        if (!$result) {
+            return false;
+        }
+
+        return (int)$result['NbPublished'];
+    }
+
+    /**
      * @param $a
      * @param $b
      * @return int
