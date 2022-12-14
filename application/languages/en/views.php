@@ -1878,13 +1878,8 @@ return [
     "Je n'ai pas de conflit d'intérêt" => 'I do not have a conflict of interest',
     "J'ai un conflit d'intérêt" => 'I do have a conflict of interest',
     'Décider plus tard' => 'Decide later',
-    "Continuer et accéder à la soumission. Vous n'avez pas de conflit d'intérêt à déclarer.
-                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'continue and access the submission . You do not have a conflict of interest to declare. Your action will be recorded in the submission event log . ',
-    "Ne pas accéder à la soumission. Les informations sur cette soumission resteront masquées pour vous.
-                            Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt . Le commentaire sera visible par les gestionnaires de l'article.
-                            Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'do not access the submission . Information about this submission will remain hidden from you .
-You may add an optional comment to explain the nature of your conflict of interest . The comment will be visible to the managers of the article .
-Your action will be recorded in the submission event log',
+    "Continuer et Accéder à la soumission. Vous n'avez pas de conflit d'intérêt à déclarer. Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Continue and Access the submission. You do not have a conflict of interest to declare. Your action will be recorded in the submission event log.',
+    "Ne pas accéder à la soumission. Les informations sur cette soumission resteront masquées pour vous. Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt. Le commentaire sera visible par les gestionnaires de l'article. Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Do not access the submission. Information about this submission will remain hidden from you. You may add an optional comment to explain the nature of your conflict of interest. The comment will be visible to the managers of the article. Your action will be recorded in the submission event log.',
     "Vous pouvez décider plus tard, aucune action ne sera enregistrée." => 'You can decide later, no action will be recorded',
     'Commentaire facultatif' => 'Optional comments',
     "Rapporté le" => "Reported on",
