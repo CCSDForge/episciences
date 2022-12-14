@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Fixed
+- [#294](https://github.com/CCSDForge/episciences/issues/294): untranslated text
 ## 1.0.38.4 - 2022-12-12
 ### Fixed
 - JS error: Failed to load plugin url: https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/langs/fr_FR.js
