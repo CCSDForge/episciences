@@ -2784,6 +2784,7 @@ class PaperController extends PaperDefaultController
 
             // remove paper (update its status)
             $paper->setStatus(Episciences_Paper::STATUS_DELETED);
+            $paper->setPassword();
             $paper->save();
 
             // delete all paper datasets
