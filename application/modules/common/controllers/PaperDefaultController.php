@@ -776,11 +776,11 @@ class PaperDefaultController extends DefaultController
             return '';
         }
 
-        $path =  $this->getCryptoFile();
+        $path = Episciences_Review::getCryptoFile();
 
         if (!empty($path)) {
 
-            $cryptoFile = json_decode(file_get_contents($path), true);
+            $cryptoFile = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
 
             if(array_key_exists('key', $cryptoFile)){
                 $sKey = $cryptoFile['key'];
@@ -801,62 +801,6 @@ class PaperDefaultController extends DefaultController
 
         return $plainText;
 
-
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     * @return bool
-     */
-    protected function saveCipherPaperPassword(Episciences_Paper $paper): bool
-    {
-
-
-        $sKey = '';
-        $result = false;
-        $plainText = $paper->getPassword();
-        $cipherText = '';
-
-        $path = $this->getCryptoFile();
-
-        if (!empty($path)) {
-
-            $cryptoFile = json_decode(file_get_contents($path), true);
-
-            if(array_key_exists('key', $cryptoFile)){
-                $sKey = $cryptoFile['key'];
-            }
-
-            try {
-                $cipherText = Episciences_Tools::encryptWithKey($plainText, Defuse\Crypto\Key::loadFromAsciiSafeString($sKey) );
-            } catch (\Defuse\Crypto\Exception\EnvironmentIsBrokenException|\Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException | \Defuse\Crypto\Exception\BadFormatException | JsonException $e) {
-                $eMsg = 'paper-' . $paper->getDocid() . '_encryptWithKey: ';
-                $eMsg .= $e->getMessage();
-                error_log($eMsg);
-            }
-
-        } else {
-            error_log('Fatal error: missing file: ' . $path);
-        }
-
-        if(!empty($cipherText)){
-            $paper->setPassword($cipherText);
-            try {
-                $result = $paper->save();
-            } catch (JsonException | Zend_Db_Adapter_Exception $e) {
-                error_log($e->getMessage());
-            }
-        }
-
-        return $result;
-
-
-    }
-
-    protected function getCryptoFile(): string
-    {
-        $filePah = Episciences_Review::getCryptoFilePath();
-        return file_exists($filePah) ? $filePah : '';
 
     }
 

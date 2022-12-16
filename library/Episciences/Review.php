@@ -43,7 +43,7 @@ class Episciences_Review
     public const SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'canAbandonContinuePublicationProcess';
     // git #155
     public const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
-    public const SETTING_CAN_SHARE_PAPER_PASSWORD = 'canSharePaperPassword';
+    public const SETTING_ARXIV_PAPER_PASSWORD = 'canSharePaperPassword';
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -200,7 +200,7 @@ class Episciences_Review
             self::SETTING_SYSTEM_IS_COI_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
-            self::SETTING_CAN_SHARE_PAPER_PASSWORD
+            self::SETTING_ARXIV_PAPER_PASSWORD
         ];
 
 
@@ -304,6 +304,13 @@ class Episciences_Review
             $select = $db->select()->from('REVIEW')->where('CODE = ?', $rvId);
         }
         return $db->fetchRow($select);
+    }
+
+    public static function getCryptoFile(): string
+    {
+        $filePah = Episciences_Review::getCryptoFilePath();
+        return file_exists($filePah) ? $filePah : '';
+
     }
 
     /**
@@ -974,7 +981,7 @@ class Episciences_Review
             self::SETTING_CAN_CHOOSE_VOLUME,
             self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
             self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
-            self::SETTING_CAN_SHARE_PAPER_PASSWORD
+            self::SETTING_ARXIV_PAPER_PASSWORD
         ], 'publication', ["legend" => "Paramètres de soumission"]);
         $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
 
@@ -1164,11 +1171,18 @@ class Episciences_Review
         );
 
         // Possibility to share the paper password for arxiv submissions
-        $form->addElement('checkbox', self::SETTING_CAN_SHARE_PAPER_PASSWORD, [
+        $form->addElement('select', self::SETTING_ARXIV_PAPER_PASSWORD, [
                 'label' => 'Permettre aux auteurs de partager le mot de passe papier arXiv',
                 'description' => "L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv",
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
+                'value' => 0,
+
+            'multioptions' => [
+                0 => 'Non',
+                1 => 'Facultatif',
+                2 => 'Requis',
+            ],
+
+            ]
         );
 
         return $form;
@@ -1701,7 +1715,7 @@ class Episciences_Review
         // Article - final decision
         $settingsValues[self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] = $this->getSetting(self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
 
-        $settingsValues[self::SETTING_CAN_SHARE_PAPER_PASSWORD] = $this->getSetting(self::SETTING_CAN_SHARE_PAPER_PASSWORD);
+        $settingsValues[self::SETTING_ARXIV_PAPER_PASSWORD] = $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD);
 
         $values = [];
 
@@ -2293,7 +2307,7 @@ class Episciences_Review
     {
 
 
-        if(in_array(Episciences_Repositories::ARXIV_REPO_ID, self::getSetting(self::SETTING_REPOSITORIES)) && $this->getSetting(self::SETTING_CAN_SHARE_PAPER_PASSWORD)){
+        if(in_array(Episciences_Repositories::ARXIV_REPO_ID, self::getSetting(self::SETTING_REPOSITORIES)) && $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD)){
 
             $path = self::getCryptoFilePath();
 

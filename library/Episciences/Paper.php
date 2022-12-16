@@ -30,7 +30,7 @@ class Episciences_Paper
 
     public const STATUS_SUBMITTED = 0;
     // reviewers have been assigned, but did not start their reports
-   public const STATUS_OK_FOR_REVIEWING = 1;
+    public const STATUS_OK_FOR_REVIEWING = 1;
     // rating has begun (at least one reviewer has starter working on his rating report)
     public const STATUS_BEING_REVIEWED = 2;
     // rating is finished (all reviewers)
@@ -63,7 +63,7 @@ class Episciences_Paper
     public const STATUS_CE_READY_TO_PUBLISH = 23;
     public const STATUS_CE_AUTHOR_FORMATTING_DEPOSED = 24; // Copy ed.: formatting by author completed, waiting for final version
     public const STATUS_TMP_VERSION_ACCEPTED = 25; // tmp version accepted
-    public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  = 26;
+    public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION = 26;
     public const STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 27;
     public const STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING = 28; // waiting to be edited by the Journal
     public const STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION = 29; // after author's modification
@@ -97,7 +97,7 @@ class Episciences_Paper
         self::STATUS_CE_READY_TO_PUBLISH,
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
         self::STATUS_TMP_VERSION_ACCEPTED,
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION,
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
@@ -190,7 +190,7 @@ class Episciences_Paper
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "copy ed : mise en forme par l'auteur terminée, en attente de la version finale",
         self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
         self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée, en attente de la version finale',
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION  => "accepté - en attente de la version finale de l'auteur",
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION => "accepté - en attente de la version finale de l'auteur",
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'accepté, en attente de modifications majeures',
         self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING => 'Accepté - version finale soumise, en attente de la mise en forme par la revue',
         self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "version temporaire acceptée après modification de l'auteur",
@@ -234,7 +234,7 @@ class Episciences_Paper
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
         self::STATUS_CE_READY_TO_PUBLISH,
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION,
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED,
         self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
@@ -252,7 +252,7 @@ class Episciences_Paper
     public const STATUS_WITH_EXPECTED_REVISION = [
         self::STATUS_WAITING_FOR_MINOR_REVISION,
         self::STATUS_WAITING_FOR_MAJOR_REVISION,
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION ,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION,
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
@@ -341,11 +341,11 @@ class Episciences_Paper
     private $_position;
     private $_files;
     private $_datasets;
-    /** @var string  */
+    /** @var string */
     private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
     public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
-    public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref','doaj', 'zbjats', 'json'];
+    public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'doaj', 'zbjats', 'json'];
 
     // variable for the export Enrichment
 
@@ -663,9 +663,9 @@ class Episciences_Paper
         return $result;
     }
 
-/*
- * A paper object, as an array, with only public information
- */
+    /*
+     * A paper object, as an array, with only public information
+     */
     public function toPublicArray(): array
     {
 
@@ -699,8 +699,8 @@ class Episciences_Paper
         $result['url'] = sprintf('%s/%s', $journal->getUrl(), $this->getPaperid());
         $result['doi'] = $this->getDoi();
         $result['journalName'] = $journal->getName();
-        $result['issn']= $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT);
-        $result['eissn']= $journal->getSetting(Episciences_Review::SETTING_ISSN);
+        $result['issn'] = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT);
+        $result['eissn'] = $journal->getSetting(Episciences_Review::SETTING_ISSN);
 
         $result['volume'] = $volumeMeta;
         $result['section'] = $sectionMeta;
@@ -1295,7 +1295,6 @@ class Episciences_Paper
     {
         return ($this->getStatus() === self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION);
     }
-
 
 
     /**
@@ -1894,7 +1893,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
 
         //get licence paper
-        if (!empty($this->getDocid())){
+        if (!empty($this->getDocid())) {
             $licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
             if ($licence !== "") {
                 $node->appendChild($dom->createElement('paperLicence', $licence));
@@ -1917,18 +1916,18 @@ class Episciences_Paper
 
         // project Funding
         $project = Episciences_Paper_ProjectsManager::formatProjectsForview($this->_paperId);
-        if (!empty($project)){
+        if (!empty($project)) {
             $node->appendChild($dom->createElement('funding', $project['funding']));
-        }else{
+        } else {
             $node->appendChild($dom->createElement('funding', ""));
         }
 
 
         $classification = Episciences_Paper_ClassificationsManager::formatClassificationForview($this->_paperId);
 
-        if (!empty($classification)){
+        if (!empty($classification)) {
             $node->appendChild($dom->createElement('classification', $classification));
-        }else{
+        } else {
             $node->appendChild($dom->createElement('classification', ""));
         }
 
@@ -2711,7 +2710,7 @@ class Episciences_Paper
         try {
             $jResult = json_encode($result, JSON_THROW_ON_ERROR);
 
-        }catch (Exception $e){
+        } catch (Exception $e) {
             $jResult = '';
             trigger_error($e->getMessage());
         }
@@ -3080,7 +3079,7 @@ class Episciences_Paper
 
     public function isAcceptedSubmission(): bool
     {
-        return in_array($this->getStatus(),  self::ACCEPTED_SUBMISSIONS, true);
+        return in_array($this->getStatus(), self::ACCEPTED_SUBMISSIONS, true);
     }
 
     /**
@@ -3929,15 +3928,16 @@ class Episciences_Paper
         $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
     }
 
-    public function getDatasetsFromEnrichment(){
+    public function getDatasetsFromEnrichment()
+    {
 
-        $notFormatedDatasets =  $this->getDatasets();
+        $notFormatedDatasets = $this->getDatasets();
         $formatedDatasets = [];
         $metatexttmp = '';
-        foreach ($notFormatedDatasets as $value){
+        foreach ($notFormatedDatasets as $value) {
             $formatedDatasets[$value->getSourceId()][] = $value;
-            if (!is_null($value->getMetatext())){
-                if ($metatexttmp !== $value->getMetatext()){
+            if (!is_null($value->getMetatext())) {
+                if ($metatexttmp !== $value->getMetatext()) {
                     $formatedDatasets[$value->getSourceId()]['metatext'][] = json_decode($value->getMetatext(), true, 512, JSON_THROW_ON_ERROR);
                     $metatexttmp = $value->getMetatext();
                 }
@@ -4173,7 +4173,7 @@ class Episciences_Paper
      * @return array [Episciences_Paper_Authors]
      * @throws JsonException
      */
-    public function getAuthors() : array
+    public function getAuthors(): array
     {
         $this->_authors = Episciences_Paper_AuthorsManager::getArrayAuthorsAffi($this->getPaperid());
 
@@ -4184,7 +4184,7 @@ class Episciences_Paper
      * @return array [Episciences_Paper_Authors]
      * @throws JsonException
      */
-    public function getAuthorsWithAffiNumeric() : array
+    public function getAuthorsWithAffiNumeric(): array
     {
         $this->_authors = Episciences_Paper_AuthorsManager::filterAuthorsAndAffiNumeric($this->getPaperid());
 
@@ -4192,12 +4192,10 @@ class Episciences_Paper
     }
 
 
-
-
     /**
      * @return string Episciences_Paper_Licence
      */
-    public function getLicence() : string
+    public function getLicence(): string
     {
         $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
         return $this->_licence;
@@ -4207,7 +4205,7 @@ class Episciences_Paper
      * @return array [Episciences_Paper_Projects]
      * @throws JsonException
      */
-    public function getFundings() : array
+    public function getFundings(): array
     {
         $this->_fundings = Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($this->getPaperid());
 
@@ -4218,7 +4216,7 @@ class Episciences_Paper
      * @return array [Episciences_Paper_Dataset]
      */
 
-    public function getLinkedData() : array
+    public function getLinkedData(): array
     {
         $this->_linkedData = Episciences_Paper_DatasetsManager::getByDocId($this->getDocid());
         return $this->_linkedData;
@@ -4274,18 +4272,78 @@ class Episciences_Paper
 
     /**
      * @param string|null $paperPassword
-     * @return Episciences_Paper
+     * @param bool $encrypt
+     * @return $this
      */
-    public function setPassword(string $paperPassword = null): self
+    public function setPassword(string $paperPassword = null, bool $encrypt = false): self
     {
+
+        if (!empty($paperPassword) && $encrypt) {
+
+            try {
+
+                $paperPassword = Episciences_Tools::encrypt($paperPassword);
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+
+            }
+        }
+
         $this->_password = $paperPassword;
+
         return $this;
     }
 
 
-  
+    /**
+     * @throws Zend_Exception
+     */
+    public function isContributorCanShareArXivPaperPwd(): bool
+    {
+        return $this->isOptionalPaperPwd() || $this->isRequiredPaperPwd();
+
+    }
+
+    /**
+     * @return bool
+     * @throws Zend_Exception
+     */
+
+    public function isRequiredPaperPwd(): bool
+    {
+
+        $journalSettings = Zend_Registry::get('reviewSettings');
+
+        return
+            (
+                isset($journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD]) &&
+                (int)$journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD] === 2
+            ) &&
+            $this->isOwner() &&
+            empty($this->getPassword()) &&
+            $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
+    }
 
 
+    /**
+     * @return bool
+     * @throws Zend_Exception
+     */
+    public function isOptionalPaperPwd(): bool
+    {
+
+        $journalSettings = Zend_Registry::get('reviewSettings');
+
+        return
+            (
+                isset($journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD]) &&
+                (int)$journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD] === 1
+            ) &&
+            $this->isOwner() &&
+            empty($this->getPassword()) &&
+            $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
+    }
 
 
 }

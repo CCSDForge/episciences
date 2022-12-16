@@ -115,7 +115,7 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $docId = $request->getParam('id');
-        $zIdentifier= $request->get('z-identifier');
+        $zIdentifier = $request->get('z-identifier');
 
         $papersManager = new Episciences_PapersManager();
         $paper = $papersManager::get($docId);
@@ -195,7 +195,6 @@ class PaperController extends PaperDefaultController
         $this->view->review = $review;
 
 
-
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
         $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
@@ -245,7 +244,6 @@ class PaperController extends PaperDefaultController
         $this->view->isAllowedToSeeNoPublicDetails = $isAllowedToSeeNoPublicDetails;
 
 
-
         $isAllowedToAnswerNewVersion =
             Episciences_Auth::isLogged() &&
             (
@@ -259,7 +257,7 @@ class PaperController extends PaperDefaultController
         $displayPaperPasswordBloc = (
             Episciences_Auth::isLogged() &&
             in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
-            $review->getSetting($review::SETTING_CAN_SHARE_PAPER_PASSWORD) &&
+            $review->getSetting($review::SETTING_ARXIV_PAPER_PASSWORD) &&
             $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
             !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
 
@@ -467,7 +465,7 @@ class PaperController extends PaperDefaultController
         if ($zIdentifier && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) { // new version submitted from z-submit application
 
             $this->view->zIdentifier = $zIdentifier;
-            $isFromZSubmit =$paper->isFromZenodo();
+            $isFromZSubmit = $paper->isFromZenodo();
         }
 
         $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
@@ -484,12 +482,14 @@ class PaperController extends PaperDefaultController
         }
 
         $this->view->zSubmitUrl = $zSubmitUrl;
-        $this->view->zSubmitStatus = EPISCIENCES_Z_SUBMIT['STATUS']; /** @see /config/dist-pwd.json */
+        $this->view->zSubmitStatus = EPISCIENCES_Z_SUBMIT['STATUS'];
+        /** @see /config/dist-pwd.json */
 
     }
 
 
-    public function postorcidauthorAction(){
+    public function postorcidauthorAction()
+    {
 
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -497,11 +497,11 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         if (($request->isXmlHttpRequest() && $request->isPost()) && Episciences_Auth::isAllowedToManageOrcidAuthor()) {
             $body = $request->getRawBody();
-            $data = json_decode($body,true, JSON_UNESCAPED_UNICODE);
+            $data = json_decode($body, true, JSON_UNESCAPED_UNICODE);
             $dbAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($data['paperid']);
             $arrayAuthorDb = [];
-            foreach ($dbAuthor as $value)  {
-                $arrayAuthorDb = json_decode($value['authors'],true,JSON_UNESCAPED_UNICODE);
+            foreach ($dbAuthor as $value) {
+                $arrayAuthorDb = json_decode($value['authors'], true, JSON_UNESCAPED_UNICODE);
             }
             //we can do that because we have the same number of author at the same place
             $arrayAuthorForm = $data['authors'];
@@ -521,10 +521,10 @@ class PaperController extends PaperDefaultController
                 }
             }
             $newAuthorInfos = new Episciences_Paper_Authors();
-            $newAuthorInfos->setAuthors(json_encode($arrayAuthorDb,JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
+            $newAuthorInfos->setAuthors(json_encode($arrayAuthorDb, JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
             $newAuthorInfos->setPaperId($data['paperid']);
             $updateAuthor = Episciences_Paper_AuthorsManager::update($newAuthorInfos);
-            if ($updateAuthor>0) {
+            if ($updateAuthor > 0) {
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
             } else {
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Informations déjà prises en compte');
@@ -541,7 +541,8 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Form_Exception
      */
 
-    public function getaffiliationsbyauthorAction(){
+    public function getaffiliationsbyauthorAction()
+    {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
@@ -550,12 +551,12 @@ class PaperController extends PaperDefaultController
         if (($request->isXmlHttpRequest() && $request->isPost()) && Episciences_Auth::isAllowedToManageOrcidAuthor()) {
             $body = $request->getRawBody();
             $data = json_decode($body, true, JSON_UNESCAPED_UNICODE);
-            $affi = Episciences_Paper_AuthorsManager::findAffiliationsOneAuthorByPaperId($data['paperId'],$data['idAuthor']);
+            $affi = Episciences_Paper_AuthorsManager::findAffiliationsOneAuthorByPaperId($data['paperId'], $data['idAuthor']);
             $arrayFormOption = [
                 'paperid' => $data['paperId'],
                 'idAuthor' => $data['idAuthor'],
             ];
-            if ($affi !== ""){
+            if ($affi !== "") {
                 $formattedAffiliationForInput = Episciences_Paper_AuthorsManager::formatAffiliationForInputRor($affi);
                 $arrayFormOption['affiliations'] = $formattedAffiliationForInput;
             }
@@ -566,8 +567,8 @@ class PaperController extends PaperDefaultController
     }
 
 
-
-    public function addaffiliationsauthorAction() {
+    public function addaffiliationsauthorAction()
+    {
 
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -582,20 +583,20 @@ class PaperController extends PaperDefaultController
         $paperId = $request->getPost('paperidauthors');
         $authorsInfo = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
         foreach ($authorsInfo as $key => $value) {
-            $jsonAuthorDecoded =  json_decode($value['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+            $jsonAuthorDecoded = json_decode($value['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         }
         $arrayAffi = [];
         foreach ($affiliations as $key => $affiliation) {
             if ($affiliation !== "") {
-                $affiliation = explode('#',$affiliation);
+                $affiliation = explode('#', $affiliation);
                 //check if we have ROR url
                 $nameRor = ["name" => rtrim($affiliation[0])];
                 $idArray = [];
-                if ((isset($affiliation[1]) && $affiliation[1] !== "") && str_contains(rtrim($affiliation[1]),$rorDomain)) {
+                if ((isset($affiliation[1]) && $affiliation[1] !== "") && str_contains(rtrim($affiliation[1]), $rorDomain)) {
                     $idArray["id"] = [
-                        ['id'=>rtrim($affiliation[1]),'id-type'=>"ROR"]
+                        ['id' => rtrim($affiliation[1]), 'id-type' => "ROR"]
                     ];
-                    $arrayAffi[] = array_merge($nameRor,$idArray);
+                    $arrayAffi[] = array_merge($nameRor, $idArray);
                 } else {
                     $arrayAffi[] = $nameRor;
                 }
@@ -605,9 +606,9 @@ class PaperController extends PaperDefaultController
         }
         // avoid space in url to avoid duplicate affiliations
         $currentUrlchecked = '';
-        foreach ($arrayAffi as $keyAffi => $affi){
-            if (isset($affi['id'])){
-                if ($currentUrlchecked !== '' && $currentUrlchecked === $affi['id'][0]['id']){
+        foreach ($arrayAffi as $keyAffi => $affi) {
+            if (isset($affi['id'])) {
+                if ($currentUrlchecked !== '' && $currentUrlchecked === $affi['id'][0]['id']) {
                     unset($arrayAffi[$keyAffi]);
                 }
                 $currentUrlchecked = $affi['id'][0]['id'];
@@ -615,14 +616,13 @@ class PaperController extends PaperDefaultController
         }
         $jsonAuthorDecoded[$authorKeyJson]["affiliation"] = $arrayAffi;
         $newAuthorInfos = new Episciences_Paper_Authors();
-        $newAuthorInfos->setAuthors(json_encode($jsonAuthorDecoded,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+        $newAuthorInfos->setAuthors(json_encode($jsonAuthorDecoded, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
         $url = self::ADMINPAPER_URL_STR . $paperId;
         $this->_helper->redirector->gotoUrl($url);
     }
-
 
 
     /**
@@ -986,6 +986,8 @@ class PaperController extends PaperDefaultController
      * revision request answer form: answer without any modifications
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public function answerrequestAction(): void
     {
@@ -997,7 +999,18 @@ class PaperController extends PaperDefaultController
         $oComment = new Episciences_Comment;
         $oComment->find($id);
 
+
         $form = Episciences_CommentsManager::answerRevisionForm();
+
+        $papersManager = new Episciences_PapersManager();
+
+        $paper = $papersManager::get($oComment->getDocid(), false);
+
+        if ($paper->isContributorCanShareArXivPaperPwd()) {
+            $form = Episciences_Submit::addPaperArxivPwdElement($form, $paper->isRequiredPaperPwd());
+        }
+
+
         $form->setAction('/paper/saveanswer?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
@@ -1011,6 +1024,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws JsonException
      */
     public function saveanswerAction(): void
     {
@@ -1026,11 +1040,16 @@ class PaperController extends PaperDefaultController
         $message = "Votre réponse n'a pas pu être enregistrée : merci de bien vouloir compléter les champs marqués d'un astérisque (*).";
         $nameSpace = 'error';
 
-        if (!empty($post['comment']) && $request->isPost()) {
-            $parentId = $request->getQuery('pcid');
+        // get paper object
+        $paper = Episciences_PapersManager::get($docId, false);
 
-            // get paper object
-            $paper = Episciences_PapersManager::get($docId, false);
+        if (
+            !empty($post['comment']) &&
+            $request->isPost() &&
+            ($paper->isOptionalPaperPwd() || ($paper->isRequiredPaperPwd() && !empty($post['paperPassword'])))
+
+        ) {
+            $parentId = $request->getQuery('pcid');
 
             // get revision request
             $oComment = new Episciences_Comment;
@@ -1081,7 +1100,11 @@ class PaperController extends PaperDefaultController
                     $newStatus = Episciences_Paper::STATUS_NO_REVISION;
                 }
 
-                // update paper status
+                // update paper status & paper password
+
+                if ($this->dataProcessing($post)['isValid']) {
+                    $paper->setPassword($post['paperPassword']);
+                }
 
                 if ($paper->getStatus() !== $newStatus) {
                     $paper->setStatus($newStatus);
@@ -1436,7 +1459,7 @@ class PaperController extends PaperDefaultController
             $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_DEADLINE, $this->view->Date($invitation_deadline, $locale));
             $mail->addTag(Episciences_Mail_Tags::TAG_RATING_DEADLINE, $this->view->Date($rating_deadline, $locale));
 
-            if($submissionType === self::TMP_VERSION_TYPE) {
+            if ($submissionType === self::TMP_VERSION_TYPE) {
 
                 // link to tmp version page
                 $tmpUrl = $this->view->url([
@@ -1616,6 +1639,14 @@ class PaperController extends PaperDefaultController
         }
 
 
+        if (!$this->dataProcessing($post[self::SEARCH_DOC_STR])['isValid'] && $paper->isRequiredPaperPwd()) {
+            $message = $this->view->translate("Votre soumission n'a pas été enregistrée : le mot de passe du papier n'a pas été rempli, veuillez réessayer.");
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            return;
+        }
+
+
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
@@ -1658,6 +1689,11 @@ class PaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
             return;
+        }
+
+
+        if ($isPostedPaperPwd) {
+            $newPaper->setPassword($post[self::SEARCH_DOC_STR]['paperPassword'], true);
         }
 
         // save new version
@@ -2217,7 +2253,7 @@ class PaperController extends PaperDefaultController
 
         // paper has been deleted
         if ($paper->isDeleted() || $paper->isRemoved()) {
-            $result['message'] = $paper->isDeleted() ?  $translator->translate("Le document demandé a été supprimé par son auteur.") :  $translator->translate("Le document demandé a été supprimé par la revue.")  ;
+            $result['message'] = $paper->isDeleted() ? $translator->translate("Le document demandé a été supprimé par son auteur.") : $translator->translate("Le document demandé a été supprimé par la revue.");
             $result['url'] = '/';
         } elseif ($paper->isAccepted() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
             $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");
@@ -2748,6 +2784,7 @@ class PaperController extends PaperDefaultController
 
             // remove paper (update its status)
             $paper->setStatus(Episciences_Paper::STATUS_DELETED);
+            $paper->setPassword();
             $paper->save();
 
             // delete all paper datasets
@@ -3036,7 +3073,7 @@ class PaperController extends PaperDefaultController
         $docId = $paper->getDocid();
 
         $tags = [
-            Episciences_Mail_Tags::TAG_PAPER_URL =>  $this->buildAdminPaperUrl($docId),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
@@ -3398,6 +3435,14 @@ class PaperController extends PaperDefaultController
 
     }
 
+    /**
+     * @param Zend_Controller_Request_Http $request
+     * @param Episciences_Paper $paper
+     * @param bool $displayPaperPasswordBloc
+     * @return void
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     */
     private function savePaperPassword(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $displayPaperPasswordBloc = false): void
     {
 
@@ -3428,9 +3473,9 @@ class PaperController extends PaperDefaultController
                     $message .= ', ';
                     $message .= $this->view->translate('car il est identique à celui déjà enregistré.');
                 } else {
-                    $paper->setPassword($postedPwd);
+                    $paper->setPassword($postedPwd, true);
 
-                    if ($this->saveCipherPaperPassword($paper)) {
+                    if ($paper->save()) {
                         $message = $this->view->translate("Votre mot de passe papier a bien été enregistré.");
                     }
                 }
@@ -3442,6 +3487,30 @@ class PaperController extends PaperDefaultController
             }
         }
 
+    }
+
+    /**
+     * @param array $post
+     * @return array
+     */
+
+    private function dataProcessing(array &$post): array
+    {
+
+        $paperPwdDetails = [
+            'isValid' => false,
+            'isValidStrlen' => false,
+            'isEmpty' => true
+        ];
+
+        if (isset($post['paperPassword'])) {
+            $paperPwdDetails['isValidStrlen'] = mb_strlen($post['paperPassword']) <= MAX_PWD_INPUT_SIZE;
+            $paperPwdDetails['isEmpty'] = empty(trim($post['paperPassword']));
+            $paperPwdDetails['isValid'] = $paperPwdDetails['isValidStrlen'] && !$paperPwdDetails['isEmpty'];
+
+        }
+
+        return $paperPwdDetails;
     }
 
 }
