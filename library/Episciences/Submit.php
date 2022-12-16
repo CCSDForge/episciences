@@ -571,6 +571,12 @@ class Episciences_Submit
                 }
             }
 
+
+            if ($paper->isContributorCanShareArXivPaperPwd()) {
+                $subform = self::addPaperArxivPwdElement($subform, $paper->isRequiredPaperPwd());
+            }
+
+
             // search button
             $subform->addElement('button', 'getPaper', [
                 'label' => 'Rechercher',
@@ -1645,6 +1651,47 @@ class Episciences_Submit
         }
 
         return $options;
+
+    }
+
+    /**
+     * @param Zend_Form $form
+     * @param bool $required
+     * @return Zend_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+
+    public static function addPaperArxivPwdElement(Zend_Form $form, bool $required): Zend_Form
+    {
+
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $description = !$required ?
+            $translator->translate("Si vous le souhaitez et si la revue vous le demande, vous pouvez partager") :
+            $translator->translate('La revue vous demande de partager');
+        $description .= ' ';
+        $description .= $translator->translate("ici le mot de passe papier lui permettant de mettre à jour ce papier dans arXiv, en particulier pour mettre en ligne la version finale mise en page de votre article. Ce mot de passe est chiffré et sera automatiquement supprimé à la publication de l'article. Seuls les gestionnaires de votre article ont accès à ce mot de passe.");
+        $description .= ' (';
+        $description .= sprintf(ucfirst($translator->translate("le nombre maximum de caractères autorisé est de <strong>%u</strong>")), MAX_PWD_INPUT_SIZE);
+        $description .= ')';
+
+
+        $form->addElement('password', 'paperPassword', ([
+            'required' => $required,
+            'autocomplete' => 'off',
+            'label' => $translator->translate('Mot de passe papier arXiv'),
+            'maxlength' => MAX_PWD_INPUT_SIZE,
+            'description' => $description,
+            'style' => 'width:55%;'
+
+        ]));
+
+        $form->addElement('hidden', 'h_requiredPwd', ([
+            'value' => (int)$required
+        ]));
+
+        return $form;
 
     }
 

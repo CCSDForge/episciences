@@ -14,10 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
 ## Unreleased
+### Added
+- Three options for sharing the paper password:
+  * No (default): do not share
+  * Optional: possibility to share
+  * Required: sharing is required when submitting a new version and responding to a revision request without any changes
+
+## 1.0.38.5 - 2022-12-14
 ### Fixed
 - [#294](https://github.com/CCSDForge/episciences/issues/294): untranslated text
+- API to return number of published documents
+
 ## 1.0.38.4 - 2022-12-12
 ### Fixed
 - JS error: Failed to load plugin url: https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/langs/fr_FR.js

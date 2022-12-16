@@ -194,6 +194,7 @@ return [
 
     //paper password
     'Copié !' => 'copied!',
-    'Copier' => 'Copy'
+    'Copier' => 'Copy',
+    "Veuillez indiquer le mot de passe arXiv du document." => "Please enter the arXiv document's password."
 
 ];

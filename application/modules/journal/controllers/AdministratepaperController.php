@@ -813,7 +813,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $displayPaperPasswordBloc = (
             in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
-            $review->getSetting($review::SETTING_CAN_SHARE_PAPER_PASSWORD) &&
+            $review->getSetting($review::SETTING_ARXIV_PAPER_PASSWORD) &&
             $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
             !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
             (
@@ -1962,6 +1962,10 @@ class AdministratepaperController extends PaperDefaultController
 
             // update status
             $paper->setStatus(Episciences_Paper::STATUS_REFUSED);
+
+            // reset paper password
+            $paper->setPassword();
+
             if ($paper->save()) {
 
                 // log new status

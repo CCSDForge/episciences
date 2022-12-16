@@ -1570,4 +1570,38 @@ class Episciences_Tools
         return Crypto::decrypt($cipherText, $key);
 
     }
+
+
+    /**
+     * @param string $plainText
+     * @return string
+     * @throws EnvironmentIsBrokenException
+     * @throws JsonException
+     * @throws Zend_Exception
+     * @throws \Defuse\Crypto\Exception\BadFormatException
+     */
+    public static  function encrypt(string $plainText): string
+    {
+
+        $cipherText = '';
+        $path = Episciences_Review::getCryptoFile();
+
+        if (!empty($path)) {
+
+            $cryptoFile = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+
+            if (array_key_exists('key', $cryptoFile)) {
+                $sKey = $cryptoFile['key'];
+                $cipherText = Episciences_Tools::encryptWithKey($plainText, Defuse\Crypto\Key::loadFromAsciiSafeString($sKey));
+            }
+
+
+        } else {
+            throw new Zend_Exception('Fatal error: missing file: ' . $path);
+        }
+
+        return $cipherText;
+
+    }
+
 }
