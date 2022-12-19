@@ -48,6 +48,7 @@ if ($paper->isPublished()) {
                     $this->headMeta()->appendName('citation_' . $citationKey, $date);
                 }
                 break;
+            case "arxiv_id":
             case "issue":
                 if ($citationMeta !== "") {
                     $this->headMeta()->appendName('citation_'.$citationKey, $citationMeta);

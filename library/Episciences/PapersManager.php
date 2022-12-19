@@ -3338,7 +3338,11 @@ class Episciences_PapersManager
         if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') {
             $issn = $journalSettings[Episciences_Review::SETTING_ISSN_PRINT];
         }
-        $authors = Episciences_PapersManager::getAuthorsData($paper);
+        $arxivId = '';
+        if ($paper->getRepoid() === (int) Episciences_Repositories::ARXIV_REPO_ID) {
+            $arxivId = $paper->getIdentifier();
+        }
+        $authors = self::getAuthorsData($paper);
         return [
             'dc' => [
                 'creator' => $authors,
@@ -3375,6 +3379,7 @@ class Episciences_PapersManager
                 'fulltext_world_readable'=> "",
                 'pdf_url' => $pdf,
                 'issn' => ["eissn" => $eissn ,'issn'=>$issn],
+                'arxiv_id' => $arxivId,
                 'language' => $language,
                 'article_type' => "Research Article",
                 'keywords' => $allKeywords,
