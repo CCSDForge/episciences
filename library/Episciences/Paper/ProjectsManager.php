@@ -72,13 +72,14 @@ class Episciences_Paper_ProjectsManager
         foreach ($rawFunding as $fundings){
             foreach ($fundings as $funding){
                 $finalFundingArray[] = $funding;
-
+                ksort($finalFundingArray[array_key_last($finalFundingArray)]); // useful for the unserialize check
             }
         }
+
+        $finalFundingArray =  array_map("unserialize", array_unique(array_map("serialize", $finalFundingArray)));
+
         return $finalFundingArray;
     }
-
-
 
     public static function update($projects): int {
 
@@ -116,12 +117,12 @@ class Episciences_Paper_ProjectsManager
                 $templateProject .= " <small class='label label-info'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' .$source_id_name."</small>";
                 foreach ($fundingInfo as $counter => $funding){
                     foreach ($funding as $kf => $vfunding){
-                        if ($vfunding['projectTitle'] !== "unidentified"){
+                        if ($vfunding['projectTitle'] !== "unidentified")   {
                             $templateProject.='<li><em>'.htmlspecialchars($vfunding['projectTitle'])."</em>";
-                        if ($vfunding['funderName'] !== "unidentified") {
-                            $templateProject.= "; ".Zend_Registry::get('Zend_Translate')->translate("Funder").": ".htmlspecialchars($vfunding['funderName']);
-                        }
-                        } elseif ($vfunding['funderName'] !== "unidentified"){
+                            if ($vfunding['funderName'] !== "unidentified") {
+                                $templateProject.= "; ".Zend_Registry::get('Zend_Translate')->translate("Funder").": ".htmlspecialchars($vfunding['funderName']);
+                            }
+                        } elseif ($vfunding['funderName'] !== "unidentified")  {
                             $templateProject.= "<li>".Zend_Registry::get('Zend_Translate')->translate("Funder").": ".htmlspecialchars($vfunding['funderName']);
                         }
                         if ($vfunding['code'] !== "unidentified" && ($vfunding['funderName'] !== "unidentified" || $vfunding['projectTitle'] !== "unidentified")) {

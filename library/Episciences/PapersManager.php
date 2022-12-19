@@ -3239,4 +3239,156 @@ class Episciences_PapersManager
         return $docIds;
 
     }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return array
+     */
+    public static function getAuthorsData(Episciences_Paper $paper): array {
+        $enrichedAuthor = Episciences_Paper_AuthorsManager::getArrayAuthorsAffi($paper->getPaperid());
+        $language = $paper->getMetadata('language') ?? 'en';
+        $abstract = $paper->getAbstract($language, true);
+        $googleScholarData = [];
+        if (!empty($enrichedAuthor)) {
+            foreach ($enrichedAuthor as $author) {
+                $googleScholarData[]['citation_author'] = $author['fullname'];
+                if (array_key_exists('orcid', $author)) {
+                    $googleScholarData[array_key_last($googleScholarData)]['citation_author_orcid'] = $author['orcid'];
+                }
+                if (array_key_exists('affiliation',$author)) {
+                    foreach ($author['affiliation'] as $affiliation) {
+                        $googleScholarData[array_key_last($googleScholarData)]['citation_author_institution'][] = $affiliation['name'];
+                    }
+                }
+            }
+        } else {
+            $authors = $paper->getMetadata('authors');
+            if ($authors) {
+                if (is_array($authors)) {
+                    foreach ($authors as $author) {
+                        $googleScholarData[]['citation_author'] = $author;
+                    }
+                } else {
+                    $googleScholarData[]['citation_author'] = $authors;
+                }
+            }
+       }
+
+        return $googleScholarData;
+    }
+
+    public static function headMetaData(Episciences_Paper $paper): array
+    {
+        $language = $paper->getMetadata('language') ?? 'en';
+        $title = $paper->getTitle($language, true);
+        $id = $paper->getDocid();
+        $url = APPLICATION_URL . '/' . $id;
+        $pdf = $url . '/pdf';
+        $abstract = $paper->getAbstract($language, true);
+        $keywords = $paper->getMetadata('subjects');
+        $allKeywords = [];
+        $journal = RVNAME;
+        $doi = $paper->getDoi();
+        if (is_array($keywords) && !empty($keywords)) {
+            foreach ($keywords as $word) {
+                if (is_array($word)) {
+                    foreach ($word as $wordLang => $itemWord) {
+                        $allKeywords[] = $itemWord;
+                    }
+                } else {
+                    $allKeywords[] = $word;
+                }
+
+            }
+        } elseif ($keywords) {
+            $allKeywords[] = $keywords;
+        }
+
+        $volume = '';
+
+        if ($paper->getVid()) {
+
+            $key = 'volume_' . $paper->getVid() . '_title';
+
+            try {
+                if (Zend_Registry::get('Zend_Translate')->isTranslated($key, false, $language)) {
+                    $volume = Zend_Registry::get('Zend_Translate')->translate('volume_' . $paper->getVid() . '_title', $language);
+                } else {
+                    $volume = Zend_Registry::get('Zend_Translate')->translate('volume_' . $paper->getVid() . '_title');
+                }
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+        $section = "";
+        if ($paper->getSid()) {
+            /* @var $oSection Episciences_Section */
+            $oSection = Episciences_SectionsManager::find($paper->getSid());
+            if ($oSection) {
+                $section = $oSection->getName('en', true);
+            }
+        }
+        $journalSettings = Zend_Registry::get('reviewSettings');
+        $eissn = "";
+        $issn = "";
+        if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') {
+            $eissn = $journalSettings[Episciences_Review::SETTING_ISSN];
+        }
+        if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') {
+            $issn = $journalSettings[Episciences_Review::SETTING_ISSN_PRINT];
+        }
+        $authors = Episciences_PapersManager::getAuthorsData($paper);
+        return [
+            'dc' => [
+                'creator' => $authors,
+                'language'=> $language,
+                'title' => $title,
+                'type' => 'journal',
+                'identifier' => ['id' => $id, 'url' => $url, 'pdf' => $pdf,'doi' => $doi],
+                'abstract' => $abstract,
+                'keywords' => $allKeywords,
+                'date' => $paper->getPublication_date(),
+                'relation' => $journal,
+                'volume' => $volume,
+                'publisher' => 'Episciences.org'
+            ],
+            'og' => [
+                'type' => $journal,
+                'title' => $title,
+                'url' => ['url'=> $url, 'pdf'=> $pdf],
+                'description' => $abstract,
+
+            ],
+            'header' => [
+                'description' => $abstract,
+                'keywords' => $allKeywords,
+            ],
+            'citation' => [
+                'journal_title' => $journal,
+                'author' => $authors,
+                'title' => $title,
+                'publication_date' => $paper->getPublication_date(),
+                'volume' => $volume,
+                'issue' => $section,
+                'doi' => $doi,
+                'fulltext_world_readable'=> "",
+                'pdf_url' => $pdf,
+                'issn' => ["eissn" => $eissn ,'issn'=>$issn],
+                'language' => $language,
+                'article_type' => "Research Article",
+                'keywords' => $allKeywords,
+                'fundings' => Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($paper->getPaperid()),
+//                'abstract' => $abstract,
+
+            ]
+        ];
+    }
+
+
+
+
+
+
+
 }

@@ -14,108 +14,151 @@ $language = $paper->getMetadata('language') ?? 'en';
 
 if ($paper->isPublished()) {
     $this->headLink(['rel' => 'schema.DC', 'href' => 'http://purl.org/dc/elements/1.1/']);
-    $this->headMeta()->prependName('citation_language', $language);
-    $this->headMeta()->prependName('DC.language', $language);
-
-    $this->headMeta()->prependName('DC.type', 'journal');
-    $this->headMeta()->prependProperty('og:type', 'journal');
-
-    $title = $paper->getTitle($language, true);
-    $this->headMeta()->prependName('citation_title', $title);
-    $this->headMeta()->prependName('DC.title', $title);
-    $this->headMeta()->prependProperty('og:title', $title);
-
-    $id = $paper->getDocid();
-    $url = APPLICATION_URL . '/' . $id;
-    $this->headMeta()->prependName('DC.identifier', $url);
-    $this->headMeta()->prependName('DC.identifier', $id);
-    $this->headMeta()->prependProperty('og:url', $url);
-
-    $authors = $paper->getMetadata('authors');
-    if ($authors) {
-        if (is_array($authors)) {
-            foreach ($authors as $author) {
-                $this->headMeta()->prependName('citation_author', $author);
-                $this->headMeta()->prependName('DC.creator', $author);
-            }
-        } else {
-            $this->headMeta()->prependName('citation_author', $authors);
-            $this->headMeta()->prependName('DC.creator', $authors);
-        }
-    }
-
-    $abstract = $paper->getAbstract($language, true);
-    if ($abstract) {
-        $this->headMeta()->prependName('citation_abstract', $abstract);
-        $this->headMeta()->prependName('DC.description', $abstract);
-        $this->headMeta()->prependName('description', $abstract);
-        $this->headMeta()->prependProperty('og:description', $abstract);
-    }
-
-    $keywords = $paper->getMetadata('subjects');
-    if (is_array($keywords) && !empty($keywords)) {
-        foreach ($keywords as $word) {
-            if (is_array($word)) {
-                foreach ($word as $wordLang => $itemWord) {
-                    $this->headMeta()->prependName('citation_keywords', $itemWord);
-                    $this->headMeta()->prependName('DC.subject', $itemWord);
-                    $this->headMeta()->prependName('keywords', $itemWord);
+    $headMeta = Episciences_PapersManager::headMetaData($paper);
+    foreach ($headMeta['citation'] as $citationKey => $citationMeta) {
+        switch ($citationKey) {
+            case "volume":
+            case "doi":
+            case "abstract":
+                if ($citationMeta) {
+                    $this->headMeta()->appendName('citation_'.$citationKey, $citationMeta);
                 }
-            } else {
-                $this->headMeta()->prependName('citation_keywords', $word);
-                $this->headMeta()->prependName('DC.subject', $word);
-                $this->headMeta()->prependName('keywords', $word);
-            }
-
+                break;
+            case "author":
+                foreach ($citationMeta as $authors) {
+                    $this->headMeta()->appendName('citation_author', $authors['citation_author']);
+                    if (array_key_exists('citation_author_institution', $authors)) {
+                        foreach ($authors['citation_author_institution'] as $affiliation) {
+                            $this->headMeta()->appendName('citation_author_institution', $affiliation);
+                        }
+                    }
+                    if (array_key_exists('citation_author_orcid', $authors)) {
+                        $this->headMeta()->appendName('citation_author_orcid', $authors['citation_author_orcid']);
+                    }
+                }
+                break;
+            case "keywords":
+                foreach ($citationMeta as $meta) {
+                    $this->headMeta()->appendName("citation_". $citationKey, $meta);
+                }
+                break;
+            case "publication_date":
+                if ($citationMeta) {
+                    $date = $this->Date($paper->getPublication_date(), $language, Zend_Date::YEAR . '-' . Zend_Date::MONTH . '-' . Zend_Date::DAY);
+                    $this->headMeta()->appendName('citation_' . $citationKey, $date);
+                }
+                break;
+            case "issue":
+                if ($citationMeta !== "") {
+                    $this->headMeta()->appendName('citation_'.$citationKey, $citationMeta);
+                }
+                break;
+            case "issn":
+                foreach ($citationMeta as $meta) {
+                    if ($meta !== "") {
+                        $this->headMeta()->appendName("citation_" . $citationKey, $this->FormatIssn($meta));
+                    }
+                }
+                break;
+            case "fundings":
+                if (!empty($citationMeta)) {
+                    foreach ($citationMeta as $project) {
+                        if ($project['funderName'] !== 'unidentified') {
+                            $strFunding = "citation_funder=".$project['funderName'].";";
+                            if ($project['code'] !== 'unidentified'){
+                                $strFunding .= " citation_grant_number=".$project['code'].";";
+                            }
+                            $this->headMeta()->appendName('citation_funder_source', $strFunding);
+                        }
+                    }
+                }
+                break;
+            default :
+                $this->headMeta()->appendName('citation_' . $citationKey, $citationMeta);
+                break;
         }
-    } elseif ($keywords) {
-        $this->headMeta()->prependName('citation_keywords', $keywords);
-        $this->headMeta()->prependName('DC.subject', $keywords);
-        $this->headMeta()->prependName('keywords', $keywords);
     }
-
-    $pdf = $url . '/pdf';
-    $this->headMeta()->prependName('citation_pdf_url', $pdf);
-    $this->headMeta()->prependName('DC.identifier', $pdf);
-    $this->headMeta()->prependProperty('og:url', $pdf);
-
-    if ($paper->getPublication_date()) {
-        $date = $this->Date($paper->getPublication_date(), $language, Zend_Date::YEAR . '-' . Zend_Date::MONTH . '-' . Zend_Date::DAY);
-        $this->headMeta()->prependName('citation_date', $date);
-        $this->headMeta()->prependName('DC.date', $date);
+    foreach ($headMeta['dc'] as $dcKey => $dcMeta) {
+        switch ($dcKey) {
+            case "creator":
+                foreach ($dcMeta as $author) {
+                    $this->headMeta()->appendName('DC.'.$dcKey, $author['citation_author']);
+                }
+            break;
+            case "date":
+                if ($dcMeta) {
+                    $date = $this->Date($paper->getPublication_date(), $language, Zend_Date::YEAR . '-' . Zend_Date::MONTH . '-' . Zend_Date::DAY);
+                    $this->headMeta()->appendName('DC.' . $dcKey, $date);
+                }
+                break;
+            case "abstract":
+                if ($dcMeta) {
+                    $this->headMeta()->appendName('DC.description', $dcMeta);
+                }
+                break;
+            case "keywords":
+                foreach ($dcMeta as $meta) {
+                    $this->headMeta()->appendName('DC.subject', $meta);
+                }
+                break;
+            case "volume":
+                if ($dcMeta !== '') {
+                    $this->headMeta()->appendName('DC.citation.volume', $dcMeta);
+                }
+                break;
+            case "identifier":
+                foreach ($dcMeta as $key => $meta) {
+                    if (($key === 'doi') && !empty($meta)) {
+                        $this->headMeta()->appendName('DC.identifier', $meta);
+                        continue;
+                    }
+                    $this->headMeta()->appendName('DC.identifier', $meta);
+                }
+                break;
+            case "relation":
+                $this->headMeta()->appendName("DC.relation.ispartof", $dcMeta);
+                break;
+            default :
+                $this->headMeta()->appendName('DC.' . $dcKey, $dcMeta);
+                break;
+        }
     }
-
-    $journal = RVNAME;
-    $this->headMeta()->prependName('citation_journal_title', $journal);
-    $this->headMeta()->prependName('DC.relation.ispartof', $journal);
-
-    $doi = $paper->getDoi();
-    if (!empty($doi)) {  // $doi !== null, $doi !== '' {
-        $this->headMeta()->prependName('DC.identifier', $doi);
-        $this->headMeta()->prependName('citation_doi', $doi);
+    foreach ($headMeta['og'] as $ogKey => $ogMeta) {
+        switch ($ogKey) {
+            case 'url':
+                foreach ($ogMeta as $key => $meta) {
+                    $this->headMeta()->appendProperty('og:' . $ogKey, $meta);
+                }
+                break;
+            case 'description':
+                if ($ogMeta) {
+                    $this->headMeta()->appendProperty('og:' . $ogKey, $ogMeta);
+                }
+                break;
+            default:
+                $this->headMeta()->appendProperty('og:' . $ogKey, $ogMeta);
+        }
     }
-
-    if ($paper->getVid()) {
-
-        $key = 'volume_' . $paper->getVid() . '_title';
-
-        try {
-            if (Zend_Registry::get('Zend_Translate')->isTranslated($key, false, $language)) {
-                $volume = $this->translate('volume_' . $paper->getVid() . '_title', $language);
-            } else {
-                $volume = $this->translate('volume_' . $paper->getVid() . '_title');
-            }
-
-            $this->headMeta()->prependName('citation_volume', $volume);
-            $this->headMeta()->prependName('DC.citation.volume', $volume);
-        } catch (Exception $e) {
-            trigger_error($e->getMessage());
+    foreach ($headMeta['header'] as $hKey => $headerMeta) {
+        switch ($hKey) {
+            case 'description':
+                if ($hKey) {
+                    $this->headMeta()->appendName($hKey, $headerMeta);
+                }
+                break;
+            case "keywords":
+                foreach ($headerMeta as $meta) {
+                    $this->headMeta()->appendName($hKey, $meta);
+                }
+                break;
+            default:
+                $this->headMeta()->appendName($hKey, $headerMeta);
         }
     }
 
-    $this->headMeta()->prependName('DC.publisher', 'Episciences.org');
 }
 ?>
+
 
 <?php
 $this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle($language, true));
