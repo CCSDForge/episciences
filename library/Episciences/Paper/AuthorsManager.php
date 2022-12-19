@@ -699,4 +699,20 @@ class Episciences_Paper_AuthorsManager
             "name" => $name
         ];
     }
+
+    /**
+     * @param int $docId
+     * @param int $paperId
+     * @return void
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function verifyExistOrInsert(int $docId, int $paperId): void {
+        $author = self::getAuthorByPaperId($paperId);
+
+        if (empty($author)) {
+            //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
+            $paper = Episciences_PapersManager::get($docId);
+            self::InsertAuthorsFromPapers($paper, $paperId);
+        }
+    }
 }
