@@ -1,24 +1,25 @@
 <p>
-    <strong><?php echo $this->translate('Demande de modification :') ?></strong>
-    (<?php echo $this->Date($this->comment['when'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>)
+    <strong><?= $this->translate('Demande de modification :') ?></strong>
+    (<?= $this->Date($this->comment['when'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>)
 </p>
 
-<?php /*if ($this->comment['file']) : */?><!--
+<?php /*if ($this->comment['file']) : */ ?><!--
     <div>
-        &gt; <a href="/docfiles/comments/<?php /*echo $this->comment['docid'] . '/' . $this->comment['file'] */?>"
+        &gt; <a href="/docfiles/comments/<?php /*echo $this->comment['docid'] . '/' . $this->comment['file'] */ ?>"
                 target="_blank">
-            <?php /*echo $this->translate('Fichier'); */?>
+            <?php /*echo $this->translate('Fichier'); */ ?>
         </a>
     </div>
-<?php /*endif; */?>
+<?php /*endif; */ ?>
 
-<?php /*echo $this->comment['message']; */?>
+<?php /*echo $this->comment['message']; */ ?>
 
 <hr/>-->
 
-<?php echo $this->form; ?>
+<?= $this->form ?>
 
 <script>
-    enableModalSubmitButton();
-    __initMCE("textarea");
+    $.getScript('/js/paper/answerrequest.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
+        console.log('loading failed:' + error);
+    });
 </script>

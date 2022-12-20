@@ -3409,7 +3409,7 @@ class PaperController extends PaperDefaultController
         $id = $request->getParam('id');
         $oComment = new Episciences_Comment;
         $oComment->find($id);
-        $form = Episciences_CommentsManager::answerRevisionForm();
+        $form = Episciences_CommentsManager::answerRevisionForm('contactRequest');
         $form->setAction('/paper/saveanswer?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
         $form->addElement('hidden', 'type', [
             'id' => 'hidden-id-' . $id,
