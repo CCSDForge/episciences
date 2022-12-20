@@ -120,6 +120,8 @@ class Episciences_Website_Navigation_Page_Credits extends Episciences_Website_Na
             $this->_form->addElement('hidden', self::PERMALIEN, [
                 'required' => true,
                 'value' => $this->getPermalien(),
+                'belongsTo' => 'pages_' . $pageidx,
+                'class' => 'permalien',
             ]);
         }
         $this->_form->getElement('labels')->setOptions(['class' => 'inputlangmulti permalien-src']);
