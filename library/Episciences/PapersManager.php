@@ -2545,6 +2545,7 @@ class Episciences_PapersManager
 
         }
 
+        Episciences_Paper_AuthorsManager::verifyExistOrInsert($docId, $paperId);
         //insert licence when save paper
         $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
         $affectedRows+= Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
