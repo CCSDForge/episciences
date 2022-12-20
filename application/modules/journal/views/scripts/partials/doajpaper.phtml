@@ -24,7 +24,7 @@ $enrichmentAuthors = $paper->getAuthorsWithAffiNumeric();
 $enrichmentAuthorsWithAffiNum = $enrichmentAuthors['authors'];
 $arrayAffiliation = $enrichmentAuthors['affiliationNumeric'];
 $enrichmentLicence = $paper->getLicence();
-$enrichmentFundings = $paper->getFundings();
+//$enrichmentFundings = $paper->getFundings();
 $enrichmentLinkedData = $paper->getLinkedData();
 
 if ($eissn = $journal->getSetting(Episciences_Review::SETTING_ISSN)) {
