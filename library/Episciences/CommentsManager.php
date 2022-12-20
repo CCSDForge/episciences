@@ -300,10 +300,11 @@ class Episciences_CommentsManager
 
     /**
      * Revision request reply form (contributor to editor)
+     * @param string $fromAnswerType
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function answerRevisionForm(): \Ccsd_Form
+    public static function answerRevisionForm(string $fromAnswerType = 'answerRequest'): \Ccsd_Form
     {
         $form = new Ccsd_Form();
         $form->setName('comment_only');
@@ -311,14 +312,15 @@ class Episciences_CommentsManager
         $form->addPrefixPath('Episciences_Form_Element', 'Episciences/Form/Element/', Zend_Form::ELEMENT);
         $form->addPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
 
-        $form->addElement(new Ccsd_Form_Element_Textarea(array(
+        $form->addElement(new Ccsd_Form_Element_Textarea([
+            'id' => 'comment_only_' . $fromAnswerType,
             'name' => 'comment',
             'class' => 'form-control',
             'label' => 'Répondre :',
             'rows' => 5,
             'required' => true,
             'decorators' => array('Label', 'Description', 'Errors', 'ViewHelper')
-        )));
+        ]));
 
         return $form;
     }
