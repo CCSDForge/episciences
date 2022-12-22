@@ -174,10 +174,6 @@ class Episciences_PapersManager
                 if ($setting === 'doi') {
                     $select = self::applyDOIFilter($select, $value);
                 }
-
-                if ($setting === 'repositories') {
-                    $select = self::applyRepositoriesFilter($select, $value);
-                }
             }
         }
 
@@ -3448,4 +3444,18 @@ class Episciences_PapersManager
 
     }
 
+    /**
+     * @param int $rvId
+     * @return array
+     */
+    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 0) {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if ($limit !== 0) {
+            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?',$rvId)->order('MODIFICATION_DATE DESC')->limit($limit); // prevent empty row
+        } else {
+            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?',$rvId); // prevent empty row
+        }
+        return $db->fetchAssoc($select);
+    }
 }

@@ -1671,6 +1671,7 @@ return [
     "Episciences_Website_Navigation_Page_Search" => "Search an article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
+    "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
@@ -1678,6 +1679,13 @@ return [
     "Photos des membres" => "Members' photos",
     'Afficher', 'Show',
     'Masquer' => 'Hide',
+
+    /**
+     * Accepted article page
+     */
+    "acceptedPaperOn"=> "Papers accepted on",
+    "de" => "by",
+
 
     /**
      * Help
