@@ -297,4 +297,25 @@ class BrowseController extends Zend_Controller_Action
         $this->renderScript('browse/volumes.phtml');
     }
 
+    public function acceptedDocsAction()
+    {
+        $page = new Episciences_Website_Navigation_Page_AcceptedPapersList();
+        $page->load();
+        $review = Episciences_ReviewsManager::find(RVID);
+        $limit = $page->getNbResults();
+
+        if (!is_numeric($limit)) {
+            $limit = 10;
+        }
+
+        $acceptedPapers = Episciences_PapersManager::getAcceptedPapersByRvid($review->getRvid(), $limit);
+        $formatPapers = [];
+        foreach ($acceptedPapers as $paper){
+            $formatPapers[] = new Episciences_Paper($paper);
+        }
+        $this->view->journal = $review;
+        $this->view->acceptedPapers = $formatPapers;
+        $this->renderScript('browse/acceptedPapersList.phtml');
+    }
+
 }
