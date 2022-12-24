@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * No (default): do not share
   * Optional: possibility to share
   * Required: sharing is required when submitting a new version and responding to a revision request without any changes
+- New filter: repositories
+- It often happens to change the version number of an article during the publication process of an article,
+  this manipulation, can cause the blocking of the publication process: from now on, by checking the box 
+  "ready to publish" at the time of the modification of the version number, the status is updated automatically
+  thus allowing the publication of the aforementioned version.
+### Changed
+- the "DOI" filter is now only accessible on the article administration page.
+- Dashboard: improved rendering of the "filters" view 
+- refactoring
 
 ## 1.0.38.5 - 2022-12-14
 ### Fixed

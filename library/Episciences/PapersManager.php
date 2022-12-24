@@ -174,6 +174,10 @@ class Episciences_PapersManager
                 if ($setting === 'doi') {
                     $select = self::applyDOIFilter($select, $value);
                 }
+
+                if ($setting === 'repositories') {
+                    $select = self::applyRepositoriesFilter($select, $value);
+                }
             }
         }
 
@@ -3137,4 +3141,59 @@ class Episciences_PapersManager
         return $docIds;
 
     }
+
+
+    public static function getOnlyActivatedRepositoriesLabels(int $byRvId = RVID): array
+    {
+
+        $without = [Episciences_Paper::STATUS_DELETED, Episciences_Paper::STATUS_REMOVED];
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $result = [];
+
+        $statusQuery = $db
+            ->select()
+            ->distinct()
+            ->where('STATUS NOT IN (?)', $without)
+            ->from(T_PAPERS, ['REPOID']);
+
+        if ($byRvId) {
+            $statusQuery->where('RVID = ? ', $byRvId);
+        }
+
+
+        foreach ($db->fetchCol($statusQuery) as $repoId) {
+
+            $label = Episciences_Repositories::getLabel($repoId);
+
+            $result['repo-' . $repoId] = $label;
+        }
+
+        natcasesort($result);
+
+        return $result;
+
+    }
+
+    /**
+     * @param Zend_Db_Select $select
+     * @param array $values
+     * @return Zend_Db_Select
+     */
+    private static function applyRepositoriesFilter(Zend_Db_Select $select, array $values = []): Zend_Db_Select
+    {
+
+        $repoIds = [];
+
+        foreach ($values as $value) {
+            $repoIds[] = str_replace('repo-', '', $value);
+        }
+
+        $select->where('REPOID in (?)', $repoIds);
+
+        return $select;
+
+}
+
 }

@@ -8,6 +8,7 @@ $(document).ready(function () {
     let $ratingStatus = $("#ratingStatus");
     let $reviewers = $("#reviewers");
     let $doi = $("#doi");
+    let $repositories = $("#repositories");
     let $oTable;
     let searchLength = 3;
     const $KeyboardNavigationKeys = [37, 39, 38, 40, 36, 33, 35, 34]; // [Turn left, Turn right, Forward, Backward, Home (start), Pitch Up, End, Pitch Down ]
@@ -20,7 +21,12 @@ $(document).ready(function () {
 
             delete params.onlyEditableWithoutEditors;
 
-            $oTable = applyMultipleFilters($controller, $action, {}, editableWithoutEditorsData.status, editableWithoutEditorsData.editors);
+            let filters = {
+                'status': editableWithoutEditorsData.status,
+                'editors': editableWithoutEditorsData.editors
+            }
+
+            $oTable = applyMultipleFilters($controller, $action, {}, filters);
 
         } else {
 
@@ -36,11 +42,23 @@ $(document).ready(function () {
             let filter_ratingStatus = $ratingStatus.length > 0 ? $ratingStatus.val() : [''];
             let filter_reviewers = $reviewers.length > 0 ? $reviewers.val() : [''];
             let filter_doi = $doi.length > 0 ? $doi.val() : [''];
+            let filter_repositories = $repositories.length > 0 ? $repositories.val() : [''];
 
-            let isFilter = checkFilterParams(filter_status, filter_volume, filter_section, filter_editors, filter_ratingStatus, filter_reviewers, filter_doi);
+            let filters = {
+                status: filter_status,
+                volume: filter_volume,
+                section: filter_section,
+                editors: filter_editors,
+                ratingStatus: filter_ratingStatus,
+                reviewers: filter_reviewers,
+                doi: filter_doi,
+                repositories: filter_repositories
+            }
+
+            let isFilter = checkFilterParams(filters);
 
             if (isFilter) {
-                $oTable = applyMultipleFilters($controller, $action, {}, filter_status, filter_editors, filter_volume, filter_section, filter_ratingStatus, filter_reviewers, filter_doi);
+                $oTable = applyMultipleFilters($controller, $action, {}, filters);
             } else {
                 $oTable = applyMultipleFilters($controller, $action);
             }
@@ -72,29 +90,28 @@ $(document).ready(function () {
 });
 
 /**
- * Liste les articles
+ *
  * @param controller
  * @param action
  * @param get
- * @param filter_status
- * @param filter_editors
- * @param filter_volume
- * @param filter_section
- * @param filter_ratingStatus
- * @returns {jQuery|*}
+ * @param filters
+ * @returns {*|jQuery}
  */
-function applyMultipleFilters(controller, action, get = {}, filter_status = [], filter_editors = [], filter_volume = [], filter_section = [], filter_ratingStatus = [], filter_reviewers = [], filter_doi = []) {
+function applyMultipleFilters(controller, action, get = {}, filters = {}) {
+
+    console.log(filters);
 
     let badRequest = translate("Une erreur interne s'est produite, veuillez recommencer.");
     let url = '/' + controller + '/' + action;
     let data = (Object.keys(get).length !== 0) ? get : {
-        status: filter_status,
-        vid: filter_volume,
-        sid: filter_section,
-        editors: filter_editors,
-        ratingStatus: filter_ratingStatus,
-        reviewers: filter_reviewers,
-        doi: filter_doi
+        status: ('status' in filters) ? filters['status'] : [],
+        vid: ('volume' in filters) ? filters['volume'] : [],
+        sid: ('section' in filters) ? filters['section'] : [],
+        editors: ('editors' in filters) ? filters['editors'] : [],
+        ratingStatus: ('ratingStatus' in filters) ? filters['ratingStatus'] : [],
+        reviewers: ('reviewers' in filters) ? filters['reviewers'] : [],
+        doi: ('doi' in filters) ? filters['doi'] : [],
+        repositories: ('repositories' in filters) ? filters['repositories'] : []
     };
 
     let columnDefs = [];
@@ -182,35 +199,31 @@ function applyMultipleFilters(controller, action, get = {}, filter_status = [], 
 }
 
 /**
- * Vérifie les paramètres de filtrage
- * @param filter_status
- * @param filter_volume
- * @param filter_section
- * @param filter_editors
- * @param filter_ratingStatus
- * @param filter_reviewers
- * @param filter_doi
+ * Checks if at least one of the filters has been selected
+ * @param filters
  * @returns {boolean}
  */
 
-function checkFilterParams(filter_status, filter_volume, filter_section, filter_editors, filter_ratingStatus, filter_reviewers, filter_doi) {
+function checkFilterParams(filters = {status: [], volume: [], section: [], editors: [], ratingStatus: [], reviewers: [], doi: [], repositories: []}) {
 
     return (
-        filter_status.length > 0 &&
-        filter_volume.length > 0 &&
-        filter_section.length > 0 &&
-        filter_editors.length > 0 &&
-        filter_ratingStatus.length > 0 &&
-        filter_reviewers.length > 0 &&
-        filter_doi.length > 0 &&
+        ('status' in filters) && filters['status'].length > 0 &&
+        ('volume' in filters) && filters['volume'].length > 0 &&
+        ('section' in filters) && filters['section'].length > 0 &&
+        ('editors' in filters) && filters['editors'].length > 0 &&
+        ('ratingStatus' in filters) && filters['ratingStatus'].length > 0 &&
+        ('reviewers' in filters) && filters['reviewers'].length > 0 &&
+        ('doi' in filters) && filters['doi'].length > 0 &&
+        ('repositories' in filters && filters['repositories'].length > 0) &&
         (
-            filter_status[0] !== '' ||
-            filter_volume[0] !== '' ||
-            filter_section[0] !== '' ||
-            filter_editors[0] !== '' ||
-            filter_ratingStatus[0] !== '' ||
-            filter_reviewers[0] !== '' ||
-            filter_doi[0] !== ''
+            filters['status'][0] !== '' ||
+            filters['volume'][0] !== '' ||
+            filters['section'][0] !== '' ||
+            filters['editors'][0] !== '' ||
+            filters['ratingStatus'][0] !== '' ||
+            filters['reviewers'][0] !== '' ||
+            filters['doi'][0] !== '' ||
+            filters['repositories'][0] !== ''
         )
     );
 }

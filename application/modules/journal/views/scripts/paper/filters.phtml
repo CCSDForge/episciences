@@ -1,26 +1,77 @@
+<?php
+$class = 'col-sm-4';
+$actionName = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+?>
 <div class="panel panel-default collapsable">
-	<div class="panel-heading">
-		<h2 class="panel-title"><?php echo $this->translate('Filtres'); ?></h2>
-	</div>
-	<div class="panel-body<?php echo ($this->open) ? ' in' : ''; ?>">
-	<form 	class="form-inline"
-			action="<?php echo $this->escape($this->element->getAction()); ?>" 
-			method="<?php echo $this->escape($this->element->getMethod()); ?>">
-	
-			<?php echo $this->element->status; ?>
-			<?php if (Zend_Controller_Front::getInstance()->getRequest()->getActionName() == 'ratings') : ?>
-				<?php echo $this->element->ratingStatus; ?>
-                <hr class="center-block" style="width:25%;">
-			<?php endif;?>
-	        <?php echo $this->element->vid; ?>
-	        <?php echo $this->element->sid; ?>
-            <hr class="center-block" style="width:25%;">
-	        <?php echo $this->element->editors; ?>
-            <?= $this->element->reviewers; ?>
-            <?= $this->element->doi; ?>
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Filtres') ?></h2>
+    </div>
+    <div class="panel-body<?= ($this->open) ? ' in' : '' ?>">
+        <form class=""
+              action="<?= $this->escape($this->element->getAction()) ?>"
+              method="<?= $this->escape($this->element->getMethod()) ?>">
 
-	        <?php echo $this->element->submit; ?>
+            <?php if (isset($this->element->status)) : ?>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <?= $this->element->status ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
-	</form>
-	</div>
+            <div class="row">
+
+                <?php if (isset($this->element->ratingStatus) && $actionName === 'ratings') : ?>
+                    <div class="<?= $class ?>">
+                        <?= $this->element->ratingStatus ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($this->element->vid)) : ?>
+                    <div class="<?= $class ?>">
+                        <?= $this->element->vid ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($this->element->sid)) : ?>
+                    <div class="<?= $class ?>">
+                        <?= $this->element->sid ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($this->element->editors)) : ?>
+                    <div class="<?= $class ?>">
+                        <?= $this->element->editors ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($this->element->reviewers)) : ?>
+                    <div class="<?= $class ?>">
+                        <?= $this->element->reviewers ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($this->element->doi)) : ?>
+                    <div class="<?= $class ?>">
+                        <?= $this->element->doi ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($this->element->repositories)) : ?>
+                    <div class="<?= $class ?>">
+                        <?= $this->element->repositories ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if (isset($this->element->submit)) : ?>
+                <div class="row">
+                    <div class="col-sm-offset-4 col-sm-4">
+                        <?= $this->element->submit ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+        </form>
+    </div>
 </div>
