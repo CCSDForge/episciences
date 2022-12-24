@@ -480,6 +480,7 @@ return [
     "La version actuelle est la version la plus récente." => "The current version is the most recent version.",
     "L'identifiant de la version la plus récente dans l’archive ouverte" => "The identifier of the most recent open archive version",
     "La version la plus récente dans l’archive ouverte" => "The most recent open archive version",
+    'Prêt à publier' => 'Ready to publish',
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
