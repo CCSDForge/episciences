@@ -4366,6 +4366,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->latestversion = $paper->getVersion();
         $this->view->action = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/savenewpostedversion';
         $this->view->prefix = 'latest-repository-version';
+        $this->view->isPublished = $paper->isPublished();
 
         $this->_helper->layout->disableLayout();
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-version-numbers-form.phtml');
@@ -4455,6 +4456,7 @@ class AdministratepaperController extends PaperDefaultController
     /**
      * Update paper version
      * @return false|void
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -4466,7 +4468,16 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $latestPostedVersion = (int)$request->getPost('latest-repository-version'); // or version identifier
+        $post = $request->getPost();
+
+        $latestPostedVersion = isset($post['latest-repository-version']) ? (int)$post['latest-repository-version'] : 0 ; // version or identifier
+
+        if (!$latestPostedVersion) {
+            return false;
+        }
+
+        $isReadyToPublish = isset($post['ready-to-publish']) && $post['ready-to-publish'] === 'on';
+
 
         $docId = (int)$request->getPost('docid');
 
@@ -4494,9 +4505,17 @@ class AdministratepaperController extends PaperDefaultController
         if ($latestPostedVersion > $currentVersion) {
 
             $paper->setVersion($latestPostedVersion);
+            $currentStatus = $paper->getStatus();
+
+            if($isReadyToPublish && !$paper->isEditable()) {
+                $paper->setStatus(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH);
+            }
 
             if ($paper->save()) {
                 $paper->log(Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED, Episciences_Auth::getUid(), ['user' => Episciences_Auth::getUser()->toArray(), 'version' => ['old' => $currentVersion, 'new' => $latestPostedVersion]]);
+                if($isReadyToPublish && $paper->getStatus() !== $currentStatus){
+                    $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
+                }
                 $result['version'] = $latestPostedVersion;
                 $result['isDataRecordUpdated'] = Episciences_PapersManager::updateRecordData($docId) > 0;
             }
