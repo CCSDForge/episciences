@@ -141,7 +141,8 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
                 'required' => true,
                 'decorators' => $decorators
             ]));
-        }
+
+
 
             // DOI
             $options = [
@@ -160,6 +161,23 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
                 'decorators' => $decorators
             ]));
 
+
+            // repositories
+
+            $rLabels = Episciences_PapersManager::getOnlyActivatedRepositoriesLabels();
+            $rOptions = array_merge(['' => $this->view->translate('Tous')], $rLabels);
+
+            $form->addElement(new Zend_Form_Element_Multiselect([
+                'name' => 'repositories',
+                'label' => "Archives",
+                'class' => 'form-control',
+                'multiOptions' => $rOptions,
+                'value' => '',
+                'required' => true,
+                'decorators' => $decorators
+            ]));
+
+        }
 
         $form->addElement(new Zend_Form_Element_Button([
                 'name'		=> 'submit',

@@ -187,5 +187,27 @@ class Episciences_Repositories
 
         return [];
     }
+
+
+    /**
+     * @return array
+     */
+    public static function getLabels(): array
+    {
+        $labels = [];
+
+        foreach (self::getRepositories() as $repoId => $repository) {
+
+            if ($repoId === 0) {
+                // skip Episciences repository
+                continue;
+            }
+
+            $labels[$repoId] = $repository['label'];
+        }
+
+        return $labels;
+
+    }
 }
 

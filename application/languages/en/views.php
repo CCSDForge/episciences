@@ -61,6 +61,7 @@ return [
     "connu" => "known",
     "et" => "and",
     'anonyme' => 'anonymous',
+    'Archives' => 'Repositories',
 
     // Messages d'erreur
     'Fichier introuvable' => 'File not found',
