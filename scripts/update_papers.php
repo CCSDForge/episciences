@@ -374,8 +374,10 @@ class UpdatePapers extends JournalScript
                 $this->processEditors($editors_uidsArray, $paper);
             }
 
-            // reindex paper
-            $this->reindex($paper);
+            if ($paper->isPublished()) {
+                // reindex paper
+                $this->reindex($paper);
+            }
 
         }
 
