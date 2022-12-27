@@ -334,6 +334,7 @@ class UpdatePapers extends JournalScript
 
         // set paper options
         $paper->setOptions($params);
+        $paper->setFlag('imported');
 
         // load paper metadata
         $metadata = Episciences_Submit::getDoc($paper->getRepoid(), $paper->getIdentifier(), $paper->getVersion(), null, false);
