@@ -98,14 +98,6 @@ class UserController extends UserDefaultController
         }
         $this->view->reviewings = $reviewer->getReviewings();
 
-
-        /*
-        * Récupérer liste des articles qui m'ont été assignés pour relecture
-        * Enregistrer un statut pour chaque relecture (assigné, en cours, terminée)
-        * >> Quand un article m'est assigné (accepté) pour relecture, enregistrer une grille
-        * dans paper_rating_grid avec statut 0 (assigné). devient 1 quand commencé, 2 quand terminé.
-        */
-
     }
 
     /**
