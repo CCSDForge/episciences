@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard: improved rendering of the "filters" view 
 - refactoring
 
+### New
+- Updated volume import script to handle new metadata
+
 ## 1.0.38.5 - 2022-12-14
 ### Fixed
 - [#294](https://github.com/CCSDForge/episciences/issues/294): untranslated text
