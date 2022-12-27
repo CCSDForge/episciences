@@ -200,17 +200,6 @@ CREATE TABLE `PAPER_LOG` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `PAPER_RATING_GRID`
---
-
-CREATE TABLE `PAPER_RATING_GRID` (
-  `DOCID` int(11) NOT NULL,
-  `RGID` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `PAPER_SETTINGS`
 --
 
