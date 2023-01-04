@@ -1208,7 +1208,7 @@ class Episciences_Submit
      */
     private static function isHalNotice(string $record, string $id, string $format = 'dcterms')
     {
-        $docPattern = '<' . $format . ':identifier>https:\/\/(.)+\.fr\/' . $id . '(v\d+)?\/document<\/' . $format . ':identifier>';
+        $docPattern = '<' . $format . ':identifier>https:\/\/(.*)\/' . $id . '(v\d+)?\/document<\/' . $format . ':identifier>';
         $word = Episciences_Tools::extractPattern('/' . $docPattern . '/', $record);
         return empty($word);
     }
