@@ -251,8 +251,12 @@ $timestamp = time();
                         <resource><?php echo $journalUrl . '/' . $paper->getDocid() . '/pdf'; ?></resource>
                     </item>
                 </collection>
+                <collection property="text-mining">
+                    <item>
+                        <resource mime_type="application/pdf"><?php echo $journalUrl . '/' . $paper->getDocid() . '/pdf'; ?></resource>
+                    </item>
+                </collection>
             </doi_data>
-
         </journal_article>
     </journal>
     </body>
