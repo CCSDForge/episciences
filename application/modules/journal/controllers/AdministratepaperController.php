@@ -4507,7 +4507,7 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setVersion($latestPostedVersion);
             $currentStatus = $paper->getStatus();
 
-            if($isReadyToPublish && !$paper->isEditable()) {
+            if ($isReadyToPublish && $paper->isEditable()) {
                 $paper->setStatus(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH);
             }
 

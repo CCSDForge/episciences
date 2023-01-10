@@ -65,7 +65,7 @@ class ArxivController extends Zend_Controller_Action
             $ref_biblio .= ($translator->isTranslated('volume_' . $paper->getVid() . '_title', false, $locale)) ? ', ' . $translator->translate('volume_' . $paper->getVid() . '_title', $locale) : '';
             $ref_biblio .= ($translator->isTranslated('section_' . $paper->getSid() . '_title', false, $locale)) ? ', ' . $translator->translate('section_' . $paper->getSid() . '_title', $locale) : '';
             $ref_biblio .= ' (' . $this->view->date($paper->getPublication_date(), $locale) . ') ';
-            $ref_biblio .= $reviews[$paper->getRvid()]->getCode() . ':' . $paper->getDocid();
+            $ref_biblio .= $reviews[$paper->getRvid()]->getCode() . ':' . $paper->getPaperid();
             $article->setAttribute('journal_ref', $ref_biblio);
             $root->appendChild($article);
         }

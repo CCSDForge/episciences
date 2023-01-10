@@ -1,6 +1,10 @@
 <?php
 /**
  * Import Volumes
+ * 1st Line of CSV File:
+ * status;current_issue;special_issue;bib_reference;title_en;title_fr;description_en;description_fr
+ * 2nd Line of CSV File example:
+ * 0;0;0;;Volume I Issue 1;;Autumn 2007;
  */
 
 $localopts = [
@@ -17,18 +21,18 @@ if (file_exists(__DIR__ . "/loadHeader.php")) {
 session_start();
 require_once "JournalScript.php";
 
-/**
- * Class UpdatePapers
- * script for updating Episciences Papers
- */
+
 class UpdateVolumes extends JournalScript
 {
     // csv file column positions
-    public const COL_POSITION = 0;
-    public const COL_STATUS = 1;
-    public const COL_CURRENT_ISSUE = 2;
-    public const COL_TITLE_FR = 3;
+    public const COL_STATUS = 0;
+    public const COL_CURRENT_ISSUE = 1;
+    public const COL_SPECIAL_ISSUE = 2;
+    public const COL_BIB_REFERENCE = 3;
     public const COL_TITLE_EN = 4;
+    public const COL_TITLE_FR = 5;
+    public const COL_DESC_EN = 6;
+    public const COL_DESC_FR = 7;
 
     /** @var $_review Episciences_Review */
     protected $_review = null;
@@ -48,6 +52,7 @@ class UpdateVolumes extends JournalScript
 
     public function run()
     {
+
         $this->checkAppEnv();
 
         $this->initApp();
@@ -144,7 +149,7 @@ class UpdateVolumes extends JournalScript
             $line++;
 
             // pass first line
-            if (strtolower($data[0]) === 'position') {
+            if (strtolower($data[0]) === 'status') {
                 continue;
             }
 
@@ -165,14 +170,33 @@ class UpdateVolumes extends JournalScript
                 continue;
             }
 
+            $descriptions = [];
+            $colDescEn = $this->get_col($data, static::COL_DESC_EN);
+            if ($colDescEn !== '') {
+                $descriptions['en'] = $colDescEn;
+            }
 
+            $colDescFr = $this->get_col($data, static::COL_DESC_FR);
+            if ($colDescFr !== '') {
+                $descriptions['fr'] = $colDescFr;
+            }
 
             // prepare import
             $params = [
                 Episciences_Volume::SETTING_STATUS => $this->get_col($data, static::COL_STATUS),
                 Episciences_Volume::SETTING_CURRENT_ISSUE => $this->get_col($data, static::COL_CURRENT_ISSUE),
-                'title' => $titles,
+                Episciences_Volume::SETTING_SPECIAL_ISSUE => $this->get_col($data, static::COL_SPECIAL_ISSUE),
+                'title' => $titles
             ];
+
+            $bib_reference = $this->get_col($data, static::COL_BIB_REFERENCE);
+            if (!empty($bib_reference)) {
+                $params['bib_reference'] = $bib_reference;
+            }
+
+            if (!empty($descriptions)) {
+                $params['description'] = $descriptions;
+            }
 
 
             $this->displayInfo("** processing line $line/$total_lines");
@@ -214,7 +238,7 @@ class UpdateVolumes extends JournalScript
     private function processSingleVolume($params)
     {
 
-        $this->displayInfo("** importing volume " . implode(' ; ', $params['title'] ), false);
+        $this->displayInfo("** importing volume " . implode(' ; ', $params['title']), false);
 
 
         if (!$this->isDebug()) {
