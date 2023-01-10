@@ -47,8 +47,8 @@ class Episciences_Repositories
             self::REPO_BASEURL => 'https://api.archives-ouvertes.fr/oai/hal/',
             self::REPO_IDENTIFIER => 'oai:HAL:%%IDv%%VERSION',
             self::REPO_EXAMPLE => 'hal-01234567',
-            self::REPO_DOCURL => 'https://hal.archives-ouvertes.fr/%%IDv%%VERSION',
-            self::REPO_PAPERURL => 'https://hal.archives-ouvertes.fr/%%IDv%%VERSION/document',
+            self::REPO_DOCURL => 'https://hal.science/%%IDv%%VERSION',
+            self::REPO_PAPERURL => 'https://hal.science/%%IDv%%VERSION/document',
             self::REPO_TYPE => self::TYPE_PAPERS,
             self::REPO_API_URL => 'https://api.archives-ouvertes.fr'
         ],

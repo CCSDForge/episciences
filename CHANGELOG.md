@@ -16,16 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Added
-- Three options for sharing the paper password:
+- Added three options for sharing the paper password (arXiv):
   * No (default): do not share
   * Optional: possibility to share
   * Required: sharing is required when submitting a new version and responding to a revision request without any changes
 - New filter: repositories
 - It often happens to change the version number of an article during the publication process of an article,
-  this manipulation, can cause the blocking of the publication process: from now on, by checking the box 
+  this manipulation, can block the publication process: from now on, by checking the box 
   "ready to publish" at the time of the modification of the version number, the status is updated automatically
   thus allowing the publication of the aforementioned version.
 - Updated volume import script to handle new metadata
+- Crossref matadata: added text-mining URL
 
 ### Changed
 - the "DOI" filter is now only accessible on the article administration page.

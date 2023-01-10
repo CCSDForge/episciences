@@ -20,12 +20,12 @@ $max = $this->max ?? '';
 
                 <div class="row">
 
-                    <div class="col-sm-4">
+                    <div class="col-sm-6">
                         <small><?= $this->translate($label) ?></small>
                     </div>
 
 
-                    <div class="col-sm-4">
+                    <div class="col-sm-6">
 
                         <?php if ($type === 'select'): ?>
                             <label>
@@ -45,32 +45,34 @@ $max = $this->max ?? '';
                             </label>
                         <?php endif; ?>
                     </div>
-
-                    <?php if (!$this->isPublished) : ?>
-
-
-                            <div class="checkbox col-sm-4">
-                                <input type="checkbox" id="ready-to-publish" name="ready-to-publish">
-                                <label for="ready-to-publish">
-                                    <small>
-                                        <?= $this->translate('Prêt à publier') ?>
-                                    </small>
-                                </label>
-                            </div>
+                </div>
 
 
+                <?php if (!$this->isPublished) : ?>
+                    <div class="col-sm-12">
 
 
-                    <?php endif; ?>
+                        <div class="checkbox col-sm-12">
+                            <input type="checkbox" id="ready-to-publish" name="ready-to-publish">
+                            <label for="ready-to-publish">
+                                <small>
+                                    <?= $this->translate('Modifier le statut en <mark>Prêt à publier</mark>') ?>
+                                </small>
+                            </label>
+                        </div>
 
-
-                    <div class="col-sm-4 pull-right">
-                        <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
-                        <a class="btn btn-default" role="button" aria-hidden="true"
-                           onclick="$('.popover').hide();">&times;</a>
                     </div>
 
+
+                <?php endif; ?>
+
+
+                <div class="col-sm-12 text-center" style="margin-bottom: 5px;">
+                    <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+                    <a class="btn btn-default" role="button" aria-hidden="true"
+                       onclick="$('.popover').hide();">&times;</a>
                 </div>
+
 
             </form>
         </div>
