@@ -174,6 +174,10 @@ class Episciences_PapersManager
                 if ($setting === 'doi') {
                     $select = self::applyDOIFilter($select, $value);
                 }
+
+                if ($setting === 'repositories') {
+                    $select = self::applyRepositoriesFilter($select, $value);
+                }
             }
         }
 
