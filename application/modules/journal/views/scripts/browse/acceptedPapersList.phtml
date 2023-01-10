@@ -5,24 +5,26 @@
 $journal = $this->journal;
 ?>
 
-<h1><?= $this->translate('acceptedPaperOn')." ". $this->escape($journal->getName()) ?></h1>
+<h1><?= $this->translate('acceptedPaperOn') . " " . $this->escape($journal->getName()) ?></h1>
 <div>
-    <?php foreach ($this->acceptedPapers as $acceptedPaper) :
-        /** @var Episciences_Paper $acceptedPaper */
-        ?>
-        <p>
-            <a href="<?= $this->escape($acceptedPaper->getDocUrl())?>" target="_blank" rel="noopener">
-                <em><?= $this->escape($acceptedPaper->getTitle())?></em></a>
-            <?php $authors = $acceptedPaper->getMetadata('authors');?>
-            <?php if (is_array($authors)): ?>
-                <?= $this->translate('de') ?>
-                <?php $lastkey = count($authors); ?>
-                <?php foreach ($authors as $key => $creatorName):?>
-                    <?= $this->escape(Episciences_Tools::reformatOaiDcAuthor($creatorName)) ?>
-                    <?php if ($lastkey !== $key+1) : ?>;<?php endif; ?>
-                <?php endforeach;?>
-            <?php endif;?>
-            (<?= $this->translate('Accepté le : ')." ".date('Y-m-d', strtotime($acceptedPaper->getModification_date())) ?>)
-        </p>
-    <?php endforeach;?>
+    <ul>
+        <?php foreach ($this->acceptedPapers as $acceptedPaper) :
+            /** @var Episciences_Paper $acceptedPaper */
+            ?>
+            <li>
+                <a href="<?= $this->escape($acceptedPaper->getDocUrl()) ?>" target="_blank" rel="noopener">
+                    <em><?= $this->escape($acceptedPaper->getTitle()) ?></em></a>
+                <?php $authors = $acceptedPaper->getMetadata('authors'); ?>
+                <?php if (is_array($authors)): ?>
+                    <?= $this->translate('de') ?>
+                    <?php $lastkey = count($authors); ?>
+                    <?php foreach ($authors as $key => $creatorName): ?>
+                        <?= $this->escape(Episciences_Tools::reformatOaiDcAuthor($creatorName)) ?>
+                        <?php if ($lastkey !== $key + 1) : ?>;<?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                (<?= $this->translate('Accepté le : ') . " " . date('Y-m-d', strtotime($acceptedPaper->getModification_date())) ?>)
+            </li>
+        <?php endforeach; ?>
+    </ul>
 </div>
