@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed: allow to submit documents from hal.science and non .fr HAL portals
+- [#299](https://github.com/CCSDForge/episciences/issues/299) licences missing character and version
 
 
 
