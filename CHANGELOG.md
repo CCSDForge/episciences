@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## 1.0.39 - 2022-01-11
 ### Added
 - Added three options for sharing the paper password (arXiv):
   * No (default): do not share
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "ready to publish" at the time of the modification of the version number, the status is updated automatically
   thus allowing the publication of the aforementioned version.
 - Updated volume import script to handle new metadata
-- Crossref matadata: added text-mining URL
+- Crossref metadata: added text-mining URL
 
 ### Changed
 - the "DOI" filter is now only accessible on the article administration page.
@@ -34,8 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code refactoring
 - From now on, the change of the reviewing deadline is reflected in the article's history [RT#75351].
 ### Fixed
-- Fixed: allow to submit documents from hal.science and non .fr HAL portals
-- [#299](https://github.com/CCSDForge/episciences/issues/299) licences missing character and version
+- Fixed: allow to submit documents from hal.science and HAL portals with a TLD different from .FR
+- [#299](https://github.com/CCSDForge/episciences/issues/299) Fixed licences missing character and version
 
 
 
