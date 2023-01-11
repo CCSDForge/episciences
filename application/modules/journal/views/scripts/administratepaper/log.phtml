@@ -286,4 +286,8 @@
         <?= $this->partial('administratepaper/revision-log-details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
         <?php break; ?>
 
+    <?php case Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE : ?>
+        <?= $this->partial('administratepaper/new-deadline-log-details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
+        <?php break; ?>
+
     <?php endswitch ?>

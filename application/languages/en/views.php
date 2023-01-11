@@ -643,6 +643,8 @@ return [
     'Inviter ce relecteur' => 'Invite this reviewer',
     'prenom.nom@example.org' => 'firstname.name@example.org',
     "Attention, la grille d'évaluation n'est pas encore disponible. Une grille de relecture peut être élaborée <a href='/grid/list'> ici </a> pour guider les relecteurs grâce à une série de points prédéfinis à examiner." => "Before any reviewing can be performed, a rating grid has to be defined <a href='/grid/list'> here </a>. It includes a variety of pre-set points to guide your reviewers.",
+    'Date limite antérieure' => 'Previous deadline',
+    'Date limite actuelle' => 'Current deadline',
 
 
     // Gestion des rédacteurs
@@ -1070,6 +1072,7 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => "Copy editing: awaiting formatting by author",
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version repointing',
+    Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New reviewing deadline',
 
 
     "Date d'assignation" => "Assignation date",
