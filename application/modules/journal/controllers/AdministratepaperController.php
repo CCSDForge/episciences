@@ -1390,6 +1390,8 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
+        $paper = Episciences_PapersManager::get($assignment->getItemid());
+
         //user
         if ($assignment->isTmp_user()) {
             $reviewer = Episciences_TmpUsersManager::findById($assignment->getUid());
@@ -1424,36 +1426,31 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
+        $oldDeadline = $assignment->getDeadline();
+
         //assignment update
         $assignment->setDeadline($post['deadline']);
         $assignment->save();
 
+        $paper->log(
+            Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE,
+            Episciences_Auth::getUid(),
+            ['oldDeadline' => $oldDeadline,
+                'newDeadline' => $assignment->getDeadline(),
+                'screenName' => Episciences_Auth::getScreenName()
+            ]
+        );
+
         //mail to the reviewer
-        $mail = new Episciences_Mail('UTF-8');
-        $mail->setDocid($assignment->getItemid());
-        $mail->setTo($reviewer);
-        $mail->setSubject($post['subject']);
-        $mail->setRawBody(Ccsd_Tools::clear_nl($post['body']));
-        if (isset($post['attachments'])) {
-            $path = REVIEW_FILES_PATH . 'attachments/';
-            foreach ($post['attachments'] as $attachment) {
-                $filepath = $path . $attachment;
-                if (file_exists($filepath)) {
-                    $mail->addAttachedFile($filepath);
-                }
-            }
-        }
-        /* Other reciptients*/
-        $cc = (!empty($post['cc'])) ? explode(';', $post['cc']) : [];
-        $bcc = (!empty($post['bcc'])) ? explode(';', $post['bcc']) : [];
-        $this->addOtherRecipients($mail, $cc, $bcc);
-        $mail->writeMail();
+        $this->sendMailFromModal($reviewer, $paper, $post['subject'], $post['body'], $post);
 
         //ajax response
         $result = [
             'status' => 1,
             'id' => $id,
-            'deadline' => $this->view->Date($post['deadline'], Episciences_Tools::getLocale())];
+            'deadline' => $this->view->Date($post['deadline'], Episciences_Tools::getLocale()),
+            'docId' => $paper->getDocid()
+        ];
         echo Zend_Json::encode($result);
     }
 

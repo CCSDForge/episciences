@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the "DOI" filter is now only accessible on the article administration page.
 - Dashboard: improved rendering of the "filters" view 
 - Code refactoring
-
+- From now on, the change of the reviewing deadline is reflected in the article's history [RT#75351].
 ### Fixed
 - Fixed: allow to submit documents from hal.science and non .fr HAL portals
 
