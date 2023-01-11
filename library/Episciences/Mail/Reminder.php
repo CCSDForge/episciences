@@ -691,7 +691,10 @@ class Episciences_Mail_Reminder
             $author = new Episciences_User;
             $author->findWithCAS($data['UID']);
 
-            $tags = [Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid()];
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
+            ];
 
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
@@ -793,7 +796,10 @@ class Episciences_Mail_Reminder
             $author = new Episciences_User;
             $author->findWithCAS($data['UID']);
 
-            $tags = [Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid()];
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
+            ];
 
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
@@ -922,6 +928,7 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
                     Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => count($invitations),
@@ -1053,10 +1060,13 @@ class Episciences_Mail_Reminder
                 $invitation_url .= $lang;
             }
 
-            $tags = [Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                 Episciences_Mail_Tags::TAG_INVITATION_LINK => $invitation_url,
                 Episciences_Mail_Tags::TAG_INVITATION_DATE => Episciences_View_Helper_Date::Date($data['INVITATION_DATE'], $lang),
-                Episciences_Mail_Tags::TAG_EXPIRATION_DATE => Episciences_View_Helper_Date::Date($data['EXPIRATION_DATE'], $lang)];
+                Episciences_Mail_Tags::TAG_EXPIRATION_DATE => Episciences_View_Helper_Date::Date($data['EXPIRATION_DATE'], $lang)
+            ];
 
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
@@ -1195,6 +1205,7 @@ class Episciences_Mail_Reminder
                 foreach ($paper->getEditors(true, true) as $editor) {
                     $tags = [
                         Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
@@ -1226,6 +1237,7 @@ class Episciences_Mail_Reminder
 
                 $tags = [
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($reviewer->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $reviewer->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $reviewer->getScreenName(),
@@ -1338,6 +1350,7 @@ class Episciences_Mail_Reminder
                 foreach ($paper->getEditors(true, true) as $editor) {
                     $tags = [
                         Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
@@ -1369,6 +1382,7 @@ class Episciences_Mail_Reminder
 
                 $tags = [
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($reviewer->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $reviewer->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $reviewer->getScreenName(),
@@ -1476,7 +1490,8 @@ class Episciences_Mail_Reminder
 
             $commonTag = [
                 Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
-                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid()
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
             ];
 
             /** @var Episciences_Editor $editor */

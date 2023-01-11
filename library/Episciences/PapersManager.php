@@ -2371,6 +2371,7 @@ class Episciences_PapersManager
 
         $tags = array_merge($mail->getTags(), [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
             Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $dateHelper::Date($paper->getSubmission_date(), $locale),
