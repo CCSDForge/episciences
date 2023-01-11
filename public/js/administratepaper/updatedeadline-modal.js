@@ -81,7 +81,8 @@ function submit() {
         success: function (response) {
             response = JSON.parse(response);
 
-            if (response.status == 1) {
+            if (response.status === 1) {
+                refreshPaperHistory(response.docId);
                 $('#modal-box').modal('hide');
                 $('#invitation-' + response.id).find('.rating_deadline').html(response.deadline).fadeIn();
             } else {
