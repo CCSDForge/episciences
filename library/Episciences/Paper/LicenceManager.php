@@ -82,9 +82,25 @@ class Episciences_Paper_LicenceManager
         //specific url
         $licenceGetter = str_replace("http://hal.archives-ouvertes.fr/licences/etalab/","https://raw.githubusercontent.com/DISIC/politique-de-contribution-open-source/master/LICENSE",$licenceGetter);
         $licenceGetter = str_replace("http://hal.archives-ouvertes.fr/licences/publicDomain/","https://creativecommons.org/publicdomain/zero/1.0",$licenceGetter);
+
+        $noVersionNcSa = "/http:\/\/creativecommons.org\/licenses\/by-nc-sa\/$/";
+        $licenceGetter = preg_replace($noVersionNcSa, "https://creativecommons.org/licenses/by-nc-sa/4.0", $licenceGetter);
+
+        $noVersionBySa = "/http:\/\/creativecommons.org\/licenses\/by-sa\/$/";
+        $licenceGetter = preg_replace($noVersionBySa, "https://creativecommons.org/licenses/by-sa/4.0", $licenceGetter);
+
+        $noVersionByNd = "/http:\/\/creativecommons.org\/licenses\/by-nd\/$/";
+        $licenceGetter = preg_replace($noVersionByNd, "https://creativecommons.org/licenses/by-nd/4.0", $licenceGetter);
+
+        $noVersionByNc = "/http:\/\/creativecommons.org\/licenses\/by-nc\/$/";
+        $licenceGetter = preg_replace($noVersionByNc, "https://creativecommons.org/licenses/by-nc/4.0", $licenceGetter);
+
+        $noVersionByNcNd = "/http:\/\/creativecommons.org\/licenses\/by-nc-nd\/$/";
+        $licenceGetter = preg_replace($noVersionByNcNd, "https://creativecommons.org/licenses/by-nc-nd/4.0", $licenceGetter);
         //////////////
         $licenceGetter = str_replace("http://", "https://", $licenceGetter);
-        $licenceGetter = rtrim($licenceGetter, '/legalcode');
+        $licenceGetter = preg_replace("/\/legalcode/", '', $licenceGetter);
+
         return rtrim($licenceGetter, '/');
     }
 
