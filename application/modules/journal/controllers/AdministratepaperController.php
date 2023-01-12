@@ -1322,6 +1322,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => (!$oAssignment->isTmp_user()) ? $oReviewer->getUsername() : '',
             Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $oReviewer->getFullName(),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $oPaper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $oPaper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $oPaper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
@@ -2325,6 +2326,7 @@ class AdministratepaperController extends PaperDefaultController
                 // Envoi de mails a l'auteur
                 $commonTags = [
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
                 ];
 
                 $authorTags = array_merge(
@@ -2417,6 +2419,7 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $assignedUser->getUsername(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $assignedUser->getFullName(),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
                 Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
@@ -2623,6 +2626,7 @@ class AdministratepaperController extends PaperDefaultController
                         $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, $editor->getUsername());
                         $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $editor->getFullName());
                         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_ID, $paper->getDocid());
+                        $mail->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $paper->getPaperid());
                         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $paper->getTitle($locale, true));
                         $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $paper->formatAuthorsMetadata());
                         $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($paper->getSubmission_date(), $locale));
@@ -3017,6 +3021,7 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => !$oReviewer->getScreenName() ? $reviewer['full_name'] : $oReviewer->getScreenName(),
                 Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $oPaper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $oPaper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $oPaper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
                 Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
@@ -3412,6 +3417,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME, Episciences_Auth::getScreenName());
         $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, Episciences_Auth::getFullName());
         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_ID, $oPaper->getDocid());
+        $mail->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $oPaper->getPaperid());
         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $oPaper->getTitle($locale, true));
         $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $oPaper->formatAuthorsMetadata());
         $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($oPaper->getSubmission_date(), $locale));

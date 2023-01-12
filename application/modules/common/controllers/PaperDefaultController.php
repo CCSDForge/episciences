@@ -233,6 +233,7 @@ class PaperDefaultController extends DefaultController
 
         $commonTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $newPaper->getPaperid(),
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
             Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $requestComment->getMessage(),
@@ -286,7 +287,11 @@ class PaperDefaultController extends DefaultController
 
         $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
-        $tags += [Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId, Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl];
+        $tags += [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
+        ];
 
         /** @var  Episciences_Reviewer $reviewer [] */
         $reviewers = $paper->getReviewers(null, true);
@@ -364,6 +369,7 @@ class PaperDefaultController extends DefaultController
 
         $recipientTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_COMMENT => $oComment->getMessage(),
             Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId),
             Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
@@ -501,7 +507,13 @@ class PaperDefaultController extends DefaultController
     {
         $docId = (int)$paper->getDocid();
 
-        $tags = array_merge([Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId, Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId)], $tags);
+        $tags = array_merge(
+            [Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId)
+            ],
+            $tags
+        );
 
         $recipients = $this->getAllEditors($paper) + $this->getAllCopyEditors($paper);
 
@@ -677,6 +689,7 @@ class PaperDefaultController extends DefaultController
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url
         ];
 

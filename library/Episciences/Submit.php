@@ -988,6 +988,7 @@ class Episciences_Submit
 
         $commonTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $author->getFullName()
         ];
 

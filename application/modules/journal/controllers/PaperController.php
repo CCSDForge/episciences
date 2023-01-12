@@ -673,6 +673,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $reviewer->getScreenName(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $reviewer->getFullName(),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
                 Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
@@ -928,6 +929,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_REQUESTER_SCREEN_NAME => $requester->getScreenName(),
                 Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($commentRequest->getWhen(), $locale),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
                 Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $commentRequest->getMessage(),
@@ -968,6 +970,7 @@ class PaperController extends PaperDefaultController
         $tags = [
             Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
             Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
@@ -1078,6 +1081,7 @@ class PaperController extends PaperDefaultController
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $recipient->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $recipient->getFullName(),
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
                     Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
                     Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($oComment->getWhen(), $locale),
@@ -1451,6 +1455,7 @@ class PaperController extends PaperDefaultController
             $mail = new Episciences_Mail(self::ENCODING_TYPE);
             $mail->setDocid($paper2->getDocid());
             $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_ID, $paper2->getDocid());
+            $mail->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $paper2->getPaperid());
             $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $paper1->getTitle($locale, true));
             $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $paper1->formatAuthorsMetadata());
             $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE, $this->view->Date($paper1->getWhen(), $locale));
@@ -2309,6 +2314,7 @@ class PaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => null,
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => null,
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
             Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
@@ -2593,7 +2599,10 @@ class PaperController extends PaperDefaultController
         if ($report->isCompleted()) {
             $locale = $user->getLangueid();
 
-            $commonTags = [Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid()];
+            $commonTags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
+            ];
 
             // send mail to reviewer *********************
             // url to rating page
@@ -3075,6 +3084,7 @@ class PaperController extends PaperDefaultController
         $tags = [
             Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
             Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
