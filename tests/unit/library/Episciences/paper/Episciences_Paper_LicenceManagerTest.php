@@ -22,5 +22,9 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         self::assertEquals("https://raw.githubusercontent.com/DISIC/politique-de-contribution-open-source/master/LICENSE",$licenceEtalab);
         $licencePublicDomain = Episciences_Paper_LicenceManager::cleanLicence("http://hal.archives-ouvertes.fr/licences/publicDomain/");
         self::assertEquals('https://creativecommons.org/publicdomain/zero/1.0',$licencePublicDomain);
+        $licenceNoVersionNcSa = Episciences_Paper_LicenceManager::cleanLicence("http://creativecommons.org/licenses/by-nc-sa/");
+        self::assertEquals('https://creativecommons.org/licenses/by-nc-sa/4.0',$licenceNoVersionNcSa);
+        $licenceNoVersionBy = Episciences_Paper_LicenceManager::cleanLicence("http://creativecommons.org/licenses/by/");
+        self::assertEquals('https://creativecommons.org/licenses/by/4.0',$licenceNoVersionBy);
     }
 }
