@@ -554,6 +554,7 @@ class Episciences_Mail extends Zend_Mail
                 $path = (is_array($attachment)) ? $attachment['path'] : $attachment;
                 $attachment = $this->getAttachmentRelativePath($path);
             }
+            unset($attachment);
             $attachments = Zend_Json::encode($attachments);
         } else {
             $attachments = null;
