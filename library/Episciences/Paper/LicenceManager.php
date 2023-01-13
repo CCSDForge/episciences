@@ -83,6 +83,9 @@ class Episciences_Paper_LicenceManager
         $licenceGetter = str_replace("http://hal.archives-ouvertes.fr/licences/etalab/","https://raw.githubusercontent.com/DISIC/politique-de-contribution-open-source/master/LICENSE",$licenceGetter);
         $licenceGetter = str_replace("http://hal.archives-ouvertes.fr/licences/publicDomain/","https://creativecommons.org/publicdomain/zero/1.0",$licenceGetter);
 
+        $noVersionby = "/http:\/\/creativecommons.org\/licenses\/by\/$/";
+        $licenceGetter = preg_replace($noVersionby, "https://creativecommons.org/licenses/by/4.0", $licenceGetter);
+
         $noVersionNcSa = "/http:\/\/creativecommons.org\/licenses\/by-nc-sa\/$/";
         $licenceGetter = preg_replace($noVersionNcSa, "https://creativecommons.org/licenses/by-nc-sa/4.0", $licenceGetter);
 
@@ -235,12 +238,9 @@ class Episciences_Paper_LicenceManager
         $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($identifier, $version);
         $xmlString = simplexml_load_string($cacheTeiHal);
         $licence = '';
-        if (isset($xmlString->teiHeader->fileDesc->publicationStmt->availability->licence, $xmlString->teiHeader->fileDesc->publicationStmt->availability->licence->attributes()->target)) {
-                $licence = (string) $xmlString->teiHeader->fileDesc->publicationStmt->availability->licence->attributes()->target;
-                //very specific ~~> try to replace bad url licence by
-                $badby = "/http:\/\/creativecommons.org\/licenses\/by\/$/";
-                $licence = preg_replace($badby, "https://creativecommons.org/licenses/by/1.0", $licence);
-                return self::cleanLicence(str_replace('http://', 'https://', $licence));
+        if (isset($xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence, $xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence->attributes()->target)) {
+                $licence = (string) $xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence->attributes()->target;
+                return self::cleanLicence($licence);
         }
         return $licence;
     }
