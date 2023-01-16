@@ -232,7 +232,14 @@ class Episciences_Mail_Sender
             if ($return_path) {
                 $mailer->Sender = $return_path[self::MAIL];
             } else {
-                $mailer->Sender = 'error@' . DOMAIN;
+                $review = Episciences_ReviewsManager::find(RVID);
+                $review->loadSettings();
+                $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
+                if (!isset($mailError) || $mailError === 0) {
+                    $mailer->Sender = 'error@' . DOMAIN;
+                } else {
+                    $mailer->Sender = $review->getCode().'-error@'.DOMAIN;
+                }
             }
 
             // Construction du message ************************************************

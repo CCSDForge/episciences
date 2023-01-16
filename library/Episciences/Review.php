@@ -117,6 +117,8 @@ class Episciences_Review
 
     public const SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION = 'paperFinalDecisionAllowRevision';
 
+    public const SETTING_CONTACT_ERROR_MAIL = "contactErrorMail";
+
     /** @var int */
     public static $_currentReviewId = null;
     protected $_db = null;
@@ -200,7 +202,8 @@ class Episciences_Review
             self::SETTING_SYSTEM_IS_COI_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
-            self::SETTING_ARXIV_PAPER_PASSWORD
+            self::SETTING_ARXIV_PAPER_PASSWORD,
+            self::SETTING_CONTACT_ERROR_MAIL
         ];
 
 
@@ -969,6 +972,11 @@ class Episciences_Review
 
         $form = $this->addFinalDecisionForm($form);
 
+        //redirection mail for errors
+
+        $form = $this->addRedirectionMailError($form);
+
+
         // display group: publication settings
         $form->addDisplayGroup([
             self::SETTING_REPOSITORIES,
@@ -1041,6 +1049,11 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION
         ], 'finalDecisions', ["legend" => "Article - décision finale"]);
         $form->getDisplayGroup('finalDecisions')->removeDecorator('DtDdWrapper');
+
+        $form->addDisplayGroup([
+            self::SETTING_CONTACT_ERROR_MAIL
+        ], 'contactMailError', ["legend" => "Mail personnalisé pour l'echec d'envoi"]);
+        $form->getDisplayGroup('contactMailError')->removeDecorator('DtDdWrapper');
 
         // submit button
         $form->setActions(true)->createSubmitButton('submit', [
@@ -1582,6 +1595,22 @@ class Episciences_Review
         );
     }
 
+    private function addRedirectionMailError(Ccsd_Form $form): \Ccsd_Form
+    {
+        // Possibility to share the paper password for arxiv submissions
+        return $form->addElement('select', self::SETTING_CONTACT_ERROR_MAIL, [
+                'label' => 'Mail de retour',
+                'description' => "Donne la possibilité de sélectionner une adresse de redirection en fonction du nom du journal ou non en cas d'échec de l'envoi d'un courrier",
+                'value' => 0,
+                'multiOptions' => [
+                    0 => 'error@'.DOMAIN,
+                    1 => $this->getCode().'-error@'.DOMAIN,
+                ],
+
+            ]
+        );
+    }
+
     /**
      * Save review settings in DB
      * @return bool
@@ -1716,6 +1745,8 @@ class Episciences_Review
         $settingsValues[self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] = $this->getSetting(self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
 
         $settingsValues[self::SETTING_ARXIV_PAPER_PASSWORD] = $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD);
+
+        $settingsValues[self::SETTING_CONTACT_ERROR_MAIL] = $this->getSetting(self::SETTING_CONTACT_ERROR_MAIL);
 
         $values = [];
 

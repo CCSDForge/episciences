@@ -2303,6 +2303,10 @@ return [
     "Échec du changement de courriel" => "Failed to change email",
     "Changement de courriel réussi" => "Successful email change",
     'Confirmer la modification' => 'Confirm change',
-    "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Modifier mon courriel</a>" => "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Change my email address</a>"
+    "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Modifier mon courriel</a>" => "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Change my email address</a>",
+
+    // settings redirect error mail
+    "Mail de retour" => "Redirection address",
+    "Donne la possibilité de sélectionner une adresse de redirection en fonction du nom du journal ou non en cas d'échec de l'envoi d'un courrier" => "Gives the possibility to select a redirection address according to the name of the journal or not in case of a mail sending failure"
 
 ];
