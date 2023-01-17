@@ -2307,6 +2307,6 @@ return [
 
     // settings redirect error mail
     "Mail de retour" => "Redirection address",
-    "Donne la possibilité de sélectionner une adresse de redirection en fonction du nom du journal ou non en cas d'échec de l'envoi d'un courrier" => "Gives the possibility to select a redirection address according to the name of the journal or not in case of a mail sending failure"
-
+    "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the failed emails",
+    "Adresse de courriel pour le retour des échecs d'envoi" => "Email address for the return of failed mailings",
 ];

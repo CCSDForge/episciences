@@ -1052,7 +1052,7 @@ class Episciences_Review
 
         $form->addDisplayGroup([
             self::SETTING_CONTACT_ERROR_MAIL
-        ], 'contactMailError', ["legend" => "Mail personnalisé pour l'echec d'envoi"]);
+        ], 'contactMailError', ["legend" => "Adresse de courriel pour le retour des échecs d'envoi"]);
         $form->getDisplayGroup('contactMailError')->removeDecorator('DtDdWrapper');
 
         // submit button
@@ -1600,7 +1600,7 @@ class Episciences_Review
         // Possibility to share the paper password for arxiv submissions
         return $form->addElement('select', self::SETTING_CONTACT_ERROR_MAIL, [
                 'label' => 'Mail de retour',
-                'description' => "Donne la possibilité de sélectionner une adresse de redirection en fonction du nom du journal ou non en cas d'échec de l'envoi d'un courrier",
+                'description' => "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels",
                 'value' => 0,
                 'multiOptions' => [
                     0 => 'error@'.DOMAIN,
