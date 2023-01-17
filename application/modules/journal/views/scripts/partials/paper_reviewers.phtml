@@ -101,7 +101,10 @@ $ratings = $paper->getRatings();
                              } ?>">
                             <div class="panel-body">
 
-                                <?php foreach ($invitations as $i => $invitation) : ?>
+                                <?php foreach ($invitations as $i => $invitation) :
+                                    $maxDate = Date(max([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
+                                    $minDate = Date(min([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
+                                    ?>
 
                                     <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
                                         <div class="reviewer">
@@ -178,14 +181,14 @@ $ratings = $paper->getRatings();
 
                                         <?php if (!array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $invitation)) : ?>
                                             <div>
-                                                <?php echo $this->translate("Date d'envoi de l'invitation :") ?>
-                                                <?php echo $this->Date(min(array($invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']))); ?>
+                                                <?= $this->translate("Date d'envoi de l'invitation :") ?>
+                                                <?= $this->Date($minDate) ?>
                                             </div>
 
                                             <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE || $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_INACTIVE) : ?>
                                                 <div>
-                                                    <?php echo $this->translate("Date de réponse à l'invitation :"); ?>
-                                                    <?php echo $this->Date(max(array($invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']))); ?>
+                                                    <?= $this->translate("Date de réponse à l'invitation :") ?>
+                                                    <?= $this->Date($invitation['ANSWER_DATE']) ?>
                                                 </div>
                                             <?php elseif (($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING || $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_EXPIRED) &&
                                                 $invitation['EXPIRATION_DATE']) : ?>
@@ -205,14 +208,14 @@ $ratings = $paper->getRatings();
                                             <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_CANCELLED) : ?>
                                                 <div>
                                                     <?php echo $this->translate("Date de l'annulation :"); ?>
-                                                    <span class="cancellation_date"><?php echo $this->Date($invitation['INVITATION_DATE']); ?></span>
+                                                    <span class="cancellation_date"><?= $this->Date($maxDate) ?></span>
                                                 </div>
                                             <?php endif; ?>
 
                                             <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_DECLINED) : ?>
                                                 <div>
                                                     <?php echo $this->translate("Date de refus :"); ?>
-                                                    <span class="rejection_date"><?= $this->Date($invitation['INVITATION_DATE']) ?></span>
+                                                    <span class="rejection_date"><?= $this->Date($invitation['ANSWER_DATE']) ?></span>
                                                 </div>
                                             <?php endif; ?>
 

@@ -793,7 +793,7 @@ class Episciences_PapersManager
             if (array_key_exists($row['ASSIGNMENT_ID'], $source)) { // remove duplicated invitations
                 continue;
             }
-
+            self::addAnswersDate($row);
             $source[$row['INVITATION_AID']][$row['ASSIGNMENT_ID']] = $row;
         }
 
@@ -825,7 +825,7 @@ class Episciences_PapersManager
                         }
 
                     }
-                } else if (!array_key_exists($invitation['UID'], $reviewers)) {
+                } elseif (!array_key_exists($invitation['UID'], $reviewers)) {
                     $reviewer = new Episciences_Reviewer();
                     if ($reviewer->findWithCAS($invitation['UID'])) {
                         $reviewers[$invitation['UID']] = $reviewer;
@@ -3463,4 +3463,18 @@ class Episciences_PapersManager
         }
         return $db->fetchAssoc($select);
     }
+
+    /**
+     * @param array $row
+     * @return void
+     */
+    private static function addAnswersDate(array &$row): void
+    {
+        $invitationAid = Episciences_User_AssignmentsManager::findById($row['INVITATION_AID']);
+        $answer = Episciences_User_InvitationAnswersManager::findById($invitationAid->getInvitation_id());
+        // this date is overwritten by the last action
+        $row['INVITATION_DATE'] = $invitationAid->getWhen();
+        $row['ANSWER_DATE'] = $answer ? $answer->getAnswer_date() : null;
+    }
+
 }
