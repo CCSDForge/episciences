@@ -235,7 +235,7 @@ class Episciences_Mail_Sender
                 $review = Episciences_ReviewsManager::find(RVID);
                 $review->loadSettings();
                 $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
-                if (!isset($mailError) || $mailError === 0) {
+                if ($mailError === false || $mailError === "0") {
                     $mailer->Sender = 'error@' . DOMAIN;
                 } else {
                     $mailer->Sender = $review->getCode().'-error@'.DOMAIN;
