@@ -21,7 +21,7 @@ if ($paper->isPublished()) {
             case "doi":
             case "abstract":
                 if ($citationMeta) {
-                    $this->headMeta()->appendName('citation_'.$citationKey, $citationMeta);
+                    $this->headMeta()->appendName('citation_' . $citationKey, $citationMeta);
                 }
                 break;
             case "author":
@@ -39,7 +39,7 @@ if ($paper->isPublished()) {
                 break;
             case "keywords":
                 foreach ($citationMeta as $meta) {
-                    $this->headMeta()->appendName("citation_". $citationKey, $meta);
+                    $this->headMeta()->appendName("citation_" . $citationKey, $meta);
                 }
                 break;
             case "publication_date":
@@ -51,7 +51,7 @@ if ($paper->isPublished()) {
             case "arxiv_id":
             case "issue":
                 if ($citationMeta !== "") {
-                    $this->headMeta()->appendName('citation_'.$citationKey, $citationMeta);
+                    $this->headMeta()->appendName('citation_' . $citationKey, $citationMeta);
                 }
                 break;
             case "issn":
@@ -65,9 +65,9 @@ if ($paper->isPublished()) {
                 if (!empty($citationMeta)) {
                     foreach ($citationMeta as $project) {
                         if ($project['funderName'] !== 'unidentified') {
-                            $strFunding = "citation_funder=".$project['funderName'].";";
-                            if ($project['code'] !== 'unidentified'){
-                                $strFunding .= " citation_grant_number=".$project['code'].";";
+                            $strFunding = "citation_funder=" . $project['funderName'] . ";";
+                            if ($project['code'] !== 'unidentified') {
+                                $strFunding .= " citation_grant_number=" . $project['code'] . ";";
                             }
                             $this->headMeta()->appendName('citation_funder_source', $strFunding);
                         }
@@ -83,9 +83,9 @@ if ($paper->isPublished()) {
         switch ($dcKey) {
             case "creator":
                 foreach ($dcMeta as $author) {
-                    $this->headMeta()->appendName('DC.'.$dcKey, $author['citation_author']);
+                    $this->headMeta()->appendName('DC.' . $dcKey, $author['citation_author']);
                 }
-            break;
+                break;
             case "date":
                 if ($dcMeta) {
                     $date = $this->Date($paper->getPublication_date(), $language, Zend_Date::YEAR . '-' . Zend_Date::MONTH . '-' . Zend_Date::DAY);
@@ -308,67 +308,25 @@ if ($this->citations !== '') {
 ?>
 
 <?php // export options ***************************************************** ?>
-<?php if ($paper->isPublished()) : ?>
-    <div class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Exporter') ?></h2>
-        </div>
-        <div class="panel-body in" style="overflow: visible">
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'bibtex') ?>">
-                BibTeX
-            </a>
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'tei') ?>">
-                <abbr title="Text Encoding Initiative">TEI</abbr>
-            </a>
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'dc') ?>">
-                <abbr title="Dublin Core">DC</abbr>
-            </a>
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'datacite') ?>">OpenAIRE</a>
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'crossref') ?>">Crossref</a>
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'doaj') ?>">DOAJ</a>
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'zbjats') ?>">zbJATS</a>
-            <a class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->url(['id' => $paper->getDocid()], 'json') ?>">JSON</a>
-        </div>
-    </div>
-<?php endif; ?>
 
-<?php // share options ***************************************************** ?>
 <?php if ($paper->isPublished()) : ?>
-    <div class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Partager') ?></h2>
+    <div class="row">
+        <div class="col-md-8">
+            <?php echo $this->partial('partials/paper_export.phtml', ['docid' => $paper->getDocid()]); ?>
         </div>
-        <div class="panel-body in" style="overflow: visible">
-            <!-- AddToAny BEGIN -->
-            <div class="a2a_kit a2a_kit_size_32 a2a_default_style">
-                <a class="a2a_dd" href="https://www.addtoany.com/share"></a>
-                <a class="a2a_button_twitter"></a>
-                <a class="a2a_button_facebook"></a>
-                <a class="a2a_button_email"></a>
-                <a class="a2a_button_reddit"></a>
-                <a class="a2a_button_mendeley"></a>
-                <a class="a2a_button_citeulike"></a>
-                <a class="a2a_button_evernote"></a>
-                <a class="a2a_button_linkedin"></a>
+        <div class="col-md-4">
+            <?php // share options ***************************************************** ?>
+
+            <div class="panel panel-default collapsable">
+                <div class="panel-heading">
+                    <h2 class="panel-title"><?= $this->translate('Partager') ?></h2>
+                </div>
+                <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper]); ?>
             </div>
-            <script>
-                var a2a_config = a2a_config || {};
-                a2a_config.num_services = 6;
-            </script>
-            <script async src="https://static.addtoany.com/menu/page.js"></script>
-            <!-- AddToAny END -->
+
         </div>
     </div>
 <?php endif; ?>
-
 
 <?php if ($this->page_count || $this->file_count) : ?>
     <!-- stats -->
