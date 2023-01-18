@@ -77,6 +77,7 @@ class Episciences_Mail extends Zend_Mail
 
         }
         $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
         $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
         if ($mailError === false || $mailError === "0") {
             $this->setReturnPath('error@' . DOMAIN);
