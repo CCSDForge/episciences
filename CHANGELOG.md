@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard: improved rendering of the "filters" view 
 - Code refactoring
 - From now on, the change of the reviewing deadline is reflected in the article's history [RT#75351].
+- Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No 
+  tracking.' AddToAny is not used anymore.
+
 ### Fixed
 - Fixed: allow to submit documents from hal.science and HAL portals with a TLD different from .FR
 - [#299](https://github.com/CCSDForge/episciences/issues/299) Fixed licences missing character and version
