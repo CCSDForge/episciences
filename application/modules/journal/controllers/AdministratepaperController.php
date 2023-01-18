@@ -4655,6 +4655,36 @@ class AdministratepaperController extends PaperDefaultController
 
     }
 
+    /**
+     * @return void
+     */
+    public function ajaxrequestremovedoiAction() : void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $post = $request->getPost();
+        if ($request->isXmlHttpRequest() && isset($post['paperId'])) {
+            $paperId = (int) $post['paperId'];
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $getPapers = $db->select()->from(T_PAPERS)->where('paperId = ?', $paperId);
+            $papers =  $db->fetchAll($getPapers);
+            if (count($papers) > 0) {
+                $getDoiQueue = Episciences_Paper_DoiQueueManager::findByPaperId((int) $paperId);
+                if (!is_null($getDoiQueue->getId_doi_queue())) {
+                    $deleteDoiQueue = Episciences_Paper_DoiQueueManager::delete((int) $paperId);
+                    if ($deleteDoiQueue === true) {
+                        $update = Episciences_PapersManager::updateDoi("", (int) $paperId);
+                        if ($update > 0) {
+                            Episciences_Paper_Logger::log($paperId, $post['docId'], Episciences_Paper_Logger::CODE_DOI_CANCELED, Episciences_Auth::getUid(), json_encode(['DOI' => $post['doi']." canceled"]),null,RVID);
+                            echo json_encode($update, JSON_THROW_ON_ERROR);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 

@@ -109,6 +109,7 @@ return [
     Episciences_Reviewer::STATUS_UNINVITED => 'non invité',
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assigné',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI mis à jour',
+    Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI annulé',
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'Nouvelle date de publication',
     Episciences_Paper_Logger::CODE_COI_REPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REPORTED],
     Episciences_Paper_Logger::CODE_COI_REVERTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REVERTED],

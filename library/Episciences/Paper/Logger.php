@@ -60,6 +60,8 @@ class Episciences_Paper_Logger
     public const CODE_DOI_ASSIGNED = 'doi_assigned';
     public const CODE_DOI_UPDATED = 'doi_updated';
 
+    public const CODE_DOI_CANCELED = 'doi_canceled';
+
     public const CODE_COI_REPORTED = "coi_reported";
     public const CODE_COI_REVERTED= "coi_reverted";
 
@@ -122,6 +124,7 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => self::VIOLET,
         self::CODE_DOI_ASSIGNED => self::INFO,
         self::CODE_DOI_UPDATED => self::INFO,
+        self::CODE_DOI_CANCELED => self::INFO,
         self::CODE_ALTER_PUBLICATION_DATE => self::WARNING,
         self::CODE_COI_REPORTED => self::DANGER,
         self::CODE_COI_REVERTED => self::SUCCESS,
@@ -158,6 +161,7 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Demande d'éclaircissements (relecteur au contributeur)",
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'éclaircissement (contributeur au relecteur)",
         self::CODE_DOI_ASSIGNED => 'DOI assigné',
+        self::CODE_DOI_CANCELED => 'DOI Annulé',
         self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)",
         self::CODE_COI_REVERTED => "Conflit d'intérêts (CI) : annulé",
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepté, demande de la version finale à l'auteur",
