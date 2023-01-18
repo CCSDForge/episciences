@@ -4671,11 +4671,11 @@ class AdministratepaperController extends PaperDefaultController
             $getPapers = $db->select()->from(T_PAPERS)->where('paperId = ?', $paperId);
             $papers =  $db->fetchAll($getPapers);
             if (count($papers) > 0) {
-                $getDoiQueue = Episciences_Paper_DoiQueueManager::findByPaperId((int) $paperId);
+                $getDoiQueue = Episciences_Paper_DoiQueueManager::findByPaperId($paperId);
                 if (!is_null($getDoiQueue->getId_doi_queue())) {
-                    $deleteDoiQueue = Episciences_Paper_DoiQueueManager::delete((int) $paperId);
+                    $deleteDoiQueue = Episciences_Paper_DoiQueueManager::delete($paperId);
                     if ($deleteDoiQueue === true) {
-                        $update = Episciences_PapersManager::updateDoi("", (int) $paperId);
+                        $update = Episciences_PapersManager::updateDoi("", $paperId);
                         if ($update > 0) {
                             Episciences_Paper_Logger::log($paperId, $post['docId'], Episciences_Paper_Logger::CODE_DOI_CANCELED, Episciences_Auth::getUid(), json_encode(['DOI' => $post['doi']." canceled"]),null,RVID);
                             echo json_encode($update, JSON_THROW_ON_ERROR);
