@@ -76,7 +76,14 @@ class Episciences_Mail extends Zend_Mail
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_LAST_NAME, Episciences_Auth::getLastname());
 
         }
-        $this->setReturnPath('error@' . DOMAIN);
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
+        if ($mailError === false || $mailError === "0") {
+            $this->setReturnPath('error@' . DOMAIN);
+        } else {
+            $this->setReturnPath($review->getCode().'-error@'.DOMAIN);
+        }
     }
 
     /**
