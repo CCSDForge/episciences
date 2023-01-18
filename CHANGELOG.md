@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 -  [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all email templates. 
+- Cancel a DOI assignment for the journal (manual DOI assignment setting only)
 - ### Fixed
 -  [#293](https://github.com/CCSDForge/episciences/issues/293): the system has overwritten the invitation date with the date of the latest action
 ## 1.0.39 - 2022-01-11
