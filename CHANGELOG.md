@@ -14,11 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+
 ## Unreleased
 ### Added
--  [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all email templates. 
-- ### Fixed
--  [#293](https://github.com/CCSDForge/episciences/issues/293): the system has overwritten the invitation date with the date of the latest action
+- [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all 
+email templates. 
+### Fixed
+- [#293](https://github.com/CCSDForge/episciences/issues/293): the system has overwritten the invitation date with 
+the date of the latest action
+- Fixed footer links to avoid redirects with updated website
+
 ## 1.0.39 - 2022-01-11
 ### Added
 - Added three options for sharing the paper password (arXiv):
