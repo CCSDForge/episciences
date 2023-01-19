@@ -35,7 +35,7 @@
     "laravolt/avatar": "^4.1",
     "neverbehave/hcaptcha": "~0.0.5",
     "phpmailer/phpmailer": "^6.5",
-    "shardj/zf1-future": "^1.20",
+    "shardj/zf1-future": "1.21.*",
     "shardj/zf1-extras-future": "^1.12",
     "solarium/solarium": "<5.0",
     "symfony/polyfill-php80": "*",
