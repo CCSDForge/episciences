@@ -143,13 +143,6 @@
             "privilege": "epiadmin"
           },
           {
-            "label": "Statistiques",
-            "controller": "stats",
-            "action": "index",
-            "resource": "stats-index",
-            "privilege": "chief_editor,administrator,secretary"
-          },
-          {
             "label": "Volumes",
             "controller": "volume",
             "action": "list",
@@ -346,5 +339,12 @@
         ]
       }
     ]
+  },
+  {
+    "label": "Statistiques",
+    "controller": "stats",
+    "action": "index",
+    "resource": "stats-index",
+    "privilege": "member"
   }
 ]
