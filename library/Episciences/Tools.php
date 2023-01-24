@@ -1547,6 +1547,21 @@ class Episciences_Tools
         return Lingua::create($string)->toISO_639_2b();
     }
 
+    public static function translateToICU(string $string): string {
+        if ($string === 'en'|| $string ==='eng') {
+            return 'en_GB';
+        } elseif ($string ==='fr' || $string === 'fra') {
+            return 'fr_FR';
+        } elseif ($string === 'de') {
+            return 'de_DE';
+        } elseif ($string === 'it') {
+            return 'it_IT';
+        } elseif ($string === 'es') {
+            return 'es_ES';
+        }
+        return '';
+    }
+
     /**
      * @param string $plainText
      * @param Key $key

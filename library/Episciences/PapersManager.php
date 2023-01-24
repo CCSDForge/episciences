@@ -3291,6 +3291,17 @@ class Episciences_PapersManager
         $url = APPLICATION_URL . '/' . $id;
         $pdf = $url . '/pdf';
         $abstract = $paper->getAbstract($language, true);
+        $allTitles = $paper->getAllTitles();
+        $listLang = [];
+        foreach ($allTitles as $lang => $title) {
+            if (Zend_Locale::isLocale($lang)) {
+                if ($lang === $language) {
+                    (!empty($listLang)) ? array_unshift($listLang, Episciences_Tools::translateToICU($lang)) : $listLang[] = Episciences_Tools::translateToICU($lang);
+                } else {
+                    $listLang[] = Episciences_Tools::translateToICU($lang);
+                }
+            }
+        }
         $keywords = $paper->getMetadata('subjects');
         $allKeywords = [];
         $journal = RVNAME;
@@ -3349,6 +3360,9 @@ class Episciences_PapersManager
             $arxivId = $paper->getIdentifier();
         }
         $authors = self::getAuthorsData($paper);
+
+        $contributor = new Episciences_User();
+        $contributor->findWithCAS($paper->getUid());
         return [
             'dc' => [
                 'creator' => $authors,
@@ -3364,10 +3378,19 @@ class Episciences_PapersManager
                 'publisher' => 'Episciences.org'
             ],
             'og' => [
-                'type' => $journal,
                 'title' => $title,
-                'url' => ['url'=> $url, 'pdf'=> $pdf],
+                'type' => "article",
+                'article' => [
+                    "published_time" => $paper->getPublication_date(),
+                    "modified_time" => $paper->getModification_date(),
+                    "author" => $authors,
+                    "tag" => $allKeywords
+                ],
+                'locale' => $listLang,
+                'url' => $url,
+                'image' => APPLICATION_URL . '/img/episciences_2674x1081.png',
                 'description' => $abstract,
+                'site_name' => "Episciences"
 
             ],
             'header' => [
@@ -3392,6 +3415,21 @@ class Episciences_PapersManager
                 'fundings' => Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($paper->getPaperid()),
 //                'abstract' => $abstract,
 
+            ],
+            "socialMedia" =>
+            [
+                "twitter" =>
+                [
+                    "card" => "summary_large_image",
+                    "site" => "@episciences",
+                    "creator" => [
+                        $contributor->getSocialMedias()
+                    ],
+                    "title" => $title,
+                    "description"=> $abstract,
+                    "image" => APPLICATION_URL . '/img/episciences_2674x1081.png',
+                    "image:alt" => 'Episciences Logo'
+                ]
             ]
         ];
     }

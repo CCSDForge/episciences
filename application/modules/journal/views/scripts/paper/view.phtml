@@ -126,9 +126,22 @@ if ($paper->isPublished()) {
     }
     foreach ($headMeta['og'] as $ogKey => $ogMeta) {
         switch ($ogKey) {
-            case 'url':
+            case 'article':
                 foreach ($ogMeta as $key => $meta) {
-                    $this->headMeta()->appendProperty('og:' . $ogKey, $meta);
+                    if ($key === 'tag') {
+                        foreach ($meta as $tag) {
+                            $this->headMeta()->appendProperty('og:'.$ogKey. ':' .$key, $tag);
+                        }
+                        continue;
+                    }
+                    if ($key === 'author') {
+                        foreach ($meta as $profile) {
+                            $this->headMeta()->appendProperty('og:'.$ogKey. ':' . 'author', $profile['citation_author']);
+                        }
+                        continue;
+                    }
+                    $this->headMeta()->appendProperty('og:' . $ogKey. ':' .$key, $meta);
+
                 }
                 break;
             case 'description':
@@ -136,9 +149,31 @@ if ($paper->isPublished()) {
                     $this->headMeta()->appendProperty('og:' . $ogKey, $ogMeta);
                 }
                 break;
+            case 'locale':
+                foreach ($ogMeta as $index => $meta) {
+                    if ($meta !== '') {
+                        if ($index === 0) {
+                            $this->headMeta()->appendProperty('og:locale', $meta);
+                        } else {
+                            $this->headMeta()->appendProperty('og:locale:alternate', $meta);
+                        }
+                    }
+                }
+                break;
             default:
                 $this->headMeta()->appendProperty('og:' . $ogKey, $ogMeta);
         }
+    }
+    foreach ($headMeta['socialMedia']['twitter'] as $twitterKey => $twitterMeta) {
+        if ($twitterKey === "creator" && !empty($twitterMeta)) {
+            foreach ($twitterMeta as $creator) {
+                if (!is_null($creator)) {
+                    $this->headMeta()->appendName("twitter:" . $twitterKey, $creator);
+                }
+            }
+            continue;
+        }
+        $this->headMeta()->appendName("twitter:".$twitterKey, $twitterMeta);
     }
     foreach ($headMeta['header'] as $hKey => $headerMeta) {
         switch ($hKey) {
