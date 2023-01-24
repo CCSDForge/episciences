@@ -1923,13 +1923,13 @@ class Episciences_Paper
         }
 
 
-        $classification = Episciences_Paper_ClassificationsManager::formatClassificationForview($this->_paperId);
+        //$classification = Episciences_Paper_ClassificationsManager::formatClassificationForview($this->_paperId);
 
-        if (!empty($classification)) {
-            $node->appendChild($dom->createElement('classification', $classification));
-        } else {
-            $node->appendChild($dom->createElement('classification', ""));
-        }
+//        if (!empty($classification)) {
+//            $node->appendChild($dom->createElement('classification', $classification));
+//        } else {
+//            $node->appendChild($dom->createElement('classification', ""));
+//        }
 
         // fetch volume data
         if ($this->getVid()) {
