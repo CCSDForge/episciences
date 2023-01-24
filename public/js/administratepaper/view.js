@@ -688,3 +688,18 @@ function getVersionEditingForm(button, docId) {
     });
 
 }
+
+function removeDoi(button,paperId,docId,doi) {
+    let removeDoi = ajaxRequest('/administratepaper/ajaxrequestremovedoi', {paperId: paperId,docId: docId, doi: doi});
+    let $doiStatusLoader = $('#doi-status-loader');
+    $doiStatusLoader.html(getLoader());
+    $doiStatusLoader.show();
+    removeDoi.done(function (response){
+        let result = JSON.parse(response);
+        console.log(result);
+        if (result > 0) {
+            location.reload();
+        }
+    });
+
+}

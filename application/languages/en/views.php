@@ -1046,6 +1046,7 @@ return [
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Clarification answer (contributor to reviewer)",
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
+    Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI canceled',
     Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
     Episciences_Paper_Logger::CODE_COI_REVERTED => 'Conflict Of Interest (COI): cancelled',
 
@@ -1830,6 +1831,7 @@ return [
     'Paramètres DOI' => 'DOI Settings',
     'DOI assigné' => 'DOI assigned',
     'DOI créé.' => 'DOI created.',
+    'Annuler le DOI' => 'Cancel the DOI',
     'Statut du DOI modifié.' => 'DOI status updated.',
 
     'Ce site utilise des cookies et collecte des informations personnelles vous concernant' => 'This site uses cookies and collects personal data',
