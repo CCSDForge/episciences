@@ -4300,7 +4300,8 @@ class Episciences_Paper
      */
     public function isContributorCanShareArXivPaperPwd(): bool
     {
-        return $this->isOptionalPaperPwd() || $this->isRequiredPaperPwd();
+
+        return $this->isOwner() && ($this->isOptionalPaperPwd() || $this->isRequiredPaperPwd());
 
     }
 
@@ -4319,7 +4320,6 @@ class Episciences_Paper
                 isset($journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD]) &&
                 (int)$journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD] === 2
             ) &&
-            $this->isOwner() &&
             empty($this->getPassword()) &&
             $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
     }
@@ -4339,7 +4339,6 @@ class Episciences_Paper
                 isset($journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD]) &&
                 (int)$journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD] === 1
             ) &&
-            $this->isOwner() &&
             empty($this->getPassword()) &&
             $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
     }
