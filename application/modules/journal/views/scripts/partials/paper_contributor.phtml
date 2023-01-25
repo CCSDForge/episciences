@@ -18,7 +18,14 @@ $paper = $this->article;
                      class="user-photo-small" alt="avatar">
 
                 <span style="margin-left: 0.5em;"><strong><?php echo $this->escape($paper->getSubmitter()->getScreenName()) ?></strong></span>
-
+                <?php if($this->escape($this->socialMedia) !== ''): ?>
+                    <a class="btn btn-default" href="https://twitter.com/<?= $this->escape($this->socialMedia) ?>" target="_blank" rel="noopener">
+                    <span data-toggle="tooltip"
+                          class="fa-brands fa-twitter"
+                          style="margin: 0.2rem"
+                    </span>
+                    </a>
+                <?php endif; ?>
 
                 <a class="btn btn-default" href="/user/view/userid/<?= $paper->getUid(); ?>" target="_blank">
                     <span data-toggle="tooltip"

@@ -519,7 +519,8 @@ class AdministratepaperController extends PaperDefaultController
         // get contributor details
         $contributor = new Episciences_User();
         $contributor->findWithCAS($paper->getUid());
-
+        $contributorTwitter = $contributor->getSocialMedias();
+        $this->view->contributorTwitter = $contributorTwitter;
         // check if paper is obsolete; if so, display a warning
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();

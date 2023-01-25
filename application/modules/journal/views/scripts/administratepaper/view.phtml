@@ -61,7 +61,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 
 <?php // contributor section  ?>
 <?php if ($paper->getUid()): ?>
-    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor']) ?>
+    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorTwitter]) ?>
 <?php endif; ?>
 
 <?php echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]); ?>
