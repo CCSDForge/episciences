@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Public access to the journal's stats.
 ### Fixed 
+- [#296](https://github.com/CCSDForge/episciences/issues/296): keep two possible choices: 
+  1. Contact without sending a new version 
+  2. Upload a new version
 - [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table.
 ## 1.0.39.1 - 2022-01-19
 ### Added
