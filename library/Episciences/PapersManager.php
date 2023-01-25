@@ -3388,7 +3388,7 @@ class Episciences_PapersManager
                 ],
                 'locale' => $listLang,
                 'url' => $url,
-                'image' => APPLICATION_URL . '/img/episciences_2674x1081.png',
+                'image' => APPLICATION_URL . '/img/episciences_logo_1081x1081.jpg',
                 'description' => $abstract,
                 'site_name' => "Episciences"
 
@@ -3427,7 +3427,7 @@ class Episciences_PapersManager
                     ],
                     "title" => $title,
                     "description"=> $abstract,
-                    "image" => APPLICATION_URL . '/img/episciences_2674x1081.png',
+                    "image" => APPLICATION_URL . '/img/episciences_logo_1081x1081.jpg',
                     "image:alt" => 'Episciences Logo'
                 ]
             ]
