@@ -99,6 +99,7 @@ class Episciences_User_Invitation
 
         // Délai avant expiration de l'invitation (en jours)
         $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
         $expiration_delay = ($review->getSetting('invitation_deadline')) ?: Episciences_Review::DEFAULT_INVITATION_DEADLINE;
 
         // Préparation des valeurs à insérer

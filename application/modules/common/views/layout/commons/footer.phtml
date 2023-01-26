@@ -38,8 +38,7 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                     <ul class="social">
                         <span><?php echo $this->translate('Support'); ?></span>
                         <li>
-                            <i class="fas fa-book"></i>&nbsp;<a
-                                    href="https://doc.episciences.org/"><?php echo $this->translate('Documentation'); ?></a>
+                            <i class="fas fa-book"></i>&nbsp;<a rel="noopener" href="https://doc.episciences.org/"><?php echo $this->translate('Documentation'); ?></a>
                         </li>
                         <?php
                         if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== '') {
@@ -50,12 +49,10 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                         }
                         ?>
                         <li>
-                            <i class="fas fa-balance-scale"></i>&nbsp;<a
-                                    href="//www.<?php echo DOMAIN; ?>/page/legal"><?php echo $this->translate('Mentions légales'); ?></a>
+                            <i class="fas fa-balance-scale"></i>&nbsp;<a rel="noopener" href="//www.<?php echo DOMAIN; ?>/legal-terms/"><?php echo $this->translate('Mentions légales'); ?></a>
                         </li>
                         <li>
-                            <i class="fas fa-cookie-bite"></i>&nbsp;<a
-                                    href="//www.<?php echo DOMAIN; ?>/page/privacy"><?php echo $this->translate('Vie privée'); ?></a>
+                            <i class="fas fa-cookie-bite"></i>&nbsp;<a rel="noopener" href="//www.<?php echo DOMAIN; ?>/privacy-and-personal-data"><?php echo $this->translate('Vie privée'); ?></a>
                         </li>
                     </ul>
                 </div>
@@ -64,14 +61,14 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                         <span><?php echo $this->translate("À propos d'Episciences"); ?></span>
 
                         <li>
-                            <a href="https://www.episciences.org/"> Episciences</a>
+                            <a href="https://www.episciences.org/" rel="noopener">Episciences</a>
                         </li>
 
                         <li>
-                            <a href="https://www.episciences.org/page/journals"><?php echo $this->translate('Revues hébergées'); ?> </a>
+                            <a href="https://www.episciences.org/journals" rel="noopener"><?php echo $this->translate('Revues hébergées'); ?> </a>
                         </li>
                         <li>
-                            <a href="https://www.episciences.org/page/acknowledgements"><?php echo $this->translate('Remerciements'); ?> </a>
+                            <a href="https://www.episciences.org/partners" rel="noopener"><?php echo $this->translate('Remerciements'); ?> </a>
                         </li>
                         <li><small><?php
                                 $versions = Episciences_Settings::getApplicationVersion();
@@ -87,8 +84,9 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                             <?php $enableOsl = Osl::getOslWantedStatus(); ?>
                             <li>
                                 <form id="toggleOsl" class="form" method="POST">
-                                    <img src="/img/osl-icon.png" alt="Open Science Lens icon"/>&nbsp;<a href="https://www.opensciencelens.eu/"
-                                                                                                                    rel="noopener" target="_blank"><abbr
+                                    <img src="/img/osl-icon.png" alt="Open Science Lens icon"/>&nbsp;<a
+                                            href="https://www.opensciencelens.eu/"
+                                            rel="noopener" target="_blank"><abbr
                                                 title="Open Science Lens">OSL</abbr></a>
                                     <div class="btn-group btn-toggle" data-toggle="buttons">
 
@@ -119,7 +117,7 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                             </li>
                         <?php else: $enableOsl = 'off' ?>
                         <?php endif; ?>
-                        <li><i class="fa-solid fa-handshake"></i>&nbsp;<a href="https://www.episciences.org/page/tou"><?= $this->translate("Conditions Générales d'Utilisation") ?></a>
+                        <li><i class="fa-solid fa-handshake"></i>&nbsp;<a rel="noopener" href="https://www.episciences.org/terms-of-use"><?= $this->translate("Conditions Générales d'Utilisation") ?></a>
                         </li>
                     </ul>
                 </div>

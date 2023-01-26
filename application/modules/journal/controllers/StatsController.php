@@ -30,6 +30,7 @@ class StatsController extends Zend_Controller_Action
             $result = json_decode($this->askApi($uri, ['rvid' => self::CURRENT_RVID, 'withDetails' => '', 'year' => $yearQuery]), true);
         } catch (GuzzleException $e) {
             $this->view->errorMessage = $errorMessage;
+            trigger_error($e->getMessage());
             return;
         }
 
@@ -288,8 +289,8 @@ class StatsController extends Zend_Controller_Action
         $headers = [
             'Accept' => 'application/json',
             'Content-type' => 'application/json',
-            'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
             'X-AUTH-RVID' => self::CURRENT_RVID,
+            'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
             'X-AUTH-LOGIN' => Episciences_Auth::getUsername()
         ];
 
