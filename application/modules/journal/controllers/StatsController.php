@@ -42,6 +42,7 @@ class StatsController extends Zend_Controller_Action
         $dashboard = $result[array_key_first($result)];
         $details = $dashboard['submissions']['details'];
         $yearCategories = array_keys($details['submissionsByYear']);
+        rsort($yearCategories);
 
         $this->view->yearCategories = $yearCategories; // navigation
 
