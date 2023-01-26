@@ -36,5 +36,11 @@
         "resource": "user-permissions"
       }
     ]
+  },
+  {
+    "label": "Statistiques",
+    "controller": "stats",
+    "action": "index",
+    "resource": "stats-index"
   }
 ]

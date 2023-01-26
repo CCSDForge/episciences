@@ -1046,11 +1046,26 @@ class PaperController extends PaperDefaultController
         // get paper object
         $paper = Episciences_PapersManager::get($docId, false);
 
+        $type = !Ccsd_Tools::ifsetor($post['type'], null) ?
+            Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT :
+            Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT;
+
         if (
             !empty($post['comment']) &&
             $request->isPost() &&
-            ($paper->isOptionalPaperPwd() || ($paper->isRequiredPaperPwd() && !empty($post['paperPassword'])))
-
+            (
+                $type === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT ||
+                (
+                    !$paper->isContributorCanShareArXivPaperPwd() ||
+                    (
+                        $paper->isOptionalPaperPwd() ||
+                        (
+                            $paper->isRequiredPaperPwd() &&
+                            !empty($post['paperPassword'])
+                        )
+                    )
+                )
+            )
         ) {
             $parentId = $request->getQuery('pcid');
 
@@ -1061,9 +1076,7 @@ class PaperController extends PaperDefaultController
             // save author's answer to revision request
             $oAnswer = new Episciences_Comment();
             $oAnswer->setParentid($parentId);
-            $type = !Ccsd_Tools::ifsetor($post['type'], null) ?
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT :
-                Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT;
+
             $oAnswer->setType($type);
             $oAnswer->setDocid($docId);
             $oAnswer->setMessage($post[self::COMMENT_STR]);
