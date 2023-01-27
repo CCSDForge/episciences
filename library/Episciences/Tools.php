@@ -1619,4 +1619,21 @@ class Episciences_Tools
 
     }
 
+    /**
+     * @param string $string
+     * @return string
+     */
+    public static function getMastodonUrl(string $string): string
+    {
+        $explode = self::getMastodonSeparatedInfo($string);
+        return "https://".$explode[2]."/@".$explode[1];
+    }
+    /**
+     * @param string $string
+     * @return array
+     */
+    public static function getMastodonSeparatedInfo(string $string): array
+    {
+        return explode('@', $string, 3);
+    }
 }

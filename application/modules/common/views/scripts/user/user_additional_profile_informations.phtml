@@ -4,10 +4,17 @@
         <?php if (!empty($socialMedia)) : ?>
         <?php $socialMedia = $this->escape($socialMedia) ?>
             &nbsp;<small>
+            <?php if (substr_count($socialMedia, "@") > 1) : ?>
+                <a href="<?= Episciences_Tools::getMastodonUrl($socialMedia) ?>" target="_blank">
+                    <span class="fa-brands fa-mastodon" style="margin-right: 5px;"></span>
+                    <?= $socialMedia ?>
+                </a>
+            <?php else: ?>
                 <a href="https://twitter.com/<?= $socialMedia ?>" target="_blank">
                     <span class="fa-brands fa-twitter" style="margin-right: 5px;"></span>
                     <?= $socialMedia ?>
                 </a>
+            <?php endif; ?>
             </small>
             <br>
         <?php endif; ?>
