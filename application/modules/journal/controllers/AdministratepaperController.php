@@ -490,7 +490,6 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $docId = (int)$request->getParam('id');
-
         // get journal details
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -563,7 +562,6 @@ class AdministratepaperController extends PaperDefaultController
             // already has one DOI but not auto assigned
             $doi_status = Episciences_Paper_DoiQueue::STATUS_MANUAL;
         }
-
         $journal = Episciences_ReviewsManager::find(RVID);
         $journal->loadSettings();
 
@@ -1908,8 +1906,10 @@ class AdministratepaperController extends PaperDefaultController
                 // Notifier les rédacteurs + préparateurs de copie de l'article + selon les pramètres de la revue: red. en chef, admins et secrétaires de red.
                 $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY, Episciences_Auth::getUser());
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
-                // if HAL, send coar notify message
 
+                $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Voulez-vous partager la publication ? Rendez-vous")."<a href='".APPLICATION_URL.$this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId])."#share'> ".$this->view->translate('ici')."</a>");
+                
+                // if HAL, send coar notify message
                 if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
                     $notification = new Episciences_Notify_Hal($paper, $journal);
                     try {

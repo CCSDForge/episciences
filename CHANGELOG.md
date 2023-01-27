@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an ema
 - [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
+- [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
 ### Changed
 - [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers

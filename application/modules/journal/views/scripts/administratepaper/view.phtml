@@ -49,7 +49,14 @@ $this->suggestedRevision = false;
 <?php // affiliations *****************************************************
 echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' =>  $this->affiliationsForm]);
 ?>
-
+<?php if ($paper->isPublished() && $paper->hasDoi()) : // Share ************************************ ?>
+        <div id="share" class="col-12 panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Partager') ?></h2>
+            </div>
+            <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper,  'contributorTwitter' => $this->contributorTwitter]); ?>
+        </div>
+<?php endif; ?>
 <?php // citations *****************************************************
     if ($this->citations !== '') {
         echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations,'counterCitations'=> $this->counterCitations]);
