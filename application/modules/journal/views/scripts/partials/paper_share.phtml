@@ -10,6 +10,8 @@ if ($controller === 'administratepaper') {
         $url .= (strpos($contributorTwitter, "@") === 0) ? " ".$contributorTwitter."&url=".$doi
             : " @".$contributorTwitter."&url=".$doi;
 
+    } else {
+        $url .= "&url=".$doi;
     }
 }
 ?>
