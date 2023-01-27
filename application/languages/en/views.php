@@ -1799,6 +1799,8 @@ return [
 
     "Exporter" => "Export",
     "Partager" => "Share",
+    "Voulez-vous partager la publication ? Rendez-vous" => "Do you want to share the publication? Go",
+    "ici" => 'here',
     "Statistiques de consultation" => "Consultation statistics",
 
     "Préparation de copie" => "Copy editing",
