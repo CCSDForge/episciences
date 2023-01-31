@@ -79,6 +79,7 @@ return [
     // TO FIX
     'guest' => 'Guest',
     'member' => 'Member',
+    'coauthor' => 'Coauthor',
     'webmaster' => 'Webmaster',
     'secretary' => 'Editorial secretary',
     'reviewer' => 'Reviewer',
@@ -92,6 +93,7 @@ return [
 
     'guests' => 'Guests',
     'members' => 'Members',
+    'coauthors' => 'Coauthors',
     'webmasters' => 'Webmasters',
     'secretaries' => 'Editorial secretaries',
     'reviewers' => 'Reviewers',

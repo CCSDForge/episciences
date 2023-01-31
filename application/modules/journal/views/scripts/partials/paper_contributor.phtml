@@ -4,6 +4,7 @@ $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerN
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 /** @var Episciences_Paper $paper */
 $paper = $this->article;
+$coAuthorList = $this->coAuthorsList;
 ?>
 
 
@@ -67,5 +68,41 @@ $paper = $this->article;
         </div>
     </div>
 </div>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Co-Auteur'); ?></h2>
+    </div>
+    <div class="panel-body in">
+        <?php foreach($coAuthorList as $coAuthorInfo): /** @var Episciences_User $coAuthorInfo */ ?>
+            <div class="contributor" style="margin-bottom: 5px">
+                <span style="margin-left: 0.5em;"><strong><?php echo $this->escape($coAuthorInfo->getScreenName()) ?></strong></span>
+                <a class="btn btn-default" href="/user/view/userid/<?= $coAuthorInfo->getUid() ?>" target="_blank">
+                    <span data-toggle="tooltip"
+                          class="fas fa-address-card"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Voir le profil") ?>">
+                    </span>
+                </a>
+                <a class="modal-opener btn btn-default"
+                   href="/administratemail/send/recipient/<?= $coAuthorInfo->getUid() ?>/paper/<?= $paper->getDocid() ?>">
+                    <span data-toggle="tooltip"
+                          class="glyphicon glyphicon-envelope"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Contacter ce contributeur") ?>">
+                    </span>
+                </a>
+                <?php if (Episciences_Auth::isSecretary()) : ?>
+                    <a class="btn btn-default" href="/user/su/uid/<?php echo $paper->getUid(); ?>">
+                        <span data-toggle="tooltip"
+                              style="margin: 0.2rem"
+                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                              class="fas fa-user-secret">
 
+                        </span>
+                    </a>&nbsp;
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
 

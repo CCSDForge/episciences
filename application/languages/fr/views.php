@@ -6,6 +6,7 @@ return [
     // TO FIX
     'guest' => 'Invité',
     'member' => 'Membre',
+    'coauthor' => 'Coauteur',
     'webmaster' => 'Webmaster',
     'secretary' => 'Secrétaire de rédaction',
     'reviewer' => 'Relecteur',
@@ -18,6 +19,7 @@ return [
 
     'guests' => 'Invités',
     'members' => 'Membres',
+    'coauthors' => 'Coauteurs',
     'webmasters' => 'Webmasters',
     'secretaries' => 'Secrétaires de rédaction',
     'reviewers' => 'Relecteurs',

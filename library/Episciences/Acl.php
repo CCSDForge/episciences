@@ -17,6 +17,8 @@ class Episciences_Acl extends Ccsd_Acl
     public const ROLE_AUTHOR = 'author';
     public const ROLE_MEMBER = 'member';
     public const ROLE_GUEST = 'guest';
+    //git 181
+    public const ROLE_CO_AUTHOR = 'coauthor';
     // Git 90
     public const ROLE_COPY_EDITOR = 'copyeditor'; // CE
 
@@ -30,6 +32,7 @@ class Episciences_Acl extends Ccsd_Acl
     public const ROLE_MEMBER_PLURAL = 'members';
     public const ROLE_AUTHOR_PLURAL = 'authors';
     public const ROLE_GUEST_PLURAL = 'guests';
+    public const ROLE_CO_AUTHOR_PLURAL = 'coauthors';
     public const CONFIGURABLE_RESOURCE = true; // configurable by review
     public const NOT_CONFIGURABLE_RESOURCE = false; //  public resource but restricted to certain roles
 
