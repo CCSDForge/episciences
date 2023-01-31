@@ -72,6 +72,7 @@ class Episciences_Review
     public const SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS = 'systemCanAssignOnlySpecialVolumeEditors';
     public const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
     const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
+    public const SETTING_DISPLAY_STATISTICS = 'displayStatistics';
 
     /**
      * Do not allow the selection of an editor in chief when the author has the option to
@@ -200,7 +201,8 @@ class Episciences_Review
             self::SETTING_SYSTEM_IS_COI_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
-            self::SETTING_ARXIV_PAPER_PASSWORD
+            self::SETTING_ARXIV_PAPER_PASSWORD,
+            self::SETTING_DISPLAY_STATISTICS
         ];
 
 
@@ -932,6 +934,7 @@ class Episciences_Review
         // Allow post-acceptance revisions of articles
 
         $form = $this->addFinalDecisionForm($form);
+        $form = $this->addStatisticsForm($form);
 
         // display group: publication settings
         $form->addDisplayGroup([
@@ -994,24 +997,20 @@ class Episciences_Review
         ], 'copyEditors', ["legend" => "Préparation de copie"]);
         $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
 
-        // display group : COI settings
-        $form->addDisplayGroup([
-            self::SETTING_SYSTEM_IS_COI_ENABLED
-        ], 'conflictOfInterest', ["legend" => "Conflit d'intérêts (CI)"]);
-        $form->getDisplayGroup('conflictOfInterest')->removeDecorator('DtDdWrapper');
-
-        // display group : Final decisions
-        $form->addDisplayGroup([
-            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION
-        ], 'finalDecisions', ["legend" => "Article - décision finale"]);
-        $form->getDisplayGroup('finalDecisions')->removeDecorator('DtDdWrapper');
-
         // submit button
         $form->setActions(true)->createSubmitButton('submit', [
                 'label' => 'Enregistrer les paramètres',
                 'class' => 'btn btn-primary'
             ]
         );
+
+        $form->addDisplayGroup([
+            self::SETTING_SYSTEM_IS_COI_ENABLED,
+            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
+            self::SETTING_DISPLAY_STATISTICS
+        ], 'additionalParams', ['legend' => 'Paramètres supplémentaires']);
+
+        $form->getDisplayGroup('additionalParams')->removeDecorator('DtDdWrapper');
 
         return $form;
     }
@@ -1546,6 +1545,35 @@ class Episciences_Review
         );
     }
 
+    private function addStatisticsForm(Ccsd_Form $form): \Ccsd_Form
+    {
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+
+       return  $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
+                'label' => 'Visibilité des statistiques',
+                'description' => "",
+                'value' => 0,
+                'placeholder' => '',
+
+                'multioptions' => [
+                    0 => 'Par defaut (cachée)',
+                    1 => 'Publique',
+                    2 => 'Réservée aux administrateurs',
+                ],
+
+            ]
+        );
+
+
+    }
+
     /**
      * Save review settings in DB
      * @return bool
@@ -1680,6 +1708,8 @@ class Episciences_Review
         $settingsValues[self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] = $this->getSetting(self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
 
         $settingsValues[self::SETTING_ARXIV_PAPER_PASSWORD] = $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD);
+        $settingsValues[self::SETTING_DISPLAY_STATISTICS] = $this->getSetting(self::SETTING_DISPLAY_STATISTICS);
+
 
         $values = [];
 

@@ -15,8 +15,18 @@ class StatsController extends Zend_Controller_Action
 
     public const CURRENT_RVID = RVID;
 
+    /**
+     * @return void
+     * @throws Zend_Exception
+     */
     public function indexAction(): void
     {
+
+        if (Zend_Registry::get('hideStatistics')) {
+            Episciences_Tools::header('HTTP/1.0 403 Forbidden');
+            $this->renderScript('index/notfound.phtml');
+            return;
+        }
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();

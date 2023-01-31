@@ -15,7 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ### Changed
-- Public access to the journal's stats.
+- The visibility of the statistics dashboard is now configurable by journal (three possible options): 
+  1) Default (hidden)
+  2) Public
+  3) Administrator only
+  
+- New display group "Additional settings"
 ### Fixed 
 - [#296](https://github.com/CCSDForge/episciences/issues/296): keep two possible choices: 
   1. Contact without sending a new version 
