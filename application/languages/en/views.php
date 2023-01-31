@@ -1848,6 +1848,10 @@ return [
     'en cours' => 'pending',
     'CGU' => 'TOS',
     "Conditions Générales d'Utilisation" => 'Term Of Use',
+    'Paramètres supplémentaires' => 'Additional settings',
+    'Visibilité des statistiques' => 'Statistics visibility',
+    'Par defaut (cachée)' => 'Default (hidden)',
+    'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
     "toutes les soumissions" => "all submissions",
