@@ -48,7 +48,12 @@
 .resp-sharing-button--twitter:hover {
   background-color: #2795e9
 }
-
+.resp-sharing-button--mastodon {
+  background-color: #6364FF;
+}
+.resp-sharing-button--mastodon:hover {
+  background-color: #563ACC;
+}
 
 .resp-sharing-button--facebook {
   background-color: #3b5998
@@ -104,6 +109,20 @@
   background-color: #2795e9;
   border-color: #2795e9;
 }
+
+.resp-sharing-button--mastodon {
+  background-color: #6364FF;
+  border-color: #6364FF;
+}
+
+.resp-sharing-button--mastodon:hover,
+.resp-sharing-button--mastodon:active {
+  background-color: #563ACC;
+  border-color: #563ACC;
+}
+
+
+
 
 .resp-sharing-button--email {
   background-color: #777777;

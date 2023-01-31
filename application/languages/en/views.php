@@ -903,9 +903,9 @@ return [
     "Télécopie" => 'Fax',
     "Photo" => 'Picture',
     "Complément de nom" => 'Middle Name',
-    'Login Twitter' => 'Twitter username',
+    'Login Twitter ou Mastodon' => 'Twitter username or Mastodon',
     'Site(s) Web' => 'Web Site(s)',
-    'Saisissez votre compte Twitter (par exemple @anonymous)' => 'Enter your Twitter account (e.g @anonymous)',
+    'Saisissez votre compte Twitter (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your Twitter account (e.g @anonymous) or Mastodon account (e.g @username@server)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
 
     // User activation
