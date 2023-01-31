@@ -39,6 +39,20 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                 $oReview->loadSettings();
                 Zend_Registry::set('reviewSettings', $oReview->getSettings());
                 Zend_Registry::set('reviewSettingsDoi', $oReview->getDoiSettings());
+
+                $reviewSettings = $oReview->getSettings();
+
+                $hideStatistics = ((
+                        !isset($reviewSettings[Episciences_Review::SETTING_DISPLAY_STATISTICS]) ||
+                        !$reviewSettings[Episciences_Review::SETTING_DISPLAY_STATISTICS]
+                    ) ||
+                    (
+                        $reviewSettings[Episciences_Review::SETTING_DISPLAY_STATISTICS] === '2' &&
+                        !Episciences_Auth::isSecretary()
+                    ));
+
+                Zend_Registry::set('hideStatistics', $hideStatistics);
+
                 defined('RVISSN') || define('RVISSN', $oReview->getSetting(Episciences_Review::SETTING_ISSN));
             } else {
                 exit(printf('Configuration Error: %s journal does not exists.', RVCODE));
@@ -113,6 +127,12 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         }
     }
 
+    /**
+     * @return Episciences_Acl|void
+     * @throws Zend_Config_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Navigation_Exception
+     */
     protected function _initAcl()
     {
         if (APPLICATION_MODULE === 'oai') {
@@ -144,12 +164,15 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         } else {
             $connectedConfig = new Zend_Config_Json(APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.guest.navigation.json', null, ['ignoreconstants' => true]);
         }
+        $confToArray = array_merge($config->toArray(), $connectedConfig->toArray());
 
-        if ($config) {
-            $config = new Zend_Config(array_merge($config->toArray(), $connectedConfig->toArray()));
-        } else {
-            $config = $connectedConfig;
+        if (Zend_Registry::get('hideStatistics')) {
+            $key = array_search('stats-index', array_column($confToArray, 'resource'), true);
+            unset($confToArray[$key]);
+
         }
+
+        $config = new Zend_Config($confToArray);
 
         $viewRenderer = Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer');
         $navigation = new Ccsd_Navigation($config);

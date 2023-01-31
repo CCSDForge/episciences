@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
 ### Changed
+The visibility of the statistics dashboard is now configurable by journal (three possible options):
+1) Default (hidden)
+2) Public
+3) Administrator only
+- New display group "Additional settings"
+
 - [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
 - It is now possible to use Lemon LDAP authentication.
 - Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No

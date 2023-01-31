@@ -352,6 +352,6 @@
     "controller": "stats",
     "action": "index",
     "resource": "stats-index",
-    "privilege": "member"
+    "privilege": "secretary"
   }
 ]
