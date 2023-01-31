@@ -403,6 +403,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws JsonException
+     * @throws Exception
      * @see Ccsd_User_Models_User::save()
      */
     public function save($forceInsert = false)
@@ -424,7 +425,7 @@ class Episciences_User extends Ccsd_User_Models_User
             'LANGUEID' => $langId,
             'SCREEN_NAME' => $this->getScreenName(),
             'USERNAME' => $this->getUsername(),
-            'API_PASSWORD' => password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT),
+            'API_PASSWORD' => $this->getApiPassword(),
             'EMAIL' => $this->getEmail(),
             'CIV' => $this->getCiv(),
             'LASTNAME' => $this->getLastname(),
@@ -692,10 +693,6 @@ class Episciences_User extends Ccsd_User_Models_User
             $result['SCREEN_NAME'] = Episciences_Auth::getFullName();
         }
 
-        if (!isset($result['API_PASSWORD']) || ($result['API_PASSWORD'] === '')) {
-            $result['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_BCRYPT);
-        }
-
         if (!isset($result['REGISTRATION_DATE'])) {
             $result['REGISTRATION_DATE'] = $this->getTime_registered(); // cas registration
         }
@@ -742,6 +739,10 @@ class Episciences_User extends Ccsd_User_Models_User
             $result['IS_VALID'] = (int)$result['IS_VALID'];
         }
 
+        if (!isset($result['API_PASSWORD'])) {
+            $result['API_PASSWORD'] = $this->getApiPassword();
+        }
+
         $this->setUid($result['UID']);
         $this->setUsername($result['USERNAME']);
         $this->setEmail($result['EMAIL']);
@@ -751,7 +752,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setMiddlename($result['MIDDLENAME']);
         $this->setCiv($result['CIV']);
         $this->setLangueid($result['LANGUEID']);
-        $this->setApi_password($result['API_PASSWORD']); // Episciences api password
+        $this->setApiPassword($result['API_PASSWORD']); // Episciences api password
         $this->setIs_valid($result['IS_VALID']); // Episciences validation
         $this->setRegistration_date($result['REGISTRATION_DATE']);  // Episciences registration date
         $this->setModification_date($result['MODIFICATION_DATE']);  // Episciences modification date
@@ -1183,7 +1184,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return string
      */
-    public function getApi_password(): string
+    public function getApiPassword(): string
     {
         return $this->_api_password;
     }
@@ -1191,7 +1192,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @param mixed $apiPassword
      */
-    public function setApi_password($apiPassword)
+    public function setApiPassword($apiPassword): void
     {
         $this->_api_password = $apiPassword;
     }

@@ -447,6 +447,8 @@ class UserDefaultController extends Zend_Controller_Action
                 $user->setModification_date();
                 $screenName = $user->getScreenName();
 
+                $user->setApiPassword(password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT));
+
                 if ($user->save()) {
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences");
                     $success = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $success);
