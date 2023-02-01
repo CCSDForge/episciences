@@ -202,6 +202,7 @@ class Episciences_Mail_Template
         if ($data) {
             $this->setId($data['ID']);
             $this->setParentId($data['PARENTID']);
+            $this->setRvid($data['RVID']);
             $this->setRvcode($data['RVCODE']);
             $this->setKey($data['KEY']);
             $this->setType($data['TYPE']);

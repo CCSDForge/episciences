@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 - New display group "Additional settings"
 ### Fixed 
+- Editing custom templates: loss of translations (wrong journal's translation path)
 - [#296](https://github.com/CCSDForge/episciences/issues/296): keep two possible choices: 
   1. Contact without sending a new version 
   2. Upload a new version
