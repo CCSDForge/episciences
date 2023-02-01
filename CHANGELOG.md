@@ -14,19 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+
+## 1.0.39.2 - 2022-02-01
 ### Changed
 - The visibility of the statistics dashboard is now configurable by journal (three possible options): 
   1) Default (hidden)
   2) Public
   3) Administrator only
-  
 - New display group "Additional settings"
+
 ### Fixed 
 - Editing custom templates: loss of translations (wrong journal's translation path)
-- [#296](https://github.com/CCSDForge/episciences/issues/296): keep two possible choices: 
+- [#296](https://github.com/CCSDForge/episciences/issues/296): keep only two possible choices: 
   1. Contact without sending a new version 
   2. Upload a new version
-- [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table.
+- [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table. The length for the 
+  comments when replying to an invitation has been increased to accept long text comments
+
 ## 1.0.39.1 - 2022-01-19
 ### Added
 - [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all 
