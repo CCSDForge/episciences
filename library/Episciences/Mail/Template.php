@@ -249,6 +249,7 @@ class Episciences_Mail_Template
      */
     public function save(): bool
     {
+        $result = true;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         if (!$this->getParentid()) {
@@ -270,8 +271,6 @@ class Episciences_Mail_Template
             // Modification d'un template personnalisé
             $key = $this->getKey();
         }
-
-        $result = true;
 
         // Ecriture des traductions ********************************
 
@@ -318,14 +317,20 @@ class Episciences_Mail_Template
         foreach ($body as $lang => $translation) {
             $path = $this->getTranslationsFolder() . $lang . '/emails/';
 
-            if (!mkdir($path) && !is_dir($path)) {
+            if (!is_dir($path) && !mkdir($path)) {
                 trigger_error('Directory "%s" was not created', $path);
+
+            } else {
+
+                $filePutContent = file_put_contents($path . $key . '.phtml', $translation);
+
+                if (!$filePutContent) {
+                    trigger_error('TEMPLATE::SAVE_WRITE_DATA_TO_FILE_IS_EMPTY');
+                }
+
+                $result = $filePutContent;
             }
 
-            if (!$filePutContent = file_put_contents($path . $key . '.phtml', $translation)) {
-                $result = $result && $filePutContent;
-                trigger_error('TEMPLATE::SAVE_WRITE_DATA_TO_FILE_IS_EMPTY');
-            }
         }
 
         return $result;
