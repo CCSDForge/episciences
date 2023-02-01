@@ -35,6 +35,7 @@ The visibility of the statistics dashboard is now configurable by journal (three
 tracking.' AddToAny is not used anymore.
 - Public access to the journal's stats.
 ### Fixed
+- Editing custom templates: loss of translations (wrong journal's translation path)
 - [#296](https://github.com/CCSDForge/episciences/issues/296): keep two possible choices:
   1. Contact without sending a new version
   2. Upload a new versio- [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table.
