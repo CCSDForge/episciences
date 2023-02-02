@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Fixed
+- %%PERMANENT_ARTICLE_ID%% tag not replaced in the mail subject.
+### Added
+- [#310](https://github.com/CCSDForge/episciences/issues/310): missing translation
 
 ## 1.0.39.2 - 2022-02-01
 ### Changed
