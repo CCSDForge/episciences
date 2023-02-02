@@ -15,13 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.39.3 - 2023-02-02
 ### Fixed
 - %%PERMANENT_ARTICLE_ID%% tag not replaced in the mail subject.
 ### Added
 - [#310](https://github.com/CCSDForge/episciences/issues/310): missing translation
 
-## 1.0.39.2 - 2022-02-01
+## 1.0.39.2 - 2023-02-01
 ### Changed
 - The visibility of the statistics dashboard is now configurable by journal (three possible options): 
   1) Default (hidden)
@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table. The length for the 
   comments when replying to an invitation has been increased to accept long text comments
 
-## 1.0.39.1 - 2022-01-19
+## 1.0.39.1 - 2023-01-19
 ### Added
 - [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all 
 email templates. 
@@ -46,7 +46,7 @@ email templates.
 the date of the latest action
 - Fixed footer links to avoid redirects with updated website
 
-## 1.0.39 - 2022-01-11
+## 1.0.39 - 2023-01-11
 ### Added
 - Added three options for sharing the paper password (arXiv):
   * No (default): do not share
