@@ -1085,7 +1085,7 @@ class AdministratepaperController extends PaperDefaultController
             $special_issue = $request->getPost('special_issue');
 
             $oPaper->loadSettings();
-            $this->view->js_paper = Zend_Json::encode($oPaper->getAllMetadata());
+            $this->view->js_paper = Zend_Json::encode(array_merge($oPaper->getAllMetadata(), ['paperId' => $oPaper->getPaperid()])); // due to the addition of a new tag %%PERMANENT_ARTICLE_ID%%
             $this->view->paper = $oPaper;
             // Lors de la reinvitation d'un relecteur suite à l'expiration d'une invitation
             $this->view->js_uid = $request->getPost('reinvite_uid');
