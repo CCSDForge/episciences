@@ -23,7 +23,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @var string
      */
-    protected string $_api_password;
+    protected string $_api_password = '';
     /**
      * @var int
      */
@@ -1184,7 +1184,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return string
      */
-    public function getApiPassword(): string
+    public function getApiPassword()
     {
         return $this->_api_password;
     }
