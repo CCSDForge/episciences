@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.39.4 - 2023-02-03
+### Fixed
+- Fixed errors when creating user accounts
+
 ## 1.0.39.3 - 2023-02-02
 ### Fixed
 - %%PERMANENT_ARTICLE_ID%% tag not replaced in the mail subject.
