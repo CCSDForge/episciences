@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+### Changed
+- [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
+- It is now possible to use Lemon LDAP authentication.
+- Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
+  tracking.' AddToAny is not used anymore.
+- Public access to the journal's stats.
 ### Added
 - Cancel a DOI assignment for the journal (manual DOI assignment setting only)
 - It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an ema
@@ -22,12 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
+## 1.0.39.3 - 2023-02-02
+### Fixed
+- %%PERMANENT_ARTICLE_ID%% tag not replaced in the mail subject.
+### Added
+- [#310](https://github.com/CCSDForge/episciences/issues/310): missing translation
+
+## 1.0.39.2 - 2023-02-01
 ### Changed
-The visibility of the statistics dashboard is now configurable by journal (three possible options):
-1) Default (hidden)
-2) Public
-3) Administrator only
-- New display group "Additional settings"
+
+- The visibility of the statistics dashboard is now configurable by journal (three possible options): 
+  1) Default (hidden)
+  2) Public
+  3) Administrator only
 
 - [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
 - It is now possible to use Lemon LDAP authentication.
@@ -35,12 +48,21 @@ The visibility of the statistics dashboard is now configurable by journal (three
 tracking.' AddToAny is not used anymore.
 - Public access to the journal's stats.
 ### Fixed
+
+### Fixed 
 - Editing custom templates: loss of translations (wrong journal's translation path)
 - [#296](https://github.com/CCSDForge/episciences/issues/296): keep two possible choices:
   1. Contact without sending a new version
   2. Upload a new versio- [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table.
 - [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table.
 ## 1.0.39.1 - 2022-01-19
+- [#296](https://github.com/CCSDForge/episciences/issues/296): keep only two possible choices: 
+  1. Contact without sending a new version 
+  2. Upload a new version
+- [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table. The length for the 
+  comments when replying to an invitation has been increased to accept long text comments
+
+## 1.0.39.1 - 2023-01-19
 ### Added
 - [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all 
 email templates. 
@@ -56,7 +78,7 @@ email templates.
 the date of the latest action
 - Fixed footer links to avoid redirects with updated website
 
-## 1.0.39 - 2022-01-11
+## 1.0.39 - 2023-01-11
 ### Added
 - Added three options for sharing the paper password (arXiv):
   * No (default): do not share

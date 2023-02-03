@@ -554,6 +554,7 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $user->setValid(0);
                 $user->setIs_valid(); // Episciences validation
+                $user->setApiPassword(password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT));
 
                 $lastInsertId = $user->save();
                 try {

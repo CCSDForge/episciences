@@ -528,6 +528,7 @@ function replaceTags(string, reviewer, locale) {
     string = string.replaceAll("%%SENDER_FULL_NAME%%", editor.full_name);
     string = string.replaceAll("%%SENDER_EMAIL%%", editor.email);
     string = string.replaceAll("%%ARTICLE_ID%%", paper.id);
+    string = string.replaceAll("%%PERMANENT_ARTICLE_ID%%", paper.paperId);
     string = string.replaceAll("%%ARTICLE_TITLE%%", paper_title);
     string = string.replaceAll("%%CONTRIBUTOR_FULL_NAME%%", contributor.full_name);
     string = string.replaceAll("%%CONTRIBUTOR_EMAIL%%", contributor.email);

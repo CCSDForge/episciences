@@ -21,7 +21,6 @@
 /config/halJournalMappings.json
 
 # composer
-/composer.lock
 /composer.phar
 
 

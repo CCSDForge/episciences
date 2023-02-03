@@ -482,6 +482,7 @@ return [
     "La version la plus récente dans l’archive ouverte" => "The most recent open archive version",
     'Prêt à publier' => 'Ready to publish',
     'Modifier le statut en <mark>Prêt à publier</mark>' => 'Change status to <mark>Ready to Publish</mark>',
+    "Ceci est la relecture d'une %sversion précédente%s" => "This is a reviewing of a %sprevious version%s",
 
     // Tableau de bord
     "Vous pouvez accéder à la gestion d'un article à partir de son identifiant." => "You can access the management of an article from its identifier.",
