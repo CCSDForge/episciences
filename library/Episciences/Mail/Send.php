@@ -89,6 +89,25 @@ class Episciences_Mail_Send
         $form->addElement('hidden', self::getElementName('hidden_to', $prefix));
 
 
+        $coauthors = Episciences_PapersManager::getCoAuthors($docId);
+        if (!empty($coauthors)) {
+            foreach ($coauthors as $coAuthor) {
+                /** @var Episciences_User $coAuthor */
+                $form->addElement('hidden', 'coauthorsInfo-'.$coAuthor->getUid(), [
+                    'id' => 'coAuthorsInfo',
+                    'value' => Zend_Json::encode([
+                        'uid' => $coAuthor->getUid(),
+                        'username' => $coAuthor->getUsername(),
+                        'lastname' => $coAuthor->getLastname(),
+                        'fullname' => $coAuthor->getFullName(),
+                        'screen_name' => $coAuthor->getScreenName(),
+                        'mail' => $coAuthor->getEmail(),
+                        'label' => $coAuthor->getFullName() . ' <' . $coAuthor->getEmail() . '>',
+                        'htmlLabel' => "<div>".$coAuthor->getFullName()."</div><div class=\"grey\">".$coAuthor->getEmail()."</div>"
+                    ])
+                ]);
+            }
+        }
         // cc
         $cc_element = self::getElementName('cc', $prefix);
         $form->addElement('text', $cc_element, [

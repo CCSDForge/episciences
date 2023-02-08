@@ -2320,4 +2320,14 @@ return [
     "Mail de retour" => "Redirection address",
     "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the failed emails",
     "Adresse de courriel pour le retour des échecs d'envoi" => "Email address for the return of failed mailings",
+
+    // co-author
+    "Co-auteur" => "Co-author",
+    "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
+    "l'utilisateur est déjà co-auteur pour ce papier" => "The user is already a co-author for this paper",
+    "Supprimer ce co-auteur" => "Delete this co-author",
+    "Envoyer une copie de ce message aux co-auteur" => "Send a copy of this message to the co-authors",
+    "Co-auteur retiré" => "Co-Autor removed",
+    "L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences et co-auteur du papier" => "The user <strong>%%RECIPIENT_SCREEN_NAME%%</strong> has been added on Episciences and added as co-author of the paper",
+    "Ajouter un co-auteur" => "Add a co-author"
 ];

@@ -152,4 +152,16 @@ class Episciences_User_AssignmentsManager
         return $sql;
     }
 
+    /**
+     * @param int $id
+     * @return bool
+     */
+    public static function removeAssignment(int $id) {
+        if ($id < 1) {
+            return false;
+        }
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $resDelete = $db->delete(T_ASSIGNMENTS, ['id = ?' => $id]);
+        return $resDelete > 0;
+    }
 }

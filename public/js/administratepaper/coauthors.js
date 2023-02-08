@@ -1,5 +1,4 @@
 $(function () {
-    console.log('totottotoot');
     let tmp = '';
 
     // initialisation de l'autocomplete

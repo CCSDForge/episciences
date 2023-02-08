@@ -518,24 +518,9 @@ class AdministratepaperController extends PaperDefaultController
         // get contributor details
         $contributor = new Episciences_User();
         $contributor->findWithCAS($paper->getUid());
-        $contributorTwitter = $contributor->getSocialMedias();
-        $this->view->contributorTwitter = $contributorTwitter;
-
-        //get coauthors
-        $coAuthors = Episciences_User_AssignmentsManager::findAll(
-            [
-            'RVID' => RVID,
-            'ITEMID'=>$paper->getPaperid(),
-            'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR
-            ]);
-        $coAuthorsList = [];
-        foreach ($coAuthors as $coAuthor) {
-            $coAuthorUser = new Episciences_User();
-            $coAuthorUser->findWithCAS($coAuthor->getUid()) ;
-            $coAuthorsList[] = $coAuthorUser;
-        }
-        $this->view->coAuthorsList = $coAuthorsList;
-        unset($coAuthor);
+        $contributorSocialMedia = $contributor->getSocialMedias();
+        $this->view->contributorSocialMedia = $contributorSocialMedia;
+        $this->view->coAuthorsList = $paper->getCoAuthors();
         // check if paper is obsolete; if so, display a warning
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();
@@ -4716,9 +4701,13 @@ class AdministratepaperController extends PaperDefaultController
             $user = new Episciences_User();
 
             if ($user->hasLocalData($selectedUserId) && $user->hasRoles($selectedUserId)) {
-                $this->addRoleCoAuthor((int)$request->getPost('paperId'), $selectedUserId);
-//                $error = Zend_Registry::get('Zend_Translate')->translate("Cet utilisateur possède déjà un compte Episciences");
-//                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
+                $addcoAuthor = $this->addRoleCoAuthor((int)$request->getPost('docId'), $selectedUserId);
+                if ($addcoAuthor) {
+                    $message = Zend_Registry::get('Zend_Translate')->translate("Utilisateur ajouté en tant que co-auteur");
+                } else {
+                    $message = Zend_Registry::get('Zend_Translate')->translate("l'utilisateur est déjà co-auteur pour ce papier");
+                }
+                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
             } else {
                 // Récupération des données CAS
                 $casUserMapper = new Ccsd_User_Models_UserMapper();
@@ -4730,31 +4719,77 @@ class AdministratepaperController extends PaperDefaultController
                 $screenName = $user->getScreenName();
 
                 if ($user->save()) {
-                    $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences");
+                    $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences et co-auteur du papier");
                     $success = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $success);
-                    $this->addRoleCoAuthor((int)$request->getPost('paperId'), $selectedUserId);
+                    $addcoAuthor = $this->addRoleCoAuthor((int)$request->getPost('docId'), $selectedUserId);
+                    if ($addcoAuthor) {
+                        $message = Zend_Registry::get('Zend_Translate')->translate("Utilisateur ajouté en tant que co-auteur");
+                    } else {
+                        $message = Zend_Registry::get('Zend_Translate')->translate("l'utilisateur est déjà co-auteur pour ce papier");
+                    }
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($success);
                 } else {
-                    $error = "L'utilisateur <strong>$screenName</strong> n'a pu être ajouté à Episciences";
+                    $error = "L'utilisateur <strong>$screenName</strong> n'a pu être ajouté aux coauteur";
                     $error = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $error);
                     $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
                 }
             }
-            return;
+            $url = self::ADMINPAPER_URL_STR . (int)$request->getPost('docId');
+            $this->_helper->redirector->gotoUrl($url);
         }
     }
 
-    private function addRoleCoAuthor(int $paperId, int $uid)
+    private function addRoleCoAuthor(int $docId, int $uid)
     {
-        $assignment = new Episciences_User_Assignment();
-        $assignment->setRvid(RVID);
-        $assignment->setItemid($paperId);
-        $assignment->setItem('paper');
-        $assignment->setUid($uid);
-        $assignment->setRoleid(Episciences_Acl::ROLE_CO_AUTHOR);
-        $assignment->setStatus(Episciences_User_Assignment::STATUS_ACTIVE);
-        return $assignment->save();
+        $exist = Episciences_User_AssignmentsManager::find(['RVID' => RVID, "ITEMID" => $docId, "UID" => $uid]);
+        if (!$exist) {
+            $assignment = new Episciences_User_Assignment();
+            $assignment->setRvid(RVID);
+            $assignment->setItemid($docId);
+            $assignment->setItem('paper');
+            $assignment->setUid($uid);
+            $assignment->setRoleid(Episciences_Acl::ROLE_CO_AUTHOR);
+            $assignment->setStatus(Episciences_User_Assignment::STATUS_ACTIVE);
+            return $assignment->save();
+        }
+        return false;
     }
+
+    /**
+     * @return void
+     */
+    public function ajaxrequestremovecoauthorAction() : void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $post = $request->getPost();
+        if ($request->isXmlHttpRequest()
+            && isset($post['docId'])
+            && isset($post['rvid'])
+            && isset($post['uid'])
+            && (int) $post['rvid'] === RVID
+            && Episciences_Auth::isAdministrator()) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $getUserAssignment = Episciences_User_AssignmentsManager::find(['RVID' => RVID, "ITEMID" => (int) $post['docId'], "UID" => (int) $post['uid']]);
+            if ($getUserAssignment->getId() !== 0 && ($getUserAssignment->getRoleid() === Episciences_Acl::ROLE_CO_AUTHOR)) {
+                $row = Episciences_User_AssignmentsManager::removeAssignment($getUserAssignment->getId());
+                if ($row > 0) {
+                    $message = Zend_Registry::get('Zend_Translate')->translate("Co-auteur retiré");
+                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                    echo json_encode($row, JSON_THROW_ON_ERROR);
+                    exit;
+                }
+            }
+        } else {
+            $message = "Une erreur est survenue.";
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+        }
+        echo json_encode(0, JSON_THROW_ON_ERROR);
+        exit;
+    }
+
 
 }
 

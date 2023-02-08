@@ -331,6 +331,9 @@ class Episciences_Paper
     /** @var Episciences_CopyEditor[] $_copyEditors */
     private $_copyEditors;
 
+    /** @var Episciences_User[] $_coAuthors */
+    private $_coAuthors;
+
     /** @var Array [Episciences_Paper_Conflict] */
     private $_conflicts = [];
 
@@ -4344,5 +4347,12 @@ class Episciences_Paper
             $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
     }
 
+    /**
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function getCoAuthors() : array {
+        return $this->_coAuthors = Episciences_PapersManager::getCoAuthors($this->getDocid());
+    }
 
 }

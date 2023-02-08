@@ -55,7 +55,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
             <div class="panel-heading">
                 <h2 class="panel-title"><?= $this->translate('Partager') ?></h2>
             </div>
-            <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper,  'contributorTwitter' => $this->contributorTwitter]); ?>
+            <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper,  'contributorSocialMedia' => $this->contributorSocialMedia, "coAuthorsList"=> $coAuthorsList]); ?>
         </div>
 <?php endif; ?>
 <?php // citations *****************************************************
@@ -69,7 +69,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 
 <?php // contributor section  ?>
 <?php if ($paper->getUid()): ?>
-    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorTwitter, "coAuthorsList"=> $coAuthorsList]) ?>
+    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorSocialMedia, "coAuthorsList"=> $coAuthorsList]) ?>
 <?php endif; ?>
 
 

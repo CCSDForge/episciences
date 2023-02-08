@@ -5,23 +5,35 @@ $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerN
 // twitter
 
 $url = "https://twitter.com/intent/tweet/?text=".$title."&url=".$doi;
-$contributorSocialMedia = $this->contributorTwitter;
+$contributorSocialMedia = $this->contributorSocialMedia;
 
+$coAuthors = $this->coAuthorsList;
 // for mastodon
 
 $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
 $loggedUser = new Episciences_User($identity);
 $loggedUserSocialMedia = $loggedUser->getSocialMedias();
-
+$socialCoAuthorList = [];
 if ($controller === 'administratepaper' && (substr_count($contributorSocialMedia, "@") === 1)) {
     $url = "https://twitter.com/intent/tweet/?text=".$title;
     if (!is_null($contributorSocialMedia)) {
-        $url .= (strpos($contributorSocialMedia, "@") === 0) ? " ".$contributorSocialMedia."&url=".$doi
-            : " @".$contributorSocialMedia."&url=".$doi;
-
-    } else {
-        $url .= "&url=".$doi;
+        foreach ($coAuthors as $coAuthorInfo) {
+            /** @var Episciences_User $coAuthorInfo */
+            $socialCoAuthor = $coAuthorInfo->getSocialMedias();
+            if (!is_null($socialCoAuthor) && substr_count($socialCoAuthor, "@") === 1) {
+                $socialCoAuthorList[] = $socialCoAuthor;
+            }
+        }
+        $url .= (strpos($contributorSocialMedia, "@") === 0) ? " ".$contributorSocialMedia
+            : " @".$contributorSocialMedia;
+        if (!empty($socialCoAuthorList)) {
+            foreach ($socialCoAuthorList as $socialCo) {
+                $url .= (strpos($contributorSocialMedia, "@") === 0) ? " ".$socialCo
+                    : " @".$socialCo;
+            }
+        }
     }
+    $url.="&url=".$doi;
 }
 ?>
 <div class="panel-body in">
