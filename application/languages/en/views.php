@@ -1527,6 +1527,7 @@ return [
     "Demandes de l'auteur : " => 'Author requests: ',
     "Invitation déclinée le : " => "Invitation declined on: ",
     "Cette invitation n'existe pas !" => "This invitation does not exist!",
+    "Détails de la réponse" => "Details of the answer",
 
     /**
      * Website

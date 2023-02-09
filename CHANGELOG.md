@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Added
+- [#315](https://github.com/CCSDForge/episciences/issues/315) : missing translatio
 
 ## 1.0.39.4 - 2023-02-03
 ### Fixed
