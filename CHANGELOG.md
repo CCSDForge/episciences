@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
+## 1.0.39.4 - 2023-02-03
+### Fixed
+- Fixed errors when creating user accounts
+
 ## 1.0.39.3 - 2023-02-02
 ### Fixed
 - %%PERMANENT_ARTICLE_ID%% tag not replaced in the mail subject.

@@ -67,9 +67,8 @@ class Episciences_Mail_Template
 
     public function getReviewTranslationsFolder()
     {
-        return realpath(APPLICATION_PATH . '/../data/' . $this->getRvcode()) . '/languages/';
+        return REVIEW_PATH . 'languages/';
     }
-
 
     public function __construct(array $options = null)
     {
