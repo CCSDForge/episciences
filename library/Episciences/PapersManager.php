@@ -1639,7 +1639,12 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
@@ -1713,7 +1718,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value'=> $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', [
@@ -1896,7 +1905,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', [
@@ -2794,7 +2807,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc','value'=> $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $prefix . '-bcc']);

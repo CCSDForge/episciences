@@ -164,4 +164,21 @@ class Episciences_User_AssignmentsManager
         $resDelete = $db->delete(T_ASSIGNMENTS, ['id = ?' => $id]);
         return $resDelete > 0;
     }
+
+    public static function reassignPaperCoAuthors(array $coAuthors, $newPaper) {
+        if (!empty($coAuthors)) {
+            foreach ($coAuthors as $coAuthor) {
+                /** @var Episciences_User $coAuthor */
+                /** @var Episciences_Paper $newPaper */
+                $assignment = new Episciences_User_Assignment();
+                $assignment->setRvid(RVID);
+                $assignment->setItemid($newPaper->getDocid());
+                $assignment->setItem('paper');
+                $assignment->setUid($coAuthor->getUid());
+                $assignment->setRoleid(Episciences_Acl::ROLE_CO_AUTHOR);
+                $assignment->setStatus(Episciences_User_Assignment::STATUS_ACTIVE);
+                $assignment->save();
+            }
+        }
+    }
 }
