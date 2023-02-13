@@ -79,6 +79,7 @@ return [
     // TO FIX
     'guest' => 'Guest',
     'member' => 'Member',
+    'coauthor' => 'Coauthor',
     'webmaster' => 'Webmaster',
     'secretary' => 'Editorial secretary',
     'reviewer' => 'Reviewer',
@@ -92,6 +93,7 @@ return [
 
     'guests' => 'Guests',
     'members' => 'Members',
+    'coauthors' => 'Coauthors',
     'webmasters' => 'Webmasters',
     'secretaries' => 'Editorial secretaries',
     'reviewers' => 'Reviewers',
@@ -2280,6 +2282,9 @@ return [
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to confirm the version to the journal's standards (formatted by the copy preparer)",
 
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the paper",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the paper",
+
     // Mot de passe papier
     "Facultatif" => "Optional",
     "Requis" => 'Required',
@@ -2318,4 +2323,14 @@ return [
     "Mail de retour" => "Redirection address",
     "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the failed emails",
     "Adresse de courriel pour le retour des échecs d'envoi" => "Email address for the return of failed mailings",
+
+    // co-author
+    "Co-auteur" => "Co-author",
+    "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
+    "l'utilisateur est déjà co-auteur pour ce papier" => "The user is already a co-author for this paper",
+    "Supprimer ce co-auteur" => "Delete this co-author",
+    "Envoyer une copie de ce message aux co-auteur" => "Send a copy of this message to the co-authors",
+    "Co-auteur retiré" => "Co-Autor removed",
+    "L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences et co-auteur du papier" => "The user <strong>%%RECIPIENT_SCREEN_NAME%%</strong> has been added on Episciences and added as co-author of the paper",
+    "Ajouter un co-auteur" => "Add a co-author"
 ];

@@ -13,6 +13,7 @@ $invitations = $this->invitations;
 $this->suggestedRefuse = false;
 $this->suggestedAccept = false;
 $this->suggestedRevision = false;
+$coAuthorsList = $this->coAuthorsList;
 ?>
 
 <style>
@@ -54,7 +55,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
             <div class="panel-heading">
                 <h2 class="panel-title"><?= $this->translate('Partager') ?></h2>
             </div>
-            <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper,  'contributorTwitter' => $this->contributorTwitter]); ?>
+            <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper,  'contributorSocialMedia' => $this->contributorSocialMedia, "coAuthorsList"=> $coAuthorsList]); ?>
         </div>
 <?php endif; ?>
 <?php // citations *****************************************************
@@ -68,7 +69,12 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 
 <?php // contributor section  ?>
 <?php if ($paper->getUid()): ?>
-    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorTwitter]) ?>
+    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorSocialMedia, "coAuthorsList"=> $coAuthorsList]) ?>
+<?php endif; ?>
+
+
+<?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()): ///********************* coauthor section ?>
+<?= $this->partial('partials/coauthors.phtml',['paper'=>$paper])?>
 <?php endif; ?>
 
 <?php echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]); ?>
@@ -348,6 +354,6 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
 $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/paper/paperAffiAuthors.js');
-$this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
+$this->jQuery()->addJavascriptFile('/js/administratepaper/coauthors.js');
 ?>
 

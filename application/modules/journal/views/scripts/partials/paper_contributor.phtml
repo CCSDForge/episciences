@@ -4,6 +4,8 @@ $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerN
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 /** @var Episciences_Paper $paper */
 $paper = $this->article;
+$coAuthorList = $this->coAuthorsList;
+$rvid = RVID;
 ?>
 
 
@@ -14,25 +16,21 @@ $paper = $this->article;
     <div class="panel-body in">
         <div id="<?= $this->id; ?>">
             <div class="contributor" style="margin-bottom: 5px">
-                <img src="/user/photo/name/<?= urlencode($this->escape($paper->getSubmitter()->getScreenName())); ?>/uid/<?= $paper->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
-                     class="user-photo-small" alt="avatar">
-
-                <span style="margin-left: 0.5em;"><strong><?php echo $this->escape($paper->getSubmitter()->getScreenName()) ?></strong></span>
-                    <?php if ($this->escape($this->socialMedia) !== '' && substr_count($this->socialMedia, "@") > 1) : ?>
-                        <a class="btn btn-default" href="<?= Episciences_Tools::getMastodonUrl($this->socialMedia) ?>" target="_blank">
+                <?php if ($this->escape($this->socialMedia) !== '' && substr_count($this->socialMedia, "@") > 1) : ?>
+                    <a class="btn btn-default" href="<?= Episciences_Tools::getMastodonUrl($this->socialMedia) ?>" target="_blank">
                             <span data-toggle="tooltip"
                                   class="fa-brands fa-mastodon"
-                                  style="margin: 0.2rem"
+                                  style="margin: 0.2rem">
                             </span>
-                        </a>
-                    <?php elseif($this->escape($this->socialMedia) !== '' && substr_count($this->socialMedia, "@") === 1): ?>
-                        <a class="btn btn-default" href="https://twitter.com/<?= $this->socialMedia ?>" target="_blank">
+                    </a>
+                <?php elseif ($this->escape($this->socialMedia) !== '' && substr_count($this->socialMedia, "@") === 1): ?>
+                    <a class="btn btn-default" href="https://twitter.com/<?= $this->socialMedia ?>" target="_blank">
                             <span data-toggle="tooltip"
                                   class="fa-brands fa-twitter"
-                                  style="margin: 0.2rem"
+                                  style="margin: 0.2rem">
                             </span>
-                        </a>
-                    <?php endif; ?>
+                    </a>
+                <?php endif; ?>
 
                 <a class="btn btn-default" href="/user/view/userid/<?= $paper->getUid(); ?>" target="_blank">
                     <span data-toggle="tooltip"
@@ -42,7 +40,7 @@ $paper = $this->article;
                     </span>
                 </a>
 
-                <a class="modal-opener btn btn-default"
+                <a id="modal-contributor" class="modal-opener btn btn-default"
                    href="/administratemail/send/recipient/<?= $paper->getUid(); ?>/paper/<?= $paper->getDocid(); ?>">
                     <span data-toggle="tooltip"
                           class="glyphicon glyphicon-envelope"
@@ -62,10 +60,78 @@ $paper = $this->article;
                         </span>
                     </a>&nbsp;
                 <?php endif; ?>
+                <img src="/user/photo/name/<?= urlencode($this->escape($paper->getSubmitter()->getScreenName())); ?>/uid/<?= $paper->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                     class="user-photo-small" alt="avatar">
 
+                <span style="margin-left: 0.5em;"><strong><?php echo $this->escape($paper->getSubmitter()->getScreenName()) ?></strong></span>
+                <?php if (!empty($coAuthorList)) : ?>
+                    <h1 style="font-size: 18px; color: black;"><?php echo $this->translate('Co-auteur'); ?></h1>
+                    <?php foreach ($coAuthorList as $authorUid => $coAuthorInfo): /** @var Episciences_User $coAuthorInfo */ ?>
+                        <div id="co-author-<?= $authorUid ?>" data-screen-name="<?= $this->escape($coAuthorInfo->getScreenName()) ?>" class="contributor row" style="margin-bottom: 5px";>
+                            <div class="col-lg-3">
+                                <?php if ($this->escape($coAuthorInfo->getSocialMedias()) !== '' && substr_count($coAuthorInfo->getSocialMedias(), "@") > 1) : ?>
+                                    <a class="btn btn-default"
+                                       href="<?= Episciences_Tools::getMastodonUrl($coAuthorInfo->getSocialMedias()) ?>"
+                                       target="_blank">
+                                        <span data-toggle="tooltip"
+                                              class="fa-brands fa-mastodon"
+                                              style="margin: 0.2rem">
+                                        </span>
+                                    </a>
+                                <?php elseif ($this->escape($coAuthorInfo->getSocialMedias()) !== '' && substr_count($coAuthorInfo->getSocialMedias(), "@") === 1): ?>
+                                    <a class="btn btn-default"
+                                       href="https://twitter.com/<?= $coAuthorInfo->getSocialMedias() ?>"
+                                       target="_blank">
+                                        <span data-toggle="tooltip"
+                                              class="fa-brands fa-twitter"
+                                              style="margin: 0.2rem">
+                                        </span>
+                                    </a>
+                                <?php endif; ?>
+                                <a class="btn btn-default" href="/user/view/userid/<?= $coAuthorInfo->getUid() ?>"
+                                   target="_blank">
+                                    <span data-toggle="tooltip"
+                                          class="fas fa-address-card"
+                                          style="margin: 0.2rem"
+                                          title="<?php echo $this->translate("Voir le profil") ?>">
+                                    </span>
+                                </a>
+                                <a class="modal-opener btn btn-default"
+                                   href="/administratemail/send/recipient/<?= $coAuthorInfo->getUid() ?>/paper/<?= $paper->getDocid() ?>">
+                                    <span data-toggle="tooltip"
+                                          class="glyphicon glyphicon-envelope"
+                                          style="margin: 0.2rem"
+                                          title="<?php echo $this->translate("Contacter ce contributeur") ?>">
+                                    </span>
+                                </a>
+                                <?php if (Episciences_Auth::isSecretary()) : ?>
+                                    <a class="btn btn-default" href="/user/su/uid/<?php echo $coAuthorInfo->getUid(); ?>">
+                                        <span data-toggle="tooltip"
+                                              style="margin: 0.2rem"
+                                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                                              class="fas fa-user-secret">
+                                        </span>
+                                    </a>
+                                <?php endif; ?>
+                                <?php if (Episciences_Auth::isAdministrator()) : ?>
+                                    <a id="remove-coauthor" class="btn btn-default" onclick="removeCoAuthor(<?= $paper->getDocid() ?>,<?= $coAuthorInfo->getUid() ?>, <?= $this->escape($rvid) ?>)">
+                                        <span data-toggle="tooltip"
+                                              style="margin: 0.2rem"
+                                              title="<?php echo $this->translate("Supprimer ce co-auteur"); ?>"
+                                              class="fa-solid fa-user-minus">
+                                        </span>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="col-lg-9">
+                                <img src="/user/photo/name/<?= urlencode($this->escape($coAuthorInfo->getScreenName())); ?>/uid/<?= $coAuthorInfo->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                                 class="user-photo-small" alt="avatar">
+                                <span id="co-author-<?= $authorUid ?>" style="margin-left: 0.5em;"><strong><?php echo $this->escape($coAuthorInfo->getScreenName()) ?></strong></span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
-
-

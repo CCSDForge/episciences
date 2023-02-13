@@ -1559,9 +1559,13 @@ class Episciences_PapersManager
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
-
+        
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId. '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId. '-cc','value'=> $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC',  'id' => $formId. '-bcc']);
@@ -1594,6 +1598,10 @@ class Episciences_PapersManager
             'label' => 'Message',
             'value' => $default['body']
         ]));
+
+        if (!empty($default['coAuthor'])) {
+            self::getCoAuthorsForm($default['coAuthor'], $form);
+        }
 
         return $form;
     }
@@ -1631,7 +1639,12 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
@@ -1664,6 +1677,10 @@ class Episciences_PapersManager
             'label' => 'Message',
             'value' => $default['body']
         ]));
+
+        if (!empty($default['coAuthor'])) {
+            self::getCoAuthorsForm($default['coAuthor'], $form);
+        }
 
         return $form;
     }
@@ -1701,7 +1718,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value'=> $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', [
@@ -1739,6 +1760,10 @@ class Episciences_PapersManager
             'class' => 'full_mce',
             'value' => $default['body']
         ]));
+
+        if (!empty($default['coAuthor'])) {
+            self::getCoAuthorsForm($default['coAuthor'], $form);
+        }
 
         return $form;
     }
@@ -1880,7 +1905,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', [
@@ -1942,6 +1971,10 @@ class Episciences_PapersManager
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]);
 
+        }
+
+        if (!empty($default['coAuthor'])) {
+            self::getCoAuthorsForm($default['coAuthor'], $form);
         }
 
         return $form;
@@ -2353,7 +2386,8 @@ class Episciences_PapersManager
                 'id' => $paper->getDocid(),
                 'subject' => $oTemplate->getSubject(),
                 'body' => $oTemplate->getBody(),
-                'author' => $contributor
+                'author' => $contributor,
+                'coAuthor' => $paper->getCoAuthors()
             ];
         }
 
@@ -2773,7 +2807,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc']);
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc','value'=> $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $prefix . '-bcc']);
@@ -2826,7 +2864,9 @@ class Episciences_PapersManager
             'label' => 'Message',
             'value' => $default['body']
         ]));
-
+        if (!empty($default['coAuthor'])) {
+            self::getCoAuthorsForm($default['coAuthor'], $form);
+        }
         return $form;
     }
 
@@ -2983,6 +3023,44 @@ class Episciences_PapersManager
         }
 
         return (int)$result['NbPublished'];
+    }
+
+    /**
+     * @param array $coAuthors
+     * @param Ccsd_Form $form
+     * @return void
+     * @throws Zend_Form_Exception
+     */
+    public static function getCoAuthorsForm(array $coAuthors, Ccsd_Form $form): void
+    {
+// get a copy
+        $strMail = self::getCoAuthorsMails($coAuthors);
+        $strMail = substr($strMail, 0, -1);
+        $form->addElement('hidden', 'co-author-mail', ['value' => $strMail]);
+        $form->addElement('checkbox', 'copy-co-author', array(
+            'label' => "Envoyer une copie de ce message aux co-auteur",
+            'decorators' => [
+                'ViewHelper',
+                ['Label', array('placement' => 'APPEND')],
+                ['HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3')]
+            ],
+            'value' => '1'
+        ));
+    }
+
+    /**
+     * @param array $coAuthors
+     * @return string
+     */
+    public static function getCoAuthorsMails(array $coAuthors): string
+    {
+        $strMail = '';
+        foreach ($coAuthors as $coAuthor) {
+            /** @var Episciences_User $coAuthor */
+            $strMail .= "<" . $coAuthor->getEmail() . '>';
+            $strMail .= ";";
+        }
+        return $strMail;
     }
 
     /**
@@ -3513,6 +3591,24 @@ class Episciences_PapersManager
         // this date is overwritten by the last action
         $row['INVITATION_DATE'] = $invitationAid->getWhen();
         $row['ANSWER_DATE'] = $answer ? $answer->getAnswer_date() : null;
+    }
+
+    /**
+     * @param $docId
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getCoAuthors($docId): array
+    {
+        //get coauthors
+        $coAuthors = Episciences_User_AssignmentsManager::findAll(['ITEMID'=> $docId, 'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR]);
+        $coAuthorsList = [];
+        foreach ($coAuthors as $coAuthor) {
+            $coAuthorUser = new Episciences_User();
+            $coAuthorUser->findWithCAS($coAuthor->getUid());
+            $coAuthorsList[$coAuthorUser->getUid()] = $coAuthorUser;
+        }
+        return $coAuthorsList;
     }
 
 }

@@ -405,7 +405,19 @@ class Episciences_Submit
         ]);
         // comment
         $form->addElement('textarea', 'comment', ['label' => 'Commentaire', 'rows' => 5]);
-
+        //copy co authors
+        $paper = Episciences_PapersManager::get($docId);
+        if (!empty($paper->getCoAuthors())) {
+            $form->addElement('checkbox', 'copy-co-author', array(
+                'label' => "Envoyer une copie de ce message aux co-auteur",
+                'decorators' => [
+                    'ViewHelper',
+                    ['Label', array('placement' => 'APPEND')],
+                    ['HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3')]
+                ],
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1]
+            ));
+        }
         return $form;
     }
 

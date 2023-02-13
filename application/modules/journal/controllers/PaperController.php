@@ -1206,7 +1206,7 @@ class PaperController extends PaperDefaultController
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
-
+        $coAuthors = $paper->getCoAuthors();
         // revision request detail
         $requestId = $request->getQuery('pcid');
         $requestComment = new Episciences_Comment;
@@ -1341,6 +1341,11 @@ class PaperController extends PaperDefaultController
             $recipients += $this->reassignPaperManagers($editors, $tmpPaper);
         }
 
+        // reassign co authors
+        if (!empty($coAuthors)) {
+            Episciences_User_AssignmentsManager::reassignPaperCoAuthors($coAuthors, $tmpPaper);
+        }
+
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
 
         Episciences_Review::checkReviewNotifications($recipients);
@@ -1368,7 +1373,25 @@ class PaperController extends PaperDefaultController
                 $CC = [];
             }
         }
-
+        // link to public article page
+        $publicUrl = $this->view->url([
+            self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
+            self::ACTION => 'view',
+            'id' => $tmpPaper->getDocid()
+        ]);
+        // empty coauthors if user don't want copy mail for co authors
+        if (isset($post['copycoauthor']) && $post['coAuthors'] === 0) {
+            $coAuthors = "";
+        }
+        Episciences_Mail_Send::sendMailFromReview(
+            $tmpPaper->getSubmitter(),
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR,
+            [
+                Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $tmpPaper->getDocid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $tmpPaper->getTitle(),
+            ], $tmpPaper, null, [], false, $coAuthors
+        );
 
         if (!$paper->isOwner()) {
             $url = $this->view->url(
@@ -1669,6 +1692,7 @@ class PaperController extends PaperDefaultController
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
         $copyEditors = $paper->getCopyEditors(true, true);
+        $coAuthors = $paper->getCoAuthors();
 
         // new version init
         $newPaper = clone($paper);
@@ -1816,6 +1840,11 @@ class PaperController extends PaperDefaultController
                 $this->reassignPaperManagers($copyEditors, $newPaper, Episciences_User_Assignment::ROLE_COPY_EDITOR);
             }
 
+            // reassign co authors
+            if (!empty($coAuthors)) {
+                Episciences_User_AssignmentsManager::reassignPaperCoAuthors($coAuthors, $newPaper);
+            }
+
             $recipients = $editors + $copyEditors;
 
             //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
@@ -1854,6 +1883,21 @@ class PaperController extends PaperDefaultController
             if ($isAlreadyAccepted) {
                 $newPaperStatusDetails['isAlreadyAccepted'] = $isAlreadyAccepted;
             }
+            // link to public article page
+            $publicUrl = $this->view->url([
+                self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
+                self::ACTION => 'view',
+                'id' => $newPaper->getDocid()
+            ]);
+            Episciences_Mail_Send::sendMailFromReview(
+                $newPaper->getSubmitter(),
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR,
+                [
+                    Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
+                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle(),
+                ], $newPaper, null, [], false, $coAuthors
+            );
 
             // log new version submission
             $newPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), $newPaperStatusDetails);
