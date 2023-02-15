@@ -4,10 +4,12 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 class ReviewerController extends PaperDefaultController
 {
     /**
-     * @throws Zend_Mail_Exception
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
-     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
     public function invitationAction(): void
@@ -15,7 +17,6 @@ class ReviewerController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $invitationId = $request->getParam('id');
-        $tmp_user = null;
 
         // check if invitation id is valid
         if (!$invitationId || !is_numeric($invitationId)) {
@@ -25,43 +26,38 @@ class ReviewerController extends PaperDefaultController
 
         // fetch invitation
         $invitation = Episciences_User_InvitationsManager::find(array('ID' => $invitationId));
+
         if (!$invitation) {
             $this->view->errors = array("Cette invitation n'existe pas !");
             return;
         }
 
+        $doRating = true;
+
         // fetch assignment
         $assignmentId = $invitation->getAid();
         $assignment = Episciences_User_AssignmentsManager::findById($assignmentId);
-        $isLogged = Episciences_Auth::isLogged();
 
-        // check reviewer identity
-        if ($assignment->isTmp_user()) {
-            // if this is a temp user invitation, check user identity (md5 param)
-            $tmp_user = Episciences_TmpUsersManager::findById($assignment->getUid());
-            if ($isLogged || !$tmp_user || md5($tmp_user->getEmail()) !== $request->getParam('tmp')) {
-                $message = $this->view->translate("Cette invitation ne vous est pas destinée.");
-                $this->view->errors = array($message);
-                return;
+        if (Episciences_Auth::isLogged() && (Episciences_Auth::getUid() !== $assignment->getUid())) {
+            $doRating = false;
+
+        } elseif ($assignment->isTmp_user()) {
+
+            $tmpUser = Episciences_TmpUsersManager::findById($assignment->getUid());
+
+            if (!$tmpUser || md5($tmpUser->getEmail()) !== $request->getParam('tmp')) {
+                $doRating = false;
             }
 
-        } elseif (!$isLogged) {
-            // user needs to login
-            $redirect_params = [
-                'controller' => 'user',
-                'action' => 'login',
-                'forward-controller' => 'reviewer',
-                'forward-action' => 'invitation',
-                'id' => $invitationId
-            ];
-            $this->redirect($this->view->url($redirect_params));
-            return;
-        } elseif ($assignment->getUid() !== Episciences_Auth::getUid()) {
-            // user is logged in: check if this invitation is really for him
+        }
+
+        if (!$doRating) {
             $message = $this->view->translate("Cette invitation ne vous est pas destinée.");
             $this->view->errors = array($message);
             return;
+
         }
+
 
         // fetch reviewer answer (if there is one)
         $invitation->loadAnswer();
@@ -94,60 +90,8 @@ class ReviewerController extends PaperDefaultController
             return;
         }
 
-        // answer forms **************************************
-        if (!$invitation->hasExpired() && !$invitation->isAnswered()) {
+        $this->answerProcess($request, $invitation, $assignment, $paper, $tmpUser);
 
-            // empty form created for validation only (real form is in viewscript)
-            //$accept_form = new Episciences_User_Form_Create();
-            $refuse_form = Episciences_ReviewersManager::refuseInvitationForm();
-
-            if ($assignment->isTmp_user()) {
-                $this->view->jQuery()->addJavascriptFile("/js/user/affiliations.js");
-                $user_form = Episciences_ReviewersManager::acceptInvitationForm();
-                $user_form->setDefaults([
-                    'SCREEN_NAME' => '',
-                    'LASTNAME' => '',
-                    'FIRSTNAME' => '',
-                    'EMAIL' => $tmp_user->getEmail(),
-                    'LANGUEID' => $tmp_user->getLangueid(true)
-                ]);
-                $this->view->user_form = $user_form;
-            }
-
-            $accepted = (array_key_exists('submitaccept', $request->getPost()));
-            $refused = (array_key_exists('submitrefuse', $request->getPost()));
-
-            if ($accepted || $refused) {
-
-                if (
-                    $refused ||
-                    (
-                        $accepted &&
-                        (
-                            !$assignment->isTmp_user()  ||
-                            (isset($user_form) && $user_form->isValid($request->getPost()))
-                        )
-                    )
-                ) {
-
-                    $this->saveanswer($invitation, $assignment, $paper, $request->getPost());
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
-
-                    // redirect
-                    if ($accepted) {
-                        $this->_helper->redirector->gotoUrl($this->_helper->url('ratings', 'paper'));
-                    } else {
-                        $this->redirect('/');
-                    }
-                } else {
-                    $this->view->invalid_form = true;
-                }
-            }
-
-            $this->view->is_tmp_user = $assignment->isTmp_user();
-            $this->view->refuse_form = $refuse_form;
-            $this->view->metadata = $paper->getDatasetsFromEnrichment();
-        }
     }
 
     private function checkPaperStatus(Episciences_Paper $paper): ?string
@@ -185,11 +129,13 @@ class ReviewerController extends PaperDefaultController
 
             // accepted invitation
             $this->accept($oInvitation, $assignment, $paper, $data);
+            $this->_helper->redirector->gotoUrl($this->_helper->url('ratings', 'paper'));
 
         } elseif (array_key_exists('submitrefuse', $data)) {
 
             // declined invitation
             $this->decline($oInvitation, $assignment, $paper, $data);
+            $this->redirect('/');
 
         }
     }
@@ -208,10 +154,20 @@ class ReviewerController extends PaperDefaultController
     {
         // update user permissions
         if ($assignment->isTmp_user()) {
-
             $user = $this->createNewReviewerWithoutAccountProcessing($data);
-
         } else {
+            if (!Episciences_Auth::isLogged()) {
+                // user needs to login
+                $redirect_params = [
+                    'controller' => 'user',
+                    'action' => 'login',
+                    'forward-controller' => 'reviewer',
+                    'forward-action' => 'invitation',
+                    'id' => $oInvitation->getId()
+                ];
+                $this->redirect($this->view->url($redirect_params));
+                return;
+            }
 
             $user = $this->createNewReviewerWithExistingAccountProcessing($assignment->getUid());
         }
@@ -294,7 +250,7 @@ class ReviewerController extends PaperDefaultController
         if ($assignment->isTmp_user()) {
             $user = new Episciences_User_Tmp();
 
-            if(!empty($user->find($uid))){
+            if (!empty($user->find($uid))) {
                 $user->generateScreen_name();
             }
 
@@ -330,7 +286,6 @@ class ReviewerController extends PaperDefaultController
             ]);
 
         $this->emailSendingProcessing($user, $paper, $newAssignment, Episciences_User_InvitationAnswer::ANSWER_NO, $data);
-
 
 
     }
@@ -508,4 +463,77 @@ class ReviewerController extends PaperDefaultController
 
     }
 
+    /**
+     * @param Zend_Controller_Request_Http $request
+     * @param Episciences_User_Invitation $invitation
+     * @param Episciences_User_Assignment $assignment
+     * @param Episciences_Paper $paper
+     * @param null $tmpUser
+     * @return void
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
+     */
+    private function answerProcess(
+        Zend_Controller_Request_Http $request,
+        Episciences_User_Invitation  $invitation,
+        Episciences_User_Assignment  $assignment,
+        Episciences_Paper            $paper,
+        Episciences_User_Tmp         $tmpUser = null
+    ): void
+    {
+        // answer forms **************************************
+        if (!$invitation->hasExpired() && !$invitation->isAnswered()) {
+
+            // empty form created for validation only (real form is in viewscript)
+            //$accept_form = new Episciences_User_Form_Create();
+            $refuse_form = Episciences_ReviewersManager::refuseInvitationForm();
+
+            if ($tmpUser) {
+
+                $this->view->jQuery()->addJavascriptFile("/js/user/affiliations.js");
+                $user_form = Episciences_ReviewersManager::acceptInvitationForm();
+                $user_form->setDefaults([
+                    'SCREEN_NAME' => '',
+                    'LASTNAME' => '',
+                    'FIRSTNAME' => '',
+                    'EMAIL' => $tmpUser->getEmail(),
+                    'LANGUEID' => $tmpUser->getLangueid(true)
+                ]);
+                $this->view->user_form = $user_form;
+            }
+
+            $accepted = (array_key_exists('submitaccept', $request->getPost()));
+            $refused = (array_key_exists('submitrefuse', $request->getPost()));
+
+            if ($accepted || $refused) {
+
+                if (
+                    $refused ||
+                    (
+                        $accepted &&
+                        (
+                            !$assignment->isTmp_user() ||
+                            (isset($user_form) && $user_form->isValid($request->getPost()))
+                        )
+                    )
+                ) {
+
+                    $this->saveanswer($invitation, $assignment, $paper, $request->getPost());
+                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
+
+
+                } else {
+                    $this->view->invalid_form = true;
+                }
+            }
+
+            $this->view->is_tmp_user = $assignment->isTmp_user();
+            $this->view->refuse_form = $refuse_form;
+            $this->view->metadata = $paper->getDatasetsFromEnrichment();
+        }
+    }
 }
