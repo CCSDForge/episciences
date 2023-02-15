@@ -16,12 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Changed
+- [#316](https://github.com/CCSDForge/episciences/issues/316): it is no longer necessary to validate / create an account before declining the invitation.
 - [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
 - It is now possible to use Lemon LDAP authentication.
 - Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
   tracking.' AddToAny is not used anymore.
 - Public access to the journal's stats.
 ### Added
+- [#315](https://github.com/CCSDForge/episciences/issues/315): missing translation
 - Cancel a DOI assignment for the journal (manual DOI assignment setting only)
 - It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an ema
 - [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites
@@ -40,26 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.0.39.2 - 2023-02-01
 ### Changed
-
 - The visibility of the statistics dashboard is now configurable by journal (three possible options): 
   1) Default (hidden)
   2) Public
   3) Administrator only
-
-- [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
-- It is now possible to use Lemon LDAP authentication.
-- Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
-tracking.' AddToAny is not used anymore.
-- Public access to the journal's stats.
-### Fixed
+- New display group "Additional settings"
 
 ### Fixed 
 - Editing custom templates: loss of translations (wrong journal's translation path)
-- [#296](https://github.com/CCSDForge/episciences/issues/296): keep two possible choices:
-  1. Contact without sending a new version
-  2. Upload a new versio- [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table.
-- [RT #177185]: Data too long for column 'VALUE' of the 'USER_INVITATION_ANSWER_DETAIL' table.
-## 1.0.39.1 - 2022-01-19
 - [#296](https://github.com/CCSDForge/episciences/issues/296): keep only two possible choices: 
   1. Contact without sending a new version 
   2. Upload a new version
@@ -68,13 +58,6 @@ tracking.' AddToAny is not used anymore.
 
 ## 1.0.39.1 - 2023-01-19
 ### Added
-- [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all 
-email templates. 
-### Fixed
-- [#293](https://github.com/CCSDForge/episciences/issues/293): the system has overwritten the invitation date with 
-the date of the latest action
-- Fixed footer links to avoid redirects with updated website
-
 - [#295](https://github.com/CCSDForge/episciences/issues/295): %%PERMANENT_ARTICLE_ID%% tag is now available in all 
 email templates. 
 - ### Fixed
