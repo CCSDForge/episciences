@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Added
-- [#315](https://github.com/CCSDForge/episciences/issues/315) : missing translatio
+- [#315](https://github.com/CCSDForge/episciences/issues/315): missing translation
+### Changed
+- [#316](https://github.com/CCSDForge/episciences/issues/316): it is no longer necessary to validate / create an account before declining the invitation.
 
 ## 1.0.39.4 - 2023-02-03
 ### Fixed
