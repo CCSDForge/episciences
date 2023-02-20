@@ -1349,7 +1349,7 @@ class Episciences_Review
 
         $form->addElement('checkbox', self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, [
                 'label' => "Ne pas permettre le choix d'un rédacteur en chef",
-                'description' => "Quand l'auteur a la possibilité de proposer un auteur lors de la soumission",
+                'description' => "Quand l'auteur a la possibilité de proposer un rédacteur lors de la soumission",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => [
                     'ViewHelper',
