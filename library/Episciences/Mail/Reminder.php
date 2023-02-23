@@ -936,8 +936,8 @@ class Episciences_Mail_Reminder
                 ];
 
                 // faut-il envoyer la relance aujourd'hui ?
-                if ($this->getRepetition()) {
-                    if (($interval % $this->getRepetition()) === 0) {
+                if ($interval >= $this->getDelay()) {
+                    if ($this->getRepetition() && ($interval % $this->getRepetition()) === 0) {
                         $recipients[] = [
                             'uid' => $editor->getUid(),
                             'fullname' => $editor->getFullName(),
@@ -945,7 +945,7 @@ class Episciences_Mail_Reminder
                             'lang' => $editor->getLangueid(true),
                             'tags' => $tags];
                     }
-                } else if ($interval === 0) {
+                } elseif ($interval === 0) {
                     $recipients[] = [
                         'uid' => $editor->getUid(),
                         'fullname' => $editor->getFullName(),
