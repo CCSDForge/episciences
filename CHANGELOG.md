@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet and if connected user have informed mastodon in profile he can publish into it 
 - [181](https://github.com/CCSDForge/episciences/issues/181): Administrator have the possiblity to add co-authors (CAS users) to papers and mail them when paper status change and see socials medias if exist, add automatically co authors in mails
+### Fixed
+- 'Not enough reviewers - editor copy: editors' reminder: editors received the reminders before the deadline set in the reminder template configuration.
+
 ## 1.0.39.4 - 2023-02-03
 ### Fixed
 - Fixed errors when creating user accounts
