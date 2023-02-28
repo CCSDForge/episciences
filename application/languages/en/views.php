@@ -1528,6 +1528,8 @@ return [
     "Invitation déclinée le : " => "Invitation declined on: ",
     "Cette invitation n'existe pas !" => "This invitation does not exist!",
     "Détails de la réponse" => "Details of the answer",
+    "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to rate this article anymore.",
+
 
     /**
      * Website
