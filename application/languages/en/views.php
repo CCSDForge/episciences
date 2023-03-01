@@ -157,7 +157,7 @@ return [
     "Choix de rubrique" => "Section choice",
     "L'auteur ne peut pas choisir la rubrique" => "The contributor can't choose a section",
     "L'auteur peut choisir la rubrique" => "The contributors can choose a section",
-    "L'auteur doit choisir la rubrique" => "The contributors has to choose section",
+    "L'auteur doit choisir la rubrique" => "The contributors have to choose a section",
     'Page de contact de la revue' => 'Journal contact URL',
     'Courriel de contact de la revue' => 'Journal contact email',
     'Page de contact du support technique' => 'Journal technical contact URL',
@@ -1529,6 +1529,8 @@ return [
     "Invitation déclinée le : " => "Invitation declined on: ",
     "Cette invitation n'existe pas !" => "This invitation does not exist!",
     "Détails de la réponse" => "Details of the answer",
+    "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to rate this article anymore.",
+
 
     /**
      * Website

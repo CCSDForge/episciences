@@ -296,6 +296,15 @@ class Episciences_User_Invitation
         return ($this->getAnswer() instanceof Episciences_User_InvitationAnswer);
     }
 
+    public function isCancelled(): bool
+    {
+        $original = Episciences_User_InvitationsManager::find(['AID' => $this->getAid()]);
+        return $original ?
+            $original->getStatus() === self::STATUS_CANCELLED :
+            $this->getStatus() === self::STATUS_CANCELLED;
+    }
+
+
     /**
      * try to load invitation answer
      * @return bool

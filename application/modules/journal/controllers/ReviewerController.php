@@ -486,7 +486,7 @@ class ReviewerController extends PaperDefaultController
     ): void
     {
         // answer forms **************************************
-        if (!$invitation->hasExpired() && !$invitation->isAnswered()) {
+        if (!$invitation->hasExpired() && !$invitation->isAnswered() && !$invitation->isCancelled()) {
 
             // empty form created for validation only (real form is in viewscript)
             //$accept_form = new Episciences_User_Form_Create();

@@ -37,6 +37,7 @@ class Episciences_User_InvitationsManager
 		$sql = $db->select()->from(T_USER_INVITATIONS, '*');
 		foreach ($params as $param=>$value) {
 			$sql->where("$param = ?", $value);
+            $sql->order('ID DESC');
 		}
 		
 		$data = $db->fetchRow($sql);
