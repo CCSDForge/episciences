@@ -613,7 +613,7 @@ class Episciences_PapersManager
         $count = 0;
 
         if (!is_array($list) || empty($list)) {
-            return $count ;
+            return $count;
         }
 
         foreach ($list as $oPaper) {
@@ -757,7 +757,7 @@ class Episciences_PapersManager
         if ($typeId) {
             if (is_array($typeId) && !empty($typeId)) {
                 $select->where('ACTION IN (?)', $typeId);
-            } else if (is_numeric($typeId)) {
+            } elseif (is_numeric($typeId)) {
                 $select->where('ACTION = ?', $typeId);
             }
         }
@@ -837,51 +837,22 @@ class Episciences_PapersManager
 
 
                 if ($reviewer) {
-                    $tmp['reviewer'] = [
-                        'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
-                        'fullname' => $reviewer->getFullName(),
-                        'screenname' => $reviewer->getScreenName(),
-                        'username' => $reviewer->getUsername(),
-                        'email' => $reviewer->getEmail(),
-                        'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid(), $rvId),
-                        'isCasUserValid' => (bool)$reviewer->getValid()
-                    ];
+                    $tmp['reviewer'] = self::reviewerProcess($reviewer, $docId, $rvId, $isTmpUser);
                 }
 
                 $key = !$isTmpUser ? $invitation['UID'] : 'tmp_' . $invitation['UID'];
+
+                if (!array_key_exists('reviewer', $tmp) && array_key_exists($key, $reviewers)) {
+
+                    $tmp['reviewer'] = self::reviewerProcess($reviewers[$key], $docId, $rvId, $isTmpUser);
+                }
                 $invitations[$key][] = $tmp;
             }
 
         }
 
         if ($sorted) {
-            $result = [
-                Episciences_User_Assignment::STATUS_ACTIVE => [],
-                Episciences_User_Assignment::STATUS_PENDING => [],
-                Episciences_User_Assignment::STATUS_INACTIVE => [],
-                Episciences_User_Assignment::STATUS_EXPIRED => [],
-                Episciences_User_Assignment::STATUS_CANCELLED => []];
-            foreach ($invitations as $invitation_list) {
-                $invitation = array_shift($invitation_list);
-                //si l'invitation a expiré, on la place dans une catégorie à part
-                if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING && self::compareToCurrentTime($invitation['EXPIRATION_DATE'])) {
-                    if ((!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
-                        (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
-                    ) {
-                        //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
-                        continue;
-                    }
-                    $result['expired'][] = $invitation;
-                } else {
-                    if ((!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
-                        (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
-                    ) {
-                        //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
-                        continue;
-                    }
-                    $result[$invitation['ASSIGNMENT_STATUS']][] = $invitation;
-                }
-            }
+            $result = self::sortInvitations($status, $invitations);
         } else {
             $result = $invitations;
         }
@@ -1043,10 +1014,10 @@ class Episciences_PapersManager
             'required' => true,
         ]);
 
-      /*  $form->addElement('text', 'firstname', [
-            'label' => 'Prénom',
-            'class' => 'form-control',
-        ]);*/
+        /*  $form->addElement('text', 'firstname', [
+              'label' => 'Prénom',
+              'class' => 'form-control',
+          ]);*/
 
         $form->addElement('select', 'user_lang', [
             'label' => 'Langue',
@@ -1534,7 +1505,7 @@ class Episciences_PapersManager
      */
     public static function getAcceptanceForm($default): \Ccsd_Form
     {
-        $formId= 'acceptance-form';
+        $formId = 'acceptance-form';
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
             'action' => '/administratepaper/accept/id/' . $default['id'],
@@ -1555,11 +1526,11 @@ class Episciences_PapersManager
 
         // to
         $form->addElement('text', 'to', [
-            'id' => $formId. '-to' ,
+            'id' => $formId . '-to',
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
-        
+
         // cc
         $existingMails = '';
         if (!empty($default['coAuthor'])) {
@@ -1568,11 +1539,11 @@ class Episciences_PapersManager
         $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId. '-cc','value'=> $existingMails]);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC',  'id' => $formId. '-bcc']);
+        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
 
         // from
         $form->addElement('text', 'from', [
-            'id' => $formId. '-from',
+            'id' => $formId . '-from',
             'label' => 'De',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1580,7 +1551,7 @@ class Episciences_PapersManager
 
         // reply-to
         $form->addElement('text', 'reply-to', [
-            'id' => $formId. '-reply-to',
+            'id' => $formId . '-reply-to',
             'label' => 'Répondre à',
             'disabled' => true,
             'placeholder' => RVCODE . '@' . DOMAIN,
@@ -1633,7 +1604,7 @@ class Episciences_PapersManager
 
         // to
         $form->addElement('text', 'to', [
-            'id' => $formId . '-to' ,
+            'id' => $formId . '-to',
             'label' => 'À',
             'disabled' => true,
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
@@ -2309,7 +2280,7 @@ class Episciences_PapersManager
         $contributorLocale = $contributor->getLangueid(true);
 
         // see gitlab #402
-        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::getDefaultLanguage() : $contributorLocale ;
+        $locale = (Episciences_Tools::getLocale() !== $contributorLocale) ? Episciences_Review::getDefaultLanguage() : $contributorLocale;
 
         if (!array_key_exists($locale, $languages)) {
             $locale = key($languages);
@@ -3010,7 +2981,8 @@ class Episciences_PapersManager
      * @return false|int
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getPublishedPapersCount() {
+    public static function getPublishedPapersCount()
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->from(T_PAPERS, [new Zend_Db_Expr("COUNT('DOCID') AS NbPublished")])
@@ -3118,9 +3090,9 @@ class Episciences_PapersManager
     }
 
     /**
-     * @deprecated
      * @param array $array
      * @return array
+     * @deprecated
      */
     private static function fromSequentialArrayToAssoc(array $array): array
     {
@@ -3191,7 +3163,7 @@ class Episciences_PapersManager
     public static function getApprovedForm($docId): \Ccsd_Form
     {
         $action = 'approvedwaitingforfinalpublication';
-        $id = 'approved' ;
+        $id = 'approved';
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
         $form->setName($id);
@@ -3229,7 +3201,7 @@ class Episciences_PapersManager
         $affiliationInfo = [
             'id' => 'affiliations',
             'label' => 'Affiliation(s)',
-            'description' => Ccsd_Tools::translate('Affiliation en texte libre ou issue du ')."<a target='_blank' rel='noopener' href='https://ror.org/'>ROR</a>",
+            'description' => Ccsd_Tools::translate('Affiliation en texte libre ou issue du ') . "<a target='_blank' rel='noopener' href='https://ror.org/'>ROR</a>",
             'display' => 'advanced',
         ];
         $affiliationInfo['value'] = [];
@@ -3294,7 +3266,7 @@ class Episciences_PapersManager
 
     }
 
-    public static  function getDocIdsInConflitByUid($uid): array
+    public static function getDocIdsInConflitByUid($uid): array
     {
 
         $docIds = [];
@@ -3609,6 +3581,72 @@ class Episciences_PapersManager
             $coAuthorsList[$coAuthorUser->getUid()] = $coAuthorUser;
         }
         return $coAuthorsList;
+    }
+
+    private static function sortInvitations($status, array $invitations = []): array
+    {
+
+        $result = [
+            Episciences_User_Assignment::STATUS_ACTIVE => [],
+            Episciences_User_Assignment::STATUS_PENDING => [],
+            Episciences_User_Assignment::STATUS_INACTIVE => [],
+            Episciences_User_Assignment::STATUS_EXPIRED => [],
+            Episciences_User_Assignment::STATUS_CANCELLED => []
+        ];
+
+        foreach ($invitations as $invitation_list) {
+            foreach ($invitation_list as $invitation) {
+                //si l'invitation a expiré, on la place dans une catégorie à part
+                if (
+                    $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING &&
+                    self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
+                ) {
+                    if (
+                        (!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
+                        (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
+                    ) {
+                        //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
+                        continue;
+                    }
+                    $result['expired'][] = $invitation;
+                } else {
+                    if (
+                        (!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
+                        (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
+                    ) {
+                        //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
+                        continue;
+                    }
+                    $result[$invitation['ASSIGNMENT_STATUS']][] = $invitation;
+                }
+            }
+        }
+
+        return $result;
+
+    }
+
+    /**
+     * @param Episciences_user $reviewer
+     * @param $docId
+     * @param $rvId
+     * @param $isTmpUser
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private static function reviewerProcess(Episciences_user $reviewer, $docId, $rvId, $isTmpUser): array
+    {
+
+        return [
+            'alias' => ($reviewer instanceof \Episciences_Reviewer) ? $reviewer->getAlias($docId) : null,
+            'fullname' => $reviewer->getFullName(),
+            'screenname' => $reviewer->getScreenName(),
+            'username' => $reviewer->getUsername(),
+            'email' => $reviewer->getEmail(),
+            'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid(), $rvId),
+            'isCasUserValid' => (bool)$reviewer->getValid()
+        ];
+
     }
 
 }

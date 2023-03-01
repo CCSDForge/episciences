@@ -14,22 +14,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
 ### Changed
-- [#316](https://github.com/CCSDForge/episciences/issues/316): it is no longer necessary to validate / create an account before declining the invitation.
 - [278](https://github.com/CCSDForge/episciences/issues/278): refuse an article: decision made by the editor in charge is now forwarded automatically to the reviewers
 - It is now possible to use Lemon LDAP authentication.
 - Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
   tracking.' AddToAny is not used anymore.
 - Public access to the journal's stats.
 ### Added
-- [#315](https://github.com/CCSDForge/episciences/issues/315): missing translation
 - Cancel a DOI assignment for the journal (manual DOI assignment setting only)
 - It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an ema
 - [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet and if connected user have informed mastodon in profile he can publish into it 
 - [181](https://github.com/CCSDForge/episciences/issues/181): Administrator have the possiblity to add co-authors (CAS users) to papers and mail them when paper status change and see socials medias if exist, add automatically co authors in mails
+- [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
+
+## 1.0.39.5 - 2023-02-23
+### Added
+- [#315](https://github.com/CCSDForge/episciences/issues/315): missing translation
+### Changed
+- [#316](https://github.com/CCSDForge/episciences/issues/316): it is no longer necessary to validate / create an account before declining the invitation.
 ### Fixed
 - 'Not enough reviewers - editor copy: editors' reminder: editors received the reminders before the deadline set in the reminder template configuration.
 

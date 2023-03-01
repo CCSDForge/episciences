@@ -73,21 +73,30 @@
                     <div><?php echo $this->translate('Vous avez suggéré de proposer la relecture à :') ?><?php echo $this->invitation->getAnswer()->getDetail('reviewer_suggest') ?></div>
                 <?php endif; ?>
 
-            <?php elseif ($this->invitation->hasExpired()) : ?>
+            <?php elseif ($this->invitation->hasExpired() || $this->invitation->isCancelled()): ?>
                 <br/>
                 <div class="red">
-                    <?php echo $this->translate("Cette invitation a expiré."); ?>
+                    <?php if ($this->invitation->hasExpired()) : ?>
+                        <?= $this->translate("Cette invitation a expiré.") ?>
+                    <?php elseif ($this->invitation->isCancelled()) : ?>
+                        <?= $this->translate("Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article.") ?>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
+
 
         </div>
     </div>
 
-    <?php if (!$this->invitation->hasExpired() && !$this->invitation->isAnswered()) : ?>
+    <?php if (
+        !$this->invitation->hasExpired() &&
+        !$this->invitation->isAnswered() &&
+        !$this->invitation->isCancelled()
+    ) : ?>
         <div class="form-actions text-center">
             <?php if ($this->user_form) : ?>
                 <button id="accept-button" type="button" class="btn btn-success" onclick="show_user_form()">
-                    <?php echo $this->translate("J'accepte de relire cet article") ?>
+                    <?= $this->translate("J'accepte de relire cet article") ?>
                 </button>
             <?php else : ?>
                 <form method="post" style="display:inline">
