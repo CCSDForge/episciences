@@ -14,10 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## 1.0.39.6 - 2023-03-01
 ### Fixed
 - [#325](https://github.com/CCSDForge/episciences/issues/325): the system allows accepting an invitation after it has been canceled
-- [#324](https://github.com/CCSDForge/episciences/issues/324)
+### Changed
+- [#324](https://github.com/CCSDForge/episciences/issues/324): Updates to journal settings translations
 
 ## 1.0.39.5 - 2023-02-23
 ### Added
