@@ -31,10 +31,13 @@ require_once "JournalScript.php";
 class getDoi extends JournalScript
 {
     /**
+     * @const int
+     */
+    public const MAX_DOI_TO_DECLARE_WITHOUT_CONFIRMATION = 20;
+    /**
      * @var Episciences_Paper
      */
     protected $_paper;
-
     /**
      * @var Episciences_Review
      */
@@ -43,17 +46,14 @@ class getDoi extends JournalScript
      * @var Episciences_Paper_DoiQueue
      */
     protected $_doiQueue;
-
     /**
      * @var Episciences_Review_DoiSettings
      */
     protected $_doiSettings;
-
     /**
      * @var bool
      */
     protected $_dryRun = true;
-
     /**
      * @var string
      */
@@ -89,9 +89,11 @@ class getDoi extends JournalScript
     /**
      * @return mixed|void
      * @throws GuzzleException
+     * @throws Zend_Db_Select_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    public
-    function run()
+    public function run()
     {
         $this->initApp();
         $this->initDb();
@@ -144,7 +146,6 @@ class getDoi extends JournalScript
                     $status = $this->readCrossrefStatusResponse($response->getBody());
 
 
-
                     $episciences_Paper_DoiQueue = $this->getDoiQueue();
                     if (((int)$status > 0) && ($episciences_Paper_DoiQueue->getDoi_status() !== Episciences_Paper_DoiQueue::STATUS_PUBLIC)) {
                         $episciences_Paper_DoiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
@@ -170,7 +171,7 @@ class getDoi extends JournalScript
         $this->getMetadataFile();
 
         if (!$this->isDryRun()) {
-            $confirmation = $this->ask('Please confirm sending to production API (Data charges may apply)', ['Yes', 'No', '¯\_(ツ)_/¯'], self::BASH_RED);
+            $confirmation = $this->ask('Please confirm sending to production API', ['Yes', 'No', 'Help'], self::BASH_RED);
             if ($confirmation == 1) {
                 die(PHP_EOL . 'Process canceled: nothing was sent.' . PHP_EOL);
             }
@@ -187,6 +188,22 @@ class getDoi extends JournalScript
         echo PHP_EOL . 'API Answered: ' . $response->getBody() . PHP_EOL;
 
 
+    }
+
+    /**
+     * @return Episciences_Review_DoiSettings
+     */
+    public function getDoiSettings(): Episciences_Review_DoiSettings
+    {
+        return $this->_doiSettings;
+    }
+
+    /**
+     * @param Episciences_Review_DoiSettings $doiSettings
+     */
+    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings)
+    {
+        $this->_doiSettings = $doiSettings;
     }
 
     /**
@@ -235,27 +252,11 @@ class getDoi extends JournalScript
     }
 
     /**
-     * @return Episciences_Review_DoiSettings
-     */
-    public function getDoiSettings(): Episciences_Review_DoiSettings
-    {
-        return $this->_doiSettings;
-    }
-
-    /**
-     * @param Episciences_Review_DoiSettings $doiSettings
-     */
-    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings)
-    {
-        $this->_doiSettings = $doiSettings;
-    }
-
-    /**
      * @param string $paperStatus
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Exception
      */
-    private function requestDois()
+    private function requestDois(): void
     {
         $res = Episciences_Paper_DoiQueueManager::findDoisByStatus($this->getParam('rvid'), Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_ASSIGNED);
 
@@ -267,11 +268,13 @@ class getDoi extends JournalScript
             exit;
         }
 
-        if (!$this->isDryRun()) {
-            $confirmation = $this->ask(sprintf('Please confirm requesting %d DOIs to production API (Data charges may apply)', $countOfPapers), ['Yes', 'No', '¯\_(ツ)_/¯'], self::BASH_RED);
-            if ($confirmation == 1) {
+        if ($countOfPapers > self::MAX_DOI_TO_DECLARE_WITHOUT_CONFIRMATION) {
+            $confirmation = $this->ask(sprintf('Please confirm requesting %d DOIs to production API', $countOfPapers), ['Yes', 'No', 'Help'], self::BASH_RED);
+            if ($confirmation === 1) {
                 die(PHP_EOL . 'Process canceled: nothing was sent.' . PHP_EOL);
-            } elseif ($confirmation == 2) {
+            }
+
+            if ($confirmation === 2) {
                 $this->displayHelp();
                 exit;
             }
@@ -293,28 +296,9 @@ class getDoi extends JournalScript
     }
 
     /**
-     * @return bool
-     */
-    public
-    function isDryRun(): bool
-    {
-        return $this->_dryRun;
-    }
-
-    /**
-     * @param bool $dryRun
-     */
-    public
-    function setDryRun(bool $dryRun)
-    {
-        $this->_dryRun = $dryRun;
-    }
-
-    /**
      * @return Episciences_Paper
      */
-    public
-    function getPaper(): Episciences_Paper
+    public function getPaper(): Episciences_Paper
     {
         return $this->_paper;
     }
@@ -322,8 +306,7 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Paper $paper
      */
-    public
-    function setPaper($paper)
+    public function setPaper($paper)
     {
         $this->_paper = $paper;
     }
@@ -331,8 +314,7 @@ class getDoi extends JournalScript
     /**
      * @return mixed
      */
-    private
-    function getMetadataFile()
+    private function getMetadataFile()
     {
 
         $paperUrl = HTTP . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
@@ -341,7 +323,7 @@ class getDoi extends JournalScript
         try {
             $res = $client->request('GET', $paperUrl);
         } catch (GuzzleException $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
         return file_put_contents($this->getMetadataPathFileName(), $res->getBody());
@@ -350,8 +332,7 @@ class getDoi extends JournalScript
     /**
      * @return string
      */
-    private
-    function getJournalUrl()
+    private function getJournalUrl()
     {
         if ($this->getJournalHostname() != '') {
             return $this->getJournalHostname();
@@ -378,8 +359,7 @@ class getDoi extends JournalScript
     /**
      * @return Episciences_Review
      */
-    public
-    function getReview(): Episciences_Review
+    public function getReview(): Episciences_Review
     {
         return $this->_review;
     }
@@ -387,8 +367,7 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Review $review
      */
-    public
-    function setReview($review)
+    public function setReview($review)
     {
         $this->_review = $review;
     }
@@ -396,8 +375,7 @@ class getDoi extends JournalScript
     /**
      * @return string
      */
-    private
-    function getMetadataPathFileName(): string
+    private function getMetadataPathFileName(): string
     {
         return CACHE_PATH . $this->getMetadataFileName();
     }
@@ -405,8 +383,7 @@ class getDoi extends JournalScript
     /**
      * @return string
      */
-    private
-    function getMetadataFileName(): string
+    private function getMetadataFileName(): string
     {
         return $this->getPaper()->getPaperid() . '.xml';
     }
@@ -415,8 +392,7 @@ class getDoi extends JournalScript
      * @return ResponseInterface
      * @throws GuzzleException
      */
-    private
-    function postMetadataFile(): ResponseInterface
+    private function postMetadataFile(): ResponseInterface
     {
 
         if ($this->isDryRun()) {
@@ -425,8 +401,7 @@ class getDoi extends JournalScript
             $apiUrl = DOI_API;
         }
 
-        $client = new Client();
-        return $client->request('POST', $apiUrl, [
+        return (new Client())->request('POST', $apiUrl, [
             'multipart' => [
                 [
                     'name' => 'operation',
@@ -442,6 +417,7 @@ class getDoi extends JournalScript
                 ],
                 [
                     'name' => 'fname',
+                    'filename' => $this->getReview()->getCode() . '-' . $this->getMetadataFileName(),
                     'contents' => fopen($this->getMetadataPathFileName(), 'rb')
                 ],
             ]
@@ -449,10 +425,26 @@ class getDoi extends JournalScript
     }
 
     /**
+     * @return bool
+     */
+    public function isDryRun(): bool
+    {
+        return $this->_dryRun;
+    }
+
+    /**
+     * @param bool $dryRun
+     */
+    public function setDryRun(bool $dryRun)
+    {
+        $this->_dryRun = $dryRun;
+    }
+
+    /**
+     * @param string $doiStatus
      * @return int
      */
-    private
-    function updateMetadataQueue($doiStatus = Episciences_Paper_DoiQueue::STATUS_REQUESTED): int
+    private function updateMetadataQueue($doiStatus = Episciences_Paper_DoiQueue::STATUS_REQUESTED): int
     {
         $this->getDoiQueue()->setDoi_status($doiStatus);
         return Episciences_Paper_DoiQueueManager::update($this->getDoiQueue());
@@ -461,8 +453,7 @@ class getDoi extends JournalScript
     /**
      * @return Episciences_Paper_DoiQueue
      */
-    public
-    function getDoiQueue(): Episciences_Paper_DoiQueue
+    public function getDoiQueue(): Episciences_Paper_DoiQueue
     {
         return $this->_doiQueue;
     }
@@ -470,8 +461,7 @@ class getDoi extends JournalScript
     /**
      * @param mixed $doiQueue
      */
-    public
-    function setDoiQueue($doiQueue)
+    public function setDoiQueue($doiQueue)
     {
         $this->_doiQueue = $doiQueue;
     }
@@ -481,8 +471,7 @@ class getDoi extends JournalScript
      * @throws GuzzleException
      * https://doi.crossref.org/servlet/submissionDownload?usr=_username_&pwd=_password_&doi_batch_id=_doi batch id_&file_name=filename&type=_submission type_
      */
-    private
-    function RequestCrossrefDoiStatus(): ResponseInterface
+    private function RequestCrossrefDoiStatus(): ResponseInterface
     {
 
         if ($this->isDryRun()) {
@@ -492,8 +481,7 @@ class getDoi extends JournalScript
         }
 
 
-        $client = new Client();
-        return $client->request('GET', $apiUrl,
+        return (new Client())->request('GET', $apiUrl,
             [
                 'query' => [
                     'usr' => DOI_LOGIN,
