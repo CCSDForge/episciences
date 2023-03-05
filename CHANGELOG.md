@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.39.7 - 2023-03-05
+### Added
+- Support for autoincrement with DOI Patterns
+
 ## 1.0.39.6 - 2023-03-01
 ### Fixed
 - [#325](https://github.com/CCSDForge/episciences/issues/325): the system allows accepting an invitation after it has been canceled
