@@ -155,9 +155,9 @@ return [
     "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)" => "Contributors can submit a previously denied article again (new version)",
     // Choix de la section
     "Choix de rubrique" => "Section choice",
-    "L'auteur ne peut pas choisir la rubrique" => "The contributor can't choose a section",
-    "L'auteur peut choisir la rubrique" => "The contributors can choose a section",
-    "L'auteur doit choisir la rubrique" => "The contributors have to choose a section",
+    "L'auteur ne peut pas choisir la rubrique" => "Contributors can't choose a section",
+    "L'auteur peut choisir la rubrique" => "Contributors can choose a section",
+    "L'auteur doit choisir la rubrique" => "Contributors have to choose a section",
     'Page de contact de la revue' => 'Journal contact URL',
     'Courriel de contact de la revue' => 'Journal contact email',
     'Page de contact du support technique' => 'Journal technical contact URL',

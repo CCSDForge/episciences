@@ -67,8 +67,14 @@ $name = $this->element->getName();
         <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR ?></code></dt>
         <dd><?php echo $this->translate('Année de publication') ?>&nbsp;<em>(<?php echo date('Y'); ?>)</em></dd>
 
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR_SHORT ?></code></dt>
+        <dd><?php echo $this->translate('Année de publication') ?>&nbsp;<em>(<?php echo date('y'); ?>)</em></dd>
+
         <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_MONTH ?></code></dt>
         <dd><?php echo $this->translate('Mois de publication') ?>&nbsp;<em>(<?php echo date('m'); ?>)</em></dd>
+
+        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_AUTOINCREMENT ?></code></dt>
+        <dd><?php echo $this->translate("Auto-incrément basé sur le DOI précédent") ?>&nbsp;<em>(7)</em></dd>
 
         <dt><code>%%</code></dt>
         <dd><?php echo $this->translate("le caractère <kbd>%</kbd>"); ?></dd>

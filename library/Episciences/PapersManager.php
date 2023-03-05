@@ -3552,5 +3552,4 @@ class Episciences_PapersManager
         ];
 
     }
-
 }
