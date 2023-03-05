@@ -41,7 +41,8 @@ if (defined('RVISSN')) {
     $issn = '';
 }
 
-$timestamp = time();
+$dateTime = new DateTime('now');
+$timestamp = $dateTime->format('YmdHisv');
 ?>
 <doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://www.crossref.org/schema/4.8.1 https://www.crossref.org/schemas/crossref4.8.1.xsd"

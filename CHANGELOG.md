@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [181](https://github.com/CCSDForge/episciences/issues/181): Administrator have the possiblity to add co-authors (CAS users) to papers and mail them when paper status change and see socials medias if exist, add automatically co authors in mails
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
+## 1.0.39.6 - 2023-03-01
+### Fixed
+- [#325](https://github.com/CCSDForge/episciences/issues/325): the system allows accepting an invitation after it has been canceled
+### Changed
+- [#324](https://github.com/CCSDForge/episciences/issues/324): Updates to journal settings translations
+
 ## 1.0.39.5 - 2023-02-23
 ### Added
 - [#315](https://github.com/CCSDForge/episciences/issues/315): missing translation

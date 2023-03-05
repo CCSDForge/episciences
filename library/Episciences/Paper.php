@@ -421,7 +421,7 @@ class Episciences_Paper
     {
         // if a DOI exists, do not update
         if (($paper->hasDoi()) || (!$paper->canBeAssignedDOI())) {
-            error_log('No DOI assigned because paper ' . $paper->getDoi() . ' has a DOI.');
+            trigger_error('No DOI assigned because paper ' . $paper->getDoi() . ' has a DOI.', E_USER_WARNING);
             return ['doi' => $paper->getDoi(), 'resUpdateDoi' => 0, 'resUpdateDoiQueue' => 0];
         }
 
@@ -3547,12 +3547,12 @@ class Episciences_Paper
     /**
      * @return string
      */
-    public function getPublicationYear(): string
+    public function getPublicationYear(string $yearFormat='Y'): string
     {
-        $year = date('Y');
+        $year = date($yearFormat);
         if ($this->isPublished()) {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            $year = $date->format('Y');
+            $year = $date->format($yearFormat);
         }
         return $year;
     }
@@ -4185,7 +4185,6 @@ class Episciences_Paper
 
     /**
      * @return array [Episciences_Paper_Authors]
-     * @throws JsonException
      */
     public function getAuthorsWithAffiNumeric(): array
     {
@@ -4226,44 +4225,6 @@ class Episciences_Paper
     }
 
 
-    /**
-     * @param null $publication_date
-     * @param string $doc_type
-     * @param array|false|string $rvcode
-     * @throws Zend_Exception
-     * @deprecated TODO Replace by COAR Notify
-     */
-    public function updateHALMetadata($publication_date = null, $doc_type = 'ART', $rvcode = RVCODE)
-    {
-        $identifier = $this->getIdentifier();
-        $version = $this->getVersion();
-        $volume = null;
-        if ($this->getVid()) {
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
-            if ($oVolume) {
-                $volume = $oVolume->getName('en', true);
-            }
-        }
-        $token = hash('sha256', EPISCIENCES_SECRET_KEY . $rvcode . $volume . $identifier . $version);
-
-        $curl = curl_init(EPISCIENCES_HAL_API . "/episciences/publication");
-        // result is returned instead of being displayed
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        $params = [
-            'identifier' => $identifier,
-            'version' => $version,
-            'rvcode' => $rvcode,
-            'volume' => $volume,
-            'date' => ($publication_date) ?: $this->getPublication_date(),
-            'token' => $token
-        ];
-        if ($doc_type) {
-            $params['typdoc'] = $doc_type;
-        }
-        curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
-        curl_exec($curl);
-        curl_close($curl);
-    }
 
     /**
      * @return string | null
