@@ -21,8 +21,10 @@ class Episciences_Review_DoiSettings
     public const DOI_FORMAT_PAPER_VOLUME_ORDER = '%VP%';
     public const DOI_FORMAT_PAPER_ID = '%P%';
     public const DOI_FORMAT_PAPER_YEAR = '%Y%';
+    public const DOI_FORMAT_PAPER_YEAR_SHORT = '%y%';
     public const DOI_FORMAT_PAPER_MONTH = '%M%';
 
+    public const DOI_FORMAT_PAPER_AUTOINCREMENT = '%AUTOINCREMENT%';
 
     public const DOI_ASSIGN_MODE_AUTO = 'automatic';
     public const DOI_ASSIGN_MODE_MANUAL = 'manual';
@@ -204,13 +206,25 @@ class Episciences_Review_DoiSettings
         $template[self::DOI_FORMAT_PAPER_SECTION_INT] = $sectionInt;
         $template[self::DOI_FORMAT_PAPER_ID] = $paper->getPaperid();
         $template[self::DOI_FORMAT_PAPER_YEAR] = $paper->getPublicationYear();
+        $template[self::DOI_FORMAT_PAPER_YEAR_SHORT] = $paper->getPublicationYear('y');
         $template[self::DOI_FORMAT_PAPER_MONTH] = $paper->getPublicationMonth();
 
 
         $search = array_keys($template);
         $replace = array_values($template);
+        $doi = str_replace($search, $replace, $doi);
+
+
+        $hasAutoIncrementReplacementChar = preg_match("/(.*)(" . self::DOI_FORMAT_PAPER_AUTOINCREMENT . ")/", $doiFormat, $matchesAutoIncrementReplacementChar);
+
+        if ($hasAutoIncrementReplacementChar) {
+            $autoIncrementValue = $this->computeNextDoiAutoIncrement($doi, $paper->getRvid());
+            $template[self::DOI_FORMAT_PAPER_AUTOINCREMENT] = $autoIncrementValue;
+        $search = array_keys($template);
+        $replace = array_values($template);
 
         $doi = str_replace($search, $replace, $doi);
+        }
 
         $doi = str_replace([' ', '..', '--'], ['', '.', '-'], $doi);
 
@@ -229,7 +243,7 @@ class Episciences_Review_DoiSettings
     /**
      * @param string $doiPrefix
      */
-    public function setDoiPrefix(string $doiPrefix)
+    public function setDoiPrefix(string $doiPrefix): void
     {
         $this->_doiPrefix = $doiPrefix;
     }
@@ -245,7 +259,7 @@ class Episciences_Review_DoiSettings
     /**
      * @param string $doiFormat
      */
-    public function setDoiFormat(string $doiFormat)
+    public function setDoiFormat(string $doiFormat): void
     {
         $this->_doiFormat = $doiFormat;
     }
@@ -274,7 +288,7 @@ class Episciences_Review_DoiSettings
     /**
      * @param string $doiRegistrationAgency
      */
-    public function setDoiRegistrationAgency(string $doiRegistrationAgency)
+    public function setDoiRegistrationAgency(string $doiRegistrationAgency): void
     {
         $this->_doiRegistrationAgency = $doiRegistrationAgency;
     }
@@ -293,5 +307,61 @@ class Episciences_Review_DoiSettings
     public function setDoiAssignMode(string $autoAssignDoi = self::DOI_DEFAULT_ASSIGN_MODE): void
     {
         $this->_doiAssignMode = $autoAssignDoi;
+    }
+    /**
+     * Get the latest DOI of a journal, according to the journal's pattern
+     * @param int $rvid
+     * @param string $doiPattern
+     * @return string
+     */
+    public static function getNextDoiAutoincrement(int $rvid, string $doiPattern): string
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->distinct('DOI')
+            ->from('PAPERS', ['DOI', 'PAPERID'])
+            ->where('DOI LIKE ?', $doiPattern . '%')
+            ->where('RVID LIKE ?', $rvid)
+            ->order('DOI DESC')
+            ->limit(1);
+
+        $res = $select->query()->fetchAll(Zend_Db::FETCH_COLUMN);
+
+        if ($res) {
+            return (string) $res[0];
+        }
+
+        return '';
+    }
+
+    /**
+     * @param $doi
+     * @param int $rvid
+     * @return int
+     */
+    private function computeNextDoiAutoIncrement($doi, int $rvid)
+    {
+
+        $doiWihtoutAutoIncrementString = str_replace(self::DOI_FORMAT_PAPER_AUTOINCREMENT, '', $doi);
+        $templateAutoIncrementSeparatorChar = substr($doiWihtoutAutoIncrementString, -1);
+
+        $doiPattern = sprintf("%s/%s", $this->getDoiPrefix(), $doiWihtoutAutoIncrementString);
+        $latestDoi = self::getNextDoiAutoincrement($rvid, $doiPattern);
+
+        if ($latestDoi === '') {
+            // no previous DOI start at 1
+            return 1;
+        }
+
+        $autoIncrementValueArray = explode($templateAutoIncrementSeparatorChar, $latestDoi);
+        if (is_array($autoIncrementValueArray)) {
+            $autoIncrementValue = end($autoIncrementValueArray) + 1;
+        } else {
+            $autoIncrementValue = 1;
+        }
+
+        return (int) $autoIncrementValue;
     }
 }
