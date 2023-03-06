@@ -3190,31 +3190,32 @@ class Episciences_PapersManager
         ];
 
         foreach ($invitations as $invitation_list) {
-            foreach ($invitation_list as $invitation) {
-                //si l'invitation a expiré, on la place dans une catégorie à part
+            $invitation = array_shift($invitation_list);
+
+            //si l'invitation a expiré, on la place dans une catégorie à part
+            if (
+                $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING &&
+                self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
+            ) {
                 if (
-                    $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING &&
-                    self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
+                    (!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
+                    (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
                 ) {
-                    if (
-                        (!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
-                        (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
-                    ) {
-                        //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
-                        continue;
-                    }
-                    $result['expired'][] = $invitation;
-                } else {
-                    if (
-                        (!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
-                        (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
-                    ) {
-                        //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
-                        continue;
-                    }
-                    $result[$invitation['ASSIGNMENT_STATUS']][] = $invitation;
+                    //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
+                    continue;
                 }
+                $result['expired'][] = $invitation;
+            } else {
+                if (
+                    (!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
+                    (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
+                ) {
+                    //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
+                    continue;
+                }
+                $result[$invitation['ASSIGNMENT_STATUS']][] = $invitation;
             }
+
         }
 
         return $result;
