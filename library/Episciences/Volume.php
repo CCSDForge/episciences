@@ -14,6 +14,19 @@ class Episciences_Volume
     const SETTING_ACCESS_CODE = 'access_code';
     const UNLABELED_VOLUME = 'Unlabeled volume';
     const PAPER_POSITION_NEEDS_TO_BE_SAVED = 'needsToBeSaved';
+
+    // volume proceeding (conference act)
+    const VOLUME_CONFERENCE_NAME = 'conference_name';
+    const VOLUME_CONFERENCE_THEME = 'conference_theme';
+    const VOLUME_CONFERENCE_ACRONYM = 'conference_acronym';
+    const VOLUME_CONFERENCE_NUMBER = 'conference_number';
+    const VOLUME_CONFERENCE_LOCATION = 'conference_location';
+    const VOLUME_CONFERENCE_START_DATE = 'conference_start';
+    const VOLUME_CONFERENCE_END_DATE = 'conference_end';
+    const VOLUME_CONFERENCE_DOI = 'conference_proceedings_doi';
+
+    const VOLUME_IS_PROCEEDING = 'is_proceeding';
+
     protected $_db = null;
     private $_vid;
     private $_rvid;
@@ -26,6 +39,7 @@ class Episciences_Volume
     // Copy Editors
     private $_copyEditors = [];
     private $_bib_reference = null;
+
 
     /**
      * Episciences_Volume constructor.
@@ -615,11 +629,23 @@ class Episciences_Volume
             self::SETTING_STATUS => $data['status'],
             self::SETTING_CURRENT_ISSUE => $data['current_issue'],
             self::SETTING_SPECIAL_ISSUE => $data['special_issue'],
-            self::SETTING_ACCESS_CODE => $this->getSetting('access_code')
+            self::SETTING_ACCESS_CODE => $this->getSetting('access_code'),
+            self::VOLUME_IS_PROCEEDING => $data['is_proceeding'],
+            self::VOLUME_CONFERENCE_NAME => $data['conference_name'],
+            self::VOLUME_CONFERENCE_THEME => $data['conference_theme'],
+            self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'],
+            self::VOLUME_CONFERENCE_NUMBER => $data['conference_number'],
+            self::VOLUME_CONFERENCE_LOCATION => $data['conference_location'],
+            self::VOLUME_CONFERENCE_START_DATE => $data['conference_start'],
+            self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'],
         ];
 
         if ($settings[self::SETTING_SPECIAL_ISSUE] == 1 && !$settings['access_code']) {
             $settings[self::SETTING_ACCESS_CODE] = $this->createAccessCode();
+        }
+
+        if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()) {
+            $settings[self::VOLUME_CONFERENCE_DOI] = Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()."/".RVCODE.".proceedings.".$post['conference_proceedings_doi'];
         }
 
         // Ajout d'un nouveau volume
@@ -1132,6 +1158,28 @@ class Episciences_Volume
     public function getStatus(): int
     {
         return (int)$this->getSetting(self::SETTING_STATUS);
+    }
+    public function isProceeding(): int
+    {
+        return (int)$this->getSetting(self::VOLUME_IS_PROCEEDING);
+    }
+
+    /**
+     * @return array
+     */
+    public function getProceedingInfo(): array
+    {
+        return [
+            self::VOLUME_IS_PROCEEDING => $this->getSetting(self::VOLUME_IS_PROCEEDING),
+            self::VOLUME_CONFERENCE_NAME => $this->getSetting(self::VOLUME_CONFERENCE_NAME),
+            self::VOLUME_CONFERENCE_THEME => $this->getSetting(self::VOLUME_CONFERENCE_THEME),
+            self::VOLUME_CONFERENCE_ACRONYM => $this->getSetting(self::VOLUME_CONFERENCE_ACRONYM),
+            self::VOLUME_CONFERENCE_NUMBER => $this->getSetting(self::VOLUME_CONFERENCE_NUMBER),
+            self::VOLUME_CONFERENCE_LOCATION => $this->getSetting(self::VOLUME_CONFERENCE_LOCATION),
+            self::VOLUME_CONFERENCE_START_DATE => $this->getSetting(self::VOLUME_CONFERENCE_START_DATE),
+            self::VOLUME_CONFERENCE_END_DATE => $this->getSetting(self::VOLUME_CONFERENCE_END_DATE),
+            self::VOLUME_CONFERENCE_SUFFIX_DOI => $this->getSetting(self::VOLUME_CONFERENCE_SUFFIX_DOI),
+        ];
     }
 
 }
