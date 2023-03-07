@@ -375,8 +375,72 @@ class Episciences_VolumesManager
             'style' => 'width:300px'
         ]);
 
+        self::getProceedingForm($form);
+
         return $form;
     }
+
+    public static function getProceedingForm(Ccsd_Form $form): \Ccsd_Form
+    {
+        // Acte de conferences
+        $checkboxDecorators = [
+            ['Label', ['placement' => 'APPEND']],
+            'Description',
+            'ViewHelper',
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+        $form->addElement('checkbox', "is_proceeding", [
+            'label' => 'Acte conf',
+            'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+            'value' => 0,
+            'decorators' => $checkboxDecorators]);
+        $form->addElement('text', "conference_name", [
+            'label' => 'Nom de la conférence',
+        ]);
+        $form->addElement('text', "conference_theme", [
+            'label' => 'Theme de la conférence',
+        ]);
+        $form->addElement('text', "conference_acronym", [
+            'label' => 'Acronyme de la conférence',
+        ]);
+        $form->addElement('text', "conference_number", [
+            'label' => 'Numéro de la conférence',
+            'validators' => [
+                [new Zend_Validate_Int()]
+            ],
+        ]);
+        $form->addElement('text', "conference_location", [
+            'label' => 'Lieu de la conférence',
+        ]);
+
+        $form->addElement('date', 'conference_start', [
+            'label' => 'Date de début de la conférence',
+            'style' => 'position: static;', // avoid too much z-index for the page
+            'class' => 'datepicker',
+            'format' => 'Y-m-d',
+        ]);
+        $form->addElement('date', 'conference_end', [
+            'label' => 'Date de fin de la conférence',
+            'style' => 'position: static;', // avoid too much z-index for the page
+            'class' => 'datepicker',
+            'format' => 'Y-m-d',
+        ]);
+
+
+        $form->addElement('text', 'conference_proceedings_doi_group', [
+            'label' => "DOI proceedings",
+            'decorators' => [['ViewScript', ['viewScript' => 'volume/doi_proceedings_row.phtml']]],
+        ]);
+
+
+        $form->addElement('hidden', 'translate_text', [
+            'value' => Zend_Registry::get('Zend_Translate')->translate("Titre de l'acte de conférence")
+        ]);
+
+        return $form;
+    }
+
 
     /**
      * Retourne le formulaire de gestion d'une metadata

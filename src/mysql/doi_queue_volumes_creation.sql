@@ -1,0 +1,3 @@
+CREATE TABLE `doi_queue_volumes` ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT , `vid` INT UNSIGNED NOT NULL , `doi_status` ENUM('assigned','requested','public','') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'assigned' , `date_init` DATETIME NOT NULL , `date_updated` DATETIME on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`id`), INDEX (`vid`)) ENGINE = InnoDB;
+ALTER TABLE `doi_queue_volumes` ADD FOREIGN KEY (`vid`) REFERENCES `VOLUME`(`VID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE `doi_queue_volumes` ADD UNIQUE (`doi_status`, `vid`);

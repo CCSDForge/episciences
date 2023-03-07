@@ -135,6 +135,7 @@ function define_table_constants()
     define('T_ASSIGNMENTS', 'USER_ASSIGNMENT');
     define('T_CAS_USERS', 'T_UTILISATEURS');
     define('T_DOI_QUEUE', 'doi_queue');
+    define('T_DOI_QUEUE_VOLUMES', 'doi_queue_volumes');
     define('T_LOGS', 'PAPER_LOG');
     define('T_MAIL_LOG', 'MAIL_LOG');
     define('T_MAIL_REMINDERS', 'REMINDERS');

@@ -17,12 +17,15 @@ $publicationYear = new DateTime($paper->getPublication_date());
 $journal = $this->journal;
 $journalUrl = $journal->getUrl();
 $journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
+$journalDoiPrefix = $journal->getDoiSettings()->getDoiPrefix();
 
 $enrichmentAuthors = $paper->getAuthors();
 $enrichmentLicence = $paper->getLicence();
 $enrichmentFundings = $paper->getFundings();
 $enrichmentLinkedData = $paper->getLinkedData();
 
+//conferences infos
+$proceedingInfo = $this->proceedingInfo;
 
 $interWorkRelationship = [
     "isDerivedFrom","hasDerivation","isReviewOf",'hasReview',
@@ -57,7 +60,12 @@ $timestamp = time();
         <registrant><?php echo DOMAIN; ?></registrant>
     </head>
     <body>
-    <journal>
+    <?php if (!is_array($proceedingInfo)): ?>
+        <journal>
+    <?php else:?>
+        <conference>
+    <?php endif;?>
+        <?php if (!is_array($proceedingInfo)): ?>
         <journal_metadata language="en">
             <full_title><?php echo $this->escape($journal->getName()); ?></full_title>
             <?php if ($issn !== '') : ?>
@@ -86,23 +94,72 @@ $timestamp = time();
                 <issue><?php echo Ccsd_Tools_String::truncate($this->escape($this->section), 29, '...'); ?></issue>
             <?php endif; ?>
         </journal_issue>
-        <journal_article publication_type="full_text">
-            <titles>
-                <?php $titleCount = 0; ?>
-                <?php foreach ($titles as $lang => $title) : ?>
-                    <?php
-                    if ($titleCount == 0): ?>
-                        <title><?php echo $this->escape($title) ?></title>
-                        <?php $titleCount++; ?>
-                    <?php elseif ($titleCount == 1) : ?>
-                        <original_language_title
-                                language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
-                        <?php $titleCount++; ?>
-                    <?php endif; ?>
+        <?php endif;?>
+        <?php if (!is_array($proceedingInfo)): ?>
+            <journal_article publication_type="full_text">
+        <?php else: ?>
+            <event_metadata>
+                <conference_name><?= $this->translate($proceedingInfo['conference_name']) ?></conference_name>
+                <?php if ($proceedingInfo['conference_theme'] !== ''): ?>
+                    <conference_theme><?= $this->escape($proceedingInfo['conference_theme']) ?></conference_theme>
+                <?php endif; ?>
+                <?php if ($proceedingInfo['conference_acronym'] !== ''): ?>
+                    <conference_acronym><?=  $this->escape($proceedingInfo['conference_acronym']) ?></conference_acronym>
+                <?php endif; ?>
+                <?php if ($proceedingInfo['conference_number'] !== ''): ?>
+                    <conference_number><?=  $this->escape($proceedingInfo['conference_number']) ?></conference_number>
+                <?php endif; ?>
+                <?php if ($proceedingInfo['conference_location'] !== ''): ?>
+                    <conference_location><?=  $this->escape($proceedingInfo['conference_location']) ?></conference_location>
+                <?php endif; ?>
+                <?php
+                if ($proceedingInfo['conference_start'] !== '' && $proceedingInfo['conference_end'] !== '') {
+                    $proceeding_start = new dateTime($proceedingInfo['conference_start']);
+                    $proceeding_end = new dateTime($proceedingInfo['conference_end']);
+                    echo '<conference_date start_month="'.$proceeding_start->format('m').'" start_year="'.$proceeding_start->format('Y').'" start_day="'.$proceeding_start->format('d').'" end_year="'.$proceeding_end->format('Y').'" end_month="'.$proceeding_end->format('m').'" end_day="'.$proceeding_end->format('d').'"/>';
+                }
+                ?>
+            </event_metadata>
+            <proceedings_metadata language="en">
+                    <proceedings_title><?php echo $this->escape($journal->getName()); ?></proceedings_title>
+                    <proceedings_subject>Metadata</proceedings_subject>
+                    <publisher>
+                        <publisher_name><?php echo $this->escape($journal->getName()); ?></publisher_name>
+                    </publisher>
+                    <publication_date media_type="online">
+                        <month><?php echo $publicationYear->format('m'); ?></month>
+                        <day><?php echo $publicationYear->format('d'); ?></day>
+                        <year><?php echo $publicationYear->format('Y'); ?></year>
+                    </publication_date>
+                    <noisbn reason="simple_series"/>
+                    <doi_data>
+                        <?php if ($journalDoiPrefix !== '') : ?>
+                            <doi><?php echo $this->escape($proceedingInfo['conference_proceedings_doi']); ?></doi>
+                        <?php endif; ?>
+                        <timestamp><?php echo $timestamp; ?></timestamp>
+                        <resource><?= $this->escape($journalUrl).'/volume/view/id/'.$this->escape($paper->getVid()) ?></resource>
+                    </doi_data>
+                </proceedings_metadata>
+                <conference_paper publication_type="full_text">
+        <?php endif;?>
+            <?php if (!is_array($proceedingInfo)): ?>
+                <titles>
+                    <?php $titleCount = 0; ?>
+                    <?php foreach ($titles as $lang => $title) : ?>
+                        <?php
+                        if ($titleCount == 0): ?>
+                            <title><?php echo $this->escape($title) ?></title>
+                            <?php $titleCount++; ?>
+                        <?php elseif ($titleCount == 1) : ?>
+                            <original_language_title
+                                    language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                            <?php $titleCount++; ?>
+                        <?php endif; ?>
 
 
-                <?php endforeach; ?>
-            </titles>
+                    <?php endforeach; ?>
+                </titles>
+            <?php endif;?>
 
 
             <?php
@@ -147,6 +204,22 @@ $timestamp = time();
                 <?php
             }
             ?>
+            <?php if (is_array($proceedingInfo)): ?>
+                <titles>
+                    <?php $titleCount = 0; ?>
+                    <?php foreach ($titles as $lang => $title) : ?>
+                        <?php
+                        if ($titleCount == 0): ?>
+                            <title><?php echo $this->escape($title) ?></title>
+                            <?php $titleCount++; ?>
+                        <?php elseif ($titleCount == 1) : ?>
+                            <original_language_title
+                                    language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                            <?php $titleCount++; ?>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </titles>
+            <?php endif;?>
             <?php if ($abstracts): ?>
 
                 <jats:abstract>
@@ -257,7 +330,16 @@ $timestamp = time();
                     </item>
                 </collection>
             </doi_data>
-        </journal_article>
-    </journal>
+        <?php if (!is_array($proceedingInfo)): ?>
+            </journal_article>
+        <?php else: ?>
+            </conference_paper>
+        <?php endif; ?>
+
+        <?php if (!is_array($proceedingInfo)): ?>
+            </journal>
+        <?php else:?>
+            </conference>
+        <?php endif;?>
     </body>
 </doi_batch>

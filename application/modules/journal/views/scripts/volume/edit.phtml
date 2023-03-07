@@ -1,8 +1,21 @@
-<?php 
+<?php
 	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 	$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-	$this->jQuery()->addJavascriptFile("/js/volume/special.js"); ?>
+	$this->jQuery()->addJavascriptFile("/js/volume/special.js");
+    $this->jQuery()->addJavascriptFile("/js/volume/confproceeding.js");
+    $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
+    $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
+    $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+
+    if ($formDoiProceeding = $this->form->getElement("conference_proceedings_doi")) {
+        $hasDoiProceedingValue = $formDoiProceeding->getValue();
+        if ($hasDoiProceedingValue !== '') {
+            $formDoiProceeding->setValue(substr(strrchr($hasDoiProceedingValue, "."), 1));
+        }
+    }
+    Zend_Debug::dump($this->element);
+    ?>
 
     <div class="panel panel-default">
         <div class="panel-body">
