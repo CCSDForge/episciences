@@ -177,11 +177,12 @@ class VolumeController extends Zend_Controller_Action
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
-//        $defaults = Episciences_VolumesManager::getFormDefaults($volume);
-        $defaults = ['conference_proceedings_doi' => 'kezrokreoekr'];
+        $defaults = Episciences_VolumesManager::getFormDefaults($volume);
+
+        $form->setDefault('conference_proceedings_doi', 'test');
+
         if ($defaults) {
-            $form->setDefaults($defaults);
-//            Zend_Debug::dump($defaults);
+            //$form->setDefaults($defaults);
         }
 
         $this->view->form = $form;
