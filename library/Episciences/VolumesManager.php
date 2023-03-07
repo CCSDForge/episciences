@@ -308,7 +308,8 @@ class Episciences_VolumesManager
         $form->setDecorators([
             ['ViewScript', [
                 'viewScript' => '/volume/form.phtml',
-                'referer' => $referer
+                'referer' => $referer,
+                'value' => $volume->getSetting('conference_proceedings_doi')
             ]
             ],
             'FormTinymce',
@@ -375,7 +376,7 @@ class Episciences_VolumesManager
             'style' => 'width:300px'
         ]);
 
-        self::getProceedingForm($form);
+        //self::getProceedingForm($form);
 
         return $form;
     }
