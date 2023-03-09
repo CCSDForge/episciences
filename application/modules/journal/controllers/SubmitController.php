@@ -37,7 +37,7 @@ class SubmitController extends DefaultController
                 $message .= ' ';
                 $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
                 $message .= $this->view->translate('Merci de les corriger.');
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->_helper->redirector('index', 'submit');
                 return;
             }
@@ -62,7 +62,7 @@ class SubmitController extends DefaultController
 
                     $message = $this->view->translate("Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !");
 
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
 
                 }
 
@@ -141,7 +141,7 @@ class SubmitController extends DefaultController
                 }
 
                 if ($result['code'] === 0) {
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 } else {
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 }
@@ -167,7 +167,7 @@ class SubmitController extends DefaultController
             $message .= $validationErrors;
             $message .= $this->view->translate('Merci de les corriger.');
             $message .= '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
 
             $this->view->error = true;
         }

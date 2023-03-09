@@ -51,7 +51,7 @@ class ReviewController extends Zend_Controller_Action
                     $this->_helper->redirector->gotoUrl($url);
                 } else {
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
             } else {
                 $message = '<strong>' . $this->view->translate("Le formulaire comporte des erreurs.") . '</strong>';
@@ -215,7 +215,7 @@ class ReviewController extends Zend_Controller_Action
                         $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                     } else {
                         $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
-                        $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                     }
                 }
             }

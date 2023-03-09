@@ -50,7 +50,7 @@ class CoiController extends PaperDefaultController
                     }
 
                     $form->setDefaults($post);
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate("Ce formulaire comporte des erreurs."));
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($this->view->translate("Ce formulaire comporte des erreurs."));
                 }
 
                 $this->view->paper = $paper;
@@ -115,7 +115,7 @@ class CoiController extends PaperDefaultController
 
             if ($latestInsertId < 1) {
                 $message = sprintf("<strong>%s</strong>", $this->view->translate("Votre réponse n'a pas pu être enregistrée."));
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
 
             } else {
 

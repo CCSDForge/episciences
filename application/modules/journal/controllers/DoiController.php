@@ -35,7 +35,7 @@ class DoiController extends Zend_Controller_Action
                     $this->_helper->redirector->gotoUrl($url);
                 } else {
                     $message = sprintf("<strong>%s</strong>", $this->view->translate("Les modifications n'ont pas pu être enregistrées."));
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
             } else {
                 $message = sprintf("<strong>%s</strong>", $this->view->translate("Le formulaire comporte des erreurs."));

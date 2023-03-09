@@ -76,7 +76,7 @@ class CommentsController extends PaperController
             }
         } else {
             $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
         $this->_helper->redirector->gotoUrl($url);
@@ -113,7 +113,7 @@ class CommentsController extends PaperController
                     $newComment->setPcid($oldComment['PCID']);
                     if (!$newComment->save('update', $strict)) {
                         $message = $this->view->translate("Une erreur est survenue lors de l'enregistrement de votre commentaire.");
-                        $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                     } else {
                         $url = Episciences_Auth::isSecretary() ? $this->buildAdminPaperUrl($oldComment['DOCID']) : $this->buildPublicPaperUrl($oldComment['DOCID']);
                         $message = $this->view->translate("Vos changements ont été enregistrés.");
