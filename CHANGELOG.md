@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.39.8 - 2023-03-09
+### Added
+- Prevent multiple submissions of the same form
+### Fixed
+- Prevent injection when refusing a reviewer invitation with comments and in email history
+
 ## 1.0.39.7 - 2023-03-06
 ### Added
 - Support for autoincrement with DOI Patterns
