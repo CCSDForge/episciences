@@ -44,13 +44,13 @@ class VolumeController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
                     $message = '<strong>' . $this->view->translate("Le nouveau volume n'a pas pu être créé.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
                 $this->_helper->redirector('index', 'volume');
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
         }
@@ -149,14 +149,14 @@ class VolumeController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
                 $this->_helper->redirector->gotoUrl($referer);
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
         $defaults = Episciences_VolumesManager::getFormDefaults($volume);

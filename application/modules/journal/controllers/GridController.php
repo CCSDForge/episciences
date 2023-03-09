@@ -81,7 +81,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
             } else {
                 $message = '<strong>' . $this->view->translate("La grille n'a pas pu être créée.") . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
 
@@ -118,7 +118,7 @@ class GridController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
         } else {
             $message = '<strong>' . $this->view->translate("La grille par défaut n'a pas pu être copiée.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
         $this->_helper->redirector('list', 'grid');
@@ -141,7 +141,7 @@ class GridController extends Zend_Controller_Action
 
         if ($rgid === 0) {
             $message = '<strong>' . $this->view->translate("La grille par défault ne pas pu être supprimée.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             return;
         }
 
@@ -155,7 +155,7 @@ class GridController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
         } else {
             $message = '<strong>' . $this->view->translate("La grille n'a pas pu être supprimée.") . '</strong>';
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
         // la redirection vers "/gid/list" est faite dans "js/grid/es.dataTables.delete-buttons.js"
@@ -196,13 +196,13 @@ class GridController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
                     $message = '<strong>' . $this->view->translate("Le nouveau critère n'a pas pu être ajouté.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
                 $this->_helper->redirector('list', 'grid');
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
 
@@ -329,13 +329,13 @@ class GridController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
                     $message = '<strong>' . $this->view->translate("Le nouveau séparateur n'a pas pu être ajouté.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
                 $this->_helper->redirector('list', 'grid');
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
 
@@ -379,13 +379,13 @@ class GridController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
                     $message = '<strong>' . $this->view->translate("Le séparateur n'a pas pu être modifié.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
                 $this->_helper->redirector('list', 'grid');
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
         }
@@ -435,13 +435,13 @@ class GridController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
                     $message = '<strong>' . $this->view->translate("Le critère n'a pas pu être modifié.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
                 $this->_helper->redirector('list', 'grid');
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
         }

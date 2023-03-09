@@ -10,9 +10,14 @@ $contributorSocialMedia = $this->contributorSocialMedia;
 $coAuthors = $this->coAuthorsList;
 // for mastodon
 
-$identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
-$loggedUser = new Episciences_User($identity);
-$loggedUserSocialMedia = $loggedUser->getSocialMedias();
+if (Episciences_Auth::isLogged()) {
+    $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
+    $loggedUser = new Episciences_User($identity);
+    $loggedUserSocialMedia = $loggedUser->getSocialMedias();
+} else {
+    $loggedUserSocialMedia = null;
+}
+
 $socialCoAuthorList = [];
 if ($controller === 'administratepaper' && (substr_count($contributorSocialMedia, "@") === 1)) {
     $url = "https://twitter.com/intent/tweet/?text=".$title;
