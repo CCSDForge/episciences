@@ -136,7 +136,7 @@ class AdministratemailController extends Zend_Controller_Action
         if ($template->save()) {
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
         } else {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué');
         }
 
         $this->_helper->redirector->gotoUrl('/administratemail/templates');
@@ -167,7 +167,7 @@ class AdministratemailController extends Zend_Controller_Action
         if ($template->delete()) {
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Le template par défaut a été restauré');
         } else {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage('La suppression du template personnalisé a échoué');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('La suppression du template personnalisé a échoué');
         }
 
         $this->_helper->redirector->gotoUrl('/administratemail/templates');
@@ -408,7 +408,7 @@ class AdministratemailController extends Zend_Controller_Action
                 return $message;
             }
 
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             return;
         }
 
@@ -538,7 +538,7 @@ class AdministratemailController extends Zend_Controller_Action
             $message = '<strong>' . $selfView->translate("Une erreur interne s'est produite, veuillez recommencer.") . '</strong>';
 
             if (!$isInModal) {
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
 
         }

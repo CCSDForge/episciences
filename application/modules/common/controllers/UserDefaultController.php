@@ -377,7 +377,7 @@ class UserDefaultController extends Zend_Controller_Action
         if (!$isAllowedToAddUserAccounts && Episciences_Auth::isLogged()) {
             // already signed in, and not an admin: not allowed to create another account
             $error = Zend_Registry::get('Zend_Translate')->translate("Vous ne pouvez pas créer de compte, car vous en possédez déjà un");
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($error);
             return;
         }
 
@@ -435,7 +435,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             if ($user->hasLocalData($selectedUserId) && $user->hasRoles($selectedUserId)) {
                 $error = Zend_Registry::get('Zend_Translate')->translate("Cet utilisateur possède déjà un compte Episciences");
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($error);
             } else {
 
                 // Récupération des données CAS
@@ -457,7 +457,7 @@ class UserDefaultController extends Zend_Controller_Action
                 } else {
                     $error = "L'utilisateur <strong>$screenName</strong> n'a pu être ajouté à Episciences";
                     $error = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $error);
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($error);
                 }
             }
 
@@ -501,7 +501,7 @@ class UserDefaultController extends Zend_Controller_Action
                     }
 
                     if (!$resp->isSuccess()) {
-                        $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
+                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
                         $this->view->form = $form;
                         $this->render('create');
                         return;
@@ -530,7 +530,7 @@ class UserDefaultController extends Zend_Controller_Action
                 if (!$userTokenMapper->save($userToken)) {
                     $error = "La création du compte a échoué. Merci de réessayer.";
                     trigger_error($error);
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($error);
                     $this->view->form = $form;
                     $this->render('create');
                     return;

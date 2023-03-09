@@ -1638,7 +1638,7 @@ class AdministratepaperController extends PaperDefaultController
         } else {
             // premier message d'erreur
             $message = $translator->translate('Erreur') . ' : ' . $translator->translate($errors[0]);
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
         if (!empty($referer)) {
@@ -1803,7 +1803,7 @@ class AdministratepaperController extends PaperDefaultController
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
 
             } else {
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué');
             }
 
         }
@@ -1829,7 +1829,7 @@ class AdministratepaperController extends PaperDefaultController
         $journal->loadSettings();
         $paper = Episciences_PapersManager::get($docId);
         if (!$paper) {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage("Vos modifications n'ont pas pu être enregistrées");
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Vos modifications n'ont pas pu être enregistrées");
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
             return;
         }
@@ -1931,7 +1931,7 @@ class AdministratepaperController extends PaperDefaultController
                 }
 
             } else {
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué');
             }
 
         }
@@ -1991,7 +1991,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
             } else {
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué');
             }
         }
 
@@ -3100,7 +3100,7 @@ class AdministratepaperController extends PaperDefaultController
                 $report->setStatus(Episciences_Rating_Report::STATUS_WIP);
                 if (!$report->save()) {
                     $message = "Une erreur s'est produite pendant l'enregistrement de vos modifications.";
-                    $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 } else {
                     $paper->ratingRefreshPaperStatus();
                     // log
@@ -3112,7 +3112,7 @@ class AdministratepaperController extends PaperDefaultController
                 }
             } else { // Pas autoriser
                 $message = $this->view->translate("Vous n'avez pas les droits suffisants pour changer le statut de cette relecture");
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         } else {
             return;
@@ -3635,7 +3635,7 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
 
         if (!$paper) {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué (article introuvable)');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué (article introuvable)');
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
         }
 
@@ -3644,7 +3644,7 @@ class AdministratepaperController extends PaperDefaultController
             if ($this->applyAction($request, $paper, $isCopyEditingAction)) {
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
             } else {
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échouées');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échouées');
             }
         }
 
@@ -3681,7 +3681,7 @@ class AdministratepaperController extends PaperDefaultController
         $result = $submitter->findWithCAS($paper->getUid());
 
         if (null === $result) {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué (auteur introuvable)');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué (auteur introuvable)');
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $paper->getDocid()]));
             return false;
         }
@@ -4189,7 +4189,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         if (!$isTypeFound) { // type is not found
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué (type incorrect)');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué (type incorrect)');
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
         }
 
@@ -4199,7 +4199,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // check that paper exists
         if (!$paper) {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué (article introuvable)');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué (article introuvable)');
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
         }
 
@@ -4216,7 +4216,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // check that submitter exists
             if (null === $result) {
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage('Les modifications ont échoué (auteur introuvable)');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué (auteur introuvable)');
                 $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
             }
 
