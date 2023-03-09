@@ -61,8 +61,13 @@
 
     </table>
 
-
-    <div><?php echo quoted_printable_decode($this->mail['bodyHtml']); ?></div>
+<?php
+    $bodyHtml = quoted_printable_decode($this->mail['bodyHtml']);
+    $htmlPurifier = new Episciences_HTMLPurifier();
+    $bodyHtml = $htmlPurifier->purifyHtml($bodyHtml);
+    ?>
+    <div><?php
+        echo $bodyHtml; ?></div>
 
     <?php if ($this->mail['attachments']) : ?>
         <hr/>
