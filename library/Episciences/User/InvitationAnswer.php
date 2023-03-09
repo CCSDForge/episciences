@@ -2,17 +2,13 @@
 
 class Episciences_User_InvitationAnswer
 {
-    // CONSTANTES ******************************************************************
-    // Réponses possibles
-    const ANSWER_YES = 'yes';
-    const ANSWER_NO = 'no';
+    public const ANSWER_YES = 'yes';
+    public const ANSWER_NO = 'no';
 
     // Détails de la réponse
-    const DETAIL_DELAY = 'delay';
-    const DETAIL_SUGGEST = 'reviewer_suggest';
-    const DETAIL_COMMENT = 'comment';
-
-    // ATTRIBUTS *******************************************************************
+    public const DETAIL_DELAY = 'delay';
+    public const DETAIL_SUGGEST = 'reviewer_suggest';
+    public const DETAIL_COMMENT = 'comment';
 
     /**
      * Id de l'invitation
@@ -35,9 +31,9 @@ class Episciences_User_InvitationAnswer
 
     protected $_details = [];
 
-    // METHODES ******************************************************************
-
-
+    /**
+     * @param array|null $options
+     */
     public function __construct(array $options = null)
     {
         if (is_array($options)) {
@@ -45,6 +41,10 @@ class Episciences_User_InvitationAnswer
         }
     }
 
+    /**
+     * @param array $options
+     * @return $this
+     */
     public function setOptions(array $options)
     {
         $methods = get_class_methods($this);
@@ -58,12 +58,17 @@ class Episciences_User_InvitationAnswer
     }
 
     /**
-     * Enregistre l'invitation en BDD
-     * @return boolean
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
      */
     public function save()
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        if ($db === null) {
+            trigger_error('Failed to init DB in ' . __CLASS__, E_USER_WARNING);
+            return false;
+        }
 
         // Préparation des valeurs à insérer
         $values = [
@@ -74,6 +79,7 @@ class Episciences_User_InvitationAnswer
 
         // Enregistrement de la réponse en base
         if (!$db->insert(T_USER_INVITATION_ANSWER, $values)) {
+            trigger_error('Failed to insert in ' . T_USER_INVITATION_ANSWER, E_USER_WARNING);
             return false;
         }
 
@@ -98,11 +104,8 @@ class Episciences_User_InvitationAnswer
     }
 
 
-    // GETTERS *******************************************************************
-
-
     /**
-     * @return the $_id
+     * @return int
      */
     public function getId()
     {
@@ -110,7 +113,8 @@ class Episciences_User_InvitationAnswer
     }
 
     /**
-     * @param number $_id
+     * @param $id
+     * @return void
      */
     public function setId($id)
     {
@@ -118,7 +122,7 @@ class Episciences_User_InvitationAnswer
     }
 
     /**
-     * @return the $_answer
+     * @return string
      */
     public function getAnswer()
     {
@@ -126,7 +130,8 @@ class Episciences_User_InvitationAnswer
     }
 
     /**
-     * @param string(10) $_answer
+     * @param $answer
+     * @return void
      */
     public function setAnswer($answer)
     {
@@ -134,26 +139,26 @@ class Episciences_User_InvitationAnswer
     }
 
     /**
-     * @return the $_details
+     * @return array|mixed
      */
     public function getDetails()
     {
         return $this->_details;
     }
 
-
-    // SETTERS ************************************************************************
-
     /**
-     * @param array $_details
+     * @param array $details
+     * @return void
      */
     public function setDetails(array $details)
     {
+        $details = array_map('trim', $details);
+        $details = array_map('htmlspecialchars', $details);
         $this->_details = $details;
     }
 
     /**
-     * @return the $_answer_date
+     * @return datetime
      */
     public function getAnswer_date()
     {
@@ -161,7 +166,8 @@ class Episciences_User_InvitationAnswer
     }
 
     /**
-     * @param datetime $_answer_date
+     * @param $answer_date
+     * @return void
      */
     public function setAnswer_date($answer_date)
     {
@@ -173,18 +179,20 @@ class Episciences_User_InvitationAnswer
         $details = $this->getDetails();
 
         if (array_key_exists($name, $details)) {
-            return $details[$name];
+            return strip_tags($details[$name]);
         }
 
         return false;
     }
 
     /**
-     * @param varchar $_name , varchar $_value
+     * @param $name
+     * @param $value
      */
     public function setDetail($name, $value)
     {
-        $this->_details[$name] = $value;
+        $value = trim($value);
+        $this->_details[$name] = filter_var($value, FILTER_SANITIZE_STRING);
     }
 
 
