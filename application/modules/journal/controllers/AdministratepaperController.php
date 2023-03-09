@@ -1477,6 +1477,17 @@ class AdministratepaperController extends PaperDefaultController
         $special_issue = $request->getParam('special_issue');
         $vid = $request->getParam('vid');
         $referer = $request->getPost('referer');
+        $session = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_no_csrf_foo');
+
+
+        if ( (!isset($post['no_csrf_foo'], $session->hash)) || ($post['no_csrf_foo'] !== $session->hash) ) {
+            $session->hash = null;
+            $message = $translator->translate('Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl($referer);
+            return false;
+        }
+        $session->hash = null;
 
         $paper = Episciences_PapersManager::get($docId, false);
         if (!$paper) {
