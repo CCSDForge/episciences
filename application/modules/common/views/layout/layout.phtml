@@ -133,10 +133,11 @@ echo $this->doctype('HTML5');
                     <?php } ?>
 
                     <?php
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_ERROR, false);
                     echo $this->DisplayFlashMessages('error', false);
-                    echo $this->DisplayFlashMessages('warning', false);
-                    echo $this->DisplayFlashMessages('success', true);
-                    echo $this->DisplayFlashMessages('info', true);
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_WARNING, false);
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_SUCCESS, false);
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_INFO, true);
                     ?>
 
                     <?php
