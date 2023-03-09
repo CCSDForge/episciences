@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
 
-## 1.0.39.7 - 2023-03-05
+## 1.0.39.7 - 2023-03-06
 ### Added
 - Support for autoincrement with DOI Patterns
 

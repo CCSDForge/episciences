@@ -1058,6 +1058,8 @@ class Episciences_PapersManager
         $action .= (array_key_exists('special_issue', $params)) ? '&special_issue=' . $params['special_issue'] : '';
 
         $form = new Ccsd_Form();
+        $form->addElement('hash', 'no_csrf_foo', array('salt' => 'unique'));
+        $form->getElement('no_csrf_foo')->setTimeout(3600);
         $form->setAction($action);
         $form->setAttrib('class', 'form-horizontal');
         $form->setAttrib('id', 'invitation-form');
