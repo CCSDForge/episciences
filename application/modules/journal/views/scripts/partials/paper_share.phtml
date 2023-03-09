@@ -16,7 +16,7 @@ if (Episciences_Auth::isLogged()) {
     $loggedUserSocialMedia = null;
 }
 
-if ($controller === 'administratepaper' && (substr_count($contributorSocialMedia, "@") === 1)) {
+if (substr_count($contributorSocialMedia, "@") === 1) {
     $url = "https://twitter.com/intent/tweet/?text=".$title;
     if (!is_null($contributorSocialMedia)) {
         $url .= (strpos($contributorSocialMedia, "@") === 0) ? " ".$contributorSocialMedia."&url=".$doi
@@ -54,7 +54,7 @@ if ($controller === 'administratepaper' && (substr_count($contributorSocialMedia
             </div>
         </div>
     </a>
-    <?php if ((substr_count($loggedUserSocialMedia, "@") > 1) && $controller === 'administratepaper') :
+    <?php if (substr_count($loggedUserSocialMedia, "@") > 1) :
         $loggedUserInfo = Episciences_Tools::getMastodonSeparatedInfo($loggedUserSocialMedia);
     ?>
     <!-- Sharingbutton Mastodon -->
