@@ -143,7 +143,7 @@ class Episciences_User_InvitationAnswer
      */
     public function getDetails()
     {
-        return $this->_details;
+        return $this->cleanDetailValue($this->_details);
     }
 
     /**
@@ -152,9 +152,27 @@ class Episciences_User_InvitationAnswer
      */
     public function setDetails(array $details)
     {
-        $details = array_map('trim', $details);
-        $details = array_map('htmlspecialchars', $details);
-        $this->_details = $details;
+        $this->_details = $this->cleanDetailValue($details);
+    }
+
+    /**
+     * @param $value
+     * @return array|string
+     */
+    private function cleanDetailValue($value)
+    {
+
+        if (is_array($value)) {
+            $value = array_map('strip_tags', $value);
+            $value = array_map('htmlspecialchars', $value);
+            $value = array_map('trim', $value);
+        } else {
+            $value = strip_tags($value);
+            $value = htmlspecialchars($value);
+            $value = trim($value);
+        }
+
+        return $value;
     }
 
     /**
@@ -179,7 +197,7 @@ class Episciences_User_InvitationAnswer
         $details = $this->getDetails();
 
         if (array_key_exists($name, $details)) {
-            return strip_tags($details[$name]);
+            return $this->cleanDetailValue($details[$name]);
         }
 
         return false;
@@ -191,8 +209,7 @@ class Episciences_User_InvitationAnswer
      */
     public function setDetail($name, $value)
     {
-        $value = trim($value);
-        $this->_details[$name] = filter_var($value, FILTER_SANITIZE_STRING);
+        $this->_details[$name] = $this->cleanDetailValue($value);
     }
 
 
