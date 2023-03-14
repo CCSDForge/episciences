@@ -1,6 +1,12 @@
 <?php $metadatas = $this->metadatas; ?>
 
 <?php
+/**
+ * @var Episciences_Volume $volume
+ */
+$volume = $this->volume;
+?>
+<?php
 /** @var Episciences_Volume_Metadata $metadata */
 foreach ($metadatas as $metadata) : ?>
 <?php
@@ -9,7 +15,25 @@ $metaId = $metadata->getId();
 $hasFile = $metadata->hasFile();
 $hasContent = !empty($metadata->getContent());
 ?>
-
+<?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1"): ?>
+    <div class="col-sm-12">
+        <p>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME).";"; } ?>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME).";"; } ?>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM).";"; } ?>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER).";"; } ?>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE).";"; } ?>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE); } ?>
+        </p>
+    </div>
+    <div class="col-sm-12">
+        <p>
+            <?php if (substr(strrchr($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI), "."), 1) !== '') {
+                echo "DOI: <a href='https://doi.org/" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) . "'target='_blank' rel='noopener'>" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) . "</a>";
+                } ?>
+        </p>
+    </div>
+<?php endif; ?>
 <div id="meta-<?= $metaId ?>">
 
     <?php if ($hasFile): ?>
@@ -54,7 +78,6 @@ $hasContent = !empty($metadata->getContent());
             <?php if ($hasContent) : ?>
                 <p class="attachment-metadata-volume small"><?= $content ?></p>
             <?php endif; ?>
-
         </div>
 
     </div>

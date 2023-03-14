@@ -644,7 +644,7 @@ class Episciences_Volume
             $settings[self::SETTING_ACCESS_CODE] = $this->createAccessCode();
         }
 
-        if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()) {
+        if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix() && $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED && $post['conference_proceedings_doi'] !== '') {
             $settings[self::VOLUME_CONFERENCE_DOI] = Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()."/".RVCODE.".proceedings.".$post['conference_proceedings_doi'];
         }
 
@@ -1169,6 +1169,7 @@ class Episciences_Volume
      */
     public function getProceedingInfo(): array
     {
+        $this->loadSettings();
         return [
             self::VOLUME_IS_PROCEEDING => $this->getSetting(self::VOLUME_IS_PROCEEDING),
             self::VOLUME_CONFERENCE_NAME => $this->getSetting(self::VOLUME_CONFERENCE_NAME),
@@ -1178,8 +1179,7 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_LOCATION => $this->getSetting(self::VOLUME_CONFERENCE_LOCATION),
             self::VOLUME_CONFERENCE_START_DATE => $this->getSetting(self::VOLUME_CONFERENCE_START_DATE),
             self::VOLUME_CONFERENCE_END_DATE => $this->getSetting(self::VOLUME_CONFERENCE_END_DATE),
-            self::VOLUME_CONFERENCE_SUFFIX_DOI => $this->getSetting(self::VOLUME_CONFERENCE_SUFFIX_DOI),
+            self::VOLUME_CONFERENCE_DOI => $this->getSetting(self::VOLUME_CONFERENCE_DOI),
         ];
     }
-
 }

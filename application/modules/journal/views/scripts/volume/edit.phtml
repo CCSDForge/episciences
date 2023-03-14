@@ -8,13 +8,6 @@
     $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
     $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 
-    if ($formDoiProceeding = $this->form->getElement("conference_proceedings_doi")) {
-        $hasDoiProceedingValue = $formDoiProceeding->getValue();
-        if ($hasDoiProceedingValue !== '') {
-            $formDoiProceeding->setValue(substr(strrchr($hasDoiProceedingValue, "."), 1));
-        }
-    }
-    //Zend_Debug::dump($this->form->getElements());
     ?>
 
     <div class="panel panel-default">

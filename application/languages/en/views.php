@@ -373,6 +373,21 @@ return [
     "Référence bibliographique du volume" => "Volume's bibliographical reference",
     "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the paper is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
+    // proceedings
+    "Nom de la conférence" => 'Conference title',
+    "Theme de la conférence" => "Conference theme",
+    "Acronyme de la conférence" => "Conference acronym",
+    "Titre de l'acte de conférence" => "Proceedings title",
+    "Numéro de la conférence" => "Conference number",
+    "Lieu de la conférence" => "Conference location",
+    "Date de début de la conférence" => "Conference start date",
+    "Date de fin de la conférence" => "Conference end date",
+    "DOI de l'acte de conférence" => "Proceeding DOI",
+    "Acte de conférence" => 'Proceedings act',
+    "Le DOI qui va être demandé" => "Doi will be requested",
+    "Demande DOI"=> "Request DOI",
+    "Annulation DOI" => "Cancel Request",
+
     //New version
     "Veuillez vérifier :" => "Please check:",
     "La version du document" => "The document version",

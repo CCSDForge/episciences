@@ -122,7 +122,25 @@ $timestamp = $dateTime->format('YmdHisv');
                 ?>
             </event_metadata>
             <proceedings_metadata language="en">
-                    <proceedings_title><?php echo $this->escape($journal->getName()); ?></proceedings_title>
+
+                    <?php if (is_array($proceedingInfo)): ?>
+                        <proceedings_title>
+                            <?php $titleCount = 0; ?>
+                            <?php foreach ($titles as $lang => $title) : ?>
+                                <?php
+                                if ($titleCount == 0): ?>
+                                    <title><?php echo $this->escape($title) ?></title>
+                                    <?php $titleCount++; ?>
+                                <?php elseif ($titleCount == 1) : ?>
+                                    <original_language_title
+                                            language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
+                                    <?php $titleCount++; ?>
+                                <?php endif; ?>
+
+
+                            <?php endforeach; ?>
+                        </proceedings_title>
+                    <?php endif;?>
                     <proceedings_subject>Metadata</proceedings_subject>
                     <publisher>
                         <publisher_name><?php echo $this->escape($journal->getName()); ?></publisher_name>
@@ -134,7 +152,7 @@ $timestamp = $dateTime->format('YmdHisv');
                     </publication_date>
                     <noisbn reason="simple_series"/>
                     <doi_data>
-                        <?php if ($journalDoiPrefix !== '') : ?>
+                        <?php if ($journalDoiPrefix !== '' && substr(strrchr($proceedingInfo['conference_proceedings_doi'], "."), 1) !== '' ): ?>
                             <doi><?php echo $this->escape($proceedingInfo['conference_proceedings_doi']); ?></doi>
                         <?php endif; ?>
                         <timestamp><?php echo $timestamp; ?></timestamp>

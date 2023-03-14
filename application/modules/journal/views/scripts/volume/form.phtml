@@ -16,7 +16,7 @@
     <form class="<?= $this->element->getAttrib('class') ?>" action="<?= $this->element->getAction() ?>"
           method="<?= $this->element->getMethod() ?>" data-library="ccsd" role="form">
         <?php foreach ($this->element->getElements() as $element) : ?>
-            <div id="<?= $element->getName() ?>-element" class="form-group">
+            <div id="<?= $element->getName() ?>-element" class="form-group" <?php if ($element->getAttrib('data-none')):?>style="display: none;" <?php endif;?>>
                 <?= $element ?>
             </div>
         <?php endforeach; ?>

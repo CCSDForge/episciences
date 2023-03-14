@@ -39,12 +39,11 @@ class Episciences_Volume_DoiQueueManager
             'date_updated' => $nowDb
         ];
         if (!empty($values)) {
-
             try {
                 $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_DOI_QUEUE_VOLUMES) . ' (`vid`,`doi_status`,`date_init`,`date_updated`) VALUES (';
                 //Prepares and executes an SQL
                 /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values) . ') ON DUPLICATE KEY UPDATE date_updated=NOW()');
+                $result = $db->query($sql . implode(', ', $values) . ') ON DUPLICATE KEY UPDATE doi_status=VALUES(doi_status), date_updated=NOW()');
                 $resInsert = $result->rowCount();
             } catch (Exception $e) {
                 error_log($e->getMessage());
@@ -66,7 +65,7 @@ class Episciences_Volume_DoiQueueManager
 
         $values = [
             'vid' => $doiQueueVolumes->getVid(),
-            'doi_status' => $doiQueueVolumes->getDoi_status(),
+            'doi_status' => $db->quote($doiQueueVolumes->getDoi_status()),
             'date_updated' => new Zend_DB_Expr('NOW()')
         ];
         try {
@@ -77,19 +76,5 @@ class Episciences_Volume_DoiQueueManager
         }
         return $resUpdate;
     }
-
-    /**
-     * @param int $vid
-     * @return bool
-     */
-//    public static function delete(int $vid): bool
-//    {
-//        if ($vid < 1) {
-//            return false;
-//        }
-//        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-//        $resDelete = $db->delete(T_DOI_QUEUE_VOLUMES, ['vid = ?' => $vid]);
-//        return $resDelete > 0;
-//    }
 
 }

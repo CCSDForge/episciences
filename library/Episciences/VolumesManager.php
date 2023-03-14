@@ -309,14 +309,16 @@ class Episciences_VolumesManager
             ['ViewScript', [
                 'viewScript' => '/volume/form.phtml',
                 'referer' => $referer,
-                'value' => $volume->getSetting('conference_proceedings_doi')
+                'value' => ''
             ]
             ],
             'FormTinymce',
             'FormCss',
             'FormJavascript'
         ]);
-
+        if ($volume !== null && $volume->getSetting('conference_proceedings_doi') !== null){
+            $form->getDecorator('ViewScript')->setOption('value',substr(strrchr($volume->getSetting('conference_proceedings_doi'), "."), 1));
+        }
         $lang = ['class' => 'Episciences_Tools', 'method' => 'getLanguages'];
         $reqLang = ['class' => 'Episciences_Tools', 'method' => 'getRequiredLanguages'];
 
@@ -376,12 +378,12 @@ class Episciences_VolumesManager
             'style' => 'width:300px'
         ]);
 
-        //self::getProceedingForm($form);
+        self::getProceedingForm($form,$volume);
 
         return $form;
     }
 
-    public static function getProceedingForm(Ccsd_Form $form): \Ccsd_Form
+    public static function getProceedingForm(Ccsd_Form $form, Episciences_Volume $volume = null): \Ccsd_Form
     {
         // Acte de conferences
         $checkboxDecorators = [
@@ -392,7 +394,7 @@ class Episciences_VolumesManager
             ['Errors', ['placement' => 'APPEND']]
         ];
         $form->addElement('checkbox', "is_proceeding", [
-            'label' => 'Acte conf',
+            'label' => 'Acte de conférence',
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'value' => 0,
             'decorators' => $checkboxDecorators]);
@@ -427,18 +429,30 @@ class Episciences_VolumesManager
             'class' => 'datepicker',
             'format' => 'Y-m-d',
         ]);
+        if ($volume !== null){
+            $form->addElement('hidden','doi_status',[
+                'value' => Episciences_Volume_DoiQueueManager::findByVolumesId($volume->getVid())->getDoi_status(),
+                'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
 
+            ]);
+        }else{
+            $form->addElement('hidden','doi_status',[
+                'value' => Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED,
+                'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volumes/form.phtml)
+            ]);
 
-        $form->addElement('text', 'conference_proceedings_doi_group', [
-            'label' => "DOI proceedings",
-            'decorators' => [['ViewScript', ['viewScript' => 'volume/doi_proceedings_row.phtml']]],
-        ]);
-
+        }
 
         $form->addElement('hidden', 'translate_text', [
-            'value' => Zend_Registry::get('Zend_Translate')->translate("Titre de l'acte de conférence")
+            'value' => Zend_Registry::get('Zend_Translate')->translate("Titre de l'acte de conférence"),
+            'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
         ]);
+        $form->addElement('hidden','translate_text_doi_request', [
 
+            'value' =>  Zend_Registry::get('Zend_Translate')->translate("Le DOI qui va être demandé"),
+            'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
+
+        ]);
         return $form;
     }
 
