@@ -206,6 +206,14 @@ class Episciences_CommentsManager
     public static function getForm($name = '', $modal = false): \Ccsd_Form
     {
         $form = new Ccsd_Form();
+
+        if ($name !== '') {
+            $form->setName($name);
+        }
+
+        $form->addElement('hash', 'no_csrf_foo', array('salt' => 'unique'));
+        $form->getElement('no_csrf_foo')->setTimeout(3600);
+
         $form->setAttrib('enctype', 'multipart/form-data');
         $form->setAttrib('class', 'form-horizontal');
         $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
