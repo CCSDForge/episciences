@@ -1382,7 +1382,11 @@ class Episciences_PapersManager
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
         $form->setName('suggeststatus');
+        $form->setMethod(Zend_Form::METHOD_POST);
         $form->setAction('/administratepaper/suggeststatus?id=' . $docId);
+        $csrfHashName = 'csrf_suggeststatus';
+        $form->addElement('hash', $csrfHashName, array('salt' => 'unique'));
+        $form->getElement($csrfHashName)->setTimeout(3600);
 
         // Les boutons de choix de suggestion sont dans la vue
         // Seuls les formulaires commentaire + validation sont générés ici
