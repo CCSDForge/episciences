@@ -32,6 +32,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
 
+## 1.0.39.9 - 2023-03-15
+### Fixed
+- Prevent repeated submission of comment form
+- Fix ignored form name parameter in comment form
+
+### Added
+- UI/UX add icon to make it easier to identify the user adding a comment
+
+## 1.0.39.8 - 2023-03-09
+### Added
+- Prevent multiple submissions of the same form
+### Fixed
+- Prevent injection when refusing a reviewer invitation with comments and in email history
+
 ## 1.0.39.7 - 2023-03-06
 ### Added
 - Support for autoincrement with DOI Patterns

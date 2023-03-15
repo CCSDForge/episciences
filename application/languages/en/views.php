@@ -2308,6 +2308,8 @@ return [
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
+    'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
+    'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
 
     //Chanage email address
 
