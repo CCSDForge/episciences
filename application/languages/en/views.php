@@ -387,6 +387,8 @@ return [
     "Le DOI qui va être demandé" => "Doi will be requested",
     "Demande DOI"=> "Request DOI",
     "Annulation DOI" => "Cancel Request",
+    'Du' => 'From',
+    'Au' => 'To',
 
     //New version
     "Veuillez vérifier :" => "Please check:",

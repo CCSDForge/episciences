@@ -44,13 +44,23 @@ $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
             ?>
         </h4>
         <?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1"): ?>
-            <p> <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME).";"; } ?>
-                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME).";"; } ?>
+            <p><b style="font-size: 14px"><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME);} ?></b></p>
+            <p>
                 <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM).";"; } ?>
-                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER).";"; } ?>
-                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE).";"; } ?>
-                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE); } ?>
+                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== ''){ echo "N°".$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER).";"; } ?>
             </p>
+            <p>
+                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) !== ''){echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION).";";} ?>
+                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== '' && $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== '') {
+                    if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) === $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) ){
+                        echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE);
+                    } else {
+                        echo Zend_Registry::get('Zend_Translate')->translate('Du').' '.$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE).' '.Zend_Registry::get('Zend_Translate')->translate('Au').' '.$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE);
+                    }
+                }
+                ?>
+            </p>
+            <p><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME).";"; } ?></p>
         <?php endif; ?>
         <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>
 
@@ -59,7 +69,7 @@ $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
         <?php endif; ?>
         <?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1" && substr(strrchr($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI), "."), 1) !== ''): ?>
             <p><?= "DOI: <a href='https://doi.org/".$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI)."'target='_blank' rel='noopener'>".$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI)."</a>" ?></p>
-        <?php endif; ?>
+            <?php endif; ?>
     </div>
 </div>
 

@@ -17,14 +17,23 @@ $hasContent = !empty($metadata->getContent());
 ?>
 <?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1"): ?>
     <div class="col-sm-12">
+        <p><b style="font-size: 12px"><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME);} ?></b></p>
         <p>
-            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME).";"; } ?>
-            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME).";"; } ?>
             <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM).";"; } ?>
-            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER).";"; } ?>
-            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE).";"; } ?>
-            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE); } ?>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== ''){ echo "N°".$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER).";"; } ?>
         </p>
+        <p>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) !== ''){echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION).";";} ?>
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== '' && $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== '') {
+                if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) === $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) ){
+                    echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE);
+                } else {
+                    echo Zend_Registry::get('Zend_Translate')->translate('Du').' '.$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE).' '.Zend_Registry::get('Zend_Translate')->translate('Au').' '.$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE);
+                }
+            }
+            ?>
+        </p>
+        <p><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME).";"; } ?></p>
     </div>
     <div class="col-sm-12">
         <p>
