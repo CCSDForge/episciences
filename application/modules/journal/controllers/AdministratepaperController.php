@@ -1990,7 +1990,7 @@ class AdministratepaperController extends PaperDefaultController
                 // Selon les paramètres de la revue, notifier les administrateurs, rédacteurs en chefs et secrétaires de rédaction.
                 $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED_EDITORS_COPY, Episciences_Auth::getUser());
 
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Vos modifications ont bien été prises en compte');
             } else {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué');
             }
@@ -2015,44 +2015,50 @@ class AdministratepaperController extends PaperDefaultController
         $request = $this->getRequest();
         $docId = $request->getQuery('id');
 
+        $form = Episciences_PapersManager::getSuggestStatusForm($docId);
+
         $papersManager = new Episciences_PapersManager;
         $paper = $papersManager::get($docId);
 
-        if ($request->isPost()) {
-
-            //Initialisation
-            $type = null;
-            $input = '';
-
-            $post = $request->getPost();
-
-            // load paper metadata
-            $paper->getAllMetadata();
-
-            // Le rédacteur recommande :
-            if (array_key_exists('confirm_accept', $post)) {
-                $type = Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION;
-                $input = 'comment_accept';
-            } elseif (array_key_exists('confirm_refuse', $post)) {
-                $type = Episciences_CommentsManager::TYPE_SUGGESTION_REFUS;
-                $input = 'comment_refuse';
-            } elseif (array_key_exists('confirm_newversion', $post)) {
-                $type = Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION;
-                $input = 'comment_newversion';
-            }
-
-            // On enregistre le commentaire en base
-            $oComment = new Episciences_Comment();
-            $oComment->setType($type);
-            $oComment->setDocid($docId);
-            $oComment->setMessage($post[$input]);
-            $oComment->save();
-
-            // On l'envoie par mail aux rédacteurs en chef, secrétaires de rédaction, administrateurs si le bon paramétrage a été choisi
-            $this->newCommentNotifyManager($paper, $oComment);
-
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+        if (!$this->getRequest()->isPost() && !$form->isValid($this->getRequest()->getPost())) {
+            $message = $this->view->translate('Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
         }
+
+        //Initialisation
+        $type = null;
+        $input = '';
+
+        $post = $request->getPost();
+
+        // load paper metadata
+        $paper->getAllMetadata();
+
+        // Le rédacteur recommande :
+        if (array_key_exists('confirm_accept', $post)) {
+            $type = Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION;
+            $input = 'comment_accept';
+        } elseif (array_key_exists('confirm_refuse', $post)) {
+            $type = Episciences_CommentsManager::TYPE_SUGGESTION_REFUS;
+            $input = 'comment_refuse';
+        } elseif (array_key_exists('confirm_newversion', $post)) {
+            $type = Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION;
+            $input = 'comment_newversion';
+        }
+
+        // On enregistre le commentaire en base
+        $oComment = new Episciences_Comment();
+        $oComment->setType($type);
+        $oComment->setDocid($docId);
+        $oComment->setMessage($post[$input]);
+        $oComment->save();
+
+        // On l'envoie par mail aux rédacteurs en chef, secrétaires de rédaction, administrateurs si le bon paramétrage a été choisi
+        $this->newCommentNotifyManager($paper, $oComment);
+
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Vos modifications ont bien été prises en compte');
+
 
         $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
 
