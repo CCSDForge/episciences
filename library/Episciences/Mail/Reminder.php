@@ -221,9 +221,8 @@ class Episciences_Mail_Reminder
      * load recipients list
      * @param bool $debug if debug is true, each query is displayed
      * @param mixed $date if date is not null, reminders are loaded for this specific date (default date is today)
-     * @throws Zend_Db_Select_Exception
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws JsonException
      */
     public function loadRecipients(bool $debug = false, $date = null): void
     {
@@ -231,7 +230,6 @@ class Episciences_Mail_Reminder
 
         $filters = [
             Episciences_Paper::STATUS_PUBLISHED,
-            Episciences_Paper::STATUS_ACCEPTED,
             Episciences_Paper::STATUS_REFUSED,
             Episciences_Paper::STATUS_OBSOLETE,
             Episciences_Paper::STATUS_REMOVED,
@@ -239,19 +237,20 @@ class Episciences_Mail_Reminder
             Episciences_Paper::STATUS_ABANDONED,
         ];
 
+        if (
+            in_array(
+                $this->getType(),
+                [self::TYPE_AFTER_REVISION_DEADLINE, self::TYPE_BEFORE_REVISION_DEADLINE],
+                true)
+        ) {
+            $filters = array_merge($filters, [Episciences_Paper::STATUS_ACCEPTED]);
+        }
+
         $revisionStatus = [
             Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION
         ];
 
-        $copyEditingStatus = [
-            Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
-            Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
-            Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
-            Episciences_Paper::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
-            Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
-            Episciences_Paper::STATUS_CE_READY_TO_PUBLISH,
-            Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED
-        ];
+        $filtersToIgnoreReminders = array_merge($filters, $revisionStatus, Episciences_Paper::ACCEPTED_SUBMISSIONS);
 
         switch ($this->getType()) {
 
@@ -267,26 +266,22 @@ class Episciences_Mail_Reminder
 
             // Editor did not assign enough reviewers to the paper
             case self::TYPE_NOT_ENOUGH_REVIEWERS:
-                $filters = array_merge($filters, $revisionStatus, $copyEditingStatus);
-                $recipients = $this->getNotEnoughReviewersRecipients($debug, $date, $filters);
+                $recipients = $this->getNotEnoughReviewersRecipients($debug, $date, $filtersToIgnoreReminders);
                 break;
 
             // Unanswered reviewer invitation
             case self::TYPE_UNANSWERED_INVITATION:
-                $filters = array_merge($filters, $revisionStatus, $copyEditingStatus);
-                $recipients = $this->getUnansweredInvitationRecipients($debug, $date, $filters);
+                $recipients = $this->getUnansweredInvitationRecipients($debug, $date, $filtersToIgnoreReminders);
                 break;
 
             // Before reviewer rating deadline
             case self::TYPE_BEFORE_REVIEWING_DEADLINE:
-                $filters = array_merge($filters, $revisionStatus, $copyEditingStatus);
-                $recipients = $this->getBeforeReviewingDeadlineRecipients($debug, $date, $filters);
+                $recipients = $this->getBeforeReviewingDeadlineRecipients($debug, $date, $filtersToIgnoreReminders);
                 break;
 
             // After reviewer rating deadline
             case self::TYPE_AFTER_REVIEWING_DEADLINE:
-                $filters = array_merge($filters, $revisionStatus, $copyEditingStatus);
-                $recipients = $this->getAfterReviewingDeadlineRecipients($debug, $date, $filters);
+                $recipients = $this->getAfterReviewingDeadlineRecipients($debug, $date, $filtersToIgnoreReminders);
                 break;
 
             // article blocked at accepted state
@@ -716,8 +711,7 @@ class Episciences_Mail_Reminder
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
                         'tags' => $tags,
-                        'deadline' => $data['DEADLINE'
-                        ]
+                        'deadline' => $data['DEADLINE']
                     ];
                 }
             } else {
@@ -804,7 +798,7 @@ class Episciences_Mail_Reminder
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
 
-                    $tags = array_merge($tags,  [
+                    $tags = array_merge($tags, [
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
@@ -1045,7 +1039,7 @@ class Episciences_Mail_Reminder
             if ((int)$data['TMP_USER'] === 1) {
                 $user = new Episciences_User_Tmp;
 
-                if(!empty($user->find($data['UID']))){
+                if (!empty($user->find($data['UID']))) {
                     $user->generateScreen_name();
                     $fullname = $user->getFullName();
                     $lang = $user->getLangueid(true);
@@ -1071,7 +1065,7 @@ class Episciences_Mail_Reminder
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
 
-                    $tags = array_merge($tags,  [
+                    $tags = array_merge($tags, [
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
@@ -1091,7 +1085,7 @@ class Episciences_Mail_Reminder
                 }
             } else {
 
-                $tags = array_merge($tags,  [
+                $tags = array_merge($tags, [
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($lang, true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $user->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $user->getScreenName(),

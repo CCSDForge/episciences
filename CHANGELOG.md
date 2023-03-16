@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 
 
+### Fixed
+- [RT#182289]: reminders are ignored once the document is accepted.
+
+## 1.0.39.10 - 2023-03-15
+### Fixed
+- Prevent repeated submission of Editor suggestions form : Force post method and add CSRF
+
 ## 1.0.39.9 - 2023-03-15
 ### Fixed
 - Prevent repeated submission of comment form
