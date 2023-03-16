@@ -74,7 +74,7 @@ class getCitationsData extends JournalScript
             if (!$sets->isHit()) {
                 $this->displayInfo('Call API Opencitations for ' . $trimDoi, true);
                 $respCitationsApi = self::retrieveAllCitationsByDoi($trimDoi);
-                if ($respCitationsApi !== '') {
+                if ($respCitationsApi !== '' && $respCitationsApi !== '[]') {
                     $sets->set($respCitationsApi);
                 } else {
                     $sets->set(json_encode([""]));
@@ -84,7 +84,7 @@ class getCitationsData extends JournalScript
             }
             $this->displayInfo('GET CACHE CALL FOR ' . $trimDoi, true);
             $apiCallCitationCache = json_decode($sets->get(), true, 512, JSON_THROW_ON_ERROR);
-            if (!empty($apiCallCitationCache)){
+            if (!empty($apiCallCitationCache) && reset($apiCallCitationCache) !== ""){
                 $globalArrayCiteDOI = []; // array of all doi which cite the doi looped
                 foreach ($apiCallCitationCache as $citationsValues){
                     $globalArrayCiteDOI[] = str_replace(self::CITATIONS_PREFIX_VALUE,"",$citationsValues['citing']);
@@ -110,7 +110,7 @@ class getCitationsData extends JournalScript
                     }
                     $this->displayInfo('METADATA FOUNDED IN CACHE ' . $doiWhoCite, true);
                     $metadataInfoCitation = json_decode($setsMetadata->get(), true, 512, JSON_THROW_ON_ERROR);
-                    if (!empty($metadataInfoCitation)){
+                    if (reset($metadataInfoCitation) !== ""){
                         foreach ($metadataInfoCitation as $infoCitation) {
                             $globalInfoMetadata[$i]['author'] = $infoCitation['author'];
                             $globalInfoMetadata[$i]['year'] = $infoCitation['year'];
