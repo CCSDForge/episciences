@@ -323,7 +323,7 @@ class Ccsd_Website_Style
             if ($this->_tags['type'] == self::TYPE_TPL && isset($this->_tags['template'])) {
                 $cssFile = $this->_tplUrl . $this->_tags['template'] . '.css';
             } else if (is_file($this->_dirname . 'style.css')) {
-                $cssFile = $this->_publicUrl . 'style.css?' . filemtime($this->_dirname . 'style.css');
+                $cssFile = '/public/style.css?' . filemtime($this->_dirname . 'style.css');
             }
         }
         return $cssFile;
