@@ -22,9 +22,9 @@ class ArxivController extends Zend_Controller_Action
         $root->setAttribute("xsi:schemaLocation", "http://arxiv.org/doi_feed http://arxiv.org/schemas/doi_feed.xsd");
 
         $date = $dom->createElement('date');
-        $date->setAttribute('year', date('d'));
+        $date->setAttribute('year', date('Y'));
         $date->setAttribute('month', date('m'));
-        $date->setAttribute('day', date('Y'));
+        $date->setAttribute('day', date('d'));
 
         $dom->appendChild($root);
         $root->appendChild($date);
