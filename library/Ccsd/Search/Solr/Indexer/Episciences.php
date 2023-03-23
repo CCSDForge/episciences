@@ -349,7 +349,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $name = Ccsd_Tools::space_clean($name);
         $name = preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $name);
         $name = Ccsd_Tools_String::stripCtrlChars($name, '');
-        $name = str_replace(' ,', '', $name);
+        $name = rtrim(',', $name);
         return trim($name);
     }
 
