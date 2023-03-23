@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [RT#182289]: reminders are ignored once the document is accepted.
 - [RT#82641]: persons who have declared a conflict of interest are copied in the "Completed rating" e-mail sent to the editors of the article.
+- Paper password registration failure
 
 ## 1.0.39.10 - 2023-03-15
 ### Fixed
