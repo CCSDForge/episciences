@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 
+## 1.0.39.12 - 2023-03-23
+### Fixed
+- Paper password registration failure
+
+
 ## 1.0.39.11 - 2023-03-23
 ### Fixed
 - [RT#182289]: reminders are ignored once the document is accepted.
