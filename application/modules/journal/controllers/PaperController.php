@@ -1710,7 +1710,7 @@ class PaperController extends PaperDefaultController
         }
 
 
-        if ($isPostedPaperPwd) {
+        if (!empty($post[self::SEARCH_DOC_STR]) && isset($post[self::SEARCH_DOC_STR]['paperPassword'])) {
             $newPaper->setPassword($post[self::SEARCH_DOC_STR]['paperPassword'], true);
         }
 
