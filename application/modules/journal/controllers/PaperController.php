@@ -2638,6 +2638,9 @@ class PaperController extends PaperDefaultController
             $recipients = $paper->getEditors(true, true);
             Episciences_Review::checkReviewNotifications($recipients);
 
+            // [RT#82641]
+            $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+
             // url to paper administration page
             $paper_url = $this->buildAdminPaperUrl((int)$report->getDocid());
             #git 295 : FYI
