@@ -9,7 +9,7 @@ $docid = $this->docid;
     <div class="panel-body in" style="overflow: visible">
 
         <?php
-        $exportUrl = $this->url(['id' => $docid]);
+
         $exportFormat['bibtex'] = 'BibTeX';
         $exportFormat['tei'] = '<abbr title="Text Encoding Initiative">TEI</abbr>';
         $exportFormat['dc'] = ' <abbr title="Dublin Core">DC</abbr>';
@@ -20,7 +20,8 @@ $docid = $this->docid;
         $exportFormat['json'] = 'JSON';
 
         foreach ($exportFormat as $format => $title) {
-            printf('<a class="btn btn-default btn-sm" target="_blank" href="%s/%s">%s</a>&nbsp;', $exportUrl, $format, $title);
+            $exportUrl = $this->url(['id' => $docid], $format);
+            printf('<a class="btn btn-default btn-sm" target="_blank" href="%s">%s</a>&nbsp;', $exportUrl, $title);
         }
         ?>
 

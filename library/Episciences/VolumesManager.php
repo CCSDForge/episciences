@@ -308,14 +308,17 @@ class Episciences_VolumesManager
         $form->setDecorators([
             ['ViewScript', [
                 'viewScript' => '/volume/form.phtml',
-                'referer' => $referer
+                'referer' => $referer,
+                'value' => ''
             ]
             ],
             'FormTinymce',
             'FormCss',
             'FormJavascript'
         ]);
-
+        if ($volume !== null && $volume->getSetting('conference_proceedings_doi') !== null){
+            $form->getDecorator('ViewScript')->setOption('value',substr(strrchr($volume->getSetting('conference_proceedings_doi'), "."), 1));
+        }
         $lang = ['class' => 'Episciences_Tools', 'method' => 'getLanguages'];
         $reqLang = ['class' => 'Episciences_Tools', 'method' => 'getRequiredLanguages'];
 
@@ -375,8 +378,84 @@ class Episciences_VolumesManager
             'style' => 'width:300px'
         ]);
 
+        self::getProceedingForm($form,$volume);
+
         return $form;
     }
+
+    public static function getProceedingForm(Ccsd_Form $form, Episciences_Volume $volume = null): \Ccsd_Form
+    {
+        // Acte de conferences
+        $checkboxDecorators = [
+            ['Label', ['placement' => 'APPEND']],
+            'Description',
+            'ViewHelper',
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+        $form->addElement('checkbox', "is_proceeding", [
+            'label' => 'Acte de conférence',
+            'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+            'value' => 0,
+            'decorators' => $checkboxDecorators]);
+        $form->addElement('text', "conference_name", [
+            'label' => 'Nom de la conférence',
+        ]);
+        $form->addElement('text', "conference_theme", [
+            'label' => 'Theme de la conférence',
+        ]);
+        $form->addElement('text', "conference_acronym", [
+            'label' => 'Acronyme de la conférence',
+        ]);
+        $form->addElement('text', "conference_number", [
+            'label' => 'Numéro de la conférence',
+            'validators' => [
+                [new Zend_Validate_Int()]
+            ],
+        ]);
+        $form->addElement('text', "conference_location", [
+            'label' => 'Lieu de la conférence',
+        ]);
+
+        $form->addElement('date', 'conference_start', [
+            'label' => 'Date de début de la conférence',
+            'style' => 'position: static;', // avoid too much z-index for the page
+            'class' => 'datepicker',
+            'format' => 'Y-m-d',
+        ]);
+        $form->addElement('date', 'conference_end', [
+            'label' => 'Date de fin de la conférence',
+            'style' => 'position: static;', // avoid too much z-index for the page
+            'class' => 'datepicker',
+            'format' => 'Y-m-d',
+        ]);
+        if ($volume !== null){
+            $form->addElement('hidden','doi_status',[
+                'value' => Episciences_Volume_DoiQueueManager::findByVolumesId($volume->getVid())->getDoi_status(),
+                'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
+
+            ]);
+        }else{
+            $form->addElement('hidden','doi_status',[
+                'value' => Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED,
+                'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volumes/form.phtml)
+            ]);
+
+        }
+
+        $form->addElement('hidden', 'translate_text', [
+            'value' => Zend_Registry::get('Zend_Translate')->translate("Titre de l'acte de conférence"),
+            'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
+        ]);
+        $form->addElement('hidden','translate_text_doi_request', [
+
+            'value' =>  Zend_Registry::get('Zend_Translate')->translate("Le DOI qui va être demandé"),
+            'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
+
+        ]);
+        return $form;
+    }
+
 
     /**
      * Retourne le formulaire de gestion d'une metadata

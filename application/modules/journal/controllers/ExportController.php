@@ -198,12 +198,16 @@ class ExportController extends Zend_Controller_Action
 
         $volume = '';
         $section = '';
-
+        $proceedingInfo = '';
         if ($paper->getVid()) {
             /* @var $oVolume Episciences_Volume */
             $oVolume = Episciences_VolumesManager::find($paper->getVid());
             if ($oVolume) {
                 $volume = $oVolume->getName('en', true);
+                $volumeId = $oVolume->getVid();
+                if ($oVolume->isProceeding()) {
+                    $proceedingInfo = $oVolume->getProceedingInfo();
+                }
             }
         }
 
@@ -230,12 +234,12 @@ class ExportController extends Zend_Controller_Action
         }
 
         $this->view->volume = $volume;
+        $this->view->proceedingInfo = $proceedingInfo;
         $this->view->section = $section;
         $this->view->journal = $journal;
         $this->view->paper = $paper;
         $this->view->doi = $doi;
         $this->view->previousVersionsUrl = $previousVersionsUrl;
-
         $paperLanguage = $paper->getMetadata('language');
 
 

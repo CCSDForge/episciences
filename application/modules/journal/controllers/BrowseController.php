@@ -176,6 +176,7 @@ class BrowseController extends Zend_Controller_Action
         foreach ($volumes as &$volume) {
             $volume->loadIndexedPapers();
             $volume->loadMetadatas();
+            $volume->getProceedingInfo();
         }
 
         unset($volume);
