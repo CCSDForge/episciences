@@ -385,9 +385,19 @@ class PaperController extends PaperDefaultController
             $currentDemand = array_shift($revision_requests);
             $revisionDeadline = $currentDemand['DEADLINE'];
         }
+
+        $journalSettings = Zend_Registry::get('reviewSettings');
+
+        $doNotDisplayContactChoice = (
+            isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) &&
+            $journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] &&
+            $paper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION
+        );
+
         $this->view->revision_requests = $revision_requests;
         $this->view->currentDemand = $currentDemand;
         $this->view->revisionDeadline = $revisionDeadline;
+        $this->view->doNotDisplayContactChoice = $doNotDisplayContactChoice;
 
         // préparation de copie
 
