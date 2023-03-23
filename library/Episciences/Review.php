@@ -1226,7 +1226,7 @@ class Episciences_Review
 
         // display rating reports on paper public page
         $form->addElement('checkbox', self::SETTING_SHOW_RATINGS, [
-                'label' => "Afficher les rapports de relecture sur la page de consultation d'un article",
+                'label' => "Afficher les rapports de relecture sur la page de consultation publique d'un article",
                 'description' => 'Concerne seulement les articles publiés',
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
