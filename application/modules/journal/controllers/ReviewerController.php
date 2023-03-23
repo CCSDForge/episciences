@@ -18,6 +18,8 @@ class ReviewerController extends PaperDefaultController
         $request = $this->getRequest();
         $invitationId = $request->getParam('id');
 
+        $tmpUser = null;
+
         // check if invitation id is valid
         if (!$invitationId || !is_numeric($invitationId)) {
             $this->view->errors = array("Cette invitation n'existe pas !");
