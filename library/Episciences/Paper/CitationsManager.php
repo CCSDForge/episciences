@@ -2,7 +2,7 @@
 
 class Episciences_Paper_CitationsManager
 {
-
+    CONST NUMBER_OF_AUTHORS_WANTED_VIEWS = 5;
     public static function insert(array $citations): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -63,6 +63,7 @@ class Episciences_Paper_CitationsManager
                         if ($keyMetadata === 'source_title') {
                             $templateCitation.= "<i>".htmlspecialchars($metadata).'</i>';
                         } elseif ($keyMetadata === 'author') {
+                            $metadata = self::reduceAuthorsView(htmlspecialchars($metadata));
                             $templateCitation.= "<b>".self::formatAuthors(htmlspecialchars($metadata)).'</b>';
                         } elseif ($keyMetadata === 'page') {
                             $templateCitation.= "pp.&nbsp".trim(htmlspecialchars($metadata));
@@ -117,6 +118,18 @@ class Episciences_Paper_CitationsManager
         }
         return rtrim($author);
     }
+
+    public static function reduceAuthorsView($author){
+        $getAllAuthorRow = explode(";",$author);
+        $getAllAuthorRow = array_map('trim',$getAllAuthorRow);
+        if (count($getAllAuthorRow) > self::NUMBER_OF_AUTHORS_WANTED_VIEWS){
+            $getAllAuthorRow = array_slice($getAllAuthorRow,0,self::NUMBER_OF_AUTHORS_WANTED_VIEWS, true);
+            $getAllAuthorRow[] = "et al.";
+        }
+        $strAuthorsReduced = implode(';', $getAllAuthorRow);
+        return rtrim($strAuthorsReduced);
+    }
+
 
     public static function createOrcidStringForView($orcid)
     {
