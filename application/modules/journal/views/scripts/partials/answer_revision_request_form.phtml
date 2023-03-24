@@ -17,14 +17,17 @@ $paper = $this->paper;
             </a>
             <ul class="dropdown-menu">
 
-                <?php if ($paper->isOwner()): ?>
-                    <li>
-                        <a href="/paper/contactrequest?id=<?= $this->current_demand['PCID'] ?>"
-                           title="<?= $this->translate('Contacter sans dépôt de version') ?>"
-                           class="modal-opener"
-                           data-target="#"><?= $this->translate('Contacter sans dépôt de version') ?>
-                        </a>
-                    </li>
+                <?php if ($this->doNotDisplayContactChoice) : ?>
+                    <?php if ($paper->isOwner()): ?>
+                        <li>
+                            <a href="/paper/contactrequest?id=<?= $this->current_demand['PCID'] ?>"
+                               title="<?= $this->translate('Contacter sans dépôt de version') ?>"
+                               class="modal-opener"
+                               data-target="#"><?= $this->translate('Contacter sans dépôt de version') ?>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
                 <?php endif; ?>
 
                 <?php if ($paper->getStatus() !== Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED) : ?>

@@ -20,12 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Paper password registration failure
 
-
 ## 1.0.39.11 - 2023-03-23
 ### Fixed
 - [RT#182289]: reminders are ignored once the document is accepted.
-- [RT#182641]: fixed a case where persons who have declared a conflict of interest are copied in the "Completed rating" 
+- [RT#182641]: fixed a case where persons who have declared a conflict of interest are copied in the "Completed rating"
   e-mail sent to the editors of the article.
+
+### Changed
+- related to Allow post - accepting article revisions: "Contact without sending a new version" is now disabled when answer final version request
+
 
 ## 1.0.39.10 - 2023-03-15
 ### Fixed
