@@ -30,7 +30,7 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $folder = ($params['folder'] === 'ce') ? 'copy_editing_sources' : $params['folder'];
+        $folder = ($params['folder'] === 'ce') ? Episciences_CommentsManager::COPY_EDITING_SOURCES : $params['folder'];
         $parentCommentId = $params['parentCommentId'] ?? null;
         $docId = $params['docId'];
         $filename = $params['filename'];
@@ -54,16 +54,21 @@ class FileController extends DefaultController
     }
 
     // load an e-mail attached file
+
+    /**
+     * @throws Exception
+     */
     public function attachmentsAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
+        $subDirectories = $params['sub_directories'];
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
-        $path = REVIEW_FILES_PATH . 'attachments/';
+        $path = REVIEW_FILES_PATH . 'attachments/' . $subDirectories;
         $filepath = $path . $file;
 
         $this->loadFile($filepath, true);
@@ -233,11 +238,14 @@ class FileController extends DefaultController
 
                     $sFolder = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
 
-                    if (!is_dir($sFolder)) {
-                        $resMkdir = mkdir($sFolder, 0770, true);
-                        if (!$resMkdir) {
-                            error_log('Fatal error : unable to create folder: ' . $sFolder);
-                        }
+                    Episciences_Tools::recursiveMkdir($sFolder);
+
+                    // only for files uploaded in attachments directory
+
+                    if (empty($path)) {
+                        Episciences_Auth::setCurrentAttachmentsPathInSession($sFolder);
+                    } else {
+                        Episciences_Auth::resetCurrentAttachmentsPath();
                     }
 
                     // rotate filename
@@ -262,6 +270,9 @@ class FileController extends DefaultController
 
     }
 
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
     public function deleteAction(): void
     {
         $this->_helper->layout()->disableLayout();
@@ -276,7 +287,8 @@ class FileController extends DefaultController
         $pcId = (int)$request->getPost('pcId');
         $paperId = (int)$request->getpost('paperId');
 
-        $filepath = $this->buildStorageFolder($path, $paperId, $docId, $pcId) . $filename;
+        $path = $this->buildStorageFolder($path, $paperId, $docId, $pcId, true);
+        $filepath = $path . $filename;
 
         if ($filename && is_file($filepath)) {
             unlink($filepath);
@@ -413,17 +425,31 @@ class FileController extends DefaultController
      * @param int $docId
      * @param int $pcId
      * @return string
+     * @throws Exception
      */
     private function buildStorageFolder(string $path = "", int $paperId = 0, int $docId = 0, int $pcId = 0): string
     {
+        if ($docId && !$paperId) {
+            $paper = Episciences_PapersManager::get($docId);
+
+            if ($paper) {
+                $paperId = $paper->getPaperid();
+            }
+        }
+
         if ($path === 'tmp_attachments') {
             $folder = $paperId . '/tmp/';
         } elseif ($path === 'comment_attachments') {
             $folder = $docId . '/comments/';
         } elseif ($path === 'ce_attachments') {
-            $folder = $docId . '/copy_editing_sources/' . $pcId . '/';
+            $folder = $docId;
+            $folder .= DIRECTORY_SEPARATOR;
+            $folder .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+            $folder .= DIRECTORY_SEPARATOR;
+            $folder .= $pcId;
+            $folder .= DIRECTORY_SEPARATOR;
         } else {
-            $folder = 'attachments/';
+            return Episciences_Tools::getAttachmentsPath((string)$paperId);
         }
         return REVIEW_FILES_PATH . $folder;
     }
@@ -436,6 +462,7 @@ class FileController extends DefaultController
      * @param int $docId
      * @param int $pcId
      * @return string
+     * @throws Exception
      */
     private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId): string
     {
@@ -446,7 +473,9 @@ class FileController extends DefaultController
         } elseif ($path === 'ce_attachments') {
             $fileUrl = '/docfiles/ce/' . $docId . '/' . $fileName . '/' . $pcId;
         } else {
-            $fileUrl = '/attachments/' . $fileName;
+            $fileUrl = '/';
+            $fileUrl .=  substr(Episciences_Tools::getAttachmentsPath((string)$paperId), mb_strlen(REVIEW_FILES_PATH));
+            $fileUrl.= $fileName;
         }
         return $fileUrl;
     }

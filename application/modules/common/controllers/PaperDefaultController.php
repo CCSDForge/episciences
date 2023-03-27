@@ -80,6 +80,7 @@ class PaperDefaultController extends DefaultController
      * @param array $tags
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = []): void
     {
