@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Changed
 - related to Allow post - accepting article revisions: "Contact without sending a new version" is now disabled when answer final version request
+- new way to store attachments:
+  * separation of the mails sent from the article page and those sent from the mailing module
+  * random generation of storage paths
 
 ## 1.0.39.12 - 2023-03-23
 ### Fixed

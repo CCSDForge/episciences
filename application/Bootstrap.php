@@ -222,7 +222,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
             REVIEW_PATH . 'tmp'];
         foreach ($folders as $folder) {
             if (!file_exists($folder)) {
-                $resMkdir = mkdir($folder, 0770, true);
+                $resMkdir = mkdir($folder, Episciences_Tools::DEFAULT_MKDIR_PERMISSIONS, true);
                 if (!$resMkdir) {
                     die('Fatal error, no configuration folder and unable to create folder: ' . $folder);
                 }

@@ -1135,6 +1135,7 @@ class Episciences_PapersManager
             'rows' => 15
         ]);
 
+        self::addHiddenDocIdElement($form, 'invite-reviewer', $docId);
 
         return $form;
     }
@@ -1572,7 +1573,11 @@ class Episciences_PapersManager
             'value' => $default['body']
         ]));
 
+
+        self::addHiddenDocIdElement($form, $formId, $default['id']);
+
         return $form;
+
     }
 
     /**
@@ -1641,6 +1646,8 @@ class Episciences_PapersManager
             'label' => 'Message',
             'value' => $default['body']
         ]));
+
+        self::addHiddenDocIdElement($form, $formId, $default['id']);
 
         return $form;
     }
@@ -1712,6 +1719,8 @@ class Episciences_PapersManager
             'class' => 'full_mce',
             'value' => $default['body']
         ]));
+
+        self::addHiddenDocIdElement($form, $formId, $default['id']);
 
         return $form;
     }
@@ -1794,6 +1803,8 @@ class Episciences_PapersManager
         ]));
 
         $form->addSubForms(['askEditors' => $askeditors_subform, 'attachment' => $attachment_subform]);
+
+        self::addHiddenDocIdElement($form, $formId, $default['id']);
 
         return $form;
     }
@@ -1916,6 +1927,8 @@ class Episciences_PapersManager
                 'decorators' => $checkboxDecorators]);
 
         }
+
+        self::addHiddenDocIdElement($form, $formId, $default['id']);
 
         return $form;
     }
@@ -2697,7 +2710,10 @@ class Episciences_PapersManager
             'value' => $default['body']
         ]));
 
-        return $form;
+
+
+        return self::addHiddenDocIdElement($form, $prefix, $default['id']);
+
     }
 
     /**
@@ -3248,6 +3264,26 @@ class Episciences_PapersManager
             'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid(), $rvId),
             'isCasUserValid' => (bool)$reviewer->getValid()
         ];
+
+    }
+
+    /**
+     * @param Zend_Form $currentForm
+     * @param string $formPrefix
+     * @param int $docId
+     * @return Zend_Form
+     * @throws Zend_Form_Exception
+     */
+
+    private static function addHiddenDocIdElement(Zend_Form $currentForm, string $formPrefix, int $docId): \Zend_Form
+    {
+
+        $currentForm->addElement('hidden', 'docid', [
+            'id' => $formPrefix . '-hdocid-'. $docId,
+            'value' => $docId
+        ]);
+
+        return $currentForm;
 
     }
 }
