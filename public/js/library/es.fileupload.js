@@ -31,7 +31,11 @@ $(function () {
 
         }
 
-        formData.docId = $docId.val();
+        if($docId){
+            formData.docId = $docId.val();
+        }
+
+
     }
 
 

@@ -1629,7 +1629,8 @@ class Episciences_Tools
 
 
     /**
-     * retrieves the last randomly generated path of the attached files for the current mail
+     * retrieves from the session the last randomly generated path of the attached files for the current mail
+     * or generate a new one
      *
      * @param string|null $root
      * @param bool $forceMkDir

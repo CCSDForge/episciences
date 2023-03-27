@@ -186,7 +186,7 @@
             <?= Episciences_Tools::epi_html_decode($this->log['detail']['mail']['bodyHtml']) ?>
         </div>
 
-        <?php if (!empty($this->log['detail']['mail']['attachments'])) : ?>
+        <?php if (!empty($this->log['detail']['mail'][Episciences_Mail_Send::ATTACHMENTS])) : ?>
 
             <hr/>
 
@@ -194,12 +194,12 @@
                 <strong><?= $this->translate([
                         'Fichier joint',
                         'Fichiers joints',
-                        count($this->log['detail']['mail']['attachments'])])
+                        count($this->log['detail']['mail'][Episciences_Mail_Send::ATTACHMENTS])])
                     ?> :</strong>
             </p>
 
             <?php
-            foreach ($this->log['detail']['mail']['attachments'] as $attachment) {
+            foreach ($this->log['detail']['mail'][Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
 
                 $filepath = (is_array($attachment)) ? $attachment['path'] : $attachment;
                 $path_info = pathinfo($filepath);
