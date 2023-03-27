@@ -692,7 +692,7 @@ class Episciences_Mail extends Zend_Mail
         } else {
             $result['bodyHtml'] = htmlspecialchars_decode($this->getBody());
         }
-        $result['attachments'] = $this->getAttachments();
+        $result[Episciences_Mail_Send::ATTACHMENTS] = $this->getAttachments();
         $result['sendDate'] = $this->getSendDate();
 
         return $result;

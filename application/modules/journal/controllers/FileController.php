@@ -68,7 +68,7 @@ class FileController extends DefaultController
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
-        $path = REVIEW_FILES_PATH . 'attachments/' . $subDirectories;
+        $path = REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . DIRECTORY_SEPARATOR . $subDirectories;
         $filepath = $path . $file;
 
         $this->loadFile($filepath, true);

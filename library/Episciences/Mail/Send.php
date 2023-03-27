@@ -177,7 +177,7 @@ class Episciences_Mail_Send
      * @param Episciences_Paper|null $paper
      * @param int|null $authUid
      * @param array $attachmentsFiles ['key' => file name, 'value' => 'file path']
-     * @param bool $makeACopy : si true faire une copie, car le path != REVIEW_FILES_PATH . 'attachments/'
+     * @param bool $makeACopy : si true faire une copie
      * @param array $CC : cc recipients
      * @return bool
      * @throws Zend_Db_Adapter_Exception
@@ -227,9 +227,16 @@ class Episciences_Mail_Send
         $mail->setSubject($template->getSubject());
         $mail->setTemplate($template->getPath(), $template->getKey() . self::TEMPLATE_EXTENSION);
 
-        // Prise en compte des fichiers attachés
+        // Consideration of attached files
         if (!empty($attachmentsFiles)) {
-            $attachmentPath = Episciences_Tools::getAttachmentsPath($paper->getPaperid(), true);
+            try {
+                // if necessary, we force the creation of folders (e.g. copy editing: the files are stored in a
+                // different path from the attached files)
+                $attachmentPath = Episciences_Tools::getAttachmentsPath($paper->getPaperid(), true);
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
             foreach ($attachmentsFiles as $fileName => $filePath) {
                 if (file_exists($filePath . $fileName)) {
                     if (!$makeACopy) {

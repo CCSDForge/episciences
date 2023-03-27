@@ -382,7 +382,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         // Contrôle des erreurs
         $errors = [];
-        $isEmptyMail = empty($post['subject']) && empty($post['content']) && empty($post['attachments']);
+        $isEmptyMail = empty($post['subject']) && empty($post['content']) && empty($post[Episciences_Mail_Send::ATTACHMENTS]);
 
         if ($checkedRecipients['isDetectedErrors']) {
             $errors[] = "Veuillez saisir au moins un destinataire";
@@ -428,7 +428,7 @@ class AdministratemailController extends Zend_Controller_Action
         $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
         $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
 
-        if (empty($content) && empty($post['attachments'])) {
+        if (empty($content) && empty($post[Episciences_Mail_Send::ATTACHMENTS])) {
             $content = 'Empty message.';
         }
 
@@ -504,9 +504,9 @@ class AdministratemailController extends Zend_Controller_Action
 
         $paperId = $paper ? (string)$paper->getPaperid() : null;
 
-        if (isset($post['attachments'])) {
+        if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($post['attachments']);
+            $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
             $path = Episciences_Tools::getAttachmentsPath();
             foreach ($attachments as $attachment) {
                 $filepath = $path . $attachment;
@@ -995,7 +995,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         } else {
 
-            $subStr = substr($currentAttachmentPath, mb_strlen(REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . '/'));
+            $subStr = substr($currentAttachmentPath, mb_strlen(REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . DIRECTORY_SEPARATOR));
 
             if (Episciences_Tools::startsWithNumber($subStr)) {
                 Episciences_Auth::resetCurrentAttachmentsPath();

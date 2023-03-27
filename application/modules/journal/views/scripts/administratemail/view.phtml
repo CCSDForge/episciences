@@ -69,15 +69,15 @@
     <div><?php
         echo $bodyHtml; ?></div>
 
-    <?php if ($this->mail['attachments']) : ?>
+    <?php if ($this->mail[Episciences_Mail_Send::ATTACHMENTS]) : ?>
         <hr/>
 
         <p class="small">
-            <strong><?php echo $this->translate(array('Fichier joint', 'Fichiers joints', count($this->mail['attachments']))) ?>
+            <strong><?php echo $this->translate(array('Fichier joint', 'Fichiers joints', count($this->mail[Episciences_Mail_Send::ATTACHMENTS]))) ?>
                 :</strong></p>
 
         <?php
-        foreach ($this->mail['attachments'] as $attachment) {
+        foreach ($this->mail[Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
 
             $filepath = (is_array($attachment)) ? $attachment['path'] : $attachment;
             $path_info = pathinfo($filepath);
