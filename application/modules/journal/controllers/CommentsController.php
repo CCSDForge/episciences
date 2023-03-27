@@ -51,10 +51,20 @@ class CommentsController extends PaperController
 
         $paperId = ($paper->getPaperid()) ? $paper->getPaperid() : $paper->getDocid();
 
-        if($isTmp){ // fichiers joints aux  commentaires des versions temporaires
-            $dir = $paperId . '/tmp/';
+        if ($isTmp) { // fichiers joints aux  commentaires des versions temporaires
+
+            $dir = $paperId;
+            $dir .= DIRECTORY_SEPARATOR;
+            $dir .= 'tmp';
+            $dir .= DIRECTORY_SEPARATOR;
+
         } elseif ($comment->isCopyEditingComment()) {
-            $dir = $comment->getDocid() . '/copy_editing_sources/' . $comment->getPcid() . '/';
+            $dir = $comment->getDocid();
+            $dir .= DIRECTORY_SEPARATOR;
+            $dir .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+            $dir .= DIRECTORY_SEPARATOR;
+            $dir .= $comment->getPcid();
+            $dir .= DIRECTORY_SEPARATOR;
         } else {
             $dir = $docid . '/comments/';
         }

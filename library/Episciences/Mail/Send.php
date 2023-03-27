@@ -5,6 +5,8 @@ class Episciences_Mail_Send
     public const ENCODING_TYPE = 'UTF-8';
     public const TEMPLATE_EXTENSION = '.phtml';
     public const DEFAULT_LANG = 'en';
+    public const FROM_MAILING = 'mailing';
+    public const ATTACHMENTS = 'attachments';
 
     /**
      * mailing form
@@ -181,6 +183,7 @@ class Episciences_Mail_Send
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     public static function sendMailFromReview(
         Episciences_User  $recipient,
@@ -226,7 +229,7 @@ class Episciences_Mail_Send
 
         // Prise en compte des fichiers attachés
         if (!empty($attachmentsFiles)) {
-            $attachmentPath = REVIEW_FILES_PATH . 'attachments/';
+            $attachmentPath = Episciences_Tools::getAttachmentsPath($paper->getPaperid(), true);
             foreach ($attachmentsFiles as $fileName => $filePath) {
                 if (file_exists($filePath . $fileName)) {
                     if (!$makeACopy) {

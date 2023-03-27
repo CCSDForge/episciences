@@ -33,6 +33,8 @@ class Episciences_CommentsManager
     public const TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST = 20;
     public const TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION = 21;
 
+    public const COPY_EDITING_SOURCES = 'copy_editing_sources';
+
     public static array $_typeLabel = [
         self::TYPE_INFO_REQUEST => "demande d'éclaircissements",
         self::TYPE_INFO_ANSWER => "réponse à une demande d'éclaircissements",
@@ -123,12 +125,12 @@ class Episciences_CommentsManager
     }
 
     /**
-     * @param $docId
-     * @param null $settings
+     * @param int $docId
+     * @param array $settings
      * @param bool $fetchReviewer
      * @return array
      */
-    public static function getList($docId, $settings = null, bool $fetchReviewer = true): array
+    public static function getList(int $docId, array $settings = [], bool $fetchReviewer = true): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = self::findByQuery($db, $docId);

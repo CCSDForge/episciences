@@ -347,4 +347,22 @@ class Episciences_Auth extends Ccsd_Auth
             !self::isGuestEditor($rvId, true) &&
             !self::isCopyEditor($rvId);
     }
+
+    public static function setCurrentAttachmentsPathInSession(string $currentPath): \Zend_Session_Namespace
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        $session->currentAttachmentsPath = $currentPath;
+
+        return $session;
+
+    }
+
+    public static function resetCurrentAttachmentsPath(): void
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        unset($session->currentAttachmentsPath);
+
+    }
+
 }

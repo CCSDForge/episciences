@@ -1462,6 +1462,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws Exception
      */
     public function savereviewerinvitationAction(): bool
     {
@@ -3673,6 +3674,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     private function applyAction(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $isCopyEditingComment = true): bool
     {
@@ -3777,6 +3779,8 @@ class AdministratepaperController extends PaperDefaultController
 
         $authorAttachments = [];
 
+        $paperId = (string)$paper->getPaperid();
+
         foreach ($attachments as $file) {
             $authorAttachments[$file] = REVIEW_FILES_PATH . 'attachments/';
         }
@@ -3791,7 +3795,12 @@ class AdministratepaperController extends PaperDefaultController
 
                 $comment->logComment();
 
-                $path = REVIEW_FILES_PATH . $docId . '/copy_editing_sources/' . $comment->getPcid() . '/';
+                $path = REVIEW_FILES_PATH . $docId;
+                $path .= DIRECTORY_SEPARATOR;
+                $path .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+                $path .= DIRECTORY_SEPARATOR;
+                $path .= $comment->getPcid();
+                $path .= DIRECTORY_SEPARATOR;
                 $source = REVIEW_FILES_PATH . 'attachments/';
                 $comment->setFilePath($path);
 

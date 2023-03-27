@@ -99,8 +99,6 @@ $(document).ready(function () {
  */
 function applyMultipleFilters(controller, action, get = {}, filters = {}) {
 
-    console.log(filters);
-
     let badRequest = translate("Une erreur interne s'est produite, veuillez recommencer.");
     let url = '/' + controller + '/' + action;
     let data = (Object.keys(get).length !== 0) ? get : {

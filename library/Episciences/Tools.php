@@ -10,6 +10,8 @@ use WhiteCube\Lingua\Service as Lingua;
 
 class Episciences_Tools
 {
+
+    public const DEFAULT_MKDIR_PERMISSIONS = 0770;
     public static $bashColors = [
         'red' => "\033[0;31m",
         'blue' => "\033[0;34m",
@@ -1056,19 +1058,25 @@ class Episciences_Tools
      * @param array $filesList
      * @param string $source
      * @param string $dest
+     * @param bool $storeDestinationPathInSession
      * @return bool
      */
-    public static function cpFiles(array $filesList, string $source, string $dest): bool
+    public static function cpFiles(
+        array $filesList,
+        string $source,
+        string $dest,
+        bool $storeDestinationPathInSession = false
+    ): bool
     {
 
         $nbFilesNotCopied = 0;
-        if (!is_dir($dest)) {
-            $resMkdir = mkdir($dest, 0777, true);
-            if (!$resMkdir) {
-                trigger_error('Fatal error : unable to create folder: ' . $dest);
-                return $resMkdir;
-            }
+
+        self::recursiveMkdir($dest);
+
+        if ($storeDestinationPathInSession) {
+            Episciences_Auth::setCurrentAttachmentsPathInSession($dest);
         }
+
 
         foreach ($filesList as $file) {
             if (!copy($source . $file, $dest . $file)) {
@@ -1092,9 +1100,9 @@ class Episciences_Tools
     }
 
     /**
-     * @deprecated use php 7.4 native function array_key_first
      * @param array $arr
      * @return int|string|null
+     * @deprecated use php 7.4 native function array_key_first
      */
     public static function epi_array_key_first(array $arr)
     {
@@ -1282,7 +1290,7 @@ class Episciences_Tools
     public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false)
     {
 
-        if(self::isInUppercase($string, $separator)){
+        if (self::isInUppercase($string, $separator)) {
             $string = strtolower($string);
         }
 
@@ -1476,7 +1484,7 @@ class Episciences_Tools
      * @return array|null
      */
 
-    public static function arrayFilterString(array $input = null, int $type = FILTER_SANITIZE_STRING , int $options = FILTER_FLAG_NO_ENCODE_QUOTES): ?array
+    public static function arrayFilterString(array $input = null, int $type = FILTER_SANITIZE_STRING, int $options = FILTER_FLAG_NO_ENCODE_QUOTES): ?array
     {
 
         if (empty($input)) {
@@ -1502,7 +1510,7 @@ class Episciences_Tools
     public static function replace_accents($str): string
     {
         $str = htmlentities($str, ENT_COMPAT, "UTF-8");
-        $str =  preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|ring|slash);/','$1',$str);
+        $str = preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|ring|slash);/', '$1', $str);
         return html_entity_decode($str);
     }
 
@@ -1529,16 +1537,16 @@ class Episciences_Tools
         $latestSubString = '';
 
 
-        foreach (explode($separator, $string) as $str){
+        foreach (explode($separator, $string) as $str) {
 
             $latestSubString = $str;
 
-            if(ctype_lower($str)){
+            if (ctype_lower($str)) {
                 return false;
             }
         }
 
-        return ctype_upper( $latestSubString );
+        return ctype_upper($latestSubString);
 
 
     }
@@ -1595,7 +1603,7 @@ class Episciences_Tools
      * @throws Zend_Exception
      * @throws \Defuse\Crypto\Exception\BadFormatException
      */
-    public static  function encrypt(string $plainText): string
+    public static function encrypt(string $plainText): string
     {
 
         $cipherText = '';
@@ -1619,6 +1627,84 @@ class Episciences_Tools
 
     }
 
+
+    /**
+     * retrieves the last randomly generated path of the attached files for the current mail
+     *
+     * @param string|null $root
+     * @param bool $forceMkDir
+     * @param int $randomBytesLength
+     * @param int $strSplitLength
+     * @return string
+     * @throws Exception
+     */
+    public static function getAttachmentsPath(
+        string $root = null,
+        bool   $forceMkDir = false,
+        int    $randomBytesLength = 6,
+        int    $strSplitLength = 2
+    ): string
+    {
+
+
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        if (isset($session->currentAttachmentsPath)) {
+            return $session->currentAttachmentsPath;
+        }
+
+
+        if (empty($root)) {
+            $root = Episciences_Mail_Send::FROM_MAILING;
+        }
+
+        $folders = str_split(bin2hex(random_bytes($randomBytesLength)), $strSplitLength);
+
+        if (!is_array($folders)) {
+            $folders = [];
+        }
+
+        $path = REVIEW_FILES_PATH;
+
+        $path .= Episciences_Mail_Send::ATTACHMENTS;
+        $path .= DIRECTORY_SEPARATOR;
+        $path .= $root;
+        $path .= DIRECTORY_SEPARATOR;
+
+        foreach ($folders as $val) {
+            $path .= $val . DIRECTORY_SEPARATOR;
+
+        }
+
+        if ($forceMkDir) {
+            self::recursiveMkdir($path);
+        }
+
+        return $path;
+
+    }
+
+    public static function startsWithNumber(string $string): bool
+    {
+        return $string !== '' && ctype_digit($string[0]);
+    }
+
+    /**
+     * @param string $path
+     * @param int $permissions
+     * @return string
+     */
+    public static function recursiveMkdir(string $path, int $permissions = self::DEFAULT_MKDIR_PERMISSIONS) : string
+    {
+
+        if (!is_dir($path) && !mkdir($path, $permissions, true) && !is_dir($path)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+        }
+
+        return $path;
+
+    }
+
     /**
      * @param string $string
      * @return string
@@ -1636,4 +1722,5 @@ class Episciences_Tools
     {
         return explode('@', $string, 3);
     }
+
 }
