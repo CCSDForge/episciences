@@ -13,11 +13,11 @@ class StatsController extends Zend_Controller_Action
 
     public const ACCEPTED_SUBMISSIONS = Episciences_Paper::ACCEPTED_SUBMISSIONS;
 
-    public const CURRENT_RVID = RVID;
 
     /**
      * @return void
      * @throws Zend_Exception
+     * @throws JsonException
      */
     public function indexAction(): void
     {
@@ -32,26 +32,25 @@ class StatsController extends Zend_Controller_Action
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
 
-        $uri = 'review/stats/dashboard';
+        $uri = 'review/stats/dashboard/' . RVCODE;
 
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
 
         try { // api request
-            $result = json_decode($this->askApi($uri, ['rvid' => self::CURRENT_RVID, 'withDetails' => '', 'year' => $yearQuery]), true);
+            $dashboard = json_decode($this->askApi($uri, ['withDetails' => '', 'year' => $yearQuery]), true, 512, JSON_THROW_ON_ERROR);
         } catch (GuzzleException $e) {
             $this->view->errorMessage = $errorMessage;
             trigger_error($e->getMessage());
             return;
         }
 
-        if (empty($result)) {
+        if (empty($dashboard)) {
             $this->view->errorMessage = 'Aucun résultat';
             return;
         }
 
-        $dashboard = $result[array_key_first($result)];
-        $details = $dashboard['submissions']['details'];
-        $yearCategories = array_keys($details['submissionsByYear']);
+        $details = $dashboard['details'];
+        $yearCategories = array_keys($details['nbSubmissions']['submissionsByYear']);
         rsort($yearCategories);
 
         $this->view->yearCategories = $yearCategories; // navigation
@@ -74,20 +73,20 @@ class StatsController extends Zend_Controller_Action
             $yearCategories = [$yearQuery];
         }
 
-        $submissionsDelay = $dashboard['submissionsDelay'];
-        $publicationsDelay = $dashboard['publicationsDelay'];
-        $allSubmissions = $dashboard['submissions']['value']; // all review submissions
+        $submissionsDelay = $dashboard['details']['averageDaysSubmissionAcceptation'];
+        $publicationsDelay = $dashboard['details']['averageDaysSubmissionPublication'];
+        $allSubmissions = $dashboard['value']['nbSubmissions']; // all review submissions
         $totalByYear = 0;
 
         foreach ($yearCategories as $year) {
 
             $nbRefusals = $nbAcceptations = $nbOthers = 0;
 
-            $nbPublications = $dashboard['submissions']['details']['submissionsByYear'][$year]['publications'];
+            $nbPublications = $details['nbSubmissions']['submissionsByYear'][$year]['publications'];
             $allPublications += $nbPublications; // l'ensemble de la revue
 
             // stats collectées par rapport à la date de modification
-            $submissionsByYearResponse = array_key_exists($year, $details['moreDetails']) ? $details['moreDetails'][$year] : [];
+            $submissionsByYearResponse = array_key_exists($year, $details['nbSubmissions']['moreDetails']) ? $details['nbSubmissions']['moreDetails'][$year] : [];
 
             foreach ($submissionsByYearResponse as $values) {
 
@@ -117,7 +116,7 @@ class StatsController extends Zend_Controller_Action
 
             $totalByYear += $nbPublications;
 
-            $series['submissionsByYear']['submissions'][] = $dashboard['submissions']['details']['submissionsByYear'][$year]['submissions']; // only submissions (1st version) of the current year
+            $series['submissionsByYear']['submissions'][] = $dashboard['details']['nbSubmissions']['submissionsByYear'][$year]['submissions']; // only submissions (1st version) of the current year
             $series['acceptationByYear']['acceptations'][] = $nbAcceptations;
             $series['refusalsByYear']['refusals'][] = $nbRefusals;
             $series['publicationsByYear']['publications'][] = $nbPublications;
@@ -131,22 +130,22 @@ class StatsController extends Zend_Controller_Action
             }
 
             // submission by repo
-            foreach ($details['submissionsByRepo'][$year] as $repoId => $val) {
+            foreach ($details['nbSubmissions']['submissionsByRepo'][$year] as $repoId => $val) {
                 $series['submissionsByRepo'][$repoId]['nbSubmissions'][] = $val['submissions'];
             }
 
-            if (!empty($submissionsDelay['details'])) {
-                if (array_key_exists($year, $submissionsDelay['details'][self::CURRENT_RVID])) {
-                    $series['delayBetweenSubmissionAndAcceptance'][] = $submissionsDelay['details'][self::CURRENT_RVID][$year]['delay'];
+            if (!empty($submissionsDelay)) {
+                if (array_key_exists($year, $submissionsDelay)) {
+                    $series['delayBetweenSubmissionAndAcceptance'][] = $submissionsDelay[$year]['delay'];
                 } else {
                     $series['delayBetweenSubmissionAndAcceptance'][] = null;
                 }
             }
 
-            if (!empty($publicationsDelay['details'])) {
+            if (!empty($publicationsDelay)) {
 
-                if (array_key_exists($year, $publicationsDelay['details'][self::CURRENT_RVID])) {
-                    $series['delayBetweenSubmissionAndPublication'][] = $publicationsDelay['details'][self::CURRENT_RVID][$year]['delay'];
+                if (array_key_exists($year, $publicationsDelay)) {
+                    $series['delayBetweenSubmissionAndPublication'][] = $publicationsDelay[$year]['delay'];
                 } else {
                     $series['delayBetweenSubmissionAndPublication'][] = null;
                 }
@@ -234,7 +233,7 @@ class StatsController extends Zend_Controller_Action
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Publication'), 'data' => $series['delayBetweenSubmissionAndPublication'], 'backgroundColor' => self::COLORS_CODE[4]];
         $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
 
-        $isAvailableUsersStats = array_key_exists('users', $dashboard);
+        $isAvailableUsersStats = !$yearQuery && array_key_exists('nbUsers', $dashboard['value']);
 
         //Users stats
         $rolesJs = [];
@@ -242,8 +241,8 @@ class StatsController extends Zend_Controller_Action
         $data = [];
 
         if ($isAvailableUsersStats) {
-            $allUsers = $dashboard['users']['value'];
-            $usersDetails = $dashboard['users']['details'][self::CURRENT_RVID];
+            $allUsers = $dashboard['value']['nbUsers'];
+            $usersDetails = $dashboard['details']['nbUsers'];
             $roles = array_keys($usersDetails);
             $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
 
@@ -251,7 +250,7 @@ class StatsController extends Zend_Controller_Action
                 unset($roles[$rootKey]);
             }
 
-            foreach ($roles as $key => $role) {
+            foreach ($roles as $role) {
                 $rolesJs[] = $this->view->translate($role);
                 $data[] = $usersDetails[$role]['nbUsers'];
             }
@@ -287,22 +286,19 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * @param $uri
+     * @param string $uri
      * @param array $options
      * @param bool $isAsynchronous
      * @return StreamInterface
      * @throws GuzzleException
      */
-    private function askApi($uri, array $options = [], $isAsynchronous = false): StreamInterface
+    private function askApi(string $uri, array $options = [], bool $isAsynchronous = false): StreamInterface
     {
         $url = EPISCIENCES_API_URL . $uri;
 
         $headers = [
             'Accept' => 'application/json',
             'Content-type' => 'application/json',
-            'X-AUTH-RVID' => self::CURRENT_RVID,
-            'X-AUTH-TOKEN' => EPISCIENCES_API_SECRET_KEY,
-            'X-AUTH-LOGIN' => Episciences_Auth::getUsername()
         ];
 
         $gOptions = [
