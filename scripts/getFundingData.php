@@ -136,7 +136,7 @@ class getFundingData extends JournalScript
                                 'source_id' => Episciences_Repositories::GRAPH_OPENAIRE_ID
                             ]
                         );
-                        $this->displayInfo('Project Founded ' . json_encode($globalfundingArray, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), true);
+                        $this->displayInfo('Project Found ' . json_encode($globalfundingArray, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), true);
                     } elseif (!empty($globalfundingArray) && !empty($rowInDBGraph)) {
                         Episciences_Paper_ProjectsManager::update(
                             [
