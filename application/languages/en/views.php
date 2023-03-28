@@ -2288,5 +2288,11 @@ return [
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
-    'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.'
+    'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
+    //API password
+    "Ce mot de passe est réservé à l'usage exclusif de l'" => "This password is for",
+    "Votre mot de passe API a bien été réinitialisé." => "Your API password was successfully reset.",
+    "API Episciences" => 'Episciences API',
+    "Réinitialiser mon mot de passe API" => "Reset my API password",
+    "Réinitialiser le mot de passe API" => "Change your API password",
 ];

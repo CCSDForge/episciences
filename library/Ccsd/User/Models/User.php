@@ -564,7 +564,7 @@ class Ccsd_User_Models_User
         return $res;
     }
 
-    public function save($forceInsert = false)
+    public function save(bool $forceInsert = false)
     {
         $userMapper = new Ccsd_User_Models_UserMapper();
         return $userMapper->save($this, $forceInsert);

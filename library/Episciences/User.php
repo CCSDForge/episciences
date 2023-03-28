@@ -399,18 +399,25 @@ class Episciences_User extends Ccsd_User_Models_User
      * Enregistre les propriétés de l'utilisateur
      *
      * @param bool $forceInsert
+     * @param bool $isLocalSave
      * @return bool|string
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Exception
      * @throws JsonException
-     * @throws Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      * @see Ccsd_User_Models_User::save()
      */
-    public function save($forceInsert = false)
+    public function save(bool $forceInsert = false, bool $isLocalSave = true)
     {
         // Enregistrement des données CAS
         // et renvoi de l'id si il s'agit d'un nouveau compte
-        $casId = parent::save($forceInsert);
+
+        $casId = null;
+
+        if ($isLocalSave) {
+            $casId = parent::save($forceInsert);
+        }
+
         $uid = ($casId) ?: $this->getUid();
         $this->setUid($uid);
 
