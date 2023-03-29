@@ -126,5 +126,8 @@
   "GEO_IP": {
     "DATABASE_PATH": "/fullPathTo/scripts/geoip/",
     "DATABASE": "GeoLite2-City.mmdb"
+  },
+  "OPENCITATIONS": {
+    "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN"
   }
 }
