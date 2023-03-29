@@ -20,6 +20,9 @@ require_once "JournalScript.php";
 
 class getCitationsData extends JournalScript
 {
+    const OPENCITATIONS_API_CITATIONS = 'https://opencitations.net/index/api/v1/citations/';
+    const OPENCITATIONS_API_METADATA = 'https://opencitations.net/index/api/v1/metadata/';
+    const OPENCITATIONS_EPISCIENCES_USER_AGENT = 'CCSD Episciences support@episciences.org';
     /**
      * @var bool
      */
@@ -171,11 +174,12 @@ class getCitationsData extends JournalScript
         $client = new Client();
         $openCitationCall = '';
         try {
-            return $client->get('https://opencitations.net/index/api/v1/citations/' . $doi, [
+            return $client->get(self::OPENCITATIONS_API_CITATIONS . $doi, [
                 'headers' => [
-                    'User-Agent' => 'CCSD Episciences support@episciences.org',
+                    'User-Agent' => self::OPENCITATIONS_EPISCIENCES_USER_AGENT,
                     'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
+                    'authorization' => OPENCITATIONS_TOKEN
                 ]
             ])->getBody()->getContents();
         } catch (GuzzleException $e) {
@@ -188,11 +192,12 @@ class getCitationsData extends JournalScript
         $client = new Client();
         $openCitationMetadataCall = '';
         try {
-            return $client->get('https://opencitations.net/index/api/v1/metadata/' . $doi, [
+            return $client->get(self::OPENCITATIONS_API_METADATA . $doi, [
                 'headers' => [
-                    'User-Agent' => 'CCSD Episciences support@episciences.org',
+                    'User-Agent' => self::OPENCITATIONS_EPISCIENCES_USER_AGENT,
                     'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
+                    'authorization' => OPENCITATIONS_TOKEN
                 ]
             ])->getBody()->getContents();
         } catch (GuzzleException $e) {
