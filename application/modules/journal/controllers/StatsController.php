@@ -32,7 +32,7 @@ class StatsController extends Zend_Controller_Action
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
 
-        $uri = 'review/stats/dashboard/' . RVCODE;
+        $uri = 'journals/stats/dashboard/' . RVCODE;
 
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
 
