@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Changed
 - related to Allow post - accepting article revisions: "Contact without sending a new version" is now disabled when answer final version request
+- now the version of the article can be modified only if its status is :
+  * submitted
+  * waiting for reviewing
+  * accepted
+  * published
+  * ready to publish
+  * approved by author - waiting for final publication
+
 
 ## 1.0.39.12 - 2023-03-23
 ### Fixed

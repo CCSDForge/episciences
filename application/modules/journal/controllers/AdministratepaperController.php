@@ -830,6 +830,10 @@ class AdministratepaperController extends PaperDefaultController
 
         $this->view->displayPaperPasswordBloc = $displayPaperPasswordBloc;
 
+        $isEditableVersion =  $paper->isEditableVersion() &&
+            (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid));
+        $this->view->isEditableVersion = $isEditableVersion;
+
 
     }
 
@@ -4508,6 +4512,17 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId, false);
 
         if (!$paper) {
+            return false;
+        }
+
+        if (
+            !$paper->isEditableVersion() ||
+            (
+                !Episciences_Auth::isSecretary() &&
+                !$paper->getEditor(Episciences_Auth::getUid()) &&
+                !$paper->getCopyEditor(Episciences_Auth::getUid())
+            )
+        ) {
             return false;
         }
 
