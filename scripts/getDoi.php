@@ -385,7 +385,7 @@ class getDoi extends JournalScript
      */
     private function getMetadataFileName(): string
     {
-        return $this->getPaper()->getPaperid() . '.xml';
+        return sprintf('%s-%s.xml', $this->getReview()->getCode(), $this->getPaper()->getPaperid());
     }
 
     /**
@@ -417,7 +417,7 @@ class getDoi extends JournalScript
                 ],
                 [
                     'name' => 'fname',
-                    'filename' => $this->getReview()->getCode() . '-' . $this->getMetadataFileName(),
+                    'filename' => $this->getMetadataFileName(),
                     'contents' => fopen($this->getMetadataPathFileName(), 'rb')
                 ],
             ]

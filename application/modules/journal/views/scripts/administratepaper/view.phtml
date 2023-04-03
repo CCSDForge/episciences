@@ -71,7 +71,11 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
     <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorTwitter]) ?>
 <?php endif; ?>
 
-<?php echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]); ?>
+<?= $this->partial('partials/paper_versions.phtml', [
+        'paper' => $paper,
+        'versions' => $this->versions,
+        'isEditableVersion' => $this->isEditableVersion
+    ]) ?>
 <?php echo $this->partial('partials/paper_doi.phtml', ['doiAssignMode'=> $this->doiAssignMode, 'canBeAssignedDOI' => $this->canBeAssignedDOI, 'paperid' => $paper->getPaperid(), 'docid' => $paper->getDocid(), 'paperDoi' => $paper->getDoi(), 'doiQueueStatus' => $this->doiQueueStatus, 'doiQueueStatusHtml' => $this->doiQueueStatusHtml]) ?>
 <?php echo $this->render('partials/paper_author_comments_bloc.phtml'); ?>
 
