@@ -1832,6 +1832,8 @@ class PaperController extends PaperDefaultController
             Episciences_Review::checkReviewNotifications($recipients);
             unset($recipients[$paper->getUid()]);
 
+            $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+
             $CC = $paper->extractCCRecipients($recipients);
 
             if (empty($recipients)) {
