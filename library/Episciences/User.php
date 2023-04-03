@@ -399,7 +399,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * Enregistre les propriétés de l'utilisateur
      *
      * @param bool $forceInsert
-     * @param bool $isLocalSave
+     * @param bool $isCasRecording
      * @return bool|string
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -407,14 +407,14 @@ class Episciences_User extends Ccsd_User_Models_User
      * @throws Zend_Exception
      * @see Ccsd_User_Models_User::save()
      */
-    public function save(bool $forceInsert = false, bool $isLocalSave = true)
+    public function save(bool $forceInsert = false, bool $isCasRecording = true)
     {
         // Enregistrement des données CAS
         // et renvoi de l'id si il s'agit d'un nouveau compte
 
         $casId = null;
 
-        if ($isLocalSave) {
+        if ($isCasRecording) {
             $casId = parent::save($forceInsert);
         }
 
@@ -443,14 +443,6 @@ class Episciences_User extends Ccsd_User_Models_User
             'IS_VALID' => $this->getIs_valid(),
             'ORCID' => $this->getOrcid()
         ];
-
-    /*    try {
-            $data['AFFILIATIONS'] = !empty($this->getAffiliations()) ? json_encode(Episciences_Tools::implodeOrExplode($this->getAffiliations()), JSON_THROW_ON_ERROR) : null;
-        } catch (JsonException $e) {
-            $data['AFFILIATIONS'] = null;
-            trigger_error($e->getMessage());
-        }*/
-
 
         if (
             !empty($this->getWebSites()) ||
