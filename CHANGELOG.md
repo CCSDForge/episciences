@@ -25,7 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * published
   * ready to publish
   * approved by author - waiting for final publication
-
+  
+### Added
+- Reset password API
+- stats indicator: acceptance rate by year
 
 ## 1.0.39.12 - 2023-03-23
 ### Fixed
