@@ -716,7 +716,16 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
+        // Allow post - acceptance revisions of articles
+        $isPostAcceptanceEnabled = (int)$review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) === 1;
+
         $templates = Episciences_PapersManager::getStatusFormsTemplates($paper, $contributor, $all_editors);
+
+
+        if ($isPostAcceptanceEnabled && (Episciences_Auth::isSecretary() || Episciences_Auth::isCopyEditor())) {
+            $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersion']);
+            $this->view->acceptedAskAuthorValidationForm = Episciences_PapersManager::getAcceptedAskAuthorValidationForm($templates['acceptedAskAuthorValidation']);
+        }
 
         // paper status change form
         if (Episciences_Auth::isAllowedToManagePaper()) {
@@ -733,11 +742,6 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->reviewFormattingDeposedForm = Episciences_PapersManager::getReviewFormattingDeposedForm($templates['reviewFormattingDeposed']);
             $this->view->ceAcceptFinalVersionForm = Episciences_PapersManager::getCeAcceptFinalVersionForm($templates['ceAcceptFinalVersion']);
 
-            if (Episciences_Auth::isSecretary()) {
-                $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersion']);
-                $this->view->acceptedAskAuthorValidationForm = Episciences_PapersManager::getAcceptedAskAuthorValidationForm($templates['acceptedAskAuthorValidation']);
-            }
-
             if (!empty($all_editors)) {
                 $this->view->askOtherEditorsForm = Episciences_PapersManager::getAskOtherEditorsForm($templates['askOtherEditors'], $all_editors, $paper);
             }
@@ -749,8 +753,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->authorFormattingRequestForm = Episciences_PapersManager::getWaitingForAuthorFormatting($templates['waitingAuthorFormatting']);
             $this->view->reviewFormattingDeposedForm = Episciences_PapersManager::getReviewFormattingDeposedForm($templates['reviewFormattingDeposed']);
             $this->view->ceAcceptFinalVersionForm = Episciences_PapersManager::getCeAcceptFinalVersionForm($templates['ceAcceptFinalVersion']);
-            $this->view->acceptedAskAuthorFinalVersionForm = Episciences_PapersManager::getAcceptedAskAuthorFinalVersionForm($templates['acceptedAskAuthorFinalVersion']);
-            $this->view->acceptedAskAuthorValidationForm = Episciences_PapersManager::getAcceptedAskAuthorValidationForm($templates['acceptedAskAuthorValidation']);
+
 
             if ($paper->isApprovedByAuthor()) {
                 $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
@@ -829,6 +832,11 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $this->view->displayPaperPasswordBloc = $displayPaperPasswordBloc;
+
+        $isEditableVersion =  $paper->isEditableVersion() &&
+            (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid));
+        $this->view->isEditableVersion = $isEditableVersion;
+
 
     }
 
@@ -4509,6 +4517,17 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId, false);
 
         if (!$paper) {
+            return false;
+        }
+
+        if (
+            !$paper->isEditableVersion() ||
+            (
+                !Episciences_Auth::isSecretary() &&
+                !$paper->getEditor(Episciences_Auth::getUid()) &&
+                !$paper->getCopyEditor(Episciences_Auth::getUid())
+            )
+        ) {
             return false;
         }
 

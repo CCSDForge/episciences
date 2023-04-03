@@ -32,12 +32,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 - Possiblity to indicate if the volume is an act of conferences in the volume creation or modification
 
-### Fixed
-- [RT#182289]: reminders are ignored once the document is accepted.
-- [RT#82641]: persons who have declared a conflict of interest are copied in the "Completed rating" e-mail sent to the editors of the article.
-- Paper password registration failure
+## Unreleased
 ### Changed
 - related to Allow post - accepting article revisions: "Contact without sending a new version" is now disabled when answer final version request
+- now the version of the article can be modified only if its status is :
+  * submitted
+  * waiting for reviewing
+  * accepted
+  * published
+  * ready to publish
+  * approved by author - waiting for final publication
+
+
+## 1.0.39.12 - 2023-03-23
+### Fixed
+- Paper password registration failure
+
+## 1.0.39.11 - 2023-03-23
+### Fixed
+- [RT#182289]: reminders are ignored once the document is accepted.
+- [RT#182641]: fixed a case where persons who have declared a conflict of interest are copied in the "Completed rating"
+  e-mail sent to the editors of the article.
+
 ## 1.0.39.10 - 2023-03-15
 ### Fixed
 - Prevent repeated submission of Editor suggestions form : Force post method and add CSRF

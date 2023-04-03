@@ -104,7 +104,7 @@ class getCitationsData extends JournalScript
                         }
                         $cache->save($setsMetadata);
                     }
-                    $this->displayInfo('METADATA FOUNDED IN CACHE ' . $doiWhoCite, true);
+                    $this->displayInfo('METADATA FOUND IN CACHE ' . $doiWhoCite, true);
                     $metadataInfoCitation = json_decode($setsMetadata->get(), true, 512, JSON_THROW_ON_ERROR);
                     if (reset($metadataInfoCitation) !== "") {
                         foreach ($metadataInfoCitation as $infoCitation) {

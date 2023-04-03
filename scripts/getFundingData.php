@@ -2,9 +2,9 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 
 $localopts = [
@@ -64,13 +64,13 @@ class getFundingData extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['PAPERID', 'DOI','IDENTIFIER','VERSION','REPOID','STATUS'])->order('REPOID DESC'); // prevent empty row
+        $select = $db->select()->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID', 'STATUS'])->order('REPOID DESC'); // prevent empty row
         $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         foreach ($db->fetchAll($select) as $value) {
-            if (isset($value['DOI']) && $value['DOI'] !== '' && $value['STATUS'] === (string) Episciences_Paper::STATUS_PUBLISHED) {
+            if (isset($value['DOI']) && $value['DOI'] !== '' && $value['STATUS'] === (string)Episciences_Paper::STATUS_PUBLISHED) {
                 $doiTrim = trim($value['DOI']);
                 // CHECK IF GLOBAL OPENAIRE RESEARCH GRAPH EXIST
-                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi(trim($value['DOI']),$value['PAPERID']);
+                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi(trim($value['DOI']), $value['PAPERID']);
                 $fileOpenAireGlobalResponse = trim(explode("/", trim($value['DOI']))[1]) . ".json";
                 $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
                 $setsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
@@ -97,11 +97,11 @@ class getFundingData extends JournalScript
                 try {
                     $fileFound = json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
                 } catch (JsonException $jsonException) {
-                    self::logErrorMsg(sprintf( 'Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+                    self::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
                 }
 
                 $globalfundingArray = [];
-                $this->displayInfo('CALL CACHE OPENAIRE FOR '. $doiTrim , true);
+                $this->displayInfo('CALL CACHE OPENAIRE FOR ' . $doiTrim, true);
                 if (!empty($fileFound[0])) {
                     $fundingArray = [];
                     $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
@@ -157,7 +157,7 @@ class getFundingData extends JournalScript
     public static function logErrorMsg($msg)
     {
         $logger = new Logger('my_logger');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_'.date('Y-m-d').'.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
         $logger->info($msg);
     }
 }

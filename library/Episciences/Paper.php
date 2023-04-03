@@ -225,6 +225,19 @@ class Episciences_Paper
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
     ];
 
+
+    public const EDITABLE_VERSION_STATUS = [
+        self::STATUS_SUBMITTED,
+        self::STATUS_OK_FOR_REVIEWING,
+        self::STATUS_ACCEPTED,
+        self::STATUS_CE_READY_TO_PUBLISH,
+        self::STATUS_PUBLISHED,
+        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
+        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
+    ];
+
     public const ACCEPTED_SUBMISSIONS = [
         self::STATUS_ACCEPTED,
         self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
@@ -4314,6 +4327,12 @@ class Episciences_Paper
      */
     public function getCoAuthors() : array {
         return $this->_coAuthors = Episciences_PapersManager::getCoAuthors($this->getDocid());
+    }
+
+    public function isEditableVersion(): bool
+    {
+        return in_array($this->getStatus(), self::EDITABLE_VERSION_STATUS, true);
+
     }
 
 }

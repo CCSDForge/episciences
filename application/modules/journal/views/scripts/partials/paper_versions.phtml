@@ -31,13 +31,8 @@ $isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper-
 
                     <?php if (
                         $controller === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER &&
-                        !$paper->isTmp() &&
-                        ($docId === $this->versions[array_key_first($this->versions)]->getDocId()) &&
-                        (
-                            (Episciences_Auth::isSecretary() && !$paper->isExcluded()) ||
-                            ($isAllowedToEditVersion && $paper->canBeAssignedDOI())
-                        )
-
+                        !$paper->isTmp() && ($docId === $this->versions[array_key_first($this->versions)]->getDocId()) &&
+                        $this->isEditableVersion
                     ) : ?>
                         <a class="btn btn-default btn-xs" role="button"
                            onclick="getVersionEditingForm(this, <?= $docId ?>)"><i class="fas fa-edit" style="margin-right: 5px"></i><?= $this->translate('Modifier') ?></a>
