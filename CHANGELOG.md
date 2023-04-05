@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * published
   * ready to publish
   * approved by author - waiting for final publication
+- statistics: the lower limit of years is now set at 2013
 
 
 ## 1.0.39.12 - 2023-03-23

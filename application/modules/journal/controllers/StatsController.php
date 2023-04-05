@@ -52,7 +52,6 @@ class StatsController extends Zend_Controller_Action
         $dashboard = $result[array_key_first($result)];
         $details = $dashboard['submissions']['details'];
         $yearCategories = array_keys($details['submissionsByYear']);
-        rsort($yearCategories);
 
         $this->view->yearCategories = $yearCategories; // navigation
 
@@ -173,7 +172,7 @@ class StatsController extends Zend_Controller_Action
             unset($totalByYear);
 
         } elseif ($allSubmissions) {
-            $publicationsPercentage = round($allPublications / $allSubmissions * 100, 2);
+            $publicationsPercentage = round($details['totalPublished'] / $allSubmissions * 100, 2);
             $refusalsPercentage = round($allRefusals / $allSubmissions * 100, 2);
             $acceptationsPercentage = round($allAcceptations / $allSubmissions * 100, 2);
             $otherStatusPercentage = round($allOtherStatus / $allSubmissions * 100, 2);
@@ -270,7 +269,7 @@ class StatsController extends Zend_Controller_Action
 
 
         $this->view->allSubmissionsJs = $allSubmissions;
-        $this->view->allPublications = $allPublications;
+        $this->view->allPublications = !$yearQuery ? $details['totalPublished'] : $allPublications;
         $this->view->allRefusals = $allRefusals;
         $this->view->allAcceptations = $allAcceptations;
         $this->view->allOtherStatus = $allOtherStatus;

@@ -18,7 +18,23 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                             <?= $this->translate('Soumissions') ?>
                             <code><?= $this->allSubmissions ?></code>
                             <?php if ($isYear): ?>
-                                <em class="fas fa-info-circle" data-toggle="tooltip" title="<?= $this->translate($submissionsTooltipInfo) ?>"></em>
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($submissionsTooltipInfo) ?>"></em>
+                            <?php endif; ?>
+                        </li>
+
+                        <li>
+                            <?= ucfirst($this->translate('articles publiés')) ?>
+                            <code><?= $this->allPublications ?></code>
+                            <?php if ($isYear): ?>
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($publishedTooltipInfo) ?>"></em>
+                            <?php endif; ?>
+                        </li>
+
+                        <li>
+                            <?= ucfirst($this->translate('articles refusés')) ?>
+                            <code><?= $this->allRefusals ?></code>
+                            <?php if ($isYear): ?>
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($refusedTooltipInfo) ?>"></em>
                             <?php endif; ?>
                         </li>
 
@@ -27,6 +43,7 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                             $acceptanceRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles acceptés") . ', S' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ' ]</em>';
                             $acceptanceRate = round((($this->allAcceptations + $this->allPublications) / $this->allSubmissions) * 100, 2);
                             ?>
+
                             <li>
                                 <?= $this->translate("Taux d'acceptation") ?>
                                 <code style="font-size: 105%;"><?= $acceptanceRate ?></code><em class="fas fa-percent fa-sm" style="margin-left: 5px;"></em>
@@ -35,32 +52,21 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                             </li>
 
                         <?php else: ?>
-
-                            <hr>
-                            <em class="text-left text-info"><?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement') ?></em>
+                            <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement') ?></h1>
 
                         <?php endif; ?>
-                        <hr>
 
-                        <li>
-                            <?= ucfirst($this->translate('articles publiés')) ?>
-                            <code><?= $this->allPublications ?></code>
-                            <?php if ($isYear): ?>
-                                <em class="fas fa-info-circle" data-toggle="tooltip" title="<?= $this->translate($publishedTooltipInfo) ?>"></em>
-                            <?php endif; ?>
-                        </li>
+
+                        <?php if(!$isYear) :?>
+                            <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('En cours de publication') ?></h1>
+                        <?php endif; ?>
+
+
                         <li>
                             <?= ucfirst($this->translate('articles acceptés')) ?>
                             <code><?= $this->allAcceptations ?></code>
                             <?php if ($isYear): ?>
-                                <em class="fas fa-info-circle" data-toggle="tooltip" title="<?= $this->translate($acceptedTooltipInfo) ?>"></em>
-                            <?php endif; ?>
-                        </li>
-                        <li>
-                            <?= ucfirst($this->translate('articles refusés')) ?>
-                            <code><?= $this->allRefusals ?></code>
-                            <?php if ($isYear): ?>
-                                <em class="fas fa-info-circle" data-toggle="tooltip" title="<?= $this->translate($refusedTooltipInfo) ?>"></em>
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($acceptedTooltipInfo) ?>"></em>
                             <?php endif; ?>
                         </li>
 
@@ -68,7 +74,7 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                             <?= ucfirst($this->translate('autres statuts')) ?>
                             <code><?= $this->allOtherStatus ?></code>
                             <?php if ($isYear): ?>
-                                <em class="fas fa-info-circle" data-toggle="tooltip" title="<?= $this->translate($otherStatusTooltipInfo) ?>"></em>
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($otherStatusTooltipInfo) ?>"></em>
                             <?php endif; ?>
                         </li>
                     </ul>
