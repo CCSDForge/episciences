@@ -200,6 +200,48 @@ class Episciences_Paper
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "approuvé - en attente de publication",
         self::STATUS_REMOVED => 'supprimé par la revue',
     ];
+
+    public const STATUS_DICTIONARY = [
+        self::STATUS_SUBMITTED => 'submitted',
+        self::STATUS_OK_FOR_REVIEWING => 'waitingFor reviewing',
+        self::STATUS_BEING_REVIEWED => 'underReview',
+        self::STATUS_REVIEWED => 'reviewed',
+        self::STATUS_ACCEPTED => 'accepted',
+        self::STATUS_PUBLISHED => 'published',
+        self::STATUS_REFUSED => 'refused',
+        self::STATUS_OBSOLETE => 'obsolete',
+        self::STATUS_WAITING_FOR_MINOR_REVISION => 'pendingMinorRevision',
+        self::STATUS_WAITING_FOR_MAJOR_REVISION => 'pendingMajorRevision',
+        self::STATUS_WAITING_FOR_COMMENTS => 'pendingClarification',
+        self::STATUS_TMP_VERSION => 'temporaryVersion',
+        self::STATUS_NO_REVISION => 'revisionRequestAnswerWithoutAnyModifications',
+        self::STATUS_NEW_VERSION => 'answerToRevisionRequestNewVersion',
+        self::STATUS_DELETED => 'deleted',
+        self::STATUS_ABANDONED => 'abandoned',
+        self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES => "waitingForAuthorsSources",
+        self::STATUS_CE_AUTHOR_SOURCES_DEPOSED => 'waitingForFormattingByTheJournal',
+        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION => "waitingForAuthorsFinalVersion",
+        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED => 'finalVersionSubmittedWaitingForValidation',
+        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED => 'formattingByJournalCompletedWaitingForAFinalVersion',
+        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "formattingByAuthorCompletedWaitingForFinalVersion",
+        self::STATUS_CE_READY_TO_PUBLISH => 'readyToPublish',
+        self::STATUS_TMP_VERSION_ACCEPTED => "acceptedTemporaryVersionWaitingForAuthorsFinalVersion",
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION => "acceptedWaitingForAuthorsFinalVersion",
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'acceptedWaitingForMajorRevision',
+        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING =>
+            'acceptedFinalVersionSubmittedWaitingForFormattingByCopyEditors',
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION =>
+            "acceptedTemporaryVersionAfterAuthorsModifications",
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION =>
+            'acceptedTemporaryVersionWaitingForMinorRevision',
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION =>
+            'acceptedTemporaryVersionWaitingForMajorRevision"',
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "AcceptedWaitingForAuthorsValidation",
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "'AcceptedWaitingForFinalPublication'",
+        self::STATUS_REMOVED => 'deletedByTheJournal',
+    ];
+
+
     public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
         self::STATUS_REFUSED,

@@ -8,7 +8,7 @@ use Psr\Http\Message\StreamInterface;
 
 class StatsController extends Zend_Controller_Action
 {
-    public const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9", "#33ff99 "];
+    public const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9", "#33ff99"];
     public const CHART_TYPE = [
         'BAR' => 'bar',
         'PIE' => 'pie',
@@ -101,7 +101,13 @@ class StatsController extends Zend_Controller_Action
             foreach ($submissionsByYearResponse as $values) {
 
 
-                foreach ($values as $status => $nbSubmissions) {
+                foreach ($values as $statusLabel => $nbSubmissions) {
+
+                    $status = array_search($statusLabel, Episciences_Paper::STATUS_DICTIONARY, true);
+
+                    if ($status === false) {
+                        trigger_error("STATS: UNDEFINED_STATUS_DICTIONARY_LABEL $statusLabel");
+                    }
 
 
                     if ($status === Episciences_Paper::STATUS_PUBLISHED) {
@@ -190,7 +196,7 @@ class StatsController extends Zend_Controller_Action
 
 
         } elseif ($allSubmissions) {
-            $publicationsPercentage = round($dashboard['details'][self::NB_SUBMISSIONS]['totalPublished'] / $allSubmissions * 100, 2);
+            $publicationsPercentage = round($dashboard['value']['totalPublished'] / $allSubmissions * 100, 2);
             $refusalsPercentage = round($allRefusals / $allSubmissions * 100, 2);
             $acceptationsPercentage = round($allAcceptations / $allSubmissions * 100, 2);
             $otherStatusPercentage = round($allOtherStatus / $allSubmissions * 100, 2);
@@ -290,7 +296,7 @@ class StatsController extends Zend_Controller_Action
 
 
         $this->view->allSubmissionsJs = $allSubmissions;
-        $this->view->allPublications = !$yearQuery ? $dashboard['details'][self::NB_SUBMISSIONS]['totalPublished'] : $allPublications;
+        $this->view->allPublications = !$yearQuery ? $dashboard['value']['totalPublished'] : $allPublications;
         $this->view->allRefusals = $allRefusals;
         $this->view->allAcceptations = $allAcceptations;
         $this->view->allOtherStatus = $allOtherStatus;
