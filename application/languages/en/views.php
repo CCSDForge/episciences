@@ -1845,6 +1845,8 @@ return [
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    "le nombre total d'articles acceptés" => 'the total number of accepted for publication',
+    "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of papers submitted during this period',
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
     "En un coup d'oeil" => "At a glance",
