@@ -68,6 +68,7 @@ class Episciences_Paper_Logger
 
     public const CODE_VERSION_REPOSITORY_UPDATED = "version_repository_updated";
     public const CODE_NEW_REVIEWING_DEADLINE = 'new_reviewing_deadline';
+    public const CODE_INBOX_COAR_NOTIFY_REVIEW = 'coar_notify_review';
 
     // alert-
     public const WARNING = 'warning';
@@ -128,7 +129,8 @@ class Episciences_Paper_Logger
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => self::VIOLET,
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => self::VIOLET,
         self::CODE_VERSION_REPOSITORY_UPDATED => self::INFO,
-        self::CODE_NEW_REVIEWING_DEADLINE => self::WARNING
+        self::CODE_NEW_REVIEWING_DEADLINE => self::WARNING,
+        self::CODE_INBOX_COAR_NOTIFY_REVIEW => self::INFO
     ];
 
     public static array $_label = [
@@ -163,7 +165,8 @@ class Episciences_Paper_Logger
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepté, demande de la version finale à l'auteur",
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur",
         self::CODE_VERSION_REPOSITORY_UPDATED => 'Re-pointage de version',
-        self::CODE_NEW_REVIEWING_DEADLINE => 'Nouvelle date limite de rendu de relecture'
+        self::CODE_NEW_REVIEWING_DEADLINE => 'Nouvelle date limite de rendu de relecture',
+        self::CODE_INBOX_COAR_NOTIFY_REVIEW => 'Nouvelle soumission > Inbox'
     ];
 
     /**

@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## Unreleased
-### Fixed
+### Added
+- Inbox notifications: new script to initialize submissions. 
+## Unreleased
 ## 1.0.39.14 - 2023-04-26
 - COAR Notify: ietf:cite-as as url for DOI
 - OpenAIRE OAI metadata: include mandatory resource license

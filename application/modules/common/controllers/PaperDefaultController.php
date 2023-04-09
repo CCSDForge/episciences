@@ -263,7 +263,7 @@ class PaperDefaultController extends DefaultController
             }
         }
 
-        return Episciences_Mail_Send::sendMailFromReview($manager, $templateKey, $tags, $newPaper, null, $attachmentsFiles, $makeCopy, $CC);
+        return Episciences_Mail_Send::sendMailFromReview($manager, $templateKey, $tags, $newPaper, null, $attachmentsFiles, $makeCopy, $CC, null);
 
     }
 
@@ -422,7 +422,7 @@ class PaperDefaultController extends DefaultController
 
             try {
                 Episciences_Mail_Send::sendMailFromReview(
-                    $recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC
+                    $recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC, null
                 );
                 ++$nbNotifications;
                 $makeCopy = false;
@@ -544,7 +544,7 @@ class PaperDefaultController extends DefaultController
             $tags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $tags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
             $tags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale);
-            Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $tags, $paper, null, $attachments, false, $CC);
+            Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $tags, $paper, null, $attachments, false, $CC, null);
             //reset $CC
             $CC = [];
         }
@@ -728,7 +728,7 @@ class PaperDefaultController extends DefaultController
                 unset($cc[$uid]);
             }
 
-            Episciences_Mail_Send::sendMailFromReview($assignedUser, $templateType, $tags, $paper, null, [], false, $cc);
+            Episciences_Mail_Send::sendMailFromReview($assignedUser, $templateType, $tags, $paper, null, [], false, $cc, null);
 
 
         }
