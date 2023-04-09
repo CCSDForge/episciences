@@ -45,16 +45,18 @@ function define_app_constants()
 /**
  * define review constants
  */
-function define_review_constants()
+function define_review_constants(string $rvCode = null)
 {
+
     // define review code
-    if (!defined('RVCODE') && getenv('RVCODE')) {
+    if ((null === $rvCode) && !defined('RVCODE') && getenv('RVCODE')) {
         define('RVCODE', getenv('RVCODE'));
+        $rvCode = RVCODE;
     }
 
-    if (defined('RVCODE')) {
+    if ($rvCode) {
         // define application module
-        switch (RVCODE) {
+        switch ($rvCode) {
             case PORTAL:
                 define('APPLICATION_MODULE', 'portal');
                 break;
@@ -70,12 +72,12 @@ function define_review_constants()
             if (APPLICATION_MODULE === PORTAL) {
                 define('APPLICATION_URL', HTTP . '://' . DOMAIN);
             } else {
-                define('APPLICATION_URL', HTTP . '://' . RVCODE . '.' . DOMAIN);
+                define('APPLICATION_URL', HTTP . '://' . $rvCode . '.' . DOMAIN);
             }
         }
 
         // define review path
-        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . RVCODE) . '/');
+        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
 
         //configurable constants path
         define('CONFIGURABLE_CONSTANTS_PATH', APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.configurable.constants.json');
