@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+
+## Unreleased
+### Fixed
+- COAR Notify: ietf:cite-as as url for DOI
+- OpenAIRE OAI metadata: include mandatory resource license
+
 ## 1.0.39.13 - 2023-04-06
 ### Changed
 - related to Allow post - accepting article revisions: "Contact without sending a new version" is now disabled when answer final version request
