@@ -34,6 +34,7 @@ if ($paper->isPublished()) {
     $authors = $paper->getMetadata('authors');
     if ($authors) {
         if (is_array($authors)) {
+            krsort($authors);
             foreach ($authors as $author) {
                 $this->headMeta()->prependName('citation_author', $author);
                 $this->headMeta()->prependName('DC.creator', $author);
