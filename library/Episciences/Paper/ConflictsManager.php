@@ -144,7 +144,9 @@ class Episciences_Paper_ConflictsManager
 
         foreach ($option as $key => $val) {
 
+
             if (in_array($key, Episciences_Paper_Conflict::TABLE_COLONES)) {
+                $key = $db->quoteIdentifier($key);
                 $sql->where("$key = ?", $val);
             }
 
