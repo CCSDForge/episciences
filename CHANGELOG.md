@@ -18,9 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+## 1.0.39.14 - 2023-04-26
 - COAR Notify: ietf:cite-as as url for DOI
 - OpenAIRE OAI metadata: include mandatory resource license
-- [RT#184361]: a person with a conflict of interest may determine the identity of the article's reviewers.
+- [RT#184361]: a person with a conflict of interest may determine the identity of the article's reviewers by 
+  trial and error
 
 ## 1.0.39.13 - 2023-04-06
 ### Changed
