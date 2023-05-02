@@ -50,16 +50,22 @@ class InboxNotifications extends Script
     {
 
         $t0 = time();
+
+        // Language choice
+        Zend_Registry::set('languages', ['fr', Episciences_Review::DEFAULT_LANG]);
+        Zend_Registry::set('Zend_Locale', new Zend_Locale(Episciences_Review::DEFAULT_LANG));
+
+
         $this->checkAppEnv();
 
         define_table_constants();
         define_simple_constants();
+        define_app_constants();
 
         $this->initApp();
         $this->initDb();
 
         $this->initTranslator(Episciences_Review::DEFAULT_LANG);
-
 
         $reader = new Episciences_Notify_Reader();
 
@@ -83,17 +89,12 @@ class InboxNotifications extends Script
         foreach ($allNotifications as $index => $notification) {
 
             /** @var COARNotification $notification */
-            if ($notification instanceof COARNotification) {
-
-                if (
-                    $this->notificationsProcess($notification) &&
-                    $this->getParam('delNotifs')
-                ) {
+            if (($notification instanceof COARNotification) && $this->notificationsProcess($notification) &&
+                $this->getParam('delNotifs')) {
 
                     $this->removeNotificationById($reader->getCoarNotificationManager(), $notification->getId());
 
                 }
-            }
 
             if ($index < ($count - 1)) {
                 $this->displayTrace('Next...' . PHP_EOL, $this->isVerbose());
@@ -117,7 +118,7 @@ class InboxNotifications extends Script
 
         $nOriginal = $notification->getOriginal();
 
-        //$nOriginal = $this->test('https://hal.science/hal-00687607v4');
+        //$nOriginal = $this->subPattern('https://hal.science/hal-00919370v2');
 
         try {
 
@@ -528,7 +529,19 @@ class InboxNotifications extends Script
     private function notifyAuthorAndEditorialCommitee(Episciences_Review $journal, Episciences_Paper $paper, Episciences_User $author)
     {
 
-        $this->defineMissingCosts($journal);
+        $rvCode = $journal->getCode();
+
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $journalPath = realpath(APPLICATION_PATH . '/../data/' . $rvCode);
+
+        $journalPathLanguesDir = $journalPath ? $journalPath . '/languages' : null;
+
+        if ($journalPathLanguesDir && is_dir($journalPathLanguesDir) && count(scandir($journalPathLanguesDir)) > 2) {
+            $translator->addTranslation($journalPathLanguesDir);
+        }
+
+
         $journalOptions = ['rvCode' => $journal->getCode(), 'rvId' => $journal->getRvid()];
 
         $isVerbose = $this->isVerbose();
@@ -732,17 +745,16 @@ class InboxNotifications extends Script
 
     private function defineMissingCosts(Episciences_Review $journal): void
     {
-        define_app_constants();
         define_review_constants($journal->getCode());
     }
 
 
-    private function removeNotificationById(COARNotificationManager $cManger, string $notificationId) : void
+    private function removeNotificationById(COARNotificationManager $cManger, string $notificationId): void
     {
         $cManger->removeNotificationById($notificationId);
     }
 
-    public function test(string $id): string
+    public function subPattern(string $id): string
     {
 
 
@@ -786,7 +798,6 @@ class InboxNotifications extends Script
         ]
 }';
     }
-
 }
 
 

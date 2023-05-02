@@ -203,7 +203,7 @@ class Episciences_Mail_Send
 
 
         $template->findByKey($templateType);
-        $template->loadTranslations();
+        $template->loadTranslations(null, $journalOptions['rvCode']);
 
         $locale = $recipient->getLangueid();
         $template->setLocale($locale);
@@ -229,7 +229,7 @@ class Episciences_Mail_Send
         }
 
         $mail->setSubject($template->getSubject());
-        $mail->setTemplate($template->getPath(), $template->getKey() . self::TEMPLATE_EXTENSION);
+        $mail->setTemplate($template->getPath(null, $journalOptions['rvCode']), $template->getKey() . self::TEMPLATE_EXTENSION);
 
         // Prise en compte des fichiers attachés
         if (!empty($attachmentsFiles)) {
