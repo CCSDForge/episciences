@@ -2574,12 +2574,12 @@ class Episciences_Paper
 
         $canReplace = false;
         $docId = $this->getDocid();
-        $translator = !$isFromCli ? Zend_Registry::get('Zend_Translate') : null;
+        $translator = Zend_Registry::get('Zend_Translate');
         $span = '<span class="fas fa-exclamation-circle">';
         $warning = $span;
         $warning .= ' ';
-        $submitted = $translator ? $translator->translate("Vous n'êtes pas l'auteur de cet article.") : "todo";
-        $canNotChangeIt = $translator ? $translator->translate('Vous ne pouvez pas le modifier.') : "todo";
+        $submitted = $translator->translate("Vous n'êtes pas l'auteur de cet article.");
+        $canNotChangeIt = $translator->translate('Vous ne pouvez pas le modifier.');
         $status = $this->getStatus();
         $identifier = $this->getIdentifier();
         $version = $this->getVersion();
@@ -2591,13 +2591,13 @@ class Episciences_Paper
         $exitLink = '&nbsp;&nbsp;&nbsp;';
         $exitLink .= '<a class="' . $style . '" href="' . $link . '">';
         $exitLink .= '<span class="glyphicon glyphicon-remove-circle" ></span>&nbsp;';
-        $exitLink .= $translator ? $translator->translate('Annuler') : "todo";
+        $exitLink .= $translator->translate('Annuler');
         $exitLink .= '</a>';
 
         $confirm = '<p style="margin:1em;">';
         $confirm .= '<button class="' . $style . '" onclick="hideResultMessage();">';
         $confirm .= '<span class="glyphicon glyphicon-ok-circle"></span>&nbsp;';
-        $confirm .= $translator ? $translator->translate('Remplacer') : 'todo';
+        $confirm .= $translator->translate('Remplacer');
         $confirm .= '</button>';
         $confirm .= $exitLink;
         $confirm .= '</p>';
@@ -2622,14 +2622,12 @@ class Episciences_Paper
         ) {
 
             $review = Episciences_ReviewsManager::find($rvId);
-            $question = $translator ? $translator->translate('Souhaitez-vous remplacer la version précédente ?') : 'todo';
+            $question = $translator->translate('Souhaitez-vous remplacer la version précédente ?');
             $result['message'] = !$isFromCli ? $warning : '';
             // Arrêt du processus de publication
             if ($status === self::STATUS_ABANDONED) {
 
-                $selfMsg = $translator ?
-                    $translator->translate("On ne peut pas re-proposer un article <strong>abandonné</strong>, Pour de plus amples renseignements, veuillez contacter le comité éditorial.")
-                    : 'todo';
+                $selfMsg = $translator->translate("On ne peut pas re-proposer un article <strong>abandonné</strong>, Pour de plus amples renseignements, veuillez contacter le comité éditorial.");
 
                 $result['message'] = $selfMsg;
 
@@ -2650,22 +2648,20 @@ class Episciences_Paper
             ) {
                 $url = '/paper/view/id/' . $this->getDocid();
                 $selfMsg = $result['message'];
-                $selfMsg .= $translator ?
-                    $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ') :
-                    'todo';
+                $selfMsg .= $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ');
 
                 if ($isFromCli) {
                     $selfMsg .= '<br>';
 
-                    $selfMsg .= $translator ? $translator->translate('ou') : 'todo';
+                    $selfMsg .= $translator->translate('ou');
                     $selfMsg .= '<span style="margin-right: 3px;"></span>';
                     $selfMsg .= '<a class="' . $style . '" href="' . $url . '">';
                     $selfMsg .= '<span class="glyphicon glyphicon-chevron-right"></span>';
-                    $selfMsg .= $translator ? $translator->translate("Accédez directement à l'article") : 'todo';
+                    $selfMsg .= $translator->translate("Accédez directement à l'article");
                     $selfMsg .= '</a>';
                     $selfMsg .= '<span style="margin-left: 3px;"></span>';
 
-                    $selfMsg .= $translator ? $translator->translate('pour répondre à la demande de modification.') : 'todo';
+                    $selfMsg .= $translator->translate('pour répondre à la demande de modification.');
 
 
                 }
@@ -2675,25 +2671,24 @@ class Episciences_Paper
 
             } elseif ($status === self::STATUS_BEING_REVIEWED) { // En cours de relecture
                 $selfMsg = $result['message'];
-                $selfMsg .= $translator ? $translator->translate('Cet article a déjà été soumis et il est en cours de relecture.') : 'todo';
+                $selfMsg .= $translator->translate('Cet article a déjà été soumis et il est en cours de relecture.');
                 $selfMsg .= $canNotChangeIt;
                 $result['message'] = $selfMsg;
             } elseif ($status === self::STATUS_REVIEWED) { /* relu */
                 $selfMsg = $result['message'];
-                $selfMsg .= $translator ? $translator->translate("Cet article est en cours d'évaluation.") : 'todo';
+                $selfMsg .= $translator->translate("Cet article est en cours d'évaluation.");
                 $selfMsg .= $canNotChangeIt;
                 $result['message'] = $selfMsg;
             } elseif ($status === self::STATUS_ACCEPTED) { /*Accepté*/
                 $selfMsg = $result['message'];
-                $selfMsg .= $translator ? $translator->translate('Cet article a été accepté.') : 'todo';
+                $selfMsg .= $translator->translate('Cet article a été accepté.');
                 $selfMsg .= $canNotChangeIt;
                 $result['message'] = $selfMsg;
             } elseif ($status === self::STATUS_REFUSED) { /*Refusé*/
 
                 if ($review->getSetting(Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER)) {
                     $selfMsg = $result['message'];
-                    $selfMsg .= $translator ? $translator->translate('Cet article a déjà été soumis et refusé. Avez-vous apporté des modifications majeures au document ?') :
-                        'todo';
+                    $selfMsg .= $translator->translate('Cet article a déjà été soumis et refusé. Avez-vous apporté des modifications majeures au document ?');
                     $selfMsg .= $confirm;
                     $result['message'] = $selfMsg;
                     $result['oldPaperId'] = $this->getPaperid();
@@ -2702,11 +2697,7 @@ class Episciences_Paper
                     $canReplace = true;
                 } else {
                     $message = $warning . $canNotChangeIt . ' ';
-                    $message .=
-                        $translator ?
-                            $translator->translate('Cet article a déjà été soumis et refusé, merci de contacter le comité editorial.') :
-                            'todo';
-
+                    $message .= $translator->translate('Cet article a déjà été soumis et refusé, merci de contacter le comité editorial.');
                     $result['message'] = $message;
                 }
 
@@ -2717,20 +2708,18 @@ class Episciences_Paper
             ) {
 
 
-                $selfMsg = $translator ? $translator->translate('Cette version') : 'todo';
+                $selfMsg = $translator->translate('Cette version');
                 $selfMsg .= ' [<strong>v' . $this->getVersion() . '</strong>] ';
-                $selfMsg .= $translator ? $translator->translate('du document existe déjà dans la revue.') : 'todo';
+                $selfMsg .= $translator->translate('du document existe déjà dans la revue.');
                 $selfMsg .= '&nbsp;';
                 $selfMsg .= '<a class="btn btn-default btn-sm" href="' . $link . '">';
                 $selfMsg .= '<span class="fas fa-redo" style="margin-right: 5px;"></span>';
-                $selfMsg .= $translator ? $translator->translate('Retour') : 'todo';
+                $selfMsg .= $translator->translate('Retour');
                 $selfMsg .= '</a>';
-                $result['message'] = $warning . ' ' . ($translator ? $translator->translate($selfMsg) : 'todo');
+                $result['message'] = $warning . ' ' . $translator->translate($selfMsg);
 
             } else { // others status
-                $result['message'] = $translator ?
-                    $translator->translate("Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer.") :
-                    'todo';
+                $result['message'] = $translator->translate("Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer.");
             }
 
             $result['oldDocId'] = (int)$docId;
@@ -2738,8 +2727,8 @@ class Episciences_Paper
 
         } else { // Pas de détails sur le statut de l'article, si on est pas l'auteur de ce dernier
             $message = $span;
-            $message .= $translator ? $translator->translate('Erreur') : 'todo';
-            $message .= $translator ? $translator->translate(': ') : 'todo';
+            $message .= $translator->translate('Erreur');
+            $message .= $translator->translate(': ');
             $message .= $submitted;
 
             $result['message'] = $message;

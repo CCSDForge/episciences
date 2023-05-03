@@ -46,7 +46,7 @@ class InboxNotifications extends Script
     }
 
 
-    public function run() : void
+    public function run(): void
     {
 
         $t0 = time();
@@ -123,8 +123,6 @@ class InboxNotifications extends Script
         $isProcessed = false;
 
         $nOriginal = $notification->getOriginal();
-
-        //$nOriginal = $this->subPattern('https://hal.science/hal-00919370v2');
 
         try {
 
@@ -212,20 +210,20 @@ class InboxNotifications extends Script
 
         if ($context !== self::COAR_NOTIFY_AT_CONTEXT) {
 
-            $message .= "@context property doesn't match: ";
+            $message .= "the '@context' property doesn't match: ";
             $message .= implode(', ', self::COAR_NOTIFY_AT_CONTEXT);
             $this->displayError($message);
             $result = false;
 
         } elseif (!$isValidOrigin) {
 
-            $message .= "origine property doesn't match: ";
+            $message .= "the 'origin' property doesn't match: ";
             $message .= $this->getCoarNotifyOrigin()['inbox'];
             $this->displayError($message);
             $result = false;
 
         } elseif ($type !== $this->getCoarNotifyType()) {
-            $message .= "type property doesn't match: ";
+            $message .= "the 'type' property doesn't match: ";
             $message .= implode(', ', $this->getCoarNotifyType());
             $this->displayError($message);
             $result = false;
@@ -392,7 +390,7 @@ class InboxNotifications extends Script
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    private function logAction(Episciences_Paper $paper, bool $isJustAVersionUpdate = false) : void
+    private function logAction(Episciences_Paper $paper, bool $isJustAVersionUpdate = false): void
     {
 
         if ($this->isVerbose()) {
@@ -757,51 +755,6 @@ class InboxNotifications extends Script
     private function removeNotificationById(COARNotificationManager $cManger, string $notificationId): void
     {
         $cManger->removeNotificationById($notificationId);
-    }
-
-    public function subPattern(string $id): string
-    {
-
-
-        return $nOriginal = '{
-            "@context": [
-            "https://www.w3.org/ns/activitystreams",
-            "https://purl.org/coar/notify"
-        ],
-  "actor": {
-            "id": "1099714",
-    "name": "Josiah Carberry",
-    "type": "Person"
-  },
-  "id": "urn:uuid:0370c0fb-bb78-4a9b-87f5-bed307a509dd",
-  "object": {
-            "id": "' . $id . '",
-    "ietf:cite-as": "' . $id . '",
-    "type": "sorg:AboutPage",
-    "url": {
-                "id": "' . $id . '/pdf",
-      "media-type": "application/pdf",
-      "type": [
-                    "Article",
-                    "sorg:ScholarlyArticle"
-                ]
-    }
-  },
-  "origin": {
-            "id": "https://hal.archives-ouvertes.fr/",
-    "inbox": "https://inbox-preprod.hal.science/",
-    "type": "Service"
-  },
-  "target": {
-            "id": "https://local-djamel-journal-gpl.episciences.org",
-    "inbox": "https://www.episciences.org/",
-    "type": "Service"
-  },
-  "type": [
-            "Offer",
-            "coar-notify:ReviewAction"
-        ]
-}';
     }
 }
 
