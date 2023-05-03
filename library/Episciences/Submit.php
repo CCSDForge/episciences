@@ -52,15 +52,15 @@ class Episciences_Submit
             'required' => true,
             'description' => $translator->translate("Saisir l'identifiant du document") . '.',
             'style' => 'width:auto; text-align:center;',
-        ] ;
+        ];
 
-        if($isFromZSubmit){
+        if ($isFromZSubmit) {
             $repIdElementOptions['disabled'] = true;
             $docIdElementOptions['disabled'] = true;
         }
 
         // Select: repositories
-        $subform->addElement('select', 'repoId', $repIdElementOptions );
+        $subform->addElement('select', 'repoId', $repIdElementOptions);
 
         unset($options);
 
@@ -723,10 +723,11 @@ class Episciences_Submit
      * @param null $version
      * @param null $latestObsoleteDocId
      * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
+     * @param int|null $rvId
      * @return array
      * @throws Zend_Exception
      */
-    public static function getDoc($repoId, $id, $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true): array
+    public static function getDoc($repoId, $id, $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true, int $rvId = RVID): array
     {
         $isNewVersionOf = !empty($latestObsoleteDocId);
         $result = [];
@@ -740,7 +741,7 @@ class Episciences_Submit
 
         $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId]);
 
-        if(!empty($hookApiRecord)){
+        if (!empty($hookApiRecord)) {
             $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
         }
 
@@ -751,13 +752,14 @@ class Episciences_Submit
 
         $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version);
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
-        $translator = Zend_Registry::get('Zend_Translate');
+
+        $translator = !Ccsd_Tools::isFromCli() ? Zend_Registry::get('Zend_Translate') : null;
 
         $oai = new Episciences_Oai_Client($baseUrl, 'xml');
 
         try {
             // version, identifier, repoid
-            $paper = new Episciences_Paper(['rvid' => RVID, 'version' => $version, 'repoid' => $repoId, 'identifier' => $id]);
+            $paper = new Episciences_Paper(['rvid' => $rvId, 'version' => $version, 'repoid' => $repoId, 'identifier' => $id]);
             // On prend pas en compte la version de l'artcile lors de la vérification de son existance en local.
             if (!$isNewVersionOf) { // resoumettre un article via "proposer un article" (submit/index)
                 $paper->setVersion(null);
@@ -786,7 +788,7 @@ class Episciences_Submit
             if ($result['status'] === 2) {
                 $paper = Episciences_PapersManager::get($docId);
                 if ($manageNewVersionErrors) {
-                    $result['newVerErrors'] = $paper->manageNewVersionErrors(['version' => $version, 'isNewVersionOf' => $isNewVersionOf]);
+                    $result['newVerErrors'] = $paper->manageNewVersionErrors(['version' => $version, 'isNewVersionOf' => $isNewVersionOf, 'rvId' => $rvId]);
                 }
             }
 
@@ -798,8 +800,20 @@ class Episciences_Submit
                     $date = self::extractEmbargoDate($oai->getRecord($identifier, 'oai_dcterms'));
 
                     if ($date > date('Y-m-d')) {
-                        $date = ('9999-12-31' === $date) ? $translator->translate('Jamais') : Episciences_View_Helper_Date::Date($date, Episciences_Tools::getLocale());
-                        $error = $translator->translate("Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : ") . '<strong class="alert-warning">' . $date . '</strong>';
+                        if (!$translator) {
+                            $date = ('9999-12-31' === $date) ?
+                                ('Never') :
+                                Episciences_View_Helper_Date::Date($date, Episciences_Tools::getLocale());
+
+                            $error = $translator->translate("Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : ") . '<strong class="alert-warning">' . $date . '</strong>';
+                        } else {
+                            $date = ('9999-12-31' === $date) ?
+                                ($translator->translate('Jamais')) :
+                                Episciences_View_Helper_Date::Date($date, Episciences_Tools::getLocale());
+
+                            $error = "You can not submit this document; the file is not available; the end date of the embargo: $date";
+
+                        }
                         throw new Ccsd_Error('docUnderEmbargo: ' . $error);
                     }
 
@@ -821,6 +835,17 @@ class Episciences_Submit
                     $hookHasDoiInfoRepresentsAllVersions = Episciences_Repositories::callHook('hookHasDoiInfoRepresentsAllVersions', ['repoId' => $repoId, 'record' => $result['record'], 'conceptIdentifier' => $oldPaper->getConcept_identifier()]);
                     if (array_key_exists('hasDoiInfoRepresentsAllVersions', $hookHasDoiInfoRepresentsAllVersions) && !$hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) {
                         $error = 'hookUnboundVersions: ';
+
+                        if (!$translator) {
+
+                            $error = 'You can not submit this document, please check that this is a new version.';
+
+                        } else {
+                            $error .= $translator->translate("Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version.");
+
+                        }
+
+
                         $error .= $translator->translate("Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version.");
                         throw new Ccsd_Error($error);
                     }
@@ -830,7 +855,17 @@ class Episciences_Submit
 
                 if (array_key_exists('isOpenAccessRight', $hookIsOpenAccessRight) && !$hookIsOpenAccessRight['isOpenAccessRight']) {
                     $error = 'hookIsNotOpenAccessRight: ';
-                    $error .= $translator->translate("Vous ne pouvez pas soumettre ce document car les fichiers ne seront pas mis à la disposition du public et le partage ne sera possible qu'avec l'approbation du déposant du fichier.");
+
+                    if (!$translator) {
+
+                        $error = 'You can not submit this document as the files will not be made publicly available and sharing will be made possible only by the approval of depositor of the original file.';
+
+                    } else {
+
+                        $error .= $translator->translate("Vous ne pouvez pas soumettre ce document car les fichiers ne seront pas mis à la disposition du public et le partage ne sera possible qu'avec l'approbation du déposant du fichier.");
+
+                    }
+
                     throw new Ccsd_Error($error);
                 }
 
@@ -838,11 +873,25 @@ class Episciences_Submit
 
         } catch (Ccsd_Error $e) { // customized message : visible to the user
             $result['status'] = 0;
-            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate($e->parseError());
+
+            if (!$translator) {
+                $result['error'] = $e->parseError();
+
+            } else {
+                $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate($e->parseError());
+            }
             return ($result);
         } catch (Exception $e) { // other exceptions: generic message
             $result['status'] = 0;
-            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate("Le document n'a pas été trouvé ou n'a pas pu être chargé.");
+
+            if (!$translator) {
+                $result['error'] = 'The document could not be found, or could not be loaded.';
+
+            } else {
+                $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate("Le document n'a pas été trouvé ou n'a pas pu être chargé.");
+
+            }
+
             return ($result);
         }
 
@@ -873,7 +922,7 @@ class Episciences_Submit
         $oldVersion = (int)Ccsd_Tools::ifsetor($data['old_version'], 1);
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
 
-        if($canReplace){
+        if ($canReplace) {
             try {
                 $journalSettings = Zend_Registry::get('reviewSettings');
                 $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
@@ -1003,7 +1052,7 @@ class Episciences_Submit
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
 
-        if ($isCoiEnabled) { 
+        if ($isCoiEnabled) {
 
             // conflicts UIDs
             $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]);
@@ -1159,7 +1208,7 @@ class Episciences_Submit
      * @param array $rawRecord
      * @return array
      */
-    public  static function extractVersionsFromArXivRaw(array $rawRecord): array
+    public static function extractVersionsFromArXivRaw(array $rawRecord): array
     {
         $historyVersions = $rawRecord['metadata']['arXivRaw']['version'];
         $versions = [];
@@ -1361,12 +1410,12 @@ class Episciences_Submit
         $authorComment->setDocid($paper->getDocid());
         $authorComment->setMessage($coverLetter["message"]);
 
-        if($paper->getUid())
+        if ($paper->getUid())
 
-        //Eviter l'insertion d'une ligne vide dans la table
-        if ((!empty($coverLetter['message']) || !empty($coverLetter["attachedFile"])) && !$authorComment->save()) {
-            error_log('SAVE_COVER_LETTER_FAILED_FOR_DOCID_ ', $paper->getDocid());
-        }
+            //Eviter l'insertion d'une ligne vide dans la table
+            if ((!empty($coverLetter['message']) || !empty($coverLetter["attachedFile"])) && !$authorComment->save()) {
+                error_log('SAVE_COVER_LETTER_FAILED_FOR_DOCID_ ', $paper->getDocid());
+            }
     }
 
     /**
@@ -1548,7 +1597,7 @@ class Episciences_Submit
             }
 
 
-        } catch (Zend_Db_Statement_Exception | GuzzleException  $e) {
+        } catch (Zend_Db_Statement_Exception|GuzzleException  $e) {
             trigger_error($e->getMessage(), E_USER_ERROR);
 
         }
@@ -1609,7 +1658,7 @@ class Episciences_Submit
 
             $latestSubmission = Episciences_PapersManager::getLastPaper($paper->getPaperid());
 
-            if($latestSubmission){
+            if ($latestSubmission) {
                 $hasHook = $latestSubmission->hasHook;
             }
 

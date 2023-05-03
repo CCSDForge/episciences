@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tracking.' AddToAny is not used anymore.
 - Public access to the journal's stats.
 ### Added
+- Inbox notifications: new script to initialize submissions.
 - Cancel a DOI assignment for the journal (manual DOI assignment setting only)
 - It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an ema
 - [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites

@@ -206,7 +206,7 @@ try {
                 $mail->addTo($recipient['email'], $recipient['fullname']);
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
-                $mail->writeMail($rvCode, $isDebug);
+                $mail->writeMail($rvCode, RVID, $isDebug);
 
                 $msg = "reminder sent to " . $recipient['fullname'] . ' (' . $recipient['uid'] . ')';
                 if (isset($tags['%%ARTICLE_ID%%'])) {

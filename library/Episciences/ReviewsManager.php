@@ -102,10 +102,14 @@ class Episciences_ReviewsManager
      * @param string $rvcode
      * @return bool|Episciences_Review
      */
-    public static function findByRvcode(string $rvcode)
+    public static function findByRvcode(string $rvcode, bool $enabledOnly = false)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_REVIEW)->where('CODE = ?', $rvcode);
+
+        if ($enabledOnly) {
+            $select->where('STATUS = ?', Episciences_Review::ENABLED);
+        }
 
         $data = $db->fetchRow($select);
         if (empty($data)) {

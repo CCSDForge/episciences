@@ -53,11 +53,12 @@ class Episciences_Mail_Template
 
     /**
      * fetch the template translations folder path (custom or default)
+     * @param string|null $rvCode
      * @return string
      */
-    public function getTranslationsFolder()
+    public function getTranslationsFolder(string $rvCode = null)
     {
-        return ($this->isCustom()) ? $this->getReviewTranslationsFolder() : $this->getDefaultTranslationsFolder();
+        return ($this->isCustom()) ? $this->getReviewTranslationsFolder($rvCode) : $this->getDefaultTranslationsFolder();
     }
 
     public function getDefaultTranslationsFolder()
@@ -65,9 +66,14 @@ class Episciences_Mail_Template
         return APPLICATION_PATH . '/languages/';
     }
 
-    public function getReviewTranslationsFolder()
+    /**
+     * @param string|null $rvCode
+     * @return string
+     */
+    public function getReviewTranslationsFolder(string $rvCode = null)
     {
-        return REVIEW_PATH . 'languages/';
+        $path = !$rvCode ? REVIEW_PATH : (realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
+        return $path . 'languages/';
     }
 
     public function __construct(array $options = null)
@@ -364,19 +370,20 @@ class Episciences_Mail_Template
     /**
      * Charge les traductions du template (body, name et subject)
      * @param null $langs
+     * @param string|null $rvCode
      * @throws Zend_Exception
      */
-    public function loadTranslations($langs = null): void
+    public function loadTranslations($langs = null, string $rvCode = null): void
     {
         if (!$langs) {
             $langs = Episciences_Tools::getLanguages();
         }
 
-        Episciences_Tools::loadTranslations($this->getTranslationsFolder(), 'mails.php');
+        Episciences_Tools::loadTranslations($this->getTranslationsFolder($rvCode), 'mails.php');
 
         $this->loadName($langs);
         $this->loadSubject($langs);
-        $this->loadBody();
+        $this->loadBody($rvCode);
     }
 
     public function getTranslations()
@@ -386,11 +393,12 @@ class Episciences_Mail_Template
 
     /**
      * Charge le corps du template dans les différentes langues trouvées
+     * @param string|null $rvCode
      * @return array
      */
-    public function loadBody(): array
+    public function loadBody(string $rvCode = null): array
     {
-        $path = $this->getTranslationsFolder();
+        $path = $this->getTranslationsFolder($rvCode);
         $exclusions = ['.', '..', '.svn'];
         $result = [];
 
@@ -483,14 +491,15 @@ class Episciences_Mail_Template
     /**
      * fetch template path
      * @param null $locale
+     * @param string|null $rvVCode
      * @return string
      */
-    public function getPath($locale = null): string
+    public function getPath($locale = null, string $rvVCode = null): string
     {
         if (!$locale) {
             $locale = $this->getLocale();
         }
-        return $this->getTranslationsFolder() . $locale . '/emails';
+        return $this->getTranslationsFolder($rvVCode) . $locale . '/emails';
     }
 
     /**
