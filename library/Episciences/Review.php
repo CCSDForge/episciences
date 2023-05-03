@@ -120,6 +120,9 @@ class Episciences_Review
 
     public const SETTING_CONTACT_ERROR_MAIL = "contactErrorMail";
 
+    public const SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS =
+        'refusedArticleAuthorsMsgSentToReviewers';
+
     /** @var int */
     public static $_currentReviewId = null;
     protected $_db = null;
@@ -205,7 +208,8 @@ class Episciences_Review
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_ARXIV_PAPER_PASSWORD,
             self::SETTING_CONTACT_ERROR_MAIL,
-            self::SETTING_DISPLAY_STATISTICS
+            self::SETTING_DISPLAY_STATISTICS,
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
         ];
 
 
@@ -1023,7 +1027,8 @@ class Episciences_Review
         $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
 
         $form->addDisplayGroup([
-            self::SETTING_SYSTEM_NOTIFICATIONS
+            self::SETTING_SYSTEM_NOTIFICATIONS,
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
         ], 'notifications', ['legend' => "Paramètres de notification"]);
         $form->getDisplayGroup('notifications')->removeDecorator('DtDdWrapper');
 
@@ -1484,6 +1489,13 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
+        $form->addElement('checkbox', self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS, [
+                'label' => "Activer la fonctionnalité",
+                'description' => "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs.",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators
+            ]);
+
         return $form;
     }
 
@@ -1771,6 +1783,8 @@ class Episciences_Review
         $settingsValues[self::SETTING_ARXIV_PAPER_PASSWORD] = $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD);
         $settingsValues[self::SETTING_DISPLAY_STATISTICS] = $this->getSetting(self::SETTING_DISPLAY_STATISTICS);
         $settingsValues[self::SETTING_CONTACT_ERROR_MAIL] = $this->getSetting(self::SETTING_CONTACT_ERROR_MAIL);
+        $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
+
 
         $values = [];
 

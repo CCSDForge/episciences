@@ -719,7 +719,7 @@ class AdministratepaperController extends PaperDefaultController
         // Allow post - acceptance revisions of articles
         $isPostAcceptanceEnabled = (int)$review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) === 1;
 
-        $templates = Episciences_PapersManager::getStatusFormsTemplates($paper, $contributor, $all_editors);
+        $templates = Episciences_PapersManager::getStatusFormsTemplates($paper, $contributor, $all_editors, $review->getSettings());
 
 
         if ($isPostAcceptanceEnabled && (Episciences_Auth::isSecretary() || Episciences_Auth::isCopyEditor())) {

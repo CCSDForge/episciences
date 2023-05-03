@@ -262,9 +262,6 @@ class Episciences_PapersManager
         }
 
 
-
-
-
         return $select;
 
     }
@@ -519,8 +516,6 @@ class Episciences_PapersManager
             if ($sectionCondition !== '') {
                 $where .= "OR SID IN ($sectionCondition) ";
             }
-
-
 
 
             //Colonnes Contributeurs, Relecteurs et Rédacteurs
@@ -1728,11 +1723,20 @@ class Episciences_PapersManager
         }
         $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value'=> $existingMails]);
 
+        $bccVal = '';
+
+        if (
+            isset($default[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS]) &&
+            ((int)$default[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] === 1)
+        ) {
+            $bccVal = Episciences_Review::forYourInformation($default['id'], Episciences_Acl::ROLE_REVIEWER);
+        }
+
         // bcc
         $form->addElement('text', 'bcc', [
             'label' => 'BCC',
             'id' => $formId . '-bcc',
-            'value' => Episciences_Review::forYourInformation($default['id'], Episciences_Acl::ROLE_REVIEWER)
+            'value' => $bccVal
         ]);
 
         // from
@@ -2304,7 +2308,7 @@ class Episciences_PapersManager
      * @throws Zend_Date_Exception
      * @throws Zend_Exception
      */
-    public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors): array
+    public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors, array $options = []): array
     {
         $templates = [];
 
@@ -2393,6 +2397,13 @@ class Episciences_PapersManager
                 'author' => $contributor,
                 'coAuthor' => $paper->getCoAuthors()
             ];
+
+            if (
+                $template_name === 'refuse' &&
+                isset($options[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS])
+            ) {
+                $templates[$template_name][Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $options[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS];
+            }
         }
 
         $urlHelper = new Zend_View_Helper_Url();
@@ -2550,7 +2561,7 @@ class Episciences_PapersManager
         $version = (int)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];
         $doiTrim = [];
-        if (!empty($result['DOI'])){
+        if (!empty($result['DOI'])) {
             $doiTrim = trim($result['DOI']);
         }
 
@@ -2591,15 +2602,15 @@ class Episciences_PapersManager
         Episciences_Paper_AuthorsManager::verifyExistOrInsert($docId, $paperId);
         //insert licence when save paper
         $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
-        $affectedRows+= Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
+        $affectedRows += Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
 
         ////////Creator OA and HAL
         $strRepoId = (string)$repoId;
         if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
 
-            $affectedRows+= Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($repoId, $paperId, $identifier, $version);
+            $affectedRows += Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($repoId, $paperId, $identifier, $version);
             //FUNDING
-            $arrayIdEuAnr =  Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
+            $arrayIdEuAnr = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
             $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
             $globalArrayJson = [];
             if (!empty($decodeHalIdsResp['response']['docs'])) {
@@ -2610,8 +2621,8 @@ class Episciences_PapersManager
                 foreach ($globalArrayJson as $globalPreJson) {
                     $mergeArrayANREU[] = $globalPreJson[0];
                 }
-                $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId,Episciences_Repositories::HAL_REPO_ID);
-                $affectedRows+= Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
+                $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::HAL_REPO_ID);
+                $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
             }
 
 
@@ -2672,14 +2683,14 @@ class Episciences_PapersManager
             try {
                 $fileFound = json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
             } catch (JsonException $jsonException) {
-                Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf( 'Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+                Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
             }
 
             $globalfundingArray = [];
             if (!empty($fileFound[0])) {
                 $fundingArray = [];
                 $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
-                $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId,Episciences_Repositories::GRAPH_OPENAIRE_ID);
+                $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
                 $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
             }
         }
@@ -2706,7 +2717,7 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_PAPERS, ['IDENTIFIER', 'REPOID', 'VERSION','PAPERID','STATUS','DOI'])
+            ->from(T_PAPERS, ['IDENTIFIER', 'REPOID', 'VERSION', 'PAPERID', 'STATUS', 'DOI'])
             ->where('DOCID = ?', $docId);
         return $db->fetchRow($select);
     }
@@ -3333,7 +3344,8 @@ class Episciences_PapersManager
      * @param Episciences_Paper $paper
      * @return array
      */
-    public static function getAuthorsData(Episciences_Paper $paper): array {
+    public static function getAuthorsData(Episciences_Paper $paper): array
+    {
         $enrichedAuthor = Episciences_Paper_AuthorsManager::getArrayAuthorsAffi($paper->getPaperid());
         $language = $paper->getMetadata('language') ?? 'en';
         $abstract = $paper->getAbstract($language, true);
@@ -3344,7 +3356,7 @@ class Episciences_PapersManager
                 if (array_key_exists('orcid', $author)) {
                     $googleScholarData[array_key_last($googleScholarData)]['citation_author_orcid'] = $author['orcid'];
                 }
-                if (array_key_exists('affiliation',$author)) {
+                if (array_key_exists('affiliation', $author)) {
                     foreach ($author['affiliation'] as $affiliation) {
                         $googleScholarData[array_key_last($googleScholarData)]['citation_author_institution'][] = $affiliation['name'];
                     }
@@ -3361,7 +3373,7 @@ class Episciences_PapersManager
                     $googleScholarData[]['citation_author'] = $authors;
                 }
             }
-       }
+        }
 
         return $googleScholarData;
     }
@@ -3439,7 +3451,7 @@ class Episciences_PapersManager
             $issn = $journalSettings[Episciences_Review::SETTING_ISSN_PRINT];
         }
         $arxivId = '';
-        if ($paper->getRepoid() === (int) Episciences_Repositories::ARXIV_REPO_ID) {
+        if ($paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID) {
             $arxivId = $paper->getIdentifier();
         }
         $authors = self::getAuthorsData($paper);
@@ -3449,10 +3461,10 @@ class Episciences_PapersManager
         return [
             'dc' => [
                 'creator' => $authors,
-                'language'=> $language,
+                'language' => $language,
                 'title' => $title,
                 'type' => 'journal',
-                'identifier' => ['id' => $id, 'url' => $url, 'pdf' => $pdf,'doi' => $doi],
+                'identifier' => ['id' => $id, 'url' => $url, 'pdf' => $pdf, 'doi' => $doi],
                 'abstract' => $abstract,
                 'keywords' => $allKeywords,
                 'date' => $paper->getPublication_date(),
@@ -3488,9 +3500,9 @@ class Episciences_PapersManager
                 'volume' => $volume,
                 'issue' => $section,
                 'doi' => $doi,
-                'fulltext_world_readable'=> "",
+                'fulltext_world_readable' => "",
                 'pdf_url' => $pdf,
-                'issn' => ["eissn" => $eissn ,'issn'=>$issn],
+                'issn' => ["eissn" => $eissn, 'issn' => $issn],
                 'arxiv_id' => $arxivId,
                 'language' => $language,
                 'article_type' => "Research Article",
@@ -3500,20 +3512,20 @@ class Episciences_PapersManager
 
             ],
             "socialMedia" =>
-            [
-                "twitter" =>
                 [
-                    "card" => "summary_large_image",
-                    "site" => "@episciences",
-                    "creator" => [
-                        $contributor->getSocialMedias()
-                    ],
-                    "title" => $title,
-                    "description"=> $abstract,
-                    "image" => APPLICATION_URL . '/img/episciences_logo_1081x1081.jpg',
-                    "image:alt" => 'Episciences Logo'
+                    "twitter" =>
+                        [
+                            "card" => "summary_large_image",
+                            "site" => "@episciences",
+                            "creator" => [
+                                $contributor->getSocialMedias()
+                            ],
+                            "title" => $title,
+                            "description" => $abstract,
+                            "image" => APPLICATION_URL . '/img/episciences_logo_1081x1081.jpg',
+                            "image:alt" => 'Episciences Logo'
+                        ]
                 ]
-            ]
         ];
     }
 
@@ -3574,13 +3586,14 @@ class Episciences_PapersManager
      * @param int $rvId
      * @return array
      */
-    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 0) {
+    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 0)
+    {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if ($limit !== 0) {
-            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?',$rvId)->order('MODIFICATION_DATE DESC')->limit($limit); // prevent empty row
+            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?', $rvId)->order('MODIFICATION_DATE DESC')->limit($limit); // prevent empty row
         } else {
-            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?',$rvId); // prevent empty row
+            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?', $rvId); // prevent empty row
         }
         return $db->fetchAssoc($select);
     }

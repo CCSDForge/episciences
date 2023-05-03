@@ -1140,6 +1140,8 @@ return [
     "Paramètres de notification" => "Notification Settings",
     "Lorsqu'un article est soumis, mis à jour ou refusé, notifier les" => "When an article is submitted, updated or refused, notify the",
     "Administrateurs" => "Administrators",
+    'Activer la fonctionnalité' => 'Enable feature',
+    "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs." => "In case an article has been refused, the message sent to the authors explaining the final decision made by the editor in charge is forwarded automatically to the reviewers.",
 
 
     "Préparateurs de copie" => "Copy editors",
