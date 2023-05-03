@@ -240,7 +240,8 @@ class Episciences_PapersManager
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function filterByRole(Zend_Db_Select $select, array $values, string $roleId = 'editor'): Zend_Db_Select
+    private static function
+    filterByRole(Zend_Db_Select $select, array $values, string $roleId = Episciences_User_Assignment::ROLE_EDITOR): Zend_Db_Select
     {
 
         // fetch last paper assignment for each selected roleId
@@ -249,6 +250,21 @@ class Episciences_PapersManager
         $select
             ->where("DOCID IN (?)", $subQuery)
             ->where("DOCID NOT IN (?)", Episciences_UserManager::getSubmittedPapersQuery(Episciences_Auth::getUid())); //git #148 : L'auteur peut deviner les rédcateurs en charge de son article
+
+
+        if ($roleId === Episciences_User_Assignment::ROLE_REVIEWER) {
+
+            $result = self::fetchPapersWithNoConflictsConfirmation();
+
+            if (!empty($result)) {
+                $select->where('DOCID IN (?)', $result);
+            }
+        }
+
+
+
+
+
         return $select;
 
     }
@@ -504,13 +520,24 @@ class Episciences_PapersManager
                 $where .= "OR SID IN ($sectionCondition) ";
             }
 
+
+
+
             //Colonnes Contributeurs, Relecteurs et Rédacteurs
+
+            $assignedTo = ['editor'];
+
+            if (!Zend_Registry::get('isCoiEnabled')) {
+                $assignedTo[] = 'reviewer';
+            }
+
+
             $query1 = $db
                 ->select()
                 ->from(['u' => T_USERS], ['USER_ID' => 'UID', 'SCREEN_NAME'])
                 ->joinLeft(['p' => T_PAPERS], 'u.UID = p.UID')
                 ->joinLeft(
-                    ['a' => self::fetchLastPaperAssignmentForSelectedRoleQuery([], ['editor', 'reviewer'])],
+                    ['a' => self::fetchLastPaperAssignmentForSelectedRoleQuery([], $assignedTo)],
                     'u.UID = a.UID_ROLE',
                     ['ITEMID' => 'DOCID']
                 );
@@ -3653,6 +3680,45 @@ class Episciences_PapersManager
             'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid(), $rvId),
             'isCasUserValid' => (bool)$reviewer->getValid()
         ];
+
+    }
+
+
+    /**
+     * @return array
+     * @throws JsonException
+     */
+    private static function fetchPapersWithNoConflictsConfirmation(): array
+    {
+
+        if (!Zend_Registry::get('isCoiEnabled')) {
+            return [];
+        }
+
+        $result = [0]; // The obligation to confirm the absence of a conflict
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $paperIds = Episciences_Paper_ConflictsManager::fetchSelectedCol('paper_id', [
+            'answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'],
+            'by' => Episciences_Auth::getUid()
+        ]);
+
+
+        if (!empty($paperIds)) {
+
+            $sql = $db->select()
+                ->from(T_PAPERS, ['DOCID'])
+                ->where('PAPERID IN (?)', $paperIds)
+                ->where('RVID = ?', RVID);
+
+
+            $result = $db->fetchCol($sql);
+
+
+        }
+
+        return $result;
 
     }
 }

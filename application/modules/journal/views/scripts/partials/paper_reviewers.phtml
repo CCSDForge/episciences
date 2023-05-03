@@ -86,7 +86,7 @@ $ratings = $paper->getRatings();
                                         $title .= (count($invitations) > 1) ? $this->translate('invitations obsolètes') : $this->translate('invitation obsolète');
                                         $title .= '&nbsp';
                                         $title .= '<i data-toggle="tooltip" title="';
-                                        $title.= $this->translate("Lorsqu'un article est obsolète, les relecteurs sont désactivés") .'" class="fas fa-info-circle pull-right"></i>';
+                                        $title .= $this->translate("Lorsqu'un article est obsolète, les relecteurs sont désactivés") . '" class="fas fa-info-circle pull-right"></i>';
                                         break;
                                     default:
                                         $title .= 'Undefined invitation status';
@@ -102,33 +102,42 @@ $ratings = $paper->getRatings();
                             <div class="panel-body">
 
                                 <?php foreach ($invitations as $i => $invitation) :
-                                    $maxDate = Date(max([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
-                                    $minDate = Date(min([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
+
+                                    if (isset($invitation['INVITATION_DATE']) && isset($invitation['ASSIGNMENT_DATE'])) {
+
+                                        $maxDate = Date(max([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
+                                        $minDate = Date(min([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
+
+                                    }
+
                                     ?>
 
                                     <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
                                         <div class="reviewer">
-                                            <img src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
-                                                 class="user-photo-small" alt="avatar">
+                                            <img
+                                                src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                                                class="user-photo-small" alt="avatar">
 
-                                            <button class="btn btn-default fas fa-ellipsis-v popover-link context-button"
-                                                    role="button"
-                                                    data-paper_status="<?= $paper->getStatus() ?>"
-                                                    data-can_be_reviewed="<?= json_encode($paper->canBeReviewed()) ?>"
-                                                    data-docid="<?= $paper->getDocid() ?>"
-                                                    data-status="<?= $status ?>"
-                                                    data-rating="<?= (array_key_exists('rating', $invitation['reviewer'])) ? $invitation['reviewer']['rating']['status'] : 0 ?>"
-                                                    data-uid="<?= $invitation['UID'] ?>"
-                                                    data-by_uid="<?= Episciences_Auth::getUid() ?>"
-                                                    data-aid="<?= $invitation['ASSIGNMENT_ID'] ?>"
-                                                    data-tmp="<?= $invitation['TMP_USER'] ?>">
+                                            <button
+                                                class="btn btn-default fas fa-ellipsis-v popover-link context-button"
+                                                role="button"
+                                                data-paper_status="<?= $paper->getStatus() ?>"
+                                                data-can_be_reviewed="<?= json_encode($paper->canBeReviewed()) ?>"
+                                                data-docid="<?= $paper->getDocid() ?>"
+                                                data-status="<?= $status ?>"
+                                                data-rating="<?= (array_key_exists('rating', $invitation['reviewer'])) ? $invitation['reviewer']['rating']['status'] : 0 ?>"
+                                                data-uid="<?= $invitation['UID'] ?>"
+                                                data-by_uid="<?= Episciences_Auth::getUid() ?>"
+                                                data-aid="<?= $invitation['ASSIGNMENT_ID'] ?>"
+                                                data-tmp="<?= $invitation['TMP_USER'] ?>">
                                             </button>
 
 
-                                            <span style="margin-left: 0.5em;"><strong><?= $this->escape($invitation['reviewer']['fullname']) ?></strong>
+                                            <span
+                                                style="margin-left: 0.5em;"><strong><?= $this->escape($invitation['reviewer']['fullname']) ?></strong>
                                                 <?php if ($invitation['TMP_USER']) {
                                                     echo '(' . $this->translate("compte temporaire") . ')';
-                                                }else{
+                                                } else {
                                                     $userTag = ' [ <mark>';
                                                     $userTag .= ' UID';
                                                     $userTag .= $this->translate(' :');
@@ -201,7 +210,8 @@ $ratings = $paper->getRatings();
                                             <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE || $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING) : ?>
                                                 <div>
                                                     <?php echo $this->translate("Relecture attendue avant le :"); ?>
-                                                    <span class="rating_deadline"><?php echo $this->Date($invitation['ASSIGNMENT_DEADLINE']); ?></span>
+                                                    <span
+                                                        class="rating_deadline"><?php echo $this->Date($invitation['ASSIGNMENT_DEADLINE']); ?></span>
                                                 </div>
                                             <?php endif; ?>
 
@@ -215,7 +225,8 @@ $ratings = $paper->getRatings();
                                             <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_DECLINED) : ?>
                                                 <div>
                                                     <?php echo $this->translate("Date de refus :"); ?>
-                                                    <span class="rejection_date"><?= $this->Date($invitation['ANSWER_DATE']) ?></span>
+                                                    <span
+                                                        class="rejection_date"><?= $this->Date($invitation['ANSWER_DATE']) ?></span>
                                                 </div>
                                             <?php endif; ?>
 
@@ -238,12 +249,12 @@ $ratings = $paper->getRatings();
     </div>
 
     <?php if (
-            $paper->isEditable() &&
-            !$paper->isRevisionRequested() &&
-            !$paper->isAccepted() &&
-            !$paper->isCopyEditingProcessStarted() &&
-            !$paper->isReadyToPublish() &&
-            (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid()))
+        $paper->isEditable() &&
+        !$paper->isRevisionRequested() &&
+        !$paper->isAccepted() &&
+        !$paper->isCopyEditingProcessStarted() &&
+        !$paper->isReadyToPublish() &&
+        (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid()))
     ) : ?>
         <div id="upload_paper_report">
             <!-- Bouton de relecture  -->
@@ -263,7 +274,7 @@ $ratings = $paper->getRatings();
             </button>
 
         </div>
-    <?php
+        <?php
 
         ?>
 
@@ -300,7 +311,7 @@ $ratings = $paper->getRatings();
         $("#rating-" + uid).collapse('show');
     });
 
-    function confirmRating(){
-        location.href ="/paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
+    function confirmRating() {
+        location.href = "/paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
     }
 </script>
