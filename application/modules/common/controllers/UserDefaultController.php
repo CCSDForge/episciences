@@ -332,7 +332,7 @@ class UserDefaultController extends Zend_Controller_Action
             $users = new Ccsd_User_Models_DbTable_User();
             foreach ($users->search($_GET['term'], 100, true) as $user) {
                 // if uid is in ignore list, skip this user
-                if (in_array($user['UID'], $ignore_list) || in_array($user['EMAIL'], IGNORE_REVIEWERS_EMAIL_VALUES, true)) {
+                if (in_array($user['UID'], $ignore_list) || in_array($user['EMAIL'], EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER, true)) {
                     continue;
                 }
                 $fullname = $user['FIRSTNAME'] . ' ' . $user['LASTNAME'];
@@ -1526,12 +1526,6 @@ class UserDefaultController extends Zend_Controller_Action
 
             $infoMsg = '';
 
-            $journalSettings = Zend_Registry::get('reviewSettings');
-
-            $technicalSupportEmail = (
-                isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) &&
-                $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== ''
-            ) ? $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] : '';
 
             $infoMsg .= $this->view->translate('Plusieurs comptes ont été crées avec cette adresse email.');
             
@@ -1540,7 +1534,7 @@ class UserDefaultController extends Zend_Controller_Action
             $infoMsg .= '<br>';
             $infoMsg .= $this->view->translate('Merci de contacter');
             $infoMsg .= ' ';
-            $infoMsg .= sprintf("<a href='mailto:%s'>%s", $technicalSupportEmail, $this->view->translate('le support technique'));
+            $infoMsg .= sprintf("<a href='mailto:%s'>%s", EPISCIENCES_SUPPORT, $this->view->translate('le support technique'));
             $infoMsg .= '</a>';
             $infoMsg .= ' ';
             $infoMsg .= $this->view->translate("en spécifiant le compte que vous souhaitez conserver et l'identifiant auteur IdHAL à conserver (si vous en avez plusieurs)");

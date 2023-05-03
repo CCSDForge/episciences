@@ -84,22 +84,16 @@ function define_review_constants()
             /** @var array $configurableConst */
             $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true);
 
-            $ignoreReviewersEmail = $configurableConst['ignore_reviewers_email'] ?? [];
             $allowedExtensions = $configurableConst['allowed_extensions'] ?? ['pdf'];
             $allowedMimesTypes = $configurableConst['allowed_mimes_types'] ?? ['application/pdf'];
-            $episciencesContact = $configurableConst['episciences_contact'] ?? 'contact@episciences.org';
 
         } else {
-            $ignoreReviewersEmail = [];
             $allowedExtensions = ['pdf'];
             $allowedMimesTypes = ['application/pdf'];
-            $episciencesContact = 'contact@episciences.org';
         }
 
-        define('IGNORE_REVIEWERS_EMAIL_VALUES', $ignoreReviewersEmail);
         define('ALLOWED_EXTENSIONS', $allowedExtensions);
         define('ALLOWED_MIMES_TYPES', $allowedMimesTypes);
-        define('EPISCIENCES_CONTACT', $episciencesContact);
     }
 
     if (defined('REVIEW_PATH')) {
