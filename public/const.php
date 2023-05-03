@@ -45,16 +45,18 @@ function define_app_constants()
 /**
  * define review constants
  */
-function define_review_constants()
+function define_review_constants(string $rvCode = null)
 {
+
     // define review code
-    if (!defined('RVCODE') && getenv('RVCODE')) {
+    if ((null === $rvCode) && !defined('RVCODE') && getenv('RVCODE')) {
         define('RVCODE', getenv('RVCODE'));
+        $rvCode = RVCODE;
     }
 
-    if (defined('RVCODE')) {
+    if ($rvCode) {
         // define application module
-        switch (RVCODE) {
+        switch ($rvCode) {
             case PORTAL:
                 define('APPLICATION_MODULE', 'portal');
                 break;
@@ -70,12 +72,12 @@ function define_review_constants()
             if (APPLICATION_MODULE === PORTAL) {
                 define('APPLICATION_URL', HTTP . '://' . DOMAIN);
             } else {
-                define('APPLICATION_URL', HTTP . '://' . RVCODE . '.' . DOMAIN);
+                define('APPLICATION_URL', HTTP . '://' . $rvCode . '.' . DOMAIN);
             }
         }
 
         // define review path
-        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . RVCODE) . '/');
+        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
 
         //configurable constants path
         define('CONFIGURABLE_CONSTANTS_PATH', APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.configurable.constants.json');
@@ -84,22 +86,16 @@ function define_review_constants()
             /** @var array $configurableConst */
             $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true);
 
-            $ignoreReviewersEmail = $configurableConst['ignore_reviewers_email'] ?? [];
             $allowedExtensions = $configurableConst['allowed_extensions'] ?? ['pdf'];
             $allowedMimesTypes = $configurableConst['allowed_mimes_types'] ?? ['application/pdf'];
-            $episciencesContact = $configurableConst['episciences_contact'] ?? 'contact@episciences.org';
 
         } else {
-            $ignoreReviewersEmail = [];
             $allowedExtensions = ['pdf'];
             $allowedMimesTypes = ['application/pdf'];
-            $episciencesContact = 'contact@episciences.org';
         }
 
-        define('IGNORE_REVIEWERS_EMAIL_VALUES', $ignoreReviewersEmail);
         define('ALLOWED_EXTENSIONS', $allowedExtensions);
         define('ALLOWED_MIMES_TYPES', $allowedMimesTypes);
-        define('EPISCIENCES_CONTACT', $episciencesContact);
     }
 
     if (defined('REVIEW_PATH')) {

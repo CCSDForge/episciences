@@ -209,13 +209,20 @@ class Episciences_Mail_Send
         int               $authUid = null,
         array             $attachmentsFiles = [],
         bool              $makeACopy = false,
-        array             $CC = []
+        array             $CC = [],
+        array $journalOptions = ['rvCode' => RVODE, 'rvId' => RVID]
     ): bool
     {
 
         $template = new Episciences_Mail_Template();
+
+
+
+        $template->setRvcode($journalOptions['rvCode']);
+
+
         $template->findByKey($templateType);
-        $template->loadTranslations();
+        $template->loadTranslations(null, $journalOptions['rvCode']);
 
         $locale = $recipient->getLangueid();
         $template->setLocale($locale);
@@ -231,8 +238,8 @@ class Episciences_Mail_Send
                 $mail->addTag($tag, $value);
             }
         }
-        $mail->setFromReview();
-        $mail->setTo($recipient);
+        $mail->setFromReview($journalOptions['rvCode']);
+        $mail->setTo($recipient, $journalOptions['rvCode']);
         /** @var Episciences_User $ccRep */
         if (!empty($CC)) {
             foreach ($CC as $ccRep) {
@@ -241,7 +248,7 @@ class Episciences_Mail_Send
         }
 
         $mail->setSubject($template->getSubject());
-        $mail->setTemplate($template->getPath(), $template->getKey() . self::TEMPLATE_EXTENSION);
+        $mail->setTemplate($template->getPath(null, $journalOptions['rvCode']), $template->getKey() . self::TEMPLATE_EXTENSION);
 
         // Prise en compte des fichiers attachés
         if (!empty($attachmentsFiles)) {
@@ -260,7 +267,7 @@ class Episciences_Mail_Send
             }
         }
 
-        if (!$mail->writeMail()) {
+        if (!$mail->writeMail($journalOptions['rvCode'], $journalOptions['rvId'])) {
             trigger_error('APPLICATION WARNING: the email (id = ' . $mail->getId() . ') was not sent', E_USER_WARNING);
             return false;
         }

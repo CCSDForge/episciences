@@ -1094,6 +1094,7 @@ return [
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version repointing',
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New reviewing deadline',
+    Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission > Inbox',
 
 
     "Date d'assignation" => "Assignation date",
@@ -1442,7 +1443,7 @@ return [
     "Réessayer avec une autre version" => "Try again with another version",
     // new repositories (exp. Zenodo)
     "Vous ne pouvez pas soumettre ce document car les fichiers ne seront pas mis à la disposition du public et le partage ne sera possible qu'avec l'approbation du déposant du fichier." => "You can not submit this document as the files will not be made publicly available and sharing will be made possible only by the approval of depositor of the original file.",
-    "Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version." => "You can not submit this document, please check that this is a new version. ",
+    "Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version." => "You can not submit this document, please check that this is a new version.",
     "Vos modifications n'ont pas été prises en compte : la version du document n'est pas liée à la précédente." => 'Your changes have not been taken into account: the document version is not bound to the previous one.',
 
     /**

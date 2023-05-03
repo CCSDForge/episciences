@@ -2384,7 +2384,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     Episciences_Mail_Send::sendMailFromReview(
                         $recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY, $recipientTags,
-                        $paper, null, [], false, $CC
+                        $paper, null, [], false, $CC, null
                     );
                     //reset $CC
                     $CC = [];
@@ -3550,7 +3550,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     $isOwner = ($uid === $paper->getUid());
 
-                    if ($isOwner || in_array($user->getEmail(), IGNORE_REVIEWERS_EMAIL_VALUES, true)) {
+                    if ($isOwner || in_array($user->getEmail(), EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER, true)) {
                         $ignoreReviewers[] = $uid;
                     }
 
