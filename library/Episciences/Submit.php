@@ -732,14 +732,14 @@ class Episciences_Submit
     /**
      * @param $repoId
      * @param $id
-     * @param null $version
+     * @param int|null $version
      * @param null $latestObsoleteDocId
      * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
      * @param int|null $rvId
      * @return array
      * @throws Zend_Exception
      */
-    public static function getDoc($repoId, $id, $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true, int $rvId = RVID): array
+    public static function getDoc($repoId, $id, int $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true, int $rvId = RVID): array
     {
         $isNewVersionOf = !empty($latestObsoleteDocId);
         $result = [];
@@ -817,13 +817,14 @@ class Episciences_Submit
                                 ('Never') :
                                 Episciences_View_Helper_Date::Date($date, Episciences_Tools::getLocale());
 
-                            $error = $translator->translate("Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : ") . '<strong class="alert-warning">' . $date . '</strong>';
+                            $error = "You can not submit this document; the file is not available; the end date of the embargo: $date";
+
                         } else {
                             $date = ('9999-12-31' === $date) ?
                                 ($translator->translate('Jamais')) :
                                 Episciences_View_Helper_Date::Date($date, Episciences_Tools::getLocale());
 
-                            $error = "You can not submit this document; the file is not available; the end date of the embargo: $date";
+                            $error = $translator->translate("Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : ") . '<strong class="alert-warning">' . $date . '</strong>';
 
                         }
                         throw new Ccsd_Error('docUnderEmbargo: ' . $error);
@@ -836,10 +837,12 @@ class Episciences_Submit
             } elseif ('arXiv' === Episciences_Repositories::getLabel($repoId)) { //  OAI interface supports only the notion of an arXiv article and not access to individual versions.
                 $arXivRawRecord = $oai->getArXivRawRecord($identifier);
                 $versionHistory = self::extractVersionsFromArXivRaw($arXivRawRecord);
+
                 if (!in_array($version, $versionHistory)) {
                     $error = 'arXivVersionDoesNotExist:';
                     throw new Ccsd_Error($error);
                 }
+
             } else {
 
                 if ($isNewVersionOf) {
@@ -857,8 +860,6 @@ class Episciences_Submit
 
                         }
 
-
-                        $error .= $translator->translate("Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version.");
                         throw new Ccsd_Error($error);
                     }
                 }
@@ -897,7 +898,7 @@ class Episciences_Submit
             $result['status'] = 0;
 
             if (!$translator) {
-                $result['error'] = 'The document could not be found, or could not be loaded.';
+                $result['error'] = $e->getMessage();
 
             } else {
                 $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate("Le document n'a pas été trouvé ou n'a pas pu être chargé.");

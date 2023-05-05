@@ -203,7 +203,7 @@ class SubmitController extends DefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $params = $request->getPost();
-        $version = (isset($params['version']) && is_numeric($params['version'])) ? $params['version'] : 1;
+        $version = (isset($params['version']) && is_numeric($params['version'])) ? (int)$params['version'] : 1;
         $latestObsoleteDocId = $params['latestObsoleteDocId']; //répondre à une demande de modif. par la soumission d'une nouvelle version
         $respond = Episciences_Submit::getDoc($params['repoId'], $params['docId'], $version, $latestObsoleteDocId);
         $this->_helper->viewRenderer->setNoRender();

@@ -1809,7 +1809,7 @@ class Episciences_Review
          }*/
 
         // Enregistrement des traductions
-        Episciences_Tools::writeTranslations($translations, $path, $file);
+       Episciences_Tools::writeTranslations($translations, $path, $file); // not necessary for the moment
 
         $this->checkAndCreateIfNotExistsCryptoFile();
 

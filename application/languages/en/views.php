@@ -1389,7 +1389,7 @@ return [
     "Actualités" => "News",
     "Ressources" => "Resources",
     "Remplacer" => 'Replace',
-    "Accédez directement à l'article" => "Directly access the article",
+    "Cliquer ici" => "Click here",
     "Rechercher un utilisateur d'Episciences" => "Search an Episcience user",
     'Liste des articles que j\'ai proposée à "%s".' => 'List of papers I\'ve submitted to "%s".',
     'Votre article a bien été enregistré.' => "Your article has been submitted.",

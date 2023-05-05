@@ -37,6 +37,7 @@ class InboxNotifications extends Script
     public function __construct(string $id = '', array $type = [], array $origin = [])
     {
 
+        $this->setRequiredParams([]);
         $this->setArgs(array_merge($this->getArgs(), ['delNotifs=dpn' => "delete processed inbox notifications"]));
         parent::__construct();
 
@@ -54,7 +55,6 @@ class InboxNotifications extends Script
         // Language choice
         Zend_Registry::set('languages', ['fr', Episciences_Review::DEFAULT_LANG]);
         Zend_Registry::set('Zend_Locale', new Zend_Locale(Episciences_Review::DEFAULT_LANG));
-
 
         $this->checkAppEnv();
 
@@ -117,7 +117,7 @@ class InboxNotifications extends Script
     }
 
 
-    private function notificationsProcess(COARNotification $notification): bool
+    public  function notificationsProcess(COARNotification $notification): bool
     {
 
         $isProcessed = false;
@@ -137,19 +137,16 @@ class InboxNotifications extends Script
 
                 $this->displayInfo('payloads specification check : OK' . PHP_EOL, $this->isVerbose());
 
+                $rvCode = $this->getRvCodeFromUrl($notifyPayloads['target']['id']);
 
-                $parse = parse_url($notifyPayloads['target']['id']);
-
-                $rvCode = mb_substr($parse['host'], 0, (mb_strlen($parse['host']) - mb_strlen(DOMAIN)) - 1);
-
-                $journal = Episciences_ReviewsManager::findByRvcode($rvCode, true);
-
-
+                $journal = ($rvCode !== '') ? Episciences_ReviewsManager::findByRvcode($rvCode, true) : null;
                 $jCode = $journal ? $journal->getCode() : 'undefined';
+
                 $this->displayInfo('The destination journal: ' . $jCode . PHP_EOL, $this->isVerbose());
 
 
                 if ($journal) {
+
                     $journal->loadSettings();
                     $actor = $notifyPayloads['actor']['id'] ?? null; // uid
 
@@ -189,7 +186,7 @@ class InboxNotifications extends Script
 
     }
 
-    private function checkNotifyPayloads(array $notifyPayloads): bool
+    public function checkNotifyPayloads(array $notifyPayloads): bool
     {
 
         $result = true;
@@ -212,20 +209,20 @@ class InboxNotifications extends Script
 
             $message .= "the '@context' property doesn't match: ";
             $message .= implode(', ', self::COAR_NOTIFY_AT_CONTEXT);
-            $this->displayError($message);
+            $this->displayError($message, $this->isVerbose());
             $result = false;
 
         } elseif (!$isValidOrigin) {
 
             $message .= "the 'origin' property doesn't match: ";
             $message .= $this->getCoarNotifyOrigin()['inbox'];
-            $this->displayError($message);
+            $this->displayError($message, $this->isVerbose());
             $result = false;
 
         } elseif ($type !== $this->getCoarNotifyType()) {
             $message .= "the 'type' property doesn't match: ";
             $message .= implode(', ', $this->getCoarNotifyType());
-            $this->displayError($message);
+            $this->displayError($message, $this->isVerbose());
             $result = false;
 
         } elseif (
@@ -236,7 +233,7 @@ class InboxNotifications extends Script
 
             $message .= 'Not valid notify target => ' . $notifyPayloads['target']['id'];
 
-            $this->displayError($message);
+            $this->displayError($message, $this->isVerbose());
             $result = false;
 
         }
@@ -699,6 +696,20 @@ class InboxNotifications extends Script
         }
 
         return $data;
+    }
+
+    public function getRvCodeFromUrl(string $url = null): string
+    {
+
+        if (!$url) {
+            return '';
+        }
+
+        $parse = parse_url($url);
+
+        return isset($parse['host']) ?
+            mb_substr($parse['host'], 0, (mb_strlen($parse['host']) - mb_strlen(DOMAIN)) - 1) :
+            '';
     }
 
 

@@ -172,6 +172,7 @@ class Episciences_Mail extends Zend_Mail
      * @param bool $debug
      * @return bool
      * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     public function writeMail($rvCode = RVCODE, int $rvId = RVID, bool $debug = false): bool
     {
@@ -219,6 +220,7 @@ class Episciences_Mail extends Zend_Mail
             }
         } catch (Exception $e) {
             Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.mail');
+            throw $e;
         }
 
         return true;

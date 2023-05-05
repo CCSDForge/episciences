@@ -281,10 +281,12 @@ class Episciences_Mail_Send
             }
         }
 
-        if (!$mail->writeMail($journalOptions['rvCode'], $journalOptions['rvId'])) {
+        $mail->writeMail($journalOptions['rvCode'], $journalOptions['rvId'], isset($journalOptions['debug']) && $journalOptions['debug']);
+
+        /*if (!$mail->writeMail($journalOptions['rvCode'], $journalOptions['rvId'], isset($journalOptions['debug']) && $journalOptions['debug'])) {
             trigger_error('APPLICATION WARNING: the email (id = ' . $mail->getId() . ') was not sent', E_USER_WARNING);
             return false;
-        }
+        }*/
 
         if ($paper) {
             $paper->log(Episciences_Paper_Logger::CODE_MAIL_SENT, $authUid, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
