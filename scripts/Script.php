@@ -87,9 +87,7 @@ abstract class Script {
      * required parameters
      * @var array
      */
-    protected $_required_params = [
-        'app_env'   =>  'app_env|e is mandatory.',
-    ];
+    protected $_required_params = [];
 
     /**
      * valid environments
