@@ -182,7 +182,7 @@ class Episciences_Paper_ProjectsManager
      * @return int
      * @throws JsonException
      */
-    public function insertOrUpdateFundingOA(array $globalfundingArray, array $rowInDBGraph, int $paperId): int
+    public static function insertOrUpdateFundingOA(array $globalfundingArray, array $rowInDBGraph, int $paperId): int
     {
         if (!empty($globalfundingArray) && empty($rowInDBGraph)) {
             return self::insert(
@@ -214,7 +214,7 @@ class Episciences_Paper_ProjectsManager
      * @return int
      * @throws JsonException
      */
-    public function insertOrUpdateHalFunding(array $rowInDbHal, array $mergeArrayANREU, int $paperId): int
+    public static function insertOrUpdateHalFunding(array $rowInDbHal, array $mergeArrayANREU, int $paperId): int
     {
         if (!empty($rowInDbHal) && !empty($mergeArrayANREU)) {
             return self::update(
