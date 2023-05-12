@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Changed
+- Bump from TinyMCE 4 to TinyMCE 6
 - [278](https://github.com/CCSDForge/episciences/issues/278): In case an article has been refused: new option to allow forward automatically the message sent to the authors explaining the final decision made by the editor in charge.
 - It is now possible to use Lemon LDAP authentication.
 - Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
