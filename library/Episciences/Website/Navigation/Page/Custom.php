@@ -272,7 +272,7 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
             'populate' => ['class' => 'Episciences_Tools', 'method' => 'getLanguages'],
             'value' => $content,
             'tiny' => true,
-            'display' => Ccsd_Form_Element_MultiText::DISPLAY_ADVANCED
+            'display' => Ccsd_Form_Element_MultiText::DISPLAY_SIMPLE
         ]);
 
         $form->getElement('content')->getDecorator('HtmlTag')->setOption('class', 'col-md-12');

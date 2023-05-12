@@ -2384,7 +2384,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     Episciences_Mail_Send::sendMailFromReview(
                         $recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY, $recipientTags,
-                        $paper, null, [], false, $CC, null
+                        $paper, null, [], false, $CC
                     );
                     //reset $CC
                     $CC = [];
