@@ -177,12 +177,13 @@ class Episciences_Mail_Send
      * @param array $attachmentsFiles ['key' => file name, 'value' => 'file path']
      * @param bool $makeACopy : si true faire une copie, car le path != REVIEW_FILES_PATH . 'attachments/'
      * @param array $CC : cc recipients
+     * @param array|null $journalOptions
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    public static function sendMailFromReview(
+    public static function sendMailFromReview (
         Episciences_User  $recipient,
         string            $templateType,
         array             $tags = [],
@@ -191,16 +192,19 @@ class Episciences_Mail_Send
         array             $attachmentsFiles = [],
         bool              $makeACopy = false,
         array             $CC = [],
-        array $journalOptions = ['rvCode' => RVODE, 'rvId' => RVID]
+        ?array $journalOptions = null
     ): bool
     {
 
         $template = new Episciences_Mail_Template();
 
+        if (empty($journalOptions) && !Ccsd_Tools::isFromCli()) {
+            $journalOptions = ['rvCode' => RVCODE, 'rvId' => RVID];
+        }
 
-
-        $template->setRvcode($journalOptions['rvCode']);
-
+        if (isset($journalOptions['rvCode'])) {
+            $template->setRvcode($journalOptions['rvCode']);
+        }
 
         $template->findByKey($templateType);
         $template->loadTranslations(null, $journalOptions['rvCode']);
