@@ -258,7 +258,7 @@ return [
 
 
     // PAPER - DECISION FINALE *****************************************************************************************************************************
-    "paper_final_decision_tpl_group" => "Post-acceptance revisions of articles",
+    "paper_final_decision_tpl_group" => "Paper - final decision",
 
     //accepted ask authors final version
     "paper_accepted_ask_authors_final_version_tpl_name" => "Accepted, ask author's final version",

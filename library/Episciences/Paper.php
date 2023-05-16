@@ -2571,7 +2571,7 @@ class Episciences_Paper
         $canReplace = false;
         $docId = $this->getDocid();
         $translator = Zend_Registry::get('Zend_Translate');
-        $span = '<span class="fas fa-exclamation-circle">';
+        $span = '<span class="fas fa-exclamation-circle"></span>';
         $warning = $span;
         $warning .= ' ';
         $submitted = $translator->translate("Vous n'êtes pas l'auteur de cet article.");
@@ -2628,7 +2628,7 @@ class Episciences_Paper
                 $selfMsg .= $question;
                 $selfMsg .= $confirm;
                 $result['message'] = $selfMsg;
-                $result['oldPaperId'] = (int)$this->getPaperid();
+                $result['oldPaperId'] = $this->getPaperid();
                 $result['submissionDate'] = $this->getSubmission_date();
                 $result['oldVid'] = $this->getVid();
                 $result['oldSid'] = $this->getSid();
@@ -2712,8 +2712,6 @@ class Episciences_Paper
 
             $result['message'] = $span . $translator->translate('Erreur') . $translator->translate(': ') . $submitted;
         }
-
-        $result['message'] .= '</span>';
 
         $result['canBeReplaced'] = $canReplace; // Peut-on remplacer l'ancienne version
         $result['oldIdentifier'] = $identifier;
