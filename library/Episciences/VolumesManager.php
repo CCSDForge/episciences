@@ -176,7 +176,17 @@ class Episciences_VolumesManager
     public static function delete($id): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $path = Episciences_Volume::TRANSLATION_PATH;
+
+        if (!Ccsd_Tools::isFromCli()) {
+
+            $path = REVIEW_LANG_PATH;
+
+        } else {
+            $currentVolume = Episciences_VolumesManager::find($id);
+            $path = $currentVolume->getJournalTranslationPath();
+        }
+
+
         $file = Episciences_Volume::TRANSLATION_FILE;
 
         // Si des articles sont rattachés à ce volume, on empêche sa suppression
@@ -262,7 +272,7 @@ class Episciences_VolumesManager
         $defaults = [];
 
         $langs = Episciences_Tools::getLanguages();
-        $path = Episciences_Volume::TRANSLATION_PATH;
+        $path = $volume->getJournalTranslationPath();
         $file = Episciences_Volume::TRANSLATION_FILE;
         $translator = Zend_Registry::get('Zend_Translate');
         Episciences_Tools::loadTranslations($path, $file);

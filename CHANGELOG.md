@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - [RT#187856]: repeated reminders fail.
+### Added
+- script to import volumes and volume metadata from journals translation files into the database.
+- .env file
+
 ## 1.0.40.7 - 2023-06-08
 ### Fixed
 - [133](https://github.com/CCSDForge/episciences/issues/133): wrong acceptance date and docUrl for tmp versions.

@@ -3,7 +3,6 @@
 class Episciences_Volume
 {
     const VOLUME_PAPER_POSITIONS = 'paper_positions';
-    const TRANSLATION_PATH = REVIEW_LANG_PATH;
     const TRANSLATION_FILE = 'volumes.php';
     const SETTING_STATUS = 'status';
     public const DEFAULT_FETCH_MODE = 'array';
@@ -40,6 +39,8 @@ class Episciences_Volume
     private $_copyEditors = [];
     private $_bib_reference = null;
 
+    private $journalTranslationPath ;
+
 
     /**
      * Episciences_Volume constructor.
@@ -50,6 +51,10 @@ class Episciences_Volume
         $this->_db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if (is_array($options)) {
             $this->setOptions($options);
+        }
+
+        if (!Ccsd_Tools::isFromCli()) {
+            $this->journalTranslationPath = REVIEW_LANG_PATH;
         }
     }
 
@@ -679,7 +684,7 @@ class Episciences_Volume
         $this->setVid($vid);
 
         // Préparation des données de traduction
-        $path = self::TRANSLATION_PATH;
+        $path = $this->getJournalTranslationPath();
         $file = self::TRANSLATION_FILE;
         $translations = Episciences_Tools::getOtherTranslations($path, $file, '#volume_' . $vid . '_#');
 
@@ -1181,5 +1186,23 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_END_DATE => $this->getSetting(self::VOLUME_CONFERENCE_END_DATE),
             self::VOLUME_CONFERENCE_DOI => $this->getSetting(self::VOLUME_CONFERENCE_DOI),
         ];
+    }
+
+    /**
+     * @return string | null
+     */
+    public function getJournalTranslationPath(): ?string
+    {
+        return $this->journalTranslationPath;
+    }
+
+    /**
+     * @param $journalTranslationPath
+     * @return $this
+     */
+    public function setJournalTranslationPath($journalTranslationPath): self
+    {
+        $this->journalTranslationPath = $journalTranslationPath;
+        return $this;
     }
 }
