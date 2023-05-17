@@ -1440,7 +1440,10 @@ class Episciences_Paper
         if ($this->getPaperid()) {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-            $sql = $this->loadHistoryQuery($db);
+            $sql = $this->loadHistoryQuery($db)
+                ->order('DOCID DESC')
+                ->order('DATE DESC')
+                ->order('LOGID DESC');
 
             $logs = $db->fetchAll($sql);
 
@@ -1475,10 +1478,6 @@ class Episciences_Paper
         if (!empty($actions)) {
             $query->where('ACTION in (?)', $actions);
         }
-
-        $query->order('DOCID DESC');
-        $query->order('DATE DESC');
-        $query->order('LOGID DESC');
 
         return $query;
     }
@@ -3212,7 +3211,11 @@ class Episciences_Paper
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         /** @var  Zend_Db_Select $sql */
-        $sql = $this->loadHistoryQuery($db);
+        $sql = $this->loadHistoryQuery($db)
+            ->order('DOCID DESC')
+            ->order('DATE DESC')
+            ->order('LOGID DESC');
+
         $detail = null;
 
         $logs = $db->fetchAll($sql);
@@ -3497,6 +3500,7 @@ class Episciences_Paper
     }
 
     /**
+     *
      * get acceptance date form paper log
      * @return string|null
      */
@@ -3505,6 +3509,12 @@ class Episciences_Paper
         $date = null;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $this->loadHistoryQuery($db, [Episciences_Paper_Logger::CODE_STATUS]);
+            //in some situations, an article may be accepted several times:
+            // the objective is to know when the article was first accepted
+        $sql->order('DOCID ASC')
+            ->order('DATE ASC')
+            ->order('LOGID ASC');
+
         $logs = $db->fetchAll($sql);
 
         foreach ($logs as $value) {
