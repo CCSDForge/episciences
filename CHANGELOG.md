@@ -16,9 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 
-## Unreleased
+## 1.0.39.15 - 2023-05-22
 - Fixed [RT#186373]: in some situations, an article can be accepted several times. Now, the first date of acceptance will be taken into account.
 ### Fixed
+
 ## 1.0.39.14 - 2023-04-26
 - COAR Notify: ietf:cite-as as url for DOI
 - OpenAIRE OAI metadata: include mandatory resource license
