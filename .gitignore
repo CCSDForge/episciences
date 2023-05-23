@@ -56,3 +56,6 @@ assets/node_modules/
 
 #geoip
 /scripts/geoip/*
+
+#PHPunit
+/.phpunit.result.cache

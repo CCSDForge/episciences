@@ -24,7 +24,7 @@ $enrichmentAuthors = $paper->getAuthorsWithAffiNumeric();
 $enrichmentAuthorsWithAffiNum = $enrichmentAuthors['authors'];
 $arrayAffiliation = $enrichmentAuthors['affiliationNumeric'];
 $enrichmentLicence = $paper->getLicence();
-$enrichmentFundings = $paper->getFundings();
+//$enrichmentFundings = $paper->getFundings();
 $enrichmentLinkedData = $paper->getLinkedData();
 
 if ($eissn = $journal->getSetting(Episciences_Review::SETTING_ISSN)) {
@@ -134,10 +134,10 @@ $timestamp = time();
                 continue;
             }
             if ($lang && Zend_Locale::isLocale($lang)) {
-                if ($lang === 'en' || $lang === 'fr' || $lang === 'eng') {
+                if ($lang === 'en' || $lang === 'fr'|| $lang === 'eng') {
                     if ($lang === 'eng') {
                         $langId = 'eng';
-                    } elseif ($lang === 'en' || $lang === 'fr') {
+                    } elseif ($lang === 'en'|| $lang === 'fr') {
                         $langId = $this->escape(Episciences_Tools::translateToIso6392b($lang));
                     }
                     echo '<abstract language="' . $langId . '">';

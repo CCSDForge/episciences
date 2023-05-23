@@ -129,8 +129,8 @@ class Episciences_Notify_Hal
         $paperUrl = sprintf('%s/%s', $cn_journal->getUrl(), $cn_paper->getPaperid());
 
         // Article published
-        if ($cn_paper->getDoi() !== '') {
-            $paperPid = $cn_paper->getDoi();
+        if ($cn_paper->hasDoi()) {
+            $paperPid = $cn_paper->getDoi(true);
         } else {
             $paperPid = $paperUrl;
         }

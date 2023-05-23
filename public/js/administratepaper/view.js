@@ -66,7 +66,7 @@ $(document).ready(function () {
         menubar: false,
         tags: getTags(),
         height: 400,
-        plugins: "link image code fullscreen table textcolor",
+        plugins: "link image code fullscreen table",
         external_plugins: {"inserttag": "/js/tinymce/plugins/es_tags/plugin.min.js"},
         toolbar1: "bold italic underline | inserttag | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image | code "
     };
@@ -685,6 +685,21 @@ function getVersionEditingForm(button, docId) {
             return false;
 
         });
+    });
+
+}
+
+function removeDoi(button,paperId,docId,doi) {
+    let removeDoi = ajaxRequest('/administratepaper/ajaxrequestremovedoi', {paperId: paperId,docId: docId, doi: doi});
+    let $doiStatusLoader = $('#doi-status-loader');
+    $doiStatusLoader.html(getLoader());
+    $doiStatusLoader.show();
+    removeDoi.done(function (response){
+        let result = JSON.parse(response);
+        console.log(result);
+        if (result > 0) {
+            location.reload();
+        }
     });
 
 }

@@ -6,6 +6,7 @@ use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 use Defuse\Crypto\Key;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use WhiteCube\Lingua\Service as Lingua;
 
 class Episciences_Tools
 {
@@ -1543,17 +1544,23 @@ class Episciences_Tools
     }
 
     public static function translateToIso6392b(string $string): string {
-        /*
-         * Temporary code
-         * TODO: add lib / find way to translate lang in iso639_2-b
-         */
-        $dict = [
-            'en'=>'eng',
-            'fr'=>'fre'
-        ];
-        return $dict[$string];
+        return Lingua::create($string)->toISO_639_2b();
     }
 
+    public static function translateToICU(string $string): string {
+        if ($string === 'en'|| $string ==='eng') {
+            return 'en_GB';
+        } elseif ($string ==='fr' || $string === 'fra') {
+            return 'fr_FR';
+        } elseif ($string === 'de') {
+            return 'de_DE';
+        } elseif ($string === 'it') {
+            return 'it_IT';
+        } elseif ($string === 'es') {
+            return 'es_ES';
+        }
+        return '';
+    }
 
     /**
      * @param string $plainText
@@ -1612,4 +1619,21 @@ class Episciences_Tools
 
     }
 
+    /**
+     * @param string $string
+     * @return string
+     */
+    public static function getMastodonUrl(string $string): string
+    {
+        $explode = self::getMastodonSeparatedInfo($string);
+        return "https://".$explode[2]."/@".$explode[1];
+    }
+    /**
+     * @param string $string
+     * @return array
+     */
+    public static function getMastodonSeparatedInfo(string $string): array
+    {
+        return explode('@', $string, 3);
+    }
 }

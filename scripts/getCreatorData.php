@@ -61,13 +61,14 @@ class getCreatorData extends JournalScript
         $this->initTranslator();
         define_review_constants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID'])->order('DOCID DESC'); // prevent empty row
+        $select = $db->select()->distinct('PAPERID')->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID','IDENTIFIER','REPOID','VERSION'])->order('DOCID DESC'); // prevent empty row
 
         foreach ($db->fetchAll($select) as $value) {
             $paperId = $value['PAPERID'];
             $info = PHP_EOL . "PAPERID " . $paperId;
             $info .= PHP_EOL . "DOCID " . $value['DOCID'];
-
+            $identifier = trim($value['IDENTIFIER']);
+            $version = (int) trim($value['VERSION']);
             $this->displayInfo($info, true);
             $doiTrim = trim($value['DOI']);
             if (empty($doiTrim)) {
@@ -103,24 +104,16 @@ class getCreatorData extends JournalScript
                 // BUT BEFORE CHECK GLOBAL CACHE
                 Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
                 ///////////////////////////////////////////////////////////////////////////////////////////////////
+                $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
+                list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
 
-
-                ////// CACHE GLOBAL RESEARCH GRAPH
-                $fileOpenAireGlobalResponse = trim(explode("/", $doiTrim)[1]) . ".json";
-                $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-                $setsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
-
-                ////// CACHE CREATOR ONLY
-                $cacheCreator = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-                $pathOpenAireCreator = trim(explode("/", $doiTrim)[1]) . "_creator.json";
-                $setsOpenAireCreator = $cacheCreator->getItem($pathOpenAireCreator);
 
                 if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
                     //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
                     // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
                     try {
                         $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                        $this->putInFileResponseOpenAireCall($decodeOpenAireResp, $doiTrim);
+                        Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
                         $this->displayInfo('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim, true);
                     } catch (JsonException $e) {
 
@@ -138,115 +131,55 @@ class getCreatorData extends JournalScript
 
                 //we need to refresh cache creator to get the new file
                 ////// CACHE CREATOR ONLY
-                $cacheCreator = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-                $pathOpenAireCreator = trim(explode("/", $doiTrim)[1]) . "_creator.json";
-                $setsOpenAireCreator = $cacheCreator->getItem($pathOpenAireCreator);
+                [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
 
-                if ($setsOpenAireCreator->isHit() && !empty($fileFound = json_decode($setsOpenAireCreator->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) && $fileFound !== [""]) {
-                    $reformatFileFound = [];
-                    if (!array_key_exists(0, $fileFound)) {
-                        $reformatFileFound[] = $fileFound;
-                    } else {
-                        $reformatFileFound = $fileFound;
-                    }
-                    $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
-                    foreach ($selectAuthor as $key => $authorInfo) {
-                        // LOOP IN ARRAY FROM DB
-                        $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                        // WE NEED TO DECODE JSON IN DB TO LOOP IN
-                        foreach ($decodeAuthor as $keyDbJson => $authorFromDB) {
-                            $needleFullName = $authorFromDB['fullname'];
-                            $flagNewOrcid = 0;
-                            // GET EACH FULLNAME TO COMPARE IN THE API ARRAY
-                            foreach ($reformatFileFound as $authorInfoFromApi) {
-                                // TRY TO FIND CORRESPONDING AUTHOR AND ORCID (IF EXIST)
-                                [$decodeAuthor, $flagNewOrcid] = $this->getOrcidApiForDb($needleFullName, $authorInfoFromApi, $decodeAuthor, $keyDbJson, $flagNewOrcid);
-                            }
-                            if ($flagNewOrcid === 1) {
-                                $this->insertAuthors($decodeAuthor, $paperId, $key);
-                            }
-
+                Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
+            }
+            if ($value['REPOID'] === Episciences_Repositories::HAL_REPO_ID) {
+                $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+                $decodeAuthor = '';
+                foreach ($selectAuthor as $authorsDb) {
+                    $decodeAuthor = json_decode($authorsDb['authors'], true, 512, JSON_THROW_ON_ERROR);
+                }
+                $insertCacheTei = Episciences_Paper_AuthorsManager::getHalTei($identifier, $version);
+                if ($insertCacheTei === true) {
+                    $this->displayInfo('Call Hal Tei ... put in cache '. $identifier, true);
+                }
+                $this->displayInfo('get Hal Tei from cache '. $identifier, true);
+                $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($identifier, $version);
+                if ($cacheTeiHal !== '') {
+                    $xmlString = simplexml_load_string($cacheTeiHal);
+                    if (is_object($xmlString) && $xmlString->count() > 0) {
+                        $authorTei = Episciences_Paper_AuthorsManager::getAuthorsFromHalTei($xmlString);
+                        if (!empty($authorTei)) {
+                            $this->displayInfo('Get Author from the TEI', true);
+                            $affiInfo = Episciences_Paper_AuthorsManager::getAffiFromHalTei($xmlString);
+                            $this->displayInfo('Get Affiliations from the TEI', true);
+                            $authorTei = Episciences_Paper_AuthorsManager::mergeAuthorInfoAndAffiTei($authorTei, $affiInfo);
+                            $this->displayInfo('Format TEI informations before merge for DB', true);
+                            $this->displayInfo('Trying to merge TEI informations with those in Database for ' . $identifier, true);
+                            $FormattedAuthorsForDb = Episciences_Paper_AuthorsManager::mergeInfoDbAndInfoTei($decodeAuthor, $authorTei);
+                            $this->insertAuthors($FormattedAuthorsForDb, $paperId, array_key_first($selectAuthor));
+                        } else {
+                            $this->displayError('Author not found in TEI ' . $identifier . ' supposed not the lastest version ->' . $version);
+                            self::logErrorMsg('NO AUTHOR IN TEI FOR ' . $identifier);
                         }
+
                     }
                 }
             }
         }
-
         $this->displayInfo('Authors Enrichment completed. Good Bye ! =)', true);
 
     }
 
-    /**
-     * @param $decodeOpenAireResp
-     * @param $doi
-     * @return void
-     * @throws JsonException
-     */
-    public function putInFileResponseOpenAireCall($decodeOpenAireResp, $doi): void
-    {
-        $cache = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $fileName = trim(explode("/", $doi)[1]) . "_creator.json";
-        $sets = $cache->getItem($fileName);
-        $sets->expiresAfter(self::ONE_MONTH);
-        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !empty($decodeOpenAireResp['response']['results'])) {
-            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
-                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
-                $sets->set(json_encode($creatorArrayOpenAire, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
-                $cache->save($sets);
-            }
-        } else {
-            $sets->set(json_encode([""]));
-            $cache->save($sets);
-        }
-    }
+
 
     public static function logErrorMsg($msg)
     {
         $logger = new Logger('my_logger');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'creatorEnrichment' . date('Y-m-d') . '.log', Logger::INFO));
         $logger->info($msg);
-    }
-
-    /**
-     * @param $needleFullName
-     * @param $authorInfoFromApi
-     * @param $decodeAuthor
-     * @param $keyDbJson
-     * @param int $flagNewOrcid
-     * @return array
-     */
-    public function getOrcidApiForDb($needleFullName, $authorInfoFromApi, $decodeAuthor, $keyDbJson, int $flagNewOrcid): array
-    {
-        /*
-         * FIRST IF PRETTY RAW SEARCHING
-         * SECOND IF REPLACE ALL ACCENT IN BOTH FULLNAME
-         */
-        $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true);
-        if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
-            self::logErrorMsg($msgLogAuthorFound);
-            if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
-                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
-                $flagNewOrcid = 1;
-            }
-
-        } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
-            self::logErrorMsg($msgLogAuthorFound);
-            if (array_key_exists("@orcid", $authorInfoFromApi)) {
-                $decodeAuthor[$keyDbJson]['orcid'] = $authorInfoFromApi['@orcid'];
-                $flagNewOrcid = 1;
-            }
-        } else {
-            self::logErrorMsg("No matching : API " . $authorInfoFromApi['$'] . " #DB# " . $needleFullName);
-        }
-        //SOME LOGGING TO KNOW IF OCCURENCE WAS FOUND EACH LOOP OF ARRAYS
-        if (!isset($decodeAuthor[$keyDbJson]['orcid'])) {
-            self::logErrorMsg("ORCID not found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true));
-        }
-        if ($flagNewOrcid === 1) {
-            self::logErrorMsg("ORCID found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true));
-
-        }
-        return [$decodeAuthor, $flagNewOrcid];
     }
 
     /**
@@ -262,7 +195,6 @@ class getCreatorData extends JournalScript
         $newAuthorInfos->setPaperId($paperId);
         $newAuthorInfos->setAuthorsId($key);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
-        echo PHP_EOL . 'new Orcid for id ' . $key . ' and paper ' . $paperId . PHP_EOL;
     }
 
     /**
@@ -282,6 +214,8 @@ class getCreatorData extends JournalScript
     {
         $this->_dryRun = $dryRun;
     }
+
+
 }
 
 

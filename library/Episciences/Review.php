@@ -118,6 +118,11 @@ class Episciences_Review
 
     public const SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION = 'paperFinalDecisionAllowRevision';
 
+    public const SETTING_CONTACT_ERROR_MAIL = "contactErrorMail";
+
+    public const SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS =
+        'refusedArticleAuthorsMsgSentToReviewers';
+
     /** @var int */
     public static $_currentReviewId = null;
     protected $_db = null;
@@ -202,7 +207,9 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_ARXIV_PAPER_PASSWORD,
-            self::SETTING_DISPLAY_STATISTICS
+            self::SETTING_CONTACT_ERROR_MAIL,
+            self::SETTING_DISPLAY_STATISTICS,
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
         ];
 
 
@@ -313,6 +320,70 @@ class Episciences_Review
         $filePah = Episciences_Review::getCryptoFilePath();
         return file_exists($filePah) ? $filePah : '';
 
+    }
+
+    /**
+     * @param int|null $docId
+     * @param string|null $role
+     * @return string
+     * @throws Zend_Db_Statement_Exception
+     */
+    private static function buildFyiStr(?int $docId, ?string $role = null): string
+    {
+        $isCoiEnabled = false;
+        $paper = null;
+        $cc = [];
+        $fyi = '';
+
+
+        if ($docId) {
+            $paper = Episciences_PapersManager::get($docId, false);
+        }
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+
+        if ($paper) {
+
+            if ($isCoiEnabled) {
+                $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
+            }
+
+            if ($role === Episciences_Acl::ROLE_REVIEWER) {
+                $cc = $paper->getReviewers(null, true);
+            }
+
+        }
+
+
+        if (!$role) {
+            self::checkReviewNotifications($cc);
+        }
+
+
+        /** @var Episciences_User $recipient */
+        foreach ($cc as $recipient) {
+
+            if (
+                $isCoiEnabled &&
+                !$role &&
+                !in_array($recipient->getUid(), $cUidS, false)
+            ) {
+                continue;
+            }
+
+            $fyi .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
+            $fyi .= '; ';
+        }
+
+        $fyi = substr($fyi, 0, -2);
+
+        return !$fyi ? '' : $fyi;
     }
 
     /**
@@ -431,51 +502,23 @@ class Episciences_Review
 
     /**
      * @param int|null $docId
+     * @param string|null $role
      * @return string
-     * @throws Zend_Db_Statement_Exception
+     *
      */
-    public static function forYourInformation(int $docId = null): string
+    public static function forYourInformation(?int $docId = null, ?string $role = null): string
     {
-        $isCoiEnabled = false;
-
+        $fyi = '';
 
         try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
-        }
+            $fyi = self::buildFyiStr($docId, $role);
 
-        if ($isCoiEnabled) {
-
-            $cUidS = [];
-
-            if ($docId) {
-
-                $paper = Episciences_PapersManager::get($docId, false);
-
-                if ($paper) {
-                    $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
-                }
-            }
+        } catch (Exception $e) {
+            error_log($e->getMessage());
 
         }
 
-        $cc = [];
-        $FYI = '';
-        self::checkReviewNotifications($cc);
-        /** @var Episciences_User $recipient */
-        foreach ($cc as $recipient) {
-
-            if ($isCoiEnabled && !in_array($recipient->getUid(), $cUidS, false)) {
-                continue;
-            }
-
-            $FYI .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
-            $FYI .= '; ';
-        }
-
-        return substr($FYI, 0, -2);
+        return $fyi;
     }
 
     /**
@@ -936,6 +979,11 @@ class Episciences_Review
         $form = $this->addFinalDecisionForm($form);
         $form = $this->addStatisticsForm($form);
 
+        //redirection mail for errors
+
+        $form = $this->addRedirectionMailError($form);
+
+
         // display group: publication settings
         $form->addDisplayGroup([
             self::SETTING_REPOSITORIES,
@@ -979,7 +1027,8 @@ class Episciences_Review
         $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
 
         $form->addDisplayGroup([
-            self::SETTING_SYSTEM_NOTIFICATIONS
+            self::SETTING_SYSTEM_NOTIFICATIONS,
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
         ], 'notifications', ['legend' => "Paramètres de notification"]);
         $form->getDisplayGroup('notifications')->removeDecorator('DtDdWrapper');
 
@@ -997,20 +1046,21 @@ class Episciences_Review
         ], 'copyEditors', ["legend" => "Préparation de copie"]);
         $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
 
+        $form->addDisplayGroup([
+            self::SETTING_SYSTEM_IS_COI_ENABLED,
+            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
+            self::SETTING_DISPLAY_STATISTICS,
+            self::SETTING_CONTACT_ERROR_MAIL
+        ], 'additionalParams', ['legend' => 'Paramètres supplémentaires']);
+
+        $form->getDisplayGroup('additionalParams')->removeDecorator('DtDdWrapper');
+
         // submit button
         $form->setActions(true)->createSubmitButton('submit', [
                 'label' => 'Enregistrer les paramètres',
                 'class' => 'btn btn-primary'
             ]
         );
-
-        $form->addDisplayGroup([
-            self::SETTING_SYSTEM_IS_COI_ENABLED,
-            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
-            self::SETTING_DISPLAY_STATISTICS
-        ], 'additionalParams', ['legend' => 'Paramètres supplémentaires']);
-
-        $form->getDisplayGroup('additionalParams')->removeDecorator('DtDdWrapper');
 
         return $form;
     }
@@ -1439,6 +1489,13 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
+        $form->addElement('checkbox', self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS, [
+                'label' => "Activer la fonctionnalité",
+                'description' => "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs.",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators
+            ]);
+
         return $form;
     }
 
@@ -1545,6 +1602,22 @@ class Episciences_Review
         );
     }
 
+    private function addRedirectionMailError(Ccsd_Form $form): \Ccsd_Form
+    {
+        // Possibility to share the paper password for arxiv submissions
+        return $form->addElement('select', self::SETTING_CONTACT_ERROR_MAIL, [
+                'label' => 'Mail de retour',
+                'description' => "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels",
+                'value' => 0,
+                'multiOptions' => [
+                    0 => 'error@'.DOMAIN,
+                    1 => $this->getCode().'-error@'.DOMAIN,
+                ],
+
+            ]
+        );
+    }
+
     private function addStatisticsForm(Ccsd_Form $form): \Ccsd_Form
     {
         $checkboxDecorators = [
@@ -1556,7 +1629,7 @@ class Episciences_Review
         ];
 
 
-       return  $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
+        return  $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
                 'label' => 'Visibilité des statistiques',
                 'description' => "",
                 'value' => 0,
@@ -1709,6 +1782,8 @@ class Episciences_Review
 
         $settingsValues[self::SETTING_ARXIV_PAPER_PASSWORD] = $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD);
         $settingsValues[self::SETTING_DISPLAY_STATISTICS] = $this->getSetting(self::SETTING_DISPLAY_STATISTICS);
+        $settingsValues[self::SETTING_CONTACT_ERROR_MAIL] = $this->getSetting(self::SETTING_CONTACT_ERROR_MAIL);
+        $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
 
 
         $values = [];

@@ -76,6 +76,13 @@
         ]
       },
       {
+        "label": "Modifier mon courriel",
+        "controller": "user",
+        "action": "change_account_email",
+        "resource": "user-change_account_email",
+        "privilege": "member"
+      },
+      {
         "label": "Modifier mon profil",
         "controller": "user",
         "action": "edit",

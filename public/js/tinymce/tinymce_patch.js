@@ -19,7 +19,7 @@ function __initEditor(selectorName, context, options) {
 
     if (options === undefined) {
         options = $.extend(domainAbsoluteURLsOptions, {
-            theme: "modern",
+            theme: 'silver',
             plugins: "link image code fullscreen table",
             toolbar1: "bold italic underline | forecolor backcolor | styleselect | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image  | fullscreen",
             menubar: false,

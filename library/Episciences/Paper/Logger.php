@@ -60,6 +60,8 @@ class Episciences_Paper_Logger
     public const CODE_DOI_ASSIGNED = 'doi_assigned';
     public const CODE_DOI_UPDATED = 'doi_updated';
 
+    public const CODE_DOI_CANCELED = 'doi_canceled';
+
     public const CODE_COI_REPORTED = "coi_reported";
     public const CODE_COI_REVERTED= "coi_reverted";
 
@@ -68,6 +70,7 @@ class Episciences_Paper_Logger
 
     public const CODE_VERSION_REPOSITORY_UPDATED = "version_repository_updated";
     public const CODE_NEW_REVIEWING_DEADLINE = 'new_reviewing_deadline';
+    public const CODE_INBOX_COAR_NOTIFY_REVIEW = 'coar_notify_review';
 
     // alert-
     public const WARNING = 'warning';
@@ -122,13 +125,15 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => self::VIOLET,
         self::CODE_DOI_ASSIGNED => self::INFO,
         self::CODE_DOI_UPDATED => self::INFO,
+        self::CODE_DOI_CANCELED => self::INFO,
         self::CODE_ALTER_PUBLICATION_DATE => self::WARNING,
         self::CODE_COI_REPORTED => self::DANGER,
         self::CODE_COI_REVERTED => self::SUCCESS,
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => self::VIOLET,
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => self::VIOLET,
         self::CODE_VERSION_REPOSITORY_UPDATED => self::INFO,
-        self::CODE_NEW_REVIEWING_DEADLINE => self::WARNING
+        self::CODE_NEW_REVIEWING_DEADLINE => self::WARNING,
+        self::CODE_INBOX_COAR_NOTIFY_REVIEW => self::INFO
     ];
 
     public static array $_label = [
@@ -158,12 +163,14 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Demande d'éclaircissements (relecteur au contributeur)",
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'éclaircissement (contributeur au relecteur)",
         self::CODE_DOI_ASSIGNED => 'DOI assigné',
+        self::CODE_DOI_CANCELED => 'DOI Annulé',
         self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)",
         self::CODE_COI_REVERTED => "Conflit d'intérêts (CI) : annulé",
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepté, demande de la version finale à l'auteur",
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur",
         self::CODE_VERSION_REPOSITORY_UPDATED => 'Re-pointage de version',
-        self::CODE_NEW_REVIEWING_DEADLINE => 'Nouvelle date limite de rendu de relecture'
+        self::CODE_NEW_REVIEWING_DEADLINE => 'Nouvelle date limite de rendu de relecture',
+        self::CODE_INBOX_COAR_NOTIFY_REVIEW => 'Nouvelle soumission > Inbox'
     ];
 
     /**

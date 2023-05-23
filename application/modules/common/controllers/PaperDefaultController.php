@@ -421,9 +421,7 @@ class PaperDefaultController extends DefaultController
             $recipientTags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = $this->view->Date($paper->getSubmission_date(), $locale);
 
             try {
-                Episciences_Mail_Send::sendMailFromReview(
-                    $recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC
-                );
+                Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC);
                 ++$nbNotifications;
                 $makeCopy = false;
             } catch (Zend_Mail_Exception | Zend_Session_Exception $e) {

@@ -53,6 +53,11 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
                 Zend_Registry::set('hideStatistics', $hideStatistics);
 
+
+                $isCoiEnabled = (boolean)$oReview->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+                Zend_Registry::set('isCoiEnabled', $isCoiEnabled);
+
+
                 defined('RVISSN') || define('RVISSN', $oReview->getSetting(Episciences_Review::SETTING_ISSN));
             } else {
                 exit(printf('Configuration Error: %s journal does not exists.', RVCODE));

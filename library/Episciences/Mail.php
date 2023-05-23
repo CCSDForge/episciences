@@ -76,7 +76,14 @@ class Episciences_Mail extends Zend_Mail
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_LAST_NAME, Episciences_Auth::getLastname());
 
         }
-        $this->setReturnPath('error@' . DOMAIN);
+        $review = Episciences_ReviewsManager::find(RVCODE);
+        $review->loadSettings();
+        $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
+        if ($mailError === false || $mailError === "0") {
+            $this->setReturnPath('error@' . DOMAIN);
+        } else {
+            $this->setReturnPath($review->getCode().'-error@'.DOMAIN);
+        }
     }
 
     /**
@@ -123,24 +130,28 @@ class Episciences_Mail extends Zend_Mail
      * set reply-to header : noreply@episciences.org
      * @throws Zend_Mail_Exception
      */
-    public function setFromReview()
+    public function setFromReview($rvCode = RVCODE)
     {
-        $this->setFrom(RVCODE . '@' . DOMAIN, RVCODE);
+        $this->setFrom($rvCode . '@' . DOMAIN, $rvCode);
         $this->setReplyTo('noreply@' . DOMAIN);
     }
 
     /**
      * set an unique recipient from an Episciences_User, and set recipient tags
      * @param Episciences_User $recipient
+     * @param array|false|string|null $rvCode
      * @return bool
      */
-    public function setTo(Episciences_User $recipient)
+    public function setTo(Episciences_User $recipient, $rvCode = RVCODE)
     {
         if (empty($recipient->getEmail())) {
             return false;
         }
 
-        $lostLoginLink = HTTP . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin';
+        $lostLoginLink = HTTP . '://';
+        $lostLoginLink .= $rvCode . '.' . DOMAIN;
+        $lostLoginLink .= '/user/lostlogin';
+
 
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL, $recipient->getEmail());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $recipient->getFullName());
@@ -162,7 +173,7 @@ class Episciences_Mail extends Zend_Mail
      * @return bool
      * @throws Zend_Mail_Exception
      */
-    public function writeMail($rvCode = RVCODE, bool $debug = false): bool
+    public function writeMail($rvCode = RVCODE, int $rvId = RVID, bool $debug = false): bool
     {
 
 
@@ -203,7 +214,7 @@ class Episciences_Mail extends Zend_Mail
 
         try {
             if (!$debug) {
-                $id = $this->log();
+                $id = $this->log($rvId);
                 $this->setId($id);
             }
         } catch (Exception $e) {
@@ -497,11 +508,12 @@ class Episciences_Mail extends Zend_Mail
 
     /**
      * log mail to database
+     * @param int $rvId
      * @return string
-     * @throws Exception
+     * @throws Zend_Db_Adapter_Exception
      * @noinspection ForgottenDebugOutputInspection
      */
-    private function log()
+    private function log(int $rvId = RVID)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -561,7 +573,7 @@ class Episciences_Mail extends Zend_Mail
         }
 
         $data = [
-            'RVID' => $this->getRvid(),
+            'RVID' => $rvId ?: $this->getRvid(),
             'DOCID' => $this->getDocid(),
             'FROM' => iconv_mime_decode($from, 0, 'UTF-8'),
             'REPLYTO' => iconv_mime_decode($replyto, 0, 'UTF-8'),

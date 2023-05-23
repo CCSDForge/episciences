@@ -102,6 +102,9 @@ class Ccsd_User_Models_User
 
     const ACCOUNT_RESET_PASSWORD_FAILURE = 'Échec du changement de mot de passe';
 
+    public const ACCOUNT_RESET_EMAIL_SUCCESS = 'Changement de courriel réussi';
+    public const ACCOUNT_RESET_EMAIL_FAILURE = 'Échec du changement de courriel';
+
     /**
      * UID unique de l'utilisateur dans la table des utilisateurs
      *

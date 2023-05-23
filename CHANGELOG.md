@@ -17,6 +17,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- Bump from TinyMCE 4 to TinyMCE 6
+- [278](https://github.com/CCSDForge/episciences/issues/278): In case an article has been refused: new option to allow forward automatically the message sent to the authors explaining the final decision made by the editor in charge.
+- It is now possible to use Lemon LDAP authentication.
+- Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
+  tracking.' AddToAny is not used anymore.
+### Added
+- Reset password API
+- stats indicator: acceptance rate by year
+- Inbox notifications: new script to initialize submissions.
+- Cancel a DOI assignment for the journal (manual DOI assignment setting only)
+- It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an email
+- [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites
+- Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
+- [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
+
+## 1.0.39.15 - 2023-05-22
+- Fixed [RT#186373]: in some situations, an article can be accepted several times. Now, the first date of acceptance will be taken into account.
+### Fixed
+
+## 1.0.39.14 - 2023-04-26
+- COAR Notify: ietf:cite-as as url for DOI
+- OpenAIRE OAI metadata: include mandatory resource license
+- [RT#184361]: a person with a conflict of interest may determine the identity of the article's reviewers by 
+  trial and error
+
+## 1.0.39.13 - 2023-04-06
+### Changed
 - related to Allow post - accepting article revisions: "Contact without sending a new version" is now disabled when answer final version request
 - now the version of the article can be modified only if its status is :
   * submitted
@@ -25,10 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * published
   * ready to publish
   * approved by author - waiting for final publication
-  
-### Added
-- Reset password API
-- stats indicator: acceptance rate by year
+- statistics: the lower limit of years is now set at 2013
+
 
 ## 1.0.39.12 - 2023-03-23
 ### Fixed

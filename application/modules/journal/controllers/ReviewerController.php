@@ -456,7 +456,7 @@ class ReviewerController extends PaperDefaultController
             ];
 
             Episciences_Mail_Send::sendMailFromReview($recipient, $editorialCommitteeTemplateType, $editorialCommitteeTags,
-                $paper, null, [], false, $CC
+                $paper, null, [], false, $CC, null
             );
             //reset $CC
             $CC = [];

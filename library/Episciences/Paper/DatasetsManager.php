@@ -216,4 +216,27 @@ class Episciences_Paper_DatasetsManager
         return $resUpdate;
     }
 
+    public static function getUrlLinkedData(string $linkedValue, string $linkType) : string
+    {
+        switch ($linkType):
+            case 'doi':
+                $url = "https://doi.org/".$linkedValue;
+                break;
+            case 'arXiv':
+                $url = "https://arxiv.org/abs/".$linkedValue;
+                break;
+            case 'SWHID':
+                $url = "https://archive.softwareheritage.org/".$linkedValue;
+                break;
+            case 'handle':
+                $url = "https://hdl.handle.net/".$linkedValue;
+                break;
+            default:
+                $url = '';
+                break;
+        endswitch;
+        return $url;
+    }
+
+
 }

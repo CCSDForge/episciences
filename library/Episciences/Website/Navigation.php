@@ -29,7 +29,10 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
     const PAGE_SEARCH = 'search';
     const PAGE_EDITORIAL_STAFF = 'editorialStaff';
-
+    const PAGE_CREDITS = 'credits';
+    const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
+    const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
+    const PAGE_ACCEPTED_PAPERS_LIST = 'acceptedPapersList';
 
     /**
      * Table de stockage de la navigztion d'un site

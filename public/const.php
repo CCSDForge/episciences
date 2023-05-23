@@ -45,16 +45,18 @@ function define_app_constants()
 /**
  * define review constants
  */
-function define_review_constants()
+function define_review_constants(string $rvCode = null)
 {
+
     // define review code
-    if (!defined('RVCODE') && getenv('RVCODE')) {
+    if ((null === $rvCode) && !defined('RVCODE') && getenv('RVCODE')) {
         define('RVCODE', getenv('RVCODE'));
+        $rvCode = RVCODE;
     }
 
-    if (defined('RVCODE')) {
+    if ($rvCode) {
         // define application module
-        switch (RVCODE) {
+        switch ($rvCode) {
             case PORTAL:
                 define('APPLICATION_MODULE', 'portal');
                 break;
@@ -70,12 +72,12 @@ function define_review_constants()
             if (APPLICATION_MODULE === PORTAL) {
                 define('APPLICATION_URL', HTTP . '://' . DOMAIN);
             } else {
-                define('APPLICATION_URL', HTTP . '://' . RVCODE . '.' . DOMAIN);
+                define('APPLICATION_URL', HTTP . '://' . $rvCode . '.' . DOMAIN);
             }
         }
 
         // define review path
-        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . RVCODE) . '/');
+        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
 
         //configurable constants path
         define('CONFIGURABLE_CONSTANTS_PATH', APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.configurable.constants.json');
@@ -84,22 +86,16 @@ function define_review_constants()
             /** @var array $configurableConst */
             $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true);
 
-            $ignoreReviewersEmail = $configurableConst['ignore_reviewers_email'] ?? [];
             $allowedExtensions = $configurableConst['allowed_extensions'] ?? ['pdf'];
             $allowedMimesTypes = $configurableConst['allowed_mimes_types'] ?? ['application/pdf'];
-            $episciencesContact = $configurableConst['episciences_contact'] ?? 'contact@episciences.org';
 
         } else {
-            $ignoreReviewersEmail = [];
             $allowedExtensions = ['pdf'];
             $allowedMimesTypes = ['application/pdf'];
-            $episciencesContact = 'contact@episciences.org';
         }
 
-        define('IGNORE_REVIEWERS_EMAIL_VALUES', $ignoreReviewersEmail);
         define('ALLOWED_EXTENSIONS', $allowedExtensions);
         define('ALLOWED_MIMES_TYPES', $allowedMimesTypes);
-        define('EPISCIENCES_CONTACT', $episciencesContact);
     }
 
     if (defined('REVIEW_PATH')) {
@@ -173,7 +169,7 @@ function define_table_constants()
     define('T_PAPER_METADATA_SOURCES', 'metadata_sources');
     define('T_PAPER_PROJECTS', 'paper_projects');
     define('T_PAPER_CITATIONS', 'paper_citations');
-    define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
+    //define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
 }
 
 /**
@@ -230,8 +226,8 @@ function defineVendorJsLibraries()
     define('VENDOR_JQUERY_UI', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js');
     define('VENDOR_JQUERY_URL_PARSER', 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js');
     define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
-    define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
-    define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
+    define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.4.1/tinymce.min.js');
+    define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.4.1/tinymce.min.js');
     define('VENDOR_CHART', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js');
     define('VENDOR_CHART_PLUGIN_DATALABELS', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js');
 }

@@ -904,9 +904,9 @@ return [
     "Télécopie" => 'Fax',
     "Photo" => 'Picture',
     "Complément de nom" => 'Middle Name',
-    'Login Twitter' => 'Twitter username',
+    'Login Twitter ou Mastodon' => 'Twitter username or Mastodon',
     'Site(s) Web' => 'Web Site(s)',
-    'Saisissez votre compte Twitter (par exemple @anonymous)' => 'Enter your Twitter account (e.g @anonymous)',
+    'Saisissez votre compte Twitter (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your Twitter account (e.g @anonymous) or Mastodon account (e.g @username@server)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
 
     // User activation
@@ -1047,6 +1047,7 @@ return [
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Clarification answer (contributor to reviewer)",
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
+    Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI canceled',
     Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
     Episciences_Paper_Logger::CODE_COI_REVERTED => 'Conflict Of Interest (COI): cancelled',
 
@@ -1074,6 +1075,7 @@ return [
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version repointing',
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New reviewing deadline',
+    Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission > Inbox',
 
 
     "Date d'assignation" => "Assignation date",
@@ -1120,6 +1122,8 @@ return [
     "Paramètres de notification" => "Notification Settings",
     "Lorsqu'un article est soumis, mis à jour ou refusé, notifier les" => "When an article is submitted, updated or refused, notify the",
     "Administrateurs" => "Administrators",
+    'Activer la fonctionnalité' => 'Enable feature',
+    "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs." => "In case an article has been refused, the message sent to the authors explaining the final decision made by the editor in charge is forwarded automatically to the reviewers.",
 
 
     "Préparateurs de copie" => "Copy editors",
@@ -1420,7 +1424,7 @@ return [
     "Réessayer avec une autre version" => "Try again with another version",
     // new repositories (exp. Zenodo)
     "Vous ne pouvez pas soumettre ce document car les fichiers ne seront pas mis à la disposition du public et le partage ne sera possible qu'avec l'approbation du déposant du fichier." => "You can not submit this document as the files will not be made publicly available and sharing will be made possible only by the approval of depositor of the original file.",
-    "Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version." => "You can not submit this document, please check that this is a new version. ",
+    "Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version." => "You can not submit this document, please check that this is a new version.",
     "Vos modifications n'ont pas été prises en compte : la version du document n'est pas liée à la précédente." => 'Your changes have not been taken into account: the document version is not bound to the previous one.',
 
     /**
@@ -1678,11 +1682,22 @@ return [
     "Episciences_Website_Navigation_Page_BrowseRegularIssues" => "Browse regular issues",
     "Episciences_Website_Navigation_Page_Search" => "Search an article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
+    "Episciences_Website_Navigation_Page_Credits" => "Credits",
+    "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
+    "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
+    "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
     "Nombre de résultats par page" => "Number of results per page",
     "Photos des membres" => "Members' photos",
     'Afficher', 'Show',
     'Masquer' => 'Hide',
+
+    /**
+     * Accepted article page
+     */
+    "acceptedPaperOn"=> "Papers accepted on",
+    "de" => "by",
+
 
     /**
      * Help
@@ -1791,6 +1806,8 @@ return [
 
     "Exporter" => "Export",
     "Partager" => "Share",
+    "Voulez-vous partager la publication ? Rendez-vous" => "Do you want to share the publication? Go",
+    "ici" => 'here',
     "Statistiques de consultation" => "Consultation statistics",
 
     "Préparation de copie" => "Copy editing",
@@ -1823,6 +1840,7 @@ return [
     'Paramètres DOI' => 'DOI Settings',
     'DOI assigné' => 'DOI assigned',
     'DOI créé.' => 'DOI created.',
+    'Annuler le DOI' => 'Cancel the DOI',
     'Statut du DOI modifié.' => 'DOI status updated.',
 
     'Ce site utilise des cookies et collecte des informations personnelles vous concernant' => 'This site uses cookies and collects personal data',
@@ -2292,6 +2310,23 @@ return [
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
+
+    //Chanage email address
+    'Modifier mon courriel' => 'Change my email address',
+    "Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes." => "As a first step, you should proceed to merge all your accounts.",
+    "Merci de contacter" => 'Please contact',
+    "le support technique" => 'the support',
+    "en spécifiant le compte que vous souhaitez conserver et l'identifiant auteur IdHAL à conserver (si vous en avez plusieurs)" => 'by specifying the account you want to keep and the author IdHAL to keep (if you have several)',
+    "Voici la liste des noms d'utilisateur trouvés pour votre compte :" => "Here is the list of usernames found for your account:",
+    "Échec du changement de courriel" => "Failed to change email",
+    "Changement de courriel réussi" => "Successful email change",
+    'Confirmer la modification' => 'Confirm change',
+    "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Modifier mon courriel</a>" => "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Change my email address</a>",
+
+    // settings redirect error mail
+    "Mail de retour" => "Redirection address",
+    "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the failed emails",
+    "Adresse de courriel pour le retour des échecs d'envoi" => "Email address for the return of failed mailings",
     'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
     //API password
     "Ce mot de passe est réservé à l'usage exclusif de l'" => "This password is for",

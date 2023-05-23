@@ -490,7 +490,6 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $docId = (int)$request->getParam('id');
-
         // get journal details
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -519,7 +518,8 @@ class AdministratepaperController extends PaperDefaultController
         // get contributor details
         $contributor = new Episciences_User();
         $contributor->findWithCAS($paper->getUid());
-
+        $contributorTwitter = $contributor->getSocialMedias();
+        $this->view->contributorTwitter = $contributorTwitter;
         // check if paper is obsolete; if so, display a warning
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();
@@ -562,7 +562,6 @@ class AdministratepaperController extends PaperDefaultController
             // already has one DOI but not auto assigned
             $doi_status = Episciences_Paper_DoiQueue::STATUS_MANUAL;
         }
-
         $journal = Episciences_ReviewsManager::find(RVID);
         $journal->loadSettings();
 
@@ -719,7 +718,7 @@ class AdministratepaperController extends PaperDefaultController
         // Allow post - acceptance revisions of articles
         $isPostAcceptanceEnabled = (int)$review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) === 1;
 
-        $templates = Episciences_PapersManager::getStatusFormsTemplates($paper, $contributor, $all_editors);
+        $templates = Episciences_PapersManager::getStatusFormsTemplates($paper, $contributor, $all_editors, $review->getSettings());
 
 
         if ($isPostAcceptanceEnabled && (Episciences_Auth::isSecretary() || Episciences_Auth::isCopyEditor())) {
@@ -732,7 +731,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->other_editors = $all_editors;
             $this->view->acceptanceForm = Episciences_PapersManager::getAcceptanceForm($templates['accept']);
             $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
-            $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse']);
+            $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse'], $docId);
             $this->view->minorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['minorRevision'], 'minor', $review, true, $docId);
             $this->view->majorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['majorRevision'], 'major', $review, true, $docId);
             // waiting for author resources form request
@@ -1925,8 +1924,10 @@ class AdministratepaperController extends PaperDefaultController
                 // Notifier les rédacteurs + préparateurs de copie de l'article + selon les pramètres de la revue: red. en chef, admins et secrétaires de red.
                 $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY, Episciences_Auth::getUser());
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
-                // if HAL, send coar notify message
 
+                $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Voulez-vous partager la publication ? Rendez-vous")."<a href='".APPLICATION_URL.$this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId])."#share'> ".$this->view->translate('ici')."</a>");
+                
+                // if HAL, send coar notify message
                 if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
                     $notification = new Episciences_Notify_Hal($paper, $journal);
                     try {
@@ -3548,7 +3549,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     $isOwner = ($uid === $paper->getUid());
 
-                    if ($isOwner || in_array($user->getEmail(), IGNORE_REVIEWERS_EMAIL_VALUES, true)) {
+                    if ($isOwner || in_array($user->getEmail(), EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER, true)) {
                         $ignoreReviewers[] = $uid;
                     }
 
@@ -4690,6 +4691,36 @@ class AdministratepaperController extends PaperDefaultController
 
     }
 
+    /**
+     * @return void
+     */
+    public function ajaxrequestremovedoiAction() : void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $post = $request->getPost();
+        if ($request->isXmlHttpRequest() && isset($post['paperId'])) {
+            $paperId = (int) $post['paperId'];
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $getPapers = $db->select()->from(T_PAPERS)->where('paperId = ?', $paperId);
+            $papers =  $db->fetchAll($getPapers);
+            if (count($papers) > 0) {
+                $getDoiQueue = Episciences_Paper_DoiQueueManager::findByPaperId($paperId);
+                if (!is_null($getDoiQueue->getId_doi_queue())) {
+                    $deleteDoiQueue = Episciences_Paper_DoiQueueManager::delete($paperId);
+                    if ($deleteDoiQueue === true) {
+                        $update = Episciences_PapersManager::updateDoi("", $paperId);
+                        if ($update > 0) {
+                            Episciences_Paper_Logger::log($paperId, $post['docId'], Episciences_Paper_Logger::CODE_DOI_CANCELED, Episciences_Auth::getUid(), json_encode(['DOI' => $post['doi']." canceled"]),null,RVID);
+                            echo json_encode($update, JSON_THROW_ON_ERROR);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 

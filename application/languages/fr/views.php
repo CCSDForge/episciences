@@ -47,6 +47,15 @@ return [
     "Episciences_Website_Navigation_Page_BrowseSpecialIssues" => "Consulter les volumes spéciaux",
     "Episciences_Website_Navigation_Page_Search" => "Rechercher un article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Membres du comité éditorial",
+    "Episciences_Website_Navigation_Page_Credits" => "Crédits",
+    "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
+    "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte d'éthique",
+    "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
+
+    /**
+     * Accepted article page
+     */
+    "acceptedPaperOn"=> "Articles acceptés sur",
 
     //Recherche : facettes
     "year" => "Année",
@@ -100,6 +109,7 @@ return [
     Episciences_Reviewer::STATUS_UNINVITED => 'non invité',
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assigné',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI mis à jour',
+    Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI annulé',
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'Nouvelle date de publication',
     Episciences_Paper_Logger::CODE_COI_REPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REPORTED],
     Episciences_Paper_Logger::CODE_COI_REVERTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REVERTED],
@@ -107,6 +117,7 @@ return [
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED],
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION],
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE],
+    Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW],
 
     // Erreurs OAI
     "The operation ended with an error. Please try again." => "L'opération s'est terminée avec une erreur. Merci de réessayer.",

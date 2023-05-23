@@ -279,13 +279,13 @@ class Episciences_User extends Ccsd_User_Models_User
      *
      * @return array
      */
-    public function getRoles(): ?array
+    public function getRoles(int $rvId = RVID): ?array
     {
         if ($this->_roles === null) {
             $this->_roles = $this->loadRoles();
         }
 
-        return (is_array($this->_roles) && array_key_exists(RVID, $this->_roles)) ? $this->_roles[RVID] : null;
+        return (is_array($this->_roles) && array_key_exists($rvId, $this->_roles)) ? $this->_roles[$rvId] : null;
     }
 
 
@@ -407,7 +407,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * @throws Zend_Exception
      * @see Ccsd_User_Models_User::save()
      */
-    public function save(bool $forceInsert = false, bool $isCasRecording = true)
+    public function save(bool $forceInsert = false, bool $isCasRecording = true, int $rvId = RVID)
     {
         // Enregistrement des données CAS
         // et renvoi de l'id si il s'agit d'un nouveau compte
@@ -472,7 +472,7 @@ class Episciences_User extends Ccsd_User_Models_User
         // Création des données locales (compte ES + rôle)
 
         $hasLocalData = $this->hasLocalData($this->getUid());
-        $hasRolesCurrentUser = $this->hasRoles($this->getUid());
+        $hasRolesCurrentUser = $this->hasRoles($this->getUid(), $rvId);
 
 
         if (!$hasLocalData || !$hasRolesCurrentUser) {
@@ -497,9 +497,9 @@ class Episciences_User extends Ccsd_User_Models_User
             }
 
             // L'utilisateur n'a pas de rôles pour cette revue : on lui en crée un
-            $rData = ['RVID' => RVID, 'UID' => $uid, 'ROLEID' => 'member'];
+            $rData = ['RVID' => $rvId, 'UID' => $uid, 'ROLEID' => 'member'];
 
-            if (!$this->hasRoles($uid) && !$this->_db->insert(T_USER_ROLES, $rData)) {
+            if (!$this->hasRoles($uid, $rvId) && !$this->_db->insert(T_USER_ROLES, $rData)) {
                 return false;
             }
 
@@ -1001,7 +1001,7 @@ class Episciences_User extends Ccsd_User_Models_User
         return $form;
     }
 
-    public function saveUserRoles($uid, $roles): bool
+    public function saveUserRoles($uid, $roles, int $rvId = RVID): bool
     {
         $uid = (int)$uid;
         // Reset des rôles de l'utilisateur
@@ -1009,7 +1009,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $editableRoles = $acl->getEditableRoles();
 
         foreach ($editableRoles as $role) {
-            $this->_db->delete(T_USER_ROLES, ['RVID = ?' => RVID, 'UID = ?' => $uid, 'ROLEID = ?' => $role]);
+            $this->_db->delete(T_USER_ROLES, ['RVID = ?' => $rvId, 'UID = ?' => $uid, 'ROLEID = ?' => $role]);
         }
 
         if (!empty($roles)) {
@@ -1017,7 +1017,7 @@ class Episciences_User extends Ccsd_User_Models_User
             // Préparation de la requête (valeurs à insérer)
             foreach ($roles as $roleId) {
                 $roleId = $this->_db->quote($roleId);
-                $values[] = '(' . $uid . ',' . RVID . ',' . $roleId . ')';
+                $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
             }
 
             // Enregistrement des nouveaux rôles
@@ -1028,7 +1028,7 @@ class Episciences_User extends Ccsd_User_Models_User
             if (PHP_SAPI !== 'cli') {
                 $user = Episciences_Auth::getInstance()->getIdentity();
                 if ($uid === Episciences_Auth::getUid()) {
-                    $userRoles[RVID] = $roles;
+                    $userRoles[$rvId] = $roles;
                     $user->setRoles($userRoles);
                     Episciences_Auth::updateIdentity($user);
                 }
@@ -1319,9 +1319,9 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param string $role
      * @return Episciences_User
      */
-    public function addRole(string $role): \Episciences_User
+    public function addRole(string $role, int $rvId = RVID): \Episciences_User
     {
-        $selfRoles = $this->getRoles();
+        $selfRoles = $this->getRoles($rvId);
         $currentRoles = [];
 
         if (!in_array($role, $selfRoles, true)) { // 'reviewer'
@@ -1337,10 +1337,10 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         if (!empty($currentRoles)) {
-            $this->saveUserRoles($this->getUid(), $currentRoles);
-            $userRoles[RVID] = $currentRoles;
+            $this->saveUserRoles($this->getUid(), $currentRoles, $rvId);
+            $userRoles[$rvId] = $currentRoles;
         } else {
-            $userRoles[RVID] = $selfRoles;
+            $userRoles[$rvId] = $selfRoles;
         }
         $this->setRoles($userRoles);
 

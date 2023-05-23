@@ -177,12 +177,13 @@ class Episciences_Mail_Send
      * @param array $attachmentsFiles ['key' => file name, 'value' => 'file path']
      * @param bool $makeACopy : si true faire une copie, car le path != REVIEW_FILES_PATH . 'attachments/'
      * @param array $CC : cc recipients
+     * @param array|null $journalOptions
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    public static function sendMailFromReview(
+    public static function sendMailFromReview (
         Episciences_User  $recipient,
         string            $templateType,
         array             $tags = [],
@@ -190,13 +191,23 @@ class Episciences_Mail_Send
         int               $authUid = null,
         array             $attachmentsFiles = [],
         bool              $makeACopy = false,
-        array             $CC = []
+        array             $CC = [],
+        ?array $journalOptions = null
     ): bool
     {
 
         $template = new Episciences_Mail_Template();
+
+        if (empty($journalOptions) && !Ccsd_Tools::isFromCli()) {
+            $journalOptions = ['rvCode' => RVCODE, 'rvId' => RVID];
+        }
+
+        if (isset($journalOptions['rvCode'])) {
+            $template->setRvcode($journalOptions['rvCode']);
+        }
+
         $template->findByKey($templateType);
-        $template->loadTranslations();
+        $template->loadTranslations(null, $journalOptions['rvCode']);
 
         $locale = $recipient->getLangueid();
         $template->setLocale($locale);
@@ -212,8 +223,8 @@ class Episciences_Mail_Send
                 $mail->addTag($tag, $value);
             }
         }
-        $mail->setFromReview();
-        $mail->setTo($recipient);
+        $mail->setFromReview($journalOptions['rvCode']);
+        $mail->setTo($recipient, $journalOptions['rvCode']);
         /** @var Episciences_User $ccRep */
         if (!empty($CC)) {
             foreach ($CC as $ccRep) {
@@ -222,7 +233,7 @@ class Episciences_Mail_Send
         }
 
         $mail->setSubject($template->getSubject());
-        $mail->setTemplate($template->getPath(), $template->getKey() . self::TEMPLATE_EXTENSION);
+        $mail->setTemplate($template->getPath(null, $journalOptions['rvCode']), $template->getKey() . self::TEMPLATE_EXTENSION);
 
         // Prise en compte des fichiers attachés
         if (!empty($attachmentsFiles)) {
@@ -241,7 +252,7 @@ class Episciences_Mail_Send
             }
         }
 
-        if (!$mail->writeMail()) {
+        if (!$mail->writeMail($journalOptions['rvCode'], $journalOptions['rvId'])) {
             trigger_error('APPLICATION WARNING: the email (id = ' . $mail->getId() . ') was not sent', E_USER_WARNING);
             return false;
         }

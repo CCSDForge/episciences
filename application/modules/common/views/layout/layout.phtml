@@ -12,7 +12,7 @@ echo $this->doctype('HTML5');
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 
-<head>
+<head <?php if ($controller === "paper" || $controller === "administratepaper"): ?>prefix="og: https://ogp.me/ns# article: http://ogp.me/ns/article# profile: http://ogp.me/ns/profile#"<?php endif;?>>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?php if (APPLICATION_ENV != ENV_PROD) : ?>
         <meta name="robots" content="noindex">

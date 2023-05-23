@@ -202,9 +202,14 @@ class Episciences_Paper_Tei
         $ps->appendChild($xml->createElement('distributor', 'CCSD'));
         $headeravailability = $xml->createElement('availability');
         $headeravailability->setAttribute('status', 'restricted');
-        $headerlicence = $xml->createElement('licence', 'Distributed under a Creative Commons Attribution 4.0 International License');
-        $headerlicence->setAttribute('target', 'http://creativecommons.org/licenses/by/4.0/');
-        $headeravailability->appendChild($headerlicence);
+//        $headerlicence = $xml->createElement('licence', 'Distributed under a Creative Commons Attribution 4.0 International License');
+//        $headerlicence->setAttribute('target', 'http://creativecommons.org/licenses/by/4.0/');
+        $enrichmentLicence = $this->getPaper()->getLicence();
+        if ($enrichmentLicence !== "") {
+            $headerlicence = $xml->createElement('licence', Ccsd_Tools::translate($enrichmentLicence));
+            $headerlicence->setAttribute('target', $enrichmentLicence);
+            $headeravailability->appendChild($headerlicence);
+        }
         $ps->appendChild($headeravailability);
         $headerdate = $xml->createElement('date');
         $headerdate->setAttribute('when', date('Y-m-d', strtotime($this->getPaper()->getPublication_date())));
@@ -253,6 +258,8 @@ class Episciences_Paper_Tei
         $lb = $xml->createElement('listBibl');
         // create biblFull section
         $b = $xml->createElement('biblFull');
+        // create back section
+        $back = $xml->createElement('back');
 
         // add titleStmt section to biblFull
         $b->appendChild($this->generateXmlTextTitleStmt($xml));
@@ -271,6 +278,9 @@ class Episciences_Paper_Tei
         $body->appendChild($lb);
         // add body section to text
         $text->appendChild($body);
+        // add back section to text
+        $back->appendChild($this->generateXmlBack($xml));
+        $text->appendChild($back);
 
         return $text;
     }
@@ -303,9 +313,16 @@ class Episciences_Paper_Tei
 
 
         }
+        $enrichmentAuthors = $this->getPaper()->getAuthorsWithAffiNumeric();
 
-        foreach ($this->getPaper()->getMetadata('authors') as $author) {
-            list($lastname, $firstname) = explode(', ', $author);
+        foreach ($this->getPaper()->getMetadata('authors') as $order => $author) {
+            $firstname = '';
+            $lastname = '';
+            if (str_contains($author, ',')) {
+                [$lastname, $firstname] = explode(', ', $author);
+            } else {
+                $lastname = $author;
+            }
             $aut = $xml->createElement('author');
             $aut->setAttribute('role', 'aut');
             $persName = $xml->createElement('persName');
@@ -313,8 +330,22 @@ class Episciences_Paper_Tei
             $first->setAttribute('type', 'first');
             $persName->appendChild($first);
             $persName->appendChild($xml->createElement('surname', $lastname));
+
             $aut->appendChild($persName);
             $aut->appendChild($xml->createElement('email'));
+
+            if (array_key_exists('orcid',$enrichmentAuthors['authors'][$order])) {
+                $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
+                $orcid->setAttribute('type', 'ORCID');
+                $aut->appendChild($orcid);
+            }
+            if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
+                foreach ($enrichmentAuthors['authors'][$order]['idAffi'] as $index => $affiNum) {
+                    $affiAuthorList = $xml->createElement('affiliation');
+                    $affiAuthorList->setAttribute("ref", "#struct-".array_search($index, array_keys($enrichmentAuthors['affiliationNumeric']), true));
+                    $aut->appendChild($affiAuthorList);
+                }
+            }
             $ts->appendChild($aut);
         }
 
@@ -367,6 +398,7 @@ class Episciences_Paper_Tei
      */
     private function generateXmlTextPublicationStmt(DOMDocument $xml)
     {
+
         $ps = $xml->createElement('publicationStmt');
         $ps->appendChild($xml->createElement('distributor', 'CCSD'));
 
@@ -381,6 +413,14 @@ class Episciences_Paper_Tei
         $id = $xml->createElement('idno', $this->getPaper()->getCitation());
         $id->setAttribute('type', 'ref');
         $ps->appendChild($id);
+
+        $enrichmentLicence = $this->getPaper()->getLicence();
+
+        if ($enrichmentLicence !== ""){
+            $licence = $xml->createElement('licence', Ccsd_Tools::translate($enrichmentLicence));
+            $licence->setAttribute('target', $enrichmentLicence);
+            $ps->appendChild($licence);
+        }
 
         return $ps;
     }
@@ -404,8 +444,16 @@ class Episciences_Paper_Tei
             $analytic->appendChild($title);
         }
 
-        foreach ($this->getPaper()->getMetadata('authors') as $author) {
-            list($lastname, $firstname) = explode(', ', $author);
+        $enrichmentAuthors = $this->getPaper()->getAuthorsWithAffiNumeric();
+
+        foreach ($this->getPaper()->getMetadata('authors') as $order => $author) {
+            $firstname= '';
+            $lastname= '';
+            if (str_contains($author, ',')) {
+                [$lastname, $firstname] = explode(', ', $author);
+            } else {
+                $lastname = $author;
+            }
             $aut = $xml->createElement('author');
             $aut->setAttribute('role', 'aut');
             $persName = $xml->createElement('persName');
@@ -415,6 +463,20 @@ class Episciences_Paper_Tei
             $persName->appendChild($xml->createElement('surname', $lastname));
             $aut->appendChild($persName);
             $aut->appendChild($xml->createElement('email'));
+            if (array_key_exists('orcid',$enrichmentAuthors['authors'][$order])) {
+                $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
+                $orcid->setAttribute('type', 'ORCID');
+                $aut->appendChild($orcid);
+            }
+            if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
+                foreach ($enrichmentAuthors['authors'][$order]['idAffi'] as $index => $affiNum) {
+                    $affiAuthorList = $xml->createElement('affiliation');
+                    $affiAuthorList->setAttribute("ref", "#struct-".array_search($index, array_keys($enrichmentAuthors['affiliationNumeric']), true));
+                    $aut->appendChild($affiAuthorList);
+                }
+            }
+
+
             $analytic->appendChild($aut);
         }
         $biblStruct->appendChild($analytic);
@@ -466,7 +528,18 @@ class Episciences_Paper_Tei
             $doi->setAttribute('type', 'doi');
             $biblStruct->appendChild($doi);
         }
-
+        $enrichmentLinkedData = $this->getPaper()->getLinkedData();
+        foreach ($enrichmentLinkedData as $linkedData) {
+            $relatedItem = $xml->createElement('relatedItem');
+            if (!is_null($linkedData['relationship'])) {
+                $relatedItem->setAttribute('type', $linkedData['relationship']);
+            }
+            $urlTargetLinkedData = Episciences_Paper_DatasetsManager::getUrlLinkedData($linkedData['value'],$linkedData['link']);
+            if ($urlTargetLinkedData !== '') {
+                $relatedItem->setAttribute('target', $urlTargetLinkedData);
+                $biblStruct->appendChild($relatedItem);
+            }
+        }
         $sourceDesc->appendChild($biblStruct);
 
         return $sourceDesc;
@@ -540,6 +613,35 @@ class Episciences_Paper_Tei
 
 
         return $profileDesc;
+    }
+
+    /**
+     * @param DOMDocument $xml
+     * @return DOMElement
+     */
+    private function generateXmlBack(DOMDocument $xml) {
+
+        $listOrg = $xml->createElement('listOrg');
+        $listAffiliations = $this->getPaper()->getAuthorsWithAffiNumeric();
+        if (!empty($listAffiliations["affiliationNumeric"])){
+            foreach ($listAffiliations["affiliationNumeric"] as $affiIndex => $affi) {
+                $org = $xml->createElement('org');
+                $org->setAttribute('xml:id',"struct-".array_search($affiIndex, array_keys($listAffiliations["affiliationNumeric"])));
+
+                if (!is_null($affi['type'])){
+                    $idno = $xml->createElement('idno');
+                    $idno->setAttribute('type', $affi['type']);
+                    $org->appendChild($idno);
+                }
+                $orgName =  $xml->createElement('orgName', $affi['name']);
+
+                $org->appendChild($orgName);
+                $listOrg->appendChild($org);
+
+            }
+        }
+
+        return $listOrg;
     }
 
     /**

@@ -15,13 +15,17 @@
       "URL": "https://zsubmit-env.domain.org",
       "STATUS": 0
     },
+    "AUTH_ADAPTER_NAME": "LemonLDAP",
     "RENDER_ALERT_BANNER": {
       "STATUS" : 0,
       "MESSAGE": {
         "FR": "ALERTE DE MAINTENANCE : Arrêt de service {date} de {h1} à {h2}, la plateforme EPIsciences sera inaccessible ({plus d'informations}).",
         "DEFAULT_LANG": "MAINTENANCE ALERT: Service interruption on {date} from {1} to {h2}, EPIsciences platform will be inaccessible (more information)"
       }
-    }
+    },
+    "SUPPORT": "email-support@platform.org",
+    "CONTACT": "email-support@platform.org",
+    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": []
   },
   "CAS": {
     "HOST": "a_db_host",
@@ -39,6 +43,15 @@
     "SSLVALIDATION": false,
     "SSLCACERT": "/fullPathTo/ca.crt",
     "LOG_PATH": "/fullPathTo/cas.log"
+  },
+  "LEMON_LDAP_SERVICE": {
+    "HOST": "auth.lemon-ldap.example.com",
+    "PORT": 443,
+    "URL": "/lmauth/",
+    "VERSION": "2.0",
+    "SSLVALIDATION": false,
+    "SSLCACERT": "",
+    "LOG_PATH": "/sites/logs/php/lemonLDAP/lemonLDAP.log"
   },
   "SOLR": {
     "HOST": "a_db_host",

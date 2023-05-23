@@ -69,7 +69,7 @@ class getLicenceDataEnrichment extends JournalScript
             $identifier = $value['IDENTIFIER'];
             $repoId = $value['REPOID'];
             $docId = $value['DOCID'];
-            $version = $value['VERSION'];
+            $version = (int) $value['VERSION'];
             $cleanID = str_replace('/', '', $identifier); // ARXIV CAN HAVE "/" in ID
             $identifier = $this->cleanOldArxivId($identifier);
             $fileName = $cleanID . "_licence.json";

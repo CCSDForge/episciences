@@ -240,7 +240,8 @@ class Episciences_PapersManager
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function filterByRole(Zend_Db_Select $select, array $values, string $roleId = 'editor'): Zend_Db_Select
+    private static function
+    filterByRole(Zend_Db_Select $select, array $values, string $roleId = Episciences_User_Assignment::ROLE_EDITOR): Zend_Db_Select
     {
 
         // fetch last paper assignment for each selected roleId
@@ -249,6 +250,18 @@ class Episciences_PapersManager
         $select
             ->where("DOCID IN (?)", $subQuery)
             ->where("DOCID NOT IN (?)", Episciences_UserManager::getSubmittedPapersQuery(Episciences_Auth::getUid())); //git #148 : L'auteur peut deviner les rédcateurs en charge de son article
+
+
+        if ($roleId === Episciences_User_Assignment::ROLE_REVIEWER) {
+
+            $result = self::fetchPapersWithNoConflictsConfirmation();
+
+            if (!empty($result)) {
+                $select->where('DOCID IN (?)', $result);
+            }
+        }
+
+
         return $select;
 
     }
@@ -504,13 +517,22 @@ class Episciences_PapersManager
                 $where .= "OR SID IN ($sectionCondition) ";
             }
 
+
             //Colonnes Contributeurs, Relecteurs et Rédacteurs
+
+            $assignedTo = ['editor'];
+
+            if (!Zend_Registry::get('isCoiEnabled')) {
+                $assignedTo[] = 'reviewer';
+            }
+
+
             $query1 = $db
                 ->select()
                 ->from(['u' => T_USERS], ['USER_ID' => 'UID', 'SCREEN_NAME'])
                 ->joinLeft(['p' => T_PAPERS], 'u.UID = p.UID')
                 ->joinLeft(
-                    ['a' => self::fetchLastPaperAssignmentForSelectedRoleQuery([], ['editor', 'reviewer'])],
+                    ['a' => self::fetchLastPaperAssignmentForSelectedRoleQuery([], $assignedTo)],
                     'u.UID = a.UID_ROLE',
                     ['ITEMID' => 'DOCID']
                 );
@@ -1680,8 +1702,21 @@ class Episciences_PapersManager
         // cc
         $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
 
+        $bccVal = '';
+
+        if (
+            isset($default[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS]) &&
+            ((int)$default[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] === 1)
+        ) {
+            $bccVal = Episciences_Review::forYourInformation($default['id'], Episciences_Acl::ROLE_REVIEWER);
+        }
+
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
+        $form->addElement('text', 'bcc', [
+            'label' => 'BCC',
+            'id' => $formId . '-bcc',
+            'value' => $bccVal
+        ]);
 
         // from
         $form->addElement('text', 'from', [
@@ -2240,7 +2275,7 @@ class Episciences_PapersManager
      * @throws Zend_Date_Exception
      * @throws Zend_Exception
      */
-    public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors): array
+    public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors, array $options = []): array
     {
         $templates = [];
 
@@ -2328,6 +2363,13 @@ class Episciences_PapersManager
                 'body' => $oTemplate->getBody(),
                 'author' => $contributor
             ];
+
+            if (
+                $template_name === 'refuse' &&
+                isset($options[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS])
+            ) {
+                $templates[$template_name][Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $options[Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS];
+            }
         }
 
         $urlHelper = new Zend_View_Helper_Url();
@@ -2483,6 +2525,13 @@ class Episciences_PapersManager
         $identifier = $result['IDENTIFIER'];
         $repoId = (int)$result['REPOID'];
         $version = (int)$result['VERSION'];
+        $paperId = (int)$result['PAPERID'];
+        $doiTrim = [];
+        if (!empty($result['DOI'])) {
+            $doiTrim = trim($result['DOI']);
+        }
+
+        $status = (int)$result['STATUS'];
 
         $repoIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier, $version);
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
@@ -2516,6 +2565,102 @@ class Episciences_PapersManager
 
         }
 
+        Episciences_Paper_AuthorsManager::verifyExistOrInsert($docId, $paperId);
+        //insert licence when save paper
+        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
+        $affectedRows += Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
+
+        ////////Creator OA and HAL
+        $strRepoId = (string)$repoId;
+        if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
+
+            $affectedRows += Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($repoId, $paperId, $identifier, $version);
+            //FUNDING
+            $arrayIdEuAnr = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
+            $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
+            $globalArrayJson = [];
+            if (!empty($decodeHalIdsResp['response']['docs'])) {
+                $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray($decodeHalIdsResp['response']['docs'], $identifier, $globalArrayJson);
+            }
+            $mergeArrayANREU = [];
+            if (!empty($globalArrayJson)) {
+                foreach ($globalArrayJson as $globalPreJson) {
+                    $mergeArrayANREU[] = $globalPreJson[0];
+                }
+                $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::HAL_REPO_ID);
+                $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
+            }
+
+
+        }
+        if (($strRepoId === Episciences_Repositories::ARXIV_REPO_ID || $strRepoId === Episciences_Repositories::ZENODO_REPO_ID || $strRepoId === Episciences_Repositories::HAL_REPO_ID)
+            && !empty($doiTrim)
+            && $status === Episciences_Paper::STATUS_PUBLISHED) {
+            // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
+            // BUT BEFORE CHECK GLOBAL CACHE
+            Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
+            list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+
+            if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
+                //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
+                // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
+                try {
+                    $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                    Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
+                } catch (JsonException $e) {
+
+                    $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
+                    // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg($eMsg);
+                    $setsOpenAireCreator->set(json_encode([""]));
+                    $cacheCreator->save($setsOpenAireCreator);
+                }
+            }
+
+            //we need to refresh cache creator to get the new file
+            ////// CACHE CREATOR ONLY
+            [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+
+            $affectedRows += Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
+
+            ////////Funding OA and HAL
+            list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
+
+            if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
+                // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
+                try {
+                    $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                    Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
+                    //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
+
+                } catch (JsonException $e) {
+                    // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
+                    Episciences_OpenAireResearchGraphTools::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
+                    $setOAFunding->set(json_encode([""]));
+                    $cacheFundingOA->save($setOAFunding);
+                }
+            }
+            list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
+
+            try {
+                $fileFound = json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            } catch (JsonException $jsonException) {
+                Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+            }
+
+            $globalfundingArray = [];
+            if (!empty($fileFound[0])) {
+                $fundingArray = [];
+                $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
+                $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
+                $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+            }
+        }
+
         // Mise à jour des données
         $data['RECORD'] = $record;
         $where['DOCID = ?'] = $docId;
@@ -2538,7 +2683,7 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_PAPERS, ['IDENTIFIER', 'REPOID', 'VERSION'])
+            ->from(T_PAPERS, ['IDENTIFIER', 'REPOID', 'VERSION', 'PAPERID', 'STATUS', 'DOI'])
             ->where('DOCID = ?', $docId);
         return $db->fetchRow($select);
     }
@@ -3117,6 +3262,194 @@ class Episciences_PapersManager
 
     }
 
+    /**
+     * @param Episciences_Paper $paper
+     * @return array
+     */
+    public static function getAuthorsData(Episciences_Paper $paper): array
+    {
+        $enrichedAuthor = Episciences_Paper_AuthorsManager::getArrayAuthorsAffi($paper->getPaperid());
+        $language = $paper->getMetadata('language') ?? 'en';
+        $abstract = $paper->getAbstract($language, true);
+        $googleScholarData = [];
+        if (!empty($enrichedAuthor)) {
+            foreach ($enrichedAuthor as $author) {
+                $googleScholarData[]['citation_author'] = $author['fullname'];
+                if (array_key_exists('orcid', $author)) {
+                    $googleScholarData[array_key_last($googleScholarData)]['citation_author_orcid'] = $author['orcid'];
+                }
+                if (array_key_exists('affiliation', $author)) {
+                    foreach ($author['affiliation'] as $affiliation) {
+                        $googleScholarData[array_key_last($googleScholarData)]['citation_author_institution'][] = $affiliation['name'];
+                    }
+                }
+            }
+        } else {
+            $authors = $paper->getMetadata('authors');
+            if ($authors) {
+                if (is_array($authors)) {
+                    foreach ($authors as $author) {
+                        $googleScholarData[]['citation_author'] = $author;
+                    }
+                } else {
+                    $googleScholarData[]['citation_author'] = $authors;
+                }
+            }
+        }
+
+        return $googleScholarData;
+    }
+
+    public static function headMetaData(Episciences_Paper $paper): array
+    {
+        $language = $paper->getMetadata('language') ?? 'en';
+        $title = $paper->getTitle($language, true);
+        $id = $paper->getDocid();
+        $url = APPLICATION_URL . '/' . $id;
+        $pdf = $url . '/pdf';
+        $abstract = $paper->getAbstract($language, true);
+        $allTitles = $paper->getAllTitles();
+        $listLang = [];
+        foreach ($allTitles as $lang => $title) {
+            if (Zend_Locale::isLocale($lang)) {
+                if ($lang === $language) {
+                    (!empty($listLang)) ? array_unshift($listLang, Episciences_Tools::translateToICU($lang)) : $listLang[] = Episciences_Tools::translateToICU($lang);
+                } else {
+                    $listLang[] = Episciences_Tools::translateToICU($lang);
+                }
+            }
+        }
+        $keywords = $paper->getMetadata('subjects');
+        $allKeywords = [];
+        $journal = RVNAME;
+        $doi = $paper->getDoi();
+        if (is_array($keywords) && !empty($keywords)) {
+            foreach ($keywords as $word) {
+                if (is_array($word)) {
+                    foreach ($word as $wordLang => $itemWord) {
+                        $allKeywords[] = $itemWord;
+                    }
+                } else {
+                    $allKeywords[] = $word;
+                }
+
+            }
+        } elseif ($keywords) {
+            $allKeywords[] = $keywords;
+        }
+
+        $volume = '';
+
+        if ($paper->getVid()) {
+
+            $key = 'volume_' . $paper->getVid() . '_title';
+
+            try {
+                if (Zend_Registry::get('Zend_Translate')->isTranslated($key, false, $language)) {
+                    $volume = Zend_Registry::get('Zend_Translate')->translate('volume_' . $paper->getVid() . '_title', $language);
+                } else {
+                    $volume = Zend_Registry::get('Zend_Translate')->translate('volume_' . $paper->getVid() . '_title');
+                }
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+        $section = "";
+        if ($paper->getSid()) {
+            /* @var $oSection Episciences_Section */
+            $oSection = Episciences_SectionsManager::find($paper->getSid());
+            if ($oSection) {
+                $section = $oSection->getName('en', true);
+            }
+        }
+        $journalSettings = Zend_Registry::get('reviewSettings');
+        $eissn = "";
+        $issn = "";
+        if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') {
+            $eissn = $journalSettings[Episciences_Review::SETTING_ISSN];
+        }
+        if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') {
+            $issn = $journalSettings[Episciences_Review::SETTING_ISSN_PRINT];
+        }
+        $arxivId = '';
+        if ($paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID) {
+            $arxivId = $paper->getIdentifier();
+        }
+        $authors = self::getAuthorsData($paper);
+
+        $contributor = new Episciences_User();
+        $contributor->findWithCAS($paper->getUid());
+        return [
+            'dc' => [
+                'creator' => $authors,
+                'language' => $language,
+                'title' => $title,
+                'type' => 'journal',
+                'identifier' => ['id' => $id, 'url' => $url, 'pdf' => $pdf, 'doi' => $doi],
+                'abstract' => $abstract,
+                'keywords' => $allKeywords,
+                'date' => $paper->getPublication_date(),
+                'relation' => $journal,
+                'volume' => $volume,
+                'publisher' => 'Episciences.org'
+            ],
+            'og' => [
+                'title' => $title,
+                'type' => "article",
+                'article' => [
+                    "published_time" => $paper->getPublication_date(),
+                    "modified_time" => $paper->getModification_date(),
+                    "author" => $authors,
+                    "tag" => $allKeywords
+                ],
+                'locale' => $listLang,
+                'url' => $url,
+                'image' => APPLICATION_URL . '/img/episciences_logo_1081x1081.jpg',
+                'description' => $abstract,
+                'site_name' => "Episciences"
+
+            ],
+            'header' => [
+                'description' => $abstract,
+                'keywords' => $allKeywords,
+            ],
+            'citation' => [
+                'journal_title' => $journal,
+                'author' => $authors,
+                'title' => $title,
+                'publication_date' => $paper->getPublication_date(),
+                'volume' => $volume,
+                'issue' => $section,
+                'doi' => $doi,
+                'fulltext_world_readable' => "",
+                'pdf_url' => $pdf,
+                'issn' => ["eissn" => $eissn, 'issn' => $issn],
+                'arxiv_id' => $arxivId,
+                'language' => $language,
+                'article_type' => "Research Article",
+                'keywords' => $allKeywords,
+                'fundings' => Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($paper->getPaperid()),
+//                'abstract' => $abstract,
+
+            ],
+            "socialMedia" =>
+                [
+                    "twitter" =>
+                        [
+                            "card" => "summary_large_image",
+                            "site" => "@episciences",
+                            "creator" => [
+                                $contributor->getSocialMedias()
+                            ],
+                            "title" => $title,
+                            "description" => $abstract,
+                            "image" => APPLICATION_URL . '/img/episciences_logo_1081x1081.jpg',
+                            "image:alt" => 'Episciences Logo'
+                        ]
+                ]
+        ];
+    }
 
     public static function getOnlyActivatedRepositoriesLabels(int $byRvId = RVID): array
     {
@@ -3169,6 +3502,22 @@ class Episciences_PapersManager
 
         return $select;
 
+    }
+
+    /**
+     * @param int $rvId
+     * @return array
+     */
+    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 0)
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if ($limit !== 0) {
+            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?', $rvId)->order('MODIFICATION_DATE DESC')->limit($limit); // prevent empty row
+        } else {
+            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?', $rvId); // prevent empty row
+        }
+        return $db->fetchAssoc($select);
     }
 
     /**
@@ -3248,6 +3597,45 @@ class Episciences_PapersManager
             'hasRoles' => !$isTmpUser && $reviewer->hasRoles($reviewer->getUid(), $rvId),
             'isCasUserValid' => (bool)$reviewer->getValid()
         ];
+
+    }
+
+
+    /**
+     * @return array
+     * @throws JsonException
+     */
+    private static function fetchPapersWithNoConflictsConfirmation(): array
+    {
+
+        if (!Zend_Registry::get('isCoiEnabled')) {
+            return [];
+        }
+
+        $result = [0]; // The obligation to confirm the absence of a conflict
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $paperIds = Episciences_Paper_ConflictsManager::fetchSelectedCol('paper_id', [
+            'answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'],
+            'by' => Episciences_Auth::getUid()
+        ]);
+
+
+        if (!empty($paperIds)) {
+
+            $sql = $db->select()
+                ->from(T_PAPERS, ['DOCID'])
+                ->where('PAPERID IN (?)', $paperIds)
+                ->where('RVID = ?', RVID);
+
+
+            $result = $db->fetchCol($sql);
+
+
+        }
+
+        return $result;
 
     }
 }
