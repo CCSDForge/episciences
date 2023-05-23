@@ -2,27 +2,27 @@
 $docid = $this->docid;
 ?>
 
-<div class="panel panel-default collapsable">
-    <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Exporter') ?></h2>
-    </div>
-    <div class="panel-body in" style="overflow: visible">
-
+<?php
+$exportUrl = $this->url(['id' => $docid]);
+$exportFormat['bibtex'] = 'BibTeX';
+$exportFormat['tei'] = 'TEI';
+$exportFormat['dc'] = 'Dublin Core';
+$exportFormat['datacite'] = 'OpenAIRE';
+$exportFormat['crossref'] = 'Crossref';
+$exportFormat['doaj'] = 'DOAJ';
+$exportFormat['zbjats'] = 'ZbMATH Open';
+$exportFormat['json'] = 'JSON';
+?>
+<div class="dropdown">
+    <button id="dLabel" class="btn btn-default btn" style="margin-top: 0.5em" type="button" data-toggle="dropdown" aria-haspopup="true"
+            aria-expanded="false">
+        <?= $this->translate('Export métadonnées') ?> <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" aria-labelledby="dLabel">
         <?php
-        $exportUrl = $this->url(['id' => $docid]);
-        $exportFormat['bibtex'] = 'BibTeX';
-        $exportFormat['tei'] = '<abbr title="Text Encoding Initiative">TEI</abbr>';
-        $exportFormat['dc'] = ' <abbr title="Dublin Core">DC</abbr>';
-        $exportFormat['datacite'] = 'OpenAIRE';
-        $exportFormat['crossref'] = 'Crossref';
-        $exportFormat['doaj'] = 'DOAJ';
-        $exportFormat['zbjats'] = 'zbJATS';
-        $exportFormat['json'] = 'JSON';
-
         foreach ($exportFormat as $format => $title) {
-            printf('<a class="btn btn-default btn-sm" target="_blank" href="%s/%s">%s</a>&nbsp;', $exportUrl, $format, $title);
+            printf('<li><a class="" target="_blank" href="%s/%s">%s</a></li>', $exportUrl, $format, $title);
         }
         ?>
-
-    </div>
+    </ul>
 </div>

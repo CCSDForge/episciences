@@ -130,17 +130,17 @@ if ($paper->isPublished()) {
                 foreach ($ogMeta as $key => $meta) {
                     if ($key === 'tag') {
                         foreach ($meta as $tag) {
-                            $this->headMeta()->appendProperty('og:'.$ogKey. ':' .$key, $tag);
+                            $this->headMeta()->appendProperty('og:' . $ogKey . ':' . $key, $tag);
                         }
                         continue;
                     }
                     if ($key === 'author') {
                         foreach ($meta as $profile) {
-                            $this->headMeta()->appendProperty('og:'.$ogKey. ':' . 'author', $profile['citation_author']);
+                            $this->headMeta()->appendProperty('og:' . $ogKey . ':' . 'author', $profile['citation_author']);
                         }
                         continue;
                     }
-                    $this->headMeta()->appendProperty('og:' . $ogKey. ':' .$key, $meta);
+                    $this->headMeta()->appendProperty('og:' . $ogKey . ':' . $key, $meta);
 
                 }
                 break;
@@ -173,7 +173,7 @@ if ($paper->isPublished()) {
             }
             continue;
         }
-        $this->headMeta()->appendName("twitter:".$twitterKey, $twitterMeta);
+        $this->headMeta()->appendName("twitter:" . $twitterKey, $twitterMeta);
     }
     foreach ($headMeta['header'] as $hKey => $headerMeta) {
         switch ($hKey) {
@@ -232,8 +232,8 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
         <div class="panel-body in">
             <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
             <p>
-                <strong><?= $statusMsg ?></strong>
-                <span class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+                <strong><?= $statusMsg ?></strong> <span
+                        class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
                 <?= $this->partial('partials/paper-revision-deadline.phtml', ['revisionDeadline' => $this->revisionDeadline]) ?>
             </p>
         </div>
@@ -346,22 +346,15 @@ if ($this->citations !== '') {
 <?php // export options ***************************************************** ?>
 
 <?php if ($paper->isPublished()) : ?>
-    <div class="row">
-        <div class="col-md-8">
-            <?php echo $this->partial('partials/paper_export.phtml', ['docid' => $paper->getDocid()]); ?>
-        </div>
-        <div class="col-md-4">
-            <?php // share options ***************************************************** ?>
 
-            <div class="panel panel-default collapsable">
-                <div class="panel-heading">
-                    <h2 class="panel-title"><?= $this->translate('Partager') ?></h2>
-                </div>
-                <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper]); ?>
-            </div>
 
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Partager et exporter') ?></h2>
         </div>
+        <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper]); ?>
     </div>
+
 <?php endif; ?>
 
 <?php if ($this->page_count || $this->file_count) : ?>

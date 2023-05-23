@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.40.1 - 2023-05-24
+### Changed
+- Merged Share + Metadata export panels to save space
+
 ## 1.0.40 - 2023-05-23
 ### Changed
 - New WYSIWYG editor version (editing toolbar for text areas) ; bumped from TinyMCE v4 to TinyMCE v6
