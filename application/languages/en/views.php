@@ -1882,6 +1882,8 @@ return [
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    "le nombre total d'articles acceptés" => 'the total number of accepted for publication',
+    "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of papers submitted during this period',
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
     "En un coup d'oeil" => "At a glance",
@@ -1911,6 +1913,8 @@ return [
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
+    "articles acceptés (soumis la même année)" => "accepted articles (submitted in the same year)",
+    'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
     // datasets
     'Données liées' => 'Linked data',
@@ -1949,8 +1953,7 @@ return [
     "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post - acceptance revisions of articles, e . g . requesting new versions of accepted preprints",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION] => "accepted - waiting for author's final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for
-    formatting by copy editors",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for formatting by copy editors",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
@@ -2329,11 +2332,8 @@ return [
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
-    'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
-    'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
 
     //Chanage email address
-
     'Modifier mon courriel' => 'Change my email address',
     "Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes." => "As a first step, you should proceed to merge all your accounts.",
     "Merci de contacter" => 'Please contact',
@@ -2349,7 +2349,13 @@ return [
     "Mail de retour" => "Redirection address",
     "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the failed emails",
     "Adresse de courriel pour le retour des échecs d'envoi" => "Email address for the return of failed mailings",
-
+    'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
+    //API password
+    "Ce mot de passe est réservé à l'usage exclusif de l'" => "This password is for",
+    "Votre mot de passe API a bien été réinitialisé." => "Your API password was successfully reset.",
+    "API Episciences" => 'Episciences API',
+    "Réinitialiser mon mot de passe API" => "Reset my API password",
+    "Réinitialiser le mot de passe API" => "Change your API password",
     // co-author
     "Co-auteur" => "Co-author",
     "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",

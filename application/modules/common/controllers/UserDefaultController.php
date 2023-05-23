@@ -1528,7 +1528,7 @@ class UserDefaultController extends Zend_Controller_Action
 
 
             $infoMsg .= $this->view->translate('Plusieurs comptes ont été crées avec cette adresse email.');
-            
+
             $infoMsg .= '<blockquote>';
             $infoMsg .= $this->view->translate('Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes.');
             $infoMsg .= '<br>';
@@ -1627,5 +1627,59 @@ class UserDefaultController extends Zend_Controller_Action
 
         return $loginsListStr;
 
+    }
+
+    /**
+     * Change User api password
+     * @throws Exception
+     */
+    public function resetapipasswordAction(): void
+    {
+        $form = new Episciences_User_Form_ApiResetPassword();
+        $form->setAction($this->view->url());
+        $form->setActions(true)->createSubmitButton('submit', [
+            'label' => 'Réinitialiser le mot de passe API',
+            'class' => 'btn btn-primary'
+        ]);
+
+        /** @var Zend_Http_ $request */
+
+        $request = $this->getRequest();
+
+        if ($request->isPost()) {
+
+            $posts = $request->getPost();
+
+            if (isset($posts['submit']) && $form->isValid($posts)) {
+
+                /** @var Episciences_User $user */
+                $user = Episciences_Auth::getUser();
+
+                $user->setApiPassword(password_hash($posts['API_PASSWORD'], PASSWORD_DEFAULT));
+
+                $result = $user->save(false, false);
+
+
+                if ($result) {
+
+                    $successMsg = "Votre mot de passe API a bien été réinitialisé";
+
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($successMsg);
+                    $this->redirect('/user/dashboard');
+
+                } else {
+                    $this->view->resultMessage = $this->view->message(
+                        "Échec de la modification. Votre mot de passe API n'a pas été changé.",
+                        Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR
+                    );
+
+                }
+
+                $this->render('change_api_password');
+
+            }
+        }
+
+        $this->view->form = $form;
     }
 }

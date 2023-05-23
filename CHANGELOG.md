@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
   tracking.' AddToAny is not used anymore.
 ### Added
+- Reset password API
+- stats indicator: acceptance rate by year
 - Inbox notifications: new script to initialize submissions.
 - Cancel a DOI assignment for the journal (manual DOI assignment setting only)
 - It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an email

@@ -97,6 +97,13 @@
         "privilege": "member"
       },
       {
+        "label": "Réinitialiser mon mot de passe API",
+        "controller": "user",
+        "action": "resetapipassword",
+        "resource": "user-reset_api_password",
+        "privilege": "member"
+      },
+      {
         "label": "Permissions",
         "controller": "user",
         "action": "permissions",
