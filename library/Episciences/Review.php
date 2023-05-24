@@ -330,7 +330,6 @@ class Episciences_Review
      */
     private static function buildFyiStr(?int $docId, ?string $role = null): string
     {
-        $isCoiEnabled = false;
         $paper = null;
         $cc = [];
         $fyi = '';
@@ -340,45 +339,24 @@ class Episciences_Review
             $paper = Episciences_PapersManager::get($docId, false);
         }
 
-        try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
 
         if ($paper) {
 
-            if ($isCoiEnabled) {
-                $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
-            }
+            if (!$role) {
+                self::checkReviewNotifications($cc);
+                Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
 
-            if ($role === Episciences_Acl::ROLE_REVIEWER) {
+            } elseif ($role === Episciences_Acl::ROLE_REVIEWER) {
+
                 $cc = $paper->getReviewers(null, true);
+                self::fyiReviewersProcess($paper->getPaperid(), $cc);
             }
 
         }
-
-
-        if (!$role) {
-            self::checkReviewNotifications($cc);
-            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
-
-        }
-
 
 
         /** @var Episciences_User $recipient */
         foreach ($cc as $recipient) {
-
-            if (
-                $isCoiEnabled &&
-                !$role &&
-                !in_array($recipient->getUid(), $cUidS, false)
-            ) {
-                continue;
-            }
 
             $fyi .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
             $fyi .= '; ';
@@ -2405,5 +2383,29 @@ class Episciences_Review
         return REVIEW_FILES_PATH . RVCODE . '-crypto.json';
     }
 
+    private static function fyiReviewersProcess(int $paperId, array $cc): void
+    {
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+
+            $cUidS = $isCoiEnabled ?
+                Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paperId]) :
+                [];
+
+            foreach ($cc as $uid => $user) {
+
+                if (in_array($uid, $cUidS, false)) {
+                    unset($cc[$uid]);
+                }
+            }
+
+
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+    }
 
 }
