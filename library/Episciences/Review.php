@@ -363,8 +363,10 @@ class Episciences_Review
 
         if (!$role) {
             self::checkReviewNotifications($cc);
-            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
+        }
 
+        if ($isCoiEnabled) {
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
         }
 
 
