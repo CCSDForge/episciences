@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+ - [RT#186795]: (related to [RT#186373] @see release 1.0.39.15 - 2023-05-22) 
 ### Changed
 - Bump from TinyMCE 4 to TinyMCE 6
 - [278](https://github.com/CCSDForge/episciences/issues/278): In case an article has been refused: new option to allow forward automatically the message sent to the authors explaining the final decision made by the editor in charge.

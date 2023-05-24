@@ -603,6 +603,7 @@ class InboxNotifications extends Script
         }
 
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients), $journal->getRvid());
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
 
         unset($recipients[$paper->getUid()]);

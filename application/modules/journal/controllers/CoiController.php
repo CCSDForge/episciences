@@ -138,6 +138,9 @@ class CoiController extends PaperDefaultController
                 $ccRecipients = [];
                 Episciences_Review::checkReviewNotifications($ccRecipients);
 
+                Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $ccRecipients);
+
+
                 if ($coiReport === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']) {
 
                     if ($paper->getEditor($loggedUid)) {
