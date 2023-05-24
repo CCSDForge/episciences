@@ -2312,6 +2312,8 @@ class AdministratepaperController extends PaperDefaultController
             // Selon les paramètres de la revue, notifier les rédacteurs en chef, secrétaires de rédaction + administrateurs
             Episciences_Review::checkReviewNotifications($recipients);
 
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
             $CC = $paper->extractCCRecipients($recipients);
 
             if (empty($recipients)) {

@@ -919,7 +919,7 @@ class PaperController extends PaperDefaultController
 
         Episciences_Review::checkReviewNotifications($recipients);
 
-        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
 
         $CC = $paper->extractCCRecipients($recipients, $requester->getUid());
@@ -1361,7 +1361,7 @@ class PaperController extends PaperDefaultController
         Episciences_Review::checkReviewNotifications($recipients);
         unset($recipients[$paper->getUid()]);
 
-        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
         $CC = $paper->extractCCRecipients($recipients);
 
@@ -1861,7 +1861,7 @@ class PaperController extends PaperDefaultController
             Episciences_Review::checkReviewNotifications($recipients);
             unset($recipients[$paper->getUid()]);
 
-            $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
             $CC = $paper->extractCCRecipients($recipients);
 
@@ -2695,7 +2695,7 @@ class PaperController extends PaperDefaultController
             Episciences_Review::checkReviewNotifications($recipients);
 
             // [RT#82641]
-            $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
             // url to paper administration page
             $paper_url = $this->buildAdminPaperUrl((int)$report->getDocid());
@@ -3113,6 +3113,8 @@ class PaperController extends PaperDefaultController
 
         $recipients = $this->getAllEditors($paper);
         Episciences_Review::checkReviewNotifications($recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
@@ -3340,6 +3342,8 @@ class PaperController extends PaperDefaultController
         $this->informRecipient($author, $paper, $authorTemplateKey);
 
         Episciences_Review::checkReviewNotifications($recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {

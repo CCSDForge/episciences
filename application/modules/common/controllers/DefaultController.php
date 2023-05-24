@@ -253,35 +253,4 @@ class DefaultController extends Zend_Controller_Action
 
     }
 
-
-    protected function keepOnlyUsersWithoutConflict(Episciences_Paper $paper, array &$recipients = []): void
-    {
-
-        $isCoiEnabled = false;
-
-
-        try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-
-        if ($isCoiEnabled) {
-
-            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
-
-            foreach ($recipients as $recipient) {
-                $rUid = $recipient->getUid();
-
-                if (!in_array($rUid, $cUidS, false)) {
-                    unset($recipients[$rUid]);
-                }
-            }
-
-        }
-
-
-    }
 }

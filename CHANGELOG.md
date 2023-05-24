@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+- [RT#186795]: (related to [RT#186373] @see release 1.0.39.15 - 2023-05-22)
 ### Changed
-
 - tracking.' AddToAny is not used anymore.
 ### Added
 - Reset password API
