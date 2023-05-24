@@ -2383,7 +2383,12 @@ class Episciences_Review
         return REVIEW_FILES_PATH . RVCODE . '-crypto.json';
     }
 
-    private static function fyiReviewersProcess(int $paperId, array $cc): void
+    /**
+     * @param int $paperId
+     * @param array $cc
+     * @return void
+     */
+    private static function fyiReviewersProcess(int $paperId, array &$cc): void
     {
 
         try {
