@@ -3638,4 +3638,45 @@ class Episciences_PapersManager
         return $result;
 
     }
+
+    /**
+     * @param int $paperId
+     * @param array $recipients
+     * @return void
+     */
+    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = []): void
+    {
+
+        $isCoiEnabled = false;
+
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+
+        if ($isCoiEnabled) {
+
+            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paperId]);
+
+            foreach ($recipients as $recipient) {
+
+                if ($recipient->hasOnlyAdministratorRole()) {
+                    continue;
+                }
+
+                $rUid = $recipient->getUid();
+
+                if (!in_array($rUid, $cUidS, false)) {
+                    unset($recipients[$rUid]);
+                }
+            }
+
+        }
+
+
+    }
 }
