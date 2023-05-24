@@ -17,23 +17,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
-- Bump from TinyMCE 4 to TinyMCE 6
-- [278](https://github.com/CCSDForge/episciences/issues/278): In case an article has been refused: new option to allow forward automatically the message sent to the authors explaining the final decision made by the editor in charge.
-- It is now possible to use Lemon LDAP authentication.
-- Share buttons on for published articles now using [sharingbuttons.io](https://sharingbuttons.io/) Code+CSS 'No JavaScript. No
-  tracking.' AddToAny is not used anymore.
+
+- tracking.' AddToAny is not used anymore.
 ### Added
 - Reset password API
 - stats indicator: acceptance rate by year
-- Inbox notifications: new script to initialize submissions.
-- Cancel a DOI assignment for the journal (manual DOI assignment setting only)
-- It is possible to find yourself with a duplicate email address: a new form is now in place for the modification of an email
-- [283](https://github.com/CCSDForge/episciences/issues/283): generic pages for the creation of sites
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
-- [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet and if connected user have informed mastodon in profile he can publish into it 
 - [181](https://github.com/CCSDForge/episciences/issues/181): Administrator have the possiblity to add co-authors (CAS users) to papers and mail them when paper status change and see socials medias if exist, add automatically co authors in mails
-- [95](https://github.com/CCSDForge/episciences/issues/95): Possibility to share published papers via admin paper page with the @username Twitter of the submitter automatically added in tweet
 - Possiblity to indicate if the volume is an act of conferences in the volume creation or modification
+
+## 1.0.40.1 - 2023-05-24
+### Changed
+- Merged Share + Metadata export panels to save space
+
+## 1.0.40 - 2023-05-23
+### Changed
+- New WYSIWYG editor version (editing toolbar for text areas) ; bumped from TinyMCE v4 to TinyMCE v6
+- [278](https://github.com/CCSDForge/episciences/issues/278): In case an article has been refused: new option to allow forward automatically the message sent to the authors explaining the final decision made by the editor in charge.
+- Share buttons for published articles now using [sharingbuttons.io](https://sharingbuttons.io/). We no longer rely on an external service for the feature
+
+### Added
+- Cancel a DOI assignment for the journal. The feature is available only with manual DOI assignment setting and until the DOI has been requested to Crossref.
+- The user profile email update form will detect duplicate accounts and allow you to request merging duplicate accounts
+- [283](https://github.com/CCSDForge/episciences/issues/283): new template pages for journal websites (credits, publishing-policies, ethical-charter)
+- Automated Metadata Enrichment: for authors via HAL XML-TEI when using the metadata update button (OpenAire and HAL Metadata will automatically update)
+- [95](https://github.com/CCSDForge/episciences/issues/95): Twitter and Mastodon support through user profiles. Possibility to share published papers via admin paper page. The feature will automatically mention the @user if they have added their username in their profile
+- Journal may use a specific email alias for bounced emails sent by the platform. Using the new email alias requires a request to Episciences support team for setting up the recipients of the alias.
+
+### Added for upcoming features  
+- COAR Inbox notifications: new script to initialize submissions, pending implementation on HAL
+- It is now possible to use LemonLDAP::NG authentication. Pending the release of the new CCSD LemonLDAP::NG in production.
+
 
 ## 1.0.39.15 - 2023-05-22
 - Fixed [RT#186373]: in some situations, an article can be accepted several times. Now, the first date of acceptance will be taken into account.
