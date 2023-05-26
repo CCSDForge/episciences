@@ -3538,12 +3538,6 @@ class PaperController extends PaperDefaultController
 
         return $paperPwdDetails;
     }
-
-
-    private function notifyAnswerRevision() {
-
-    }
-
-
+    
 }
 
