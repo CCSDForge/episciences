@@ -153,7 +153,18 @@ $paper = $this->paper;
                 </div>
 
                 <?php if (isset($comment['replies'])) : ?>
-                    <?php foreach ($comment['replies'] as $reply) : ?>
+
+                    <?php foreach ($comment['replies'] as $reply) :
+
+                        if ((int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION) {
+                            $href = '/docfiles/comments/' . $this->paper->getDocid();
+                        } else {
+                            $href = '/tmp_files/' . $this->paper->getPaperId();
+
+                        }
+
+
+                        ?>
 
                         <div style="background: #efeff3; padding: 0 5px; margin: 10px 0 10px 30px;" class="small">
                             <?php if ($reply['MESSAGE'] || $reply['FILE']) : ?>
@@ -164,7 +175,7 @@ $paper = $this->paper;
                                     <?php foreach ($files as $index => $file): ?>
                                         <div class="col-sm-10">
                                             &gt;
-                                            <a href="/tmp_files/<?= $this->paper->getPaperId() . '/' . $file; ?>"
+                                            <a href="<?= $href . '/' . $file ?>"
                                                target="_blank">
                                                 <?php
                                                 $dFile = (count($files) === 1) ? $this->translate('Fichier') : $this->translate('Fichier') . ' ' . ((int)$index + 1);
