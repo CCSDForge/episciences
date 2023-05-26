@@ -1356,9 +1356,11 @@ class PaperController extends PaperDefaultController
         Episciences_Review::checkReviewNotifications($recipients);
         unset($recipients[$paper->getUid()]);
 
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
-        $CC = $paper->extractCCRecipients($recipients);
+        $principalRecipient = new Episciences_User();
+        $principalRecipient->find($requestComment->getUid());
+
+        $CC = $paper->extractCCRecipients($recipients, $requestComment->getUid());
 
         if (empty($recipients)) {
             $arrayKeyFirstCC = array_key_first($CC);
@@ -1366,18 +1368,10 @@ class PaperController extends PaperDefaultController
             unset($CC[$arrayKeyFirstCC]);
         }
 
-        if (!empty($recipients)) {
+        // link to manage article page
+        $paper_url = $this->buildAdminPaperUrl($tmpPaper->getDocid());
 
-            // link to manage article page
-            $paper_url = $this->buildAdminPaperUrl($tmpPaper->getDocid());
-            $makeCopy = true;
-            foreach ($recipients as $recipient) {
-                $this->answerRevisionNotifyManager($recipient, $paper, $tmpPaper, $requestComment, $answerComment, $makeCopy, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
-                $makeCopy = false;
-                //reset $CC
-                $CC = [];
-            }
-        }
+        $this->answerRevisionNotifyManager($principalRecipient, $paper, $tmpPaper, $requestComment, $answerComment, true, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
 
 
         if (!$paper->isOwner()) {
@@ -1595,7 +1589,6 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $post = $request->getPost();
-
 
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
@@ -1834,32 +1827,23 @@ class PaperController extends PaperDefaultController
 
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
-            $CC = $paper->extractCCRecipients($recipients);
+            $principalRecipient = new Episciences_User();
+            $principalRecipient->find($requestComment->getUid());
 
-            if (empty($recipients)) {
-                $arrayKeyFirstCC = array_key_first($CC);
-                $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-                unset($CC[$arrayKeyFirstCC]);
-            }
+            $CC = $paper->extractCCRecipients($recipients, $requestComment->getUid());
 
-            if (!empty($recipients)) {
 
-                // link to manage article page
-                $paper_url = $this->view->url([
-                    self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
-                    self::ACTION => 'view',
-                    'id' => $newPaper->getDocid()
-                ]);
+            // link to manage article page
+            $paper_url = $this->view->url([
+                self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
+                self::ACTION => 'view',
+                'id' => $newPaper->getDocid()
+            ]);
 
-                $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
-                $makeCopy = true;
-                foreach ($recipients as $recipient) {
-                    $this->answerRevisionNotifyManager($recipient, $paper, $newPaper, $requestComment, $answerComment, $makeCopy, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
-                    $makeCopy = false;
-                    //reset $CC
-                    $CC = [];
-                }
-            }
+            $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+
+            $this->answerRevisionNotifyManager($principalRecipient, $paper, $newPaper, $requestComment, $answerComment, true, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
+
 
             $newPaperStatusDetails = [self::STATUS => $status];
 
@@ -3554,6 +3538,12 @@ class PaperController extends PaperDefaultController
 
         return $paperPwdDetails;
     }
+
+
+    private function notifyAnswerRevision() {
+
+    }
+
 
 }
 
