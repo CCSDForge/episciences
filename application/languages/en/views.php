@@ -323,7 +323,7 @@ return [
     "Il s'agit d'une ancienne version de %s cet article %s" => "It is an older version of %s this article %s",
     "cet article" => "this article",
     "Télécharger le fichier" => "Download this file",
-    "Visiter la page de l'article" => "Consult the article webpage",
+    "Visiter la page de l'article sur" => "Consult the article webpage on",
     "Cette page a été consultée %s fois." => "This page has been seen %s times.",
     "Le PDF de cet article a été téléchargé %s fois." => "This article's PDF has been downloaded %s times.",
 
