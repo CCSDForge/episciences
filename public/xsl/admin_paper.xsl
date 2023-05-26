@@ -301,9 +301,9 @@
                                     <button class="btn btn-default btn-sm">
                                         <span class="fas fa-external-link-alt" style="margin-right: 5px"/>
                                         <xsl:variable name="string">
-                                            <xsl:text>Visiter la page de l'article</xsl:text>
+                                            <xsl:text>Visiter la page de l'article sur</xsl:text>
                                         </xsl:variable>
-                                        <xsl:value-of select="php:function('Ccsd_Tools::translate', $string)"/>
+                                        <xsl:value-of select="concat(php:function('Ccsd_Tools::translate', $string), ' ', episciences/repoLabel)"/>
                                     </button>
                                 </a>
                             </xsl:if>

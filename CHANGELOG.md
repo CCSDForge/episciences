@@ -18,8 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - [RT#186795]: (related to [RT#186373] @see release 1.0.39.15 - 2023-05-22)
+- Revision requests section: wrong url
 ### Changed
 - tracking.' AddToAny is not used anymore.
+- [#342](https://github.com/CCSDForge/episciences/issues/#342)
+
 ### Added
 - Reset password API
 - stats indicator: acceptance rate by year
