@@ -6,8 +6,9 @@
     }
 </style>
 <?php if ($this->suggestedEditors) : ?>
+<div class="alert alert-info">
     <p><i>
-            <?php echo $this->translate(array("L'auteur a suggéré un rédacteur", "L'auteur a suggéré des rédacteurs", count($this->suggestedEditors))); ?>
+            <?= $this->translate(array("L'auteur a suggéré un rédacteur", "L'auteur a suggéré des rédacteurs", count($this->suggestedEditors)))?>
             :
             <?php
 
@@ -23,7 +24,9 @@
                 }
             }
             ?>
-            .</i></p>
+            .</i>
+    </p>
+</div>
 <?php endif; ?>
 
 <?php if ($this->editorsForm) : ?>
