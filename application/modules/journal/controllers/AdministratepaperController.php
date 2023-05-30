@@ -2211,9 +2211,10 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
+        $this->view->suggestedEditors = Episciences_EditorsManager::getSuggestedEditors($docId);
+
         if ($editors) {
             try {
-                $this->view->suggestedEditors = Episciences_EditorsManager::getSuggestedEditors($docId);
                 $this->view->editors = $editors;
                 $this->view->editorsForm = Episciences_PapersManager::getEditorsForm($docId, $editors);
             } catch (Exception $e) {
