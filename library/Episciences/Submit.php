@@ -1064,7 +1064,6 @@ class Episciences_Submit
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
 
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
         if ($isCoiEnabled) {
 
