@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Conflict of interest: prevent sending email in CC in case of Conflict 
 - Revision requests section: Fixed wrong URL
-- 
+- Author's suggestions: fixed: the choice of an editor for the article was not rendered
+
 ### Changed
 - [#342 Feature request: "Consult the article webpage"](https://github.com/CCSDForge/episciences/issues/342)
 
