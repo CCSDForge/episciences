@@ -1001,6 +1001,9 @@ class Episciences_Submit
 
         $this->saveCoverLetter($paper, $coverLetter);
 
+        // Sauvegarder les options *************************************************************
+        $this->saveAllAuthorSuggestions($data, $result);
+
         $recipients = [];
 
         // Message de confirmation
@@ -1074,10 +1077,6 @@ class Episciences_Submit
         if (!empty($recipients)) {
             self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
         }
-
-
-        // Sauvegarder les options *************************************************************
-        $this->saveAllAuthorSuggestions($data, $result);
 
         if (!empty($result['message'])) {
             return $result;
