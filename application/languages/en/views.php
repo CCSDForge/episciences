@@ -1856,11 +1856,11 @@ return [
     'Remerciements' => 'Acknowledgements',
     'Paramètres généraux (affichés dans le pied de page)' => 'General settings (displayed in the footer)',
     'en cours' => 'pending',
-    'CGU' => 'TOS',
+    'CGU' => 'TOU',
     "Conditions Générales d'Utilisation" => 'Term Of Use',
     'Paramètres supplémentaires' => 'Additional settings',
     'Visibilité des statistiques' => 'Statistics visibility',
-    'Par defaut (cachée)' => 'Default (hidden)',
+    'Par défaut (cachée)' => 'Default (hidden)',
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
