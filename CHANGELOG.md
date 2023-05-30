@@ -15,12 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.40.2 - 2023-05-30
 ### Fixed
-- [RT#186795]: (related to [RT#186373] @see release 1.0.39.15 - 2023-05-22)
-- Revision requests section: wrong url
+- Conflict of interest: prevent sending email in CC in case of Conflict 
+- Revision requests section: Fixed wrong URL
+- 
 ### Changed
-- [#342](https://github.com/CCSDForge/episciences/issues/#342)
+- [#342 Feature request: "Consult the article webpage"](https://github.com/CCSDForge/episciences/issues/342)
 
 ## 1.0.40.1 - 2023-05-24
 ### Changed
