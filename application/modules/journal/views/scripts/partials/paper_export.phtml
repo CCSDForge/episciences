@@ -1,9 +1,8 @@
 <?php
 $docid = $this->docid;
-?>
 
-<?php
-$exportUrl = $this->url(['id' => $docid]);
+$review = Episciences_ReviewsManager::findByRvid(RVID);
+$exportUrl = $review->getUrl() . '/' . $docid;
 $exportFormat['bibtex'] = 'BibTeX';
 $exportFormat['tei'] = 'TEI';
 $exportFormat['dc'] = 'Dublin Core';
@@ -21,7 +20,7 @@ $exportFormat['json'] = 'JSON';
     <ul class="dropdown-menu" aria-labelledby="dLabel">
         <?php
         foreach ($exportFormat as $format => $title) {
-            printf('<li><a class="" target="_blank" href="%s/%s">%s</a></li>', $exportUrl, $format, $title);
+            printf('<li><a rel="noopener" target="_blank" href="%s/%s">%s</a></li>', $exportUrl, $format, $title);
         }
         ?>
     </ul>
