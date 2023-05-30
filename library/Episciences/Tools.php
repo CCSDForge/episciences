@@ -746,14 +746,22 @@ class Episciences_Tools
 
     public static function getAbstractFromIndexedPaper($doc, $locale)
     {
-        if (array_key_exists($locale . '_abstract_t', $doc)) {
-            $abstract = $doc[$locale . '_abstract_t'];
-        } elseif (array_key_exists('language_s', $doc) && array_key_exists($doc['language_s'] . '_abstract_t', $doc)) {
-            $abstract = $doc[$doc['language_s'] . '_abstract_t'];
-        } elseif (is_array($doc['abstract_t'])) {
-            $abstract = $doc['abstract_t'][0];
+        $abstractInLocale = $locale . '_abstract_t';
+        $abstractInDocumentLocale = $doc['language_s'] . '_abstract_t';
+        if (array_key_exists($abstractInLocale, $doc)) {
+            $abstract = $doc[$abstractInLocale];
+        } elseif (array_key_exists('language_s', $doc) && array_key_exists($abstractInDocumentLocale, $doc)) {
+            $abstract = $doc[$abstractInDocumentLocale];
+        } elseif (array_key_exists('abstract_t', $doc)) {
+
+            if (is_array($doc['abstract_t'])) {
+                $abstract = $doc['abstract_t'][0];
+            } else {
+                $abstract = $doc['abstract_t'];
+            }
+
         } else {
-            $abstract = $doc['abstract_t'];
+            $abstract = '';
         }
 
         return static::decodeLatex($abstract);
