@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+
+## 1.0.40.3 - 2023-05-30
+### Fixed
+- Fixed export URLs
+
+### Changed
+- Updates on label and download button size [#342 Feature request: "Consult the article webpage"](https://github.com/CCSDForge/episciences/issues/342)
+ 
 ## 1.0.40.2 - 2023-05-30
 ### Fixed
 - Conflict of interest: prevent sending email in CC in case of Conflict 
