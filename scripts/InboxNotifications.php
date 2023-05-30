@@ -541,7 +541,7 @@ class InboxNotifications extends Script
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    private function notifyAuthorAndEditorialCommitee(Episciences_Review $journal, Episciences_Paper $paper, Episciences_User $author)
+    private function notifyAuthorAndEditorialCommitee(Episciences_Review $journal, Episciences_Paper $paper, Episciences_User $author): void
     {
 
         $rvCode = $journal->getCode();
@@ -603,10 +603,26 @@ class InboxNotifications extends Script
         }
 
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients), $journal->getRvid());
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
+        if ((int)$journal->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) === 1) {
+
+            // conflicts UIDs
+            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]);
+
+            foreach ($recipients as $recipient) {
+
+                $rUid = $recipient->getUid();
+
+                if (array_key_exists($rUid, $cUidS)) {
+                    unset($recipients[$rUid]);
+                }
+            }
+
+        }
 
 
         unset($recipients[$paper->getUid()]);
+
 
         if (!empty($recipients) && !$this->isDebug()) {
 
