@@ -1805,7 +1805,6 @@ return [
     'Rédacteur sans rubrique' => 'Editor without section',
 
     "Exporter" => "Export",
-    "Export métadonnées" => "Export metadata",
     "Partager" => "Share",
     "Partager et exporter" => 'Share and export',
     "Voulez-vous partager la publication ? Rendez-vous" => "Do you want to share the publication? Go",
