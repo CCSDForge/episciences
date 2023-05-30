@@ -744,26 +744,43 @@ class Episciences_Tools
         return static::decodeLatex($title);
     }
 
+    /**
+     * @param $doc
+     * @param $locale
+     * @return array|string|string[]
+     */
     public static function getAbstractFromIndexedPaper($doc, $locale)
     {
         $abstractInLocale = $locale . '_abstract_t';
-        $abstractInDocumentLocale = $doc['language_s'] . '_abstract_t';
+
+        if (array_key_exists('language_s', $doc)) {
+            $documentLocale = $doc['language_s'];
+            $abstractInDocumentLocale = $documentLocale . '_abstract_t';
+        } else {
+            $documentLocale = '';
+            $abstractInDocumentLocale = '';
+        }
+
+        if (array_key_exists('abstract_t', $doc)) {
+            $documentAbstract = $doc['abstract_t'];
+        } else {
+            $documentAbstract = '';
+        }
+
         if (array_key_exists($abstractInLocale, $doc)) {
             $abstract = $doc[$abstractInLocale];
-        } elseif (array_key_exists('language_s', $doc) && array_key_exists($abstractInDocumentLocale, $doc)) {
+        } elseif ($abstractInDocumentLocale !== '' && array_key_exists($abstractInDocumentLocale, $doc)) {
             $abstract = $doc[$abstractInDocumentLocale];
-        } elseif (array_key_exists('abstract_t', $doc)) {
-
-            if (is_array($doc['abstract_t'])) {
-                $abstract = $doc['abstract_t'][0];
+        } elseif ($documentAbstract !== '') {
+            if (is_array($documentAbstract)) {
+                $abstract = $documentAbstract[0];
             } else {
-                $abstract = $doc['abstract_t'];
+                $abstract = $documentAbstract;
             }
 
         } else {
-            $abstract = '';
+            return ''; // mission failed
         }
-
         return static::decodeLatex($abstract);
     }
 
