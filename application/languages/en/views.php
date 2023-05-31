@@ -2312,6 +2312,7 @@ return [
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
 
     //Chanage email address
+    "Modification de l'adresse e-mail d'un autre compte utilisateur" => "Changing the e-mail address of another user account",
 
     'Modifier mon courriel' => 'Change my email address',
     "Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes." => "As a first step, you should proceed to merge all your accounts.",
