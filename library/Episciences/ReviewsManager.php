@@ -149,7 +149,7 @@ class Episciences_ReviewsManager
     {
 
         $jNumber = 0;
-        $journalCollection[$jNumber] = ['Number', 'Title', 'ISSN', 'EISSN', 'Address', 'Accepted-repositories'];
+        $journalCollection[$jNumber] = ['Number', 'Code', 'Title', 'ISSN', 'EISSN', 'Address', 'Accepted-repositories'];
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_REVIEW)->where('STATUS = 1 AND RVID IN (SELECT RVID FROM PAPERS WHERE STATUS=?)', Episciences_Paper::STATUS_PUBLISHED);
@@ -189,7 +189,7 @@ class Episciences_ReviewsManager
             } else {
                 $issnElec = Episciences_View_Helper_FormatIssn::FormatIssn($issnElec);
             }
-            $journalCollection[] = [$jNumber, $oReview->getName(), $issnPrint, $issnElec, $oReview->getUrl(), $acceptedRepositories];
+            $journalCollection[] = [$jNumber, $oReview->getCode(), $oReview->getName(), $issnPrint, $issnElec, $oReview->getUrl(), $acceptedRepositories];
 
         }
 
