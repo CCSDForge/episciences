@@ -1,9 +1,8 @@
 <?php
 $docid = $this->docid;
-?>
 
-<?php
-$exportUrl = $this->url(['id' => $docid]);
+$review = Episciences_ReviewsManager::findByRvid(RVID);
+$exportUrl = $review->getUrl() . '/' . $docid;
 $exportFormat['bibtex'] = 'BibTeX';
 $exportFormat['tei'] = 'TEI';
 $exportFormat['dc'] = 'Dublin Core';
@@ -16,12 +15,12 @@ $exportFormat['json'] = 'JSON';
 <div class="dropdown">
     <button id="dLabel" class="btn btn-default btn" style="margin-top: 0.5em" type="button" data-toggle="dropdown" aria-haspopup="true"
             aria-expanded="false">
-        <?= $this->translate('Export métadonnées') ?> <span class="caret"></span>
+        <?= $this->translate('Exporter') ?> <span class="caret"></span>
     </button>
     <ul class="dropdown-menu" aria-labelledby="dLabel">
         <?php
         foreach ($exportFormat as $format => $title) {
-            printf('<li><a class="" target="_blank" href="%s/%s">%s</a></li>', $exportUrl, $format, $title);
+            printf('<li><a rel="noopener" target="_blank" href="%s/%s">%s</a></li>', $exportUrl, $format, $title);
         }
         ?>
     </ul>

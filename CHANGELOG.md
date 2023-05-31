@@ -14,21 +14,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
 ## Unreleased
 ### Fixed
-- [RT#186795]: (related to [RT#186373] @see release 1.0.39.15 - 2023-05-22)
-- Revision requests section: wrong url
+- it is no longer possible to change the address of a user account without logging in to it.
 ### Changed
 - tracking.' AddToAny is not used anymore.
-- [#342](https://github.com/CCSDForge/episciences/issues/#342)
-
 ### Added
 - Reset password API
 - stats indicator: acceptance rate by year
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
 - [181](https://github.com/CCSDForge/episciences/issues/181): Administrator have the possiblity to add co-authors (CAS users) to papers and mail them when paper status change and see socials medias if exist, add automatically co authors in mails
 - Possiblity to indicate if the volume is an act of conferences in the volume creation or modification
+
+## 1.0.40.3 - 2023-05-30
+### Fixed
+- Fixed export URLs
+
+### Changed
+- Updates on label and download button size [#342 Feature request: "Consult the article webpage"](https://github.com/CCSDForge/episciences/issues/342)
+ 
+## 1.0.40.2 - 2023-05-30
+### Fixed
+- Conflict of interest: prevent sending email in CC in case of Conflict 
+- Revision requests section: Fixed wrong URL
+- Author's suggestions: fixed: the choice of an editor for the article was not rendered
+
+### Changed
+- [#342 Feature request: "Consult the article webpage"](https://github.com/CCSDForge/episciences/issues/342)
 
 ## 1.0.40.1 - 2023-05-24
 ### Changed

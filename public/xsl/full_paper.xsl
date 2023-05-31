@@ -92,7 +92,6 @@
                 </h2>
 
                 <xsl:if test="episciences/paperId and episciences/paperId != 0">
-                    <!-- <xsl:value-of select="$pIdentifier"/> -> -->
                     <xsl:value-of select="episciences/review_code"/>:<xsl:value-of select="episciences/paperId"/> -
                 </xsl:if>
 
@@ -256,7 +255,7 @@
 
                 <xsl:if test="episciences/funding/text() != ''">
                     <div class="small">
-                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Fundings :')"/>
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Financement :')"/>
                         <xsl:value-of select="episciences/funding" disable-output-escaping="yes"/>
                     </div>
                 </xsl:if>
@@ -305,7 +304,7 @@
                                     </xsl:choose>
                                 </xsl:attribute>
                                 <xsl:if test="episciences/notHasHook/text() = '1'">
-                                    <button class="btn btn-default btn-sm" style="margin-right: 5px">
+                                    <button class="btn btn-default btn" style="margin-right: 5px">
                                         <span class="fas fa-file-download" style="margin-right: 5px"/>
                                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Télécharger le fichier')"/>
                                     </button>
@@ -320,7 +319,7 @@
                                     <button class="btn btn-default btn-sm">
                                         <span class="fas fa-external-link-alt" style="margin-right: 5px"/>
                                         <xsl:variable name="string">
-                                            <xsl:text>Visiter la page de l'article sur</xsl:text>
+                                            <xsl:text>Voir la page du document sur</xsl:text>
                                         </xsl:variable>
                                         <xsl:value-of select="concat(php:function('Ccsd_Tools::translate', $string), ' ', episciences/repoLabel)"/>
                                     </button>

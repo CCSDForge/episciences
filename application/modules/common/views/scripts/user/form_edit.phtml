@@ -5,6 +5,19 @@
 /** @var Zend_Form_Element $element */
 foreach ($this->element->getElements() as $element) {
 
+    if ($element->getName() === 'EMAIL') {
+
+        $uid = $this->element->getElements() ['UID']->getValue();
+        $href = '/user/change_account_email?userid=' . $uid;
+        $description = '<a href="' . $href . '"';
+        $description .= ' class="btn btn-xs btn-primary">';
+        $description .= $this->translate('Modifier mon courriel');
+        $description .= '</a>';
+
+        $element->setDescription($description);
+
+    }
+
     if ($element->getDecorator('HtmlTag')) {
         $element->getDecorator('HtmlTag')->setOption("class", "col-md-9 form-group");
     }

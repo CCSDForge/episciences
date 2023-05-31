@@ -1924,7 +1924,15 @@ class Episciences_Paper
         // Création des éléments et ajout au node episciences
         $node->appendChild($dom->createElement('id', $this->getDocid())); // Identifiant Episciences
         $node->appendChild($dom->createElement('paperId', $this->getPaperid())); // Identifiant unique perenne
-        $node->appendChild($dom->createElement('identifier', Episciences_Repositories::getIdentifier($this->getRepoid(), $this->getIdentifier(), $this->getVersion()))); // Identifiant source
+        $repositoryIdentifier = Episciences_Repositories::getIdentifier($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
+
+
+        $oaiPrefixString = 'oai:';
+        if (strpos($repositoryIdentifier, $oaiPrefixString) === 0) {
+            $repositoryIdentifier = substr($repositoryIdentifier, strlen($oaiPrefixString));
+        }
+
+        $node->appendChild($dom->createElement('identifier', $repositoryIdentifier)); // Identifiant source
         $node->appendChild($dom->createElement('doi', $this->getDoi())); // DOI
         $node->appendChild($dom->createElement('hasOtherVersions', ($this->getDocid() != $this->getPaperid()) ? 1 : 0));
         $node->appendChild($dom->createElement('tmp', $this->isTmp()));
@@ -1948,7 +1956,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('isImported', $this->isImported()));
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
-        $node->appendChild($dom->createElement('repoLabel', mb_strtoupper(Episciences_Repositories::getLabel($this->getRepoid()))));
+        $node->appendChild($dom->createElement('repoLabel', Episciences_Repositories::getLabel($this->getRepoid())));
 
 
         //get licence paper

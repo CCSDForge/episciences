@@ -1617,7 +1617,7 @@ class Episciences_Review
                 'placeholder' => '',
 
                 'multioptions' => [
-                    0 => 'Par defaut (cachée)',
+                    0 => 'Par défaut (cachée)',
                     1 => 'Publique',
                     2 => 'Réservée aux administrateurs',
                 ],
