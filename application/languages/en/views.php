@@ -2322,7 +2322,6 @@ return [
     "Échec du changement de courriel" => "Failed to update email",
     "Changement de courriel réussi" => "Email update successfully",
     'Confirmer la modification' => 'Confirm update',
-    "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Modifier mon courriel</a>" => "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Update my email address</a>",
 
     // settings redirect error mail
     "Mail de retour" => "Redirection address",

@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+## Unreleased
+### Fixed
+- it is no longer possible to change the address of a user account without logging in to it.
 
 ## 1.0.40.3 - 2023-05-30
 ### Fixed

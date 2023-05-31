@@ -158,7 +158,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $adapter = null;
             }
 
-            if(!$adapter){
+            if (!$adapter) {
                 die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
 
             }
@@ -293,7 +293,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $auth = null;
             }
 
-            if(!$auth){
+            if (!$auth) {
                 die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
 
             }
@@ -915,19 +915,34 @@ class UserDefaultController extends Zend_Controller_Action
         $request = $this->getRequest();
 
         $form = new Ccsd_User_Form_AccountEditEmail();
+
         $form->setAction($this->view->url());
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Confirmer la modification',
             'class' => 'btn btn-primary'
         ]);
 
+        $userUid = $request->isPost() ? $request->getPost('USER_UID') : $request->getParam('userid');
+        $userUid = (int)$userUid;
 
-        $form->setDefault('EMAIL', Episciences_Auth::getEmail());
-
-        if ($request) {
-            $this->processChangeEmail($request, $form);
+        if ($userUid && Episciences_Auth::isSecretary()) {
+            $user = new Episciences_User();
+            try {
+                $user->find($userUid);
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage(), E_USER_ERROR);
+            }
+        } else {
+            $user = Episciences_Auth::getUser();
         }
 
+        if (!$user->getUid()) {
+            return;
+        }
+
+        $form->setDefault('EMAIL', $user->getEmail());
+        $form->setDefault('USER_UID', $user->getUid());
+        $this->processChangeEmail($request, $form);
 
         $this->view->form = $form;
     }
@@ -1524,11 +1539,9 @@ class UserDefaultController extends Zend_Controller_Action
 
         if ($isNotAllowedToChangeEmail) {
 
-            $infoMsg = '';
 
+            $infoMsg = $this->view->translate('Plusieurs comptes ont été crées avec cette adresse email.');
 
-            $infoMsg .= $this->view->translate('Plusieurs comptes ont été crées avec cette adresse email.');
-            
             $infoMsg .= '<blockquote>';
             $infoMsg .= $this->view->translate('Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes.');
             $infoMsg .= '<br>';
@@ -1559,18 +1572,38 @@ class UserDefaultController extends Zend_Controller_Action
 
         if ($request->isPost() && $request->get('submit') && $form->isValid($post)) {
 
+            $postedUid = (int)$post['USER_UID'];
+
+
             $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE;
 
 
             if (!$isNotAllowedToChangeEmail) {
 
-                /** @var Episciences_User $user */
-
-                $user = Episciences_Auth::getUser();
+                if ($postedUid && Episciences_Auth::isSecretary()) {
+                    $user = new Episciences_User();
+                    try {
+                        $user->find($post['USER_UID']);
+                    } catch (Zend_Db_Statement_Exception $e) {
+                        trigger_error($e->getMessage(), E_USER_ERROR);
+                    }
+                } else {
+                    $user = Episciences_Auth::getUser();
+                }
 
                 $user->setEmail($form->getValue('EMAIL'));
 
                 if ($user->save()) {
+
+                    if (Episciences_Auth::getUid() === $postedUid) {
+                        //If you modify your own account, you update the session
+                        $user = new Episciences_User();
+                        $user->find(Episciences_Auth::getUid());
+                        Episciences_Auth::getInstance()->clearIdentity();
+                        Episciences_Auth::setIdentity($user);
+
+                    }
+
                     $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS;
                 }
 
@@ -1584,7 +1617,15 @@ class UserDefaultController extends Zend_Controller_Action
 
 
             if ($alertType === self::SUCCESS) {
-                $this->redirect($fController . '/' . $fAction);
+                $url = $fController . '/' . $fAction;
+
+                if ($postedUid) {
+
+                    $url .= '?userid=' . $postedUid;
+
+                }
+
+                $this->redirect($url);
             }
 
 
