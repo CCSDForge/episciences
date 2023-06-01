@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.40.5 - 2023-06-01
+### Fixed
+- Fixed: #352 Augmenter la taille du champ adresse Mastodon / Increase the size of the Mastodon address field
+
 ## 1.0.40.4 - 2023-05-31
 ### Changed
 - Administrator are now able to change the address of a user account for support.
