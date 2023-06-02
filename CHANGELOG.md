@@ -14,9 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+## 1.0.40.5 - 2023-06-01
 ### Fixed
-- it is no longer possible to change the address of a user account without logging in to it.
+- Fixed: #352 Augmenter la taille du champ adresse Mastodon / Increase the size of the Mastodon address field
+
+## 1.0.40.4 - 2023-05-31
+### Changed
+- Administrator are now able to change the address of a user account for support.
+- Export of metadata: use relative URLs
+
+### Added
+- API: list of publishing journals, added journal 'Code' in result
 
 ## 1.0.40.3 - 2023-05-30
 ### Fixed
