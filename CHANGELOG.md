@@ -15,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-### Fixed
-- it is no longer possible to change the address of a user account without logging in to it.
 ### Changed
 - tracking.' AddToAny is not used anymore.
 ### Added
@@ -25,6 +23,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enrichment of authors via HAL TEI via the metadata update button (get OpenAire Metadatas and HAL TEI Metadatas) and via script + refactoring of enrichment scripts
 - [181](https://github.com/CCSDForge/episciences/issues/181): Administrator have the possiblity to add co-authors (CAS users) to papers and mail them when paper status change and see socials medias if exist, add automatically co authors in mails
 - Possiblity to indicate if the volume is an act of conferences in the volume creation or modification
+
+
+
+
+
+## 1.0.40.5 - 2023-06-01
+### Fixed
+- Fixed: #352 Augmenter la taille du champ adresse Mastodon / Increase the size of the Mastodon address field
+
+## 1.0.40.4 - 2023-05-31
+### Changed
+- Administrator are now able to change the address of a user account for support.
+- Export of metadata: use relative URLs
+
+### Added
+- API: list of publishing journals, added journal 'Code' in result
 
 ## 1.0.40.3 - 2023-05-30
 ### Fixed

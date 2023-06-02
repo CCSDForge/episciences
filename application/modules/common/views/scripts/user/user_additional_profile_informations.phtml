@@ -1,20 +1,22 @@
-<?php if($this->socialMedias || $this->webSites ): ?> <br> <?php endif ?>
+<?php if ($this->socialMedias || $this->webSites): ?> <br> <?php endif ?>
 <?php if (!empty($this->socialMedias)) : ?>
     <?php foreach ($this->socialMedias as $socialMedia): ?>
         <?php if (!empty($socialMedia)) : ?>
-        <?php $socialMedia = $this->escape($socialMedia) ?>
-            &nbsp;<small>
-            <?php if (substr_count($socialMedia, "@") > 1) : ?>
-                <a href="<?= Episciences_Tools::getMastodonUrl($socialMedia) ?>" target="_blank">
-                    <span class="fa-brands fa-mastodon" style="margin-right: 5px;"></span>
-                    <?= $socialMedia ?>
-                </a>
-            <?php else: ?>
-                <a href="https://twitter.com/<?= $socialMedia ?>" target="_blank">
-                    <span class="fa-brands fa-twitter" style="margin-right: 5px;"></span>
-                    <?= $socialMedia ?>
-                </a>
-            <?php endif; ?>
+            <?php $socialMedia = $this->escape($socialMedia) ?>
+            <?php $socialMediaTruncated = Ccsd_Tools_String::truncate($socialMedia, 40, "&hellip;") ?>
+            <small>
+                <?php if (substr_count($socialMedia, "@") > 1) : ?>
+                    <span class="fa-brands fa-mastodon"></span>
+                    <a rel="noopener" class="mastodon" href="<?= Episciences_Tools::getMastodonUrl($socialMedia) ?>"
+                       target="_blank">
+                        <?= $socialMediaTruncated ?>
+                    </a>
+                <?php else: ?>
+                    <a rel="noopener" class="twitter" href="https://twitter.com/<?= $socialMedia ?>" target="_blank"> <span
+                                class="fa-brands fa-twitter"></span>
+                        <?= $socialMediaTruncated ?>
+                    </a>
+                <?php endif; ?>
             </small>
             <br>
         <?php endif; ?>
@@ -24,8 +26,8 @@
 <?php if (!empty($this->webSites)) : ?>
 
     <?php foreach ($this->webSites as $webSite): ?>
-        &nbsp;<small>
-            <a href="<?= $this->escape($webSite) ?>" target="_blank"> <span class="fas fa-link" style="margin-right: 5px;"></span></a><?= $this->escape($webSite) ?>
+        &nbsp;<small> <a href="<?= $this->escape($webSite) ?>" target="_blank"> <span class="fas fa-link"
+                                                                                      style="margin-right: 5px;"></span></a><?= $this->escape($webSite) ?>
         </small>
         <br>
     <?php endforeach; ?>
