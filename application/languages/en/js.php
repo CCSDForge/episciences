@@ -12,6 +12,7 @@ return [
     'Confirmer' => 'Confirm',
     "Voulez-vous supprimer ce fichier ?" => "Do you want to delete this file?",
     "cliquez ICI" => "click HERE",
+    "Partager"=>"Share",
     "Pour répondre à cette demande" => "To answer this request",
     "Voulez-vous déposer une nouvelle version ?" => "Do you want to upload a new version?",
     "Le comité éditorial demande que vous apportiez des modifications à votre article." => "The editorial committee asks that you bring modifications to your article.",

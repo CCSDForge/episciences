@@ -1826,7 +1826,7 @@ return [
     "Exporter" => "Export",
     "Partager" => "Share",
     "Partager et exporter" => 'Share and export',
-    "Voulez-vous partager la publication ? Rendez-vous" => "Do you want to share the publication? Go",
+    "Vous pouvez partager cette publication" => "You can share this publication",
     "ici" => 'here',
     "Statistiques de consultation" => "Consultation statistics",
 
@@ -2350,7 +2350,7 @@ return [
     'Confirmer la modification' => 'Confirm update',
 
     // settings redirect error mail
-    "Mail de retour" => "Redirection address",
+    "Courriel de retour'" => "Redirection address",
     "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the bounced emails",
     "Adresse de courriel pour le retour des échecs d'envoi" => "E-mail address for the return of failed deliveries (bounced emails)",
     //API password
@@ -2362,10 +2362,10 @@ return [
     // co-author
     "Co-auteur" => "Co-author",
     "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
-    "l'utilisateur est déjà co-auteur pour ce papier" => "The user is already a co-author for this paper",
+    "L'utilisateur est déjà co-auteur de ce document" => "The user is already a co-author for this document",
     "Supprimer ce co-auteur" => "Delete this co-author",
     "Envoyer une copie de ce message aux co-auteur" => "Send a copy of this message to the co-authors",
-    "Co-auteur retiré" => "Co-Autor removed",
-    "L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences et co-auteur du papier" => "The user <strong>%%RECIPIENT_SCREEN_NAME%%</strong> has been added on Episciences and added as co-author of the paper",
+    "Co-auteur retiré" => "Co-Author removed",
+    "L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté en tant que co-auteur du document" => "The user <strong>%%RECIPIENT_SCREEN_NAME%%</strong> has been added as co-author of the document",
     "Ajouter un co-auteur" => "Add a co-author"
 ];

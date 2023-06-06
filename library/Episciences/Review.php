@@ -1587,7 +1587,7 @@ class Episciences_Review
     {
         // Possibility to share the paper password for arxiv submissions
         return $form->addElement('select', self::SETTING_CONTACT_ERROR_MAIL, [
-                'label' => 'Mail de retour',
+                'label' => 'Courriel de retour',
                 'description' => "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels",
                 'value' => 0,
                 'multiOptions' => [
