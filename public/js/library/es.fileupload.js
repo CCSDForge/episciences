@@ -1,5 +1,7 @@
 $(function () {
 
+    let $docId = null;
+
     if (typeof paperCommentId  === 'undefined' || paperCommentId === 0 ) {
         paperCommentId = null;
     }
@@ -16,7 +18,26 @@ $(function () {
         formData.path = isHiddenPath ? $hiddenPath.val() : ''
         formData.docId = isHiddenPath ? $hiddenPath.attr('docId') : 0;
         formData.paperId = (isHiddenPath && $hiddenPath.attr('paperId')) ? $hiddenPath.attr('paperId') : 0;
+
+    } else if ($('#docid').length > 0 || $('input:hidden[name="docid"]')) {
+
+        if ($('#docid').length > 0) {
+
+            $docId = $('#docid');
+
+        } else if ($('input:hidden[name="docid"]').length > 0) {
+
+            $docId = $('input:hidden[name="docid"]');
+
+        }
+
+        if($docId){
+            formData.docId = $docId.val();
+        }
+
+
     }
+
 
     $('.upload_button').on('click', function () {
         // Simulate a click on the file input button

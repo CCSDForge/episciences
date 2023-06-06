@@ -495,7 +495,7 @@ class Episciences_Reviewer extends Episciences_User
         $this->setReviewings($reviewings);
     }
 
-    public function getComments($docId): array
+    public function getComments(int $docId): array
     {
         if (empty($this->_comments)) {
             $this->_comments = Episciences_CommentsManager::getList($docId, ['UID' => $this->getUid()]);

@@ -294,7 +294,7 @@ class PaperController extends PaperDefaultController
             Episciences_CommentsManager::TYPE_INFO_ANSWER,
             Episciences_CommentsManager::TYPE_CONTRIBUTOR_TO_REVIEWER
         ]];
-        $comments = Episciences_CommentsManager::getList($docId, $settings);
+        $comments = Episciences_CommentsManager::getList($paper->getDocid(), $settings);
         $this->view->comments = $comments;
 
 
@@ -357,7 +357,7 @@ class PaperController extends PaperDefaultController
             ]
         ];
 
-        $revision_requests = Episciences_CommentsManager::getRevisionRequests($docId, $settings);
+        $revision_requests = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), $settings);
 
         // if revision requests were made on previous versions, fetch them too
         $previousVersions = $paper->getPreviousVersions();
@@ -412,7 +412,7 @@ class PaperController extends PaperDefaultController
             Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION
         ]];
 
-        $copyEditingDemands = Episciences_CommentsManager::getList($docId, $copyEditingSettings);
+        $copyEditingDemands = Episciences_CommentsManager::getList($paper->getDocid(), $copyEditingSettings);
 
         $this->view->copyEditingDemands = $copyEditingDemands;
 
@@ -751,7 +751,14 @@ class PaperController extends PaperDefaultController
         $result = $comment->save();
 
         if ($comment->isCopyEditingComment()) {
-            $comment->setFilePath(REVIEW_FILES_PATH . $docId . '/copy_editing_sources/' . $comment->getPcid() . '/');
+            $cePath = REVIEW_FILES_PATH . $docId;
+            $cePath .= DIRECTORY_SEPARATOR;
+            $cePath .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+            $cePath .= DIRECTORY_SEPARATOR;
+            $cePath .= $comment->getPcid();
+            $cePath .= DIRECTORY_SEPARATOR;
+
+            $comment->setFilePath($cePath);
         }
 
         return !$result ? false : $comment;
@@ -768,6 +775,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception|JsonException
+     * @throws Exception
      */
     private function saveAuthorFormattingAnswer(Episciences_Paper $paper, int $commentType, int $parentCommentId, bool $sendMail = true): bool
     {
@@ -789,7 +797,7 @@ class PaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $attachments = $request->getPost('attachments'); // see js/library/es.fileupload.js
+        $attachments = $request->getPost(Episciences_Mail_Send::ATTACHMENTS); // see js/library/es.fileupload.js
 
         $templateAuthorType = '';
         $templateEditorType = '';
@@ -818,9 +826,15 @@ class PaperController extends PaperDefaultController
         $cAnswer->logComment();
 
         // path des sources
-        $parentPath = REVIEW_FILES_PATH . $cAnswer->getDocid() . '/copy_editing_sources/' . $cAnswer->getParentid() . '/';
+        $parentPath = REVIEW_FILES_PATH . $cAnswer->getDocid();
+        $parentPath .= DIRECTORY_SEPARATOR;
+        $parentPath .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+        $parentPath .= DIRECTORY_SEPARATOR;
+        $parentPath .= $cAnswer->getParentid();
+        $parentPath .= DIRECTORY_SEPARATOR;
+
         $path = $cAnswer->getFilePath();
-        $mailPath = REVIEW_FILES_PATH . 'attachments/';
+        $mailPath = Episciences_Tools::getAttachmentsPath((string)$paper->getPaperid());
 
 
         // Le fichier attaché à la réponse se trouve dans un autre path car au moment de la réponse, on a pas encore l'id de la réponse.
@@ -842,7 +856,7 @@ class PaperController extends PaperDefaultController
             // Fichier attachés aux mails pointe vers REVIEW_FILES_PATH . 'attachments/'
             if ($sendMail) {
                 $file = Episciences_Tools::filenameRotate($mailPath, $file);
-                Episciences_Tools::cpFiles((array)$file, $parentPath, $mailPath);
+                Episciences_Tools::cpFiles((array)$file, $parentPath, $mailPath, true);
             }
 
             unlink($parentPath . $file);
@@ -1207,7 +1221,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-        $attachments = $post['attachments']; // see js/library/es.fileupload.js
+        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS]; // see js/library/es.fileupload.js
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
@@ -1776,7 +1790,14 @@ class PaperController extends PaperDefaultController
                 $file = $answerComment->getFile();
                 // Copier le fichier
                 if ($file) {
-                    $path = REVIEW_FILES_PATH . $docId . '/copy_editing_sources/' . $answerComment->getPcid() . '/';
+
+                    $path = REVIEW_FILES_PATH . $docId;
+                    $path .= DIRECTORY_SEPARATOR;
+                    $path .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+                    $path .= DIRECTORY_SEPARATOR;
+                    $path .= $answerComment->getPcid();
+                    $path .= DIRECTORY_SEPARATOR;
+
                     Episciences_Tools::cpFiles((array)$answerComment->getFile(), $answerComment->getFilePath(), $path);
                 }
 
@@ -2197,7 +2218,7 @@ class PaperController extends PaperDefaultController
                 Episciences_CommentsManager::TYPE_CONTRIBUTOR_TO_REVIEWER
             ]];
 
-            $comments = Episciences_CommentsManager::getList($docId, $settings);
+            $comments = Episciences_CommentsManager::getList($paper->getDocid(), $settings);
             $this->view->comments = $comments;
 
             $comment_form = Episciences_CommentsManager::getForm();

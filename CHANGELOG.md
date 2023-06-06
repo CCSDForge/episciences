@@ -82,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   forward automatically the message sent to the authors explaining the final decision made by the editor in charge.
 - Share buttons for published articles now using [sharingbuttons.io](https://sharingbuttons.io/). We no longer rely on
   an external service for the feature
-
+  
 ### Added
 
 - Cancel a DOI assignment for the journal. The feature is available only with manual DOI assignment setting and until

@@ -268,12 +268,7 @@ class AdministratemailController extends Zend_Controller_Action
 
     /**
      * mailing module
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Form_Exception
-     * @throws Zend_Json_Exception
-     * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
+     * @throws Exception
      */
     public function sendAction(): void
     {
@@ -283,14 +278,18 @@ class AdministratemailController extends Zend_Controller_Action
 
         $ajax = (bool)$request->getParam('ajax');
 
+        $this->checkEmailAttachmentsPath($ajax || isset($post['in_modal'])); //on submission of the form: $ajax === false
+
         // Git #61
         $docId = (int)$request->get('paper');
 
         if ($ajax) {
+
             $this->_helper->layout->disableLayout();
             $to_enabled = false;
             $button_enabled = false;
         } else {
+
             $to_enabled = true;
             $button_enabled = true;
         }
@@ -368,12 +367,11 @@ class AdministratemailController extends Zend_Controller_Action
      * TODO: move this outside of the controller ?
      * @param array $post
      * @return string|void
-     * @throws Zend_Exception
-     * @throws Zend_Json_Exception
-     * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     private function sendMail(array $post)
     {
+        $paper = null;
 
         $isInModal = isset($post['in_modal']) && $post['in_modal']; // true: sent from the paper administration page
 
@@ -384,13 +382,15 @@ class AdministratemailController extends Zend_Controller_Action
 
         // Contrôle des erreurs
         $errors = [];
-        $isEmptyMail = empty($post['subject']) && empty($post['content']) && empty($post['attachments']);
+        $isEmptyMail = empty($post['subject']) && empty($post['content']) && empty($post[Episciences_Mail_Send::ATTACHMENTS]);
 
         if ($checkedRecipients['isDetectedErrors']) {
             $errors[] = "Veuillez saisir au moins un destinataire";
         }
 
         if (!empty($errors) || $isEmptyMail) {
+
+            Episciences_Tools::deleteDir(Episciences_Tools::getAttachmentsPath());
 
             $message = '<p><strong>' . $selfView->translate("Votre message n'a pas pu être envoyé :") . '</strong></p>';
 
@@ -428,7 +428,7 @@ class AdministratemailController extends Zend_Controller_Action
         $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
         $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
 
-        if (empty($content) && empty($post['attachments'])) {
+        if (empty($content) && empty($post[Episciences_Mail_Send::ATTACHMENTS])) {
             $content = 'Empty message.';
         }
 
@@ -497,10 +497,17 @@ class AdministratemailController extends Zend_Controller_Action
             }
         }
 
-        if (isset($post['attachments'])) {
+        if (isset($post['docid'])) {
+            /** @var Episciences_Paper $paper */
+            $paper = Episciences_PapersManager::get((int)$post['docid']);
+        }
+
+        $paperId = $paper ? (string)$paper->getPaperid() : null;
+
+        if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($post['attachments']);
-            $path = REVIEW_FILES_PATH . 'attachments/';
+            $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
+            $path = Episciences_Tools::getAttachmentsPath();
             foreach ($attachments as $attachment) {
                 $filepath = $path . $attachment;
                 if (file_exists($filepath)) {
@@ -514,10 +521,8 @@ class AdministratemailController extends Zend_Controller_Action
 
             $message = '<strong>' . $selfView->translate("Votre e-mail a bien été envoyé.") . '</strong>';
 
-            if (isset($post['docid'])) {
-                /** @var Episciences_Paper $paper */
-                $paper = Episciences_PapersManager::get((int)$post['docid']);
-                if ($paper) {
+            if ($paper) {
+
                     try {
                         $paper->log(
                             Episciences_Paper_Logger::CODE_MAIL_SENT,
@@ -527,10 +532,12 @@ class AdministratemailController extends Zend_Controller_Action
                     } catch (Exception $e) {
                         Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.mail');
                     }
-                }
+
             } else {
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
             }
+
+            Episciences_Auth::resetCurrentAttachmentsPath();
 
 
         } else {
@@ -956,6 +963,45 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         return $docIds;
+
+    }
+
+    /**
+     * Check the current path for email attachments saved in session or randomly generated
+     * @throws Exception
+     */
+    private function checkEmailAttachmentsPath(bool $isAjax): void
+    {
+
+        $currentAttachmentPath = Episciences_Tools::getAttachmentsPath();
+
+         $subStr = substr(
+                $currentAttachmentPath,
+                mb_strlen(REVIEW_FILES_PATH),
+                mb_strlen(Episciences_Mail_Send::ATTACHMENTS)
+         );
+
+
+
+        $isAttachments = $subStr === Episciences_Mail_Send::ATTACHMENTS;
+
+        if (!$isAttachments) {
+            Episciences_Auth::resetCurrentAttachmentsPath();
+        } elseif ($isAjax) {
+
+            if (strpos($currentAttachmentPath, Episciences_Mail_Send::FROM_MAILING) !== false) {
+                Episciences_Auth::resetCurrentAttachmentsPath();
+            }
+
+        } else {
+
+            $subStr = substr($currentAttachmentPath, mb_strlen(REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . DIRECTORY_SEPARATOR));
+
+            if (Episciences_Tools::startsWithNumber($subStr)) {
+                Episciences_Auth::resetCurrentAttachmentsPath();
+            }
+
+        }
 
     }
 }

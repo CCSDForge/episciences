@@ -5,6 +5,8 @@ class Episciences_Mail_Send
     public const ENCODING_TYPE = 'UTF-8';
     public const TEMPLATE_EXTENSION = '.phtml';
     public const DEFAULT_LANG = 'en';
+    public const FROM_MAILING = 'mailing';
+    public const ATTACHMENTS = 'attachments';
 
     /**
      * mailing form
@@ -194,13 +196,14 @@ class Episciences_Mail_Send
      * @param Episciences_Paper|null $paper
      * @param int|null $authUid
      * @param array $attachmentsFiles ['key' => file name, 'value' => 'file path']
-     * @param bool $makeACopy : si true faire une copie, car le path != REVIEW_FILES_PATH . 'attachments/'
+     * @param bool $makeACopy : si true faire une copie
      * @param array $CC : cc recipients
      * @param array|null $journalOptions
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     public static function sendMailFromReview (
         Episciences_User  $recipient,
@@ -254,9 +257,16 @@ class Episciences_Mail_Send
         $mail->setSubject($template->getSubject());
         $mail->setTemplate($template->getPath(null, $journalOptions['rvCode']), $template->getKey() . self::TEMPLATE_EXTENSION);
 
-        // Prise en compte des fichiers attachés
+        // Consideration of attached files
         if (!empty($attachmentsFiles)) {
-            $attachmentPath = REVIEW_FILES_PATH . 'attachments/';
+            try {
+                // if necessary, we force the creation of folders (e.g. copy editing: the files are stored in a
+                // different path from the attached files)
+                $attachmentPath = Episciences_Tools::getAttachmentsPath($paper->getPaperid(), true);
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
             foreach ($attachmentsFiles as $fileName => $filePath) {
                 if (file_exists($filePath . $fileName)) {
                     if (!$makeACopy) {
