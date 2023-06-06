@@ -933,7 +933,7 @@ class PaperController extends PaperDefaultController
 
         Episciences_Review::checkReviewNotifications($recipients);
 
-        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
 
         $CC = $paper->extractCCRecipients($recipients, $requester->getUid());
@@ -1230,7 +1230,7 @@ class PaperController extends PaperDefaultController
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
-
+        $coAuthors = $paper->getCoAuthors();
         // revision request detail
         $requestId = $request->getQuery('pcid');
         $requestComment = new Episciences_Comment;
@@ -1365,14 +1365,21 @@ class PaperController extends PaperDefaultController
             $recipients += $this->reassignPaperManagers($editors, $tmpPaper);
         }
 
+        // reassign co authors
+        if (!empty($coAuthors)) {
+            Episciences_User_AssignmentsManager::reassignPaperCoAuthors($coAuthors, $tmpPaper);
+        }
+
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
 
         Episciences_Review::checkReviewNotifications($recipients);
         unset($recipients[$paper->getUid()]);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
-        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+        $principalRecipient = new Episciences_User();
+        $principalRecipient->find($requestComment->getUid());
 
-        $CC = $paper->extractCCRecipients($recipients);
+        $CC = $paper->extractCCRecipients($recipients, $requestComment->getUid());
 
         if (empty($recipients)) {
             $arrayKeyFirstCC = array_key_first($CC);
@@ -1380,19 +1387,29 @@ class PaperController extends PaperDefaultController
             unset($CC[$arrayKeyFirstCC]);
         }
 
-        if (!empty($recipients)) {
-
             // link to manage article page
             $paper_url = $this->buildAdminPaperUrl($tmpPaper->getDocid());
-            $makeCopy = true;
-            foreach ($recipients as $recipient) {
-                $this->answerRevisionNotifyManager($recipient, $paper, $tmpPaper, $requestComment, $answerComment, $makeCopy, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
-                $makeCopy = false;
-                //reset $CC
-                $CC = [];
-            }
-        }
+            $this->answerRevisionNotifyManager($principalRecipient, $paper, $tmpPaper, $requestComment, $answerComment, true, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
 
+            // link to public article page
+        $publicUrl = $this->view->url([
+            self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
+            self::ACTION => 'view',
+            'id' => $tmpPaper->getDocid()
+        ]);
+        // empty coauthors if user don't want copy mail for co authors
+        if (isset($post['copycoauthor']) && $post['coAuthors'] === 0) {
+            $coAuthors = "";
+        }
+        Episciences_Mail_Send::sendMailFromReview(
+            $tmpPaper->getSubmitter(),
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR,
+            [
+                Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $tmpPaper->getDocid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $tmpPaper->getTitle(),
+            ], $tmpPaper, null, [], false, $coAuthors
+        );
 
         if (!$paper->isOwner()) {
             $url = $this->view->url(
@@ -1610,7 +1627,6 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -1693,6 +1709,7 @@ class PaperController extends PaperDefaultController
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
         $copyEditors = $paper->getCopyEditors(true, true);
+        $coAuthors = $paper->getCoAuthors();
 
         // new version init
         $newPaper = clone($paper);
@@ -1847,46 +1864,57 @@ class PaperController extends PaperDefaultController
                 $this->reassignPaperManagers($copyEditors, $newPaper, Episciences_User_Assignment::ROLE_COPY_EDITOR);
             }
 
+            // reassign co authors
+            if (!empty($coAuthors)) {
+                Episciences_User_AssignmentsManager::reassignPaperCoAuthors($coAuthors, $newPaper);
+            }
+
             $recipients = $editors + $copyEditors;
 
             //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
             Episciences_Review::checkReviewNotifications($recipients);
             unset($recipients[$paper->getUid()]);
 
-            $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
-            $CC = $paper->extractCCRecipients($recipients);
+            $principalRecipient = new Episciences_User();
+            $principalRecipient->find($requestComment->getUid());
 
-            if (empty($recipients)) {
-                $arrayKeyFirstCC = array_key_first($CC);
-                $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-                unset($CC[$arrayKeyFirstCC]);
-            }
+            $CC = $paper->extractCCRecipients($recipients, $requestComment->getUid());
 
-            if (!empty($recipients)) {
 
-                // link to manage article page
-                $paper_url = $this->view->url([
-                    self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
-                    self::ACTION => 'view',
-                    'id' => $newPaper->getDocid()
-                ]);
+            // link to manage article page
+            $paper_url = $this->view->url([
+                self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
+                self::ACTION => 'view',
+                'id' => $newPaper->getDocid()
+            ]);
 
-                $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
-                $makeCopy = true;
-                foreach ($recipients as $recipient) {
-                    $this->answerRevisionNotifyManager($recipient, $paper, $newPaper, $requestComment, $answerComment, $makeCopy, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
-                    $makeCopy = false;
-                    //reset $CC
-                    $CC = [];
-                }
-            }
+            $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+
+            $this->answerRevisionNotifyManager($principalRecipient, $paper, $newPaper, $requestComment, $answerComment, true, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
+
 
             $newPaperStatusDetails = [self::STATUS => $status];
 
             if ($isAlreadyAccepted) {
                 $newPaperStatusDetails['isAlreadyAccepted'] = $isAlreadyAccepted;
             }
+            // link to public article page
+            $publicUrl = $this->view->url([
+                self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
+                self::ACTION => 'view',
+                'id' => $newPaper->getDocid()
+            ]);
+            Episciences_Mail_Send::sendMailFromReview(
+                $newPaper->getSubmitter(),
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR,
+                [
+                    Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
+                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle(),
+                ], $newPaper, null, [], false, $coAuthors
+            );
 
             // log new version submission
             $newPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), $newPaperStatusDetails);
@@ -2665,14 +2693,14 @@ class PaperController extends PaperDefaultController
                     Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url
                 ];
 
-            Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_REVIEWER_COPY, $reviewerTags, $paper, Episciences_Auth::getUid());
+            Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_REVIEWER_COPY, $reviewerTags, $paper, Episciences_Auth::getUid(), [], false, [], null);
 
             // send mail to editors + notify chief editors, administrators and secretaries *********************
             $recipients = $paper->getEditors(true, true);
             Episciences_Review::checkReviewNotifications($recipients);
 
             // [RT#82641]
-            $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
             // url to paper administration page
             $paper_url = $this->buildAdminPaperUrl((int)$report->getDocid());
@@ -2724,7 +2752,7 @@ class PaperController extends PaperDefaultController
                     $attachments[$fileName] = $path;
                 }
 
-                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, $paper, Episciences_Auth::getUid(), $attachments, true, $CC);
+                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, $editorTags, $paper, Episciences_Auth::getUid(), $attachments, true, $CC, null);
                 // reset CC
                 $CC = [];
             }
@@ -3090,6 +3118,8 @@ class PaperController extends PaperDefaultController
 
         $recipients = $this->getAllEditors($paper);
         Episciences_Review::checkReviewNotifications($recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
@@ -3317,6 +3347,8 @@ class PaperController extends PaperDefaultController
         $this->informRecipient($author, $paper, $authorTemplateKey);
 
         Episciences_Review::checkReviewNotifications($recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {

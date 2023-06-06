@@ -429,6 +429,9 @@ class ReviewerController extends PaperDefaultController
         //  > editors + admins + secretaries + chief editors notifications
         $recipients = $paper->getEditors(true, true);
         Episciences_Review::checkReviewNotifications($recipients);
+
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
@@ -456,7 +459,7 @@ class ReviewerController extends PaperDefaultController
             ];
 
             Episciences_Mail_Send::sendMailFromReview($recipient, $editorialCommitteeTemplateType, $editorialCommitteeTags,
-                $paper, null, [], false, $CC
+                $paper, null, [], false, $CC, null
             );
             //reset $CC
             $CC = [];

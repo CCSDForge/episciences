@@ -16,10 +16,16 @@
     <form class="<?= $this->element->getAttrib('class') ?>" action="<?= $this->element->getAction() ?>"
           method="<?= $this->element->getMethod() ?>" data-library="ccsd" role="form">
         <?php foreach ($this->element->getElements() as $element) : ?>
-            <div id="<?= $element->getName() ?>-element" class="form-group">
+            <div id="<?= $element->getName() ?>-element" class="form-group" <?php if ($element->getAttrib('data-none')):?>style="display: none;" <?php endif;?>>
                 <?= $element ?>
             </div>
         <?php endforeach; ?>
+
+        <?= $this->partial('volume/doi_proceedings_row.phtml', [
+                'value' => $this->element->getDecorator('ViewScript')->getOption('value')
+        ]) ?>
+
+
         <div id="metadata-element" class="form-group row">
             <label class="col-md-3 control-label optional"><?= $this->translate('Métadonnées') ?></label>
             <div class="col-md-9" style="padding-top: 7px">

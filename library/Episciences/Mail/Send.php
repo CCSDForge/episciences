@@ -91,6 +91,25 @@ class Episciences_Mail_Send
         $form->addElement('hidden', self::getElementName('hidden_to', $prefix));
 
 
+        $coauthors = Episciences_PapersManager::getCoAuthors($docId);
+        if (!empty($coauthors)) {
+            foreach ($coauthors as $coAuthor) {
+                /** @var Episciences_User $coAuthor */
+                $form->addElement('hidden', 'coauthorsInfo-'.$coAuthor->getUid(), [
+                    'id' => 'coAuthorsInfo',
+                    'value' => Zend_Json::encode([
+                        'uid' => $coAuthor->getUid(),
+                        'username' => $coAuthor->getUsername(),
+                        'lastname' => $coAuthor->getLastname(),
+                        'fullname' => $coAuthor->getFullName(),
+                        'screen_name' => $coAuthor->getScreenName(),
+                        'mail' => $coAuthor->getEmail(),
+                        'label' => $coAuthor->getFullName() . ' <' . $coAuthor->getEmail() . '>',
+                        'htmlLabel' => "<div>".$coAuthor->getFullName()."</div><div class=\"grey\">".$coAuthor->getEmail()."</div>"
+                    ])
+                ]);
+            }
+        }
         // cc
         $cc_element = self::getElementName('cc', $prefix);
         $form->addElement('text', $cc_element, [
@@ -179,13 +198,14 @@ class Episciences_Mail_Send
      * @param array $attachmentsFiles ['key' => file name, 'value' => 'file path']
      * @param bool $makeACopy : si true faire une copie
      * @param array $CC : cc recipients
+     * @param array|null $journalOptions
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Exception
      */
-    public static function sendMailFromReview(
+    public static function sendMailFromReview (
         Episciences_User  $recipient,
         string            $templateType,
         array             $tags = [],
@@ -193,13 +213,23 @@ class Episciences_Mail_Send
         int               $authUid = null,
         array             $attachmentsFiles = [],
         bool              $makeACopy = false,
-        array             $CC = []
+        array             $CC = [],
+        ?array $journalOptions = null
     ): bool
     {
 
         $template = new Episciences_Mail_Template();
+
+        if (empty($journalOptions) && !Ccsd_Tools::isFromCli()) {
+            $journalOptions = ['rvCode' => RVCODE, 'rvId' => RVID];
+        }
+
+        if (isset($journalOptions['rvCode'])) {
+            $template->setRvcode($journalOptions['rvCode']);
+        }
+
         $template->findByKey($templateType);
-        $template->loadTranslations();
+        $template->loadTranslations(null, $journalOptions['rvCode']);
 
         $locale = $recipient->getLangueid();
         $template->setLocale($locale);
@@ -215,8 +245,8 @@ class Episciences_Mail_Send
                 $mail->addTag($tag, $value);
             }
         }
-        $mail->setFromReview();
-        $mail->setTo($recipient);
+        $mail->setFromReview($journalOptions['rvCode']);
+        $mail->setTo($recipient, $journalOptions['rvCode']);
         /** @var Episciences_User $ccRep */
         if (!empty($CC)) {
             foreach ($CC as $ccRep) {
@@ -225,7 +255,7 @@ class Episciences_Mail_Send
         }
 
         $mail->setSubject($template->getSubject());
-        $mail->setTemplate($template->getPath(), $template->getKey() . self::TEMPLATE_EXTENSION);
+        $mail->setTemplate($template->getPath(null, $journalOptions['rvCode']), $template->getKey() . self::TEMPLATE_EXTENSION);
 
         // Consideration of attached files
         if (!empty($attachmentsFiles)) {
@@ -251,7 +281,7 @@ class Episciences_Mail_Send
             }
         }
 
-        if (!$mail->writeMail()) {
+        if (!$mail->writeMail($journalOptions['rvCode'], $journalOptions['rvId'])) {
             trigger_error('APPLICATION WARNING: the email (id = ' . $mail->getId() . ') was not sent', E_USER_WARNING);
             return false;
         }

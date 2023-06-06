@@ -1,10 +1,4 @@
 {
-  "ignore_reviewers_email": [
-    "ccsd-tech@ccsd.cnrs.fr",
-    "hal@ccsd.cnrs.fr",
-    "contact@ccsd.cnrs.fr",
-    "contact@sciencesconf.org"
-  ],
   "allowed_extensions": [
     "png",
     "jpg",

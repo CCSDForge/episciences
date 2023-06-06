@@ -87,9 +87,7 @@ abstract class Script {
      * required parameters
      * @var array
      */
-    protected $_required_params = [
-        'app_env'   =>  'app_env|e is mandatory.',
-    ];
+    protected $_required_params = [];
 
     /**
      * valid environments
@@ -496,13 +494,20 @@ abstract class Script {
 
     /**
      * init Zend Translator
+     * @param string|null $locale
+     * @throws Zend_Locale_Exception
+     * @throws Zend_Translate_Exception
      */
-    public function initTranslator()
+    public function initTranslator(string $locale = null)
     {
+
+        $locale = $locale ?: null;
+
         $translator = new Zend_Translate(
             Zend_Translate::AN_ARRAY,
             APPLICATION_PATH . '/languages',
-            null,
+            $locale
+            ,
             array('scan' => Zend_Translate::LOCALE_DIRECTORY));
 
         Zend_Registry::set('Zend_Translate', $translator);

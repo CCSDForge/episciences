@@ -356,7 +356,7 @@ class PaperDefaultController extends DefaultController
 
         Episciences_Review::checkReviewNotifications($recipients, $strict);
 
-        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
         $CC = $paper->extractCCRecipients($recipients);
 
@@ -422,9 +422,7 @@ class PaperDefaultController extends DefaultController
             $recipientTags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = $this->view->Date($paper->getSubmission_date(), $locale);
 
             try {
-                Episciences_Mail_Send::sendMailFromReview(
-                    $recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC
-                );
+                Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC);
                 ++$nbNotifications;
                 $makeCopy = false;
             } catch (Zend_Mail_Exception | Zend_Session_Exception $e) {
@@ -526,7 +524,7 @@ class PaperDefaultController extends DefaultController
 
         $principalRecipientUid = (null !== $principalRecipient) ? $principalRecipient->getUid() : null;
 
-        $this->keepOnlyUsersWithoutConflict($paper, $recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
 
         $CC = $paper->extractCCRecipients($recipients, $principalRecipientUid);

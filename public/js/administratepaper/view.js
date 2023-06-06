@@ -186,6 +186,15 @@ $(document).ready(function () {
         $("#btn-hide-citations").hide();
         $("#btn-show-citations").show();
     });
+    $('input#copycoauthor').click(function(){
+        let coAuthorsMailStr = $('input#coauthormail').val();
+        if ($(this).prop('checked')) {
+            $("input[name='cc']").val(coAuthorsMailStr);
+        } else {
+            let inputcc =  $("input[name='cc']");
+            inputcc.val(inputcc.val().replace(coAuthorsMailStr,''));
+        }
+    });
 
 });
 
@@ -701,5 +710,11 @@ function removeDoi(button,paperId,docId,doi) {
             location.reload();
         }
     });
+}
 
+function removeCoAuthor (docId, uid, rvid) {
+    let removeCoAuthor = ajaxRequest('/administratepaper/ajaxrequestremovecoauthor', {docId: docId, uid: uid, rvid: rvid});
+    removeCoAuthor.done(function (response){
+        location.reload();
+    });
 }

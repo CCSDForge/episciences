@@ -1,4 +1,18 @@
-<h2><?= $this->translate("Changement de l'adresse mail") ?></h2>
+<?php
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$params = $request->getParams();
+?>
+
+<?php if (
+        isset($params['userid']) &&
+        Episciences_Auth::isSecretary() &&
+        Episciences_Auth::getUid() !== (int)$params['userid']) : ?>
+    <div class="alert alert-info" role="alert"><i class="fas fa-info-circle"></i>&nbsp;
+        <?= $this->translate("Modification de l'adresse e-mail d'un autre compte utilisateur") ?>
+    </div>
+
+<?php endif; ?>
+
 
 <?php if ($this->isNotAllowedToChangeEmail): ?>
 

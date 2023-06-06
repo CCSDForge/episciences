@@ -120,6 +120,9 @@ class Episciences_Review
 
     public const SETTING_CONTACT_ERROR_MAIL = "contactErrorMail";
 
+    public const SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS =
+        'refusedArticleAuthorsMsgSentToReviewers';
+
     /** @var int */
     public static $_currentReviewId = null;
     protected $_db = null;
@@ -205,7 +208,8 @@ class Episciences_Review
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_ARXIV_PAPER_PASSWORD,
             self::SETTING_CONTACT_ERROR_MAIL,
-            self::SETTING_DISPLAY_STATISTICS
+            self::SETTING_DISPLAY_STATISTICS,
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
         ];
 
 
@@ -326,7 +330,6 @@ class Episciences_Review
      */
     private static function buildFyiStr(?int $docId, ?string $role = null): string
     {
-        $isCoiEnabled = false;
         $paper = null;
         $cc = [];
         $fyi = '';
@@ -336,42 +339,24 @@ class Episciences_Review
             $paper = Episciences_PapersManager::get($docId, false);
         }
 
-        try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
 
         if ($paper) {
 
-            if ($isCoiEnabled) {
-                $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paper->getPaperid()]);
-            }
+            if (!$role) {
+                self::checkReviewNotifications($cc);
+                Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
 
-            if ($role === Episciences_Acl::ROLE_REVIEWER) {
+            } elseif ($role === Episciences_Acl::ROLE_REVIEWER) {
+
                 $cc = $paper->getReviewers(null, true);
+                self::fyiReviewersProcess($paper->getPaperid(), $cc);
             }
 
-        }
-
-
-        if (!$role) {
-            self::checkReviewNotifications($cc);
         }
 
 
         /** @var Episciences_User $recipient */
         foreach ($cc as $recipient) {
-
-            if (
-                $isCoiEnabled &&
-                !$role &&
-                !in_array($recipient->getUid(), $cUidS, false)
-            ) {
-                continue;
-            }
 
             $fyi .= $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
             $fyi .= '; ';
@@ -1023,7 +1008,8 @@ class Episciences_Review
         $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
 
         $form->addDisplayGroup([
-            self::SETTING_SYSTEM_NOTIFICATIONS
+            self::SETTING_SYSTEM_NOTIFICATIONS,
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
         ], 'notifications', ['legend' => "Paramètres de notification"]);
         $form->getDisplayGroup('notifications')->removeDecorator('DtDdWrapper');
 
@@ -1484,6 +1470,13 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
+        $form->addElement('checkbox', self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS, [
+                'label' => "Activer la fonctionnalité",
+                'description' => "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs.",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators
+            ]);
+
         return $form;
     }
 
@@ -1624,7 +1617,7 @@ class Episciences_Review
                 'placeholder' => '',
 
                 'multioptions' => [
-                    0 => 'Par defaut (cachée)',
+                    0 => 'Par défaut (cachée)',
                     1 => 'Publique',
                     2 => 'Réservée aux administrateurs',
                 ],
@@ -1771,6 +1764,8 @@ class Episciences_Review
         $settingsValues[self::SETTING_ARXIV_PAPER_PASSWORD] = $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD);
         $settingsValues[self::SETTING_DISPLAY_STATISTICS] = $this->getSetting(self::SETTING_DISPLAY_STATISTICS);
         $settingsValues[self::SETTING_CONTACT_ERROR_MAIL] = $this->getSetting(self::SETTING_CONTACT_ERROR_MAIL);
+        $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
+
 
         $values = [];
 
@@ -2388,5 +2383,34 @@ class Episciences_Review
         return REVIEW_FILES_PATH . RVCODE . '-crypto.json';
     }
 
+    /**
+     * @param int $paperId
+     * @param array $cc
+     * @return void
+     */
+    private static function fyiReviewersProcess(int $paperId, array &$cc): void
+    {
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+
+            $cUidS = $isCoiEnabled ?
+                Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paperId]) :
+                [];
+
+            foreach ($cc as $uid => $user) {
+
+                if (in_array($uid, $cUidS, false)) {
+                    unset($cc[$uid]);
+                }
+            }
+
+
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+    }
 
 }

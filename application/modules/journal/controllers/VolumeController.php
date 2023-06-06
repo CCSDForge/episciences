@@ -28,7 +28,16 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
         $form = Episciences_VolumesManager::getForm();
-
+        $journal =  Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
+        $journal->loadSettings();
+        $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
+        if ($journalPrefixDoi !== '') {
+            $form->addElement('hidden',"journalprefixDoi",[
+                'label' => "journalprefixDoi",
+                'value' => $journalPrefixDoi.'/'.RVCODE.".proceedings.",
+                'data-none' => true
+            ]);
+        }
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
             if ($form->isValid($request->getPost())) {
@@ -37,7 +46,13 @@ class VolumeController extends Zend_Controller_Action
 
                 $resVol = $oVolume->save($form->getValues(), null, $request->getPost());
                 $oVolume->saveVolumeMetadata($request->getPost());
-
+                $post = $request->getPost();
+                if ($post['conference_proceedings_doi'] !== ''){
+                    $volumequeue = new Episciences_Volume_DoiQueue();
+                    $volumequeue->setVid($volume->getVid());
+                    $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+                    Episciences_Volume_DoiQueueManager::add($volumequeue);
+                }
 
                 if ($resVol) {
                     $message = '<strong>' . $this->view->translate("Le nouveau volume a bien été créé.") . '</strong>';
@@ -80,7 +95,6 @@ class VolumeController extends Zend_Controller_Action
         }
 
         $volume = Episciences_VolumesManager::find($vid);
-
         if (empty($volume)) {
             $this->_helper->redirector('add');
             return;
@@ -136,14 +150,28 @@ class VolumeController extends Zend_Controller_Action
         $this->view->gapsInOrderingPapers = $gaps;
 
         $form = Episciences_VolumesManager::getForm($referer, $volume);
-
+        $journal =  Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
+        $journal->loadSettings();
+        $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
+        if ($journalPrefixDoi !== '') {
+            $form->addElement('hidden', "journalprefixDoi",[
+                'label' => "journalprefixDoi",
+                'value' => $journalPrefixDoi.'/'.RVCODE.".proceedings.",
+                'data-none' => true
+            ]);
+        }
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
                 $volume->saveVolumeMetadata($request->getPost());
-
+                if ($post['conference_proceedings_doi'] !== ''){
+                    $volumequeue = new Episciences_Volume_DoiQueue();
+                    $volumequeue->setVid($volume->getVid());
+                    $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+                    Episciences_Volume_DoiQueueManager::add($volumequeue);
+                }
                 if ($resVol) {
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
@@ -160,6 +188,7 @@ class VolumeController extends Zend_Controller_Action
             }
         }
         $defaults = Episciences_VolumesManager::getFormDefaults($volume);
+
         if ($defaults) {
             $form->setDefaults($defaults);
         }
@@ -169,7 +198,6 @@ class VolumeController extends Zend_Controller_Action
 
         $this->view->volume = $volume;
         $this->view->metadataForm = Episciences_VolumesManager::getMetadataForm();
-
     }
 
     /**

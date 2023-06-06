@@ -25,9 +25,12 @@
                             <br>
                             <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => Episciences_Auth::getUser()->getWebSites(), 'socialMedias' => (array)Episciences_Auth::getUser()->getSocialMedias(), 'height' => 16]) ?>
                             <br>
-                            <a href="/user/change_account_email" class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon courriel") ?></a>
-                            <a href="/user/edit" class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon profil")?></a>
-                            <a href="/user/changepassword" class="btn btn-primary btn-xs" style="margin-top: 5px;"><?= $this->translate("Modifier mon mot de passe") ?></a>
+                            <a href="/user/edit"
+                               class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon profil") ?></a>
+                            <a href="/user/changepassword"
+                               class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon mot de passe") ?></a>
+                            <a href="/user/reset_api_password" style="margin-top: 5px;"
+                               class="btn btn-default btn-xs"><?= $this->translate("Réinitialiser mon mot de passe API") ?></a>
                         </td>
                     </tr>
                     <tr>

@@ -27,6 +27,14 @@ return [
     "paper_submission_author_copy_tpl_name" => "Nouvel article - Copie à destination de l'auteur",
     "paper_submission_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Votre article a bien été soumis",
 
+    // Confirmation de nouvelle version d'un article pour les auteurs et co auteur si existant
+    "paper_new_version_submission_author_tpl_name" => "Nouvelle version du papier a destination de l'auteur et co-auteur",
+    "paper_new_version_submission_author_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Nouvelle version du papier",
+
+    // Confirmation de nouvelle version temporaire d'un article pour les auteurs et co auteur si existant
+    "paper_new_version_temporary_submission_author_tpl_name" => "Nouvelle version du papier a destination de l'auteur et co-auteur",
+    "paper_new_version_temporary_submission_author_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Nouvelle version temporaire du papier",
+
     // Suppression d'un article par son auteur - copie destinée à l'auteur
     "paper_deleted_author_copy_tpl_name" => "Article supprimé - Copie à destination de l'auteur",
     "paper_deleted_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Votre article a été supprimé",

@@ -5,10 +5,10 @@
   "codeRepository": "https://github.com/CCSDForge/episciences",
   "dateCreated": "2013-01-01",
   "datePublished": "2020-12-23",
-  "dateModified": "2022-05-25",
+  "dateModified": "2023-05-31",
   "issueTracker": "https://github.com/CCSDForge/episciences/issues",
   "name": "Episciences",
-  "version": "1.0.28.5",
+  "version": "1.0.40.4",
   "description": "An overlay journal platform",
   "applicationCategory": "Scientific Publishing",
   "releaseNotes": "https://github.com/CCSDForge/episciences/blob/main/CHANGELOG.md",
@@ -22,7 +22,7 @@
     "overlay journal;open-access;open science;journal"
   ],
   "programmingLanguage": [
-    "PHP;XML;XSLT"
+    "PHP;XML;XSLT;Javascript"
   ],
   "operatingSystem": [
     "Linux"

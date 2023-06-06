@@ -14,14 +14,6 @@ class Ccsd_User_Form_AccountEditEmail extends Ccsd_Form
         $this->setConfig(new Zend_Config_Ini('Ccsd/User/configs/account_edit_email.ini'));
 
         $email = $this->getElement('EMAIL');
-        $userUid = $this->getElement('USER_UID');
-
-        if($userUid){
-
-            $userUid->setValue(Episciences_Auth::getUid());
-
-        }
-
 
         if ($email) {
             $options = array(

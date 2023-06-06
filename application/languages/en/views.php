@@ -79,6 +79,7 @@ return [
     // TO FIX
     'guest' => 'Guest',
     'member' => 'Member',
+    'coauthor' => 'Coauthor',
     'webmaster' => 'Webmaster',
     'secretary' => 'Editorial secretary',
     'reviewer' => 'Reviewer',
@@ -92,6 +93,7 @@ return [
 
     'guests' => 'Guests',
     'members' => 'Members',
+    'coauthors' => 'Coauthors',
     'webmasters' => 'Webmasters',
     'secretaries' => 'Editorial secretaries',
     'reviewers' => 'Reviewers',
@@ -295,6 +297,7 @@ return [
     "Consulter un article" => "Read an article",
     "Auteurs : " => 'Authors: ',
     "Auteur : " => 'Author: ',
+    'Source : '=>'Source: ',
     "Soumis le : " => 'Submitted on: ',
     'Soumise le : ' => 'Submitted on: ',
     "Importé le : " => 'Imported on: ',
@@ -310,6 +313,7 @@ return [
     'Accepté le : ' => 'Accepted on: ',
     'Mots-clés : ' => 'Keywords: ',
     'Licence : ' => 'Licence: ',
+    'Financement : ' => 'Fundings: ',
     'Rubrique : ' => 'Section: ',
     'Volumes & rubriques' => 'Volumes & sections',
     'Volume : ' => 'Volume: ',
@@ -323,7 +327,7 @@ return [
     "Il s'agit d'une ancienne version de %s cet article %s" => "It is an older version of %s this article %s",
     "cet article" => "this article",
     "Télécharger le fichier" => "Download this file",
-    "Visiter la page de l'article" => "Consult the article webpage",
+    "Voir la page du document sur" => "See the document's page on",
     "Cette page a été consultée %s fois." => "This page has been seen %s times.",
     "Le PDF de cet article a été téléchargé %s fois." => "This article's PDF has been downloaded %s times.",
 
@@ -371,6 +375,23 @@ return [
     "Référence bibliographique du volume" => "Volume's bibliographical reference",
     "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the paper is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
+    // proceedings
+    "Nom de la conférence" => 'Conference title',
+    "Theme de la conférence" => "Conference theme",
+    "Acronyme de la conférence" => "Conference acronym",
+    "Titre de l'acte de conférence" => "Proceedings title",
+    "Numéro de la conférence" => "Conference number",
+    "Lieu de la conférence" => "Conference location",
+    "Date de début de la conférence" => "Conference start date",
+    "Date de fin de la conférence" => "Conference end date",
+    "DOI de l'acte de conférence" => "Proceeding DOI",
+    "Acte de conférence" => 'Proceedings act',
+    "Le DOI qui va être demandé" => "Doi will be requested",
+    "Demande DOI"=> "Request DOI",
+    "Annulation DOI" => "Cancel Request",
+    'Du' => 'From',
+    'Au' => 'To',
+
     //New version
     "Veuillez vérifier :" => "Please check:",
     "La version du document" => "The document version",
@@ -900,11 +921,9 @@ return [
     "Langue par défaut" => 'Default Language',
     "Créer mon compte" => 'Create Account',
     "Civilité" => 'Title',
-    "Téléphone" => 'Phone',
-    "Télécopie" => 'Fax',
     "Photo" => 'Picture',
     "Complément de nom" => 'Middle Name',
-    'Login Twitter ou Mastodon' => 'Twitter username or Mastodon',
+    'Login Twitter ou Mastodon' => 'Twitter or Mastodon username',
     'Site(s) Web' => 'Web Site(s)',
     'Saisissez votre compte Twitter (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your Twitter account (e.g @anonymous) or Mastodon account (e.g @username@server)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
@@ -1075,6 +1094,7 @@ return [
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version repointing',
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New reviewing deadline',
+    Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission > Inbox',
 
 
     "Date d'assignation" => "Assignation date",
@@ -1121,6 +1141,8 @@ return [
     "Paramètres de notification" => "Notification Settings",
     "Lorsqu'un article est soumis, mis à jour ou refusé, notifier les" => "When an article is submitted, updated or refused, notify the",
     "Administrateurs" => "Administrators",
+    'Activer la fonctionnalité' => 'Enable feature',
+    "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs." => "In case an article has been refused, the message sent to the authors explaining the final decision made by the editor in charge is forwarded automatically to the reviewers.",
 
 
     "Préparateurs de copie" => "Copy editors",
@@ -1421,7 +1443,7 @@ return [
     "Réessayer avec une autre version" => "Try again with another version",
     // new repositories (exp. Zenodo)
     "Vous ne pouvez pas soumettre ce document car les fichiers ne seront pas mis à la disposition du public et le partage ne sera possible qu'avec l'approbation du déposant du fichier." => "You can not submit this document as the files will not be made publicly available and sharing will be made possible only by the approval of depositor of the original file.",
-    "Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version." => "You can not submit this document, please check that this is a new version. ",
+    "Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version." => "You can not submit this document, please check that this is a new version.",
     "Vos modifications n'ont pas été prises en compte : la version du document n'est pas liée à la précédente." => 'Your changes have not been taken into account: the document version is not bound to the previous one.',
 
     /**
@@ -1803,6 +1825,7 @@ return [
 
     "Exporter" => "Export",
     "Partager" => "Share",
+    "Partager et exporter" => 'Share and export',
     "Voulez-vous partager la publication ? Rendez-vous" => "Do you want to share the publication? Go",
     "ici" => 'here',
     "Statistiques de consultation" => "Consultation statistics",
@@ -1852,14 +1875,16 @@ return [
     'Remerciements' => 'Acknowledgements',
     'Paramètres généraux (affichés dans le pied de page)' => 'General settings (displayed in the footer)',
     'en cours' => 'pending',
-    'CGU' => 'TOS',
+    'CGU' => 'TOU',
     "Conditions Générales d'Utilisation" => 'Term Of Use',
     'Paramètres supplémentaires' => 'Additional settings',
     'Visibilité des statistiques' => 'Statistics visibility',
-    'Par defaut (cachée)' => 'Default (hidden)',
+    'Par défaut (cachée)' => 'Default (hidden)',
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    "le nombre total d'articles acceptés" => 'the total number of accepted for publication',
+    "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of papers submitted during this period',
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
     "En un coup d'oeil" => "At a glance",
@@ -1889,6 +1914,8 @@ return [
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
+    "articles acceptés (soumis la même année)" => "accepted articles (submitted in the same year)",
+    'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
     // datasets
     'Données liées' => 'Linked data',
@@ -1927,8 +1954,7 @@ return [
     "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post - acceptance revisions of articles, e . g . requesting new versions of accepted preprints",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION] => "accepted - waiting for author's final version",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for
-    formatting by copy editors",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for formatting by copy editors",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
@@ -2284,6 +2310,9 @@ return [
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to confirm the version to the journal's standards (formatted by the copy preparer)",
 
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the paper",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the paper",
+
     // Mot de passe papier
     "Facultatif" => "Optional",
     "Requis" => 'Required',
@@ -2308,6 +2337,7 @@ return [
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
 
     //Chanage email address
+    "Modification de l'adresse e-mail d'un autre compte utilisateur" => "Changing the e-mail address of another user account",
 
     'Modifier mon courriel' => 'Change my email address',
     "Dans un premier temps, vous devriez procéder à la fusion de tous vos comptes." => "As a first step, you should proceed to merge all your accounts.",
@@ -2315,13 +2345,27 @@ return [
     "le support technique" => 'the support',
     "en spécifiant le compte que vous souhaitez conserver et l'identifiant auteur IdHAL à conserver (si vous en avez plusieurs)" => 'by specifying the account you want to keep and the author IdHAL to keep (if you have several)',
     "Voici la liste des noms d'utilisateur trouvés pour votre compte :" => "Here is the list of usernames found for your account:",
-    "Échec du changement de courriel" => "Failed to change email",
-    "Changement de courriel réussi" => "Successful email change",
-    'Confirmer la modification' => 'Confirm change',
-    "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Modifier mon courriel</a>" => "<a href= '/user/change_account_email' class= 'btn btn-xs btn-primary'>Change my email address</a>",
+    "Échec du changement de courriel" => "Failed to update email",
+    "Changement de courriel réussi" => "Email update successfully",
+    'Confirmer la modification' => 'Confirm update',
 
     // settings redirect error mail
     "Mail de retour" => "Redirection address",
-    "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the failed emails",
-    "Adresse de courriel pour le retour des échecs d'envoi" => "Email address for the return of failed mailings",
+    "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the bounced emails",
+    "Adresse de courriel pour le retour des échecs d'envoi" => "E-mail address for the return of failed deliveries (bounced emails)",
+    //API password
+    "Ce mot de passe est réservé à l'usage exclusif de l'" => "This password is for",
+    "Votre mot de passe API a bien été réinitialisé." => "Your API password was successfully reset.",
+    "API Episciences" => 'Episciences API',
+    "Réinitialiser mon mot de passe API" => "Reset my API password",
+    "Réinitialiser le mot de passe API" => "Change your API password",
+    // co-author
+    "Co-auteur" => "Co-author",
+    "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
+    "l'utilisateur est déjà co-auteur pour ce papier" => "The user is already a co-author for this paper",
+    "Supprimer ce co-auteur" => "Delete this co-author",
+    "Envoyer une copie de ce message aux co-auteur" => "Send a copy of this message to the co-authors",
+    "Co-auteur retiré" => "Co-Autor removed",
+    "L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences et co-auteur du papier" => "The user <strong>%%RECIPIENT_SCREEN_NAME%%</strong> has been added on Episciences and added as co-author of the paper",
+    "Ajouter un co-auteur" => "Add a co-author"
 ];
