@@ -42,7 +42,7 @@ class FileController extends DefaultController
             $file .= '.' . $extension;
         }
 
-        $path = REVIEW_FILES_PATH . $docId . '/' . $folder . '/';
+        $path = Episciences_PapersManager::buildDocumentPath($docId) . '/' . $folder . '/';
 
         if (null !== $parentCommentId) {
             $path .= $parentCommentId . '/';
@@ -86,7 +86,7 @@ class FileController extends DefaultController
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
 
-        $path = REVIEW_FILES_PATH . $docId . '/tmp/';
+        $path = Episciences_PapersManager::buildDocumentPath($docId) . '/tmp/';
         $filepath = $path . $file;
 
         $this->loadFile($filepath);
@@ -103,7 +103,7 @@ class FileController extends DefaultController
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
-        $path = REVIEW_FILES_PATH . $docId . '/ratings/';
+        $path = Episciences_PapersManager::buildDocumentPath($docId) . '/ratings/';
         $filepath = $path . $file;
 
         $this->loadFile($filepath);

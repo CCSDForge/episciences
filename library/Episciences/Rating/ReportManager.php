@@ -79,7 +79,7 @@ class Episciences_Rating_ReportManager
      */
     public static function renameGrid(int $docId, int $uid): bool
     {
-        $gridPath = REVIEW_FILES_PATH . $docId . '/reports/';
+        $gridPath = Episciences_PapersManager::buildDocumentPath($docId) . '/reports/';
         $nameDir = $gridPath . $uid;
 
         if (!is_dir($nameDir)) {

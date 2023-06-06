@@ -2094,7 +2094,7 @@ class Episciences_PapersManager
 
         // delete paper folder and content
         if (defined('RVCODE') && defined('REVIEW_FILES_PATH') && $docid) {
-            Episciences_Tools::deleteDir(REVIEW_FILES_PATH . $docid);
+            Episciences_Tools::deleteDir(self::buildDocumentPath($docid));
         }
 
         // remove from index
@@ -3815,5 +3815,15 @@ class Episciences_PapersManager
         }
 
 
+    }
+
+
+    /**
+     * @param int $docId
+     * @return string
+     */
+    public static function buildDocumentPath(int $docId) : string
+    {
+        return REVIEW_FILES_PATH . $docId;
     }
 }
