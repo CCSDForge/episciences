@@ -751,7 +751,7 @@ class PaperController extends PaperDefaultController
         $result = $comment->save();
 
         if ($comment->isCopyEditingComment()) {
-            $cePath = REVIEW_FILES_PATH . $docId;
+            $cePath = Episciences_PapersManager::buildDocumentPath($docId);
             $cePath .= DIRECTORY_SEPARATOR;
             $cePath .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
             $cePath .= DIRECTORY_SEPARATOR;
@@ -1791,7 +1791,7 @@ class PaperController extends PaperDefaultController
                 // Copier le fichier
                 if ($file) {
 
-                    $path = REVIEW_FILES_PATH . $docId;
+                    $path = Episciences_PapersManager::buildDocumentPath($docId);
                     $path .= DIRECTORY_SEPARATOR;
                     $path .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
                     $path .= DIRECTORY_SEPARATOR;

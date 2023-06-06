@@ -1121,7 +1121,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // save comment to database ******************************************
         $oComment = new Episciences_Comment();
-        $oComment->setFilePath(REVIEW_FILES_PATH . $docId . '/comments/');
+        $oComment->setFilePath(Episciences_PapersManager::buildDocumentPath($docId) . '/comments/');
         $oComment->setType(Episciences_CommentsManager::TYPE_EDITOR_COMMENT);
         $oComment->setDocid($docId);
         $oComment->setMessage($post['comment']);
@@ -3363,7 +3363,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Reviewer_AliasManager::delete($docId, $uid);
 
             //delete reviewer grid
-            Episciences_Tools::deleteDir(REVIEW_FILES_PATH . $docId . '/reports/' . $uid);
+            Episciences_Tools::deleteDir(Episciences_PapersManager::buildDocumentPath($docId) . '/reports/' . $uid);
         }
 
         if (!$isUninvited) { // Seulement si une invitation est à l'origine de la relecture
@@ -3902,7 +3902,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 $comment->logComment();
 
-                $path = REVIEW_FILES_PATH . $docId;
+                $path = Episciences_PapersManager::buildDocumentPath($docId);
                 $path .= DIRECTORY_SEPARATOR;
                 $path .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
                 $path .= DIRECTORY_SEPARATOR;

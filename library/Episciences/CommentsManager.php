@@ -352,7 +352,7 @@ class Episciences_CommentsManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         // receive file and get its name
-        $path = REVIEW_FILES_PATH . $docId . '/comments/';
+        $path = Episciences_PapersManager::buildDocumentPath($docId) . '/comments/';
         $uploads = Episciences_Tools::uploadFiles($path);
         if ($uploads) {
             $file = array_shift($uploads);
