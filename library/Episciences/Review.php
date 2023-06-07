@@ -728,7 +728,7 @@ class Episciences_Review
     }
 
     /**
-     * return an sql query for getting all volumes with papers
+     * return a sql query for getting all volumes with papers
      * @return Zend_Db_Select
      */
     private function getVolumesWithPapersQuery(): \Zend_Db_Select
