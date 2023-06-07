@@ -5,7 +5,7 @@
 $journal = $this->journal;
 ?>
 
-<h1><?= $this->translate('acceptedPaperOn') . " " . $this->escape($journal->getName()) ?></h1>
+<h2><?= $this->translate('acceptedPaperOn') . " " . $this->escape($journal->getName()) ?></h2>
 <div>
     <ul>
         <?php foreach ($this->acceptedPapers as $acceptedPaper) :
