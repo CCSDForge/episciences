@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- [133](https://github.com/CCSDForge/episciences/issues/133): now all accepted items are included
+
+### Changed
+- [133](https://github.com/CCSDForge/episciences/issues/133):
+ * the modification date previously displayed is replaced by the acceptance date 
+ * a link to the article administration page has been added for editorial secretaries
 
 ## 1.0.40.5 - 2023-06-01
 ### Fixed

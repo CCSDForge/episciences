@@ -3513,9 +3513,9 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if ($limit !== 0) {
-            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?', $rvId)->order('MODIFICATION_DATE DESC')->limit($limit); // prevent empty row
+            $select = $db->select()->from(T_PAPERS)->where('STATUS IN (?)', Episciences_Paper::ACCEPTED_SUBMISSIONS)->where('RVID = ?', $rvId)->order('MODIFICATION_DATE DESC')->limit($limit); // prevent empty row
         } else {
-            $select = $db->select()->from(T_PAPERS)->where('STATUS = ?', Episciences_Paper::STATUS_ACCEPTED)->where('RVID = ?', $rvId); // prevent empty row
+            $select = $db->select()->from(T_PAPERS)->where('STATUS IN (?)', Episciences_Paper::ACCEPTED_SUBMISSIONS)->where('RVID = ?', $rvId); // prevent empty row
         }
         return $db->fetchAssoc($select);
     }
