@@ -316,6 +316,7 @@ class BrowseController extends Zend_Controller_Action
         }
         $this->view->journal = $review;
         $this->view->acceptedPapers = $formatPapers;
+        $this->view->isSecretary = Episciences_Auth::isSecretary();
         $this->renderScript('browse/acceptedPapersList.phtml');
     }
 

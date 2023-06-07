@@ -10,6 +10,12 @@ $journal = $this->journal;
     <ul>
         <?php foreach ($this->acceptedPapers as $acceptedPaper) :
             /** @var Episciences_Paper $acceptedPaper */
+            $epiUrl = $this->url(
+                [
+                    'controller' => 'administratepaper',
+                    'action' => 'view',
+                    'id' => $acceptedPaper->getDocid()
+                ]);
             ?>
             <li>
                 <a href="<?= $this->escape($acceptedPaper->getDocUrl()) ?>" target="_blank" rel="noopener">
@@ -23,7 +29,11 @@ $journal = $this->journal;
                         <?php if ($lastkey !== $key + 1) : ?>;<?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
-                (<?= $this->translate('Accepté le : ') . " " . date('Y-m-d', strtotime($acceptedPaper->getModification_date())) ?>)
+                (<?= $this->translate('Accepté le : ') . " " . date('Y-m-d', strtotime($acceptedPaper->getAcceptanceDate())) ?>)
+                <?php if ($this->isSecretary) : ?>
+                <a href="<?= $epiUrl ?>">#<?= $acceptedPaper->getDocid() ?></a>
+                <?php endif; ?>
+                <?php ?>
             </li>
         <?php endforeach; ?>
     </ul>
