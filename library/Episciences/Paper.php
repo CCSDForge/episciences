@@ -3542,8 +3542,8 @@ class Episciences_Paper
         $date = null;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $this->loadHistoryQuery($db, [Episciences_Paper_Logger::CODE_STATUS]);
-            //in some situations, an article may be accepted several times:
-            // the objective is to know when the article was first accepted
+        //in some situations, an article may be accepted several times:
+        // the objective is to know when the article was first accepted
         $sql->order('DOCID ASC')
             ->order('DATE ASC')
             ->order('LOGID ASC');
@@ -3551,17 +3551,31 @@ class Episciences_Paper
         $logs = $db->fetchAll($sql);
 
         foreach ($logs as $value) {
+            try {
+                $detail = json_decode($value['DETAIL'], true, 512, JSON_THROW_ON_ERROR);
 
-            $detail = json_decode($value['DETAIL'], true);
+                $isAccepted = isset($detail['status']) &&
+                    (
+                        (int)$detail['status'] === self::STATUS_ACCEPTED ||
 
-            if (
-                isset($detail['status']) &&
-                (int)$detail['status'] === self::STATUS_ACCEPTED &&
-                !isset($detail['isAlreadyAccepted'])
-            ) {
-                $date = $value['DATE'];
-                break;
+                        (
+                            (int)$detail['status'] === self::STATUS_TMP_VERSION_ACCEPTED &&
+                            $this->isTmp()
+                        )
+                    );
+
+
+                if ($isAccepted) {
+                    $date = $value['DATE'];
+                    break;
+                }
+
+
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage(), E_USER_NOTICE);
+
             }
+
         }
 
         return $date;
@@ -4360,6 +4374,27 @@ class Episciences_Paper
     public function isEditableVersion(): bool
     {
         return in_array($this->getStatus(), self::EDITABLE_VERSION_STATUS, true);
+
+    }
+
+
+    /**
+     * @return mixed
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function getDocUrlTmpVersionsIncluded()
+    {
+
+        if (!$this->isTmp()) {
+            return $this->getDocUrl();
+        }
+
+        $paper = Episciences_PapersManager::get($this->getPaperid(), false);
+        return Episciences_Repositories::getDocUrl(
+            $paper->getRepoid(),
+            $paper->getIdentifier(),
+            (int)$this->getVersion()
+        );
 
     }
 

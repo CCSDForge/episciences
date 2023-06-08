@@ -18,7 +18,7 @@ $journal = $this->journal;
                 ]);
             ?>
             <li>
-                <a href="<?= $this->escape($acceptedPaper->getDocUrl()) ?>" target="_blank" rel="noopener">
+                <a href="<?= $this->escape($acceptedPaper->getDocUrlTmpVersionsIncluded()) ?>" target="_blank" rel="noopener">
                     <em><?= $this->escape($acceptedPaper->getTitle()) ?></em></a>
                 <?php $authors = $acceptedPaper->getMetadata('authors'); ?>
                 <?php if (is_array($authors)): ?>
