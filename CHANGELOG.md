@@ -14,9 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## 1.0.40.7 - 2023-06-08
 ### Fixed
 - [133](https://github.com/CCSDForge/episciences/issues/133): wrong acceptance date and docUrl for tmp versions.
+
+### Changed
+- [133](https://github.com/CCSDForge/episciences/issues/133) Added html classes and ids, removed useless H2 title
 
 ## 1.0.40.6 - 2023-06-07
 ### Fixed
