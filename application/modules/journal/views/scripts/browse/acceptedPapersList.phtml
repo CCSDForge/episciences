@@ -5,7 +5,7 @@
 $journal = $this->journal;
 ?>
 
-<h1><?= $this->translate('acceptedPaperOn') . " " . $this->escape($journal->getName()) ?></h1>
+<h2><?= $this->translate('acceptedPaperOn') . " " . $this->escape($journal->getName()) ?></h2>
 <div>
     <ul>
         <?php foreach ($this->acceptedPapers as $acceptedPaper) :
@@ -18,7 +18,7 @@ $journal = $this->journal;
                 ]);
             ?>
             <li>
-                <a href="<?= $this->escape($acceptedPaper->getDocUrl()) ?>" target="_blank" rel="noopener">
+                <a href="<?= $this->escape($acceptedPaper->getDocUrlTmpVersionsIncluded()) ?>" target="_blank" rel="noopener">
                     <em><?= $this->escape($acceptedPaper->getTitle()) ?></em></a>
                 <?php $authors = $acceptedPaper->getMetadata('authors'); ?>
                 <?php if (is_array($authors)): ?>

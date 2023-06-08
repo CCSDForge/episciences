@@ -3606,17 +3606,22 @@ class Episciences_PapersManager
 
     /**
      * @param int $rvId
+     * @param int $limit
      * @return array
      */
     public static function getAcceptedPapersByRvid(int $rvId, int $limit = 0)
     {
+        $defaultLimit = 100;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        if ($limit !== 0) {
-            $select = $db->select()->from(T_PAPERS)->where('STATUS IN (?)', Episciences_Paper::ACCEPTED_SUBMISSIONS)->where('RVID = ?', $rvId)->order('MODIFICATION_DATE DESC')->limit($limit); // prevent empty row
-        } else {
-            $select = $db->select()->from(T_PAPERS)->where('STATUS IN (?)', Episciences_Paper::ACCEPTED_SUBMISSIONS)->where('RVID = ?', $rvId); // prevent empty row
-        }
+
+        $select = $db->select()->
+        from(T_PAPERS)->where('STATUS IN (?)', Episciences_Paper::ACCEPTED_SUBMISSIONS)->
+        where('RVID = ?', $rvId)->
+        order('MODIFICATION_DATE DESC');
+
+        ($limit !== 0) ? $select->limit($limit) : $select->limit($defaultLimit);
+
         return $db->fetchAssoc($select);
     }
 
