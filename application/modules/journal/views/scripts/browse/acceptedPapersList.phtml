@@ -4,9 +4,7 @@
  */
 $journal = $this->journal;
 ?>
-
-<h2><?= $this->translate('acceptedPaperOn') . " " . $this->escape($journal->getName()) ?></h2>
-<div>
+<div id="browse-accepted-papers">
     <ul>
         <?php foreach ($this->acceptedPapers as $acceptedPaper) :
             /** @var Episciences_Paper $acceptedPaper */
@@ -17,21 +15,26 @@ $journal = $this->journal;
                     'id' => $acceptedPaper->getDocid()
                 ]);
             ?>
-            <li>
-                <a href="<?= $this->escape($acceptedPaper->getDocUrlTmpVersionsIncluded()) ?>" target="_blank" rel="noopener">
-                    <em><?= $this->escape($acceptedPaper->getTitle()) ?></em></a>
+            <li class="accepted-papers-list">
+                <?php if ($this->isSecretary) : ?>
+                    <a class="accepted-papers-list-internal-ref"
+                       href="<?= $epiUrl ?>">[#<?= $acceptedPaper->getDocid() ?>]</a>
+                <?php endif; ?>
+
+                <a href="<?= $this->escape($acceptedPaper->getDocUrlTmpVersionsIncluded()) ?>" target="_blank"
+                   rel="noopener"> <em><?= $this->escape($acceptedPaper->getTitle()) ?></em></a>.&nbsp;
                 <?php $authors = $acceptedPaper->getMetadata('authors'); ?>
                 <?php if (is_array($authors)): ?>
-                    <?= $this->translate('de') ?>
                     <?php $lastkey = count($authors); ?>
                     <?php foreach ($authors as $key => $creatorName): ?>
                         <?= $this->escape(Episciences_Tools::reformatOaiDcAuthor($creatorName)) ?>
                         <?php if ($lastkey !== $key + 1) : ?>;<?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
-                (<?= $this->translate('Accepté le : ') . " " . date('Y-m-d', strtotime($acceptedPaper->getAcceptanceDate())) ?>)
-                <?php if ($this->isSecretary) : ?>
-                <a href="<?= $epiUrl ?>">#<?= $acceptedPaper->getDocid() ?></a>
+                <?php $acceptedDateToTime = strtotime($acceptedPaper->getAcceptanceDate()); ?>
+                <?php if ($acceptedDateToTime) : ?>
+                    &nbsp;<span
+                            class="accepted-on">(<?= $this->translate('Accepté le : ') . date('Y-m-d', $acceptedDateToTime) ?>)</span>
                 <?php endif; ?>
                 <?php ?>
             </li>
