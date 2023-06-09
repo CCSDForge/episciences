@@ -52,10 +52,6 @@ return [
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte d'éthique",
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
-    /**
-     * Accepted article page
-     */
-    "acceptedPaperOn"=> "Articles acceptés sur",
 
     //Recherche : facettes
     "year" => "Année",

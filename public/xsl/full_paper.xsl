@@ -255,7 +255,7 @@
 
                 <xsl:if test="episciences/funding/text() != ''">
                     <div class="small">
-                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Financement :')"/>
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Financement : ')"/>
                         <xsl:value-of select="episciences/funding" disable-output-escaping="yes"/>
                     </div>
                 </xsl:if>
