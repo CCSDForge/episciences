@@ -1711,10 +1711,7 @@ return [
     'Afficher', 'Show',
     'Masquer' => 'Hide',
 
-    /**
-     * Accepted article page
-     */
-    "acceptedPaperOn"=> "Papers accepted on",
+
     "de" => "by",
 
 
