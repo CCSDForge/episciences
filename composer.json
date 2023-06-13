@@ -52,7 +52,8 @@
     "defuse/php-encryption": "^2.3",
     "doctrine/annotations": "^1.13",
     "vlucas/phpdotenv": "^5.5",
-    "league/html-to-markdown": "^5.1"
+    "league/html-to-markdown": "^5.1",
+    "league/commonmark": "^2.4"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",

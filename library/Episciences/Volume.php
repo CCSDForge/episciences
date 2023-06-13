@@ -2,6 +2,8 @@
 
 class Episciences_Volume
 {
+    public const MARKDOWN_TO_HTML = 'markdownToHtml';
+    public const HTML_TO_MARKDOWN = 'htmlToMarkdown';
     const VOLUME_PAPER_POSITIONS = 'paper_positions';
     const TRANSLATION_FILE = 'volumes.php';
     const SETTING_STATUS = 'status';
@@ -31,7 +33,7 @@ class Episciences_Volume
     private $_rvid;
     private $_position;
     private $_settings = [];
-    private $_metadatas = [];
+    private array $_metadatas = [];
     private $_indexedPapers = null;
     private $_paperPositions = [];
     private $_editors;
@@ -40,6 +42,10 @@ class Episciences_Volume
     private $_bib_reference = null;
 
     private $journalTranslationPath ;
+
+    private ?array $titles;
+    private ?array $descriptions;
+
 
 
     /**
@@ -511,7 +517,7 @@ class Episciences_Volume
      */
     public function loadMetadatas()
     {
-        $metadatas = [];
+        $allMetadata = [];
 
         $select = $this->_db->select()
             ->from(T_VOLUME_METADATAS)
@@ -520,13 +526,21 @@ class Episciences_Volume
         $result = $this->_db->fetchAssoc($select);
 
         foreach ($result as $data) {
-            $values = ['ID' => $data['ID'], 'VID' => $data['VID'], 'FILE' => $data['FILE']];
+            $values = [
+                'ID' => $data['ID'],
+                'title' => $data['titles'],
+                'content' => $data['CONTENT'],
+                'VID' => $data['VID'],
+                'FILE' => $data['FILE']
+            ];
+
+            Episciences_VolumesManager::dataProcess($values, 'decode', ['title', 'content']);
+
             $metadata = new Episciences_Volume_Metadata($values);
-            $metadata->loadTranslations();
-            $metadatas[$metadata->getId()] = $metadata;
+            $allMetadata[$metadata->getId()] = $metadata;
         }
 
-        $this->setMetadatas($metadatas);
+        $this->setMetadatas($allMetadata);
     }
 
     /**
@@ -553,7 +567,7 @@ class Episciences_Volume
      * @param $metadatas
      */
 
-    public function setMetadatas($metadatas)
+    public function setMetadatas(array $metadatas = [])
     {
         $this->_metadatas = $metadatas;
     }
@@ -566,6 +580,9 @@ class Episciences_Volume
         $res['vid'] = $this->getVid();
         $res['rvid'] = $this->getRvid();
         $res['position'] = $this->getPosition();
+        $res['bib_reference'] = $this->getBib_reference();
+        $res['titles'] = $this->getTitles();
+        $res['descriptions'] = $this->getDescriptions();
         $res['settings'] = $this->getSettings();
         $res['metadatas'] = $this->getMetadatas();
 
@@ -672,59 +689,35 @@ class Episciences_Volume
             $settings[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
         }
 
+
+        $this->setBib_reference($post['bib_reference']);
+        $this->setTitles($post['title']);
+        $this->setDescriptions($post['description']);
+
         // Ajout d'un nouveau volume
         if (!$vid) {
             // Récupération de la position du volume
             $position = $this->getNewVolumePosition();
 
             // Enregistrement du volume
-            $vid = $this->addNewVolume($position, $data['bib_reference']);
+            $vid = $this->addNewVolume($position);
 
             if ($vid === 0) {
                 return false;
             }
 
+            $this->setVid($vid);
+
             // Enregistrement des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid);
 
         } else {
-
             // Modification d'un volume
-            if ($this->getBib_reference() !== $post['bib_reference']) {
-                $this->setBib_reference($post['bib_reference']);
-                $this->updateVolume();
-            }
+            $this->updateVolume();
 
             // Mise à jour des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid, true);
 
-        }
-
-
-        $this->setVid($vid);
-
-        // Préparation des données de traduction
-        $path = $this->getJournalTranslationPath();
-        $file = self::TRANSLATION_FILE;
-        $translations = Episciences_Tools::getOtherTranslations($path, $file, '#volume_' . $vid . '_#');
-
-        // Nom du volume
-        foreach ($data['title'] as $lang => $translated) {
-            $translations[$lang]['volume_' . $vid . '_title'] = $translated;
-        }
-
-        // Description du volume
-        foreach ($data['description'] as $lang => $translated) {
-            $translations[$lang]['volume_' . $vid . '_description'] = $translated;
-        }
-
-
-        // Enregistrement des traductions
-        $resWriting = Episciences_Tools::writeTranslations($translations, $path, $file);
-
-
-        if (!$resWriting) {
-            return false;
         }
 
         return true;
@@ -770,17 +763,17 @@ class Episciences_Volume
     /**
      * Add a new volume, return a New volume VID
      * @param int $position
-     * @param string|null $bibReference
      * @return int the New volume id OR 0 if we fail
      */
-    private function addNewVolume(int $position, string $bibReference = null): int
+    private function addNewVolume(int $position): int
     {
         $values['RVID'] = RVID;
         $values['POSITION'] = $position;
+        $values['BIB_REFERENCE'] = $this->getBib_reference();
+        $values['titles'] = $this->preProcess($this->getTitles());
+        $values['descriptions'] = $this->preProcess($this->getDescriptions());
 
-        if (!empty($bibReference)) {
-            $values['BIB_REFERENCE'] = $bibReference;
-        }
+        Episciences_VolumesManager::dataProcess($values);
 
         try {
             $affectedRows = $this->_db->insert(T_VOLUMES, $values);
@@ -836,43 +829,79 @@ class Episciences_Volume
      * @param $post
      * @return bool
      */
-    public function saveVolumeMetadata($post)
+    public function saveVolumeMetadata($post): bool
     {
 
         // Enregistrement des nouvelles metadatas et des metadatas modifiées
         $position = 0;
-        $newMetadata_Ids = [];
+        $newMetadataIds = [];
+        $values = [];
 
         foreach ($post as $key => $value) {
             if (strpos($key, 'md_ui-id-') === 0) {
                 $position++;
-                $values = array_merge(json_decode($value, true), ['vid' => $this->getVid(), 'position' => $position]);
-                if (array_key_exists('tmpfile', $values)) {
-                    $values['tmpfile'] = json_decode($values['tmpfile'], true);
+                try {
+                    $values = array_merge(
+                        json_decode(
+                            $value, true,
+                            512,
+                            JSON_THROW_ON_ERROR
+                        ),
+                        ['vid' => $this->getVid(), 'position' => $position]
+                    );
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
                 }
+
+                if (array_key_exists('tmpfile', $values)) {
+                    try {
+                        $values['tmpfile'] = json_decode(
+                            $values['tmpfile'],
+                            true,
+                            512,
+                            JSON_THROW_ON_ERROR
+                        );
+                    } catch (JsonException $e) {
+                        trigger_error($e->getMessage());
+                    }
+                }
+
                 $metadata = new Episciences_Volume_Metadata($values);
+
                 $saveResult = $metadata->save();
 
                 if (!$saveResult) {
                     return false;
                 }
+
+
                 $this->setMetadata($metadata);
 
-                $newMetadata_Ids[] = $metadata->getId();
+                $newMetadataIds[] = $metadata->getId();
             }
         }
 
-        // Suppression des anciennes metadatas
-        foreach ($this->getMetadatas() as $oldMetadata_Ids => $metadata) {
-            if (!in_array($oldMetadata_Ids, $newMetadata_Ids)) {
-                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . $oldMetadata_Ids);
+       $this->deleteOldMetadata($newMetadataIds);
+
+        return true;
+
+    }
+
+    /**
+     * @param array $newMetadataIds
+     * @return void
+     */
+    private function deleteOldMetadata(array $newMetadataIds = []): void
+    {
+
+        foreach ($this->getMetadatas() as $oldMetadataIds => $metadata) {
+            if (!in_array($oldMetadataIds, $newMetadataIds, false)) {
+                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . $oldMetadataIds);
                 if ($metadata->hasFile() && file_exists(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile())) {
                     unlink(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile());
                 }
             }
         }
-
-        return true;
 
     }
 
@@ -887,50 +916,67 @@ class Episciences_Volume
     /**
      * @param null $lang
      * @param bool $forceResult
-     * @return string|null
-     * @throws Zend_Exception
+     * @return string
      */
-    public function getName($lang = null, $forceResult = false)
+    public function getName($lang = null, bool $forceResult = false) : string
     {
-        $result = null;
-        $translator = Zend_Registry::get('Zend_Translate');
-        // try to fetch translation for specified language
-        if ($translator->isTranslated($this->getNameKey(), $lang)) {
-            $result = $translator->translate($this->getNameKey(), $lang);
-        }
-        if (!$result && $forceResult) {
-            if ($translator->isTranslated($this->getNameKey(), 'en')) {
-                // if it cannot be found, try to fetch english translation
-                $result = $translator->translate($this->getNameKey(), 'en');
-            } else {
-                // else, try to fetch any translation
-                foreach (Episciences_Tools::getLanguages() as $locale) {
-                    if ($translator->isTranslated($this->getNameKey(), $locale)) {
-                        $result = $translator->translate($this->getNameKey(), $locale);
-                        break;
-                    }
-                }
-            }
-            if (!$result) {
-                $result = self::UNLABELED_VOLUME;
+
+        $titles = $this->getTitles();
+
+        if (null === $lang) {
+            try {
+                $lang = Zend_Registry::get('lang');
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
             }
         }
-        return $result;
+
+        if (!isset($titles[$lang]) && $forceResult && $lang !== Episciences_Review::DEFAULT_LANG) {
+            $lang  = array_key_first($titles);
+        }
+
+
+        return $titles[$lang] ?? self::UNLABELED_VOLUME;
+
     }
 
     /**
+     * @param string|null $lang
      * @return string
      */
-    public function getNameKey()
+    public function getNameKey(string $lang = null): string
     {
+        $titles = $this->getTitles();
+
+        if (!empty($titles)) {
+
+            $locale = !$lang ? Episciences_Tools::getLocale() : $lang;
+
+            if ($locale && isset($titles[$locale])) {
+                return $titles[$locale];
+            }
+
+        }
+
         return 'volume_' . $this->getVid() . '_title';
+
     }
 
     /**
      * @return string
      */
-    public function getDescriptionKey()
+    public function getDescriptionKey() : string
     {
+        $descriptions = $this->getDescriptions();
+
+        if (!empty($descriptions)) {
+
+            $locale = Episciences_Tools::getLocale();
+            if ($locale && isset($descriptions[$locale])) {
+                return $descriptions[$locale];
+            }
+        }
+
         return 'volume_' . $this->getVid() . '_description';
     }
 
@@ -1139,16 +1185,24 @@ class Episciences_Volume
 
     /**
      * update a volume
-     * @return bool
+     * @return int
      */
-    private function updateVolume(): bool
+    private function updateVolume(): ?int
     {
         $where = 'VID = ' . $this->getVid();
 
+        $data['BIB_REFERENCE'] = $this->getBib_reference();
+        $data['titles'] = $this->preProcess($this->getTitles());
+        $data['descriptions'] = $this->preProcess($this->getDescriptions());
+
+        Episciences_VolumesManager::dataProcess($data);
+
         try {
-            return ($this->_db->update(T_VOLUMES, ['BIB_REFERENCE' => $this->getBib_reference()], $where) > 0);
+            return $this->_db->update(T_VOLUMES, $data, $where);
+
         } catch (Zend_Db_Adapter_Exception $exception) {
-            return false;
+            trigger_error($exception->getMessage());
+            return 0;
         }
     }
 
@@ -1224,5 +1278,66 @@ class Episciences_Volume
     {
         $this->journalTranslationPath = $journalTranslationPath;
         return $this;
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getTitles(): ?array
+    {
+        return $this->titles;
+    }
+
+    /**
+     * @param array|null $titles
+     * @return Episciences_Volume
+     */
+    public function setTitles(?array $titles): self
+    {
+        $this->titles = $titles;
+        return $this;
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getDescriptions(): ?array
+    {
+        return $this->descriptions;
+    }
+
+    /**
+     * @param array|null $descriptions
+     * @return Episciences_Volume
+     */
+    public function setDescriptions(?array $descriptions): self
+    {
+        $this->descriptions = $descriptions;
+        return $this;
+    }
+
+    /**
+     * @param array|null $assoc
+     * @param string $type
+     * @return array|null
+     */
+    public function preProcess(?array $assoc, string $type = self::HTML_TO_MARKDOWN): ?array
+    {
+
+        if (!empty($assoc)) {
+
+            foreach ($assoc as $lang => $val) {
+
+                if ($type === self::MARKDOWN_TO_HTML) {
+                    $assoc[$lang] = Episciences_Tools::convertMarkdownToHtml($val);
+                } elseif ($type === self::HTML_TO_MARKDOWN) {
+                    $assoc[$lang] = Episciences_Tools::convertHtmlToMarkdown($val);
+                }
+
+            }
+        }
+
+        return $assoc;
+
     }
 }

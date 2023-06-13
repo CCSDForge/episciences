@@ -6,6 +6,9 @@ use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 use Defuse\Crypto\Key;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use League\CommonMark\CommonMarkConverter;
+use League\CommonMark\GithubFlavoredMarkdownConverter;
+use League\HTMLToMarkdown\HtmlConverter;
 use WhiteCube\Lingua\Service as Lingua;
 
 class Episciences_Tools
@@ -280,13 +283,16 @@ class Episciences_Tools
         return false;
     }
 
-    /**
-     * @return mixed
-     * @throws Zend_Exception
-     */
-    public static function getLocale()
+
+    public static function getLocale() :?string
     {
-        return Zend_Registry::get("Zend_Translate")->getLocale();
+        try {
+            return Zend_Registry::get("Zend_Translate")->getLocale();
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        return null;
     }
 
     /**
@@ -1746,6 +1752,77 @@ class Episciences_Tools
         }
 
         return $path;
+
+    }
+
+
+    /**
+     * @param string $markdown
+     * @param array $options
+     * @param string $converterType
+     * @return \League\CommonMark\Output\RenderedContentInterface|string
+     */
+    public static function convertMarkdownToHtml(
+        string $markdown,
+        array $options = [],
+        string $converterType = 'commonMark'
+    )
+    {
+
+        $options = empty($options) ? [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ] : $options;
+
+
+        if ($converterType === 'commonMark') {
+
+            $converter = new CommonMarkConverter($options);
+
+        } elseif ($converterType === 'gitHub') {
+
+            $converter = new GithubFlavoredMarkdownConverter($options);
+
+        } else {
+            $message = "Invalid Converter type: available converters: 'commonMark' and 'gitHub'";
+            throw new InvalidArgumentException($message);
+        }
+
+        try {
+            return $converter->convert($markdown);
+        } catch (\League\CommonMark\Exception\CommonMarkException $e) {
+            trigger_error($e->getMessage());
+            return $markdown;
+        }
+    }
+
+
+    /**
+     * @param string $html
+     * @param array $options : the options to be enabled
+     * @return string
+     */
+    public static function convertHtmlToMarkdown(string $html, array $options = []): string
+    {
+
+        $converter = new HtmlConverter();
+        $config = $converter->getConfig();
+
+        if (empty($options)) {
+
+            //By default, HTML To Markdown preserves HTML tags without Markdown equivalents, like <span> and <div>.
+            //To strip HTML tags that don't have a Markdown equivalent while preserving the content inside them
+
+            $config->setOption('strip_tags', true);
+
+        } else {
+            foreach ($options as $key) {
+                $config->setOption($key, true);
+            }
+        }
+
+        return $converter->convert($html);
+
 
     }
 }

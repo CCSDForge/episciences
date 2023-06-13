@@ -18,7 +18,8 @@ class VolumeController extends Zend_Controller_Action
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
         $this->view->review = $review;
-        $this->view->volumes = $review->getVolumes();
+        $volumes = $review->getVolumes();
+        $this->view->volumes = $volumes;
     }
 
     /**
@@ -95,6 +96,7 @@ class VolumeController extends Zend_Controller_Action
         }
 
         $volume = Episciences_VolumesManager::find($vid);
+
         if (empty($volume)) {
             $this->_helper->redirector('add');
             return;
@@ -165,8 +167,11 @@ class VolumeController extends Zend_Controller_Action
 
             if ($form->isValid($post)) {
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
+
                 $volume->saveVolumeMetadata($request->getPost());
-                if ($post['conference_proceedings_doi'] !== ''){
+
+
+                if ($post['conference_proceedings_doi'] !== '') {
                     $volumequeue = new Episciences_Volume_DoiQueue();
                     $volumequeue->setVid($volume->getVid());
                     $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);

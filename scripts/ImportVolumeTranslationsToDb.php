@@ -10,6 +10,7 @@ require_once "JournalScript.php";
 
 class ImportVolumeTranslationsToDb extends JournalScript
 {
+    public const TRANSLATION_FILE = 'volumes.php';
     public const VOLUME_TITLE = 'title';
     public const VOLUME_DESCRIPTION = 'description';
     public const META_NAME = 'name';
@@ -81,7 +82,7 @@ class ImportVolumeTranslationsToDb extends JournalScript
             // load review translation files
             if (is_dir($languagesPath) && count(scandir($languagesPath)) > 2) {
 
-                $currentTranslations = Episciences_Tools::getOtherTranslations($languagesPath, Episciences_Volume::TRANSLATION_FILE, '#volume_[\d]+_[\W]+#');
+                $currentTranslations = Episciences_Tools::getOtherTranslations($languagesPath, self::TRANSLATION_FILE, '#volume_[\d]+_[\W]+#');
 
                 foreach ($currentTranslations as $lang => $translations) {
 
@@ -154,28 +155,6 @@ class ImportVolumeTranslationsToDb extends JournalScript
                         $volumeDescriptions[$lang] = $value[self::VOLUME_DESCRIPTION];
                     }
 
-
-                    if (!empty($volumeTitles)) {
-                        $sql .= $this->getSqlUpdateStatement(
-                            T_VOLUMES,
-                            'titles',
-                            ['values' => $volumeTitles, 'id' => $vId]
-                        );
-
-                        unset($volumeTitles);
-                    }
-
-                    if (!empty($volumeDescriptions)) {
-                        $sql .= $this->getSqlUpdateStatement(
-                            T_VOLUMES,
-                            'descriptions',
-                            ['values' => $volumeDescriptions, 'id' => $vId]
-                        );
-
-                        unset($volumeDescriptions);
-
-                    }
-
                     if (isset($value[self::META_KEY])) {
 
                         foreach ($value[self::META_KEY] as $metaId => $meta) {
@@ -200,6 +179,7 @@ class ImportVolumeTranslationsToDb extends JournalScript
 
                                 unset($volumeMetaTitles);
 
+
                             }
 
                             if (!empty($volumeMetaContents)) {
@@ -216,6 +196,29 @@ class ImportVolumeTranslationsToDb extends JournalScript
 
                     }
                 }
+
+                if (!empty($volumeTitles)) {
+                    $sql .= $this->getSqlUpdateStatement(
+                        T_VOLUMES,
+                        'titles',
+                        ['values' => $volumeTitles, 'id' => $vId]
+                    );
+
+                    unset($volumeTitles);
+                }
+
+
+                if (!empty($volumeDescriptions)) {
+                    $sql .= $this->getSqlUpdateStatement(
+                        T_VOLUMES,
+                        'descriptions',
+                        ['values' => $volumeDescriptions, 'id' => $vId]
+                    );
+
+                    unset($volumeDescriptions);
+
+                }
+
             }
         }
 

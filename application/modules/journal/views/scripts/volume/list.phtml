@@ -47,7 +47,9 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
             </tr>
             </thead>
             <tbody class="sortable">
-            <?php foreach ($this->volumes as $volume) : ?>
+            <?php
+            /** @var  Episciences_Volume $volume */
+            foreach ($this->volumes as $volume) : ?>
                 <?php $volume->loadSettings(); ?>
                 <tr id="volume_<?php echo $volume->getVid(); ?>">
                     <td style="display:none;"><?php echo $volume->getPosition(); ?></td>
@@ -55,7 +57,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     <td>
                         <a title="<?php echo $this->translate('Modifier'); ?>"
                            href="/volume/edit?id=<?php echo $volume->getVid(); ?>">
-                            <?php echo $this->translate($volume->getNameKey()); ?>
+                            <?= Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()) ?>
                         </a>
                         <?php if ($this->review->getSetting(Episciences_Review::SETTING_SPECIAL_ISSUE_ACCESS_CODE) &&
                             $volume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
