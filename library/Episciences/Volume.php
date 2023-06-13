@@ -622,11 +622,13 @@ class Episciences_Volume
      * @param array|null $post form data volume metadata
      * @return bool
      */
-    public function save($data, $vid = null, $post = null): bool
+    public function save(array $data, int $vid = null, array $post = []): bool
     {
 
         // Enregistrement de la position des articles
-        if (($post !== null) && (array_key_exists(self::VOLUME_PAPER_POSITIONS, $post)) && ($vid !== null)) {
+        if (
+            isset($post[self::VOLUME_PAPER_POSITIONS]) && ($vid !== null)
+        ) {
             $this->savePaperPositionsInVolume($vid, $post[self::VOLUME_PAPER_POSITIONS]);
         }
 
@@ -645,21 +647,39 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'],
         ];
 
-        if ($settings[self::SETTING_SPECIAL_ISSUE] == 1 && !$settings['access_code']) {
+        if ((int)$settings[self::SETTING_SPECIAL_ISSUE] === 1 && !$settings['access_code']) {
             $settings[self::SETTING_ACCESS_CODE] = $this->createAccessCode();
         }
 
-        if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix() && $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED && $post['conference_proceedings_doi'] !== '') {
-            $settings[self::VOLUME_CONFERENCE_DOI] = Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()."/".RVCODE.".proceedings.".$post['conference_proceedings_doi'];
+
+        try {
+            $doiPrefix = Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix();
+        } catch (Zend_Exception $e) {
+            $doiPrefix = false;
+            trigger_error($e->getMessage());
+        }
+
+        if (
+            $post['conference_proceedings_doi'] !== '' &&
+            $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED &&
+            $doiPrefix
+        ) {
+            $doiPrefixSetting = $doiPrefix;
+            $doiPrefixSetting .= '/';
+            $doiPrefixSetting .= RVCODE;
+            $doiPrefixSetting .= '.proceedings.';
+            $doiPrefixSetting .= $post['conference_proceedings_doi'];
+            $settings[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
         }
 
         // Ajout d'un nouveau volume
-        if (empty($vid)) {
+        if (!$vid) {
             // Récupération de la position du volume
             $position = $this->getNewVolumePosition();
 
             // Enregistrement du volume
             $vid = $this->addNewVolume($position, $data['bib_reference']);
+
             if ($vid === 0) {
                 return false;
             }
