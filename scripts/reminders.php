@@ -113,7 +113,7 @@ try {
         $rvCode = $review->getCode();
         $status = $review->getStatus();
 
-        if(empty($status)){
+        if (empty($status)) {
             displayMessage($rvCode . ': NOT ACTIVATED ( STATUS = ' . $status . ' )' , 'red', true);
             continue;
         }
