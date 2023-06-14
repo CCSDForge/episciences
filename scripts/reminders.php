@@ -111,6 +111,7 @@ try {
 
 
         $rvCode = $review->getCode();
+        $rvId = $review->getRvid();
         $status = $review->getStatus();
 
         if (empty($status)) {
@@ -206,7 +207,7 @@ try {
                 $mail->addTo($recipient['email'], $recipient['fullname']);
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
-                $mail->writeMail($rvCode, RVID, $isDebug);
+                $mail->writeMail($rvCode, $rvId, $isDebug);
 
                 $msg = "reminder sent to " . $recipient['fullname'] . ' (' . $recipient['uid'] . ')';
                 if (isset($tags['%%ARTICLE_ID%%'])) {
