@@ -837,6 +837,12 @@ class AdministratepaperController extends PaperDefaultController
             (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid));
         $this->view->isEditableVersion = $isEditableVersion;
 
+        /**
+         * Bibliographical References
+         */
+
+        $this->view->urlcallapibib = APPLICATION_URL . '/' . $paper->getDocid() . '/pdf';
+        $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
 
     }
 

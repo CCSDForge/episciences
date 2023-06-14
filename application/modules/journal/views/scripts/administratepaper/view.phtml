@@ -77,6 +77,18 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 <?= $this->partial('partials/coauthors.phtml',['paper'=>$paper])?>
 <?php endif; ?>
 
+<div id="biblio-refs" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('References') ?></h2>
+    </div>
+    <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+        <?php
+        //REFERENCES EPI CITATIONS ****************************************************************
+        echo $this->partial('administratepaper/paper_admin_biblio_refs.phtml', ['paper' => $paper, 'urlcallapibib' => $this->urlcallapibib, 'apiEpiBibCitation' => $this->apiEpiBibCitation]);
+        ?>
+    </div>
+</div>
+
 <?= $this->partial('partials/paper_versions.phtml', [
         'paper' => $paper,
         'versions' => $this->versions,
@@ -359,5 +371,6 @@ $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
 $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/paper/paperAffiAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/coauthors.js');
+$this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
 ?>
 

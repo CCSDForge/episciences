@@ -495,6 +495,13 @@ class PaperController extends PaperDefaultController
         $this->view->zSubmitStatus = EPISCIENCES_Z_SUBMIT['STATUS'];
         /** @see /config/dist-pwd.json */
 
+
+        /**
+         * Bibliographical References
+         */
+
+        $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
+        $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
     }
 
 
@@ -3613,6 +3620,5 @@ class PaperController extends PaperDefaultController
 
         return $paperPwdDetails;
     }
-
 }
 
