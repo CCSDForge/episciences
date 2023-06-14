@@ -49,7 +49,7 @@ class VolumeController extends Zend_Controller_Action
                 $post = $request->getPost();
                 if ($post['conference_proceedings_doi'] !== ''){
                     $volumequeue = new Episciences_Volume_DoiQueue();
-                    $volumequeue->setVid($volume->getVid());
+                    $volumequeue->setVid($oVolume->getVid());
                     $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
                     Episciences_Volume_DoiQueueManager::add($volumequeue);
                 }
