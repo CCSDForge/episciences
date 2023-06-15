@@ -666,8 +666,15 @@ class Episciences_Mail_Reminder
             ->where("DEADLINE >= $date");
 
         if ($this->getRepetition()) {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) <= " . $this->getDelay()));
-            $sql->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, $date, DEADLINE), " . $this->getRepetition() . ') = 0'));
+
+            $whereRepetition = new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) <= " . $this->getDelay());
+            $whereRepetition .= ' OR ';
+            $whereRepetition .= new Zend_Db_Expr(
+                "MOD(TIMESTAMPDIFF(DAY, $date, DEADLINE), " . $this->getRepetition() . ') = 0'
+            );
+
+            $sql->where($whereRepetition);
+
         } else {
             $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) = " . $this->getDelay()));
         }
@@ -770,8 +777,15 @@ class Episciences_Mail_Reminder
             ->where("DEADLINE >= $date");
 
         if ($this->getRepetition()) {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay()));
-            $sql->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, DEADLINE, $date), " . $this->getRepetition() . ') = 0'));
+
+            $whereRepetition = new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay());
+            $whereRepetition .= ' OR ';
+            $whereRepetition .= new Zend_Db_Expr(
+                "MOD(TIMESTAMPDIFF(DAY, DEADLINE, $date), " . $this->getRepetition() . ') = 0'
+            );
+
+            $sql->where($whereRepetition);
+
         } else {
             $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) = " . $this->getDelay()));
         }
@@ -1011,10 +1025,19 @@ class Episciences_Mail_Reminder
             ->group(['DOCID', 'UID']);
 
         if ($this->getRepetition()) {
+
             // interval between today and invitation date should be 0
-            $sql->where(new Zend_Db_Expr('TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date) = 0"));
+            $interval0 = new Zend_Db_Expr(
+                'TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date) = 0"
+            );
             // interval should be divisible by "repetition"
-            $sql->where(new Zend_Db_Expr('MOD(TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'));
+            $interval1 = new Zend_Db_Expr(
+                'MOD(TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'
+            );
+
+            $sql->where($interval0 . ' OR ' . $interval1);
+
+
         } else {
             $sql->where("$date = ?", new Zend_Db_Expr('DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . ' DAY)'));
         }
@@ -1173,8 +1196,14 @@ class Episciences_Mail_Reminder
 
 
         if ($this->getRepetition()) {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) <= " . $this->getDelay()));
-            $sql->where(new Zend_Db_Expr('MOD(TIMESTAMPDIFF(DAY, DATE_SUB(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'));
+
+            $interval0 = new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) <= " . $this->getDelay());
+            $interval1 = new Zend_Db_Expr(
+                'MOD(TIMESTAMPDIFF(DAY, DATE_SUB(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'
+            );
+
+            $sql->where($interval0 . ' OR ' . $interval1);
+
         } else {
             $sql->where(new Zend_Db_Expr('DATE_SUB(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY) = $date"));
         }
@@ -1319,8 +1348,14 @@ class Episciences_Mail_Reminder
             ->where("DEADLINE <= $date");
 
         if ($this->getRepetition()) {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay()));
-            $sql->where(new Zend_Db_Expr('MOD(TIMESTAMPDIFF(DAY, DATE_ADD(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'));
+
+            $interval0 = new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay());
+            $interval1 = new Zend_Db_Expr(
+                'MOD(TIMESTAMPDIFF(DAY, DATE_ADD(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'
+            );
+
+            $sql->where($interval0 . ' OR ' . $interval1);
+
         } else {
             $sql->where(new Zend_Db_Expr('DATE_ADD(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY) = $date"));
         }
@@ -1444,8 +1479,12 @@ class Episciences_Mail_Reminder
         $paperQuery->where("MODIFICATION_DATE <= $date");
 
         if ($this->getRepetition()) {
-            $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date) >= " . $this->getDelay()));
-            $paperQuery->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date), " . $this->getRepetition() . ') = 0'));
+
+            $interval0 = new Zend_Db_Expr("TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date) >= " . $this->getDelay());
+            $interval1 = new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date), " . $this->getRepetition() . ') = 0');
+
+            $paperQuery->where($interval0 . ' OR ' . $interval1);
+
         } else {
             $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date) = " . $this->getDelay()));
         }
