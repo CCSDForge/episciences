@@ -943,23 +943,18 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $required_reviewers,
                 ];
 
-                // faut-il envoyer la relance aujourd'hui ?
-                if ($interval >= $this->getDelay()) {
-                    if ($this->getRepetition() && ($interval % $this->getRepetition()) === 0) {
-                        $recipients[] = [
-                            'uid' => $editor->getUid(),
-                            'fullname' => $editor->getFullName(),
-                            'email' => $editor->getEmail(),
-                            'lang' => $editor->getLangueid(true),
-                            'tags' => $tags];
-                    }
-                } elseif ($interval === 0) {
+                if (
+                    $interval === 0 || // faut-il envoyer la relance aujourd'hui ?
+                    ($this->getRepetition() && ($interval % $this->getRepetition()) === 0)
+
+                ) {
                     $recipients[] = [
                         'uid' => $editor->getUid(),
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
-                        'tags' => $tags];
+                        'tags' => $tags
+                    ];
                 }
 
             } // endforeach $editors
