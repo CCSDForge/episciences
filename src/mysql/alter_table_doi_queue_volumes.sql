@@ -1,0 +1,1 @@
+ALTER TABLE `doi_queue_volumes` DROP FOREIGN KEY `doi_queue_volumes_ibfk_1`; ALTER TABLE `doi_queue_volumes` ADD CONSTRAINT `doi_queue_volumes_ibfk_1` FOREIGN KEY (`vid`) REFERENCES `VOLUME`(`VID`) ON DELETE CASCADE ON UPDATE CASCADE;
