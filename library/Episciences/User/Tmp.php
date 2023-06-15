@@ -26,7 +26,7 @@ class Episciences_User_Tmp extends Episciences_User
         return (array)$data;
     }
 
-    public function save($forceInsert = false)
+    public function save($forceInsert = false, bool $isCasRecording = false, int $rvId = RVID): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
