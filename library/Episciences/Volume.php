@@ -644,7 +644,9 @@ class Episciences_Volume
             $settings[self::SETTING_ACCESS_CODE] = $this->createAccessCode();
         }
 
-        if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix() && $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED && $post['conference_proceedings_doi'] !== '') {
+        if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix() &&
+            ($data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED || $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED)
+            && $post['conference_proceedings_doi'] !== '') {
             $settings[self::VOLUME_CONFERENCE_DOI] = Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()."/".RVCODE.".proceedings.".$post['conference_proceedings_doi'];
         }
 
