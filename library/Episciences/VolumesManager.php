@@ -223,6 +223,10 @@ class Episciences_VolumesManager
                 rmdir($path);
             }
 
+            //suppression de la file pour le volume
+
+            $db->delete(T_DOI_QUEUE_VOLUMES, 'VID = '. $id);
+
             return true;
         }
 
