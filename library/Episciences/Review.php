@@ -2153,12 +2153,11 @@ class Episciences_Review
     }
 
     /**
-     * @param bool $accessCodeFilterActivated (default = true : filters special volumes if they are protected by an access code)
-     * @param bool $translated (default = false : translate volumes keys)
+     *
+     * @param bool $accessCodeFilterActivated //(default = true : check special volumes)
      * @return array
-     * @throws Zend_Exception
      */
-    public function getVolumesOptions(bool $accessCodeFilterActivated = true, bool $translated = false): array
+    public function getVolumesOptions(bool $accessCodeFilterActivated = true): array
     {
         // Récupération des volumes
         $options[] = "Hors volume";
@@ -2173,13 +2172,16 @@ class Episciences_Review
                     (int)$oVolume->getSetting('status') === 1 &&
                     (
                         (int)$oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) !== 1 ||
-                        (!array_key_exists(self::SETTING_SPECIAL_ISSUE_ACCESS_CODE, $settings) || (int)$settings[self::SETTING_SPECIAL_ISSUE_ACCESS_CODE] !== 1)
+                        (
+                            !array_key_exists(self::SETTING_SPECIAL_ISSUE_ACCESS_CODE, $settings) ||
+                            (int)$settings[self::SETTING_SPECIAL_ISSUE_ACCESS_CODE] !== 1
+                        )
                     )
                 ) {
-                    $options[$oVolume->getVid()] = !$translated ? $oVolume->getNameKey() : Zend_Registry::get("Zend_Translate")->translate($oVolume->getNameKey());
+                    $options[$oVolume->getVid()] = $oVolume->getNameKey();
                 }
             } else { // all volumes name keys
-                $options[$oVolume->getVid()] = !$translated ? $oVolume->getNameKey() : Zend_Registry::get("Zend_Translate")->translate($oVolume->getNameKey());
+                $options[$oVolume->getVid()] = $oVolume->getNameKey();
             }
 
         }

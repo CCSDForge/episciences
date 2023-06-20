@@ -942,9 +942,10 @@ class Episciences_Volume
 
     /**
      * @param string|null $lang
+     * @param bool $force
      * @return string
      */
-    public function getNameKey(string $lang = null): string
+    public function getNameKey(string $lang = null, bool $force = false): string
     {
         $titles = $this->getTitles();
 
@@ -958,14 +959,14 @@ class Episciences_Volume
 
         }
 
-        return 'volume_' . $this->getVid() . '_title';
+        return $force ? 'volume_' . $this->getVid() . '_title' : '';
 
     }
 
     /**
      * @return string
      */
-    public function getDescriptionKey() : string
+    public function getDescriptionKey(bool $force = false) : string
     {
         $descriptions = $this->getDescriptions();
 
@@ -977,7 +978,7 @@ class Episciences_Volume
             }
         }
 
-        return 'volume_' . $this->getVid() . '_description';
+        return $force ? 'volume_' . $this->getVid() . '_description' : '';
     }
 
     /**

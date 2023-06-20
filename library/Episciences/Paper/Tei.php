@@ -80,15 +80,14 @@ class Episciences_Paper_Tei
     private function getVolumeName()
     {
         $languages = $this->getLanguages();
-        $translator = $this->getTranslator();
 
         $volumeName = array();
         if ($this->getPaper()->getVid()) {
             $volume = Episciences_VolumesManager::find($this->getPaper()->getVid());
             if ($volume instanceof Episciences_Volume) {
                 foreach ($languages as $locale => $language) {
-                    if ($translator->isTranslated($volume->getNameKey(), false, $locale)) {
-                        $volumeName[$locale] = $translator->translate($volume->getNameKey(), $locale);
+                    if ($volume->getNameKey()) {
+                        $volumeName[$locale] = $volume->getNameKey();
                     }
                 }
             }

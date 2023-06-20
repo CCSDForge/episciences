@@ -32,7 +32,7 @@ $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
     <div class="media-body">
         <h4 class="media-heading">
             <a href="<?= $volumeUrl ?>">
-                <?= $this->translate($volume->getNameKey()) ?>
+                <?= Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()) ?>
             </a>
             <?php
             $countOfPublishedArticles = count($volume->getIndexedPapers());
@@ -62,9 +62,9 @@ $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
             </p>
             <p><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME).";"; } ?></p>
         <?php endif; ?>
-        <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($volume->getDescriptionKey())) : ?>
+        <?php if ($volume->getDescriptionKey()) : ?>
 
-            <p><?= $this->translate($volume->getDescriptionKey()) ?></p>
+            <p><?= Episciences_Tools::convertMarkdownToHtml($volume->getDescriptionKey()) ?></p>
 
         <?php endif; ?>
         <?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1" && substr(strrchr($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI), "."), 1) !== ''): ?>
