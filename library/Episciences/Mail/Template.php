@@ -58,7 +58,9 @@ class Episciences_Mail_Template
      */
     public function getTranslationsFolder(string $rvCode = null)
     {
-        return ($this->isCustom()) ? $this->getReviewTranslationsFolder($rvCode) : $this->getDefaultTranslationsFolder();
+        return $this->isCustom() ?
+            $this->getReviewTranslationsFolder($rvCode) :
+            $this->getDefaultTranslationsFolder();
     }
 
     public function getDefaultTranslationsFolder()
@@ -72,7 +74,13 @@ class Episciences_Mail_Template
      */
     public function getReviewTranslationsFolder(string $rvCode = null)
     {
-        $path = !$rvCode ? REVIEW_PATH : (realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
+
+        if (!$rvCode && !Ccsd_Tools::isFromCli()) {
+            $path = REVIEW_PATH;
+        } else {
+            $path = realpath(APPLICATION_PATH . '/../data') . '/' . $rvCode . '/';
+        }
+
         return $path . 'languages/';
     }
 
