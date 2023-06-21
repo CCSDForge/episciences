@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Changed
+- Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
+  stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
+### Added
+- script to import volumes and volume metadata from journals translation files into the database.
+- .env file
 ## 1.0.40.8 - 2023-06-20
 ### Fixed
 - Automated repeated reminders failed

@@ -12,8 +12,8 @@ class Episciences_Volume_Metadata
     private $_deletelist;
     private $_position;
 
-    private $_title;
-    private $_content;
+    private ?array $_title;
+    private ?array $_content;
 
     public function __construct(array $options = null)
     {
@@ -56,8 +56,10 @@ class Episciences_Volume_Metadata
     }
 
     /**
-     * load metadata translations
+     * @deprecated: titles and content are now loaded from 'T_VOLUME_METADATAS' table
      * @param null $langs
+     * @throws Zend_Exception
+     * load metadata translations
      */
     public function loadTranslations($langs = null)
     {
@@ -135,41 +137,56 @@ class Episciences_Volume_Metadata
         return 'volume_' . $this->getVid() . '_md_' . $this->getId() . '_content';
     }
 
-    // Renvoie true si la métadonnée a du contenu
-
+    /**
+     * Returns the title of the metadata in the specified language
+     * @param $lang
+     * @return mixed|null
+     */
     public function getTitle($lang = null)
     {
+
+        $titles = $this->getTitles();
+
         if (!$lang) {
-            $lang = Zend_Registry::get('lang');
-        }
-        if (is_array($this->_title) && array_key_exists($lang, $this->_title)) {
-            return $this->_title[$lang];
+            try {
+                $lang = Zend_Registry::get('lang');
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+            }
         }
 
-        return null;
+        return $titles[$lang] ?? null;
     }
 
-    // Renvoie true si la métadonnée a un fichier
 
-    public function setTitle($title)
+
+    public function setTitle(?array $title = null): self
     {
         $this->_title = $title;
         return $this;
     }
 
-    public function getContent($lang = null)
+    /**
+     * @param $lang
+     * @return string|null
+     * @throws Zend_Exception
+     */
+    public function getContent($lang = null) : ?string
     {
+        $contents = $this->getContents();
+
         if (!$lang) {
             $lang = Zend_Registry::get('lang');
         }
-        if (is_array($this->_content) && array_key_exists($lang, $this->_content)) {
-            return $this->_content[$lang];
-        }
 
-        return null;
+        return $contents[$lang] ?? null;
     }
 
-    public function setContent($content)
+    /**
+     * @param array|null $content
+     * @return $this
+     */
+    public function setContent(?array $content = null): self
     {
         $this->_content = $content;
         return $this;
@@ -201,7 +218,12 @@ class Episciences_Volume_Metadata
         return explode('/', $fileinfo);
     }
 
-    public function hasFile()
+    /**
+     * Renvoie 1 si la métadonnée a un fichier
+     * @return int
+     */
+
+    public function hasFile(): int
     {
         return ($this->getFile()) ? 1 : 0;
     }
@@ -284,7 +306,15 @@ class Episciences_Volume_Metadata
         }
 
         // Enregistre la métadonnée
-        $values = ['CONTENT' => $this->hasContent(), 'FILE' => ($this->hasFile()) ? $this->getFile() : null, 'POSITION' => $this->getPosition()];
+        try {
+            $values = [
+                'titles' => json_encode($this->getTitles(), JSON_THROW_ON_ERROR),
+                'CONTENT' => json_encode($this->getContents(), JSON_THROW_ON_ERROR), // descriptions
+                'FILE' => ($this->hasFile()) ? $this->getFile() : null, 'POSITION' => $this->getPosition()
+            ];
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+        }
         $values['VID'] = $this->getVid();
 
 
@@ -308,34 +338,6 @@ class Episciences_Volume_Metadata
 
             $this->setId($this->_db->lastInsertId());
         }
-
-
-        // Préparation des données de traduction
-        $path = self::TRANSLATION_PATH;
-        $file = self::TRANSLATION_FILE;
-
-
-        $translations = Episciences_Tools::getOtherTranslations($path, $file, '#volume_' . $this->getVid() . '_md_' . $this->getId() . '_#');
-
-        // Nom de la métadonnée
-        $key = $this->getNameKey();
-        foreach ($this->getTitles() as $lang => $translated) {
-            $translations[$lang][$key] = $translated;
-        }
-
-        // Contenu de la métadonnée
-        $key = $this->getContentKey();
-        foreach ($this->getContents() as $lang => $translated) {
-            $translations[$lang][$key] = $translated;
-        }
-
-        // Enregistrement des traductions
-        $resWriting = Episciences_Tools::writeTranslations($translations, $path, $file);
-
-        if (!$resWriting) {
-            return false;
-        }
-
         return true;
     }
 
@@ -361,18 +363,24 @@ class Episciences_Volume_Metadata
         return $this;
     }
 
-    public function hasContent()
+    /**
+     * Renvoie true si la métadonnée a une description
+     * @return bool
+     */
+
+    public function hasContent(): bool
     {
         $contents = $this->getContents();
+
         foreach ($contents as $value) {
             if ($value) {
-                return 1;
+                return true;
             }
         }
-        return 0;
+        return false;
     }
 
-    public function getContents()
+    public function getContents() : ?array
     {
         return $this->_content;
     }
@@ -388,7 +396,7 @@ class Episciences_Volume_Metadata
         return $this;
     }
 
-    public function getTitles()
+    public function getTitles() : ?array
     {
         return $this->_title;
     }

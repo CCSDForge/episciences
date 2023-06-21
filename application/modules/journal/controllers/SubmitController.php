@@ -245,7 +245,7 @@ class SubmitController extends DefaultController
         $response['canPickEditor'] = (int)$review->getSetting(Episciences_Review::SETTING_CAN_PICK_EDITOR);
         $response['canChooseVolumes'] = filter_var($review->getSetting(Episciences_Review::SETTING_CAN_CHOOSE_VOLUME), FILTER_VALIDATE_BOOLEAN);
         $response['editors'] = $response['canPickEditor'] > 0 ? $this->compileEditors($review->getEditors()) : [];
-        $response['volumesOptions'] = $response['canChooseVolumes'] ? $review->getVolumesOptions(true, true) : [];
+        $response['volumesOptions'] = $response['canChooseVolumes'] ? $review->getVolumesOptions() : [];
 
         if (strlen($code) != 13) {
             $response['error'] = 'Code invalide';

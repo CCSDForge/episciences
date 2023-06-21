@@ -1,7 +1,7 @@
 <?php
 
-require_once '../public/const.php';
-require_once '../public/bdd_const.php';
+require_once dirname(__DIR__) . '/public/const.php';
+require_once dirname(__DIR__)  . '/public/bdd_const.php';
 require_once 'ProgressBar.php';
 
 abstract class Script {
@@ -422,11 +422,20 @@ abstract class Script {
     /**
      * init Zend application
      */
-    public function initApp()
+    public function initApp($isRequiredAppEnv = true)
     {
         // check environment is valid
-        if ($this->getParam('app_env') && !in_array($this->getParam('app_env'), $this->_valid_envs))  {
+        if ($isRequiredAppEnv && $this->getParam('app_env') && !in_array($this->getParam('app_env'), $this->_valid_envs))  {
             $this->displayError("Incorrect application environment: " . $this->getParam('app_env') . PHP_EOL . "Should be one of these: " . implode(', ', $this->_valid_envs));
+        } else {
+
+
+            $dotEnv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+
+            foreach ($dotEnv->load() as $key => $value) {
+                define($key, $value);
+            }
+
         }
 
         // set environment constant

@@ -17,7 +17,7 @@ $othersVolumes = $article->getOtherVolumes();
         }
         /** @var Episciences_Volume $volume */
         $volume = $volumes[$paper_volume->getVid()];
-        echo $this->translate($volume->getNameKey());
+        echo Episciences_Tools::convertMarkdownToHtml($volume->getNameKey());
         if ($i < count($othersVolumes)) {
             echo ', ';
         }

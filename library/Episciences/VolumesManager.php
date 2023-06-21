@@ -20,6 +20,8 @@ class Episciences_VolumesManager
             return false;
         }
 
+        self::dataProcess($volume, 'decode');
+
         $oVolume = new Episciences_Volume($volume);
         $oVolume->loadSettings();
         $oVolume->loadMetadatas();
@@ -52,7 +54,9 @@ class Episciences_VolumesManager
         $result = $db->fetchAll($select);
 
         $volumes = [];
+
         foreach ($result as $volume) {
+            self::dataProcess($volume, 'decode');
             $oVolume = new Episciences_Volume($volume);
             $volumes[$oVolume->getVid()] = ($toArray) ? $oVolume->toArray() : $oVolume;
         }
@@ -176,7 +180,17 @@ class Episciences_VolumesManager
     public static function delete($id): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $path = Episciences_Volume::TRANSLATION_PATH;
+
+        if (!Ccsd_Tools::isFromCli()) {
+
+            $path = REVIEW_LANG_PATH;
+
+        } else {
+            $currentVolume = Episciences_VolumesManager::find($id);
+            $path = $currentVolume->getJournalTranslationPath();
+        }
+
+
         $file = Episciences_Volume::TRANSLATION_FILE;
 
         // Si des articles sont rattachés à ce volume, on empêche sa suppression
@@ -263,30 +277,12 @@ class Episciences_VolumesManager
      */
     public static function getFormDefaults(Episciences_Volume $volume): array
     {
-        $defaults = [];
 
-        $langs = Episciences_Tools::getLanguages();
-        $path = Episciences_Volume::TRANSLATION_PATH;
-        $file = Episciences_Volume::TRANSLATION_FILE;
-        $translator = Zend_Registry::get('Zend_Translate');
-        Episciences_Tools::loadTranslations($path, $file);
+        $defaults['title'] = $volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML);
+        $defaults['description'] = $volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML);
 
-        $vid = $volume->getVid();
         foreach ($volume->getSettings() as $setting => $value) {
             $defaults[$setting] = $value;
-        }
-        //$defaults['status'] = $volume->getSetting('status');
-        //$defaults['current_issue'] = $volume->getSetting('current_issue');
-
-        foreach ($langs as $code => $lang) {
-
-            if ($translator->isTranslated('volume_' . $vid . '_title', $code)) {
-                $defaults['title'][$code] = $translator->translate('volume_' . $vid . '_title', $code);
-            }
-
-            if ($translator->isTranslated('volume_' . $vid . '_description', $code)) {
-                $defaults['description'][$code] = $translator->translate('volume_' . $vid . '_description', $code);
-            }
         }
 
         return $defaults;
@@ -303,7 +299,7 @@ class Episciences_VolumesManager
      */
     public static function getForm(string $referer = '', Episciences_Volume $volume = null ): \Ccsd_Form
     {
-        if(empty($referer)){
+        if (empty($referer)) {
             $referer = '/volume/list';
         }
 
@@ -333,7 +329,7 @@ class Episciences_VolumesManager
             'populate' => $lang,
             'validators' => [new Ccsd_Form_Validate_RequiredLang(['populate' => $reqLang])],
             'required' => true,
-            'display' => Ccsd_Form_Element_MultiText::DISPLAY_ADVANCED
+            'display' => Ccsd_Form_Element_MultiText::DISPLAY_SIMPLE
         ]));
 
         // Description du volume
@@ -582,4 +578,37 @@ class Episciences_VolumesManager
         return $res;
     }
 
+    public static function dataProcess(
+        array  &$data = [],
+        string $method = 'encode',
+        array  $keysToCheck = ['titles', 'descriptions']
+    ): void
+
+    {
+
+        foreach ($keysToCheck as $key) {
+
+            if (!isset($data[$key])) {
+                continue;
+            }
+
+            try {
+                $data[$key] = $method === 'decode' ?
+                    json_decode($data[$key],
+                        true,
+                        512,
+                        JSON_THROW_ON_ERROR
+                    ) :
+                    json_encode(
+                        $data[$key],
+                        JSON_THROW_ON_ERROR
+                    );
+
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
+
+        }
+
+    }
 }

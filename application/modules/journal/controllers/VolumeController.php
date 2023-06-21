@@ -18,7 +18,8 @@ class VolumeController extends Zend_Controller_Action
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
         $this->view->review = $review;
-        $this->view->volumes = $review->getVolumes();
+        $volumes = $review->getVolumes();
+        $this->view->volumes = $volumes;
     }
 
     /**
@@ -82,7 +83,7 @@ class VolumeController extends Zend_Controller_Action
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $vid = $request->getParam('id');
+        $vid = (int)$request->getParam('id');
         $docId = $request->getParam('docid');
         $from = $request->getParam('from');
 
@@ -95,6 +96,7 @@ class VolumeController extends Zend_Controller_Action
         }
 
         $volume = Episciences_VolumesManager::find($vid);
+
         if (empty($volume)) {
             $this->_helper->redirector('add');
             return;
@@ -165,9 +167,16 @@ class VolumeController extends Zend_Controller_Action
 
             if ($form->isValid($post)) {
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
+
                 $oVolume = $volume->saveVolumeMetadata($request->getPost());
+
+
                 if ($post['conference_proceedings_doi'] !== '' &&
-                    ($post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED || $post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED)) {
+                    (
+                        $post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED ||
+                        $post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED
+                    )
+                ) {
                     $volumequeue = new Episciences_Volume_DoiQueue();
                     $volumequeue->setVid($oVolume->getVid());
                     $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
