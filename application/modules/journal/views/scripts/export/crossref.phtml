@@ -137,7 +137,7 @@ $timestamp = $dateTime->format('YmdHisv');
                                     <?php } ?>
                                 <?php endif; ?>
                                 <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?>
-                                    <ORCID><?= "https://orcid.org/" . $this->escape($enrichmentAuthors[$order]['orcid']) ?></ORCID>
+                                    <ORCID><?= "https://orcid.org/" . strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></ORCID>
                                 <?php endif; ?>
                             <?php endif; ?>
                         </person_name>
