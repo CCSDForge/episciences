@@ -31,7 +31,7 @@ return [
     'epiadmins' => 'Root',
 
     //Menu
-    "Episciences_Website_Navigation_Page_Index" => "Page d'accueil",
+    "Episciences_Website_Navigation_Page_Index" => "Accueil",
     "Episciences_Website_Navigation_Page_Custom" => "Page personnalisable",
     "Episciences_Website_Navigation_Page_Link" => "Lien",
     "Episciences_Website_Navigation_Page_File" => "Fichier",
@@ -51,7 +51,7 @@ return [
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Membres du comité éditorial",
     "Episciences_Website_Navigation_Page_Credits" => "Crédits",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
-    "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte d'éthique",
+    "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
 
