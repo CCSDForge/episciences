@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+
+## 1.0.40.9 - 2023-06-21
+## Fixed
+- Fixed internal error: Use of undefined constant REVIEW_PATH
+
 ## 1.0.40.8 - 2023-06-20
 ### Fixed
 - Automated repeated reminders failed
