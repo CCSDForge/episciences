@@ -499,9 +499,16 @@ class PaperController extends PaperDefaultController
         /**
          * Bibliographical References
          */
+        $enabledBib = false;
 
-        $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
-        $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
+        if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
+            ($paper->getStatus() === Episciences_Paper::STATUS_CE_READY_TO_PUBLISH ||
+                $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED)) {
+            $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
+            $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
+            $enabledBib = true;
+        }
+        $this->view->enabledBib = $enabledBib;
     }
 
 

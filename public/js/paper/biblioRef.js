@@ -24,8 +24,14 @@ function visualizeBiblioRefs(){
             $.ajax({
                 url: $(this).data("api")+"/visualize-citations?url="+$(this).val(),
                 dataType: "json",
+                beforeSend: function() {
+                    // setting a timeout
+                    $("#visualize-biblio-refs").hide();
+                    $("#loading-biblio").show();
+                },
             }).success(function (response) {
                 $.each(response,function(i,obj){
+                    $("#loading-biblio").hide();
                     if (obj.ref !== undefined){
                         let strBiblioRef = ''
                         let parsedRawRef = JSON.parse(obj.ref);
@@ -49,6 +55,7 @@ function visualizeBiblioRefs(){
             $("#biblio-refs-container").show();
         }
         alreadyCalled = true;
+        $("#loading-biblio").hide();
         $("#visualize-biblio-refs").hide();
         $("#hide-biblio-refs").show();
     });
@@ -56,13 +63,21 @@ function visualizeBiblioRefs(){
 
 function processBiblioRefs(){
     $("#hide-process-biblio-refs").hide();
+    $("#epi-citation-app").hide();
+    $("#loading-biblio").hide();
     let alreadyCalled = false;
     $("#process-biblio-refs").click(function (e){
         if (!alreadyCalled){
             $.ajax({
                 url: $(this).data( "api" )+"/process-citations?url="+$(this).val(),
                 dataType: "json",
+                beforeSend: function() {
+                    // setting a timeout
+                    $("#process-biblio-refs").hide();
+                    $("#loading-biblio").show();
+                },
             }).success(function (response) {
+                $("#loading-biblio").hide();
                 $.each(response,function(i,obj){
                     if (obj.ref !== undefined){
                         let strBiblioRef = ''
@@ -86,7 +101,14 @@ function processBiblioRefs(){
         } else {
             $("#process-biblio-refs-container").show();
         }
-        $("#process-biblio-refs").hide();
-        $("#hide-process-biblio-refs").show();
+
+        setTimeout(
+            function()
+            {
+                $("#process-biblio-refs").hide();
+                $("#hide-process-biblio-refs").show();
+                $("#epi-citation-app").show();
+            }, 1000);
+
     });
 }

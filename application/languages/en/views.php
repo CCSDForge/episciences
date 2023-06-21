@@ -2364,5 +2364,10 @@ return [
     "Envoyer une copie de ce message aux co-auteur" => "Send a copy of this message to the co-authors",
     "Co-auteur retiré" => "Co-Author removed",
     "L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté en tant que co-auteur du document" => "The user <strong>%%RECIPIENT_SCREEN_NAME%%</strong> has been added as co-author of the document",
-    "Ajouter un co-auteur" => "Add a co-author"
+    "Ajouter un co-auteur" => "Add a co-author",
+    "Afficher les references bibliographiques" => "Show bibliographical references",
+    "Chargement"=> "Loading",
+    "Masquer les références bibliographique" => "Hide bibliographical references",
+    "Extraire les references bibliographiques" => "Extract bibliographical references",
+    "Gérer les références bibliographiques" => "Manage the bibliographical references"
 ];
