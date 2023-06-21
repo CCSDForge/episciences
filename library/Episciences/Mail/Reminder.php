@@ -123,7 +123,7 @@ class Episciences_Mail_Reminder
         }
 
         $template->findByKey($templateConst);
-        $template->loadTranslations($langs);
+        $template->loadTranslations($langs, $review->getCode());
 
         foreach ($langs as $code => $lang) {
             // Reminder name
