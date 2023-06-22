@@ -242,10 +242,10 @@ class ExportController extends Zend_Controller_Action
         $this->view->previousVersionsUrl = $previousVersionsUrl;
         $paperLanguage = $paper->getMetadata('language');
 
-
-        $nbPages = $this->getDocumentBackupNbOfPages($paper);
-        $this->view->nbPages = $nbPages;
-
+        if ($format==='zbjats') {
+            $nbPages = $this->getDocumentBackupNbOfPages($paper);
+            $this->view->nbPages = $nbPages;
+        }
 
 
         if ($paperLanguage == '') {
