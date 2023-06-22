@@ -34,6 +34,7 @@ class Episciences_CommentsManager
     public const TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION = 21;
 
     public const COPY_EDITING_SOURCES = 'copy_editing_sources';
+    public const TYPE_ANSWER_REQUEST = 'answerRequest';
 
     public static array $_typeLabel = [
         self::TYPE_INFO_REQUEST => "demande d'éclaircissements",
@@ -314,7 +315,7 @@ class Episciences_CommentsManager
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
-    public static function answerRevisionForm(string $fromAnswerType = 'answerRequest'): \Ccsd_Form
+    public static function answerRevisionForm(string $fromAnswerType = self::TYPE_ANSWER_REQUEST): \Ccsd_Form
     {
         $form = new Ccsd_Form();
         $form->setName('comment_only');
@@ -331,6 +332,23 @@ class Episciences_CommentsManager
             'required' => true,
             'decorators' => array('Label', 'Description', 'Errors', 'ViewHelper')
         ]));
+
+        if ($fromAnswerType === self::TYPE_ANSWER_REQUEST) {
+            $descriptions = self::getDescriptions();
+
+            $form->addElement('file', 'file', [
+                    'label' => 'Fichier',
+                    'description' => $descriptions['description'],
+                    'valueDisabled' => true,
+                    'maxFileSize' => MAX_FILE_SIZE,
+                    'validators' => [
+                        'Count' => [false, 1],
+                        'Extension' => [false, $descriptions['extensions']],
+                        'Size' => [false, MAX_FILE_SIZE]
+                    ]
+                ]
+            );
+        }
 
         return $form;
     }

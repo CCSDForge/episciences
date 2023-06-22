@@ -1099,6 +1099,8 @@ class PaperController extends PaperDefaultController
 
             // save author's answer to revision request
             $oAnswer = new Episciences_Comment();
+            $oAnswer->setFilePath(Episciences_PapersManager::buildDocumentPath($docId) . '/comments/');
+
             $oAnswer->setParentid($parentId);
 
             $oAnswer->setType($type);
@@ -1127,7 +1129,15 @@ class PaperController extends PaperDefaultController
                     Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($paper->getDocid()) //paper management page url
                 ];
 
-                Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER, $tags, $paper, Episciences_Auth::getUid());
+                Episciences_Mail_Send::sendMailFromReview(
+                    $recipient,
+                    Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER,
+                    $tags,
+                    $paper,
+                    Episciences_Auth::getUid(),
+                    [ $oAnswer->getFile() => $oAnswer->getFilePath()],
+                    true
+                );
             }
 
             if ($type !== Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
