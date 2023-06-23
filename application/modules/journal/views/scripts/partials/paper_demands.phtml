@@ -31,9 +31,6 @@ $commentUrl = '/docfiles/comments/' . $paper->getDocid();
     <div class="small"><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($this->current_demand['MESSAGE'])) ?></div>
 
     <?php //TODO Remettre en place après le copy editing, voir (RT 89076 & commit ad1a32223c41eea459f9246a9e195eea4e9a64b4) ?>
-
-
-    <?php // echo $this->answerForm; ?>
 <?php endif; ?>
 
 <?php if ($this->current_demand && $this->previous_demands) : ?>
@@ -56,18 +53,9 @@ $commentUrl = '/docfiles/comments/' . $paper->getDocid();
                     <?= $this->Date($comment['DEADLINE']) ?>
                 </div>
             <?php endif; ?>
-            <?php
-            /*
-            echo '(';
-            echo $this->translate('relecteur').' '.$comment['ALIAS'];
-            if ($comment['UID'] == Episciences_Auth::getUid()) {
-                echo ' : '.$this->translate('vous');
-            } elseif (Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor()) {
-                echo ' : '.$comment['SCREEN_NAME'];
-            }
-            echo ')';
-            */ ?>
+
             <div><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($comment['MESSAGE'])) ?></div>
+
             <?php if ($comment['FILE']) : ?>
             <?php $href = (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
                     $tmpUrl :
@@ -90,7 +78,6 @@ $commentUrl = '/docfiles/comments/' . $paper->getDocid();
                     <?= $this->partial('partials/icon_user_identity.phtml', [
                         'user' => ['name' => $reply['SCREEN_NAME'], 'uid' => $reply['UID']]
                     ]) ?>
-
 
                     <span><strong><?= $this->Date($reply['WHEN']) ?> : </strong></span>
                     <div><?= $reply['MESSAGE'] ?></div>
@@ -147,17 +134,8 @@ $commentUrl = '/docfiles/comments/' . $paper->getDocid();
                         'user' => ['name' => $comment['SCREEN_NAME'], 'uid' => $comment['UID']]
                     ]) ?>
 
-                    <strong><?= $this->Date($comment['WHEN']) ?> : </strong><?php
-                    /*
-                    echo '(';
-                    echo $this->translate('relecteur').' '.$comment['ALIAS'];
-                    if ($comment['UID'] == Episciences_Auth::getUid()) {
-                        echo ' : '.$this->translate('vous');
-                    } elseif (Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor()) {
-                        echo ' : '.$comment['SCREEN_NAME'];
-                    }
-                    echo ')';
-                    */ ?>
+                    <strong><?= $this->Date($comment['WHEN']) ?> : </strong>
+                    
                     <div><?= Episciences_Tools::epi_html_decode($comment['MESSAGE']) ?></div>
                     <?php if ($comment['FILE']) : ?>
                         <?php $href = (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
