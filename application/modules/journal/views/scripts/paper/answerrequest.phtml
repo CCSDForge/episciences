@@ -22,4 +22,9 @@
     $.getScript('/js/paper/answerrequest.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
         console.log('loading failed:' + error);
     });
+
+
+    $.getScript('/js/common/visualDeleteFile.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
+        console.log('loading failed:' + error);
+    });
 </script>

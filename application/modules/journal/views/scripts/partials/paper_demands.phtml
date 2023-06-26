@@ -1,6 +1,8 @@
 <?php
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
+$tmpUrl = '/tmp_files/' . $paper->getPaperId();
+$commentUrl = '/docfiles/comments/' . $paper->getDocid();
 ?>
 
 <style>
@@ -14,61 +16,57 @@ $paper = $this->paper;
 
 <?php if ($this->current_demand) : ?>
     <div style="margin-bottom: 15px;">
-        <strong><?php echo $this->translate('Dernière demande') . ' : '; ?></strong>
-        (<?php echo $this->Date($this->current_demand['WHEN']); ?>)
+        <strong><?= $this->translate('Dernière demande') . ' : ' ?></strong>
+        <?= $this->partial('partials/icon_user_identity.phtml', [
+                'user' => ['name' => $this->current_demand['SCREEN_NAME'], 'uid' => $this->current_demand['UID']]
+        ]) ?>
+        (<?= $this->Date($this->current_demand['WHEN']) ?>)
         <?php if ($this->current_demand['DEADLINE']) : ?><br/>
             <div>
-                <?php echo $this->translate('Date limite de réponse :'); ?>
-                <?php echo $this->Date($this->current_demand['DEADLINE']); ?>
+                <?= $this->translate('Date limite de réponse :') ?>
+                <?= $this->Date($this->current_demand['DEADLINE']) ?>
             </div>
         <?php endif; ?>
     </div>
     <div class="small"><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($this->current_demand['MESSAGE'])) ?></div>
 
     <?php //TODO Remettre en place après le copy editing, voir (RT 89076 & commit ad1a32223c41eea459f9246a9e195eea4e9a64b4) ?>
-
-
-    <?php // echo $this->answerForm; ?>
 <?php endif; ?>
 
 <?php if ($this->current_demand && $this->previous_demands) : ?>
     <hr style="margin: 20px 0;"/><?php endif; ?>
 
 <?php if ($this->previous_demands) : ?>
-    <div style="margin-bottom: 15px;"><strong><?php echo $this->translate('Anciennes demandes :') . ' '; ?></strong>
+    <div style="margin-bottom: 15px;"><strong><?= $this->translate('Anciennes demandes :') . ' ' ?></strong>
     </div>
     <?php $first = key($this->previous_demands); ?>
     <?php foreach ($this->previous_demands as $id => $comment) : ?>
         <?php $margin = ($id == $first) ? '0' : '20px'; ?>
-        <div style="margin-top: <?php echo $margin; ?>;" class="small">
-            <strong><?php echo $this->Date($comment['WHEN']); ?> : </strong>
+        <div style="margin-top: <?= $margin ?>;" class="small">
+            <?= $this->partial('partials/icon_user_identity.phtml', [
+                'user' => ['name' => $comment['SCREEN_NAME'], 'uid' => $comment['UID']]
+            ]) ?>
+            <strong><?= $this->Date($comment['WHEN']) ?> : </strong>
             <?php if ($comment['DEADLINE']) : ?><br/>
                 <div>
-                    <?php echo $this->translate('Date limite de réponse :'); ?>
-                    <?php echo $this->Date($comment['DEADLINE']); ?>
+                    <?= $this->translate('Date limite de réponse :') ?>
+                    <?= $this->Date($comment['DEADLINE']) ?>
                 </div>
             <?php endif; ?>
-            <?php
-            /*
-            echo '(';
-            echo $this->translate('relecteur').' '.$comment['ALIAS'];
-            if ($comment['UID'] == Episciences_Auth::getUid()) {
-                echo ' : '.$this->translate('vous');
-            } elseif (Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor()) {
-                echo ' : '.$comment['SCREEN_NAME'];
-            }
-            echo ')';
-            */ ?>
+
             <div><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($comment['MESSAGE'])) ?></div>
+
             <?php if ($comment['FILE']) : ?>
+            <?php $href = (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
+                    $tmpUrl :
+                    $commentUrl; ?>
                 <div class="col-sm-10">
-                    &gt; <a href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE']; ?>"
-                            target="_blank">
-                        <?php echo $this->translate('Fichier') . ' : ' . $comment['FILE']; ?>
+                    &gt; <a href="<?= $href ?>/<?= $comment['FILE'] ?>" target="_blank">
+                        <?= $this->translate('Fichier') . ' : ' . $comment['FILE'] ?>
                     </a>
                 </div>
                 <div class="col-sm-2">
-                    <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>
+                    <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -77,15 +75,20 @@ $paper = $this->paper;
             <?php foreach ($comment['replies'] as $reply) : ?>
 
                 <div style="margin: 10px 0 10px 30px;" class="small">
+                    <?= $this->partial('partials/icon_user_identity.phtml', [
+                        'user' => ['name' => $reply['SCREEN_NAME'], 'uid' => $reply['UID']]
+                    ]) ?>
 
-                    <span><strong><?php echo $this->Date($reply['WHEN']); ?> : </strong></span>
-                    <div><?= $reply['MESSAGE']; ?></div>
+                    <span><strong><?= $this->Date($reply['WHEN']) ?> : </strong></span>
+                    <div><?= $reply['MESSAGE'] ?></div>
                     <?php if ($reply['FILE']) : ?>
+                        <?php $href = (int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
+                            $tmpUrl :
+                            $commentUrl; ?>
                         <?php $files = Episciences_Tools::isJson($reply['FILE']) ? json_decode($reply['FILE'], true) : (array)$reply['FILE']; ?>
                         <?php foreach ($files as $index => $file): ?>
                             <div class="col-sm-10">
-                                &gt; <a href="/tmp_files/<?= $this->paper->getPaperId() . '/' . $file; ?>"
-                                        target="_blank">
+                                &gt; <a href="<?= $href ?>/<?= $file ?>" target="_blank">
                                     <?php
                                     $dFile = (count($files) === 1) ? $this->translate('Fichier') : $this->translate('Fichier') . ' ' . ((int)$index + 1);
                                     $dFile .= ' : ' . $file;
@@ -94,7 +97,7 @@ $paper = $this->paper;
                                 </a>
                             </div>
                             <div class="col-sm-2">
-                                <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file, 'istmp' => true]); ?>
+                                <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file, 'istmp' => true]) ?>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -107,9 +110,9 @@ $paper = $this->paper;
 
 
 <?php if ($this->previousVersionsDemands) : ?>
-    <?= !empty($this->current_demand) ? '<hr/>' : ''; ?>
+    <?= !empty($this->current_demand) ? '<hr/>' : '' ?>
     <div style="margin-bottom: 15px;">
-        <strong><?php echo $this->translate('Demandes des versions précédentes') . ' : '; ?></strong></div>
+        <strong><?= $this->translate('Demandes des versions précédentes') . ' : ' ?></strong></div>
     <div class="previousRequests">
         <?php foreach ($this->previousVersionsDemands as $versionId => $versionComments) : ?>
             <?php if (!$versionComments) {
@@ -118,36 +121,33 @@ $paper = $this->paper;
             <div style="margin-top: 20px;" class="darkgrey">
                 <strong>
                     <?php if ($this->previousVersions[$versionId]->isTmp()) : ?>
-                        <?php echo $this->translate('Version temporaire du ') . $this->Date($this->previousVersions[$versionId]->getWhen()); ?>
+                        <?= $this->translate('Version temporaire du ') . $this->Date($this->previousVersions[$versionId]->getWhen()) ?>
                     <?php else : ?>
-                        <?php echo $this->translate('Version') . ' ' . $this->previousVersions[$versionId]->getVersion(); ?>
+                        <?= $this->translate('Version') . ' ' . $this->previousVersions[$versionId]->getVersion() ?>
                     <?php endif; ?>
                 </strong>
             </div>
             <?php $first = key($this->previousVersionsDemands); ?>
             <?php foreach ($versionComments as $id => $comment) : ?>
                 <div style="background: #f2f2f2; padding: 0 5px; margin-top: 15px;" class="small">
-                    <strong><?php echo $this->Date($comment['WHEN']); ?> : </strong><?php
-                    /*
-                    echo '(';
-                    echo $this->translate('relecteur').' '.$comment['ALIAS'];
-                    if ($comment['UID'] == Episciences_Auth::getUid()) {
-                        echo ' : '.$this->translate('vous');
-                    } elseif (Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor()) {
-                        echo ' : '.$comment['SCREEN_NAME'];
-                    }
-                    echo ')';
-                    */ ?>
+                    <?= $this->partial('partials/icon_user_identity.phtml', [
+                        'user' => ['name' => $comment['SCREEN_NAME'], 'uid' => $comment['UID']]
+                    ]) ?>
+
+                    <strong><?= $this->Date($comment['WHEN']) ?> : </strong>
+                    
                     <div><?= Episciences_Tools::epi_html_decode($comment['MESSAGE']) ?></div>
                     <?php if ($comment['FILE']) : ?>
+                        <?php $href = (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
+                            $tmpUrl :
+                            $commentUrl; ?>
                         <div class="col-sm-10">
-                            &gt; <a href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE']; ?>"
-                                    target="_blank">
-                                <?php echo $this->translate('Fichier') . ' : ' . $comment['FILE']; ?>
+                            &gt; <a href="<?= $href ?>/<?= $comment['FILE'] ?>" target="_blank">
+                                <?= $this->translate('Fichier') . ' : ' . $comment['FILE'] ?>
                             </a>
                         </div>
                         <div class="col-sm-2">
-                            <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>
+                            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -156,36 +156,35 @@ $paper = $this->paper;
 
                     <?php foreach ($comment['replies'] as $reply) :
 
-                        if ((int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION) {
-                            $href = '/docfiles/comments/' . $this->paper->getDocid();
-                        } else {
-                            $href = '/tmp_files/' . $this->paper->getPaperId();
-
-                        }
-
+                        $href = (int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
+                            $tmpUrl :
+                            $commentUrl;
 
                         ?>
 
                         <div style="background: #efeff3; padding: 0 5px; margin: 10px 0 10px 30px;" class="small">
                             <?php if ($reply['MESSAGE'] || $reply['FILE']) : ?>
-                                <span><strong><?php echo $this->Date($reply['WHEN']); ?> : </strong></span>
-                                <div><?= Episciences_Tools::epi_html_decode($reply['MESSAGE'])?></div>
+                                <?= $this->partial('partials/icon_user_identity.phtml', [
+                                    'user' => ['name' => $reply['SCREEN_NAME'], 'uid' => $reply['UID']]
+                                ]) ?>
+
+                                <span><strong><?= $this->Date($reply['WHEN']) ?> : </strong></span>
+                                <div><?= Episciences_Tools::epi_html_decode($reply['MESSAGE']) ?></div>
                                 <?php if ($reply['FILE']) : ?>
                                     <?php $files = Episciences_Tools::isJson($reply['FILE']) ? json_decode($reply['FILE'], true) : (array)$reply['FILE']; ?>
                                     <?php foreach ($files as $index => $file): ?>
                                         <div class="col-sm-10">
                                             &gt;
-                                            <a href="<?= $href . '/' . $file ?>"
-                                               target="_blank">
+                                            <a href="<?= $href ?>/<?= $file ?>" target="_blank">
                                                 <?php
                                                 $dFile = (count($files) === 1) ? $this->translate('Fichier') : $this->translate('Fichier') . ' ' . ((int)$index + 1);
                                                 $dFile .= ' : ' . $file;
                                                 echo $dFile;
-                                                ?>
+                                                 ?>
                                             </a>
                                         </div>
                                         <div class="col-sm-2">
-                                            <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file, 'istmp' => true]); ?>
+                                            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file, 'istmp' => true]) ?>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

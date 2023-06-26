@@ -1821,7 +1821,7 @@ class AdministratepaperController extends PaperDefaultController
                 $subject = $data['acceptancesubject'];
                 $message = $data['acceptancemessage'];
 
-                $deadline = $data['minor-revisiondeadline'] ?: null;
+                $deadline = $data['minor-revisiondeadline'] ?? null;
 
                 // prepare comment options
                 $options = [];

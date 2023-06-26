@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
   stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
 ### Added
+- icon to make it easier to identify the user in revision requests section.
+- [313](https://github.com/CCSDForge/episciences/issues/313): optional file attachment in "Contact without sending a new version.
 - script to import volumes and volume metadata from journals translation files into the database.
 - .env file
 
