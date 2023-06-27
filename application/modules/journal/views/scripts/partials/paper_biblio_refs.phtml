@@ -3,9 +3,10 @@
     <div class="row">
         <div class="col-md-12">
             <div id="biblio-refs-container"></div>
-            <button id="visualize-biblio-refs" class="btn btn-default btn-sm" value="<?= $this->urlcallapibib ?>" data-api="<?=$this->apiEpiBibCitation?>"><i class="fa-regular fa-eye"></i> <?= $this->translate('Afficher les references bibliographiques') ?></button>
-            <button id="loading-biblio" class="btn btn-default btn-sm" disabled><i class="fa-solid fa-loader"></i><?= $this->translate('Chargement') ?> ...</button>
-            <button id="hide-biblio-refs" class="btn btn-default btn-sm"><i class="fa-solid fa-quote-left"></i> <?= $this->translate('Masquer les références bibliographique') ?></button>
+            <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>" data-api="<?=$this->apiEpiBibCitation?>" hidden></div>
+            <?php if ($this->enabledManageFromPublicPage === true) : ?>
+                <a id="epi-citation-app-enabled-public" class="btn btn-default btn-sm" target="_blank" href="<?=$this->apiEpiBibCitation?>/login?url=<?=$this->urlcallapibib?>"><i class="fa-solid fa-asterisk"></i> <?= $this->translate('Gérer les références bibliographiques') ?></a>
+            <?php endif;?>
         </div>
     </div>
 </div>

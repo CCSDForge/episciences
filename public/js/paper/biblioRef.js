@@ -17,25 +17,16 @@ function hideBiblioRefs(){
     });
 }
 function visualizeBiblioRefs(){
-    $("#hide-biblio-refs").hide();
     let alreadyCalled = false;
-    $("#visualize-biblio-refs").click(function (e){
         if (!alreadyCalled){
             $.ajax({
-                url: $(this).data("api")+"/visualize-citations?url="+$(this).val(),
+                url: $("#visualize-biblio-refs").data("api")+"/visualize-citations?url="+$("#visualize-biblio-refs").data("value"),
                 dataType: "json",
-                beforeSend: function() {
-                    // setting a timeout
-                    $("#visualize-biblio-refs").hide();
-                    $("#loading-biblio").show();
-                },
             }).success(function (response) {
                 $.each(response,function(i,obj){
-                    $("#loading-biblio").hide();
-                    if (obj.ref !== undefined){
+                    if (obj.ref !== undefined) {
                         let strBiblioRef = ''
                         let parsedRawRef = JSON.parse(obj.ref);
-                        console.log(parsedRawRef.raw_reference);
                         strBiblioRef+= parsedRawRef.raw_reference;
                         if (parsedRawRef.doi !== undefined){
                             strBiblioRef+= " "+"<a href='https://doi.org/"+parsedRawRef.doi+"' rel='noopener' target='_blank'>"+parsedRawRef.doi+"</a>"
@@ -51,14 +42,9 @@ function visualizeBiblioRefs(){
                 let apiResponse = JSON.parse(xhr.responseText);
                 $( "<div>"+apiResponse.message+"</div>" ).appendTo( "#biblio-refs-container" );
             });
-        }else{
-            $("#biblio-refs-container").show();
+            alreadyCalled = true;
         }
-        alreadyCalled = true;
-        $("#loading-biblio").hide();
-        $("#visualize-biblio-refs").hide();
-        $("#hide-biblio-refs").show();
-    });
+
 }
 
 function processBiblioRefs(){
