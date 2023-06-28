@@ -1683,7 +1683,7 @@ return [
     "Mails" => "Mail",
     "Relances" => "Reminders",
 
-    "Episciences_Website_Navigation_Page_Index" => "Homepage",
+    "Episciences_Website_Navigation_Page_Index" => "Home",
     "Episciences_Website_Navigation_Page_Custom" => "Custom page",
     "Episciences_Website_Navigation_Page_Link" => "Link",
     "Episciences_Website_Navigation_Page_File" => "File",

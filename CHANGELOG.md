@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
   stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
+- [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and ethical
 ### Added
 - icon to make it easier to identify the user in revision requests section.
 - [313](https://github.com/CCSDForge/episciences/issues/313): optional file attachment in "Contact without sending a new version.
