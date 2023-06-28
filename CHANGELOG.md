@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+- if statement doesn't work as expected.
+- Display "revision contact comments" in "Revision requests" section.
+
 ### Changed
 - Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
   stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
