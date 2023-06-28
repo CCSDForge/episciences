@@ -388,10 +388,8 @@ class PaperController extends PaperDefaultController
 
         $journalSettings = Zend_Registry::get('reviewSettings');
 
-        $doNotDisplayContactChoice = (
-            isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) &&
-            $journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] &&
-            $paper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION
+        $doNotDisplayContactChoice = in_array(
+            $paper->getStatus(), Episciences_Paper::All_STATUS_WAITING_FOR_FINAL_VERSION, true
         );
 
         $this->view->revision_requests = $revision_requests;

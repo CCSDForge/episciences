@@ -272,6 +272,13 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
     ];
 
+    public const All_STATUS_WAITING_FOR_FINAL_VERSION = [
+        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
+        self::STATUS_TMP_VERSION_ACCEPTED,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION
+
+    ];
+
     /**
      * @var int
      */
