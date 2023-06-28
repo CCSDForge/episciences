@@ -1,0 +1,33 @@
+<?php
+$comment = $this->comment;
+$file = $comment['FILE'] ?? null;
+if ($file) : ?>
+    <?php try {
+        $files = Episciences_Tools::isJson($file) ? json_decode($file, true, 512, JSON_THROW_ON_ERROR) : (array)$file;
+    } catch (JsonException $e) {
+        trigger_error($e->getMessage());
+    } ?>
+    <hr>
+    <p class="small">
+        <strong><?= $this->translate('Fichier(s) joint(s)') ?> :</strong>
+    </p>
+
+    <?php foreach ($files as $file) : ?>
+        <div class="col-sm-10">
+            <a href="/docfiles/ce/<?= $comment['DOCID'] . '/' . $file . '/' . $comment['PCID'] ?>"
+               target="_blank">
+                <?= $file ?>
+            </a>
+        </div>
+        <div class="col-sm-2">
+            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment, 'fileName' => $file]) ?>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
+
+
+
+
+
+
+
