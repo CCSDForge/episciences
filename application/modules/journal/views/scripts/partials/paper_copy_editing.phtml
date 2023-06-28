@@ -12,10 +12,14 @@ foreach ($comments as $id => $comment) : ?>
     ?>
     <div class="small">
         <div id="copy-editing-request-<?= $id ?>">
-            <strong><em class="fas fa-paper-plane" style="margin-right: 5px;"></em><?= $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) . $towPoints . ' ' ?></strong>
+            <strong><em class="fas fa-paper-plane"
+                        style="margin-right: 5px;"></em><?= $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) . $towPoints . ' ' ?>
+            </strong>
             <?php
             echo '(';
-            if (!in_array($comment['TYPE'], Episciences_CommentsManager::$_copyEditingRequestTypes, false)
+            if (
+                $comment['TYPE'] === Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST ||
+                !in_array($comment['TYPE'], Episciences_CommentsManager::$_copyEditingRequestTypes, false)
             ) {
                 echo $this->translate('contributeur');
             } else {
@@ -27,6 +31,11 @@ foreach ($comments as $id => $comment) : ?>
                 echo ' : ' . $comment['SCREEN_NAME'];
             }
             echo ') <strong>' . $towPoints . ' </strong><span class="label label-status-' . $comment['TYPE'] . '">' . $this->translate(Episciences_CommentsManager::$_typeLabel[$comment['TYPE']]) . '</span>'; ?>
+
+            <div id="copy-editing-request-types">
+                <?= $this->partial('partials/comment-attachments.phtml', ['comment' => $comment]) ?>
+            </div>
+
         </div>
 
         <?php if ($replyForms) : ?>
@@ -73,7 +82,7 @@ foreach ($comments as $id => $comment) : ?>
         <div id="replyForm_<?= $id ?>" class="replyForm small" style="margin: 20px 20px 10px 20px; display: none">
             <?php if ($isFinalVersionRequest) : ?>
                 <?= $this->partial('paper/new_version_show_result.phtml',
-                    ['form' => $replyForms[$id], 'isFromZSubmit' => $this->isFromZSubmit, 'zenodoRepoId' => Episciences_Repositories::ZENODO_REPO_ID, 'zSubmitUrl' => $this->zSubmitUrl ]) ?>
+                    ['form' => $replyForms[$id], 'isFromZSubmit' => $this->isFromZSubmit, 'zenodoRepoId' => Episciences_Repositories::ZENODO_REPO_ID, 'zSubmitUrl' => $this->zSubmitUrl]) ?>
             <?php else: ?>
                 <?= $replyForms[$id] ?>
             <?php endif; ?>
@@ -89,7 +98,7 @@ foreach ($comments as $id => $comment) : ?>
             $infoMsg .= $isFinalVersion ? ('<a class="btn btn-primary btn-sm" href="' . $linkToLatestDocId . '" data-toggle="tooltip" title="' . $this->translate('Accéder à la version finale') . '"><i class="fas fa-link" style="margin-right: 5px;"></i>') : '';
             $infoMsg .= !$isFinalVersion ? '<span class="label label-status-' . $reply['TYPE'] . '">' : '';
             $infoMsg .= $this->translate(Episciences_CommentsManager::$_typeLabel[$reply['TYPE']]);
-            $infoMsg .= !$isFinalVersion ? '</span>' :  '';
+            $infoMsg .= !$isFinalVersion ? '</span>' : '';
             $infoMsg .= $isFinalVersion ? '</a>' : '';
             ?>
             <br>
@@ -109,27 +118,12 @@ foreach ($comments as $id => $comment) : ?>
                 <?php endif; ?>
                 <?= $infoMsg ?>
 
-                <div><?= Episciences_Tools::formatText($this->escape($reply['MESSAGE'])) ?></div>
+                <div>
+                    <?= Episciences_Tools::formatText($this->escape($reply['MESSAGE'])) ?>
+                    <?= $this->partial('partials/comment-attachments.phtml', ['comment' => $reply]) ?>
 
-                <?php if ($reply['FILE']) : ?>
-                    <?php $files = Episciences_Tools::isJson($reply['FILE']) ? json_decode($reply['FILE'], true) : (array)$reply['FILE'] ?>
-                    <hr>
-                    <p class="small">
-                        <strong><?= $this->translate('Fichier(s) joint(s)') ?> :</strong>
-                    </p>
+                </div>
 
-                    <?php foreach ($files as $file) : ?>
-                        <div class="col-sm-10">
-                            <a href="/docfiles/ce/<?= $reply['DOCID'] . '/' . $file . '/' . $reply['PCID'] ?>"
-                               target="_blank">
-                                <?= $file; ?>
-                            </a>
-                        </div>
-                        <div class="col-sm-2">
-                            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file]) ?>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     <?php endif; ?>
