@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Changed
+- [351] (https://github.com/CCSDForge/episciences/issues/351): formatted files available on the copy editing section
 ### Fixed
 - if statement doesn't work as expected.
 - Display "revision contact comments" in "Revision requests" section.
