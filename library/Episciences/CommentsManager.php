@@ -333,22 +333,21 @@ class Episciences_CommentsManager
             'decorators' => array('Label', 'Description', 'Errors', 'ViewHelper')
         ]));
 
-        if ($fromAnswerType === self::TYPE_ANSWER_REQUEST) {
-            $descriptions = self::getDescriptions();
 
-            $form->addElement('file', 'file', [
-                    'label' => 'Fichier',
-                    'description' => $descriptions['description'],
-                    'valueDisabled' => true,
-                    'maxFileSize' => MAX_FILE_SIZE,
-                    'validators' => [
-                        'Count' => [false, 1],
-                        'Extension' => [false, $descriptions['extensions']],
-                        'Size' => [false, MAX_FILE_SIZE]
-                    ]
+        $descriptions = self::getDescriptions();
+
+        $form->addElement('file', 'file', [
+                'label' => 'Fichier',
+                'description' => $descriptions['description'],
+                'valueDisabled' => true,
+                'maxFileSize' => MAX_FILE_SIZE,
+                'validators' => [
+                    'Count' => [false, 1],
+                    'Extension' => [false, $descriptions['extensions']],
+                    'Size' => [false, MAX_FILE_SIZE]
                 ]
-            );
-        }
+            ]
+        );
 
         return $form;
     }

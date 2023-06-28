@@ -17,7 +17,7 @@ $paper = $this->paper;
             </a>
             <ul class="dropdown-menu">
 
-                <?php if ($this->doNotDisplayContactChoice) : ?>
+                <?php if (!$this->doNotDisplayContactChoice) : ?>
                     <?php if ($paper->isOwner()): ?>
                         <li>
                             <a href="/paper/contactrequest?id=<?= $this->current_demand['PCID'] ?>"

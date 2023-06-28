@@ -658,7 +658,8 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_CommentsManager::TYPE_REVISION_REQUEST,
                 Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
                 Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION
+                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION,
+                Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT
             ]
         ];
 
