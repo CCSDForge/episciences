@@ -15,6 +15,10 @@
       "URL": "https://zsubmit-env.domain.org",
       "STATUS": 0
     },
+    "BIBLIOREF": {
+      "URL":"https://epiextract-env.domain.org",
+      "ENABLE" : false
+    },
     "AUTH_ADAPTER_NAME": "LemonLDAP",
     "RENDER_ALERT_BANNER": {
       "STATUS" : 0,

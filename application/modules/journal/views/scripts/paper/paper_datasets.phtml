@@ -29,10 +29,10 @@ $currentSmall = "";
                                         <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($sourceId) ?></small>
                                     <?php endif;?>
                                     <?php if ($k !== "metatext" && is_null($meta->getMetatext())) : ?>
-                                        <?=strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>"><?= $meta->getValue() ?></a>
+                                        <?=strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>" target="_blank" rel="noopener"><?= $meta->getValue() ?></a>
                                         <br>
                                     <?php elseif($k !== "metatext" && !is_null($meta->getMetatext())) : ?>
-                                        <?= $meta->getRelationship() ?>&nbsp;<?= strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>"><?= $meta->getValue() ?></a><br>
+                                        <?= $meta->getRelationship() ?>&nbsp;<?= strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>" target="_blank" rel="noopener"><?= $meta->getValue() ?></a><br>
                                         <?php  $countEnrichmentMeta++; ?>
                                         <?php if ($countEnrichmentMeta === count($metadataArray)-1) : ?>
                                             <?php foreach ($metadataArray['metatext'] as $kmeta => $typemeta) : ?>
@@ -44,15 +44,17 @@ $currentSmall = "";
                                                     <?php endforeach; ?>
                                                 </ul>
                                                 <span style="font-weight: bold"><?= $this->escape($typemeta['title']) ?></span><br>
-                                                <?php foreach ($typemeta['creators'] as $key => $value) : ?>
-                                                    <span><?= $value['name'] ?>
-                                                        <?php if ($value['identifiers'] !== null) : ?>
-                                                            <?php foreach ($value['identifiers'] as $identifierInfo) : ?>
-                                                                <span><?= $this->escape($identifierInfo['identifier']) ?></span>
-                                                            <?php endforeach; ?>
-                                                        <?php endif;?>
-                                                    </span>;
-                                                <?php endforeach; ?>
+                                                <?php if(array_key_exists("creators",$typemeta)): ?>
+                                                    <?php foreach ($typemeta['creators'] as $key => $value) : ?>
+                                                        <span><?= $value['name'] ?>
+                                                            <?php if ($value['identifiers'] !== null) : ?>
+                                                                <?php foreach ($value['identifiers'] as $identifierInfo) : ?>
+                                                                    <span><?= $this->escape($identifierInfo['identifier']) ?></span>
+                                                                <?php endforeach; ?>
+                                                            <?php endif;?>
+                                                        </span>;
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
                                             <?php endforeach; ?>
                                         <?php endif;?>
                                     <?php endif; ?>

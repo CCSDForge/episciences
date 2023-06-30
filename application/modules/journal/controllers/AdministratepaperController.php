@@ -838,7 +838,18 @@ class AdministratepaperController extends PaperDefaultController
             (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid));
         $this->view->isEditableVersion = $isEditableVersion;
 
-
+        /**
+         * Bibliographical References
+         */
+        $enabledBib = false;
+        if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
+            ($paper->getStatus() === Episciences_Paper::STATUS_CE_READY_TO_PUBLISH ||
+                $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED)) {
+            $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
+            $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
+            $enabledBib = true;
+        }
+        $this->view->enabledBib = $enabledBib;
     }
 
     /**
