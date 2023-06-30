@@ -99,7 +99,7 @@
       {
         "label": "Réinitialiser mon mot de passe API",
         "controller": "user",
-        "action": "resetapipassword",
+        "action": "reset_api_password",
         "resource": "user-reset_api_password",
         "privilege": "member"
       },
