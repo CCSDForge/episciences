@@ -1,5 +1,7 @@
 $(function () {
-    visualizeBiblioRefs();
+    if ($("#visualize-biblio-refs").length) {
+        visualizeBiblioRefs();
+    }
     hideBiblioRefs();
     processBiblioRefs();
 });
