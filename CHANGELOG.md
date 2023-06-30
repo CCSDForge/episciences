@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [313](https://github.com/CCSDForge/episciences/issues/313): optional file attachment in "Contact without sending a new version.
 - script to import volumes and volume metadata from journals translation files into the database.
 - .env file
-
+- Integration of api and application for the bibliographical references 
 ## 1.0.40.9 - 2023-06-21
 ## Fixed
 - Fixed internal error: Use of undefined constant REVIEW_PATH

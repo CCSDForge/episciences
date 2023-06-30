@@ -494,6 +494,25 @@ class PaperController extends PaperDefaultController
         $this->view->zSubmitStatus = EPISCIENCES_Z_SUBMIT['STATUS'];
         /** @see /config/dist-pwd.json */
 
+
+        /**
+         * Bibliographical References
+         */
+        $enabledBib = false;
+        $enabledManageFromPublicPage = false;
+        if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
+            ($paper->getStatus() === Episciences_Paper::STATUS_CE_READY_TO_PUBLISH ||
+                $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED)) {
+            $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
+            $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
+            $enabledBib = true;
+            if (Episciences_Auth::isLogged() &&  $paper->isOwner())
+            {
+                $enabledManageFromPublicPage = true;
+            }
+        }
+        $this->view->enabledBib = $enabledBib;
+        $this->view->enabledManageFromPublicPage = $enabledManageFromPublicPage;
     }
 
 
@@ -3612,6 +3631,5 @@ class PaperController extends PaperDefaultController
 
         return $paperPwdDetails;
     }
-
 }
 

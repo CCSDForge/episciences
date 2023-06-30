@@ -284,7 +284,19 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
             </div>
         </div>
     <?php endif; ?>
-
+    <?php if ($this->enabledBib): ?>
+        <div id="biblio-refs" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('References') ?></h2>
+            </div>
+            <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+                <?php
+                //REFERENCES EPI CITATIONS ****************************************************************
+                echo $this->partial('partials/paper_biblio_refs.phtml', ['paper' => $paper,'urlcallapibib'=>$this->urlcallapibib,'apiEpiBibCitation' => $this->apiEpiBibCitation, 'enabledManageFromPublicPage' => $this->enabledManageFromPublicPage]);
+                ?>
+            </div>
+        </div>
+    <?php endif; ?>
     <?php // author's comments and cover letter ************************************************************************* ?>
     <?php if ($this->author_comments && !$paper->isPublished()) : ?>
         <?php // Author comments  *****************************************?>
@@ -393,6 +405,7 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
 $this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
+$this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
 <script>
