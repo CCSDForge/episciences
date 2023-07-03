@@ -1404,10 +1404,16 @@ class PaperController extends PaperDefaultController
         unset($recipients[$paper->getUid()]);
         Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
-        $principalRecipient = new Episciences_User();
-        $principalRecipient->find($requestComment->getUid());
+        if ($tmpPaper->isEditor($requestComment->getUid())) {
 
-        $CC = $paper->extractCCRecipients($recipients, $requestComment->getUid());
+            $revisionInitiator = new Episciences_User();
+            $revisionInitiator->find($requestComment->getUid());
+            $principalRecipient = $revisionInitiator;
+        } else {
+            $principalRecipient = !empty($recipients) ? $recipients[array_key_first($editors)] : null;
+        }
+
+        $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
 
         if (empty($recipients)) {
             $arrayKeyFirstCC = array_key_first($CC);
@@ -1415,9 +1421,24 @@ class PaperController extends PaperDefaultController
             unset($CC[$arrayKeyFirstCC]);
         }
 
+        if (null !== $principalRecipient) {
+
             // link to manage article page
             $paper_url = $this->buildAdminPaperUrl($tmpPaper->getDocid());
-            $this->answerRevisionNotifyManager($principalRecipient, $paper, $tmpPaper, $requestComment, $answerComment, true, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
+
+            $this->answerRevisionNotifyManager(
+                $principalRecipient,
+                $paper, $tmpPaper,
+                $requestComment,
+                $answerComment,
+                true,
+                [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url],
+                $CC
+            );
+
+        } else {
+            trigger_error('Answer revision with tmp version: mail not sent to managers: empty recipients');
+        }
 
             // link to public article page
         $publicUrl = $this->view->url([
@@ -1905,23 +1926,44 @@ class PaperController extends PaperDefaultController
 
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
-            $principalRecipient = new Episciences_User();
-            $principalRecipient->find($requestComment->getUid());
 
-            $CC = $paper->extractCCRecipients($recipients, $requestComment->getUid());
+            if ($newPaper->isEditor($requestComment->getUid())) {
+
+                $revisionInitiator = new Episciences_User();
+                $revisionInitiator->find($requestComment->getUid());
+                $principalRecipient = $revisionInitiator;
+
+            } else {
+                $principalRecipient = !empty($recipients) ? $recipients[array_key_first($editors)] : null;
+            }
+
+            $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
 
 
-            // link to manage article page
-            $paper_url = $this->view->url([
-                self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
-                self::ACTION => 'view',
-                'id' => $newPaper->getDocid()
-            ]);
+            if ($principalRecipient) {
 
-            $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+                // link to manage article page
+                $paper_url = $this->view->url([
+                    self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
+                    self::ACTION => 'view',
+                    'id' => $newPaper->getDocid()
+                ]);
 
-            $this->answerRevisionNotifyManager($principalRecipient, $paper, $newPaper, $requestComment, $answerComment, true, [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url], $CC);
+                $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+                $this->answerRevisionNotifyManager(
+                    $principalRecipient,
+                    $paper,
+                    $newPaper,
+                    $requestComment,
+                    $answerComment,
+                    true,
+                    [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url],
+                    $CC
+                );
 
+            } else {
+                trigger_error('Answer revision with new version: mail not sent to managers: empty recipients');
+            }
 
             $newPaperStatusDetails = [self::STATUS => $status];
 
