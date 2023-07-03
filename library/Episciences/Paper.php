@@ -4406,4 +4406,28 @@ class Episciences_Paper
     }
 
 
+    /**
+     * @param int|null $uid
+     * @return bool
+     */
+    public function isEditor(int $uid = null): bool
+    {
+
+        if (!$uid) {
+            return false;
+        }
+
+        try {
+
+            $editor = $this->getEditor($uid);
+
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        return !empty($editor);
+
+    }
+
+
 }
