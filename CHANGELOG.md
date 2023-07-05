@@ -14,12 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.40.10 - 2023-07-05
 ### Changed
 - [351] (https://github.com/CCSDForge/episciences/issues/351): formatted files available on the copy editing section
 ### Fixed
-- RT#189427
-- if statement doesn't work as expected.
 - Display "revision contact comments" in "Revision requests" section.
 
 ## 1.0.40.9 - 2023-06-21
