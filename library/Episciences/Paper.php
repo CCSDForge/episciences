@@ -4506,4 +4506,15 @@ class Episciences_Paper
 
 
 
+    public function getBibRef() :array {
+        if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
+            ($this->getStatus() === self::STATUS_CE_READY_TO_PUBLISH ||
+                $this->getStatus() === self::STATUS_PUBLISHED)) {
+            $urlPdf= APPLICATION_URL . '/' . $this->getDocid() . '/pdf';
+            $citations = Episciences_BibliographicalsReferencesTools::getBibRefFromApi($urlPdf);
+            return $citations;
+        }
+        return [];
+    }
+
 }

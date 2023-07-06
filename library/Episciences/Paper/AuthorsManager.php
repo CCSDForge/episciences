@@ -726,4 +726,45 @@ class Episciences_Paper_AuthorsManager
 
         return $affectedRows;
     }
+
+    /**
+     * @param array|null $arrayDb
+     * @param array $acronyms
+     * @param string $haystack
+     * @return string
+     */
+    public static function setOrUpdateRorAcronym(?array $arrayDb, array $acronyms, string $haystack): string
+    {
+        $strAcronym = '';
+        // match acronym in label with acronym received
+        if (($arrayDb !== null) && array_key_exists("id", $arrayDb) && array_key_exists("acronym", $arrayDb['id'][0])) {
+            $strAcronym = $arrayDb['id'][0]['acronym'];
+        }//case if array does not exist
+        foreach ($acronyms as $acronym) {
+            if ($acronym !== '' && str_contains($haystack, $acronym)) {
+                $strAcronym = $acronym;
+            }
+        }
+        return $strAcronym;
+    }
+
+    /**
+     * only for export
+     * @param string $name
+     * @param string $acronym
+     * @return string
+     */
+    public static function eraseAcronymInName(string $name,string $acronym): string {
+        $cleanedCompleteNameForExport = str_replace($acronym,"",$name);
+        return rtrim($cleanedCompleteNameForExport);
+    }
+
+    /**
+     * @param string $acronym
+     * @return string
+     */
+    public static function cleanAcronymForExport(string $acronym): string {
+        $acronym = trim($acronym);
+        return substr($acronym, 1, -1);
+    }
 }

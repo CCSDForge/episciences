@@ -618,6 +618,8 @@ class PaperController extends PaperDefaultController
             $jsonAuthorDecoded = json_decode($value['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         }
         $arrayAffi = [];
+        $acronyms = $request->getPost("affiliationAcronym");
+        $acronyms = explode('||',$acronyms);
         foreach ($affiliations as $key => $affiliation) {
             if ($affiliation !== "") {
                 $affiliation = explode('#', $affiliation);
@@ -625,16 +627,19 @@ class PaperController extends PaperDefaultController
                 $nameRor = ["name" => rtrim($affiliation[0])];
                 $idArray = [];
                 if ((isset($affiliation[1]) && $affiliation[1] !== "") && str_contains(rtrim($affiliation[1]), $rorDomain)) {
+                    $strAcronym = Episciences_Paper_AuthorsManager::setOrUpdateRorAcronym($jsonAuthorDecoded[$authorKeyJson]["affiliation"][$key], $acronyms, $affiliation[0]);
                     $idArray["id"] = [
                         ['id' => rtrim($affiliation[1]), 'id-type' => "ROR"]
                     ];
+                    if ($strAcronym !== ''){
+                        $idArray["id"][0]['acronym'] = trim($strAcronym);
+                    }
                     $arrayAffi[] = array_merge($nameRor, $idArray);
                 } else {
                     $arrayAffi[] = $nameRor;
                 }
 
             }
-
         }
         // avoid space in url to avoid duplicate affiliations
         $currentUrlchecked = '';
