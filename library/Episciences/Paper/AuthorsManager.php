@@ -155,6 +155,9 @@ class Episciences_Paper_AuthorsManager
                         if (isset($affiliation['id'])) {
                             $arrayAllAffi[array_key_last($arrayAllAffi)]['url'] = $affiliation['id'][0]['id'];
                             $arrayAllAffi[array_key_last($arrayAllAffi)]['type'] = $affiliation['id'][0]['id-type'];
+                            if (array_key_exists("acronym",$affiliation['id'][0])) {
+                                $arrayAllAffi[array_key_last($arrayAllAffi)]['acronym'] = $affiliation['id'][0]['acronym'];
+                            }
                         }
                         $allauthors[$key]['idAffi'][array_key_last($arrayAllAffi)] = $arrayAllAffi[array_key_last($arrayAllAffi)];
                     }

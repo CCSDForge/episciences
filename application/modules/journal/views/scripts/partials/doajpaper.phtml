@@ -121,7 +121,12 @@ $timestamp = time();
         <affiliationsList>
             <?php foreach ($arrayAffiliation as $affiIndex => $affiName) { ?>
                 <affiliationName
-                        affiliationId="<?= array_search($this->escape($affiIndex), array_keys($arrayAffiliation)) ?>"><?= $this->escape($affiName['name']) ?></affiliationName>
+                        affiliationId="<?= array_search($this->escape($affiIndex), array_keys($arrayAffiliation)) ?>"><?php
+                    if (array_key_exists('acronym',$affiName)){
+                        echo $this->escape(Episciences_Paper_AuthorsManager::eraseAcronymInName($affiName['name'],$affiName['acronym']));
+                    }else{
+                        echo $this->escape($affiName['name']);
+                    } ?></affiliationName>
             <?php } ?>
         </affiliationsList>
     <?php endif; ?>

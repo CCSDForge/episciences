@@ -87,7 +87,12 @@ if (defined('RVISSN')) {
                     <?php if (!empty($enrichmentAuthors)):?>
                         <?php if (!empty($enrichmentAuthors[$key]['affiliation'])): ?>
                                 <?php foreach ($enrichmentAuthors[$key]['affiliation'] as $affiliationAuthor) { ?>
-                                     <datacite:affiliation><?= $this->escape($affiliationAuthor['name']) ?></datacite:affiliation>
+                                     <datacite:affiliation><?php
+                                         if (array_key_exists('id',$affiliationAuthor) && array_key_exists('acronym',$affiliationAuthor['id'][0])){
+                                             echo $this->escape(Episciences_Paper_AuthorsManager::eraseAcronymInName($affiliationAuthor['name'],$affiliationAuthor['id'][0]['acronym']));
+                                         }else{
+                                             echo $this->escape($affiliationAuthor['name']);
+                                         } ?></datacite:affiliation>
                                         <?php if (isset($affiliationAuthor['id'])): ?>
                                             <datacite:nameIdentifier nameIdentifierScheme="ROR" schemeURI="http://ror.org/"><?= $this->escape($affiliationAuthor['id'][0]['id']) ?></datacite:nameIdentifier>
                                         <?php endif; ?>

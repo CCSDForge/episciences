@@ -632,8 +632,11 @@ class Episciences_Paper_Tei
                     $idno->setAttribute('type', $affi['type']);
                     $org->appendChild($idno);
                 }
-                $orgName =  $xml->createElement('orgName', $affi['name']);
-
+                if (array_key_exists('acronym',$affi)){
+                    $orgName =  $xml->createElement('orgName', Episciences_Paper_AuthorsManager::eraseAcronymInName($affi['name'],$affi['acronym']));
+                }else{
+                    $orgName =  $xml->createElement('orgName', $affi['name']);
+                }
                 $org->appendChild($orgName);
                 $listOrg->appendChild($org);
 
