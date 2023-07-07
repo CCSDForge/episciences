@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Fixed
+ - DOI filter not working properly.
 
 ## 1.0.40.10 - 2023-07-05
 ### Changed
