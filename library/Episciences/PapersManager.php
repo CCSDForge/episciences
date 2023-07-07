@@ -448,7 +448,7 @@ class Episciences_PapersManager
     {
         return
             self::allPapers()
-                ->where('DOI IS NULL');
+                ->where("DOI IS NULL OR DOI LIKE '' ");
     }
 
     /**
@@ -458,7 +458,7 @@ class Episciences_PapersManager
     {
         return
             self::allPapers()
-                ->where('DOI IS NOT NULL');
+                ->where("DOI IS NOT NULL AND DOI NOT LIKE '' ");
     }
 
     /**
