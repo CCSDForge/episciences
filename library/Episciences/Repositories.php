@@ -32,6 +32,8 @@ class Episciences_Repositories
     public const DATACITE_REPO_ID = '7';
     public const GRAPH_OPENAIRE_ID = '8';
     public const OPENCITATIONS_ID = '13';
+    public const BIO_RXIV_ID = '10';
+    public const MED_RXIV_ID = '11';
 
     // todo : to be converted to a database table
     private static array $_repositories = [
@@ -64,15 +66,15 @@ class Episciences_Repositories
             self::REPO_DOI_PREFIX => '10.48550'
         ],
         // OAI is down.
-    /*  self::CWI_REPO_ID => [
-            self::REPO_LABEL => 'CWI',
-            self::REPO_EXAMPLE => '22211',
-            self::REPO_BASEURL => 'https://ir.cwi.nl/oai/',
-            self::REPO_IDENTIFIER => 'oai:cwi.nl:%%ID',
-            self::REPO_DOCURL => 'http://persistent-identifier.org/?identifier=urn:nbn:nl:ui:18-%%ID',
-            self::REPO_PAPERURL => 'https://ir.cwi.nl/pub/%%ID/%%ID.pdf',
-            self::REPO_TYPE => self::TYPE_PAPERS
-        ],*/
+        /*  self::CWI_REPO_ID => [
+                self::REPO_LABEL => 'CWI',
+                self::REPO_EXAMPLE => '22211',
+                self::REPO_BASEURL => 'https://ir.cwi.nl/oai/',
+                self::REPO_IDENTIFIER => 'oai:cwi.nl:%%ID',
+                self::REPO_DOCURL => 'http://persistent-identifier.org/?identifier=urn:nbn:nl:ui:18-%%ID',
+                self::REPO_PAPERURL => 'https://ir.cwi.nl/pub/%%ID/%%ID.pdf',
+                self::REPO_TYPE => self::TYPE_PAPERS
+            ],*/
 
         self::ZENODO_REPO_ID => [
             // example https://zenodo.org/oai2d?verb=GetRecord&identifier=oai:zenodo.org:3752641&metadataPrefix=oai_dc
@@ -85,6 +87,30 @@ class Episciences_Repositories
             self::REPO_DOI_PREFIX => '10.5281',
             self::REPO_TYPE => self::TYPE_DATA,
             self::REPO_API_URL => 'https://zenodo.org/api/'
+
+        ],
+        self::BIO_RXIV_ID => [
+            self::REPO_EXAMPLE => '(DOI)10.1101/339747',
+            self::REPO_TYPE => self::TYPE_PAPERS,
+            self::REPO_API_URL => 'https://api.biorxiv.org/details/biorxiv/',
+            self::REPO_BASEURL => null,
+            self::REPO_DOI_PREFIX => Episciences_Repositories_BioMedRxiv::DOI_PREFIX,
+            self::REPO_LABEL => 'bioRxiv',
+            self::REPO_IDENTIFIER => 'oai:bioRxiv.org:%%ID',
+            self::REPO_DOCURL => 'https://www.biorxiv.org/content/%%IDv%%VERSION',
+            self::REPO_PAPERURL => 'https://www.biorxiv.org/content/%%IDv%%VERSION.full.pdf'
+
+        ],
+        self::MED_RXIV_ID => [
+            self::REPO_EXAMPLE => '(DOI)10.1101/339747',
+            self::REPO_TYPE => self::TYPE_PAPERS,
+            self::REPO_API_URL => 'https://api.biorxiv.org/details/medrxiv/',
+            self::REPO_BASEURL => null,
+            self::REPO_DOI_PREFIX => Episciences_Repositories_BioMedRxiv::DOI_PREFIX,
+            self::REPO_LABEL => 'medRxiv',
+            self::REPO_IDENTIFIER => 'oai:bioRxiv.org:%%ID',
+            self::REPO_DOCURL => 'https://www.medrxiv.org/content/%%IDv%%VERSION',
+            self::REPO_PAPERURL => 'https://www.medrxiv.org/content/%%IDv%%VERSION.full.pdf'
 
         ],
     ];
@@ -165,7 +191,7 @@ class Episciences_Repositories
      */
     private static function makeHookClassNameByRepoId(int $repoId): string
     {
-        return __CLASS__ . '_' . self::getLabel($repoId) . '_Hooks';
+        return __CLASS__ . '_' . ucfirst(self::getLabel($repoId)) . '_Hooks';
     }
 
     /**

@@ -4580,8 +4580,26 @@ class AdministratepaperController extends PaperDefaultController
                     }
                 }
 
-            }
+            } elseif (
+                $repoId === (int)Episciences_Repositories::BIO_RXIV_ID ||
+                $repoId === (int)Episciences_Repositories::MED_RXIV_ID
+            ) {
+                $url = $api . $paper->getIdentifier() . DIRECTORY_SEPARATOR . 'na' . DIRECTORY_SEPARATOR . 'json';
 
+                $response = Episciences_Tools::callApi($url);
+                $messages = $response['messages'][array_key_first($response['messages'])];
+                $collection = $response['collection'];
+
+                if (
+                    isset($messages['status']) &&
+                    $messages['status'] === Episciences_Repositories_BioMedRxiv::SUCCESS_CODE
+                ) {
+                    foreach ($collection as $index => $values) {
+                        $versions[$index + 1] = $values['version'];
+
+                    }
+                }
+            }
 
         } else {
 

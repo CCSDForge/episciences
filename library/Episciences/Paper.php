@@ -408,7 +408,7 @@ class Episciences_Paper
     private $_datasets;
     /** @var string */
     private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
-    public $hasHook; // !empty(Episciences_Repositories::hasHook($this->getRepoid()));
+    public $hasHook; // @see self:: setRepoid();
 
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'doaj', 'zbjats', 'json'];
 
@@ -903,7 +903,8 @@ class Episciences_Paper
     public function setRepoid($repoId): self
     {
         $this->_repoId = (int)$repoId;
-        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid()));
+        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
+            $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID;
         return $this;
     }
 
@@ -1285,7 +1286,7 @@ class Episciences_Paper
             ->where('RVID = ?', $this->getRvid())
             ->where('STATUS != ?', self::STATUS_DELETED);
 
-        if ($this->hasHook) {
+        if ($this->hasHook && $this->getConcept_identifier()) {
             $sql->where('CONCEPT_IDENTIFIER = ?', $this->getConcept_identifier());
         } else {
             $sql->where('IDENTIFIER = ?', $this->getIdentifier());
@@ -2351,10 +2352,10 @@ class Episciences_Paper
 
     /**
      * @param string $language
-     * @return string
+     * @return string | null
      * @throws Zend_Exception
      */
-    private function getTitleByLanguage(string $language): string
+    private function getTitleByLanguage(string $language): ?string
     {
         $title = $this->getMetadata('title');
 

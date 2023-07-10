@@ -272,4 +272,10 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
     }
 
+    public static function isRequiredVersion(): array
+    {
+        return [
+            'result' => false
+        ];
+    }
 }

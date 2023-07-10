@@ -24,19 +24,38 @@ $(document).ready(function () {
 
         let hasHookRequest = ajaxRequest('/submit/ajaxhashook', {repoId: repoValue});
         hasHookRequest.done(function (response) {
-            if (JSON.parse(response)) {
-                hasHook = response;
-                $versionBloc.hide();
+
+
+            let oResponse = JSON.parse(response);
+
+            if (oResponse) {
+
+                hasHook = oResponse.hasHook;
+
+                let isRequiredVersion = oResponse.isRequiredVersion.result;
+
+                if(!isRequiredVersion){
+                    $versionBloc.hide();
+                } else {
+
+                    $versionBloc.show();
+
+                }
+
 
                 if($searchDocRepoId.val() === zenodoRepoId){
                     if(zSubmitStatus){ // to be enabled : @ see /config/dist-pwd.json
                         insertZSubmitElement(zSubmitUrl);
                     }
+                } else {
+
+                    $('#z-submit-element').remove();
+
                 }
 
             } else {
                 $versionBloc.show();
-                $('#z-submit-element').remove();
+
             }
         });
 

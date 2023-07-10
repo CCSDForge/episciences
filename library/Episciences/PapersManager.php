@@ -2585,30 +2585,72 @@ class Episciences_PapersManager
         $status = (int)$result['STATUS'];
 
         $repoIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier, $version);
-        $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
-        $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
 
-        $record = $oai->getRecord($repoIdentifier);
+        $oai = null;
+        $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
+
+        if ($baseUrl) {
+            $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
+        }
+
+        if ($oai) {
+            $record = $oai->getRecord($repoIdentifier);
+        } else {
+
+            $record = Episciences_Repositories::callHook(
+                'hookApiRecords', [
+                    'identifier' => $identifier,
+                    'repoId' => $repoId,
+                    'version' => $version
+                ]
+            )['record'];
+
+        }
+
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
-        $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', ['record' => $record, 'repoId' => $repoId]);
+        $result = Episciences_Repositories::callHook(
+            'hookCleanXMLRecordInput', [
+                'record' => $record,
+                'repoId' => $repoId
+            ]);
 
         if (array_key_exists('record', $result)) {
             $record = $result['record'];
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($docId);
             // add all files
-            $hookFiles = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
-            $affectedRows += $hookFiles['affectedRows'];
+            $hookFiles = Episciences_Repositories::callHook(
+                'hookFilesProcessing', [
+                    'repoId' => $repoId,
+                    'identifier' => $identifier,
+                    'docId' => $docId
+                ]
+            );
+
+            if (isset($hookFiles['affectedRows'])){
+                $affectedRows += $hookFiles['affectedRows'];
+
+            }
+
         }
 
         // delete all paper datasets
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($docId, $repoId);
 
         if (Episciences_Repositories::hasHook($repoId)) {
-            // add all linked data if has hook
-            $hookLikedData = Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
-            $affectedRows += $hookLikedData['affectedRows'];
+            // add all linked data : Zenodo only
+            $hookLikedData = Episciences_Repositories::callHook(
+                'hookLinkedDataProcessing', [
+                    'repoId' => $repoId,
+                    'identifier' => $identifier,
+                    'docId' => $docId
+                ]);
+
+            if (isset($hookLikedData['affectedRows'])){
+                $affectedRows += $hookLikedData['affectedRows'];
+            }
+
 
         } else {
             // add all datasets for Hal repository
@@ -2644,9 +2686,19 @@ class Episciences_PapersManager
 
 
         }
-        if (($strRepoId === Episciences_Repositories::ARXIV_REPO_ID || $strRepoId === Episciences_Repositories::ZENODO_REPO_ID || $strRepoId === Episciences_Repositories::HAL_REPO_ID)
-            && !empty($doiTrim)
-            && $status === Episciences_Paper::STATUS_PUBLISHED) {
+        if (
+            !empty($doiTrim) &&
+            $status === Episciences_Paper::STATUS_PUBLISHED &&
+            (
+            in_array($strRepoId, [
+                Episciences_Repositories::ARXIV_REPO_ID,
+                Episciences_Repositories::ZENODO_REPO_ID,
+                Episciences_Repositories::HAL_REPO_ID,
+                Episciences_Repositories::BIO_RXIV_ID,
+                Episciences_Repositories::MED_RXIV_ID
+            ], true)
+            )
+        ) {
             // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
             // BUT BEFORE CHECK GLOBAL CACHE
             Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);

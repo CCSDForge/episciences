@@ -1825,4 +1825,11 @@ class Episciences_Tools
 
 
     }
+
+
+    public static function isDoi(string $doi = '') : bool
+    {
+        return !($doi === '' || !preg_match("/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i", $doi));
+    }
+
 }

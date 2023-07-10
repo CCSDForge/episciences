@@ -751,7 +751,7 @@ class Episciences_Submit
             $id = $hookCleanIdentifiers['identifier'];
         }
 
-        $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId]);
+        $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId, 'version' => $version]);
 
         if (!empty($hookApiRecord)) {
             $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
@@ -765,9 +765,15 @@ class Episciences_Submit
         $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version);
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
 
+        $oai = null;
+
+        if ($baseUrl) {
+            $oai = new Episciences_Oai_Client($baseUrl, 'xml');
+        }
+
+
         $translator = !Ccsd_Tools::isFromCli() ? Zend_Registry::get('Zend_Translate') : null;
 
-        $oai = new Episciences_Oai_Client($baseUrl, 'xml');
 
         try {
             // version, identifier, repoid
@@ -777,7 +783,15 @@ class Episciences_Submit
                 $paper->setVersion(null);
             }
 
-            $result['record'] = $oai->getRecord($identifier);
+            if ($oai) {
+                $result['record'] = $oai->getRecord($identifier);
+            } else {
+                $result['record'] = $hookApiRecord ['record'];
+                if(isset($hookApiRecord['error']) || empty($result['record'])){
+                    throw new Ccsd_Oai_Error('idDoesNotExist', 'identifier', $identifier);
+                }
+            }
+
             $conceptIdentifier = null;
 
             if (isset($hookApiRecord['conceptrecid'])) {
@@ -1755,6 +1769,10 @@ class Episciences_Submit
         ]));
 
         return $form;
+
+    }
+
+    private function getHookParams(){
 
     }
 

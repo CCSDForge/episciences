@@ -195,7 +195,9 @@ class SubmitController extends DefaultController
 
     }
 
+
     /**
+     * @return void
      * @throws Zend_Exception
      */
     public function getdocAction(): void
@@ -310,8 +312,19 @@ class SubmitController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
 
         $repoId = (int)$request->get('repoId');
+        $hasHook = !empty(Episciences_Repositories::hasHook($repoId));
 
-        echo json_encode(!empty(Episciences_Repositories::hasHook($repoId)));
+        $isRequiredVersion = $hasHook ?
+            Episciences_Repositories::callHook('isRequiredVersion', ['repoId' => $repoId]) :
+            ['result' => true];
+
+        $response = ['hasHook' => $hasHook, 'isRequiredVersion' =>$isRequiredVersion];
+
+        try {
+            echo json_encode($response, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+        }
 
     }
 }
