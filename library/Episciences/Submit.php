@@ -399,7 +399,7 @@ class Episciences_Submit
         // attachments
         $form->setDecorators([[
             'ViewScript', [
-                'viewScript' => '/paper/comment-attachments.phtml'
+                'viewScript' => '/paper/attachments.phtml'
             ]],
             $form->getDecorator('FormRequired'),
         ]);
