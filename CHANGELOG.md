@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
  - DOI filter not working properly.
+ - [#361](https://github.com/CCSDForge/episciences/issues/361): upload Temporary version dialog with no content 
 
 ### Added 
 - bioRxiv and medRxiv preprint servers.
