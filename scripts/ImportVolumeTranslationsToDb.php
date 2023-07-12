@@ -187,7 +187,7 @@ class ImportVolumeTranslationsToDb extends JournalScript
 
         foreach ($journals as $journal) {
 
-            if ($journal->getCode() === 'portal') {
+            if ($journal->getCode() === 'portal' || $journal->getStatus() == '0') {
                 continue;
             }
 
