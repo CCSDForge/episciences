@@ -30,18 +30,16 @@ $(document).ready(function () {
 
             if (oResponse) {
 
+                // initialized in submit/index.phtml
                 hasHook = oResponse.hasHook;
-
-                let isRequiredVersion = oResponse.isRequiredVersion.result;
+                isRequiredVersion = oResponse.isRequiredVersion.result;
 
                 if(!isRequiredVersion){
                     $versionBloc.hide();
+
                 } else {
-
                     $versionBloc.show();
-
                 }
-
 
                 if($searchDocRepoId.val() === zenodoRepoId){
                     if(zSubmitStatus){ // to be enabled : @ see /config/dist-pwd.json

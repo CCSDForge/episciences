@@ -44,6 +44,7 @@ $zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
 <script>
     let examples = <?= $this->examples ?>;
     let hasHook = false;
+    let isRequiredVersion = true;
     let isFromZSubmit = <?= $isFromZSubmitJson ?>;
     let zSubmitUrl = '<?= $this->zSubmitUrl ?>';
     let zenodoRepoId = '<?= $this->zenodoRepoId ?>';
