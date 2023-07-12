@@ -14,6 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Added
+- .env file (/!\ /.env.exemple)
+- script to import volumes and volume metadata from journals translation files into the database (/!\ @see /src/mysql/alter_volume_and_volume_metadata_tables.sql)
+
+### Changed
+- Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
+  * optional file attachment in "Contact without sending a new version" and "answer without any modifications".
+- UX: icon to make it easier to identify the user in revision requests section
+- Some adjustments: titles and descriptions volume's, titles and content metadata volumes are now stored
+  in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
+
+### Fixed
+- [#353](https://github.com/CCSDForge/episciences/issues/353)
 ## 1.0.40.11 - 2023-07-11
 ### Fixed
  - DOI filter not working properly.
