@@ -108,7 +108,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
 
     public static function hookIsOpenAccessRight(array $hookParams): array
     {
-        return Episciences_Repositories_Common::isOpenAccessRight($hookParams);
+        return ['isOpenAccessRight' => true];
     }
 
     public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
@@ -205,7 +205,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
             'source' => [$urlIdentifier]
         ];
 
-        if (isset($currentVersion['license']) && str_contains(strtolower($currentVersion['license']), 'cc_by')) {
+        if (isset($currentVersion['license']) && str_contains(strtolower($currentVersion['license']), 'cc_')) {
             $xmlElements['rights'] = 'info:eu-repo/semantics/openAccess';
         }
 
