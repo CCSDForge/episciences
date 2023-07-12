@@ -193,7 +193,7 @@ class ImportVolumeTranslationsToDb extends JournalScript
 
             $rvId = $journal->getRvid();
 
-            $journalPath = APPLICATION_PATH . '/data/' . $journal->getCode() . '/';
+            $journalPath = APPLICATION_PATH . '/../data/' . $journal->getCode() . '/';
             $languagesPath = $journalPath . 'languages/';
 
             // load review translation files
