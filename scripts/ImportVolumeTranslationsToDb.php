@@ -187,7 +187,16 @@ class ImportVolumeTranslationsToDb extends JournalScript
 
         foreach ($journals as $journal) {
 
-            if ($journal->getCode() === 'portal' || $journal->getStatus() == '0') {
+            $isEnabled = (int)$journal->getStatus() === 1;
+
+            if (!$isEnabled || $journal->getCode() === 'portal') {
+                
+                if(!$isEnabled){
+                    $this->displayWarning(
+                        sprintf('%s ignored > status = %s', $journal->getCode(), $journal->getStatus()), true
+                    );
+                }
+
                 continue;
             }
 
@@ -233,7 +242,7 @@ class ImportVolumeTranslationsToDb extends JournalScript
                     }
                 }
             } else {
-                die(sprintf('%s not found', $languagesPath));
+                $this->displayWarning(sprintf('%s not found', $languagesPath), true);
             }
         }
 
