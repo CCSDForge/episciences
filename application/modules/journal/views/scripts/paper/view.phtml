@@ -410,6 +410,7 @@ $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
 <script>
     let hasHook = <?= json_encode($this->hasHook) ?>;
+    let isRequiredVersion = <?= json_encode($this->isRequiredVersion) ?>;
     let isFromZSubmit = <?= $this->isFromZSubmit ?>;
     let zSubmitStatus = <?= json_encode($this->zSubmitStatus) ?>;
 </script>

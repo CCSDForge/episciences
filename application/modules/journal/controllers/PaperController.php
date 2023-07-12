@@ -464,6 +464,10 @@ class PaperController extends PaperDefaultController
         }
 
         $this->view->hasHook = $hasHook;
+        $this->view->isRequiredVersion = $hasHook ? Episciences_Repositories::callHook(
+            'isRequiredVersion', [
+                'repoId' => $paper->getRepoid()
+            ])['result'] : true;
 
         $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;
 
