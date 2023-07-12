@@ -49,79 +49,6 @@ class ImportVolumeTranslationsToDb extends JournalScript
         $this->updatingProcess();
     }
 
-
-    /**
-     * @param string|null $rvCode
-     * @return array
-     */
-    private function getVolumesTranslations(string $rvCode = null): array
-    {
-
-        $converter = new HtmlConverter();
-
-        //By default, HTML To Markdown preserves HTML tags without Markdown equivalents, like <span> and <div>.
-        //To strip HTML tags that don't have a Markdown equivalent while preserving the content inside them
-
-        $converter->getConfig()->setOption('strip_tags', true);
-
-
-        $allVolumesTranslations = [];
-        $journals = !$rvCode ? Episciences_ReviewsManager::getList() : [Episciences_ReviewsManager::find($rvCode)];
-
-        foreach ($journals as $journal) {
-
-            if ($journal->getCode() === 'portal') {
-                continue;
-            }
-
-            $rvId = $journal->getRvid();
-
-            $journalPath = APPLICATION_PATH . '/data/' . $journal->getCode() . '/';
-            $languagesPath = $journalPath . 'languages/';
-
-            // load review translation files
-            if (is_dir($languagesPath) && count(scandir($languagesPath)) > 2) {
-
-                $currentTranslations = Episciences_Tools::getOtherTranslations($languagesPath, self::TRANSLATION_FILE, '#volume_[\d]+_[\W]+#');
-
-                foreach ($currentTranslations as $lang => $translations) {
-
-                    foreach ($translations as $vKey => $translation) {
-
-                        $translation = $converter->convert($translation);
-
-                        if (false === preg_match('#volume_[\d]+#', $vKey, $matches)) {
-                            continue;
-                        }
-
-                        $vid = (int)filter_var($matches[0], FILTER_SANITIZE_NUMBER_INT);
-                        $prefix = 'volume_' . $vid . '_';
-
-                        if (preg_match('#' . $prefix . self::VOLUME_TITLE . '#', $vKey)) {
-                            $allVolumesTranslations[$rvId][$vid][$lang][self::VOLUME_TITLE] = $translation;
-                        } elseif (preg_match('#' . $prefix . self::VOLUME_DESCRIPTION . '#', $vKey)) {
-                            $allVolumesTranslations [$rvId][$vid][$lang][self::VOLUME_DESCRIPTION] = $translation;
-                        } elseif (preg_match('#' . $prefix . 'md_#', $vKey, $mMeta)) {
-
-                            $metaStr = mb_substr($vKey, mb_strlen($mMeta[0]));
-                            $metaId = (int)filter_var($metaStr, FILTER_SANITIZE_NUMBER_INT);
-
-                            if ($metaStr === $metaId . '_' . self::META_NAME) {
-                                $allVolumesTranslations[$rvId][$vid][$lang][self::META_KEY][$metaId][self::META_NAME] = $translation;
-
-                            } elseif ($metaStr === $metaId . '_' . self::META_CONTENT) {
-                                $allVolumesTranslations[$rvId][$vid][$lang][self::META_KEY][$metaId][self::META_CONTENT] = $translation;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return $allVolumesTranslations;
-    }
-
-
     private function updatingProcess(): void
     {
 
@@ -240,6 +167,78 @@ class ImportVolumeTranslationsToDb extends JournalScript
         }
     }
 
+    /**
+     * @param string|null $rvCode
+     * @return array
+     */
+    private function getVolumesTranslations(string $rvCode = null): array
+    {
+
+        $converter = new HtmlConverter();
+
+        //By default, HTML To Markdown preserves HTML tags without Markdown equivalents, like <span> and <div>.
+        //To strip HTML tags that don't have a Markdown equivalent while preserving the content inside them
+
+        $converter->getConfig()->setOption('strip_tags', true);
+
+
+        $allVolumesTranslations = [];
+        $journals = !$rvCode ? Episciences_ReviewsManager::getList() : [Episciences_ReviewsManager::find($rvCode)];
+
+        foreach ($journals as $journal) {
+
+            if ($journal->getCode() === 'portal') {
+                continue;
+            }
+
+            $rvId = $journal->getRvid();
+
+            $journalPath = APPLICATION_PATH . '/data/' . $journal->getCode() . '/';
+            $languagesPath = $journalPath . 'languages/';
+
+            // load review translation files
+            if (is_dir($languagesPath) && count(scandir($languagesPath)) > 2) {
+
+                $currentTranslations = Episciences_Tools::getOtherTranslations($languagesPath, self::TRANSLATION_FILE, '#volume_[\d]+_[\W]+#');
+
+                foreach ($currentTranslations as $lang => $translations) {
+
+                    foreach ($translations as $vKey => $translation) {
+
+                        $translation = $converter->convert($translation);
+
+                        if (false === preg_match('#volume_[\d]+#', $vKey, $matches)) {
+                            continue;
+                        }
+
+                        $vid = (int)filter_var($matches[0], FILTER_SANITIZE_NUMBER_INT);
+                        $prefix = 'volume_' . $vid . '_';
+
+                        if (preg_match('#' . $prefix . self::VOLUME_TITLE . '#', $vKey)) {
+                            $allVolumesTranslations[$rvId][$vid][$lang][self::VOLUME_TITLE] = $translation;
+                        } elseif (preg_match('#' . $prefix . self::VOLUME_DESCRIPTION . '#', $vKey)) {
+                            $allVolumesTranslations [$rvId][$vid][$lang][self::VOLUME_DESCRIPTION] = $translation;
+                        } elseif (preg_match('#' . $prefix . 'md_#', $vKey, $mMeta)) {
+
+                            $metaStr = mb_substr($vKey, mb_strlen($mMeta[0]));
+                            $metaId = (int)filter_var($metaStr, FILTER_SANITIZE_NUMBER_INT);
+
+                            if ($metaStr === $metaId . '_' . self::META_NAME) {
+                                $allVolumesTranslations[$rvId][$vid][$lang][self::META_KEY][$metaId][self::META_NAME] = $translation;
+
+                            } elseif ($metaStr === $metaId . '_' . self::META_CONTENT) {
+                                $allVolumesTranslations[$rvId][$vid][$lang][self::META_KEY][$metaId][self::META_CONTENT] = $translation;
+                            }
+                        }
+                    }
+                }
+            } else {
+                die(sprintf('%s not found', $languagesPath));
+            }
+        }
+
+        return $allVolumesTranslations;
+    }
 
     private function getSqlUpdateStatement(string $table, string $column, array $options = []): string
     {
