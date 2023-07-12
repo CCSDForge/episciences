@@ -1501,7 +1501,10 @@ class Episciences_Tools
 
 
         } catch (GuzzleException $e) {
-            trigger_error($e->getMessage());
+
+            if ($e->getCode() !== 404) {
+                trigger_error($e->getMessage());
+            }
         }
 
         return $result;
