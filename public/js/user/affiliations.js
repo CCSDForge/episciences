@@ -3,6 +3,7 @@ $(function () {
     let $affiliations = $('#affiliations');
     let cache = [];
     let cacheAcronym = [];
+    let flagAddPreviousAffiliationWithNew = 0;
     $affiliations.autocomplete({
         source: function (request, response) {
 
@@ -58,9 +59,15 @@ $(function () {
 
     $('button[data-original-title="Add"]').on('click',function (e) {
         if ($("input#affiliationAcronym").length) {
+            $("input#affiliationAcronym").val();
             let strAcronym = "";
             let numberOfAcronyms = cacheAcronym.length;
             let i = 1;
+            if (flagAddPreviousAffiliationWithNew !== 1 && $("input#affiliationAcronym").val() !== ''){
+                strAcronym += $("input#affiliationAcronym").val();
+                strAcronym += "||";
+                flagAddPreviousAffiliationWithNew = 1;
+            }
             cacheAcronym.forEach(function (acronym){
                 strAcronym += acronym
                 if (numberOfAcronyms !== i) {

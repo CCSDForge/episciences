@@ -591,6 +591,11 @@ class PaperController extends PaperDefaultController
             if ($affi !== "") {
                 $formattedAffiliationForInput = Episciences_Paper_AuthorsManager::formatAffiliationForInputRor($affi);
                 $arrayFormOption['affiliations'] = $formattedAffiliationForInput;
+                //avoid future duplicate
+                $acronymAlreadyExisting = Episciences_Paper_AuthorsManager::getAcronymExisting($affi);
+                if ($acronymAlreadyExisting !== '') {
+                    $arrayFormOption['acronymList'] = $acronymAlreadyExisting;
+                }
             }
             $affiForm = Episciences_PapersManager::getAffiliationsForm($arrayFormOption);
 
@@ -627,12 +632,14 @@ class PaperController extends PaperDefaultController
                 $nameRor = ["name" => rtrim($affiliation[0])];
                 $idArray = [];
                 if ((isset($affiliation[1]) && $affiliation[1] !== "") && str_contains(rtrim($affiliation[1]), $rorDomain)) {
-                    $strAcronym = Episciences_Paper_AuthorsManager::setOrUpdateRorAcronym($jsonAuthorDecoded[$authorKeyJson]["affiliation"][$key], $acronyms, $affiliation[0]);
+                    $rawstrAcronym = Episciences_Paper_AuthorsManager::setOrUpdateRorAcronym($acronyms, $affiliation[0]);
+                    $strAcronym = Episciences_Paper_AuthorsManager::cleanAcronym($rawstrAcronym);
                     $idArray["id"] = [
                         ['id' => rtrim($affiliation[1]), 'id-type' => "ROR"]
                     ];
-                    if ($strAcronym !== ''){
+                    if ($strAcronym !== '') {
                         $idArray["id"][0]['acronym'] = trim($strAcronym);
+                        $nameRor['name'] = Episciences_Paper_AuthorsManager::eraseAcronymInName($nameRor['name'],$rawstrAcronym);
                     }
                     $arrayAffi[] = array_merge($nameRor, $idArray);
                 } else {

@@ -211,14 +211,9 @@ $timestamp = $dateTime->format('YmdHisv');
                                     <?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
                                         <affiliations>
                                             <?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor) { ?>
-                                                <institution><institution_name><?php
-                                                        if (array_key_exists('id',$affiliationAuthor) && array_key_exists('acronym',$affiliationAuthor['id'][0])){
-                                                            echo $this->escape(Episciences_Paper_AuthorsManager::eraseAcronymInName($affiliationAuthor['name'],$affiliationAuthor['id'][0]['acronym']));
-                                                        }else{
-                                                            echo $this->escape($affiliationAuthor['name']);
-                                                        } ?></institution_name>
+                                                <institution><institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name>
                                                     <?php if (array_key_exists('id',$affiliationAuthor) && array_key_exists('acronym',$affiliationAuthor['id'][0])){ ?>
-                                                        <institution_acronym><?= $this->escape(Episciences_Paper_AuthorsManager::cleanAcronymForExport($affiliationAuthor['id'][0]['acronym'])) ?></institution_acronym>
+                                                        <institution_acronym><?= $this->escape($affiliationAuthor['id'][0]['acronym']) ?></institution_acronym>
                                                     <?php } ?>
                                                 </institution>
                                             <?php } ?>

@@ -39,6 +39,9 @@ class Episciences_Paper_AuthorsManager
                 foreach ($affiliationInfo as $affiliation) {
                     if (array_key_exists('id', $affiliation)) {
                         $tmpInfoAffi = ['affiliation' => $affiliation['name'], 'url' => $affiliation['id'][0]['id']];
+                        if (array_key_exists('acronym',$affiliation['id'][0])){
+                            $tmpInfoAffi['acronym'] = $affiliation['id'][0]['acronym'];
+                        }
                     } else {
                         $tmpInfoAffi = ['affiliation' => $affiliation['name']];
                     }
@@ -111,7 +114,11 @@ class Episciences_Paper_AuthorsManager
             $stringListAffi .= '<ul class="list-unstyled">';
             foreach ($uniqueAffi as $index => $affi) {
                 if (isset($affi['url'])) {
-                    $stringListAffi .= '<li class="affiliation"><span class="label label-default">' . ($index + 1) . '</span> <a href=' . $affi['url'] . ' target="_blank">' . htmlspecialchars($affi['affiliation']) . '</a></li>';
+                    $stringListAffi .= '<li class="affiliation"><span class="label label-default">' . ($index + 1) . '</span> <a href=' . $affi['url'] . ' target="_blank">' . htmlspecialchars($affi['affiliation']);
+                    if (isset($affi['acronym'])){
+                        $stringListAffi .= " [".$affi['acronym']."]";
+                    }
+                    $stringListAffi.= '</a></li>';
                 } else {
                     $stringListAffi .= '<li class="affiliation"><span class="label label-default">' . ($index + 1) . '</span> ' . htmlspecialchars($affi['affiliation']) . '</li>';
                 }
@@ -214,10 +221,14 @@ class Episciences_Paper_AuthorsManager
         $affiliationFormatted = [];
         foreach ($affiliation as $value) {
             $url = '';
+            $acronym = '';
             if (array_key_exists('id', $value)) {
                 $url = ' #' . $value['id'][0]['id'];
+                if (array_key_exists('acronym',$value['id'][0])){
+                    $acronym = ' ['.$value['id'][0]['acronym'].']';
+                }
             }
-            $affiliationFormatted[] = $value['name'] . $url;
+            $affiliationFormatted[] = $value['name'] . $acronym . $url;
         }
         return $affiliationFormatted;
     }
@@ -446,11 +457,20 @@ class Episciences_Paper_AuthorsManager
         if (isset($back->listOrg)) {
             foreach ($back->listOrg->org as $org) {
                 $orgInfo[(string)$org->attributes('xml', true)[0]]['name'] = trim((string)$org->orgName);
+                $orgHasRor = 0;
                 if ($org->idno) {
                     foreach ($org->idno as $orgIdno) {
                         if ((string)$orgIdno->attributes()->type === 'ROR') {
+                            // remove those which have already ror
+                            $orgIdno = str_replace("https://ror.org/","",$orgIdno);
                             $orgInfo[(string)$org->attributes('xml', true)[0]]['ROR'] = trim("https://ror.org/" . $orgIdno);
+                            $orgHasRor = 1;
                         }
+                    }
+                }
+                foreach ($org->orgName as $orgName) {
+                    if ($orgHasRor === 1 && (string)$orgName->attributes()->type === 'acronym') {
+                        $orgInfo[(string)$org->attributes('xml', true)[0]]['acronym'] = trim($orgName);
                     }
                 }
             }
@@ -471,6 +491,9 @@ class Episciences_Paper_AuthorsManager
                     $authorTei[$index]['affiliations'][$indexAffi] = ['name' => $affiliationTei[$affiliationStruct]['name']];
                     if (array_key_exists('ROR', $affiliationTei[$affiliationStruct])) {
                         $authorTei[$index]['affiliations'][$indexAffi]['ROR'] = $affiliationTei[$affiliationStruct]['ROR'];
+                    }
+                    if (array_key_exists('acronym', $affiliationTei[$affiliationStruct])){
+                        $authorTei[$index]['affiliations'][$indexAffi]['acronym'] = $affiliationTei[$affiliationStruct]['acronym'];
                     }
                 }
             }
@@ -505,7 +528,6 @@ class Episciences_Paper_AuthorsManager
                                 } else {
                                     $authorDb[$indexAuthor]['affiliation'][] = self::putOnlyNameAffiliation($affiliation['name']);
                                 }
-
                                 if (PHP_SAPI === 'cli') {
                                     echo PHP_EOL . "Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . PHP_EOL;
                                     self::logInfoMessage("Affiliation Added with ROR for " . $authorDb[$indexAuthor]['fullname']);
@@ -513,10 +535,14 @@ class Episciences_Paper_AuthorsManager
                             } elseif (in_array($affiliation['name'], array_column($authorInfoDb['affiliation'], 'name'))
                                 && array_key_exists('ROR', $affiliation)
                                 && self::affiliationRorExistbyAffi($authorInfoDb['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]) === false) {
-                                $authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]['id'] = self::putOnlyRORAffiliation($affiliation['ROR']);
+                                $affiliationAcronymToInsert = "";
+                                if (array_key_exists('acronym',$affiliation)) {
+                                    $affiliationAcronymToInsert = $affiliation['acronym'];
+                                }
+                                $authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]['id'] = self::putOnlyRORAffiliation($affiliation['ROR'],$affiliationAcronymToInsert);
                                 if (PHP_SAPI === 'cli') {
-                                    echo PHP_EOL . "ROR to Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . " - " . $authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])] . PHP_EOL;
-                                    self::logInfoMessage("ROR to Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . " - " . $authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]);
+                                    echo PHP_EOL . "ROR to Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name'] . PHP_EOL;
+                                    self::logInfoMessage("ROR to Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name']);
                                 }
                             }
                         }
@@ -561,7 +587,7 @@ class Episciences_Paper_AuthorsManager
      */
     public static function putAffiliationWithRORinArray(array $affiliation): array
     {
-        return [
+        $affiliationArray = [
             "name" => $affiliation['name'],
             "id" => [
                 [
@@ -570,6 +596,10 @@ class Episciences_Paper_AuthorsManager
                 ]
             ]
         ];
+        if (array_key_exists('acronym',$affiliation)) {
+            $affiliationArray['id'][0]['acronym'] = $affiliation['acronym'];
+        }
+        return $affiliationArray;
     }
 
     /**
@@ -601,16 +631,34 @@ class Episciences_Paper_AuthorsManager
 
     /**
      * @param string $ror
+     * @param string|null $acronym
      * @return array[]
      */
-    public static function putOnlyRORAffiliation(string $ror): array
+    public static function putOnlyRORAffiliation(string $ror, ?string $acronym): array
     {
-        return [
+        $arrayAffi = [
             [
                 'id' => $ror,
                 'id-type' => 'ROR'
             ]
         ];
+        if ($acronym !== ""){
+            $arrayAffi[0]['acronym'] = $acronym;
+        }
+        return $arrayAffi;
+    }
+
+    /**
+     * @param array $arrayAffi
+     * @param string|null $acronym
+     * @return bool
+     */
+    public static function acronymAlreadyExist(array $arrayAffi, string $acronym): bool
+    {
+        if (isset($arrayAffi[0]['acronym']) && $arrayAffi[0]['acronym'] === $acronym){
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -731,18 +779,13 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array|null $arrayDb
      * @param array $acronyms
      * @param string $haystack
      * @return string
      */
-    public static function setOrUpdateRorAcronym(?array $arrayDb, array $acronyms, string $haystack): string
+    public static function setOrUpdateRorAcronym(array $acronyms, string $haystack): string
     {
         $strAcronym = '';
-        // match acronym in label with acronym received
-        if (($arrayDb !== null) && array_key_exists("id", $arrayDb) && array_key_exists("acronym", $arrayDb['id'][0])) {
-            $strAcronym = $arrayDb['id'][0]['acronym'];
-        }//case if array does not exist
         foreach ($acronyms as $acronym) {
             if ($acronym !== '' && str_contains($haystack, $acronym)) {
                 $strAcronym = $acronym;
@@ -766,8 +809,66 @@ class Episciences_Paper_AuthorsManager
      * @param string $acronym
      * @return string
      */
-    public static function cleanAcronymForExport(string $acronym): string {
+    public static function cleanAcronym(string $acronym): string {
         $acronym = trim($acronym);
         return substr($acronym, 1, -1);
+    }
+    /**
+     * @param array $affiliationOfAuthor
+     * @return bool
+     */
+    public static function AcronymExist(array $affiliationOfAuthor): bool {
+        if (isset($affiliationOfAuthor['id'])) {
+            foreach ($affiliationOfAuthor['id'] as $key => $affiliation) {
+                if ($key === "acronym") {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param array $affiliationDb
+     * @return string
+     */
+    public static function getAcronymExisting(array $affiliationDb): string {
+        $acronymList = [];
+        $strAcronymList = '';
+        foreach ($affiliationDb as $affiliation){
+            if (isset($affiliation['id'])) {
+                foreach ($affiliation['id'] as $affiliationInfo) {
+                    if (array_key_exists('acronym',$affiliationInfo)) {
+                        $acronymList[] = $affiliationInfo['acronym'];
+                    }
+                }
+            }
+        }
+        if (!empty($acronymList)){
+            $acronymList = array_unique($acronymList);
+            $acronymList = array_map(static function($value){
+                return "[".$value."]";
+            },$acronymList);
+            $strAcronymList = self::formatAcronymList($acronymList);
+        }
+        return $strAcronymList;
+    }
+
+    /**
+     * @param array $acronymList
+     * @return string
+     */
+    public static function formatAcronymList(array $acronymList): string {
+        $strList = '';
+        $size = sizeof($acronymList);
+        $i = 1;
+        foreach ($acronymList as $value){
+            $strList.= $value;
+            if ($size !== $i){
+                $strList .= '||';
+            }
+            $i++;
+        }
+        return $strList;
     }
 }
