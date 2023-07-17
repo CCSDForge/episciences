@@ -87,7 +87,7 @@ if (defined('RVISSN')) {
                     <?php if (!empty($enrichmentAuthors)):?>
                         <?php if (!empty($enrichmentAuthors[$key]['affiliation'])): ?>
                                 <?php foreach ($enrichmentAuthors[$key]['affiliation'] as $affiliationAuthor) { ?>
-                                     <datacite:affiliation><?= $this->escape($affiliationAuthor['name']) ?></datacite:affiliation>
+                                     <datacite:affiliation><?= $this->escape($affiliationAuthor['name']); ?></datacite:affiliation>
                                         <?php if (isset($affiliationAuthor['id'])): ?>
                                             <datacite:nameIdentifier nameIdentifierScheme="ROR" schemeURI="http://ror.org/"><?= $this->escape($affiliationAuthor['id'][0]['id']) ?></datacite:nameIdentifier>
                                         <?php endif; ?>

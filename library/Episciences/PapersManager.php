@@ -3329,7 +3329,11 @@ class Episciences_PapersManager
             }
         }
         $form->addElement('multiTextSimple', 'affiliations', $affiliationInfo);
-
+        if (isset($option['acronymList'])) {
+            $form->addElement('hidden', 'affiliationAcronym',['value' => $option['acronymList']]);
+        } else {
+            $form->addElement('hidden', 'affiliationAcronym');
+        }
         // Button : validate
         $form->addElement('submit', 'submit-affiliation-author', [
             'label' => 'Valider',

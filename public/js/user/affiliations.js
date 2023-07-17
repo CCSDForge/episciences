@@ -2,7 +2,8 @@ $(function () {
 
     let $affiliations = $('#affiliations');
     let cache = [];
-
+    let cacheAcronym = [];
+    let flagAddPreviousAffiliationWithNew = 0;
     $affiliations.autocomplete({
         source: function (request, response) {
 
@@ -14,7 +15,7 @@ $(function () {
                 return;
             }
 
-            let url = 'https://api.ror.org/organizations?query=' + term;
+            let url = 'https://api.ror.org/organizations?affiliation=' + term;
 
             let ajaxReq = ajaxRequest(url, {}, 'GET');
 
@@ -27,7 +28,13 @@ $(function () {
                 if ('items' in rorResponse) {
 
                     rorResponse.items.forEach(function (item) {
-                        availableAffiliations.push({'label': item.name + ' #' + item.id, 'identifier': item.id});
+                        let additionnalInfo = "";
+                        if (item.matching_type === "ACRONYM") {
+                            additionnalInfo = "["+item.organization.acronyms[0]+"]";
+                            cacheAcronym.push(additionnalInfo);
+                            cacheAcronym = [... new Set(cacheAcronym)];
+                        }
+                        availableAffiliations.push({'label': item.organization.name + ' ' + additionnalInfo + ' #' + item.organization.id, 'identifier': item.organization.id, 'acronym': additionnalInfo});
                     });
 
                     cache[term] = availableAffiliations;
@@ -50,5 +57,25 @@ $(function () {
 
     });
 
-
+    $('button[data-original-title="Add"]').on('click',function (e) {
+        if ($("input#affiliationAcronym").length) {
+            $("input#affiliationAcronym").val();
+            let strAcronym = "";
+            let numberOfAcronyms = cacheAcronym.length;
+            let i = 1;
+            if (flagAddPreviousAffiliationWithNew !== 1 && $("input#affiliationAcronym").val() !== ''){
+                strAcronym += $("input#affiliationAcronym").val();
+                strAcronym += "||";
+                flagAddPreviousAffiliationWithNew = 1;
+            }
+            cacheAcronym.forEach(function (acronym){
+                strAcronym += acronym
+                if (numberOfAcronyms !== i) {
+                    strAcronym += "||";
+                }
+                i++;
+            })
+            $("input#affiliationAcronym").val(strAcronym);
+        }
+    });
 });

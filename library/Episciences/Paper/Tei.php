@@ -627,14 +627,21 @@ class Episciences_Paper_Tei
                 $org = $xml->createElement('org');
                 $org->setAttribute('xml:id',"struct-".array_search($affiIndex, array_keys($listAffiliations["affiliationNumeric"])));
 
-                if (!is_null($affi['type'])){
-                    $idno = $xml->createElement('idno');
+                if (array_key_exists('type',$affi) && !is_null($affi['type'])) {
+                    $idno = $affi['type'] === "ROR" ? $xml->createElement('idno', $affi['url']) : $xml->createElement('idno');
                     $idno->setAttribute('type', $affi['type']);
                     $org->appendChild($idno);
                 }
+                $orgNameAcronym = "";
                 $orgName =  $xml->createElement('orgName', $affi['name']);
-
+                if (array_key_exists('acronym',$affi)){
+                    $orgNameAcronym =  $xml->createElement('orgName');
+                    $orgNameAcronym->setAttribute('acronym',$affi['acronym']);
+                }
                 $org->appendChild($orgName);
+                if ($orgNameAcronym !== "") {
+                    $org->appendChild($orgNameAcronym);
+                }
                 $listOrg->appendChild($org);
 
             }

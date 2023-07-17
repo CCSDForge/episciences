@@ -17,7 +17,8 @@
     },
     "BIBLIOREF": {
       "URL":"https://epiextract-env.domain.org",
-      "ENABLE" : false
+      "ENABLE" : false,
+      "SSL_VERIFY": true
     },
     "AUTH_ADAPTER_NAME": "LemonLDAP",
     "RENDER_ALERT_BANNER": {

@@ -23,6 +23,7 @@ $enrichmentAuthors = $paper->getAuthors();
 $enrichmentLicence = $paper->getLicence();
 $enrichmentFundings = $paper->getFundings();
 $enrichmentLinkedData = $paper->getLinkedData();
+$bibliographicalRef = $paper->getBibRef();
 
 //conferences infos
 $proceedingInfo = $this->proceedingInfo;
@@ -48,9 +49,10 @@ $dateTime = new DateTime('now');
 $timestamp = $dateTime->format('YmdHisv');
 ?>
 <doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://www.crossref.org/schema/4.8.1 https://www.crossref.org/schemas/crossref4.8.1.xsd"
-           xmlns="http://www.crossref.org/schema/4.8.1" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1" xmlns:fr="http://www.crossref.org/fundref.xsd"
-           version="4.8.1">
+           xsi:schemaLocation="http://www.crossref.org/schema/5.3.0 https://www.crossref.org/schemas/crossref5.3.0.xsd"
+           xmlns="http://www.crossref.org/schema/5.3.0" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1"
+           xmlns:fr="http://www.crossref.org/fundref.xsd" xmlns:mml="http://www.w3.org/1998/Math/MathML" version="5.3.0"
+>
     <head>
         <doi_batch_id><?php echo DOMAIN . '_' . $paper->getPaperid() . '_' . $timestamp; ?></doi_batch_id>
         <timestamp><?php echo $timestamp; ?></timestamp>
@@ -206,11 +208,17 @@ $timestamp = $dateTime->format('YmdHisv');
                             <?php endif; ?>
                             <surname><?php echo $this->escape($familyName) ?></surname>
                             <?php if (!empty($enrichmentAuthors)): ?>
-                                <?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
-                                    <?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor) { ?>
-                                        <affiliation><?= $this->escape($affiliationAuthor['name']) ?></affiliation>
-                                    <?php } ?>
-                                <?php endif; ?>
+                                    <?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
+                                        <affiliations>
+                                            <?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor) { ?>
+                                                <institution><institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name>
+                                                    <?php if (array_key_exists('id',$affiliationAuthor) && array_key_exists('acronym',$affiliationAuthor['id'][0])){ ?>
+                                                        <institution_acronym><?= $this->escape($affiliationAuthor['id'][0]['acronym']) ?></institution_acronym>
+                                                    <?php } ?>
+                                                </institution>
+                                            <?php } ?>
+                                        </affiliations>
+                                    <?php endif; ?>
                                 <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?>
                                     <ORCID><?= "https://orcid.org/" . strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></ORCID>
                                 <?php endif; ?>
@@ -349,6 +357,21 @@ $timestamp = $dateTime->format('YmdHisv');
                     </item>
                 </collection>
             </doi_data>
+            <?php if (!empty($bibliographicalRef)): ?>
+                    <citation_list>
+                        <?php $iRef = 1 ?>
+                        <?php foreach ($bibliographicalRef as $refInfo): ?>
+                            <citation key="ref<?=$iRef?>">
+                                <?php if (array_key_exists('doi',$refInfo)): ?>
+                                    <doi><?=$refInfo['doi']?></doi>
+                                <?php elseif (array_key_exists('unstructured_citation',$refInfo)): ?>
+                                    <unstructured_citation><?=$refInfo['unstructured_citation']?></unstructured_citation>
+                                <?php endif; ?>
+                                <?php $iRef++;?>
+                            </citation>
+                        <?php endforeach; ?>
+                    </citation_list>
+            <?php endif;?>
         <?php if (!is_array($proceedingInfo)): ?>
             </journal_article>
         <?php else: ?>

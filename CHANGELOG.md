@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - .env file (/!\ /.env.exemple)
 - script to import volumes and volume metadata from journals translation files into the database (/!\ @see /src/mysql/alter_volume_and_volume_metadata_tables.sql)
 - bioRxiv and medRxiv preprint servers.
+- New version crossref export 4.3 -> 5.3
+- bibliographical references in export crossref
+- affiliation acronym in crossref and TEI export
+- possibility to research acronym in affiliation input ROR
 
 ### Changed
 - Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
