@@ -64,6 +64,20 @@ $currentSmall = "";
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php foreach ($metadata as $sourceId => $metadataArray) : ?>
+                <?php
+                /* @var  Episciences_Paper_Dataset $meta
+                 */foreach ($metadataArray as $k => $meta) : ?>
+                    <?php if ($k !== "metatext"): ?>
+                        <?php if ($meta->getName() === 'software'): ?>
+                            <?php $urlSwd = "https://archive.softwareheritage.org/browse/embed/".$meta->getValue()."/"; ?>
+                            <iframe style="width: 100%; height: 500px; border: 1px solid rgba(0, 0, 0, 0.125);"
+                                    src=<?=$urlSwd?>>
+                            </iframe>
+                        <?php endif;?>
+                    <?php endif;?>
+                <?php endforeach;?>
+            <?php endforeach;?>
         </div>
     </div>
 <?php endif; ?>
