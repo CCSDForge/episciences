@@ -380,7 +380,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
     {
 
         if (!isset($PHPCAS_CLIENT)) {
-            phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(), $this->getCasStartSessions());
+            phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(),  $this->getServiceURL(), $this->getCasStartSessions());
 
         }
 
@@ -445,7 +445,7 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
     public function logout($urlDeDestination = null)
     {
         if (!isset($PHPCAS_CLIENT)) {
-            phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(), $this->getCasStartSessions());
+            phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(), $urlDeDestination, $this->getCasStartSessions());
         }
 
         if ($this->getCasSslValidation() === false) {
