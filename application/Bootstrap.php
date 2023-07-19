@@ -26,6 +26,13 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     protected function _initModule()
     {
 
+        $dotEnv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+
+        foreach ($dotEnv->load() as $key => $value) {
+            define($key, $value);
+        }
+
+
         if (APPLICATION_MODULE === 'oai') {
             defined('RVID') || define('RVID', 0);
             defined('RVNAME') || define('RVNAME', 'OAI Episciences');
