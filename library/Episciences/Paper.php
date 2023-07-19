@@ -2175,11 +2175,25 @@ class Episciences_Paper
 
     /**
      * @return mixed
+     * @throws Zend_Db_Statement_Exception
      */
     public function getDocUrl()
     {
         if (!$this->_docUrl) {
-            $this->setDocUrl(Episciences_Repositories::getDocUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion()));
+
+            if (!$this->isTmp()) {
+                $this->setDocUrl(Episciences_Repositories::getDocUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion()));
+            } else {
+
+                $paper = Episciences_PapersManager::get($this->getPaperid(), false);
+                $this->setDocUrl(Episciences_Repositories::getDocUrl(
+                    $paper->getRepoid(),
+                    $paper->getIdentifier(),
+                    (int)$this->getVersion()
+                ));
+
+            }
+
         }
 
         return $this->_docUrl;
@@ -4458,26 +4472,6 @@ class Episciences_Paper
     public function isEditableVersion(): bool
     {
         return in_array($this->getStatus(), self::EDITABLE_VERSION_STATUS, true);
-
-    }
-
-    /**
-     * @return mixed
-     * @throws Zend_Db_Statement_Exception
-     */
-    public function getDocUrlTmpVersionsIncluded()
-    {
-
-        if (!$this->isTmp()) {
-            return $this->getDocUrl();
-        }
-
-        $paper = Episciences_PapersManager::get($this->getPaperid(), false);
-        return Episciences_Repositories::getDocUrl(
-            $paper->getRepoid(),
-            $paper->getIdentifier(),
-            (int)$this->getVersion()
-        );
 
     }
 
