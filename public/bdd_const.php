@@ -16,12 +16,19 @@ if (file_exists($path)) {
     }
 
     // Création des constantes d'accès aux bases de données et services
-    foreach ($fileContent as $bdd => $array) {
-        foreach ($array as $key => $value) {
-            define($bdd . '_' . $key, $value);
-        }
-        if (isset($array['NAME'])) {
-            define($bdd . '_PDO_URL', "mysql:host=" . $array['HOST'] . (isset($array['PORT']) ? ";port=" . $array['PORT'] : '') . ";dbname=" . $array['NAME']);
+    foreach ($fileContent as $const => $current) {
+
+        if (!is_array($current)) {
+            define($const , $current);
+        } else {
+            foreach ($current as $key => $value) {
+                define($const . '_' . $key, $value);
+            }
+
+            if (isset($current['NAME'])) {
+                define($const . '_PDO_URL', "mysql:host=" . $current['HOST'] . (isset($current['PORT']) ? ";port=" . $current['PORT'] : '') . ";dbname=" . $current['NAME']);
+            }
+
         }
     }
 } else {
