@@ -12,7 +12,7 @@ use Monolog\Logger;
  * @author ccsd
  *
  */
-class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
+class Ccsd_Auth_Adapter_Cas extends Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\AdapterInterface
 {
 
     /**
@@ -152,37 +152,6 @@ class Ccsd_Auth_Adapter_Cas implements \Ccsd\Auth\Adapter\AdapterInterface
         return $this;
     }
 
-    /**
-     * Retourne le nom d'hôte que l'application CAS va utiliser
-     * Pour redirection après login et logout
-     *
-     * @return string Nom de l'hôte
-     */
-    public static function getCurrentHostname(): string
-    {
-        if ((isset($_SERVER['HTTPS'])) && ($_SERVER['HTTPS'] !== '')) {
-            $scheme = 'https://';
-        } else {
-            $scheme = 'http://';
-        }
-
-        $hostname = $scheme . $_SERVER['SERVER_NAME'];
-
-
-        if ((isset($_SERVER['SERVER_PORT'])) && ($_SERVER['SERVER_PORT'] !== '')) {
-            switch ($_SERVER['SERVER_PORT']) {
-                case '443':
-                case '':
-                case '80':
-                    break;
-                default:
-                    $hostname .= ":" . $_SERVER['SERVER_PORT'];
-                    break;
-            }
-        }
-
-        return $hostname;
-    }
 
     /**
      * @return Ccsd_User_Models_User
