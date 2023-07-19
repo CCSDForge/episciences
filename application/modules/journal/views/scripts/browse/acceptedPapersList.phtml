@@ -21,7 +21,7 @@ $journal = $this->journal;
                        href="<?= $epiUrl ?>">[#<?= $acceptedPaper->getDocid() ?>]</a>
                 <?php endif; ?>
 
-                <a href="<?= $this->escape($acceptedPaper->getDocUrlTmpVersionsIncluded()) ?>" target="_blank"
+                <a href="<?= $this->escape($acceptedPaper->getDocUrl()) ?>" target="_blank"
                    rel="noopener"> <em><?= $this->escape($acceptedPaper->getTitle()) ?></em></a>.&nbsp;
                 <?php $authors = $acceptedPaper->getMetadata('authors'); ?>
                 <?php if (is_array($authors)): ?>
