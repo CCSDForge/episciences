@@ -809,7 +809,7 @@ return [
     'Suggestions' => "Suggestions",
     "Votre suggestion à déjà été enregistrée." => "Your suggestion already been registered.",
     "Je ne souhaite plus gérer cet article" => "I no longer wish to manage this article",
-    'ne souhaite plus gérer cet article' => 'no longer wish to manage this article',
+    'ne souhaite plus gérer cet article' => 'no longer wishes to manage this article',
     "Le suivi de l'article sera bientôt confié à un autre rédacteur" => "The management of the article will soon be delegated to another editor",
     "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bientôt retirée." => "You no longer wish to manage this article, its management will soon be removed.",
     "Veuillez détailler les raisons de votre refus :" => "Please explain the reasons for your refusal:",

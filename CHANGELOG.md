@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
 ### Added
 - .env file (/!\ /.env.exemple)
@@ -33,6 +34,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [#353](https://github.com/CCSDForge/episciences/issues/353)
+### Changed
+- Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
+  stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
+- [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and ethical
+### Added
+- icon to make it easier to identify the user in revision requests section.
+- script to import volumes and volume metadata from journals translation files into the database.
+- .env file
+- Integration of api and application for the bibliographical references
+
+## 1.0.40.13 - 2023-07-20
+### Fixed
+- Fixed English translation
+
+## 1.0.40.12 - 2023-07-20
+### Fixed
+ - Refactoring to prevent error on temporary links
+
 ## 1.0.40.11 - 2023-07-11
 ### Fixed
  - DOI filter not working properly.
@@ -44,15 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Display "revision contact comments" in "Revision requests" section.
 
-### Changed
-- Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
-  stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
-- [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and ethical
-### Added
-- icon to make it easier to identify the user in revision requests section.
-- script to import volumes and volume metadata from journals translation files into the database.
-- .env file
-- Integration of api and application for the bibliographical references 
 ## 1.0.40.9 - 2023-06-21
 ## Fixed
 - Fixed internal error: Use of undefined constant REVIEW_PATH
