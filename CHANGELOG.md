@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.40.12 - 2023-07-20
+### Fixed
+ - Refactoring to prevent error on temporary links
+
 ## 1.0.40.11 - 2023-07-11
 ### Fixed
  - DOI filter not working properly.
