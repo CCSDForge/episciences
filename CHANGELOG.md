@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.40.13 - 2023-07-20
+### Fixed
+- Fixed English translation
+
 ## 1.0.40.12 - 2023-07-20
 ### Fixed
  - Refactoring to prevent error on temporary links
