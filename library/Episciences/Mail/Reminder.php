@@ -767,7 +767,7 @@ class Episciences_Mail_Reminder
             ->where('c.DEADLINE IS NOT NULL')
             ->where('(p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION
                 . ' OR p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION . ')')
-            ->where("DEADLINE >= $date");
+            ->where("DEADLINE <= $date");
 
         if ($this->getRepetition()) {
             $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay()));

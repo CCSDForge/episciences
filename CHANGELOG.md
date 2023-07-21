@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+### Fixed
+- Automatic reminders [RT#190672]
 ## 1.0.40.13 - 2023-07-20
 ### Fixed
 - Fixed English translation
