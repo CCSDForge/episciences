@@ -1006,13 +1006,23 @@ class Episciences_Mail_Reminder
             ->group(['DOCID', 'UID']);
 
         if ($this->getRepetition()) {
+
             // interval between today and invitation date should be 0
-            $sql->where(new Zend_Db_Expr('TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date) = 0"));
+            $interval0 = new Zend_Db_Expr(
+                'TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date) = 0"
+            );
             // interval should be divisible by "repetition"
-            $sql->where(new Zend_Db_Expr('MOD(TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'));
+            $interval1 = new Zend_Db_Expr(
+                'MOD(TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'
+            );
+
+            $sql->where($interval0 . ' OR ' . $interval1);
+
+
         } else {
             $sql->where("$date = ?", new Zend_Db_Expr('DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . ' DAY)'));
         }
+
 
         if ($debug) {
             echo Episciences_Tools::$bashColors['light_blue'] . $sql . Episciences_Tools::$bashColors['default'] . PHP_EOL;
