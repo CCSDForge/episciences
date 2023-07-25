@@ -100,9 +100,10 @@ class Episciences_Paper_Citations
     /**
      * @param int $docId
      */
-    public function setDocId(int $docId): void
+    public function setDocId(int $docId): self
     {
         $this->_docId = $docId;
+        return $this;
     }
 
     public function getSourceId(): ?int

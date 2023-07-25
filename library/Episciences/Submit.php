@@ -106,6 +106,11 @@ class Episciences_Submit
         $form->addElement($xml);
         $group[] = 'xml';
 
+        $form->addElement('hidden', 'h_enrichment',
+            ['decorators' => [
+                'ViewHelper',
+            ]]);
+
         // Si il s'agit d'un nouveau document (et non une nouvelle version)
         if (!array_key_exists('newVersionOf', $settings)) {
 
@@ -787,9 +792,18 @@ class Episciences_Submit
                 $result['record'] = $oai->getRecord($identifier);
             } else {
                 $result['record'] = $hookApiRecord ['record'];
+
                 if(isset($hookApiRecord['error']) || empty($result['record'])){
                     throw new Ccsd_Oai_Error('idDoesNotExist', 'identifier', $identifier);
                 }
+
+
+                if (isset($hookApiRecord[Episciences_Repositories_BioMedRxiv::ENRICHMENT])) {
+
+                    $result[Episciences_Repositories_BioMedRxiv::ENRICHMENT] = $hookApiRecord[Episciences_Repositories_BioMedRxiv::ENRICHMENT];
+
+                }
+
             }
 
             $conceptIdentifier = null;
@@ -1013,6 +1027,11 @@ class Episciences_Submit
             /** @var Episciences_User $user */
             $user = Episciences_Auth::getUser();
             $user->addRole(Episciences_Acl::ROLE_AUTHOR);
+
+
+            if (isset($data['h_enrichment'])) {
+                self::enrichmentProcess($paper, $data['h_enrichment']);
+            }
 
         } else {
             $message = '<strong>' . $translator->translate("Une erreur s'est produite pendant l'enregistrement de votre article.") . '</strong>';
@@ -1772,7 +1791,65 @@ class Episciences_Submit
 
     }
 
-    private function getHookParams(){
+    /**
+     * @param Episciences_Paper $paper
+     * @param string $enrichment // json
+     * @return void
+     */
+
+    public static function enrichmentProcess(Episciences_Paper $paper, string $enrichment = ''): void
+    {
+
+        if ($enrichment === '') {
+            return;
+        }
+
+        try {
+            $enrichment = json_decode($enrichment, false, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+            return;
+        }
+
+
+        foreach ($enrichment as $key => $values) {
+
+            if ($key === Episciences_Repositories_BioMedRxiv::CONTRIB_ENRICHMENT) {
+
+                // todo
+
+
+            } elseif ($key === Episciences_Repositories_BioMedRxiv::CITATIONS) {
+
+                if (!empty($values)) {
+
+                    try {
+
+
+                        $jsonCitations = json_encode($values, JSON_THROW_ON_ERROR);
+                        $oCitations = new Episciences_Paper_Citations();
+
+
+                        $oCitations
+                            ->setCitation($jsonCitations)
+                            ->setDocId($paper->getDocid())
+                            ->setSourceId($paper->getRepoid());
+
+                        Episciences_Paper_CitationsManager::insert([$oCitations]);
+
+                    } catch (JsonException $e) {
+                        trigger_error($e->getMessage());
+                    }
+
+                }
+
+
+
+            } elseif ($key === Episciences_Repositories_BioMedRxiv::INSTITUTIONS) {
+
+            }
+
+        }
 
     }
 

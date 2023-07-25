@@ -1835,4 +1835,10 @@ class Episciences_Tools
         return !($doi === '' || !preg_match("/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i", $doi));
     }
 
+    public  static function extractLicenseFromString(string $string): string
+    {
+        return $string;
+    }
+
+
 }

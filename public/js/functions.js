@@ -834,3 +834,4 @@ function updateTooltipTitle($element, newTitle = ''){
         .tooltip('fixTitle')
         .tooltip('show');
 }
+

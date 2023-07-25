@@ -56,3 +56,32 @@ function htmlentities (string, quote_style, charset, double_encode) {
 
 	  return string;
 	}
+
+function isEmptyData(arrayOrObject) {
+
+	let foundEmptyValue = 0;
+
+	if (Array.isArray(arrayOrObject)) {
+		let length = arrayOrObject.length;
+
+		for (let cpt = 0; cpt < length; cpt++) {
+
+			if (arrayOrObject[cpt] === null || arrayOrObject[cpt] === 'undefined' || arrayOrObject[cpt] === 0 || arrayOrObject[cpt] === '0') {
+				foundEmptyValue += 1;
+			}
+
+		}
+
+		return arrayOrObject.length === foundEmptyValue;
+
+	} else if (typeof arrayOrObject === 'object') {
+		for (const prop in arrayOrObject) {
+			if (Object.hasOwn(arrayOrObject, prop)) {
+				return false;
+			}
+		}
+	} else {
+		return true;
+	}
+
+}

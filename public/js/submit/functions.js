@@ -249,6 +249,11 @@ $(function () {
             // load and display result
             message += result['xslt'];
             $('#xml').val(result['record']); // insert record in hidden field
+
+            if (!isEmptyData(result['enrichment'])){
+                $('#h_enrichment').val(JSON.stringify(result['enrichment']));
+            }
+
         }
 
         $result_container.html(message);

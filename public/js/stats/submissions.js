@@ -43,30 +43,6 @@ $(function () {
 });
 
 
-function isEmptyData(array){
-
-    let foundEmptyValue = 0;
-
-    if(Array.isArray(array)){
-        let length = array.length;
-
-        for (let cpt = 0; cpt < length; cpt ++){
-
-            if(array[cpt] === null || array[cpt] === 'undefined' || array[cpt] === 0 || array[cpt] === '0' ){
-                foundEmptyValue += 1;
-            }
-
-        }
-
-        return array.length === foundEmptyValue;
-
-    } else {
-        return true;
-    }
-
-}
-
-
 
 
 

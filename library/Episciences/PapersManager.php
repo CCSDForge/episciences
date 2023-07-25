@@ -2605,6 +2605,12 @@ class Episciences_PapersManager
                 ]
             )['record'];
 
+
+            if (isset($record['enrichment'])){
+                // todo bioRxiv & medRxiv enrichment updates
+            }
+
+
         }
 
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
