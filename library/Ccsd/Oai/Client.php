@@ -76,6 +76,8 @@ class Ccsd_Oai_Client {
 			throw new Exception("URL du serveur OAI-PMH non définie", "0");
 		}
 
+        $error = false;
+
 		try {
 			$dom = new DOMDocument();
             $userAgent = method_exists($this, 'getUserAgent') ? $this->getUserAgent() : 'CcsdToolsCurl';
@@ -87,11 +89,17 @@ class Ccsd_Oai_Client {
 			foreach (Ccsd_Tools::getNamespaces($dom->documentElement) as $id => $ns) {
 				$xpath->registerNamespace($id, $ns);
 			}
-			$error = self::isOaiError($xpath->query('/xmlns:OAI-PMH/xmlns:error'));
+
+
+            if ($xpath->query('/xmlns:OAI-PMH/xmlns:error') !== false) {
+                $error = self::isOaiError($xpath->query('/xmlns:OAI-PMH/xmlns:error'));
+            }
+
 
 			if ( $error ) {
 				throw new Ccsd_Error($error, 1);
 			}
+
 			$record = $xpath->query('//xmlns:GetRecord/xmlns:record');
 			if ( $record->length ) {
 				return ( $this->_outputFormat === 'array') ? Ccsd_Tools::dom2array($record->item(0)) : $dom->saveXML($record->item(0));
