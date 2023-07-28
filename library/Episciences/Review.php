@@ -720,6 +720,7 @@ class Episciences_Review
 
         $volumes = [];
         foreach ($result as $volume) {
+            Episciences_VolumesManager::dataProcess($volume, 'decode');
             $oVolume = new Episciences_Volume($volume);
             $volumes[$oVolume->getVid()] = $oVolume;
         }
