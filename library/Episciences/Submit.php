@@ -1537,7 +1537,7 @@ class Episciences_Submit
     private function getSuggestedEditorsFromPost(array $post): array
     {
 
-        if (!isset($post['can_replace']) || !$post['can_replace']) {
+        if (isset($post['suggestEditors']) && (!isset($post['can_replace']) || !$post['can_replace'])) {
             return array_filter((array)$post['suggestEditors'], static function ($value) {
                 return !empty($value);
             });
