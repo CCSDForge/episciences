@@ -100,9 +100,8 @@
                     <xsl:value-of
                             select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/>
                 </xsl:if>
-                <xsl:if test="episciences/volume and episciences/volume != 0">,
-                    <xsl:value-of
-                            select="php:function('Ccsd_Tools::translate', concat('volume_',episciences/volume,'_title'))"/>
+                <xsl:if test="episciences/volume and episciences/volume != 0">
+                    <xsl:value-of select="episciences/volumeName"/>
                 </xsl:if>
 
                 <xsl:if test="episciences/doi and episciences/doi != ''">
@@ -183,8 +182,7 @@
                 <xsl:if test="episciences/volume and episciences/volume != 0">
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Volume : ')"/>
-                        <xsl:value-of
-                                select="php:function('Ccsd_Tools::translate', concat('volume_',episciences/volume,'_title'))"/>
+                        <xsl:value-of select="episciences/volumeName"/>
                     </div>
                 </xsl:if>
 

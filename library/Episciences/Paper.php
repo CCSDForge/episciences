@@ -2010,6 +2010,7 @@ class Episciences_Paper
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
             if ($oVolume instanceof Episciences_Volume) {
+                $node->appendChild($dom->createElement('volumeName', $oVolume->getNameKey()));
                 $oVolume->loadSettings();
             }
         }
