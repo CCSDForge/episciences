@@ -1329,18 +1329,20 @@ class Episciences_Volume
     public function preProcess(?array $assoc, string $type = self::HTML_TO_MARKDOWN): ?array
     {
 
-        if (!empty($assoc)) {
+        // todo Edition d'un volume : voir pourquoi les balises <p></p> sont ajoutées automatiquement.
 
-            foreach ($assoc as $lang => $val) {
-
-                if ($type === self::MARKDOWN_TO_HTML) {
-                    $assoc[$lang] = Episciences_Tools::convertMarkdownToHtml($val);
-                } elseif ($type === self::HTML_TO_MARKDOWN) {
-                    $assoc[$lang] = Episciences_Tools::convertHtmlToMarkdown($val);
-                }
-
-            }
-        }
+//        if (!empty($assoc)) {
+//
+//            foreach ($assoc as $lang => $val) {
+//
+//                if ($type === self::MARKDOWN_TO_HTML) {
+//                    $assoc[$lang] = Episciences_Tools::convertMarkdownToHtml($val);
+//                } elseif ($type === self::HTML_TO_MARKDOWN) {
+//                    $assoc[$lang] = Episciences_Tools::convertHtmlToMarkdown($val);
+//                }
+//
+//            }
+//        }
 
         return $assoc;
 
