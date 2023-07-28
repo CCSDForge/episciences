@@ -375,7 +375,7 @@ class Episciences_Paper_ProjectsManager
             $i = 0;
             foreach ($respEuHAl['response']['docs'] as $key => $value) {
                 $arrayEuropean[$key] = $value;
-                //add unidentified to all key not founded
+                //add unidentified to all key not found
                 if (!empty(array_diff_key($arrayAllValuesExpected, $value))) {
                     foreach (array_diff_key($arrayAllValuesExpected, $value) as $keyDiff => $valueDiff) {
                         $arrayEuropean[$i][$keyDiff] = $valueDiff;
@@ -425,7 +425,7 @@ class Episciences_Paper_ProjectsManager
             $i = 0;
             foreach ($respAnrHAl['response']['docs'] as $key => $value) {
                 $arrayAnr[$key] = $value;
-                //add unidentified to all key not founded
+                //add unidentified to all key not found
                 if (!empty(array_diff_key($arrayAllValuesExpected, $value))) {
                     foreach (array_diff_key($arrayAllValuesExpected, $value) as $keyDiff => $valueDiff) {
                         $arrayAnr[$i][$keyDiff] = $valueDiff;
