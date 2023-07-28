@@ -100,7 +100,7 @@
                     <xsl:value-of
                             select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/>
                 </xsl:if>
-                <xsl:if test="episciences/volume and episciences/volume != 0">
+                <xsl:if test="episciences/volume and episciences/volume != 0">,
                     <xsl:value-of select="episciences/volumeName"/>
                 </xsl:if>
 
