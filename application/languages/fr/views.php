@@ -265,5 +265,8 @@ return [
     "Fundings :"=> "Financeurs :",
     "callId" => "Call ID",
     "projectFinancing" => "Projet Financeur",
+    
+    // bioRxiv & medRxiv
+     "[CC_NO] The copyright holder for this pre-print is the author. All rights reserved. The material may not be redistributed, re-used or adapted without the author’s permission." => "[CC_NO] Le détenteur des droits d'auteur de cette prépublication est l'auteur. Tous droits réservés. Le matériel ne peut être redistribué, réutilisé ou adapté sans l'autorisation de l'auteur."
 
 ];

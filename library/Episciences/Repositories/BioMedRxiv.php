@@ -468,8 +468,8 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                     '';
             } elseif ($ak === 'kwd-group') {
                 $keyWords = $aVals[self::KEYWORDS] ?? [];
+                self::cleanRepairKeywords($keyWords);
             }
-
 
         } // end foreach articleMeta
 
@@ -568,5 +568,14 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
         }
 
         return $license;
+    }
+
+    private static function cleanRepairKeywords(array &$keywords = []): void
+    {
+        foreach ($keywords as $index => $keyword){
+            if (is_array($keyword)) { // exp. ['italic => "Cebus"] bioRxiv => 10.1101/011908v1
+                $keywords[$index] = array_shift($keyword);
+            }
+        }
     }
 }
