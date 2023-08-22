@@ -206,7 +206,6 @@ class ExportController extends Zend_Controller_Action
             $oVolume = Episciences_VolumesManager::find($paper->getVid());
             if ($oVolume) {
                 $volume = $oVolume->getName('en', true);
-                $volumeId = $oVolume->getVid();
                 if ($oVolume->isProceeding()) {
                     $proceedingInfo = $oVolume->getProceedingInfo();
                 }
