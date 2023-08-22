@@ -843,27 +843,25 @@ class Episciences_Volume
     {
         $result = null;
         $translator = Zend_Registry::get('Zend_Translate');
-        // try to fetch translation for specified language
-        if ($translator->isTranslated($this->getNameKey(), $lang)) {
-            $result = $translator->translate($this->getNameKey(), $lang);
-        }
-        if (!$result && $forceResult) {
-            if ($translator->isTranslated($this->getNameKey(), 'en')) {
-                // if it cannot be found, try to fetch english translation
-                $result = $translator->translate($this->getNameKey(), 'en');
-            } else {
-                // else, try to fetch any translation
-                foreach (Episciences_Tools::getLanguages() as $locale) {
-                    if ($translator->isTranslated($this->getNameKey(), $locale)) {
-                        $result = $translator->translate($this->getNameKey(), $locale);
-                        break;
-                    }
+        $nameKey = $this->getNameKey();
+        $languages = Episciences_Tools::getRequiredLanguages();
+
+        if ($translator->isTranslated($nameKey, $lang)) {
+            $result = $translator->translate($nameKey, $lang);
+        } elseif ($forceResult) {
+            foreach ($languages as $localeKey) {
+                if ($translator->isTranslated($nameKey, $localeKey)) {
+                    $result = $translator->translate($nameKey, $localeKey);
+                    break;
                 }
             }
             if (!$result) {
-                $result = self::UNLABELED_VOLUME;
+                $result = $translator->translate($nameKey, 'en')?: self::UNLABELED_VOLUME;
             }
+        } else {
+            $result = self::UNLABELED_VOLUME;
         }
+
         return $result;
     }
 
