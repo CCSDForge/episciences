@@ -1,5 +1,7 @@
 <?php
 
+use Dotenv\Dotenv;
+
 class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 {
 
@@ -19,14 +21,37 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     {
         $dbDriverOption1002Const = $this->getOption('resources')['db']['driver_options']['1002']; // see application.ini
         Zend_Db_Table::setDefaultAdapter($this->getPluginResource('db')->getDbAdapter());
-        Zend_Db_Table_Abstract::getDefaultAdapter()->getConnection()->exec($dbDriverOption1002Const);
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $strFailedToConnect = 'Failed to connect to Database';
+
+        if ($db === null) {
+            echo $strFailedToConnect;
+            trigger_error($strFailedToConnect, E_USER_ERROR);
+        }
+
+        try {
+            $connection = $db->getConnection();
+        } catch (Exception $exception) {
+            echo $strFailedToConnect;
+            trigger_error($exception->getMessage(), E_USER_ERROR);
+        }
+
+        if ($connection === null) {
+            echo $strFailedToConnect;
+            trigger_error($strFailedToConnect, E_USER_ERROR);
+        }
+
+        $connection->exec($dbDriverOption1002Const);
+
         return Zend_Db_Table_Abstract::getDefaultAdapter();
     }
 
     protected function _initModule()
     {
 
-        $dotEnv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+        $dotEnv = Dotenv::createImmutable(dirname(__DIR__));
 
         foreach ($dotEnv->load() as $key => $value) {
             define($key, $value);
@@ -77,7 +102,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     /**
      * @throws Zend_Session_Exception
      */
-    protected function _initSession()
+    protected function _initSession(): void
     {
         $options = $this->getOptions();
         $sessionOptions = [
@@ -90,14 +115,14 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     }
 
     // Initialisation du log des exceptions
-    protected function _initLog()
+    protected function _initLog(): void
     {
         try {
             $writer = new Zend_Log_Writer_Stream(EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.exceptions.log');
             $logger = new Zend_Log($writer);
             Zend_Registry::set('Logger', $logger);
         } catch (Zend_Log_Exception $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
     }
 
@@ -129,13 +154,13 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     /**
      * Définition du DOCTYPE
      */
-    protected function _initDoctype()
+    protected function _initDoctype(): void
     {
         $doctypeHelper = new Zend_View_Helper_Doctype();
         try {
             $doctypeHelper->doctype('XHTML1_STRICT');
         } catch (Zend_View_Exception $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
     }
 
@@ -201,7 +226,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
      * Cache Zend_Db_Table
      * @see http://framework.zend.com/manual/1.12/fr/zend.db.table.html#zend.db.table.metadata.caching
      */
-    protected function _initZend_Db_TableCache()
+    protected function _initZend_Db_TableCache(): void
     {
         $frontendOptions = [
             'cache_id_prefix' => 'epi',
@@ -217,12 +242,12 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     }
 
 
-    protected function _initApplicationVersion()
+    protected function _initApplicationVersion(): void
     {
         define('APPLICATION_VERSION', Episciences_Settings::getApplicationVersion()['gitHash']);
     }
 
-    protected function _initcheckApplicationDirectories()
+    protected function _initcheckApplicationDirectories(): void
     {
         // Verification de l'existence des dossiers de stockage, creation si necessaire
         $folders = [
@@ -236,7 +261,9 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
             if (!file_exists($folder)) {
                 $resMkdir = mkdir($folder, Episciences_Tools::DEFAULT_MKDIR_PERMISSIONS, true);
                 if (!$resMkdir) {
-                    die('Fatal error, no configuration folder and unable to create folder: ' . $folder);
+                    $errorMessage = 'Fatal error, no configuration folder and unable to create folder: ' . $folder;
+                    echo $errorMessage;
+                    trigger_error($errorMessage, E_USER_ERROR);
                 }
             }
         }
