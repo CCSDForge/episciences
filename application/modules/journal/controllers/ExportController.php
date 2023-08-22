@@ -149,7 +149,9 @@ class ExportController extends Zend_Controller_Action
     }
 
     /**
+     * @param string $format
      * @return bool
+     * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
