@@ -125,17 +125,19 @@ class ExportController extends Zend_Controller_Action
      * @param Episciences_Paper $paper
      * @param string $format
      * @return bool|false|string
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function exportTo(Episciences_Paper $paper, string $format)
     {
 
-        if ($format === 'bibtex') {
-            header('Content-Type: text/plain; charset: utf-8');
-        } elseif ($format === 'json') {
-            header('Content-Type: text/json; charset: utf-8');
-        } else {
-            header('Content-Type: text/xml; charset: utf-8');
-        }
+        $contentTypes = [
+            'bibtex' => 'text/plain; charset=utf-8',
+            'json' => 'text/json; charset=utf-8',
+            'xml' => 'text/xml; charset=utf-8',
+        ];
+
+        header('Content-Type: '. $contentTypes[$format]?? $contentTypes['xml']);
+
 
         return $paper->get($format);
     }
@@ -155,7 +157,7 @@ class ExportController extends Zend_Controller_Action
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    protected function xmlExport($format = ''): bool
+    protected function xmlExport(string $format = ''): bool
     {
 
         if ($format === 'voldoaj') {
@@ -260,23 +262,14 @@ class ExportController extends Zend_Controller_Action
 
         header('Content-Type: text/xml; charset: utf-8');
 
-        switch ($format) {
-            case 'crossref':
-                $output = $this->view->render('export/crossref.phtml');
-                break;
-            case 'doaj':
-                $output = $this->view->render('export/doaj.phtml');
-                break;
-            case 'zbjats':
-                $output = $this->view->render('export/zbjats.phtml');
-                break;
-            case 'datacite':
-                //break omitted
-            default:
-                $output = $this->view->render('export/datacite.phtml');
-                break;
+        $formats = [
+            'crossref' => 'export/crossref.phtml',
+            'doaj' => 'export/doaj.phtml',
+            'zbjats' => 'export/zbjats.phtml',
+            'datacite' => 'export/datacite.phtml',
+        ];
 
-        }
+        $output = $this->view->render($formats[$format]?? $formats['datacite']);
 
 
         return $this->displayXml($output);
