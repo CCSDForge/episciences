@@ -535,8 +535,8 @@ class Episciences_Paper_AuthorsManager
                             } else {
                                 $authorDb[$indexAuthor]['affiliation'][] = self::putOnlyNameAffiliation($affiliation['name']);
                                 if (PHP_SAPI === 'cli') {
-                                    echo PHP_EOL.'New Affiliation without ROR founded, Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name'].PHP_EOL;
-                                    self::logInfoMessage('New Affiliation without ROR founded, Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name']);
+                                    echo PHP_EOL.'New Affiliation without ROR found, Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name'].PHP_EOL;
+                                    self::logInfoMessage('New Affiliation without ROR found, Added for '.$authorDb[$indexAuthor]['fullname']." - ".$affiliation['name']);
                                 }
                             }
                         }
