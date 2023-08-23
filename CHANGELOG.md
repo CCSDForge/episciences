@@ -13,8 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.40.14 - 2023-08-23
 ### Fixed
-- Automatic reminders [RT#190672]
+- Automatic reminders: fixed incorrect management of dates
+- Fixed translations of Volumes for Journals with only one locale defined as French
+ 
 ## 1.0.40.13 - 2023-07-20
 ### Fixed
 - Fixed English translation
