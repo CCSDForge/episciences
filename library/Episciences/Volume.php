@@ -663,10 +663,11 @@ class Episciences_Volume
         }
 
         // Description du volume
-        foreach ($data['description'] as $lang => $translated) {
-            $translations[$lang]['volume_' . $vid . '_description'] = $translated;
+        if ((isset($data['description'])) && ($data['description'] !== '')) {
+            foreach ($data['description'] as $lang => $translated) {
+                $translations[$lang]['volume_' . $vid . '_description'] = $translated;
+            }
         }
-
 
         // Enregistrement des traductions
         $resWriting = Episciences_Tools::writeTranslations($translations, $path, $file);
@@ -681,11 +682,11 @@ class Episciences_Volume
 
 
     /**
-     * Save Paper positions from a formular (with jquery sortable) in a Volume
+     * Save Paper positions from a form (with jquery sortable) in a Volume
      * @param $vid
      * @param $paper_positions
      */
-    public function savePaperPositionsInVolume($vid, $paper_positions)
+    public function savePaperPositionsInVolume($vid, $paper_positions): void
     {
         // value="paper-126,paper-38"
         $positionsFromFormular = explode(',', $paper_positions);
