@@ -2244,7 +2244,7 @@ class Episciences_Paper
         }
 
         $query = 'q=*%3A*&wt=phps&omitHeader=true&fq=docid:' . $this->getDocid();
-        $res = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
+        $res = Episciences_Tools::solrCurl($query);
         if ($res) {
             $solrData = unserialize($res, ['allowed_classes' => false]);
             $solrData = array_shift($solrData['response']['docs']);

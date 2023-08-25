@@ -12,11 +12,10 @@ $localopts = [
     'file=s' => "csv file path (for multiple imports)",
 ];
 
-if (file_exists(__DIR__ . "/loadHeader.php")) {
-    require_once __DIR__ . '/loadHeader.php';
-} else {
-    require_once 'loadHeader.php';
-}
+
+require_once __DIR__ . '/loadHeader.php';
+
+
 
 session_start();
 require_once "JournalScript.php";
@@ -24,6 +23,7 @@ require_once "JournalScript.php";
 
 class UpdateVolumes extends JournalScript
 {
+
     // csv file column positions
     public const COL_STATUS = 0;
     public const COL_CURRENT_ISSUE = 1;
@@ -62,7 +62,7 @@ class UpdateVolumes extends JournalScript
         $this->checkRvid();
 
 
-        define_review_constants();
+
 
 
         $this->_review = Episciences_ReviewsManager::find($this->getParam('rvid'));
@@ -71,6 +71,7 @@ class UpdateVolumes extends JournalScript
             $this->displayError("Invalid journal ID / RVID");
         }
 
+        define_review_constants($this->_review->getCode());
 
         // load review translation files
         if (is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {

@@ -174,9 +174,9 @@ class BrowseController extends Zend_Controller_Action
         }
 
         foreach ($volumes as &$volume) {
-            $volume->loadIndexedPapers();
             $volume->loadMetadatas();
             $volume->getProceedingInfo();
+            $volume->getSolrCountOfVolumePapers();
         }
 
         unset($volume);
@@ -274,7 +274,7 @@ class BrowseController extends Zend_Controller_Action
             $query .= '&fq=revue_id_i:' . RVID;
         }
 
-        $res = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
+        $res = Episciences_Tools::solrCurl($query);
         if ($res) {
             $this->view->articles = unserialize($res, ['allowed_classes' => false]);
         }

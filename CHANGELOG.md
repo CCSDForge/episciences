@@ -16,8 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
-### Fixed
-- Automatic reminders [RT#190672]
 ### Added
 - .env file (/!\ /.env.exemple)
 - script to import volumes and volume metadata from journals translation files into the database (/!\ @see /src/mysql/alter_volume_and_volume_metadata_tables.sql)
@@ -26,27 +24,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bibliographical references in export crossref
 - affiliation acronym in crossref and TEI export
 - possibility to research acronym in affiliation input ROR
+- icon to make it easier to identify the user in revision requests section.
+- script to import volumes and volume metadata from journals translation files into the database.
+- Integration of api and application for the bibliographical references
 
 ### Changed
 - Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
-  * optional file attachment in "Contact without sending a new version" and "answer without any modifications".
+    * optional file attachment in "Contact without sending a new version" and "answer without any modifications".
 - UX: icon to make it easier to identify the user in revision requests section
 - Some adjustments: titles and descriptions volume's, titles and content metadata volumes are now stored
   in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
-
-### Fixed
-- Automatic reminders [RT#190672]
-- [#353](https://github.com/CCSDForge/episciences/issues/353)
-### Changed
 - Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
   stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
 - [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and ethical
-### Added
-- icon to make it easier to identify the user in revision requests section.
-- script to import volumes and volume metadata from journals translation files into the database.
-- .env file
-- Integration of api and application for the bibliographical references
 
+### Fixed
+- [#353](https://github.com/CCSDForge/episciences/issues/353)
+
+
+## 1.0.40.14 - 2023-08-23
+### Fixed
+- Automatic reminders: fixed incorrect management of dates
+- Fixed translations of Volumes for Journals with only one locale defined as French
+ 
 ## 1.0.40.13 - 2023-07-20
 ### Fixed
 - Fixed English translation

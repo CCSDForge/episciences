@@ -41,6 +41,8 @@ class Episciences_Volume
     private $_copyEditors = [];
     private $_bib_reference = null;
 
+    private int $nbOfPapersInVolume = 0;
+
     private $journalTranslationPath ;
 
     private ?array $titles;
@@ -394,6 +396,27 @@ class Episciences_Volume
         return Episciences_UsersManager::unassign($ids, $params);
     }
 
+    public function getSolrCountOfVolumePapers() {
+
+        $numFound = 0;
+        $query = 'q=*%3A*';
+        $query .= '&wt=phps&omitHeader=true';
+        $query .= '&fq=revue_id_i:' . RVID;
+        $query .= '&fq=(volume_id_i:' . $this->getVid() . '+OR+secondary_volume_id_i:' . $this->getVid() . ')';
+        $query .= '&rows=0';
+
+        $result = Episciences_Tools::solrCurl($query);
+        $result = unserialize($result, ['allowed_classes' => false]);
+
+        if ($result && array_key_exists('response', $result)) {
+            $response = $result['response'];
+            $numFound = (int) $response['numFound'];
+        }
+
+        $this->setNbOfPapersInVolume($numFound);
+        return $numFound;
+
+    }
     /**
      * @throws Exception
      */
@@ -405,7 +428,7 @@ class Episciences_Volume
         $query .= '&fq=(volume_id_i:' . $this->getVid() . '+OR+secondary_volume_id_i:' . $this->getVid() . ')';
         $query .= '&rows=1000';
 
-        $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
+        $result = Episciences_Tools::solrCurl($query);
         $result = unserialize($result, ['allowed_classes' => false]);
 
 
@@ -729,11 +752,11 @@ class Episciences_Volume
 
 
     /**
-     * Save Paper positions from a formular (with jquery sortable) in a Volume
+     * Save Paper positions from a form (with jquery sortable) in a Volume
      * @param $vid
      * @param $paper_positions
      */
-    public function savePaperPositionsInVolume($vid, $paper_positions)
+    public function savePaperPositionsInVolume($vid, $paper_positions): void
     {
         // value="paper-126,paper-38"
         $positionsFromFormular = explode(',', $paper_positions);
@@ -1291,6 +1314,16 @@ class Episciences_Volume
     public function getTitles(): ?array
     {
         return $this->titles;
+    }
+
+    public function getNbOfPapersInVolume(): int
+    {
+        return $this->nbOfPapersInVolume;
+    }
+
+    public function setNbOfPapersInVolume(int $nbOfPapersInVolume): void
+    {
+        $this->nbOfPapersInVolume = $nbOfPapersInVolume;
     }
 
     /**

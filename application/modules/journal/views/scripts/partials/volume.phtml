@@ -35,7 +35,7 @@ $volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
                 <?= Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()) ?>
             </a>
             <?php
-            $countOfPublishedArticles = count($volume->getIndexedPapers());
+            $countOfPublishedArticles = $volume->getNbOfPapersInVolume();
             if ($countOfPublishedArticles > 1) {
                 echo '<span class="text-muted">(' . $countOfPublishedArticles . ' ' . $this->translate('articles') . ')</span>';
             } elseif ($countOfPublishedArticles === 1) {
