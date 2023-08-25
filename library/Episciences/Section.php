@@ -452,7 +452,7 @@ class Episciences_Section
         $query .= '&rows=0';
 
         try {
-            $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
+            $result = Episciences_Tools::solrCurl($query);
 
             if ($result) {
                 $numFound = unserialize($result, ['allowed_classes' => false])['response']['numFound'];
@@ -479,7 +479,7 @@ class Episciences_Section
         $query .= '&fq=section_id_i:' . $this->getSid();
         $query .= '&rows=1000';
 
-        $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
+        $result = Episciences_Tools::solrCurl($query);
 
         if ($result) {
 

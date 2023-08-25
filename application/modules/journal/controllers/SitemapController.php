@@ -31,7 +31,7 @@ class SitemapController extends Zend_Controller_Action
             $query .= '&fq=revue_id_i:' . RVID;
         }
 
-        $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
+        $result = Episciences_Tools::solrCurl($query);
         if ($result) {
             $result = unserialize($result, ['allowed_classes' => false]);
             if (!empty($result['response']['docs'])) {
