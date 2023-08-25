@@ -446,17 +446,27 @@ class Episciences_Paper_AuthorsManager
      * @param simpleXMLElement $xmlString
      * @return array
      */
-    public static function getAffiFromHalTei(simpleXMLElement $xmlString): array {
+    public static function getAffiFromHalTei(simpleXMLElement $xmlString): array
+    {
         $back = $xmlString->text->back;
         $orgInfo = [];
         if (isset($back->listOrg)) {
             foreach ($back->listOrg->org as $org) {
                 $orgInfo[(string)$org->attributes('xml', true)[0]]['name'] = trim((string)$org->orgName);
+                $orgHasRor = 0;
                 if ($org->idno) {
                     foreach ($org->idno as $orgIdno) {
-                        if ((string)$orgIdno->attributes()->type ==='ROR') {
-                            $orgInfo[(string)$org->attributes('xml', true)[0]]['ROR'] = trim("https://ror.org/".$orgIdno);
+                        if ((string)$orgIdno->attributes()->type === 'ROR') {
+                            // remove those which have already ror
+                            $orgIdno = str_replace("https://ror.org/","",$orgIdno);
+                            $orgInfo[(string)$org->attributes('xml', true)[0]]['ROR'] = trim("https://ror.org/" . $orgIdno);
+                            $orgHasRor = 1;
                         }
+                    }
+                }
+                foreach ($org->orgName as $orgName) {
+                    if ($orgHasRor === 1 && (string)$orgName->attributes()->type === 'acronym') {
+                        $orgInfo[(string)$org->attributes('xml', true)[0]]['acronym'] = trim($orgName);
                     }
                 }
             }
