@@ -27,6 +27,8 @@ class Episciences_Volume
     private $_copyEditors = [];
     private $_bib_reference = null;
 
+    private int $nbOfPapersInVolume = 0;
+
     /**
      * Episciences_Volume constructor.
      * @param array|null $options
@@ -369,6 +371,27 @@ class Episciences_Volume
         return Episciences_UsersManager::unassign($ids, $params);
     }
 
+    public function getSolrCountOfVolumePapers() {
+
+        $numFound = 0;
+        $query = 'q=*%3A*';
+        $query .= '&wt=phps&omitHeader=true';
+        $query .= '&fq=revue_id_i:' . RVID;
+        $query .= '&fq=(volume_id_i:' . $this->getVid() . '+OR+secondary_volume_id_i:' . $this->getVid() . ')';
+        $query .= '&rows=0';
+
+        $result = Episciences_Tools::solrCurl($query);
+        $result = unserialize($result, ['allowed_classes' => false]);
+
+        if ($result && array_key_exists('response', $result)) {
+            $response = $result['response'];
+            $numFound = (int) $response['numFound'];
+        }
+
+        $this->setNbOfPapersInVolume($numFound);
+        return $numFound;
+
+    }
     /**
      * @throws Exception
      */
@@ -380,7 +403,7 @@ class Episciences_Volume
         $query .= '&fq=(volume_id_i:' . $this->getVid() . '+OR+secondary_volume_id_i:' . $this->getVid() . ')';
         $query .= '&rows=1000';
 
-        $result = Episciences_Tools::solrCurl($query, 'episciences', 'select', true);
+        $result = Episciences_Tools::solrCurl($query);
         $result = unserialize($result, ['allowed_classes' => false]);
 
 
@@ -1131,6 +1154,16 @@ class Episciences_Volume
     public function getStatus(): int
     {
         return (int)$this->getSetting(self::SETTING_STATUS);
+    }
+
+    public function getNbOfPapersInVolume(): int
+    {
+        return $this->nbOfPapersInVolume;
+    }
+
+    public function setNbOfPapersInVolume(int $nbOfPapersInVolume): void
+    {
+        $this->nbOfPapersInVolume = $nbOfPapersInVolume;
     }
 
 }
