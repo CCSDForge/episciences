@@ -185,6 +185,7 @@ try {
                 if (isset($tags['%%ARTICLE_ID%%'])) {
                     $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
                     $mail->setDocid($paper->getDocid());
+                    displayMessage('DOCID > #' . $paper->getDocid(), 'default', true );
                 }
 
                 $mail->setFrom($rvCode . '@' . DOMAIN, $rvCode);
@@ -193,6 +194,8 @@ try {
                 $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, $review->getName());
 
                 if (isset($recipient['deadline'])) {
+
+                    displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])) . ')', 'default', true);
 
                     $target = date_create($recipient['deadline']);
                     $interval = $origin->diff($target, true)->format('%a'); // in days
@@ -205,6 +208,8 @@ try {
                 }
 
                 $mail->addTo($recipient['email'], $recipient['fullname']);
+                displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'] , 'default', true);
+
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
                 $mail->writeMail($rvCode, $rvId, $isDebug);
