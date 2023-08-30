@@ -54,7 +54,11 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $dotEnv = Dotenv::createImmutable(dirname(__DIR__));
 
         foreach ($dotEnv->load() as $key => $value) {
-            define($key, $value);
+
+            if(!defined($key)){
+                define($key, $value);
+            }
+
         }
 
 
