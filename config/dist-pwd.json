@@ -142,5 +142,6 @@
   },
   "OPENCITATIONS": {
     "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN"
-  }
+  },
+  "SERVER_HTTP": "https"
 }
