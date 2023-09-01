@@ -17,7 +17,7 @@ $indexedPapers = $this->volume->getIndexedPapers();
             <?php endif; ?>
 
             <?php if ($metadatas) : ?>
-                <div id="metadatas">
+                <div id="metadatas" class="volume-metadata">
                     <?= $this->partial('volume/volume-metadatas.phtml', ['metadatas' => $metadatas]) ?>
                 </div>
             <?php endif; ?>
