@@ -20,7 +20,7 @@ $volume = $this->volume;
 
             <?php endif; ?>
             <?php if ($metadatas) : ?>
-                <div id="metadatas">
+                <div id="metadatas" class="volume-metadata">
                     <?= $this->partial('volume/volume-metadatas.phtml', ['metadatas' => $metadatas, 'volume' => $this->volume]) ?>
 
                 </div>
