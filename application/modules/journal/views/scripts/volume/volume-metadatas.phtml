@@ -69,11 +69,9 @@ $hasContent = !empty($metadata->getContent());
 
             <?php $download = !$metadata->isPDF() ? 'download="' . $metadata->getFile() . '"' : ''; ?>
 
-                <a href="<?= $metadata->getFileUrl() ?>" <?= $download ?> target="_blank">
-                    <button class="btn btn-default btn-sm attachment-metadata-volume">
+                <a class="metadata-file" href="<?= $metadata->getFileUrl() ?>" <?= $download ?> target="_blank">
                         <span class="glyphicon glyphicon-file"></span>
-                        <?= $metadata->getTitle() ?>
-                    </button>
+                    <?= $metadata->getTitle() ?>
                 </a>
 
             <?php endif; ?>
@@ -85,7 +83,7 @@ $hasContent = !empty($metadata->getContent());
         <div class="col-sm-10">
 
             <?php if ($hasContent) : ?>
-                <p class="attachment-metadata-volume small"><?= $content ?></p>
+                <p class="attachment-metadata-volume small"><?= nl2br($content) ?></p>
             <?php endif; ?>
         </div>
 
