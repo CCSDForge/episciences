@@ -1,12 +1,14 @@
 <?php
 
 require_once 'const.php';
-define_simple_constants();
-define_table_constants();
-define_app_constants();
-define_review_constants();
+defineProtocol();
+defineSimpleConstants();
+defineSQLTableConstants();
+defineApplicationConstants();
+defineJournalConstants();
 defineVendorCssLibraries();
 defineVendorJsLibraries();
+
 
 require_once 'bdd_const.php';
 

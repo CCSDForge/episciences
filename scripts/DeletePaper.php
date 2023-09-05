@@ -34,9 +34,9 @@ class DeletePaper extends JournalScript
 
         $this->checkAppEnv();
 
-        define_simple_constants();
-        define_table_constants();
-        define_app_constants();
+        defineSimpleConstants();
+        defineSQLTableConstants();
+        defineApplicationConstants();
 
         $this->initApp();
         $this->initDb();
@@ -44,7 +44,7 @@ class DeletePaper extends JournalScript
         $this->checkRvid();
         $this->checkRvcode();
 
-        define_review_constants();
+        defineJournalConstants();
 
         $this->checkMethod();
 

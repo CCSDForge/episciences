@@ -1,9 +1,23 @@
 <?php
 
+
+function defineProtocol()
+{
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        $protocol = 'https';
+    } elseif ((isset($_SERVER['HTTPS'])) && (!empty($_SERVER['HTTPS'])) && (strtolower($_SERVER['HTTPS']) === 'on')) {
+        $protocol = 'https';
+    } else {
+        $protocol = 'http';
+    }
+
+    define('SERVER_PROTOCOL', $protocol);
+}
+
 /**
  * define application constants
  */
-function define_app_constants()
+function defineApplicationConstants()
 {
     // environnements
     define('ENV_PROD', 'production');
@@ -45,7 +59,7 @@ function define_app_constants()
 /**
  * define review constants
  */
-function define_review_constants(string $rvCode = null)
+function defineJournalConstants(string $rvCode = null)
 {
 
     // define review code
@@ -68,13 +82,7 @@ function define_review_constants(string $rvCode = null)
         }
 
         // define application url
-        if (defined('HTTP') && defined('DOMAIN')) {
-            if (APPLICATION_MODULE === PORTAL) {
-                define('APPLICATION_URL', HTTP . '://' . DOMAIN);
-            } else {
-                define('APPLICATION_URL', HTTP . '://' . $rvCode . '.' . DOMAIN);
-            }
-        }
+        define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
 
         // define review path
         define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
@@ -125,7 +133,7 @@ function define_review_constants(string $rvCode = null)
 /**
  * define db table constants
  */
-function define_table_constants()
+function defineSQLTableConstants()
 {
     define('T_ALIAS', 'REVIEWER_ALIAS');
     define('T_ASSIGNMENTS', 'USER_ASSIGNMENT');
@@ -176,12 +184,9 @@ function define_table_constants()
 /**
  * define some simple constants
  */
-function define_simple_constants()
+function defineSimpleConstants()
 {
-    // define http protocol
-    define('HTTP', isset($_SERVER['HTTPS']) ? 'https' : 'http');
     define('DOMAIN', 'episciences.org');
-
     define('KO', 1024);
     define('MO', 1048576);
     define('MAX_FILE_SIZE', 15 * MO);
@@ -191,25 +196,8 @@ function define_simple_constants()
     define('DUPLICATE_ENTRY_SQLSTATE', 23000);
     define('TINYMCE_DIR', '/js/tinymce/');
     define('MAX_PWD_INPUT_SIZE', 40);
-
 }
 
-function check_constants()
-{
-    $errors = [];
-
-    if (!defined('APPLICATION_ENV')) {
-        $errors = 'APPLICATION_ENV is not defined';
-    }
-    if (!defined('APPLICATION_PATH')) {
-        $errors = 'APPLICATION_PATH is not defined';
-    }
-
-    return [
-        'status' => count($errors) ? false : true,
-        'errors' => $errors
-    ];
-}
 
 /**
  * Constants to include vendor JS Libraries

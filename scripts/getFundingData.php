@@ -62,7 +62,7 @@ class getFundingData extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
-        define_review_constants();
+        defineJournalConstants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID', 'STATUS'])->order('REPOID DESC'); // prevent empty row
         $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');

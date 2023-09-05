@@ -286,7 +286,7 @@ class PaperDefaultController extends DefaultController
             'action' => 'view',
             'id' => $docId]);
 
-        $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         $tags += [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
@@ -468,7 +468,7 @@ class PaperDefaultController extends DefaultController
                 'id' => $docId
             ]);
 
-        return HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $adminPaperUrl;
+        return SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $adminPaperUrl;
     }
 
     /**
@@ -484,7 +484,7 @@ class PaperDefaultController extends DefaultController
                 'id' => $docId
             ]);
 
-        return HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paperUrl;
+        return SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paperUrl;
     }
 
     /**

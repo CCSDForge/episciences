@@ -610,10 +610,7 @@ class Episciences_Review
      */
     public function getUrl(): string
     {
-        if ($this->getCode() === 'portal') {
-            return HTTP . '://' . DOMAIN;
-        }
-        return HTTP . '://' . $this->getCode() . '.' . DOMAIN;
+        return SERVER_PROTOCOL . '://' . $this->getCode() . '.' . DOMAIN;
     }
 
     /**

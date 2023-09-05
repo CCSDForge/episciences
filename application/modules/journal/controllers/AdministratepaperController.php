@@ -1674,7 +1674,7 @@ class AdministratepaperController extends PaperDefaultController
             $url_params['tmp'] = md5($reviewer['email']);
         }
 
-        $invitation_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . $this->view->url($url_params);
+        $invitation_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $this->view->url($url_params);
 
         // La page de l'article sur Episciences
         $paperUrl = $this->view->url([
@@ -1682,7 +1682,7 @@ class AdministratepaperController extends PaperDefaultController
             'action' => 'view',
             'id' => $paper->getDocid()]);
 
-        $paper_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         // la page de l'article sur l'archive ouverte
         $paperRepoUrl = $paper->getDocUrl();
@@ -1700,7 +1700,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, $paper_url);
         $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_REPO_URL, $paperRepoUrl);
         $mail->addTag(Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, $contributor->getFullName());
-        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, HTTP . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin');
+        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin');
         $mail->addTo($reviewer['email'], $reviewer['full_name']);
 
         // Other reciptients
@@ -1892,7 +1892,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     $additionalTags = [
                         Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_NAME => RVCODE . '_' . CE_RESOURCES_NAME,
-                        Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => HTTP . '://' . $_SERVER['SERVER_NAME'] . '/website/public',
+                        Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/website/public',
                     ];
 
                     if ($journal->getDoiSettings()->getDoiAssignMode() === Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
@@ -2734,7 +2734,7 @@ class AdministratepaperController extends PaperDefaultController
                         'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
                         'action' => 'view',
                         'id' => $paper->getDocid()]);
-                    $paper_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
+                    $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
 
                     foreach ($editors as $uid => $editor) {
 
@@ -2828,7 +2828,7 @@ class AdministratepaperController extends PaperDefaultController
                 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
                 'action' => 'view',
                 'id' => $paper->getDocid()]);
-            $paper_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
+            $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
 
             if (!empty($added)) {
                 $this->assignUser($paper, $added, $paper_url);
@@ -3503,7 +3503,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->form = $form;
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
         $this->view->template = $oTemplate;
-        $paper_url = HTTP . '://' . $_SERVER['SERVER_NAME'] . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view/id/' . $oPaper->getDocid();
+        $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view/id/' . $oPaper->getDocid();
         $this->view->js_paper = Zend_Json::encode(array_merge($oPaper->getAllMetadata(), ['url' => $paper_url]));
         $this->view->js_review = Zend_Json::encode($review);
         $this->view->js_template = Zend_Json::encode($template);
@@ -3560,7 +3560,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $oPaper->getTitle($locale, true));
         $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $oPaper->formatAuthorsMetadata());
         $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($oPaper->getSubmission_date(), $locale));
-        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, HTTP . '://' . $_SERVER['SERVER_NAME'] . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . 'view/id/' . $oPaper->getDocid());
+        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . 'view/id/' . $oPaper->getDocid());
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
         $mail->setFromReview();

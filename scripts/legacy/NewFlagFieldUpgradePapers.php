@@ -25,8 +25,8 @@ class NewFlagFieldUpgradePapers extends JournalScript
 
         $this->checkAppEnv();
 
-        define_table_constants();
-        define_app_constants();
+        defineSQLTableConstants();
+        defineApplicationConstants();
 
         $this->initApp();
         $this->initDb();

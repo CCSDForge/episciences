@@ -267,7 +267,7 @@ class UserDefaultController extends Zend_Controller_Action
     public function logoutAction(): void
     {
 
-        $scheme = (!isset($_SERVER['HTTPS']) || strtolower($_SERVER['HTTPS']) != 'on') ? "http://" : "https://";
+        $scheme = SERVER_PROTOCOL;
         $urlParams = ['controller' => 'user', 'action' => 'logoutfromcas'];
 
         if ($this->getParam('reason') == 'passwordupdated') {

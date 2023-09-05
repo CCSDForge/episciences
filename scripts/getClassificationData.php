@@ -57,7 +57,7 @@ class getClassificationData extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
-        define_review_constants();
+        defineJournalConstants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $dir = dirname(APPLICATION_PATH) . '/cache/enrichmentClassifications';
         $file = $dir.'/'.self::FILE_NAME_BROKER_OUTPUT;

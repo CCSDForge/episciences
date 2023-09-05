@@ -3,10 +3,11 @@
 header("content-type: application/x-javascript");
 
 require_once '../const.php';
-define_simple_constants();
-define_table_constants();
-define_app_constants();
-define_review_constants();
+defineProtocol();
+defineSimpleConstants();
+defineSQLTableConstants();
+defineApplicationConstants();
+defineJournalConstants();
 
 
 $lang = $_GET['lang'] ?? 'en';
@@ -25,7 +26,6 @@ echo "var locale = '" . $lang . "';" . PHP_EOL;
 echo "var translations = " . json_encode($translations) . ';' . PHP_EOL;
 
 ?>
-
 function translate (key, lang) {
     let i = (lang) ? lang : locale;
     if (translations[i] == undefined || translations[i][key] == undefined)

@@ -148,7 +148,7 @@ class Episciences_Mail extends Zend_Mail
             return false;
         }
 
-        $lostLoginLink = HTTP . '://';
+        $lostLoginLink = SERVER_PROTOCOL . '://';
         $lostLoginLink .= $rvCode . '.' . DOMAIN;
         $lostLoginLink .= '/user/lostlogin';
 
@@ -637,7 +637,7 @@ class Episciences_Mail extends Zend_Mail
         $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
 
         if (defined('RVCODE')) {
-            $baseurl = HTTP . '://' . RVCODE . '.' . DOMAIN;
+            $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $docid);
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $docid);
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $docid);

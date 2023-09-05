@@ -1946,9 +1946,9 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('tmp', $this->isTmp()));
         $node->appendChild($dom->createElement('review', $oReview->getName()));
         $node->appendChild($dom->createElement('review_code', $oReview->getCode()));
-        $node->appendChild($dom->createElement('review_url', HTTP . '://' . RVCODE . '.' . DOMAIN));
+        $node->appendChild($dom->createElement('review_url', SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN));
         $node->appendChild($dom->createElement('version', $this->getVersion()));
-        $node->appendChild($dom->createElement('esURL', HTTP . '://' . RVCODE . '.' . DOMAIN . '/' . $this->getDocid()));
+        $node->appendChild($dom->createElement('esURL', SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN . '/' . $this->getDocid()));
         $node->appendChild($dom->createElement('docURL', $this->getDocUrl()));
         $node->appendChild($dom->createElement('paperURL', $this->getPaperUrl()));
         $node->appendChild($dom->createElement('volume', $this->getVid()));

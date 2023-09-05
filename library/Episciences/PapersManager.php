@@ -2426,7 +2426,7 @@ class Episciences_PapersManager
         $urlHelper = new Zend_View_Helper_Url();
         $dateHelper = new Episciences_View_Helper_Date();
 
-        $site = HTTP . '://' . $_SERVER['SERVER_NAME'];
+        $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
         $url = $site . $urlHelper->url([
                 'controller' => 'paper',
                 'action' => 'view',

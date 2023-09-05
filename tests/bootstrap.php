@@ -17,10 +17,10 @@ if (file_exists($configPath . $envFile)) {
 require_once dirname(__DIR__) . '/public/const.php';
 require_once dirname(__DIR__) . '/public/bdd_const.php';
 
-define_simple_constants();
-define_table_constants();
-define_app_constants();
-define_review_constants();
+defineSimpleConstants();
+defineSQLTableConstants();
+defineApplicationConstants();
+defineJournalConstants();
 
 // Define application environment
 defined('APPLICATION_ENV') || define('APPLICATION_ENV', (getenv('APPLICATION_ENV') ?: ENV_DEV));

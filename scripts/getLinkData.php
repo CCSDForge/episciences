@@ -58,7 +58,7 @@ class getLinkData extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
-        define_review_constants();
+        defineJournalConstants();
         $client = new Client();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()

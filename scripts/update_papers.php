@@ -75,7 +75,7 @@ class UpdatePapers extends JournalScript
         $this->checkRvid();
         $this->checkRepoId();
 
-        define_review_constants();
+        defineJournalConstants();
 
         $this->_review = Episciences_ReviewsManager::find($this->getParam('rvid'));
 

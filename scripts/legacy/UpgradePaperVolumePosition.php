@@ -27,14 +27,14 @@ class UpgradePaperVolumePosition extends JournalScript
 
         $this->checkAppEnv();
 
-        define_simple_constants();
-        define_table_constants();
-        define_app_constants();
+        defineSimpleConstants();
+        defineSQLTableConstants();
+        defineApplicationConstants();
 
         $this->initApp();
         $this->initDb();
 
-        define_review_constants();
+        defineJournalConstants();
         $this->upgradeTable();
     }
 

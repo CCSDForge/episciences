@@ -44,7 +44,7 @@ class ImportVolumeTranslationsToDb extends JournalScript
         $this->initDb();
         $this->initTranslator();
 
-        define_table_constants();
+        defineSQLTableConstants();
 
         $this->updatingProcess();
     }

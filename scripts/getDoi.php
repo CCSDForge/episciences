@@ -98,7 +98,7 @@ class getDoi extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
-        define_review_constants();
+        defineJournalConstants();
 
 
         if ($this->getParam('paperid')) {
@@ -317,7 +317,7 @@ class getDoi extends JournalScript
     private function getMetadataFile()
     {
 
-        $paperUrl = HTTP . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
+        $paperUrl = SERVER_PROTOCOL . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
         echo PHP_EOL . 'Requesting: ' . $paperUrl;
         $client = new Client();
         try {

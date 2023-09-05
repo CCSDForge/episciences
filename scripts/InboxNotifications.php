@@ -58,9 +58,9 @@ class InboxNotifications extends Script
 
         $this->checkAppEnv();
 
-        define_table_constants();
-        define_simple_constants();
-        define_app_constants();
+        defineSQLTableConstants();
+        defineSimpleConstants();
+        defineApplicationConstants();
 
         $this->initApp();
         $this->initDb();
@@ -566,7 +566,7 @@ class InboxNotifications extends Script
 
         $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY;
 
-        $paperUrl = HTTP . '://' . $journal->getCode() . DOMAIN . '/paper/view?id=' . $paper->getDocid();
+        $paperUrl = SERVER_PROTOCOL . '://' . $journal->getCode() . DOMAIN . '/paper/view?id=' . $paper->getDocid();
 
         $aLocale = $author->getLangueid();
 
@@ -623,7 +623,7 @@ class InboxNotifications extends Script
 
         if (!empty($recipients) && !$this->isDebug()) {
 
-            $paperUrl = HTTP . '://' . $journal->getCode() . DOMAIN . '/administratepaper/view?id=' . $paper->getDocid();
+            $paperUrl = SERVER_PROTOCOL . '://' . $journal->getCode() . DOMAIN . '/administratepaper/view?id=' . $paper->getDocid();
 
             $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY;
             $adminTags = $commonTags;

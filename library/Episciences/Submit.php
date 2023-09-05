@@ -1077,7 +1077,7 @@ class Episciences_Submit
             'action' => 'view',
             'id' => $paper->getDocid()]);
 
-        $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         //Author infos
         /** @var Episciences_User $author */
@@ -1377,7 +1377,7 @@ class Episciences_Submit
             'id' => $paper->getDocid()
         ]);
 
-        $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl; // Lien de gestion de l'article
 
@@ -1393,7 +1393,7 @@ class Episciences_Submit
 
                 ]);
 
-                $refusedPaperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $refusedPaperUrl;
+                $refusedPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $refusedPaperUrl;
 
                 // Au lieu d'ajouter un template pour ce cas particulier, on ajoute ce  tags dans le template paper_submission_editor_copy
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = $refusedPaperUrl;

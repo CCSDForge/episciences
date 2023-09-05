@@ -14,6 +14,6 @@ class ErrorController  extends Zend_Controller_Action
     }
     public function errorAction()
     {
-       $this->redirect(HTTP . '://' . DOMAIN);
+       $this->redirect(SERVER_PROTOCOL . '://' . DOMAIN);
     }
 }

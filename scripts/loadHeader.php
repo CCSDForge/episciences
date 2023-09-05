@@ -47,10 +47,10 @@ $nocolor = isset($opts->nocolor);
 
 require_once __DIR__ . '/../public/const.php';
 require_once __DIR__ . '/../public/bdd_const.php';
-define_simple_constants();
-define_table_constants();
-define_app_constants();
-define_review_constants();
+defineSimpleConstants();
+defineSQLTableConstants();
+defineApplicationConstants();
+defineJournalConstants();
 
 
 // Environnement

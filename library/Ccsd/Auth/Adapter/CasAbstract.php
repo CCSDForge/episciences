@@ -288,20 +288,8 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
      */
     public final static function getCurrentHostname(): string
     {
-
-        if (
-            !defined('SERVER_HTTP') ||
-            (SERVER_HTTP !== 'http' && SERVER_HTTP !== 'https')
-        ) {
-            $scheme = 'http://';
-        } else {
-
-            $scheme = SERVER_HTTP . '://';
-        }
-
-
+        $scheme = SERVER_PROTOCOL . '://';
         $hostname = $scheme . $_SERVER['SERVER_NAME'];
-
 
         if ((isset($_SERVER['SERVER_PORT'])) && ($_SERVER['SERVER_PORT'] !== '')) {
             switch ($_SERVER['SERVER_PORT']) {

@@ -99,7 +99,7 @@ try {
             define('RVCODE', $opts->rvcode);
         }
 
-        define_review_constants();
+        defineJournalConstants();
         $settings = ['is' => ['code' => $opts->rvcode]];
     }
 

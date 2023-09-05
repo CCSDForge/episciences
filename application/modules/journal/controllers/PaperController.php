@@ -708,7 +708,7 @@ class PaperController extends PaperDefaultController
 
             // paper rating page url
             $paper_url = $this->view->url([self::CONTROLLER => self::CONTROLLER_NAME, self::ACTION => self::RATING_ACTION, 'id' => $paper->getDocid()]);
-            $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+            $paper_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
 
             $locale = $reviewer->getLangueid();
 
@@ -954,7 +954,7 @@ class PaperController extends PaperDefaultController
         // + autres: selon les paramètres de la revue, notifier aussi les rédacteurs en chefs, administrateurs et secrétaires de rédaction
 
         $adminPaperUrl = $this->view->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $paper->getDocid()]);
-        $adminPaperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+        $adminPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
 
         // Tous les rédacteurs
         $allEditors = $this->getAllEditors($paper);
@@ -1023,7 +1023,7 @@ class PaperController extends PaperDefaultController
 
         // La page de l'article
         $paperUrl = '/' . self::CONTROLLER_NAME . '/view?id=' . $docId;
-        $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         $tags = [
             Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
@@ -1527,7 +1527,7 @@ class PaperController extends PaperDefaultController
             self::CONTROLLER => self::CONTROLLER_NAME,
             self::ACTION => 'view',
             'id' => $paper1->getDocid()]);
-        $paper1_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper1_url;
+        $paper1_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper1_url;
 
         // settings for new invitation / assignment
         $oReview = Episciences_ReviewsManager::find(RVID);
@@ -1561,7 +1561,7 @@ class PaperController extends PaperDefaultController
                 self::CONTROLLER => 'reviewer',
                 self::ACTION => 'invitation',
                 'id' => $oInvitation->getId()]);
-            $invitation_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $invitation_url;
+            $invitation_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $invitation_url;
 
             // update assignment with invitation_id
             $oAssignment->setInvitation_id($oInvitation->getId());
@@ -1590,7 +1590,7 @@ class PaperController extends PaperDefaultController
                     self::CONTROLLER => self::CONTROLLER_NAME,
                     self::ACTION => 'view',
                     'id' => $paper2->getDocid()]);
-                $tmpUrl = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $tmpUrl;
+                $tmpUrl = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $tmpUrl;
 
                 $mail->addTag(Episciences_Mail_Tags::TAG_TMP_PAPER_URL, $tmpUrl);
             }
@@ -1965,7 +1965,7 @@ class PaperController extends PaperDefaultController
                     'id' => $newPaper->getDocid()
                 ]);
 
-                $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+                $paper_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
                 $this->answerRevisionNotifyManager(
                     $principalRecipient,
                     $paper,
@@ -2468,7 +2468,7 @@ class PaperController extends PaperDefaultController
             'id' => $docId
         ]);
 
-        $paper_url = HTTP . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+        $paper_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
 
         $contributorTags = [
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => null,
@@ -3466,7 +3466,7 @@ class PaperController extends PaperDefaultController
 
         // La page de l'article
         $paperUrl = $this->view->url([self::CONTROLLER => self::CONTROLLER_NAME, self::ACTION => 'view', 'id' => $paper->getDocid()]);
-        $paperUrl = HTTP . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         /** @var  $invitations [] */
         foreach ($invitationsByStatus as $invitations) {

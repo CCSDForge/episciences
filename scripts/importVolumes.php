@@ -71,7 +71,7 @@ class UpdateVolumes extends JournalScript
             $this->displayError("Invalid journal ID / RVID");
         }
 
-        define_review_constants($this->_review->getCode());
+        defineJournalConstants($this->_review->getCode());
 
         // load review translation files
         if (is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
