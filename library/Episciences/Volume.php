@@ -199,7 +199,7 @@ class Episciences_Volume
 
             $arrayOfVolOrSect[$kVolOrSect]['id'] = $volOrSectObj->$getId();
             $arrayOfVolOrSect[$kVolOrSect]['position'] = $volOrSectObj->getPosition();
-            $arrayOfVolOrSect[$kVolOrSect]['name'] = $volOrSectObj->getName('', true);
+            $arrayOfVolOrSect[$kVolOrSect]['name'] = $volOrSectObj->getName();
             $arrayOfVolOrSect[$kVolOrSect][$status] = $volOrSectObj->getStatus();
             foreach ($volOrSectObj->getIndexedPapers() as $kPaper => $paper) {
                 foreach ($formatAsArrayMappings as $volKeyName => $volValue) {
@@ -615,7 +615,7 @@ class Episciences_Volume
     public function toPublicArray(): array
     {
         $res['vid'] = $this->getVid();
-        $res['name'] = $this->getName('en', true);
+        $res['name'] = $this->getName('en');
         return $res;
     }
 
@@ -945,7 +945,7 @@ class Episciences_Volume
      * @param bool $forceResult
      * @return string
      */
-    public function getName($lang = null, bool $forceResult = false) : string
+    public function getName(string $lang = null, bool $forceResult = true) : string
     {
 
         $titles = $this->getTitles();
@@ -972,7 +972,7 @@ class Episciences_Volume
      * @param bool $force
      * @return string
      */
-    public function getNameKey(string $lang = null, bool $force = false): string
+    public function getNameKey(string $lang = null, bool $force = true): string
     {
         $titles = $this->getTitles();
 
