@@ -328,12 +328,12 @@ class Ccsd_Tools
         "ł" => "l",
         "ı" => "{\\i}",
     ];
-    static private $_PatternCarLatex = null;
-    static private $_ReplaceCarLatex = null;
-    static private $_PatternCarLatexGreek = null;
-    static private $_ReplaceCarLatexGreek = null;
-    static private $_PatternCarLatexGlobal = null;
-    static private $_ReplaceCarLatexGlobal = null;
+    private static $_PatternCarLatex = null;
+    private static $_ReplaceCarLatex = null;
+    private static $_PatternCarLatexGreek = null;
+    private static $_ReplaceCarLatexGreek = null;
+    private static $_PatternCarLatexGlobal = null;
+    private static $_ReplaceCarLatexGlobal = null;
 
     /**
      * Formatage d'un utilisateur
@@ -802,7 +802,7 @@ class Ccsd_Tools
     {
         $filename = preg_replace('/[^a-z0-9_\.-\/\\\\]/i', '_', self::spaces2Space(self::stripAccents(($filename))));
         $filename = preg_replace("~\.\.*~", ".", $filename);
-        return (preg_replace("/__*/", "_", $filename));
+        return preg_replace("/__*/", "_", $filename);
     }
 
     /**
@@ -842,14 +842,6 @@ class Ccsd_Tools
         return $text;
     }
 
-    /**
-     * @param $string
-     * @return string
-     */
-    public static function nl2space($string): string
-    {
-        return (preg_replace("/\\n(\\r)?/i", " ", $string));
-    }
 
     /**
      * @param string $text
@@ -897,27 +889,6 @@ class Ccsd_Tools
 
         return false;
     }
-
-    /**
-     * @param string $filepath
-     * @param array $data
-     * @return bool
-     */
-    public static function write_translations($filepath, array $data = []): bool
-    {
-        if (!file_exists($filepath)) {
-            return false;
-        }
-
-        file_put_contents($filepath, "<?php return array (");
-        foreach ($data as $key => $value) {
-            file_put_contents($filepath, "'" . addslashes($key) . "' => '" . addslashes($value) . "',\r\n", FILE_APPEND);
-        }
-        file_put_contents($filepath, ");", FILE_APPEND);
-
-        return true;
-    }
-
     /**
      *
      * Curl sur le serveur de requêtes de solr
@@ -958,11 +929,6 @@ class Ccsd_Tools
         curl_setopt($curlHandler, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curlHandler, CURLOPT_CONNECTTIMEOUT, 15); // timeout in seconds
 
-        //$auth = $s->getEndPointAuth();
-        //if (is_array($auth)) {
-        //    curl_setopt($curlHandler, CURLOPT_USERPWD, $auth ['username'] . ':' . $auth ['password']);
-        //}
-
         curl_setopt($curlHandler, CURLOPT_URL, $endPointUrl);
         curl_setopt($curlHandler, CURLOPT_TIMEOUT, $timeout); // timeout in seconds
 
@@ -978,57 +944,6 @@ class Ccsd_Tools
         throw new Exception("cURL error ({$errno}): {$error_message}", $errno);
     }
 
-
-    /**
-     * @param $var
-     * @param bool $ret
-     * @param string $format
-     * @param string $title
-     * @param bool $infos
-     * @return string
-     */
-    public static function debug($var, $ret = false, $format = "pre", $title = "Debug", $infos = true)
-    {
-        $debug = debug_backtrace();
-        $last_debug = $debug [0];
-        $return = '<fieldset class="ccsd-debug">';
-        $return .= '<legend>' . $title . '</legend>';
-        if ($infos) {
-            $return .= '<div class="infos">Fichier : ' . $last_debug ['file'] . '<br />Ligne : ' . $last_debug ['line'] . '</div>';
-        }
-        $return .= '<' . $format . '>' . print_r($var, true) . '</' . $format . '>';
-        $return .= '</fieldset>';
-
-        if (!$ret) {
-            echo $return;
-        }
-        return $return;
-    }
-
-    /**
-     * Suppression d'un répertoire et des fichiers situés à l'intérieur
-     *
-     * @param string $path
-     * @return bool
-     */
-    public static function deletedir($path): bool
-    {
-        if (is_dir($path)) {
-            $res = opendir($path);
-            while (($entry = readdir($res)) !== false) {
-                if ($entry != "." && $entry != "..") {
-                    if (is_dir(realpath($path) . '/' . $entry)) {
-                        self::deletedir(realpath($path) . '/' . $entry);
-                    } else {
-                        unlink(realpath($path) . '/' . $entry);
-                    }
-                }
-            }
-            closedir($res);
-            return rmdir(realpath($path));
-        }
-        return false;
-    }
 
 
     /**
@@ -1162,72 +1077,13 @@ class Ccsd_Tools
     }
 
     /**
-     * Return https?://server , en regardant si on doit utiliser http ou https
-     *
-     * @return string
-     */
-    public static function getBaseUrl(): string
-    {
-        if (isset($_SERVER ['HTTPS'])) {
-            $protocol = ($_SERVER ['HTTPS'] && $_SERVER ['HTTPS'] != "off") ? "https" : "http";
-        } else {
-            $protocol = 'http';
-        }
-        return $protocol . "://" . $_SERVER ['HTTP_HOST'];
-    }
-
-    /**
      * Détecte si le script est executé depuis la CLI
      *
      * @return boolean true si CLI false si HTTP
      */
     public static function isFromCli(): bool
     {
-        return (!isset($_SERVER ['SERVER_SOFTWARE']) && (php_sapi_name() == 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0)));
-    }
-
-
-    /**
-     * @param $value
-     * @return bool
-     * @throws ReflectionException
-     */
-    public static function isEmpty($value): bool
-    {
-        if (is_object($value)) {
-            $class = new ReflectionClass($value);
-            if ($class->hasMethod('isEmpty')) {
-                return $value->isEmpty();
-            }
-
-            return false;
-        }
-        if ($value === 0 || $value === "0") {
-            return false;
-        }
-        return empty($value);
-    }
-
-
-    /**
-     * Renvoie une ligne d'un fichier XML
-     *
-     * @param $fileStream
-     * @param $lineNb
-     * @return bool|string
-     */
-    public static function getFileLine($fileStream, $lineNb)
-    {
-        $result = false;
-        for ($currentLine = 1; $currentLine <= $lineNb; $currentLine++) {
-            $buffer = fgets($fileStream);
-            if (empty($buffer)) {
-                break;
-            }
-
-            $result = $buffer;
-        }
-        return $result;
+        return !isset($_SERVER ['SERVER_SOFTWARE']) && (php_sapi_name() == 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
     }
 
 
