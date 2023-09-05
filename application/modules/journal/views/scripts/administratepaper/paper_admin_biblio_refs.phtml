@@ -2,11 +2,22 @@
 
     <div class="row">
         <div id="container-processing-biblio-refs" class="col-md-12">
+
+            <button id="process-biblio-refs" class="btn btn-default btn-sm" value="<?= $this->urlcallapibib ?>"
+                    data-api="<?= $this->apiEpiBibCitation ?>"><i
+                        class="fa-regular fa-eye"></i> <?= $this->translate('Afficher les references bibliographiques') ?>
+            </button>
+            <button id="loading-biblio" class="btn btn-default btn-sm" disabled><i
+                        class="fa-solid fa-loader"></i> <?= $this->translate('Chargement') ?> ...
+            </button>
+            <button id="hide-process-biblio-refs" class="btn btn-default btn-sm"><i
+                        class="fa-solid fa-eye-slash"></i> <?= $this->translate('Masquer les références bibliographique') ?>
+            </button>
+            <a id="epi-citation-app" class="btn btn-default btn-sm" target="_blank"
+               href="<?= $this->apiEpiBibCitation ?>/login?url=<?= $this->urlcallapibib ?>"><i
+                        class="fas fa-edit"></i> <?= $this->translate('Gérer les références bibliographiques') ?>
+            </a>
             <div id="process-biblio-refs-container"></div>
-            <button id="process-biblio-refs" class="btn btn-default btn-sm" value="<?= $this->urlcallapibib ?>" data-api="<?=$this->apiEpiBibCitation?>"><i class="fa-regular fa-eye"></i> <?= $this->translate('Extraire les references bibliographiques') ?></button>
-            <button id="loading-biblio" class="btn btn-default btn-sm" disabled><i class="fa-solid fa-loader"></i> <?= $this->translate('Chargement') ?> ...</button>
-            <button id="hide-process-biblio-refs" class="btn btn-default btn-sm"><i class="fa-solid fa-eye-slash"></i> <?= $this->translate('Masquer les références bibliographique') ?></button>
-            <a id="epi-citation-app" class="btn btn-default btn-sm" target="_blank" href="<?=$this->apiEpiBibCitation?>/login?url=<?=$this->urlcallapibib?>"><i class="fa-solid fa-asterisk"></i> <?= $this->translate('Gérer les références bibliographiques') ?></a>
         </div>
     </div>
 </div>
