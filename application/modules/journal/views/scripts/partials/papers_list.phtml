@@ -9,7 +9,7 @@
         <?php else : ?>
             <h2>
                 <?php echo $this->translate('Volume : '); ?>
-                <?php echo $this->translate('volume_' . $vid . '_title'); ?>
+                <?= Episciences_VolumesManager::translateVolumeKey('volume_' . $vid . '_title'); ?>
             </h2>
         <?php endif; ?>
 
@@ -58,7 +58,7 @@
 
                             if ($article['vId']) {
                                 echo $this->translate('Volume') . ' : ';
-                                echo $this->translate('volume_' . $article['vId'] . '_title');
+                                echo Episciences_VolumesManager::translateVolumeKey('volume_' . $article['vId'] . '_title');
                             }
 
                             if ($article['sId'] && $article['vId']) {

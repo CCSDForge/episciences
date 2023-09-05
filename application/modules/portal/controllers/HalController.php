@@ -62,7 +62,7 @@ class HalController extends Zend_Controller_Action
 
 
             if ($paper->getVid() !== 0) {
-                $journalRef['docVolumeName'] = ($translator->isTranslated('volume_' . $paper->getVid() . '_title', false, $locale)) ? $translator->translate('volume_' . $paper->getVid() . '_title', $locale) : '';
+                $journalRef['docVolumeName'] = ($translator->isTranslated('volume_' . $paper->getVid() . '_title', false, $locale)) ? Episciences_VolumesManager::translateVolumeKey('volume_' . $paper->getVid() . '_title', $locale) : '';
             }
             if ($paper->getSid() !== 0) {
                 $journalRef['docSectionName'] = ($translator->isTranslated('section_' . $paper->getSid() . '_title', false, $locale)) ? $translator->translate('section_' . $paper->getSid() . '_title', $locale) : '';

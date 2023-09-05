@@ -611,4 +611,15 @@ class Episciences_VolumesManager
         }
 
     }
+
+
+    public static function translateVolumeKey(string $volumeKey, string $language = null): string
+    {
+
+        if (!$language) {
+            $language = Episciences_Tools::getLocale();
+        }
+
+        return self::find((int)filter_var($volumeKey, FILTER_SANITIZE_NUMBER_INT))->getNameKey($language);
+    }
 }

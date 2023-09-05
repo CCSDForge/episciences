@@ -72,7 +72,13 @@ class Episciences_Volume_Metadata
         $this->loadContents($langs);
     }
 
-    // Charge les traductions du titre de la metadata
+    /**
+     * Deprecated: titles are now loaded from 'T_VOLUME_METADATAS' table
+     * Charge les traductions du titre de la metadata
+     * @param $langs
+     * @return void
+     * @throws Zend_Exception
+     */
     public function loadTitles($langs)
     {
         $translator = Zend_Registry::get('Zend_Translate');
@@ -116,7 +122,13 @@ class Episciences_Volume_Metadata
         return $this;
     }
 
-    // Renvoie le contenu de la metadata dans la langue voulue
+    /**
+     * Deprecated: contents are now loaded from 'T_VOLUME_METADATAS' table
+     * Renvoie le contenu de la metadata dans la langue voulue
+     * @param $langs
+     * @return void
+     * @throws Zend_Exception
+     */
 
     public function loadContents($langs)
     {

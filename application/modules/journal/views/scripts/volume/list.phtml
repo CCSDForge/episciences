@@ -57,7 +57,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     <td>
                         <a title="<?php echo $this->translate('Modifier'); ?>"
                            href="/volume/edit?id=<?php echo $volume->getVid(); ?>">
-                            <?= Episciences_Tools::convertMarkdownToHtml($volume->getNameKey(null, true)) ?>
+                            <?= Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()) ?>
                         </a>
                         <?php if ($this->review->getSetting(Episciences_Review::SETTING_SPECIAL_ISSUE_ACCESS_CODE) &&
                             $volume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&

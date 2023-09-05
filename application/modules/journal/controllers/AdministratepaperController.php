@@ -2210,7 +2210,7 @@ class AdministratepaperController extends PaperDefaultController
             ]);
         }
 
-        echo ($volume) ? ($volume->getName(null, true) . $htmlPosition) : Zend_Registry::get('Zend_Translate')->translate('aucun');
+        echo ($volume) ? ($volume->getName() . $htmlPosition) : Zend_Registry::get('Zend_Translate')->translate('aucun');
     }
 
     /**
@@ -4159,7 +4159,7 @@ class AdministratepaperController extends PaperDefaultController
                         'referer' => $referer
                     ]);
 
-                    $result[$docId] = $oldVolume->getName(null, true) . $htmlPosition;
+                    $result[$docId] = $oldVolume->getName() . $htmlPosition;
                 }
             }
 
@@ -4175,7 +4175,7 @@ class AdministratepaperController extends PaperDefaultController
                         'position' => $position,
                         'referer' => $referer
                     ]);
-                    $result[$docId] = $currentVolume->getName(null, true) . $htmlPosition;
+                    $result[$docId] = $currentVolume->getName() . $htmlPosition;
                 }
             } else {
                 $result[$currentDocId] = $none;
