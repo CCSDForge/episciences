@@ -178,7 +178,7 @@ class ExportController extends Zend_Controller_Action
 
             $this->view->listOfPaper = $listOfPaper;
             $this->view->journal = $journal;
-            $this->view->volume = $getVolume->getName('en', true);
+            $this->view->volume = $getVolume->getName('en');
             
             header('Content-Type: text/xml; charset: utf-8');
             
@@ -207,7 +207,7 @@ class ExportController extends Zend_Controller_Action
             /* @var $oVolume Episciences_Volume */
             $oVolume = Episciences_VolumesManager::find($paper->getVid());
             if ($oVolume) {
-                $volume = $oVolume->getName('en', true);
+                $volume = $oVolume->getName('en');
                 if ($oVolume->isProceeding()) {
                     $proceedingInfo = $oVolume->getProceedingInfo();
                 }

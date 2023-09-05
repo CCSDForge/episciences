@@ -150,7 +150,7 @@ class Episciences_Review_DoiSettings
             /* @var $oVolume Episciences_Volume */
             $oVolume = Episciences_VolumesManager::find($paper->getVid());
             if ($oVolume) {
-                $volume = $oVolume->getName('en', true);
+                $volume = $oVolume->getName('en');
                 $paperPosition = $paper->getPosition() + 1; // Paper position starts at 0 ; +1 for the human version
                 $refBibVolume = $oVolume->getBib_reference();
             }

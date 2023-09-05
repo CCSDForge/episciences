@@ -150,7 +150,7 @@ $logs_with_details = [
 
                 <?php case Episciences_Paper_Logger::CODE_VOLUME_SELECTION: ?>
                     <?= $this->translate(' :') ?>
-                    <?= ($detail['vid'] !== 0) ? $this->translate('volume_' . $detail['vid'] . '_title') : $this->translate('Hors volume') ?>
+                    <?= ($detail['vid'] !== 0) ? Episciences_VolumesManager::translateVolumeKey('volume_' . $detail['vid'] . '_title') : $this->translate('Hors volume') ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION: ?>
@@ -160,7 +160,7 @@ $logs_with_details = [
                     $volumesLabel = [];
 
                     foreach ($detail['vids'] as $sVid) {
-                        $volumesLabel [] = $this->translate('volume_' . $sVid['vid'] . '_title');
+                        $volumesLabel [] = Episciences_VolumesManager::translateVolumeKey('volume_' . $sVid['vid'] . '_title');
                     }
                     ?>
 

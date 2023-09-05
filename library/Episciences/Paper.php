@@ -3527,7 +3527,7 @@ class Episciences_Paper
         $translator = Zend_Registry::get('Zend_Translate');
         $locale = !$locale ? $translator->getLocale() : $locale;
         $volume = Episciences_VolumesManager::find($this->getVid());
-        return !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale, true);
+        return !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
     }
 
     /**
@@ -3929,7 +3929,7 @@ class Episciences_Paper
         if ($this->getVid()) {
             $volume = Episciences_VolumesManager::find($this->getVid());
             if ($volume instanceof Episciences_Volume) {
-                $citation .= ', ' . $volume->getName($locale, true);;
+                $citation .= ', ' . $volume->getName($locale);
             }
         }
 
@@ -4125,7 +4125,7 @@ class Episciences_Paper
             /* @var $oVolume Episciences_Volume */
             $oVolume = Episciences_VolumesManager::find($this->getVid());
             if ($oVolume) {
-                $volume = $oVolume->getName('en', true);
+                $volume = $oVolume->getName('en');
             }
         }
 

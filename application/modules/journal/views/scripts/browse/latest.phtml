@@ -67,7 +67,7 @@
 		<?php if (array_key_exists('volume_id_i', $doc)) : ?>
 	        <div class="small">
 	        	<?php echo $this->translate('Volume : '); ?>
-		        <?php echo $this->translate('volume_'.$doc['volume_id_i'].'_title'); ?>
+		        <?= Episciences_VolumesManager::translateVolumeKey('volume_'.$doc['volume_id_i'].'_title') ?>
 	        </div>
 		<?php endif;?>
 		<?php if (array_key_exists('section_id_i', $doc)) : ?>

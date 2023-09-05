@@ -3503,20 +3503,10 @@ class Episciences_PapersManager
         $volume = '';
 
         if ($paper->getVid()) {
-
             $key = 'volume_' . $paper->getVid() . '_title';
-
-            try {
-                if (Zend_Registry::get('Zend_Translate')->isTranslated($key, false, $language)) {
-                    $volume = Zend_Registry::get('Zend_Translate')->translate('volume_' . $paper->getVid() . '_title', $language);
-                } else {
-                    $volume = Zend_Registry::get('Zend_Translate')->translate('volume_' . $paper->getVid() . '_title');
-                }
-
-            } catch (Exception $e) {
-                trigger_error($e->getMessage());
-            }
+            $volume = Episciences_VolumesManager::translateVolumeKey($key, $language);
         }
+
         $section = "";
         if ($paper->getSid()) {
             /* @var $oSection Episciences_Section */

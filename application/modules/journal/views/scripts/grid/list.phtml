@@ -45,7 +45,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 <div class="panel-heading">
                     <h2 class="panel-title">
                         <?php echo $this->translate('Grille pour le volume : '); ?>
-                        <?php echo $this->translate('volume_' . $grid->getId() . '_title'); ?>
+                        <?= Episciences_VolumesManager::translateVolumeKey('volume_' . $grid->getId() . '_title'); ?>
                     </h2>
                 </div>
 
