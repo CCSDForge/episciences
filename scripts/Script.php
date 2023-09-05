@@ -433,7 +433,11 @@ abstract class Script {
             $dotEnv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__));
 
             foreach ($dotEnv->load() as $key => $value) {
-                define($key, $value);
+
+                if(!defined($key)){
+                    define($key, $value);
+                }
+                
             }
 
         }
