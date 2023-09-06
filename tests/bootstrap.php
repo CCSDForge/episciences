@@ -16,7 +16,7 @@ if (file_exists($configPath . $envFile)) {
 
 require_once dirname(__DIR__) . '/public/const.php';
 require_once dirname(__DIR__) . '/public/bdd_const.php';
-
+defineProtocol();
 defineSimpleConstants();
 defineSQLTableConstants();
 defineApplicationConstants();
