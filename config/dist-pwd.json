@@ -71,18 +71,9 @@
     "USER": "a_db_user_name",
     "PWD": "a_db_password"
   },
-  "HAL": {
-    "HOST": "a_db_host",
-    "NAME": "a_db_name",
-    "USER": "a_db_user_name",
-    "PWD": "a_db_password"
-  },
   "FUSION": {
     "HOST": "https://example.org",
     "TOKEN_AUTH": "exampleToken"
-  },
-  "SMTP": {
-    "SERVER": "relay.example.org"
   },
   "CAPTCHA": {
     "BRAND": "HCAPTCHA"
