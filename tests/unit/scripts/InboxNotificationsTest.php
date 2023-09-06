@@ -37,12 +37,10 @@ class InboxNotificationsTest extends TestCase
             false,
             $this->getNotification()->setCoarNotifyOrigin([
                 'id' => NOTIFY_TARGET_HAL_URL, // defined in pwd.json
-                'inbox' => InboxNotifications::HAL_INBOX_URL['development'],
+                'inbox' => NOTIFY_TARGET_HAL_INBOX,
                 'type' => InboxNotifications::INBOX_SERVICE_TYPE
             ])
-                ->checkNotifyPayloads($validPayload),
-            'not matched: origin property'
-        );
+                ->checkNotifyPayloads($validPayload), 'not matched: origin property');
 
 
     }
@@ -108,7 +106,7 @@ class InboxNotificationsTest extends TestCase
     }
   },
   "origin": {
-            "id": "https://hal.archives-ouvertes.fr/",
+            "id": "https://hal.science/",
     "inbox": "https://inbox-preprod.hal.science/",
     "type": "Service"
   },
@@ -140,7 +138,7 @@ class InboxNotificationsTest extends TestCase
             ])
             ->setCoarNotifyOrigin([
                 'id' => NOTIFY_TARGET_HAL_URL, // defined in pwd.json
-                'inbox' => InboxNotifications::HAL_INBOX_URL[$app_env],
+                'inbox' => NOTIFY_TARGET_HAL_INBOX,
                 'type' => InboxNotifications::INBOX_SERVICE_TYPE
             ]);
 

@@ -26,14 +26,6 @@ class InboxNotifications extends Script
 
     public const INBOX_SERVICE_TYPE = ['Service'];
 
-    public const HAL_INBOX_URL = [
-        'development' => 'https://inbox-development.hal.science/',
-        'testing' => 'https://inbox-testing.hal.science/',
-        'preprod' => 'https://inbox-preprod.hal.science/',
-        'production' => 'https://inbox.hal.science/'
-    ];
-
-
     public function __construct(string $id = '', array $type = [], array $origin = [])
     {
 

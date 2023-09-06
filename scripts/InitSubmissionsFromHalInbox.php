@@ -18,7 +18,7 @@ $script
     ])
     ->setCoarNotifyOrigin([ // origin of request
         'id' => NOTIFY_TARGET_HAL_URL, // defined in pwd.json
-        'inbox' => isset($params['app_env']) ? InboxNotifications::HAL_INBOX_URL[$script->getParam('app_env')] : NOTIFY_TARGET_HAL_INBOX,
+        'inbox' => NOTIFY_TARGET_HAL_INBOX, // defined in pwd.json
         'type' => InboxNotifications::INBOX_SERVICE_TYPE
     ]);
 

@@ -240,6 +240,7 @@ function defineVendorCssLibraries()
 /**
  * Never called
  * Prevent warning from code analyzers for undefined constants
+ * @see config pwd.json
  */
 function fixUndefinedConstantsForCodeAnalysis()
 {
@@ -254,5 +255,7 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('EPISCIENCES_API_SECRET_KEY', '');
         define('EPISCIENCES_UID', 0);
         define('EPISCIENCES_Z_SUBMIT', 0);
+        define('NOTIFY_TARGET_HAL_INBOX', '');
+        define('NOTIFY_TARGET_HAL_URL', '');
     }
 }
