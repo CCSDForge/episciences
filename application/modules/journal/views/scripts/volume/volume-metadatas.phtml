@@ -82,8 +82,8 @@ $hasContent = !empty($metadata->getContent());
 
                 <?php $download = !$metadata->isPDF() ? 'download="' . $metadata->getFile() . '"' : ''; ?>
 
-                <a class="metadata-file" href="<?= $metadata->getFileUrl() ?>" <?= $download ?> target="_blank"> <span
-                            class="glyphicon glyphicon-file"></span>
+                <a class="metadata-file" href="<?= $metadata->getFileUrl() ?>" <?= $download ?> target="_blank">
+                        <span class="glyphicon glyphicon-file"></span>
                     <?= $metadata->getTitle() ?>
                 </a>
 
