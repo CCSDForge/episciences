@@ -2598,10 +2598,11 @@ class AdministratepaperController extends PaperDefaultController
             $vid = (int)$request->getPost('vid');
 
             if ($vid !== $oldVid) {
-                if (!empty($oldVid) && !$paper->deletePosition()) { //delete position in old volume
+
+                if (!$oldVid && !$paper->deletePosition()) { //delete position in old volume
                     $logMsg = 'Moving a paper (docId = . ' . $docId . ') from (vid = ' . $oldVid . ') ' . 'to (vid = ' . $vid . '): failed to delete position in old volume';
                     $logMsg .= ' or the paper has not been positioned';
-                    trigger_error($logMsg);
+                    error_log($logMsg);
                 }
 
                 $paper->setVid($vid); // new volume
@@ -2609,7 +2610,8 @@ class AdministratepaperController extends PaperDefaultController
                 $paper->log(
                     Episciences_Paper_Logger::CODE_VOLUME_SELECTION,
                     Episciences_Auth::getUid(),
-                    ['vid' => $vid]);
+                    ['vid' => $vid]
+                );
 
                 // delete master volume from secondary volumes
                 Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);

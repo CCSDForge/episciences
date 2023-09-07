@@ -3151,7 +3151,7 @@ class Episciences_Paper
      * Create or delete an position in volume
      * @return int|null
      */
-    public function applyPositioningStrategy()
+    public function applyPositioningStrategy(): ?int
     {
 
         if (empty($this->getVid())) {
@@ -3160,15 +3160,12 @@ class Episciences_Paper
 
         if (in_array($this->getStatus(), self::DO_NOT_SORT_THIS_KIND_OF_PAPERS, true)) {
             $this->deletePosition();
-            $this->setPosition(null);
+            $this->setPosition();
             return null;
         }
 
-        if ($this->isAccepted() || $this->isCopyEditingProcessStarted() || $this->isReadyToPublish()) {
-            return $this->createPositionProcessing();
-        }
+        return $this->createPositionProcessing();
 
-        return $this->getPosition();
     }
 
     /**
@@ -3257,7 +3254,7 @@ class Episciences_Paper
      * assign position
      * @return int|null
      */
-    private function insertPosition()
+    private function insertPosition(): ?int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -3265,7 +3262,7 @@ class Episciences_Paper
         $position = $db->fetchOne($select);
 
         if (!is_numeric($position)) {
-            $position = 0;
+            return null;
         }
 
         $paperPosition[$position] = $this->getPaperid();
