@@ -1095,8 +1095,8 @@ return [
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version repointing',
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New reviewing deadline',
     Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission > Inbox',
-
-
+    Episciences_Paper_Logger::CODE_LD_ADDED => 'Linked data added',
+    Episciences_Paper_Logger::CODE_LD_REMOVED => 'Linked data removed',
     "Date d'assignation" => "Assignation date",
     "Date de désassignation" => "De-assignment date",
     "Assigné par" => "Assigned by",
@@ -1917,6 +1917,21 @@ return [
     // datasets
     'Données liées' => 'Linked data',
     'Voir' => 'View',
+    'Ajouter un jeu de donnée' => 'Add dataset',
+    'Ajouter un logiciel' => 'Add software',
+    'Ajouter une publication' => 'Add publication',
+    'Erreur, vous essayez peut-être d\'insérer des données liées déjà existantes.' =>'Error, you maybe try to insert an already existing linked data',
+    'Ajout de la donnée liée bien prise en compte' => 'Linked data added successfully',
+    'Suppression de la donnée liée bien prise en compte' => 'Linked data have been successfully deleted',
+    'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the linked data ?',
+    'Format de donnée non reconnu' => 'Data format not recognised',
+    "Vous essayez d'insérer des données liées déjà existantes" => 'You are trying to insert linked data that already exists',
+    "Si vous souhaitez affiner les informations concernant le papier à l'aide de données liées, un bloc sera disponible à cet effet sur la page du document." => "If you wish to refine the information about the paper using linked data, a block will be available for this purpose on the document page.",
+    'software' => 'Software',
+    'doi' => 'DOI',
+    'handle' => 'Handle',
+    'hal' => 'HAL',
+    'Modification non autorisé' => "modification not allowed",
     //COI
     "Votre réponse à bien été enregistrée." => "Your answer has been saved.",
     "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",

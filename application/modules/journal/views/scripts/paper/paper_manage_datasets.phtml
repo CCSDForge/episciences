@@ -1,0 +1,13 @@
+<button id="add-dataset" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-plus" style="margin-right: 5px"></span><?= $this->translate('Ajouter un jeu de donnée') ?></button>
+<button id="add-software" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-plus" style="margin-right: 5px"></span><?= $this->translate('Ajouter un logiciel') ?></button>
+<button id="add-publication" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-plus" style="margin-right: 5px"></span><?= $this->translate('Ajouter une publication') ?></button>
+<form id="addld" action="/administratelinkeddata/getformld">
+    <div id="container-datasets" style=" margin: 2px; display: flex; gap: 3px; flex-wrap: wrap;"></div>
+    <button id="btn-cancel-dataset" type="button" class="btn btn-default btn-sm hidden" style="margin: 2px;"><?= $this->translate('Annuler') ?></button>
+    <button id="btn-dataset" type="submit" class="btn btn-primary hidden" style="margin: 2px;"><?= $this->translate('Ajouter') ?></button>
+    <span class="hidden" id="error_msg_same_val"><?= $this->translate("Vous essayez d'insérer des données liées déjà existantes") ?></span>
+    <span class="hidden" id="alert_msg_remove"><?= $this->translate("Voulez-vous supprimer la donnée liée ?") ?></span>
+    <input class="hidden" id="paper_docId" value="<?= $this->docId ?>">
+    <input class="hidden" id="paper_id" value="<?= $this->paperId ?>">
+</form>
+<?php $this->jQuery()->addJavascriptFile('/js/linkeddatas/managelinkeddatas.js'); ?>

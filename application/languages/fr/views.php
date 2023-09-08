@@ -116,7 +116,8 @@ return [
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION],
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE],
     Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW],
-
+    Episciences_Paper_Logger::CODE_LD_ADDED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_ADDED],
+    Episciences_Paper_Logger::CODE_LD_REMOVED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_REMOVED],
     // Erreurs OAI
     "The operation ended with an error. Please try again." => "L'opération s'est terminée avec une erreur. Merci de réessayer.",
     "The argument included in the request is not valid." => "L'argument inclus dans la demande n'est pas valide.",
@@ -254,7 +255,10 @@ return [
     'help_versions_text' => 'À propos des numéros de versions',
 
     //datasets
-    'software' => 'logiciel',
+    'software' => 'Logiciel',
+    'doi' => 'DOI',
+    'handle' => 'Handle',
+    'hal' => 'HAL',
 
     // COI
     'no' => 'non',
