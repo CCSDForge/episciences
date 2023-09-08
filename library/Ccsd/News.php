@@ -61,6 +61,8 @@ class Ccsd_News
 	 * @var string
 	 */
 	protected $_dirLangFiles = '';
+
+    public const PREFIX_FILENAME = 'news';
 	
 	
 	/**
@@ -115,7 +117,7 @@ class Ccsd_News
 		$data = array();
 		$news = $this->getListNews(false, $newsid);
 		if ($news) {
-			$reader = new Ccsd_Lang_Reader('news', $this->_dirLangFiles, $this->_languages, true);
+			$reader = new Ccsd_Lang_Reader(self::PREFIX_FILENAME, $this->_dirLangFiles, $this->_languages, true);
 			foreach ($news as $key => $value) {
 				$key = mb_strtolower($key);
 				if ($key == 'title' || $key == 'content') {
@@ -142,33 +144,52 @@ class Ccsd_News
 		);
 		
 		$id = 0;
+        $isInsert = true;
+
 		foreach ($news as $key => $value) {
-			if ($key == 'newsid') {
+			if ($key === 'newsid') {
 				$id = $value;
-			} else if ($key != 'title' && $key != 'content' && $key != 'date') {
+			} else if ($key !== 'title' && $key !== 'content' && $key !== 'date') {
 				$bind[mb_strtoupper($key)] = $value;
 			}
 		}
-		
-		if ($id == 0) {
+
+		if ($id === 0) {
 			//Insertion
 			$this->_db->insert($this->_table, $bind);
 			$id = $this->_db->lastInsertId($this->_table);
+
+
 		} else {
-			//Modification
+
+            $isInsert = false;
+			//Editing
 			if (isset($news['date']) && $news['date']) {
 				//Maj de la date
 				$bind['DATE_POST'] = new Zend_Db_Expr('NOW()');
 			}
+
 			$this->_db->update($this->_table, $bind, $this->_primary . ' = ' . $id);
+
 		}
-		//Modification des fichiers de trzductions
-		$lang = array(
-			'title_' . $id		=>	$news['title'],
-			'content_' . $id	=>	$news['content']
-		);
-		$writer = new Ccsd_Lang_Writer($lang);
-		$writer->add($this->_dirLangFiles, 'news');	
+
+		//Editing translation files
+        $lang = [
+            'title_' . $id		=>	$news['title']
+        ];
+
+        if (!empty($news['content'])) {
+            $lang['content_' . $id] = $news['content'];
+        }
+
+        if (!$isInsert){
+            $this->updateTranslation($id, $lang);
+        } else {
+            $writer = new Ccsd_Lang_Writer($lang);
+            $writer->add($this->_dirLangFiles, self::PREFIX_FILENAME);
+
+        }
+
 	}
 	
 	/**
@@ -177,7 +198,11 @@ class Ccsd_News
 	 */
 	public function delete($newsid)
 	{
-		$this->_db->delete($this->_table, $this->_primary . ' = ' . $newsid);
+		if ($this->_db->delete($this->_table, $this->_primary . ' = ' . $newsid)) {
+
+            $this->updateTranslation($newsid);
+
+        }
 	}
 	
 	/**
@@ -209,4 +234,37 @@ class Ccsd_News
 		}
 		return $this->_form;
 	}
+
+
+    private function updateTranslation($newsId, array $data = []): bool
+    {
+        $translations = Episciences_Tools::getOtherTranslations($this->_dirLangFiles, self::PREFIX_FILENAME, '#_' . $newsId . '#');
+
+
+        if (!empty($data)) {
+            foreach ($data as $key => $currentTranslations) {
+                if ($key === ('title_' . $newsId)) {
+                    foreach ($currentTranslations as $lang => $value) {
+                        $translations[$lang][$key] = $value;
+
+                    }
+
+                } elseif ($key === 'content_' . $newsId) {
+                    foreach ($currentTranslations as $lang => $value) {
+                        $translations[$lang][$key] = $value;
+
+                    }
+
+                }
+
+            }
+        }
+
+        if (!Episciences_Tools::writeTranslations($translations, $this->_dirLangFiles, self::PREFIX_FILENAME . '.php')) {
+            return false;
+        }
+
+        return true;
+
+    }
 }

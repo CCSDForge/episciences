@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- news edition: translations not updating
 
 ## 1.0.40.14 - 2023-08-23
 ### Fixed

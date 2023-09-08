@@ -48,11 +48,18 @@
                     <small><?php echo $this->translate($news['DATE_POST']); ?></small>
                 </td>
                 <td>
-                    <div class="content">
-                        <div class="truncate"><?php echo $this->truncate($this->translate($news['CONTENT']))->withPostfix('&#0133; <a href="javascript:void(0);" class="more"><span class="glyphicon glyphicon-plus-sign"></span></a>'); ?></div>
-                        <div class="complete"
-                             style="display:none;"><?php echo $this->translate($news['CONTENT']); ?></div>
-                    </div>
+
+                    <?php try {
+                        if (Zend_Registry::get('Zend_Translate')->istranslated($news['CONTENT'])): ?>
+                            <div class="content">
+                                <div class="truncate"><?php echo $this->truncate($this->translate($news['CONTENT']))->withPostfix('&#0133; <a href="javascript:void(0);" class="more"><span class="glyphicon glyphicon-plus-sign"></span></a>'); ?></div>
+                                <div class="complete"
+                                     style="display:none;"><?php echo $this->translate($news['CONTENT']); ?></div>
+                            </div>
+                        <?php endif;
+                    } catch (Zend_Exception $e) {
+                        trigger_error($e->getMessage());
+                    } ?>
                 </td>
                 <td style="text-align:right;">
 
