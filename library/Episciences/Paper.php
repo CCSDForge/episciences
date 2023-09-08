@@ -3105,6 +3105,8 @@ class Episciences_Paper
                     // try to enrich with TEI HAL
                     Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB((string) $this->getRepoid(),$this->getPaperid(),$this->getIdentifier(),(int) $this->getVersion());
                 } else {
+                    // keep datalinked and insert line with the new doc id
+                    Episciences_Paper_DatasetsManager::updateAllByDocId($this);
                     $this->setPosition($this->applyPositioningStrategy());
                 }
                 return true;

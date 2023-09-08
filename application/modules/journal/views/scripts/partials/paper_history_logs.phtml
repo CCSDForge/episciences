@@ -27,7 +27,8 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_COI_REPORTED,
     Episciences_Paper_Logger::CODE_COI_REVERTED,
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION,
-    Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE
+    Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE,
+    Episciences_Paper_Logger::CODE_LD_ADDED,
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
@@ -194,6 +195,14 @@ $logs_with_details = [
                     <?= $this->translate(' :') ?>
                     <?= $this->Date($detail['newDeadline'], Episciences_Tools::getLocale()) . ' > ' . $detail['screenName'] ?>
                     <?php break; ?>
+                <?php case Episciences_Paper_Logger::CODE_LD_ADDED: ?>
+                <?php case Episciences_Paper_Logger::CODE_LD_REMOVED: ?>
+                    <?= $this->translate('par').' '.$detail['username'] ?>
+                    <?= $this->translate(' :') ?>
+                    <?= $detail['typeLd']. " =>" ?>
+                    <?= $detail['valueLd'] ?>
+                    <?php break; ?>
+
                 <?php endswitch ?>
 
             <span class="log-detail-icon glyphicon glyphicon-plus"></span>

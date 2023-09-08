@@ -45,7 +45,7 @@ $authorizedRelatedIndentifier = [
     "IGSN","ISBN","ISSN",
     "ISTC","LISSN","LSID","PISSN",
     "PMID","PURL","UPC",
-    "URL","URN","WOS"
+    "URL","URN","WOS","Software"
 ];
 
 if (defined('RVISSN')) {
@@ -215,8 +215,8 @@ if (defined('RVISSN')) {
         <?php endif; ?>
         <?php if (!empty($enrichmentLinkedData)) : ?>
             <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
-                <?php if (in_array((strtoupper($linkedData['link'])), $authorizedRelatedIndentifier, true) || $linkedData['link'] === 'handle' || $linkedData['link'] === 'doi' || $linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode') : ?>
-                    <?php if (in_array($linkedData['relationship'], $authorizedRelationType, true)) : ?>
+                <?php if (in_array((strtoupper($linkedData['link'])), $authorizedRelatedIndentifier, true) || $linkedData['link'] === 'handle' || $linkedData['link'] === 'doi' || $linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode' || $linkedData['link'] === 'software') : ?>
+                    <?php if (in_array(ucfirst($linkedData['relationship']), $authorizedRelationType, true)) : ?>
                         <datacite:relatedIdentifier relatedIdentifierType="<?php
                         if ($linkedData['link'] === 'handle') { echo $this->escape(ucfirst($linkedData['link'])); }
                         elseif ($linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode') { echo $this->escape($linkedData['link']); }

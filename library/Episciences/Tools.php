@@ -1835,4 +1835,58 @@ class Episciences_Tools
         return !($doi === '' || !preg_match("/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i", $doi));
     }
 
+    /**
+     * @param string $halId
+     * @return bool
+     */
+    public static function isHal(string $halId): bool {
+        return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?/", $halId);
+    }
+
+    /**
+     * @param string $swhid
+     * @return bool
+     */
+    public static function isSoftwareHeritageId(string $swhid): bool {
+        return (bool)preg_match("/^swh:1:(cnt|dir|rel|rev|snp):[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid);
+    }
+    public static function isHandle(string $handle): bool {
+        return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
+    }
+    public static function isArxiv(string $arxiv): bool {
+        return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
+    }
+
+    /**
+     * @param $value
+     * @return false|string
+     */
+    public static function checkValueType($value) {
+        $isHal = self::isHal($value);
+        if ($isHal) {
+            return 'hal';
+        }
+        $isDoi = self::isDoi($value);
+        if ($isDoi) {
+            return 'doi';
+        }
+        $isSwhid = self::isSoftwareHeritageId($value);
+        if ($isSwhid) {
+            return 'software';
+        }
+        $isUrl = Zend_Uri::check($value);
+        if ($isUrl) {
+            return 'url';
+        }
+        $isHdl = self::isHandle($value);
+        if ($isHdl) {
+            return 'handle';
+        }
+        $isArxiv = self::isArxiv($value);
+        if ($isArxiv) {
+            return 'arxiv';
+        }
+        return false;
+    }
+
 }

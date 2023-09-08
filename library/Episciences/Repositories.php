@@ -35,6 +35,8 @@ class Episciences_Repositories
     public const BIO_RXIV_ID = '10';
     public const MED_RXIV_ID = '11';
 
+    public const EPI_USER_ID = '12';
+
     // todo : to be converted to a database table
     private static array $_repositories = [
         self::EPISCIENCES_REPO_ID => [
