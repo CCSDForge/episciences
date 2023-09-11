@@ -72,10 +72,13 @@ $currentSmall = "";
                  */foreach ($metadataArray as $k => $meta) : ?>
                     <?php if ($k !== "metatext"): ?>
                         <?php if ($meta->getName() === 'software'): ?>
-                            <?php $urlSwd = "https://archive.softwareheritage.org/browse/embed/".$meta->getValue()."/"; ?>
+                            <?php
+                            if (Episciences_Paper_DatasetsManager::CheckSwhidType($meta->getValue()) === 'dir'){
+                                $urlSwd = "https://archive.softwareheritage.org/browse/embed/".$meta->getValue(); ?>
                             <iframe style="width: 100%; height: 500px; border: 1px solid rgba(0, 0, 0, 0.125);"
                                     src=<?=$urlSwd?>>
                             </iframe>
+                            <?php } ?>
                         <?php endif;?>
                     <?php endif;?>
                 <?php endforeach;?>
