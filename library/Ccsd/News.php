@@ -157,7 +157,7 @@ class Ccsd_News
 		if ($id === 0) {
 			//Insertion
 			$this->_db->insert($this->_table, $bind);
-			$id = $this->_db->lastInsertId($this->_table);
+			$id = (int)$this->_db->lastInsertId($this->_table);
 
 
 		} else {
@@ -236,31 +236,30 @@ class Ccsd_News
 	}
 
 
-    private function updateTranslation($newsId, array $data = []): bool
+    private function updateTranslation(int $newsId, array $data = []): bool
     {
         $translations = Episciences_Tools::getOtherTranslations($this->_dirLangFiles, self::PREFIX_FILENAME, '#_' . $newsId . '#');
 
 
         if (!empty($data)) {
+
             foreach ($data as $key => $currentTranslations) {
-                if ($key === ('title_' . $newsId)) {
-                    foreach ($currentTranslations as $lang => $value) {
-                        $translations[$lang][$key] = $value;
 
-                    }
-
-                } elseif ($key === 'content_' . $newsId) {
-                    foreach ($currentTranslations as $lang => $value) {
-                        $translations[$lang][$key] = $value;
-
-                    }
-
+                if ($key !== 'title_' . $newsId && $key !== 'content_' . $newsId) {
+                    continue;
                 }
 
+                foreach ($currentTranslations as $lang => $value) {
+                    $translations[$lang][$key] = $value;
+
+                }
             }
         }
 
         if (!Episciences_Tools::writeTranslations($translations, $this->_dirLangFiles, self::PREFIX_FILENAME . '.php')) {
+
+            error_log('Translation update failed for news id = ' . $newsid);
+
             return false;
         }
 
