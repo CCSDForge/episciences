@@ -21,6 +21,17 @@
                  <button type="submit" class="btn btn-default"><i class="glyphicon glyphicon-plus"></i>&nbsp;<?php echo $this->translate("Déposer le fichier"); ?></button>
              </div>
          </div>
+
+         <div class="row">
+
+             <div class="col-md-offset-2 col-md-10">
+                 <br>
+                 <input type="checkbox" id="overwrite-existing-file" name="overwriteFile" />
+                 <label for="overwrite-existing-file"><?= $this->translate('Écraser le fichiers existant avec un nom identique') ?></label>
+             </div>
+
+
+         </div>
          <script>
              $('#file').change(function() {
                  $('#value_file').val($(this).val().replace('C:\\fakepath\\', ''));
@@ -59,7 +70,7 @@
 	</tbody>
 </table>
 
-<?php echo $this->confirm("Confirmation", "Souhaitez-vous supprimer le fichier")
+<?php echo $this->confirm("Confirmation", "Souhaitez-vous supprimer le fichier ?")
 			->setTrigger('.delete-file')
 			->setJsInit('$("#confirm-id").val($(this).closest("tr.file").find(".name").text());')
 			->setJsCallback('deleteFile();');?>

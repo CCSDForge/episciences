@@ -1662,15 +1662,20 @@ return [
     'Ajouter/Modifier une actualité' => 'Add/update some news',
     "Suppression de l'actualité" => 'Delete a news',
     "Souhaitez-vous supprimer l'actualité ?" => "Do you want to delete this news?",
-
     // RESSOURCES
     "Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."
     => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their url or delete them.",
 
     "Ajouter un nouveau fichier" => "Add a new file",
-    "Déposer le fichier" => "Select the file",
+    "Déposer le fichier" => "Upload the file",
     "Fichiers" => "Files",
     "Aucun fichier sélectionné." => "No file selected",
+    'Souhaitez-vous supprimer le fichier ?' => 'Do you want to delete this file?',
+    'existe déjà.' => 'already exists.',
+    'Le fichier a été téléchargé et a été renommé' => 'The file has been uploaded and was renamed to',
+    'Écraser le fichiers existant avec un nom identique' => 'Overwrite existing file with the same name',
+    'Le fichier a été déposé.' => 'The file has been uploaded.',
+    'contient des caractères non valides' => 'contains invalid characters',
 
     /**
      * Menus

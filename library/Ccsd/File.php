@@ -248,30 +248,28 @@ class Ccsd_File
      * @param string $name
      *            nom du fichier à renommer
      * @param string $path
-     * @param boolean $replace
+     * @param boolean $force => false: nettoyage, true: nettoyage + renommage
      * @return string
      *
      */
-    public static function renameFile($name, $path = '', $replace = false)
+    public static function renameFile(string $name, string $path = '', bool $force = true): string
     {
         $name = preg_replace('/[^a-z0-9_\.-\/\\\\]/i', '_', self::spaces2space(self::stripAccents(($name))));
         $name = preg_replace("~\.\.*~", ".", $name);
         $name = preg_replace("/__*/", "_", $name);
 
-        if (!$replace && $path != '') {
-            if (strpos($name, '.')) {
-                while (is_file($path . $name)) {
-                    $matches = [];
-                    // Attention, on doit forcement matche tout nom avec un .
-                    // sinon, risque de boucle infinie
-                    if (preg_match('/_?(\d*)(\.\w*)$/', $name, $matches)) {
-                        $num = $matches[1];
-                        $ext = $matches[2];
-                        $num++;
-                        $name = preg_replace('/_?\d*(\.\w*)$/', "_$num$ext", $name);
-                    }
-
+        if ($force && $path !== '' && strpos($name, '.')) {
+            while (is_file($path . $name)) {
+                $matches = [];
+                // Attention, on doit forcement matche tout nom avec un .
+                // sinon, risque de boucle infinie
+                if (preg_match('/_?(\d*)(\.\w*)$/', $name, $matches)) {
+                    $num = $matches[1];
+                    $ext = $matches[2];
+                    $num++;
+                    $name = preg_replace('/_?\d*(\.\w*)$/', "_$num$ext", $name);
                 }
+
             }
         }
         return $name;
