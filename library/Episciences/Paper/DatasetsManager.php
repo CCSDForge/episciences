@@ -360,7 +360,7 @@ class Episciences_Paper_DatasetsManager
     {
         $swhidEx = explode(':',$swhid);
         if (is_array($swhidEx)){
-            return $swhid[2];
+            return $swhidEx[2];
         }
         return '';
     }
