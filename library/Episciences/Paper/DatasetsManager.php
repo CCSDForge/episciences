@@ -351,4 +351,18 @@ class Episciences_Paper_DatasetsManager
             }
         }
     }
+
+    /**
+     * @param string $swhid
+     * @return string
+     */
+    public static function CheckSwhidType(string $swhid): string
+    {
+        $swhidEx = explode(':',$swhid);
+        if (is_array($swhidEx)){
+            return $swhidEx[2];
+        }
+        return '';
+    }
+
 }
