@@ -358,10 +358,13 @@ class Episciences_Paper_DatasetsManager
      */
     public static function CheckSwhidType(string $swhid): string
     {
-        $swhidEx = explode(':',$swhid);
-        if (is_array($swhidEx)){
-            return $swhidEx[2];
+        if (Episciences_Tools::isSoftwareHeritageId($swhid) === true){
+            $swhidEx = explode(':',$swhid);
+            if (is_array($swhidEx)){
+                return $swhidEx[2];
+            }
         }
+
         return '';
     }
 
