@@ -250,16 +250,20 @@ class WebsiteDefaultController extends Zend_Controller_Action
     public function newsAction()
     {
         $news = new Episciences_News();
+
         $form = $news->getForm($this->getRequest()->getParam('newsid', 0));
 
         if ($this->getRequest()->isPost()) {
-            if ($form->isValid($this->getRequest()->getParams())) {
+            $post = $this->getRequest()->getParams();
+            if ($form->isValid($post)) {
                 $news->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect('/website/news');
-            } else {
+
+            } elseif (isset($post['newsid'])) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur dans la saisie");
                 $this->view->errors = $this->getRequest()->getParams();
+
             }
         }
 
