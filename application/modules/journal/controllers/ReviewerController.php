@@ -127,7 +127,10 @@ class ReviewerController extends PaperDefaultController
      */
     private function saveanswer(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
     {
-        if (array_key_exists('submitaccept', $data)) {
+        if (
+            array_key_exists('submitaccept', $data) ||
+            (isset($data['is-accepted']) && $data['is-accepted'])
+        ) {
 
             // accepted invitation
             $this->accept($oInvitation, $assignment, $paper, $data);
@@ -165,7 +168,8 @@ class ReviewerController extends PaperDefaultController
                     'action' => 'login',
                     'forward-controller' => 'reviewer',
                     'forward-action' => 'invitation',
-                    'id' => $oInvitation->getId()
+                    'id' => $oInvitation->getId(),
+                    'is-accepted' => array_key_exists('submitaccept', $data)
                 ];
                 $this->redirect($this->view->url($redirect_params));
                 return;
@@ -511,7 +515,15 @@ class ReviewerController extends PaperDefaultController
                 $this->view->user_form = $user_form;
             }
 
-            $accepted = (array_key_exists('submitaccept', $request->getPost()));
+            $accepted = (
+                array_key_exists('submitaccept', $request->getPost()) ||
+                (
+                    Episciences_Auth::isLogged() &&
+                    $request->getParam('is-accepted') &&
+                    $request->getParam('is-accepted') === '1'
+                )
+            );
+
             $refused = (array_key_exists('submitrefuse', $request->getPost()));
 
             if ($accepted || $refused) {
@@ -527,7 +539,9 @@ class ReviewerController extends PaperDefaultController
                     )
                 ) {
 
-                    $this->saveanswer($invitation, $assignment, $paper, $request->getPost());
+                    $data = $request->isPost() ? $request->getPost() : ['is-accepted' => $accepted];
+
+                    $this->saveanswer($invitation, $assignment, $paper, $data);
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
 
 
