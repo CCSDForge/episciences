@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ### Fixed
 - news edition: translations not updating
+- [#360](https://github.com/CCSDForge/episciences/issues/360): Improvement of the referees user experience.
 
 ## Unreleased
 ### Added
