@@ -80,7 +80,7 @@ class CommentsController extends PaperController
                 }
                 !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
                 unlink($comment_path);
-                $comment->save('update', true);
+                $comment->save(true);
                 $message = $this->view->translate("Le fichier a bien été supprimé.");
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
             }
@@ -121,7 +121,7 @@ class CommentsController extends PaperController
                     $newComment->setDocid($oldComment['DOCID']);
                     $newComment->setMessage($form_values['author_comment']);
                     $newComment->setPcid($oldComment['PCID']);
-                    if (!$newComment->save('update', $strict)) {
+                    if (!$newComment->save($strict)) {
                         $message = $this->view->translate("Une erreur est survenue lors de l'enregistrement de votre commentaire.");
                         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                     } else {

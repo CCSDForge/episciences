@@ -387,7 +387,7 @@ class PaperController extends PaperDefaultController
             $revisionDeadline = $currentDemand['DEADLINE'];
         }
 
-        $journalSettings = Zend_Registry::get('reviewSettings');
+        $paper->_revisionDeadline = $revisionDeadline;
 
         $doNotDisplayContactChoice = in_array(
             $paper->getStatus(), Episciences_Paper::All_STATUS_WAITING_FOR_FINAL_VERSION, true
@@ -395,7 +395,6 @@ class PaperController extends PaperDefaultController
 
         $this->view->revision_requests = $revision_requests;
         $this->view->currentDemand = $currentDemand;
-        $this->view->revisionDeadline = $revisionDeadline;
         $this->view->doNotDisplayContactChoice = $doNotDisplayContactChoice;
 
         // préparation de copie
@@ -854,7 +853,7 @@ class PaperController extends PaperDefaultController
         }
 
         // update comment
-        $cAnswer->save('update', true);
+        $cAnswer->save(true);
 
         // log comment
         $cAnswer->logComment();
@@ -1140,7 +1139,7 @@ class PaperController extends PaperDefaultController
             $oAnswer->setType($type);
             $oAnswer->setDocid($docId);
             $oAnswer->setMessage($post[self::COMMENT_STR]);
-            $oAnswer->save('insert', false, $paper->getUid()); // admin can save answer
+            $oAnswer->save(false, $paper->getUid()); // admin can save answer
 
             // send mail to chief editors and editors
             $recipients = $paper->getEditors(true, true);
@@ -1302,7 +1301,7 @@ class PaperController extends PaperDefaultController
         }
 
         try {
-            $isSaved = $answerComment->save('insert', false, $answerCommentUid);
+            $isSaved = $answerComment->save(false, $answerCommentUid);
         } catch (Zend_Exception $e) {
             throw new Zend_Exception('failure to save the answer comment', 0, $e);
         }
@@ -1838,7 +1837,7 @@ class PaperController extends PaperDefaultController
             $author_comment->setUid($commentUid);
             $author_comment->setType(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
             $author_comment->setFilePath(REVIEW_FILES_PATH . $newPaper->getDocid() . self::COMMENTS_STR);
-            $author_comment->save('insert', false, $commentUid);
+            $author_comment->save(false, $commentUid);
 
             // save answer (new version)
             $answerCommentType = !in_array($requestComment->getType(), Episciences_CommentsManager::$_copyEditingFinalVersionRequest) ?
@@ -1849,7 +1848,7 @@ class PaperController extends PaperDefaultController
             $answerComment->setParentid($requestId);
             $answerComment->setType($answerCommentType);
             $answerComment->setDocid($docId);
-            $answerComment->save('insert', false, $answerComment->getUid());
+            $answerComment->save(false, $answerComment->getUid());
 
             if ($answerComment->isCopyEditingComment()) {
                 $file = $answerComment->getFile();

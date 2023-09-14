@@ -234,7 +234,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
             <p>
                 <strong><?= $statusMsg ?></strong> <span
                         class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
-                <?= $this->partial('partials/paper-revision-deadline.phtml', ['revisionDeadline' => $this->revisionDeadline]) ?>
+                <?= $this->partial('partials/paper-revision-deadline.phtml', ['paper' => $paper]) ?>
             </p>
         </div>
     </div>

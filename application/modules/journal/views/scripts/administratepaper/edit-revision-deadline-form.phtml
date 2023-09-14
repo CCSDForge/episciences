@@ -1,0 +1,27 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$minDate = date($paper->_revisionDeadline ?: 'Y-m-d');
+$maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
+
+$id = 'revision-deadline-value-' . $paper->getDocid();
+?>
+<div style="width: 400px">
+    <form action="/administratepaper/updaterevisiondeadline" id="revision-deadline-form-<?= $paper->getDocid() ?>"
+          style="height : 34px;">
+
+        <div class="pull-right btn-xs" style="padding-left : 10px;">
+            <button type="submit" class="btn btn-primary btn-xs"><?= $this->translate("Enregistrer") ?></button>
+            <a class="btn btn-default" role="button" aria-hidden="true" onclick="$('.popover').hide();">&times;</a>
+        </div>
+
+        <div class="input-group">
+            <label for="<?= $id ?>" class="input-group-addon">
+                <?= ucfirst($this->translate('date limite de révision')) ?>
+            </label>
+            <input type="date" id="<?= $id ?>" class="form-control btn-xs" name="<?= $id ?>" min="<?= $minDate ?>"
+                   max="<?= $maxDate ?>" value="<?= $paper->_revisionDeadline ?>"/>
+        </div>
+
+    </form>
+</div>

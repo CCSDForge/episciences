@@ -718,3 +718,46 @@ function removeCoAuthor (docId, uid, rvid) {
         location.reload();
     });
 }
+
+function getRevisionDeadlineForm(button, docId, commentId = null) {
+
+    let request = getCommunForm(button, docId, '/administratepaper/revisiondeadlineform');
+
+    let popoverParams = {
+        'placement': 'bottom',
+        'container': 'body',
+        'html': true,
+        'content': getLoader()
+    }
+
+    request.done(function (result) {
+
+        // Destruction du popup de chargement
+        $(button).popover('destroy');
+        openedPopover = null;
+        // Affichage du formulaire dans le popover
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
+
+        $('form[action^="/administratepaper/updaterevisiondeadline"]').on('submit', function () {
+            let $revisionDeadline = $("#revision-deadline");
+            // Traitement AJAX du formulaire
+            let sRequest = ajaxRequest('/administratepaper/updaterevisiondeadline', $(this).serialize() + "&docid=" + docId + "&pcid=" + commentId , 'POST', 'json');
+            sRequest.done(function (response) {
+                // Destruction du popup
+                $(button).popover('destroy');
+
+                if (response) {
+                    $revisionDeadline.html(response);
+                    refreshPaperHistory(docId);
+                } else {
+                    alert(translate("Veuillez indiquer une date valide !"));
+                }
+
+            });
+            return false;
+        });
+    });
+
+
+}

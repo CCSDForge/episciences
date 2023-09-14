@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Display revision deadlines and make them editable: [#367](https://github.com/CCSDForge/episciences/issues/367) 
 - .env file (/!\ /.env.exemple)
 - script to import volumes and volume metadata from journals translation files into the database (/!\ @see /src/mysql/alter_volume_and_volume_metadata_tables.sql)
 - bioRxiv and medRxiv preprint servers.

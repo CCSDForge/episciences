@@ -178,8 +178,8 @@ $logs_with_details = [
                     <?= $fullName . ' > ' . $detail['submitter']['fullname'] ?>
                     <?php break; ?>
 
-                <?php
-                case Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE: ?>
+                <?php case Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE: ?>
+                <?php case Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED: ?>
                     <?= $this->translate(' :') ?>
                     <?= $detail['newDate'] . ' > ' ?>
                     <?= $fullName ?>

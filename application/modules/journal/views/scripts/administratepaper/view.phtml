@@ -120,8 +120,11 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 
         <p>
             <strong><?= $statusMsg ?></strong>
-            <span class="label label-status-<?= $status  ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
-            <?= $this->partial('partials/paper-revision-deadline.phtml', ['revisionDeadline' => $this->revisionDeadline]) ?>
+            <span class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+            <?= $this->partial('partials/paper-revision-deadline.phtml', [
+                'paper' => $paper,
+                'currentDemand' => $this->currentDemand
+            ]) ?>
         </p>
 
 

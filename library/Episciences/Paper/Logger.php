@@ -83,6 +83,9 @@ class Episciences_Paper_Logger
     public const DANGER = 'danger';
     public const PRIMARY = 'primary';
 
+    public const CODE_REVISION_DEADLINE_UPDATED = 'revision_deadline_updated';
+
+
     // log type css class
     public static array $_css = [
         self::CODE_RESTORATION_OF_STATUS => self::SUCCESS,
@@ -138,6 +141,8 @@ class Episciences_Paper_Logger
         self::CODE_INBOX_COAR_NOTIFY_REVIEW => self::INFO,
         self::CODE_LD_ADDED => self::INFO,
         self::CODE_LD_REMOVED => self::INFO,
+        self::CODE_REVISION_DEADLINE_UPDATED => self::WARNING,
+
     ];
 
     public static array $_label = [

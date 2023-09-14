@@ -1097,6 +1097,7 @@ return [
     Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission > Inbox',
     Episciences_Paper_Logger::CODE_LD_ADDED => 'Linked data added',
     Episciences_Paper_Logger::CODE_LD_REMOVED => 'Linked data removed',
+    Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'New révision deadline',
     "Date d'assignation" => "Assignation date",
     "Date de désassignation" => "De-assignment date",
     "Assigné par" => "Assigned by",

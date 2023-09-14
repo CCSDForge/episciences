@@ -138,6 +138,7 @@ return [
     Episciences_Editor::TAG_SECTION_EDITOR => 'Rédacteur de la rubrique',
     Episciences_Editor::TAG_VOLUME_EDITOR => 'Rédacteur du volume',
     Episciences_Editor::TAG_SUGGESTED_EDITOR => "Rédacteur suggéré par l'auteur",
+    Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'Nouvelle date limite de révision',
 
     // users permissions
     "administratemail-deletetemplate" => "Supprimer le template personnalisé et rétablir celui par défaut",

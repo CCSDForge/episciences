@@ -176,7 +176,6 @@ class Episciences_Comment
      * strict = false pour :
      * L'insertion d'un commentaire à la soumission d'un article.
      * Eviter aussi  l'écrasement de l'ancien fichier lors de l'edition de ce dernier.
-     * @param string $action
      * @param bool $strict
      * @param int|null $uid
      * @return bool
@@ -184,14 +183,16 @@ class Episciences_Comment
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      */
-    public function save(string $action = 'insert', bool $strict = false, int $uid = null): bool
+    public function save(bool $strict = false, int $uid = null): bool
     {
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
         $result = false;
 
         $this->uploadFileComment($strict);
 
-        if ($action === 'insert') { // INSERT
+        if (!$this->getPcid()) { // INSERT
 
             if ($this->insertComment($db, $uid)) {
                 $this->setPcid($db->lastInsertId());
@@ -199,10 +200,8 @@ class Episciences_Comment
                 $result = true;
             }
 
-        } elseif ($action === 'update') { //UPDATE
-            if ($this->updateComment($db)) {
-                $result = true;
-            }
+        } elseif ($this->updateComment($db)) {
+            $result = true;
         }
         // not log here if copy editing comment
         if (
@@ -576,10 +575,25 @@ class Episciences_Comment
      */
     private function updateComment(Zend_Db_Adapter_Abstract $db): bool
     {
-        $values = array(
+        $values = [
             'MESSAGE' => $this->getMessage(),
             'FILE' => $this->getFile(),
-            'WHEN' => new Zend_Db_Expr('NOW()'));
+            'WHEN' => new Zend_Db_Expr('NOW()')
+        ];
+
+        if ($this->getDeadline()) {
+
+            $values['DEADLINE'] = $this->getDeadline();
+
+            $options = $this->getOptions();
+
+            if (!empty($options)){
+                $values['OPTIONS'] = Zend_Json::encode($options);
+
+            }
+
+        }
+
         if (!$db->update(T_PAPER_COMMENTS, $values, ['PCID = ?' => $this->getPcid()])) {
             return false;
         }

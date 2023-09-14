@@ -685,13 +685,16 @@ class AdministratepaperController extends PaperDefaultController
         // check if last revision request has been answered
         $currentDemand = null;
         $revisionDeadline = null;
+
         if (!empty($demands) && !array_key_exists('replies', current($demands))) {
             $currentDemand = array_shift($demands);
             $revisionDeadline = $currentDemand['DEADLINE'];
         }
+
+        $paper->_revisionDeadline = $revisionDeadline;
+
         $this->view->demands = $demands;
         $this->view->currentDemand = $currentDemand;
-        $this->view->revisionDeadline = $revisionDeadline;
 
         // load all paper rating reports
         $this->view->grid = $paper->getGrid();
@@ -4873,7 +4876,120 @@ class AdministratepaperController extends PaperDefaultController
         return Episciences_PapersManager::getApprovedForm($docId);
     }
 
+    /**
+     *  get revision deadline edit form (ajax)
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function revisiondeadlineformAction(): bool
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
 
+        $docId = $request->getPost('docid');
+
+        if (!$docId) {
+            return false;
+        }
+
+        $paper = Episciences_PapersManager::get($docId);
+
+        if (!$paper->isRevisionRequested()) {
+            return false;
+        }
+
+        $paper->setRevisionDeadline();
+
+        $this->view->paper = $paper;
+
+        $this->_helper->layout->disableLayout();
+        $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-revision-deadline-form.phtml');
+        return true;
+
+    }
+
+
+    /**
+     * /**
+     * @return void
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Json_Exception
+     */
+    public function updaterevisiondeadlineAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
+
+        $paper = Episciences_PapersManager::get($docId);
+
+
+        if (!$paper || !$paper->isRevisionRequested()) {
+            echo false;
+            return;
+        }
+
+        if ($request->isPost() && $request->isXmlHttpRequest()) {
+
+
+            $current = date($paper->_revisionDeadline ?: 'Y-m-d');
+
+            $maxDate = Episciences_Tools::addDateInterval($current, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
+
+            $next = $request->getPost('revision-deadline-value-' . $docId);
+
+            if (
+                $next >= $current &&
+                $next <= $maxDate &&
+
+                Episciences_Auth::isSecretary() &&
+                (DateTime::createFromFormat('Y-m-d', $next) !== false) // it's a date ?
+
+            ) {
+                {
+                    $local = Episciences_Tools::getLocale();
+
+                    $localDate = Episciences_View_Helper_Date::Date($next, $local);
+
+
+                    if ($next !== $current) {
+
+                        /** @var Episciences_Comment $demand */
+                        $oDemand = new Episciences_Comment(Episciences_CommentsManager::getComment((int)$request->getPost('pcid')));
+                        $oDemand->setDeadline($next);
+                        $oDemand->setOption('deadline', $oDemand->getDeadline());
+
+                        $oDemand->save();
+
+                        $paper->_revisionDeadline = $next;
+
+
+                        $details = [
+                            'user' => [
+                                'uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()
+                            ],
+                            'oldDate' => $current,
+                            'newDate' => $next
+                        ];
+
+                        $paper->log(Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED, Episciences_Auth::getUid(), $details);
+
+                    }
+
+                    echo $localDate;
+                }
+
+            }
+        }
+    }
 }
 
 
