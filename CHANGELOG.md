@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ### Fixed
-- RT#193137: the button for sending a reply to the log is no longer displayed.
-- news edition: translations not updating
+- Fixed a case where the button to send a response to the reviewer seems to be missing (RT#193137)
+- News: translations were not updated when editing news
 - [#360](https://github.com/CCSDForge/episciences/issues/360): Improvement of the referees user experience.
 
 ## 1.0.40.14 - 2023-08-23
