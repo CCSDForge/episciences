@@ -23,6 +23,7 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
      * @var string
      */
     const DEFAULT_AUTH_CONTROLLER = 'user';
+    public const DEFAULT_SCHEME = 'https://';
 
     /**
      * Nom de l'action pour le login
@@ -293,7 +294,7 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
             !defined('SERVER_HTTP') ||
             (SERVER_HTTP !== 'http' && SERVER_HTTP !== 'https')
         ) {
-            $scheme = 'http://';
+            $scheme = self::DEFAULT_SCHEME;
         } else {
 
             $scheme = SERVER_HTTP . '://';
