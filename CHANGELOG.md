@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.40.15 - 2023-09-15
 ### Fixed
 - Fixed a case where the button to send a response to the reviewer seems to be missing (RT#193137)
 - News: translations were not updated when editing news
