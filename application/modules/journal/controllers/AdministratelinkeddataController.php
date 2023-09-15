@@ -14,7 +14,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             exit();
         }
 
-        $typeLd = $this->getRequest()->getPost('typeld');
+        $inputTypeLd = $this->getRequest()->getPost('typeld');
         $valueLd = $this->getRequest()->getPost('valueld');
         $docId = $this->getRequest()->getPost('docId');
         $paperId = $this->getRequest()->getPost('paperId');
@@ -23,6 +23,10 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage('Format de donnée non reconnu');
             exit();
+        }
+
+        if ($inputTypeLd === 'software' && $typeLd !== false) {
+            $typeLd = 'software';
         }
         if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId,$typeLd,$valueLd) > 0) {
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_ADDED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
