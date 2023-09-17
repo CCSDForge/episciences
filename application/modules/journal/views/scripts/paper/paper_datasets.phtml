@@ -10,7 +10,7 @@ $currentSmall = "";
 
     <div class="panel panel-default collapsable" id="paper-files">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Données liées') ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Publication - Jeux de données - Codes sources') ?></h2>
         </div>
         <div class="panel-body in">
             <table class="table table-striped">
@@ -26,11 +26,17 @@ $currentSmall = "";
                                  */
                                 foreach ($metadataArray as $k => $meta) : ?>
                                     <?php if ($k !== "metatext"): ?>
-                                    <?php if ((string)$sourceId === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?><button id="remove-ld" data-ld="<?= $meta->getId(); ?>" class="btn btn-default btn-xs" type="button" ><i class="fa-solid fa-trash-can"></i></button><?php endif;?>
+                                    <?php if ((string)$sourceId === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?><button id="remove-ld" data-ld="<?= $meta->getId(); ?>" class="btn btn-default btn-sm" type="button" ><i class="fa-solid fa-trash-can"></i></button><?php endif;?>
                                         <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($sourceId) ?></small>
                                     <?php endif;?>
                                     <?php if ($k !== "metatext" && is_null($meta->getMetatext())) : ?>
-                                        <?= $this->translate($meta->getName()) ?> <a href="<?= $meta->getLink() ?>" target="_blank" rel="noopener" id="link-ld"><?= $meta->getValue() ?></a>
+                                        <?php if (Episciences_Paper_DatasetsManager::CheckSwhidType($meta->getValue()) === 'dir') : ?>
+                                            <a href="https://archive.softwareheritage.org/<?= $meta->getValue() ?>">
+                                                <img src="https://archive.softwareheritage.org/badge/<?= $meta->getValue() ?>" alt="Archived | <?= $meta->getValue() ?>"/>
+                                            </a>
+                                        <?php else: ?>
+                                            <?= $this->translate($meta->getName()) ?> <a href="<?= $meta->getLink() ?>" target="_blank" rel="noopener" id="link-ld"><?= $meta->getValue() ?></a>
+                                        <?php endif; ?>
                                         <div style="margin-bottom: 4px"></div>
                                     <?php elseif($k !== "metatext" && !is_null($meta->getMetatext())) : ?>
                                         <?= $meta->getRelationship() ?>&nbsp;<?= strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>" target="_blank" rel="noopener" id="link-ld"><?= $meta->getValue() ?></a><br>
@@ -88,7 +94,7 @@ $currentSmall = "";
 <?php elseif (empty($metadata) && (Episciences_Auth::isAllowedToManageOrcidAuthor() || $paper->isOwner())): ?>
     <div class="panel panel-default collapsable" id="paper-files">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Données liées') ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Gérer les liens Publication - Jeux de données - Codes sources') ?></h2>
         </div>
         <div class="panel-body in">
             <?= $this->partial('paper/paper_manage_datasets.phtml',['docId' => $paper->getDocid(),'paperId' => $paper->getPaperid()]) ?>

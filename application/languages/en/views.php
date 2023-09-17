@@ -1922,8 +1922,10 @@ return [
     'En cours de publication' => 'Being published',
     // datasets
     'Données liées' => 'Linked data',
+    'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Softwares',
+    'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Softwares',
     'Voir' => 'View',
-    'Ajouter un jeu de donnée' => 'Add dataset',
+    'Ajouter un jeu de données' => 'Add dataset',
     'Ajouter un logiciel' => 'Add software',
     'Ajouter une publication' => 'Add publication',
     'Erreur, vous essayez peut-être d\'insérer des données liées déjà existantes.' =>'Error, you maybe try to insert an already existing linked data',
