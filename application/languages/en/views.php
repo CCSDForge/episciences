@@ -1892,7 +1892,7 @@ return [
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
     'En cours de publication' => 'Being published',
     // datasets
-    'Données liées' => 'Linked data',
+    'Liens publications - données - logiciels' => 'Linked publications - datasets - softwares',
     'Voir' => 'View',
     //COI
     "Votre réponse à bien été enregistrée." => "Your answer has been saved.",
