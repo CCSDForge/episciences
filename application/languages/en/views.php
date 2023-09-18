@@ -311,7 +311,7 @@ return [
     'Accepté le : ' => 'Accepted on: ',
     'Mots-clés : ' => 'Keywords: ',
     'Licence : ' => 'Licence: ',
-    'Financement : ' => 'Fundings: ',
+    'Financement : ' => 'Funding: ',
     'Rubrique : ' => 'Section: ',
     'Volumes & rubriques' => 'Volumes & sections',
     'Volume : ' => 'Volume: ',
