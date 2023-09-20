@@ -316,7 +316,7 @@ class InboxNotifications extends Script
 
 
                 $this->displaySuccess('Success' . PHP_EOL, $isVerbose);
-                $this->displaySuccess('Reday to submit' . PHP_EOL, $isVerbose);
+                $this->displaySuccess('Ready to submit' . PHP_EOL, $isVerbose);
 
 
             } elseif ($result['status'] === 2) {
