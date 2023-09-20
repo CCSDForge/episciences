@@ -24,6 +24,7 @@ class InboxNotifications extends Script
     public function __construct(string $id = '', array $type = [], array $origin = [])
     {
 
+        define('SERVER_PROTOCOL', 'https');
         $this->setRequiredParams([]);
         $this->setArgs(array_merge($this->getArgs(), ['delNotifs=dpn' => "delete processed inbox notifications"]));
         parent::__construct();
@@ -602,7 +603,7 @@ class InboxNotifications extends Script
 
         $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY;
 
-        $paperUrl = sprintf("https://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
+        $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
         $aLocale = $author->getLangueid();
 
