@@ -283,9 +283,10 @@ class InboxNotifications extends Script
 
         $apply = false;
         $canBeReplaced = false;
-
+        define('RVCODE', $journal->getCode());
         $data = $this->dataFromUrl($object);
         $data['rvid'] = $journal->getRvid();
+
         $data['repoid'] = (int)Episciences_Repositories::HAL_REPO_ID;
         $data['uid'] = $actor;
 
@@ -600,7 +601,7 @@ class InboxNotifications extends Script
 
         $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY;
 
-        $paperUrl = SERVER_PROTOCOL . '://' . $journal->getCode() . DOMAIN . '/paper/view?id=' . $paper->getDocid();
+        $paperUrl = 'https://' . $journal->getCode() . DOMAIN . '/paper/view?id=' . $paper->getDocid();
 
         $aLocale = $author->getLangueid();
 
