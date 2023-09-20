@@ -602,7 +602,7 @@ class InboxNotifications extends Script
 
         $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY;
 
-        $paperUrl = 'https://' . $journal->getCode() . DOMAIN . '/paper/view?id=' . $paper->getDocid();
+        $paperUrl = sprintf("https://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
         $aLocale = $author->getLangueid();
 
