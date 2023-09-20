@@ -570,34 +570,31 @@ class Ccsd_Tools
      * @param $params array
      *            parametres à passer à la transformation XSL
      * @return string nouvelle chaine XML
+     * @throws Exception
      */
     public static function xslt($xmlStr, $xslFile, array $params = [])
     {
-        try {
-            $xml = new DOMDocument ();
-            if (!$xmlStr) {
-                throw new Exception('pas de données');
-            }
-            if (!is_file($xslFile)) {
-                throw new Exception('fichier ' . $xslFile . " n'existe pas");
-            }
-
-            set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
-            $xml->loadXML($xmlStr);
-            restore_error_handler();
-
-            $xsl = new DOMDocument ();
-            $xsl->load($xslFile);
-            $proc = new XSLTProcessor ();
-            $proc->registerPHPFunctions();
-            foreach ($params as $key => $value) {
-                $proc->setParameter('', $key, $value);
-            }
-            $proc->importStyleSheet($xsl);
-            return $proc->transformToXML($xml);
-        } catch (Exception $e) {
-            return false;
+        $xml = new DOMDocument ();
+        if (!$xmlStr) {
+            throw new Exception('pas de données');
         }
+        if (!is_file($xslFile)) {
+            throw new Exception('fichier ' . $xslFile . " n'existe pas");
+        }
+
+        set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
+        $xml->loadXML($xmlStr);
+        restore_error_handler();
+
+        $xsl = new DOMDocument ();
+        $xsl->load($xslFile);
+        $proc = new XSLTProcessor ();
+        $proc->registerPHPFunctions();
+        foreach ($params as $key => $value) {
+            $proc->setParameter('', $key, $value);
+        }
+        $proc->importStyleSheet($xsl);
+        return $proc->transformToXML($xml);
     }
 
 
