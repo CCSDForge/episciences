@@ -1392,7 +1392,7 @@ return [
     "Remplacer" => 'Replace',
     "Cliquer ici" => "Click here",
     "Rechercher un utilisateur d'Episciences" => "Search an Episcience user",
-    'Liste des articles que j\'ai proposée à "%s".' => 'List of papers I\'ve submitted to "%s".',
+    'Liste des articles que j\'ai proposés à "%s".' => 'List of papers I\'ve submitted to "%s".',
     'Votre article a bien été enregistré.' => "Your article has been submitted.",
     'La nouvelle version de votre article a bien été enregistrée.' => "Your new version has been saved.",
     "Le document n'a pas été trouvé ou n'a pas pu être chargé." => "The document could not be found, or could not be loaded.",
