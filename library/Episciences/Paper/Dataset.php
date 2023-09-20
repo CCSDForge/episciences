@@ -316,24 +316,21 @@ class Episciences_Paper_Dataset
      * get metadata sources from T_PAPER_METADATA_SOURCES table
      * @param int $sourcesId
      * @return string
+     * @throws Zend_Exception
      */
     public function getSourceLabel(int $sourcesId): string
     {
 
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $metadataSources = Zend_Registry::get('metadataSources');
 
-        if (!isset($session->metadataSources)) {
-            $session->metadataSources = Episciences_Paper_MetaDataSourcesManager::all();
-        }
-
-        if (!array_key_exists($sourcesId, $session->metadataSources)) {
+        if (!$metadataSources || !array_key_exists($sourcesId, $metadataSources)) {
             return 'Undefined';
         }
 
         /** @var Episciences_Paper_MetaDataSource $metaDataSource */
-        $metaDataSource = $session->metadataSources[$sourcesId];
+        $metaDataSource = new Episciences_Paper_MetaDataSource($metadataSources[$sourcesId]);
 
-        return $metaDataSource->getName();
+        return  $metaDataSource->getName();
     }
 
 }

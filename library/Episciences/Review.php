@@ -1057,7 +1057,7 @@ class Episciences_Review
         $repositories = [];
         foreach (Episciences_Repositories::getRepositories() as $repoId => $repo) {
             if ($repoId > 0) {
-                $repositories[$repoId] = $repo['label'];
+                $repositories[$repoId] = $repo[Episciences_Repositories::REPO_LABEL];
             }
         }
 

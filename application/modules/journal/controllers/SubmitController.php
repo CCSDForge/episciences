@@ -182,7 +182,7 @@ class SubmitController extends DefaultController
                 //remove episciences from repositories list
                 continue;
             }
-            $examples[$id] = $repository['example'];
+            $examples[$id] = Episciences_Repositories::$_identifierExemples[$repository['id']];
         }
 
         $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
