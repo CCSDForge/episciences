@@ -290,7 +290,7 @@ class InboxNotifications extends Script
         $data['rvid'] = $journal->getRvid();
 
         $data['repoid'] = (int)Episciences_Repositories::HAL_REPO_ID;
-        $data['uid'] = $actor;
+        $data['uid'] = $this->getUidFromMailString($actor);
 
         $isVerbose = $this->isVerbose();
 
