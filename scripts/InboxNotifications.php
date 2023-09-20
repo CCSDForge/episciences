@@ -11,20 +11,15 @@ require_once "Script.php";
 class InboxNotifications extends Script
 {
 
-    private array $coarNotifyOrigin;
-    private array $coarNotifyType;
-
-    private $coarNotifyId;
-
-
     public const COAR_NOTIFY_AT_CONTEXT = [
         'https://www.w3.org/ns/activitystreams',
         'https://purl.org/coar/notify'
     ];
-
     public const NOTIFICATION_ID = 'notificationId';
-
     public const INBOX_SERVICE_TYPE = ['Service'];
+    private array $coarNotifyOrigin;
+    private array $coarNotifyType;
+    private $coarNotifyId;
 
     public function __construct(string $id = '', array $type = [], array $origin = [])
     {
@@ -109,7 +104,7 @@ class InboxNotifications extends Script
     }
 
 
-    public  function notificationsProcess(COARNotification $notification): bool
+    public function notificationsProcess(COARNotification $notification): bool
     {
 
         $isProcessed = false;
@@ -202,14 +197,14 @@ class InboxNotifications extends Script
             $message .= "the '@context' property doesn't match: ";
             $message .= implode(', ', self::COAR_NOTIFY_AT_CONTEXT);
             $this->displayError($message, $this->isVerbose());
-            $result = false;
+            //   $result = false;
 
         } elseif (!$isValidOrigin) {
 
             $message .= "the 'origin' property doesn't match: ";
             $message .= $this->getCoarNotifyOrigin()['inbox'];
             $this->displayError($message, $this->isVerbose());
-            $result = false;
+            //$result = false;
 
         } elseif ($type !== $this->getCoarNotifyType()) {
             $message .= "the 'type' property doesn't match: ";
@@ -232,6 +227,48 @@ class InboxNotifications extends Script
 
         return $result;
 
+    }
+
+    /**
+     * @return array
+     */
+    public function getCoarNotifyType(): array
+    {
+        return $this->coarNotifyType;
+    }
+
+    public function setCoarNotifyType(array $coarNotifyType): self
+    {
+        $this->coarNotifyType = $coarNotifyType;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getCoarNotifyOrigin(): array
+    {
+        return $this->coarNotifyOrigin;
+    }
+
+    public function setCoarNotifyOrigin(array $coarNotifyOrigin): self
+    {
+        $this->coarNotifyOrigin = $coarNotifyOrigin;
+        return $this;
+    }
+
+    public function getRvCodeFromUrl(string $url = null): string
+    {
+
+        if (!$url) {
+            return '';
+        }
+
+        $parse = parse_url($url);
+
+        return isset($parse['host']) ?
+            mb_substr($parse['host'], 0, (mb_strlen($parse['host']) - mb_strlen(DOMAIN)) - 1) :
+            '';
     }
 
     /**
@@ -324,109 +361,59 @@ class InboxNotifications extends Script
 
     }
 
-    private function addLocalUserInNotExist(array $data, int $rvId): ?Episciences_User
+    public function dataFromUrl(string $url): array
     {
-        if ($this->isVerbose()) {
-            $this->displayInfo('Add local User if not exist' . PHP_EOL, true);
-        }
 
+        $data = [
+            'version' => 1,
+            'identifier' => ''
+        ];
 
-        $user = new Episciences_User();
+        $aParse = parse_url($url);
 
-        try {
-            $casUser = $user->findWithCAS($data['uid']);
-        } catch (Zend_Db_Statement_Exception $e) {
-            $this->displayCritical($e->getMessage());
-            return null;
-        }
+        if ($aParse && isset($aParse['path'])) {
 
-        if (!$casUser) {
-            $message = 'Notification id = ';
-            $message .= $data[self::NOTIFICATION_ID];
-            $message .= ' not processed:';
-            $message .= ' CAS UID = ' . $data['uid'] . ' not found';
-            $this->displayError($message . PHP_EOL);
+            $vPos = mb_strpos($aParse['path'], 'v');
 
-            return null;
+            if ($vPos) {
 
-        }
+                $version = mb_substr($aParse['path'], ($vPos + 1));
 
+                if ($version) {
+                    $data['version'] = (int)$version;
 
-        if (!$user->hasRoles($data['uid'], $rvId)) {
+                }
 
-            if (!$this->isDebug() && $user->save(false, false, $rvId) && $this->isVerbose()) {
-                $this->displayInfo('local User added [UID = ' . $data['uid'] . PHP_EOL, true);
+            } else {
+                $version = '';
             }
 
+            $rPath = str_replace('/', '', $aParse['path']);
 
-        } elseif ($this->isVerbose()) {
-            $this->displayInfo('Already existing profile' . PHP_EOL, true);
+            $data['identifier'] = $vPos ? mb_substr($rPath, 0, mb_strlen($rPath) - (mb_strlen($version) + 1)) : $rPath;
+
+
         }
 
-        if (!$this->isDebug()) {
-            $user->addRole(Episciences_Acl::ROLE_AUTHOR, $rvId);
-        }
-
-
-        return $user;
-
+        return $data;
     }
 
     /**
-     * @param Episciences_Paper $paper
-     * @param bool $isJustAVersionUpdate
-     * @return void
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
+     * @param int $repoId
+     * @param string $identifier
+     * @param int|null $version
+     * @param int|null $rvId
+     * @return array
+     * @throws Zend_Exception
      */
-    private function logAction(Episciences_Paper $paper, bool $isJustAVersionUpdate = false): void
+    private function getRecord(int $repoId, string $identifier, int $version = null, int $rvId = null): array
     {
-
         if ($this->isVerbose()) {
-            $this->displayInfo('log action...', true);
+            $this->displayInfo('get record...' . PHP_EOL, true);
         }
 
-        if (!$this->isDebug()) {
-
-            $paper->log(
-                Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW,
-                EPISCIENCES_UID,
-                ['origin' => $paper->getRepoid(), 'paper' => $paper->toArray()]
-            );
-
-            !$isJustAVersionUpdate ?
-                $paper->log(
-                    Episciences_Paper_Logger::CODE_STATUS,
-                    EPISCIENCES_UID,
-                    ['status' => Episciences_Paper::STATUS_SUBMITTED]
-                ) :
-                $paper->log(
-                    Episciences_Paper_Logger::CODE_PAPER_UPDATED,
-                    EPISCIENCES_UID,
-                    [
-                        'user' => (new Episciences_User())->find(EPISCIENCES_UID),
-                        'version' => [
-                            'old' => Episciences_PapersManager::get($paper->getLatestVersionId(), false)->getVersion(),
-                            'new' => $paper->getVersion()
-                        ]
-                    ]
-                );
-
-            if ($this->isVerbose()) {
-                $this->displayInfo(
-                    !$isJustAVersionUpdate ?
-                        'New submission' :
-                        'Article updated' . PHP_EOL,
-                    true
-                );
-            }
-
-
-        }
-
-
+        return Episciences_Submit::getDoc($repoId, $identifier, $version, null, true, $rvId);
     }
-
 
     /**
      * @param Episciences_Review $journal
@@ -519,6 +506,61 @@ class InboxNotifications extends Script
         return $isAdded;
     }
 
+    private function addLocalUserInNotExist(array $data, int $rvId): ?Episciences_User
+    {
+        if ($this->isVerbose()) {
+            $this->displayInfo('Add local User if not exist' . PHP_EOL, true);
+        }
+
+        $uid = $this->getUidFromMailString($data['uid']);
+
+        $user = new Episciences_User();
+
+        try {
+            $casUser = $user->findWithCAS($uid);
+        } catch (Zend_Db_Statement_Exception $e) {
+            $this->displayCritical($e->getMessage());
+            return null;
+        }
+
+        if (!$casUser) {
+            $message = 'Notification id = ';
+            $message .= $data[self::NOTIFICATION_ID];
+            $message .= ' not processed:';
+            $message .= ' CAS UID = ' . $uid . ' not found. Original string was: ' . $data['uid'];
+            $this->displayError($message . PHP_EOL);
+
+            return null;
+
+        }
+
+
+        if (!$user->hasRoles($uid, $rvId)) {
+
+            if (!$this->isDebug() && $user->save(false, false, $rvId) && $this->isVerbose()) {
+                $this->displayInfo('local User added [UID = ' . $uid . PHP_EOL, true);
+            }
+
+
+        } elseif ($this->isVerbose()) {
+            $this->displayInfo('Already existing profile' . PHP_EOL, true);
+        }
+
+        if (!$this->isDebug()) {
+            $user->addRole(Episciences_Acl::ROLE_AUTHOR, $rvId);
+        }
+
+
+        return $user;
+
+    }
+
+    private function getUidFromMailString(string $uid): int
+    {
+        $uid = ltrim($uid, 'mailto:');
+        $uid = rtrim($uid, '@ccsd.cnrs.fr');
+        return (int)$uid;
+    }
 
     /**
      * @param Episciences_Review $journal
@@ -652,76 +694,65 @@ class InboxNotifications extends Script
 
     }
 
-
-    public function dataFromUrl(string $url): array
+    /**
+     * @param Episciences_Paper $paper
+     * @param bool $isJustAVersionUpdate
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function logAction(Episciences_Paper $paper, bool $isJustAVersionUpdate = false): void
     {
 
-        $data = [
-            'version' => 1,
-            'identifier' => ''
-        ];
+        if ($this->isVerbose()) {
+            $this->displayInfo('log action...', true);
+        }
 
-        $aParse = parse_url($url);
+        if (!$this->isDebug()) {
 
-        if ($aParse && isset($aParse['path'])) {
+            $paper->log(
+                Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW,
+                EPISCIENCES_UID,
+                ['origin' => $paper->getRepoid(), 'paper' => $paper->toArray()]
+            );
 
-            $vPos = mb_strpos($aParse['path'], 'v');
+            !$isJustAVersionUpdate ?
+                $paper->log(
+                    Episciences_Paper_Logger::CODE_STATUS,
+                    EPISCIENCES_UID,
+                    ['status' => Episciences_Paper::STATUS_SUBMITTED]
+                ) :
+                $paper->log(
+                    Episciences_Paper_Logger::CODE_PAPER_UPDATED,
+                    EPISCIENCES_UID,
+                    [
+                        'user' => (new Episciences_User())->find(EPISCIENCES_UID),
+                        'version' => [
+                            'old' => Episciences_PapersManager::get($paper->getLatestVersionId(), false)->getVersion(),
+                            'new' => $paper->getVersion()
+                        ]
+                    ]
+                );
 
-            if ($vPos) {
-
-                $version = mb_substr($aParse['path'], ($vPos + 1));
-
-                if ($version) {
-                    $data['version'] = (int)$version;
-
-                }
-
-            } else {
-                $version = '';
+            if ($this->isVerbose()) {
+                $this->displayInfo(
+                    !$isJustAVersionUpdate ?
+                        'New submission' :
+                        'Article updated' . PHP_EOL,
+                    true
+                );
             }
 
-            $rPath = str_replace('/', '', $aParse['path']);
-
-            $data['identifier'] = $vPos ? mb_substr($rPath, 0, mb_strlen($rPath) - (mb_strlen($version) + 1)) : $rPath;
-
 
         }
 
-        return $data;
+
     }
 
-    public function getRvCodeFromUrl(string $url = null): string
+    private function removeNotificationById(COARNotificationManager $cManger, string $notificationId): void
     {
-
-        if (!$url) {
-            return '';
-        }
-
-        $parse = parse_url($url);
-
-        return isset($parse['host']) ?
-            mb_substr($parse['host'], 0, (mb_strlen($parse['host']) - mb_strlen(DOMAIN)) - 1) :
-            '';
+        $cManger->removeNotificationById($notificationId);
     }
-
-
-    /**
-     * @param int $repoId
-     * @param string $identifier
-     * @param int|null $version
-     * @param int|null $rvId
-     * @return array
-     * @throws Zend_Exception
-     */
-    private function getRecord(int $repoId, string $identifier, int $version = null, int $rvId = null): array
-    {
-        if ($this->isVerbose()) {
-            $this->displayInfo('get record...' . PHP_EOL, true);
-        }
-
-        return Episciences_Submit::getDoc($repoId, $identifier, $version, null, true, $rvId);
-    }
-
 
     /**
      * @return string
@@ -739,42 +770,6 @@ class InboxNotifications extends Script
     {
         $this->coarNotifyId = $coarNotifyId;
         return $this;
-    }
-
-
-    /**
-     * @return array
-     */
-    public function getCoarNotifyOrigin(): array
-    {
-        return $this->coarNotifyOrigin;
-    }
-
-
-    public function setCoarNotifyOrigin(array $coarNotifyOrigin): self
-    {
-        $this->coarNotifyOrigin = $coarNotifyOrigin;
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getCoarNotifyType(): array
-    {
-        return $this->coarNotifyType;
-    }
-
-
-    public function setCoarNotifyType(array $coarNotifyType): self
-    {
-        $this->coarNotifyType = $coarNotifyType;
-        return $this;
-    }
-
-    private function removeNotificationById(COARNotificationManager $cManger, string $notificationId): void
-    {
-        $cManger->removeNotificationById($notificationId);
     }
 }
 
