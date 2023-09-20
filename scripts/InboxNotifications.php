@@ -690,7 +690,7 @@ class InboxNotifications extends Script
                 $this->displaySuccess($recipient->getScreenName() . ' notified > OK' . PHP_EOL, $isVerbose);
             }
 
-            $this->displaySuccess('All editorial committée notified > OK' . PHP_EOL, $isVerbose);
+            $this->displaySuccess('All editorial committee notified > OK' . PHP_EOL, $isVerbose);
 
         }
 
