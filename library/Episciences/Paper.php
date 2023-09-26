@@ -4090,15 +4090,45 @@ class Episciences_Paper
 
         $notFormatedDatasets = $this->getDatasets();
         $formatedDatasets = [];
-        $metatexttmp = '';
-        foreach ($notFormatedDatasets as $value) {
-            $formatedDatasets[$value->getSourceId()][] = $value;
-            if (!is_null($value->getMetatext())) {
-                if ($metatexttmp !== $value->getMetatext()) {
-                    $formatedDatasets[$value->getSourceId()]['metatext'][] = json_decode($value->getMetatext(), true, 512, JSON_THROW_ON_ERROR);
-                    $metatexttmp = $value->getMetatext();
-                }
+        $sourcesList = [];
+        $iSourceList = 1;
+        foreach ($notFormatedDatasets as $unorderedDatasets){
+            /** @var Episciences_Paper_Dataset $unorderedDatasets */
+            $typeLd = '';
+            if (((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::SCHOLEXPLORER_ID) && $unorderedDatasets->getMetatext() !== null) {
+                $typeLd = Episciences_Paper_DatasetsMetadataManager::getTypeLdMetadata($unorderedDatasets->getMetatext());
+            } elseif ((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::EPI_USER_ID && $unorderedDatasets->getCode() !== null && $unorderedDatasets->getCode() !== "swhidId_s"){
+                $typeLd = $unorderedDatasets->getCode();
+            } else {
+                $typeLd = $unorderedDatasets->getName();
             }
+            $sourceLabel = $unorderedDatasets->getSourceLabel($unorderedDatasets->getSourceId());
+            if (!array_key_exists($sourceLabel,$sourcesList)) {
+                $sourcesList[$sourceLabel] = $iSourceList;
+                $iSourceList++;
+            }
+            switch ($typeLd) {
+                case 'publication' :
+                case 'dataset' :
+                case 'software':
+                    $formatedDatasets[$typeLd][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    break;
+                default :
+                    $formatedDatasets["publication"][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    break;
+            }
+        }
+        if (isset($formatedDatasets['publication'])) {
+            $formatedDatasets['publication'] = Episciences_Paper_DatasetsManager::putUserLdFirst($formatedDatasets['publication']);
+        }
+        if (isset($formatedDatasets['dataset'])) {
+            $formatedDatasets['dataset'] = Episciences_Paper_DatasetsManager::putUserLdFirst($formatedDatasets['dataset']);
+        }
+        if (isset($formatedDatasets['software'])) {
+            $formatedDatasets['software'] = Episciences_Paper_DatasetsManager::putUserLdFirst($formatedDatasets['software']);
+        }
+        if (!empty($formatedDatasets)){
+            $formatedDatasets["listSources"] = $sourcesList;
         }
         return $formatedDatasets;
     }

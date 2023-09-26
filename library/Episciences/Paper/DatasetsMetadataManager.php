@@ -63,8 +63,22 @@ class Episciences_Paper_DatasetsMetadataManager
             return false;
         }
     }
+
     /**
-     * @param string $metatext
-     * @return bool
+     * Only for ScholeXplorer MetaData
+     * @return string
+     * @throws JsonException
      */
+    public static function getTypeLdMetadata(string $metadata) {
+        try {
+            $metadata = json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
+            if(array_key_exists("objectType",$metadata)) {
+                return $metadata['objectType'];
+            }
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+        }
+        return '';
+    }
+
 }

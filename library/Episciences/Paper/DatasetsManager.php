@@ -13,6 +13,10 @@ class Episciences_Paper_DatasetsManager
 
     public CONST URL_HAL = 'https://hal.science/';
 
+    public CONST URL_PMID = 'https://pubmed.ncbi.nlm.nih.gov/';
+
+    public CONST URL_PMC = 'https://www.ncbi.nlm.nih.gov/pmc/articles/';
+
     /**
      * @param int $docId
      * @return array [Episciences_Paper_Dataset]
@@ -43,6 +47,12 @@ class Episciences_Paper_DatasetsManager
                     break;
                 case 'hal':
                     $value['link'] = self::URL_HAL.$value['value'];
+                    break;
+                case 'pmid':
+                    $value['link'] = self::URL_PMID.$value['value'];
+                    break;
+                case 'pmc':
+                    $value['link'] = self::URL_PMC.$value['value'];
                     break;
                 case 'url':
                     $value['link'] = $value['value'];
@@ -272,6 +282,12 @@ class Episciences_Paper_DatasetsManager
             case 'hal':
                 $url = self::URL_HAL.$linkedValue;
                 break;
+            case 'pmid':
+                $url = self::URL_PMID.$linkedValue;
+                break;
+            case 'pmc':
+                $url = self::URL_PMC.$linkedValue;
+                break;
             case 'url':
                 $url = $linkedValue;
                 break;
@@ -288,27 +304,24 @@ class Episciences_Paper_DatasetsManager
      * @param string $value
      * @return int
      */
-    public static function addDatasetFromSubmission(int $docId,string $name, string $value): int {
+    public static function addDatasetFromSubmission(int $docId,string $name, string $value, $metaTextId = "", string $code): int {
         $dataset = new Episciences_Paper_Dataset();
         $dataset->setDocId($docId);
+        $dataset->setCode($code);
         switch ($name):
             case 'arxiv':
-                $dataset->setCode("null");
                 $dataset->setName("arXiv");
                 $dataset->setLink("arXiv");
                 break;
             case 'doi':
-                $dataset->setCode("null");
                 $dataset->setName("doi");
                 $dataset->setLink("doi");
                 break;
             case 'hal':
-                $dataset->setCode("null");
                 $dataset->setName("hal");
                 $dataset->setLink("hal");
                 break;
             case 'handle':
-                $dataset->setCode("null");
                 $dataset->setName("handle");
                 $dataset->setLink("handle");
                 break;
@@ -318,7 +331,6 @@ class Episciences_Paper_DatasetsManager
                 $dataset->setLink("SWHID");
                 break;
             case 'url':
-                $dataset->setCode("url");
                 $dataset->setName("software");
                 $dataset->setLink("url");
                 break;
@@ -328,6 +340,9 @@ class Episciences_Paper_DatasetsManager
         $dataset->setValue($value);
         $dataset->setRelationship(self::RELATION_TYPE_SOFTWARE);
         $dataset->setSourceId((int)Episciences_Repositories::EPI_USER_ID);
+        if ($metaTextId !== '') {
+            $dataset->setIdPaperDatasetsMeta($metaTextId);
+        }
         return self::insert([$dataset]);
     }
 
@@ -359,10 +374,29 @@ class Episciences_Paper_DatasetsManager
     public static function CheckSwhidType(string $swhid): string
     {
         $swhidEx = explode(':',$swhid);
-        if (is_array($swhidEx)){
-            return $swhidEx[2];
+        if (Episciences_Tools::isSoftwareHeritageId($swhid) === true){
+            $swhidEx = explode(':',$swhid);
+            if (is_array($swhidEx)){
+                return $swhidEx[2];
+            }
         }
+
         return '';
+    }
+
+    /**
+     * @param array $arrayLd
+     * @return array
+     */
+    public static function putUserLdFirst(array $arrayLd): array
+    {
+
+        if (isset($arrayLd[Episciences_Repositories::EPI_USER_ID])){
+            $epiUserLd = $arrayLd[Episciences_Repositories::EPI_USER_ID];
+            unset($arrayLd[Episciences_Repositories::EPI_USER_ID]);
+            $arrayLd = [Episciences_Repositories::EPI_USER_ID => $epiUserLd] + $arrayLd;
+        }
+        return $arrayLd;
     }
 
 }

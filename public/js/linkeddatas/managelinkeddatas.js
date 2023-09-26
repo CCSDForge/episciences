@@ -104,4 +104,13 @@ $(function () {
             $('#error-input-ld').remove();
         }
     }
+    $('#anchor-publication-add').on('click',function () {
+       $('#add-publication').click();
+    });
+    $('#anchor-software-add').on('click',function () {
+        $('#add-software').click();
+    });
+    $('#anchor-dataset-add').on('click',function () {
+        $('#add-dataset').click();
+    });
 });
