@@ -261,6 +261,8 @@ return [
     'handle' => 'Handle',
     'hal' => 'HAL',
 
+    'software_bloc_label' => 'Logiciels',
+
     // COI
     'no' => 'non',
     'yes' => 'oui',
@@ -272,6 +274,39 @@ return [
     "projectFinancing" => "Projet Financeur",
     
     // bioRxiv & medRxiv
-     "[CC_NO] The copyright holder for this pre-print is the author. All rights reserved. The material may not be redistributed, re-used or adapted without the author’s permission." => "[CC_NO] Le détenteur des droits d'auteur de cette prépublication est l'auteur. Tous droits réservés. Le matériel ne peut être redistribué, réutilisé ou adapté sans l'autorisation de l'auteur."
+     "[CC_NO] The copyright holder for this pre-print is the author. All rights reserved. The material may not be redistributed, re-used or adapted without the author’s permission." => "[CC_NO] Le détenteur des droits d'auteur de cette prépublication est l'auteur. Tous droits réservés. Le matériel ne peut être redistribué, réutilisé ou adapté sans l'autorisation de l'auteur.",
+
+    //relationships datasets
+    "IsDerivedFrom" => "Est dérivé de",
+    "HasDerivation" => "A une dérivation",
+    "IsReviewOf" => "Est une révision de",
+    'HasReview' => "A une révision",
+    "IsCommentOn" => "Est commenté sur",
+    "HasComment" => "A un commentaire",
+    "IsReplyTo" => "Est une réponse pour",
+    "HasReply" => "A une réponse",
+    "BasedOnData" => "Basé sur les données de ",
+    "IsDataBasisFor" => "Est une base de donnée pour",
+    "HasRelatedMaterial" => "Dispose d'un matériel",
+    "IsRelatedMaterial" => "Est un matériel relatif à",
+    "IsCompiledBy" => "Est compilé par",
+    "Compiles" => "compile",
+    "IsDocumentedBy" => "Est documenté par",
+    "Documents" => "Document",
+    "IsSupplementTo" => "Est un supplément à",
+    "IsSupplementedBy" => "Est complété par",
+    "IsContinuedBy" => "Est continué par",
+    "Continues" => "Continue",
+    "IsPartOf" => "Fait partie de",
+    "HasPart" => "a une partie",
+    "references" => "Reference",
+    "IsReferencedBy" => "Est référencé par",
+    "IsBasedOn" => "Est basé sur ",
+    "IsBasisFor" => "Est basé pour",
+    "Requires" => "Nécessite",
+    "IsRequiredBy"=> "Est requis pour",
+    "Finances" => "Finance",
+    "IsFinancedBy" => "Est financé par",
+    "IsVersionOf" => "Est une version de",
 
 ];

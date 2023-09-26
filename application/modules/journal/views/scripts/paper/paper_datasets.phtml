@@ -7,92 +7,18 @@ $currentSmall = "";
 ?>
 
 <?php if (!empty($metadata)) : ?>
-
-    <div class="panel panel-default collapsable" id="paper-files">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Publication - Jeux de données - Codes sources') ?></h2>
-        </div>
-        <div class="panel-body in">
-            <table class="table table-striped">
-                <tbody>
-                    <?php foreach ($metadata as $sourceId => $metadataArray) : ?>
-                        <tr>
-                            <td>
-                                <?php
-
-                                /**
-                                 * @var  $k
-                                 * @var  Episciences_Paper_Dataset $meta
-                                 */
-                                foreach ($metadataArray as $k => $meta) : ?>
-                                    <?php if ($k !== "metatext"): ?>
-                                    <?php if ((string)$sourceId === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?><button id="remove-ld" data-ld="<?= $meta->getId(); ?>" class="btn btn-default btn-sm" type="button" ><i class="fa-solid fa-trash-can"></i></button><?php endif;?>
-                                        <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($sourceId) ?></small>
-                                    <?php endif;?>
-                                    <?php if ($k !== "metatext" && is_null($meta->getMetatext())) : ?>
-                                        <?php if (Episciences_Paper_DatasetsManager::CheckSwhidType($meta->getValue()) === 'dir') : ?>
-                                            <a href="https://archive.softwareheritage.org/<?= $meta->getValue() ?>">
-                                                <img src="https://archive.softwareheritage.org/badge/<?= $meta->getValue() ?>" alt="Archived | <?= $meta->getValue() ?>"/>
-                                            </a>
-                                        <?php else: ?>
-                                            <?= $this->translate($meta->getName()) ?> <a href="<?= $meta->getLink() ?>" target="_blank" rel="noopener" id="link-ld"><?= $meta->getValue() ?></a>
-                                        <?php endif; ?>
-                                        <div style="margin-bottom: 4px"></div>
-                                    <?php elseif($k !== "metatext" && !is_null($meta->getMetatext())) : ?>
-                                        <?= $meta->getRelationship() ?>&nbsp;<?= strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>" target="_blank" rel="noopener" id="link-ld"><?= $meta->getValue() ?></a><br>
-                                        <?php  $countEnrichmentMeta++; ?>
-                                        <?php if ($countEnrichmentMeta === count($metadataArray)-1) : ?>
-                                            <?php foreach ($metadataArray['metatext'] as $kmeta => $typemeta) : ?>
-                                                <ul>
-                                                    <?php foreach ($typemeta['identifiers'] as $key => $value) : ?>
-                                                        <li>
-                                                            <span><?= $this->escape($value['identifier']) ?></span>
-                                                        </li>
-                                                    <?php endforeach; ?>
-                                                </ul>
-                                                <span style="font-weight: bold"><?= $this->escape($typemeta['title']) ?></span><br>
-                                                <?php if(array_key_exists("creators",$typemeta)): ?>
-                                                    <?php foreach ($typemeta['creators'] as $key => $value) : ?>
-                                                        <span><?= $value['name'] ?>
-                                                            <?php if ($value['identifiers'] !== null) : ?>
-                                                                <?php foreach ($value['identifiers'] as $identifierInfo) : ?>
-                                                                    <span><?= $this->escape($identifierInfo['identifier']) ?></span>
-                                                                <?php endforeach; ?>
-                                                            <?php endif;?>
-                                                        </span>;
-                                                    <?php endforeach; ?>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        <?php endif;?>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <?php if (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner()) echo $this->partial('paper/paper_manage_datasets.phtml',['docId' => $paper->getDocid(),'paperId' => $paper->getPaperid()]) ?>
-            <?php foreach ($metadata as $sourceId => $metadataArray) : ?>
-                <?php
-                /* @var  Episciences_Paper_Dataset $meta
-                 */foreach ($metadataArray as $k => $meta) : ?>
-                    <?php if ($k !== "metatext"): ?>
-                        <?php if ($meta->getName() === 'software'): ?>
-                            <?php
-                            if (Episciences_Paper_DatasetsManager::CheckSwhidType($meta->getValue()) === 'dir'){
-                                $urlSwd = "https://archive.softwareheritage.org/browse/embed/".$meta->getValue(); ?>
-                            <iframe style="width: 100%; height: 500px; border: 1px solid rgba(0, 0, 0, 0.125);"
-                                    src=<?=$urlSwd?>>
-                            </iframe>
-                            <?php } ?>
-                        <?php endif;?>
-                    <?php endif;?>
-                <?php endforeach;?>
-            <?php endforeach;?>
-        </div>
-    </div>
-<?php elseif (empty($metadata) && (Episciences_Auth::isAllowedToManageOrcidAuthor() || $paper->isOwner())): ?>
-    <div class="panel panel-default collapsable" id="paper-files">
+    <?php if (array_key_exists('software',$metadata)) {
+        echo $this->partial('paper/paper_datasets_softwares.phtml', ['softwares' => $metadata['software'],'paper' => $paper, 'listSources' =>$metadata['listSources']]);
+    } ?>
+    <?php if (array_key_exists('publication',$metadata)) {
+        echo $this->partial('paper/paper_datasets_publications.phtml', ['publications' => $metadata['publication'],'paper' => $paper, 'listSources' => $metadata['listSources']]);
+    } ?>
+    <?php if (array_key_exists('dataset',$metadata)) {
+        echo $this->partial('paper/paper_datasets_datas.phtml', ['datasets' => $metadata['dataset'], 'paper' => $paper, 'listSources' => $metadata['listSources'] ]);
+    } ?>
+<?php endif; ?>
+<?php if (Episciences_Auth::isAllowedToManageOrcidAuthor() || $paper->isOwner()): ?>
+    <div class="panel panel-default collapsable" id="manage-linked-data">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Gérer les liens Publication - Jeux de données - Codes sources') ?></h2>
         </div>

@@ -13,7 +13,6 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage('Modification non autorisé');
             exit();
         }
-
         $inputTypeLd = $this->getRequest()->getPost('typeld');
         $valueLd = $this->getRequest()->getPost('valueld');
         $docId = $this->getRequest()->getPost('docId');
@@ -25,10 +24,30 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             exit();
         }
 
+        $idMetaDataLastId = "";
+        if ($inputTypeLd === 'software' && $typeLd === 'hal'){
+            $codeMetaFromHal = Episciences_SoftwareHeritageTools::getCodeMetaFromHal($valueLd);
+            if ($codeMetaFromHal !== ''){
+                $epiDM = new Episciences_Paper_DatasetMetadata();
+                $epiDM->setMetatext($codeMetaFromHal);
+                $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+            }
+        }
+
+        if ($inputTypeLd === 'software' && $typeLd === 'software' && Episciences_Paper_DatasetsManager::CheckSwhidType($valueLd) === 'dir') {
+            $codeMetaFromDir = Episciences_SoftwareHeritageTools::getCodeMetaFromDirSwh($valueLd);
+            if ($codeMetaFromDir !== '') {
+                $epiDM = new Episciences_Paper_DatasetMetadata();
+                $epiDM->setMetatext($codeMetaFromDir);
+                $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+            }
+        }
+
         if ($inputTypeLd === 'software' && $typeLd !== false) {
             $typeLd = 'software';
         }
-        if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId,$typeLd,$valueLd) > 0) {
+
+        if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId,$typeLd,$valueLd, $idMetaDataLastId,$inputTypeLd) > 0) {
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_ADDED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
             echo json_encode([true], JSON_THROW_ON_ERROR);
         }
@@ -54,8 +73,12 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $datasetInDb = Episciences_Paper_DatasetsManager::findById($idLd);
         $typeLd = $datasetInDb->getName();
         $valueLd = $datasetInDb->getValue();
-        /** @var Zend_Controller_Request_Http $request */
-        if (Episciences_Paper_DatasetsManager::deleteById($idLd)){
+        if (($ds = $datasetInDb->getIdPaperDatasetsMeta()) !== null){
+            $isDeleted = Episciences_Paper_DatasetsMetadataManager::deleteMetaDataAndDatasetsByIdMd((int)$ds);
+        } else {
+            $isDeleted = Episciences_Paper_DatasetsManager::deleteById((int)$idLd);
+        }
+        if ($isDeleted) {
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_REMOVED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
 
             echo json_encode([true], JSON_THROW_ON_ERROR);
