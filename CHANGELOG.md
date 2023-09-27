@@ -15,11 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## 1.0.40.15 - 2023-09-15
-### Fixed
-- Fixed a case where the button to send a response to the reviewer seems to be missing (RT#193137)
-- News: translations were not updated when editing news
-- [#360](https://github.com/CCSDForge/episciences/issues/360): Improvement of the referees user experience.
 
 ## Unreleased
 ### Added
@@ -47,7 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template for DataLinked
 ### Fixed
 - [#353](https://github.com/CCSDForge/episciences/issues/353)
-
+## 1.0.40.15 - 2023-09-15
+### Fixed
+- Fixed a case where the button to send a response to the reviewer seems to be missing (RT#193137)
+- News: translations were not updated when editing news
+- [#360](https://github.com/CCSDForge/episciences/issues/360): Improvement of the referees user experience.
 
 ## 1.0.40.14 - 2023-08-23
 ### Fixed
