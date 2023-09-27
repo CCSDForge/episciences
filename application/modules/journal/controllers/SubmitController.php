@@ -183,7 +183,7 @@ class SubmitController extends DefaultController
                 continue;
             }
 
-            $examples[$id] = Episciences_Repositories::$_identifierExemples[$repository['id']] ?? '';
+            $examples[$id] = Episciences_Repositories::getIdentifierExemple($repository['id']);
         }
 
         $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
@@ -214,7 +214,6 @@ class SubmitController extends DefaultController
 
         if (!array_key_exists('error', $respond) && array_key_exists('record', $respond)) {
             // transform xml record for display, using xslt
-
             $respond['record'] = preg_replace('#xmlns="(.*)"#', '', $respond['record']);
 
             $input = array_merge($respond, ['repoId' => $params['repoId']]);
@@ -316,10 +315,10 @@ class SubmitController extends DefaultController
         $hasHook = !empty(Episciences_Repositories::hasHook($repoId));
 
         $isRequiredVersion = $hasHook ?
-            Episciences_Repositories::callHook('isRequiredVersion', ['repoId' => $repoId]) :
+            Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $repoId]) :
             ['result' => true];
 
-        $response = ['hasHook' => $hasHook, 'isRequiredVersion' =>$isRequiredVersion];
+        $response = ['hasHook' => $hasHook, 'hookIsRequiredVersion' =>$isRequiredVersion];
 
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);

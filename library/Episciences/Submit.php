@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\DataSet;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -14,7 +15,7 @@ class Episciences_Submit
 
     /**
      * @param array $settings
-     * @param null $defaults
+     * @param array|null $defaults
      * @param bool $isFromZSubmit
      * @return Ccsd_Form
      * @throws Zend_Db_Statement_Exception
@@ -22,7 +23,7 @@ class Episciences_Submit
      * @throws Zend_Form_Exception
      */
 
-    public static function getForm(array $settings = [], $defaults = null, bool $isFromZSubmit = false): \Ccsd_Form
+    public static function getForm(array $settings = [], ?array $defaults = [], bool $isFromZSubmit = false): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $review = Episciences_ReviewsManager::find(RVID);
@@ -67,10 +68,12 @@ class Episciences_Submit
         // Champ texte : identifiant du document
         $subform->addElement('text', 'docId', $docIdElementOptions);
 
-        // Champ texte : version du document
-        $isNotRequired = isset($defaults['repoId']) && ((int)$defaults['repoId'] === 4);
+        $hookVersion = isset($defaults['repoId']) ? Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']]) : [];
+        $isRequiredVersionField = empty($hookVersion) || (isset($hookVersion['result']) && $hookVersion['result']);
 
-        if (!$isNotRequired) {
+        // Champ texte : version du document
+
+        if ($isRequiredVersionField) {
             $subform->addElement('text', 'version', [
                 'label' => 'Version',
                 'required' => false,
@@ -500,6 +503,7 @@ class Episciences_Submit
      */
     public static function getNewVersionForm(Episciences_Paper $paper, array $settings = []): ?Ccsd_Form
     {
+        $translator = Zend_Registry::get('Zend_Translate');
         $defaults = self::fetchNewVersionFormDefaultValues($paper);
 
         if (array_key_exists('zIdentifier', $settings)) {
@@ -518,16 +522,20 @@ class Episciences_Submit
 
 
             $subform = new Ccsd_Form_SubForm();
+            $placeholder = $translator->translate("Saisir l'identifiant du document");
 
             $docIdOptions = [
                 'label' => 'Identifiant du document',
                 'disabled' => true,
                 'required' => true,
-                'placeholder' => Zend_Registry::get('Zend_Translate')->translate("Saisir l'identifiant du document"),
+                'placeholder' => $placeholder,
                 'style' => 'width:33%;',
             ];
 
-            if ($hasHook) {
+            if (
+                !isset($defaults['isRequiredIdentifier']) ||
+                $defaults['isRequiredIdentifier']
+            ) {
                 unset($docIdOptions['disabled']);
             }
 
@@ -536,7 +544,7 @@ class Episciences_Submit
 
             $subform->addElement('hidden', 'h_docId');
 
-            if (!$hasHook) {
+            if (!$hasHook || Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']])['result']) {
 
                 // Champ texte : version du document
                 $subform->addElement('text', 'version', [
@@ -619,6 +627,11 @@ class Episciences_Submit
             $xml->setDecorators(['ViewHelper']);
             $form->addElement($xml);
             $group[] = 'xml';
+
+            $form->addElement('hidden', 'h_enrichment',
+                ['decorators' => [
+                    'ViewHelper',
+                ]]);
 
             // Author's comments and Cover Letter [new version]
             // Keep in sync with paper views where these roles have access to the comments and cover letter
@@ -791,19 +804,16 @@ class Episciences_Submit
             if ($oai) {
                 $result['record'] = $oai->getRecord($identifier);
             } else {
-                $result['record'] = $hookApiRecord ['record'];
+                $result['record'] = $hookApiRecord ['record'] ?? null;
 
-                if(isset($hookApiRecord['error']) || empty($result['record'])){
+                if (isset($hookApiRecord['error']) || empty($result['record'])) {
                     throw new Ccsd_Oai_Error('idDoesNotExist', 'identifier', $identifier);
                 }
 
+            }
 
-                if (isset($hookApiRecord[Episciences_Repositories_BioMedRxiv::ENRICHMENT])) {
-
-                    $result[Episciences_Repositories_BioMedRxiv::ENRICHMENT] = $hookApiRecord[Episciences_Repositories_BioMedRxiv::ENRICHMENT];
-
-                }
-
+            if (isset($hookApiRecord[Episciences_Repositories_Common::ENRICHMENT])) {
+                $result[Episciences_Repositories_Common::ENRICHMENT] = $hookApiRecord[Episciences_Repositories_Common::ENRICHMENT];
             }
 
             $conceptIdentifier = null;
@@ -952,10 +962,24 @@ class Episciences_Submit
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception|JsonException
      */
+
     public function saveDoc($data, $paperId = null, $vid = null, $sid = null): array
     {
 
         $isCoiEnabled = false;
+
+        $enrichment = [];
+        $isEnrichment = isset($data['h_enrichment']) && $data['h_enrichment'] !== '';
+
+        if ($isEnrichment) {
+            try {
+
+                $enrichment = json_decode($data['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
 
         // Initialisation
         $canReplace = (boolean)Ccsd_Tools::ifsetor($data['can_replace'], false); // remplacer ou pas la version V-1
@@ -987,7 +1011,10 @@ class Episciences_Submit
         // Préparation du populate de l'article
         $values = $this->buildValuesToPopulatePaper($data, $paperId, $vid, $sid);
 
-        $paper = new Episciences_Paper($values);
+
+        $paper = !Episciences_Repositories::isDataverse($values['REPOID']) ?
+            new Episciences_Paper($values) :
+            new DataSet($values);
 
         if ($paper->alreadyExists()) {
             $message = '<strong>' . $translator->translate("L'article que vous tentez d'envoyer existe déjà.") . '</strong>';
@@ -1015,9 +1042,11 @@ class Episciences_Submit
                 Episciences_Paper_FilesManager::deleteByDocId($oldDocId);
             }
 
-            $response = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()]);
+            $hookParams = ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()];
 
-            Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid(), 'response' => $response]);
+            $response = Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
+
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', array_merge($hookParams, ['response' => $response]));
 
 
             if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
@@ -1028,9 +1057,23 @@ class Episciences_Submit
             $user = Episciences_Auth::getUser();
             $user->addRole(Episciences_Acl::ROLE_AUTHOR);
 
+            if ($isEnrichment) {
+                self::enrichmentProcess($paper, $enrichment);
+            } else {
 
-            if (isset($data['h_enrichment'])) {
-                self::enrichmentProcess($paper, $data['h_enrichment']);
+                // insert author dc:creator to json author in the database
+                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
+
+                try {
+
+                    if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) { // try to enrich with TEI HAL
+                        Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
+                    }
+
+                } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+                    trigger_error($e->getMessage());
+                }
+
             }
 
         } else {
@@ -1692,10 +1735,13 @@ class Episciences_Submit
         $repository = $paper->getRepoid();
         $hasHook = $paper->hasHook;
 
+        $isRequiredIdentifier = !$hasHook || $repository === (int)Episciences_Repositories::ZENODO_REPO_ID;
+
         if ($repository) {
             $defaults = [
                 'hasHook' => $hasHook,
-                'docId' => !$hasHook ? $paper->getIdentifier() : '', //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
+                'isRequiredIdentifier' => $isRequiredIdentifier,
+                'docId' => !$isRequiredIdentifier ? $paper->getIdentifier() : '', //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
                 'version' => $paper->getVersion(),
                 'repoId' => $repository
             ];
@@ -1793,64 +1839,81 @@ class Episciences_Submit
 
     /**
      * @param Episciences_Paper $paper
-     * @param string $enrichment // json
-     * @return void
+     * @param array $enrichment
+     * @return int
      */
 
-    public static function enrichmentProcess(Episciences_Paper $paper, string $enrichment = ''): void
+    public static function enrichmentProcess(Episciences_Paper $paper, array $enrichment = []): int
     {
 
-        if ($enrichment === '') {
-            return;
+        if (empty ($enrichment)) {
+            return 0;
         }
 
-        try {
-            $enrichment = json_decode($enrichment, false, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            trigger_error($e->getMessage());
-            return;
-        }
+        $insertedRows = 0;
 
+        $jsonVals = [];
 
         foreach ($enrichment as $key => $values) {
 
-            if ($key === Episciences_Repositories_BioMedRxiv::CONTRIB_ENRICHMENT) {
+            if (!in_array($key, Episciences_Repositories_Common::AVAILABLE_ENRICHMENT, true)) {
+                continue;
+            }
 
-                // todo
+            $paperId = $paper->getPaperId();
 
+            try {
+                $jsonVals = json_encode($values, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
 
-            } elseif ($key === Episciences_Repositories_BioMedRxiv::CITATIONS) {
+            if ($key === Episciences_Repositories_Common::CONTRIB_ENRICHMENT) {
 
-                if (!empty($values)) {
+                $authors = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
 
-                    try {
+                if (empty($authors)) { // to prevent manual changes being overwritten.
 
-
-                        $jsonCitations = json_encode($values, JSON_THROW_ON_ERROR);
-                        $oCitations = new Episciences_Paper_Citations();
-
-
-                        $oCitations
-                            ->setCitation($jsonCitations)
-                            ->setDocId($paper->getDocid())
-                            ->setSourceId($paper->getRepoid());
-
-                        Episciences_Paper_CitationsManager::insert([$oCitations]);
-
-                    } catch (JsonException $e) {
-                        trigger_error($e->getMessage());
-                    }
+                    $insertedRows += Episciences_Paper_AuthorsManager::insert([
+                        [
+                            'authors' => $jsonVals,
+                            'paperId' => $paperId
+                        ]
+                    ]);
 
                 }
 
+            } elseif ($key === Episciences_Repositories_Common::CITATIONS) {
 
 
-            } elseif ($key === Episciences_Repositories_BioMedRxiv::INSTITUTIONS) {
+                if (!empty($values)) {
 
+                    $oCitations = new Episciences_Paper_Citations();
+
+                    $oCitations
+                        ->setCitation($jsonVals)
+                        ->setDocId($paper->getDocid())
+                        ->setSourceId($paper->getRepoid());
+
+                    $insertedRows += Episciences_Paper_CitationsManager::insert([$oCitations]);
+
+                }
+
+            } elseif ($key === Episciences_Repositories_Common::REFERENCES_EPI_CITATIONS) {
+                // todo to be saved in REFERENCES EPI CITATIONS
+
+            } elseif ($key === Episciences_Repositories_Common::PROJECTS) {
+
+                $data = [
+                    'funding' => $jsonVals,
+                    'paperId' => $paper->getPaperid(),
+                    'source_id' => $paper->getRepoid()
+                ];
+
+                $insertedRows += Episciences_Paper_ProjectsManager::insert($data);
             }
-
         }
-
+        return $insertedRows;
     }
 
 }

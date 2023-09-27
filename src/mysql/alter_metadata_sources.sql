@@ -127,3 +127,18 @@ SET
     `id` = '0'
 WHERE
     `metadata_sources`.`name` = 'Episciences';
+
+    ALTER TABLE
+        `metadata_sources` CHANGE `type` `type` ENUM(
+            'repository',
+            'metadataRepository',
+            'dataverse',
+            'user'
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+
+UPDATE `metadata_sources` SET `paper_url` = '' WHERE `metadata_sources`.`id` = 4;
+UPDATE `metadata_sources` SET `doc_url` = 'https://entrepot.recherche.data.gouv.fr/dataset.xhtml?persistentId=%%ID' WHERE `metadata_sources`.`id` = 15;
+UPDATE `metadata_sources` SET `doc_url` = 'https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=%%ID' WHERE `metadata_sources`.`id` = 14;
+UPDATE `metadata_sources` SET `name` = 'Recherche Data Gouv' WHERE `metadata_sources`.`id` = 15;
+

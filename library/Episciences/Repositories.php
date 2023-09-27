@@ -9,7 +9,7 @@ use GuzzleHttp\Exception\GuzzleException;
 class Episciences_Repositories
 {
 
-    public const TYPE_DATA = 'data';
+    public const TYPE_DATAVERSE = 'dataverse';
     public const TYPE_PAPERS_REPOSITORY = 'repository';
 
     public const  REPO_LABEL = 'name';
@@ -23,7 +23,7 @@ class Episciences_Repositories
 
     public const REPO_DOI_PREFIX = 'doi_prefix';
 
-    public const EPISCIENCES_REPO_ID = '0';
+    // IDs in metadata_sources table : Episciences repository => '0'
     public const HAL_REPO_ID = '1';
     public const ARXIV_REPO_ID = '2';
     public const CWI_REPO_ID = '3';
@@ -36,17 +36,17 @@ class Episciences_Repositories
     public const MED_RXIV_ID = '11';
 
     public const EPI_USER_ID = '12';
+
     private static array $_repositories = [];
 
-    public static array $_identifierExemples = [
+    public const IDENTIFIER_EXEMPLES = [
         self::HAL_REPO_ID => 'hal-01234567',
         self::ARXIV_REPO_ID => '0123.45678',
         self::CWI_REPO_ID => '22211',
         self::ZENODO_REPO_ID => '123456 / (DOI)10.5281/zenodo.123456',
-        self::BIO_RXIV_ID => '(DOI)10.1101/339747',
-        self::MED_RXIV_ID => '(DOI)10.1101/339747',
+        self::BIO_RXIV_ID => '(DOI) 10.1101/339747',
+        self::MED_RXIV_ID => '(DOI) 10.1101/339747'
     ];
-
 
     public static function getRepositories(): array
     {
@@ -57,7 +57,7 @@ class Episciences_Repositories
                 self::$_repositories = array_filter(Zend_Registry::get('metadataSources'), static function ($source) {
                     return (
                         $source[self::REPO_LABEL] !== 'Software Heritage' &&
-                        ($source[self::REPO_TYPE] === self::TYPE_DATA || $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY)
+                        ($source[self::REPO_TYPE] === self::TYPE_DATAVERSE || $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY)
                     );
                 });
             } catch (Zend_Exception $e) {
@@ -132,6 +132,7 @@ class Episciences_Repositories
         if (!class_exists($className)) {
             $className = '';
         }
+
         return $className;
     }
 
@@ -141,7 +142,8 @@ class Episciences_Repositories
      */
     private static function makeHookClassNameByRepoId(int $repoId): string
     {
-        return __CLASS__ . '_' . ucfirst(self::getLabel($repoId)) . '_Hooks';
+        $label = !self::isDataverse($repoId) ? self::getLabel($repoId) : self::TYPE_DATAVERSE;
+        return __CLASS__ . '_' . ucfirst($label) . '_Hooks';
     }
 
     /**
@@ -183,6 +185,26 @@ class Episciences_Repositories
         }
 
         return $labels;
+
+    }
+
+    public static function isDataverse(int $repoId): bool
+    {
+
+
+        if (!isset(self::getRepositories()[$repoId][self::REPO_TYPE])) {
+            return false;
+        }
+
+        return self::getRepositories()[$repoId][self::REPO_TYPE] === self::TYPE_DATAVERSE;
+    }
+
+    public static function getIdentifierExemple(int $repoId) :string
+    {
+
+        return !self::isDataverse($repoId) ?
+            self::IDENTIFIER_EXEMPLES[(string)$repoId] :
+            Episciences_Repositories_Dataverse_Hooks::DATAVERSE_IDENTIFIER_EXEMPLE;
 
     }
 }

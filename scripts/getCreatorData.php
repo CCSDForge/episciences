@@ -76,8 +76,8 @@ class getCreatorData extends JournalScript
                 $this->displayInfo('COPY PASTE AUTHOR FROM PAPER TO AUTHOR', true);
 
                 //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
-                $paper = Episciences_PapersManager::get($value['DOCID']);
-                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $paperId);
+                $paper = Episciences_PapersManager::get($value['DOCID'], false);
+                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
 
             } else {
 
@@ -96,9 +96,9 @@ class getCreatorData extends JournalScript
 
 
                 //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
-                $paper = Episciences_PapersManager::get($value['DOCID']);
+                $paper = Episciences_PapersManager::get($value['DOCID'], false);
 
-                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper, $paperId);
+                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
 
                 // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
                 // BUT BEFORE CHECK GLOBAL CACHE

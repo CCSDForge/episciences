@@ -12,5 +12,5 @@ interface Episciences_Repositories_HooksInterface
     public static function hookGetConceptIdentifierFromRecord(array $hookParams): array;
     public static function hookConceptIdentifier(array $hookParams): array;
     public static function hookLinkedDataProcessing(array $hookParams): array;
-    public static function isRequiredVersion(): array;
+    public static function hookIsRequiredVersion(): array;
 }

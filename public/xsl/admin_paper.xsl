@@ -115,6 +115,7 @@
                 <strong>
                     <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($title))"/>
                 </strong>
+                <span class="label label-default pull-right"><xsl:value-of select="php:function('Ccsd_Tools::translate',string(episciences/submissionType))"/></span>
 
                 <p>
                     <i>

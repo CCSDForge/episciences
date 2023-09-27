@@ -273,8 +273,8 @@ class Episciences_Paper_AuthorsManager
      */
     public static function enrichAffiOrcidFromTeiHalInDB(int $repoId, int $paperId, string $identifier, int $version): int
     {
-        if ((string)$repoId === Episciences_Repositories::HAL_REPO_ID) {
-            $decodeAuthor = '';
+        if ($repoId === (int)Episciences_Repositories::HAL_REPO_ID) {
+            $decodeAuthor = [];
             $selectAuthor = self::getAuthorByPaperId($paperId);
             foreach ($selectAuthor as $authorsDb) {
                 $decodeAuthor = json_decode($authorsDb['authors'], true, 512, JSON_THROW_ON_ERROR);
@@ -698,19 +698,20 @@ class Episciences_Paper_AuthorsManager
 
         if (empty($author)) {
             //COPY PASTE AUTHOR FROM PAPER TO AUTHOR
-            $paper = Episciences_PapersManager::get($docId);
-            self::InsertAuthorsFromPapers($paper, $paperId);
+            $paper = Episciences_PapersManager::get($docId, false);
+            self::InsertAuthorsFromPapers($paper);
         }
     }
 
     /**
-     * @param $paper
-     * @param $paperId
-     * @return void
+     * @param Episciences_Paper $paper
+     * @return int
      */
-    public static function InsertAuthorsFromPapers($paper, $paperId): void
+    public static function InsertAuthorsFromPapers(Episciences_Paper $paper): int
     {
-        if (empty(self::getAuthorByPaperId($paperId))) {
+        $result = 0;
+        $paperId = $paper->getPaperid();
+        if (empty(self::getAuthorByPaperId($paperId))){
             $authors = $paper->getMetadata('authors');
             foreach ($authors as $author) {
                 $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
@@ -724,7 +725,7 @@ class Episciences_Paper_AuthorsManager
                 ];
             }
 
-            Episciences_Paper_AuthorsManager::insert([
+           $result = Episciences_Paper_AuthorsManager::insert([
                 [
                     'authors' => json_encode($arrayAuthors, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                     'paperId' => $paperId
@@ -732,6 +733,8 @@ class Episciences_Paper_AuthorsManager
             ]);
             unset($arrayAuthors);
         }
+
+        return $result;
     }
 
     /**

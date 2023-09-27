@@ -611,6 +611,12 @@ class Ccsd_Tools
             if ($lang === null) {
                 $lang = Zend_Registry::get('lang');
             }
+
+            if (!$translator->isTranslated($str)) {
+                error_log('Missing translation: ' . $str);
+                return $str;
+            }
+
             return $translator->translate($str, $lang);
         } catch (Zend_Exception $e) {
             Ccsd_Tools::panicMsg(__FILE__, __LINE__, "Zend registry: Zend_Translate not defined\n" . $e->getTrace());

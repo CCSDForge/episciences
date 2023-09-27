@@ -6,6 +6,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 class Episciences_Paper_ProjectsManager
 {
     public const ONE_MONTH = 3600 * 24 * 31;
+    public const UNIDENTIFIED = 'unidentified';
 
     public static function getProjectsByPaperIdAndSourceId(int $paperId, int $sourceId): array
     {
@@ -63,22 +64,29 @@ class Episciences_Paper_ProjectsManager
                 $templateProject .= " <small class='label label-info'>" . Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . $source_id_name . "</small>";
                 foreach ($fundingInfo as $counter => $funding) {
                     foreach ($funding as $kf => $vfunding) {
-                        if ($vfunding['projectTitle'] !== "unidentified") {
+                        if ($vfunding['projectTitle'] !== self::UNIDENTIFIED) {
                             $templateProject .= '<li><em>' . htmlspecialchars($vfunding['projectTitle']) . "</em>";
-                            if ($vfunding['funderName'] !== "unidentified") {
+                            if ($vfunding['funderName'] !== self::UNIDENTIFIED) {
                                 $templateProject .= "; " . Zend_Registry::get('Zend_Translate')->translate("Funder") . ": " . htmlspecialchars($vfunding['funderName']);
                             }
-                        } elseif ($vfunding['funderName'] !== "unidentified") {
+                        } elseif ($vfunding['funderName'] !== self::UNIDENTIFIED) {
                             $templateProject .= "<li>" . Zend_Registry::get('Zend_Translate')->translate("Funder") . ": " . htmlspecialchars($vfunding['funderName']);
                         }
-                        if ($vfunding['code'] !== "unidentified" && ($vfunding['funderName'] !== "unidentified" || $vfunding['projectTitle'] !== "unidentified")) {
+                        if ($vfunding['code'] !== self::UNIDENTIFIED && ($vfunding['funderName'] !== self::UNIDENTIFIED || $vfunding['projectTitle'] !== self::UNIDENTIFIED)) {
                             $templateProject .= "; Code: " . htmlspecialchars($vfunding['code']);
                         }
-                        if (isset($vfunding['callId']) && $vfunding['callId'] !== "unidentified") {
+                        if (isset($vfunding['callId']) && $vfunding['callId'] !== self::UNIDENTIFIED) {
                             $templateProject .= "; " . Zend_Registry::get('Zend_Translate')->translate("callId") . ": " . htmlspecialchars($vfunding['callId']);
                         }
-                        if (isset($vfunding['projectFinancing']) && $vfunding['projectFinancing'] !== "unidentified") {
+                        if (isset($vfunding['projectFinancing']) && $vfunding['projectFinancing'] !== self::UNIDENTIFIED) {
                             $templateProject .= "; " . Zend_Registry::get('Zend_Translate')->translate("projectFinancing") . ": " . htmlspecialchars($vfunding['projectFinancing']);
+                        }
+
+                        if (isset($vfunding['url']) && $vfunding['url'] !== ''){
+                            $templateProject .= "; ";
+                            $templateProject .= '<a href="' . $vfunding['url'] . '">';
+                            $templateProject .= $vfunding['url'];
+                            $templateProject.= '</a>';
                         }
                         $templateProject .= "</li>";
                     }
@@ -363,12 +371,12 @@ class Episciences_Paper_ProjectsManager
     {
 
         $arrayAllValuesExpected = [
-            'projectTitle' => 'unidentified',
-            'acronym' => 'unidentified',
+            'projectTitle' => self::UNIDENTIFIED,
+            'acronym' => self::UNIDENTIFIED,
             'funderName' => 'European Commission',
-            'code' => 'unidentified',
-            'callId' => 'unidentified',
-            'projectFinancing' => 'unidentified'
+            'code' => self::UNIDENTIFIED,
+            'callId' => self::UNIDENTIFIED,
+            'projectFinancing' => self::UNIDENTIFIED
         ];
         $arrayEuropean = [];
         if (!empty($respEuHAl['response']['docs'])) {
@@ -415,10 +423,10 @@ class Episciences_Paper_ProjectsManager
     {
 
         $arrayAllValuesExpected = [
-            'projectTitle' => 'unidentified',
-            'acronym' => 'unidentified',
+            'projectTitle' => self::UNIDENTIFIED,
+            'acronym' => self::UNIDENTIFIED,
             'funderName' => 'French National Research Agency (ANR)',
-            'code' => 'unidentified',
+            'code' => self::UNIDENTIFIED,
         ];
         $arrayAnr = [];
         if (!empty($respAnrHAl['response']['docs'])) {

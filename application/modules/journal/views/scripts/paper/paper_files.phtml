@@ -2,8 +2,9 @@
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $action = 'oafiles';
+$files = $paper->getFiles();
 ?>
-<?php if ($paper->hasHook): ?>
+<?php if ($paper->hasHook && $files): ?>
     <div class="panel panel-default collapsable" id="paper-files">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Fichiers') ?>
@@ -40,7 +41,7 @@ $action = 'oafiles';
                         <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
                         <td>
                     <span class="pull-right">
-                        <a class="btn btn-xs btn-default" href="<?= $href ?>" data-toggle="tooltip" title="<?= $this->translate('Télécharger le fichier') ?>">
+                        <a class="btn btn-xs btn-default" href="<?= $oFile->_downloadLike ?>" data-toggle="tooltip" title="<?= $this->translate('Télécharger le fichier') ?>">
                            <i class="fas fa-file-download"></i>
                         </a>
                     </span>
