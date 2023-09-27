@@ -246,7 +246,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $tmpData['value'] = $linkedIdentifier['identifier'];
             $tmpData['code'] = array_key_exists('resource_type', $linkedIdentifier) ? $linkedIdentifier['resource_type'] : 'undefined';
             $tmpData['name'] = $linkedIdentifier['scheme'];
-            $tmpData['link'] = $linkedIdentifier['scheme'] !== 'url' ? Episciences_Paper_Dataset::$_datasetsLink[$linkedIdentifier['scheme']] . $linkedIdentifier['identifier'] : $linkedIdentifier['identifier'];
+            $tmpData['link'] = !in_array($linkedIdentifier['scheme'], ['url', 'lsid'], true) ? Episciences_Paper_Dataset::$_datasetsLink[$linkedIdentifier['scheme']] . $linkedIdentifier['identifier'] : $linkedIdentifier['identifier'];
             $tmpData['source_id'] = $hookParams['repoId'];
 
             $data[] = $tmpData;

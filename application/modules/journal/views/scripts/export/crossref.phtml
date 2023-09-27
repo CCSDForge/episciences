@@ -301,7 +301,8 @@ $timestamp = $dateTime->format('YmdHisv');
             <?php endif; ?>
             <?php if ($enrichmentLicence !== ""): ?>
                 <program xmlns="http://www.crossref.org/AccessIndicators.xsd">
-                    <license_ref start_date="<?= date("Y-m-d", strtotime($paper->getPublication_date()))?>"><?= $this->escape($enrichmentLicence) ?></license_ref>
+                    <free_to_read/>
+                    <license_ref applies_to="vor" start_date="<?= date("Y-m-d", strtotime($paper->getPublication_date()))?>"><?= $this->escape($enrichmentLicence) ?></license_ref>
                 </program>
             <?php endif; ?>
             <program xmlns="http://www.crossref.org/relations.xsd">

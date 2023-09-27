@@ -20,7 +20,7 @@ $currentSmall = "";
 <?php if (Episciences_Auth::isAllowedToManageOrcidAuthor() || $paper->isOwner()): ?>
     <div class="panel panel-default collapsable" id="manage-linked-data">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Gérer les liens Publication - Jeux de données - Codes sources') ?></h2>
+            <h2 class="panel-title"><?= $this->translate('Liens publications - données - logiciels') ?></h2>
         </div>
         <div class="panel-body in">
             <?= $this->partial('paper/paper_manage_datasets.phtml',['docId' => $paper->getDocid(),'paperId' => $paper->getPaperid()]) ?>

@@ -313,7 +313,7 @@ return [
     'Accepté le : ' => 'Accepted on: ',
     'Mots-clés : ' => 'Keywords: ',
     'Licence : ' => 'Licence: ',
-    'Financement : ' => 'Fundings: ',
+    'Financement : ' => 'Funding: ',
     'Rubrique : ' => 'Section: ',
     'Volumes & rubriques' => 'Volumes & sections',
     'Volume : ' => 'Volume: ',
@@ -1921,7 +1921,7 @@ return [
     'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
     // datasets
-    'Données liées' => 'Linked data',
+    'Liens publications - données - logiciels' => 'Linked publications - datasets - softwares',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Softwares',
     'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Softwares',
     'Jeux de données' => 'Datasets',
