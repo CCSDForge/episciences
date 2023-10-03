@@ -11,6 +11,9 @@ class ArxivController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
         header('Content-Type: text/xml');
 
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
         $dom = new Ccsd_DOMDocument('1.0', 'utf-8');
         $dom->preserveWhiteSpace = false;
 
@@ -33,9 +36,16 @@ class ArxivController extends Zend_Controller_Action
         $repoId = Episciences_Repositories::getRepoIdByLabel('arXiv');
         $translator = Zend_Registry::get('Zend_Translate');
 
+
         $settings = ['is' => [
             'repoid' => $repoId,
             'status' => Episciences_Paper::STATUS_PUBLISHED]];
+
+        if ($request->getParam('limit') !== 'all') {
+            $settings['limit'] = 1;
+            $settings['offset'] = 1000;
+        }
+
         $papers = Episciences_PapersManager::getList($settings);
 
         $reviews = [];
