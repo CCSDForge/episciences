@@ -1,12 +1,11 @@
 <div class="panel-body in">
-
     <div class="row">
         <div class="col-md-12">
-            <div id="biblio-refs-container"></div>
-            <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>" data-api="<?=$this->apiEpiBibCitation?>" hidden></div>
             <?php if ($this->enabledManageFromPublicPage === true) : ?>
-                <a id="epi-citation-app-enabled-public" class="btn btn-default btn-sm" target="_blank" href="<?=$this->apiEpiBibCitation?>/login?url=<?=$this->urlcallapibib?>"><i class="fa-solid fa-asterisk"></i> <?= $this->translate('Gérer les références bibliographiques') ?></a>
+                <a id="epi-citation-app-enabled-public" style="margin-bottom: 8px;" class="btn btn-default btn-sm" target="_blank" href="<?=$this->apiEpiBibCitation?>/login?url=<?=$this->urlcallapibib?>"><i class="fas fa-edit"t></i> <?= $this->translate('Gérer les références bibliographiques') ?></a>
             <?php endif;?>
+            <div id="biblio-refs-container"></div>
+            <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>" data-api="<?=$this->apiEpiBibCitation?>" <?php if ($this->enabledManageFromPublicPage === true) : ?>data-all="1" <?php endif;?> hidden></div>
         </div>
     </div>
 </div>

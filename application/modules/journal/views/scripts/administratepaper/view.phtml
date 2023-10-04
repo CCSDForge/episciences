@@ -76,7 +76,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 <?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()): ///********************* coauthor section ?>
 <?= $this->partial('partials/coauthors.phtml',['paper'=>$paper])?>
 <?php endif; ?>
-<?php if ($this->enabledBib): ?>
+<?php if ($this->enabledBib && $paper->getRepoid() !== (int) Episciences_Repositories::ZENODO_REPO_ID): ?>
     <div id="biblio-refs" class="panel panel-default collapsable">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('References') ?></h2>

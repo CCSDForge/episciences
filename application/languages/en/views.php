@@ -2393,7 +2393,6 @@ return [
     "Afficher les references bibliographiques" => "Show bibliographical references",
     "Chargement"=> "Loading",
     "Masquer les références bibliographique" => "Hide bibliographical references",
-    "Afficher les references bibliographiques" => "Extract bibliographical references",
     "Gérer les références bibliographiques" => "Manage the bibliographical references",
 
     // relationships linked data
