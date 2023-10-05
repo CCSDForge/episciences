@@ -1,17 +1,17 @@
 #! /bin/sh
 # This script will process an index queue
 core="episciences"
-dir=`dirname $0`
+dir=$(dirname "$0")
 usage="$0 -v(verbose) -d(debug) -t(test) <environnement> <UPDATE|DELETE>";
 
 verbose=0
 test=0
 debug=0
 verbose() {
-    [ $verbose -eq 1 ] && echo $*
+    [ $verbose -eq 1 ] && echo "$*"
 }
 debug() {
-    [ $debug -eq 1 ] && echo $*
+    [ $debug -eq 1 ] && echo "$*"
 }
 verboseOpt=''
 debugOpt=''
@@ -24,23 +24,29 @@ while getopts "tvdh" opt; do
            ;;
         t) test=1;testOpt=-t
            ;;
-	h) echo $usage
-	   exit 0
-	   ;;
+	      h) echo "$usage"
+	         exit 0
+	         ;;
+ 	      *) echo "$usage"
+ 	         exit 0
+ 	         ;;
     esac
 done
-shift `expr $OPTIND - 1`
+
+
+shift "$(expr $OPTIND - 1)"
 case $# in
     2) : ok
        ;;
     *) echo "Need 2 args"
-       echo $usage
+       echo "$usage"
        exit 1;
        ;;
 esac
 
 case $1 in
-    production|preprod|test|development) :oh;;
+    production|preprod|test|development)
+      ;;
     *) echo "Arg1 must be an environnement name: production|preprod|test|development"
        exit 1;;
 esac
@@ -51,10 +57,10 @@ esac
     case $test in
 	1)
 	    # No & in test case
-	    $dir/php_launch_command.sh  $verboseOpt $debugOpt $testOpt $dir/solrJob.php -e $1 --cron $2 -c $core
+	    "$dir"/php_launch_command.sh  $verboseOpt $debugOpt $testOpt "$dir"/solrJob.php -e "$1" --cron "$2" -c $core
 	    ;;
 	0)
-	    $dir/php_launch_command.sh  $verboseOpt $debugOpt $testOpt $dir/solrJob.php -e $1 --cron $2 -c $core &
+	    "$dir"/php_launch_command.sh  $verboseOpt $debugOpt $testOpt "$dir"/solrJob.php -e "$1" --cron "$2" -c $core &
 	    ;;
     esac
 

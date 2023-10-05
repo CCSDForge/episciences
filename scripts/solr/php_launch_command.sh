@@ -4,7 +4,14 @@ max=60
 verbose=0
 test=0
 debug=0
-PHP_BIN="/usr/bin/php"
+
+if test -f "/usr/bin/php7.4"; then
+    PHP_BIN="/usr/bin/php7.4"
+else
+  PHP_BIN="/usr/bin/php"
+fi
+
+
 
 verbose() {
     [ $verbose -eq 1 ] && echo $*
@@ -23,23 +30,28 @@ while getopts "m:tvdp:" opt; do
            ;;
         t) test=1
            ;;
-	p) phpCommandList="$OPTARG $phpCommandList"
+	      p) phpCommandList="$OPTARG $phpCommandList"
+	        ;;
+	      *)
+	        ;;
     esac
 done
-shift `expr $OPTIND - 1`
+shift $(expr $OPTIND - 1)
 command=$1
 
 nbprocess=$(ps ax | grep "$command" | wc -l)
-verbose "Nbr de process pour $command: $nbprocess"
+verbose "Number of processes for $command: $nbprocess"
 
-if [[ $nbprocess -gt $max ]] ; then
-    debug "Nb of process $command: $nbprocess > $max"
-  echo "Too many process"
+if [ $nbprocess -gt $max ]; then
+    debug "Number of processes for $command: $nbprocess exceeds maximum allowed ($max)"
+    echo "Too many processes"
+    exit 1
 else
-    verbose "exec $PHP_BIN $*";
+    verbose "Executing $PHP_BIN $*"
     if [ $test -eq 1 ]; then
-	echo "exec $PHP_BIN $*";
-    else 
-	exec $PHP_BIN $*
+        echo "Executing $PHP_BIN $*"
+    else
+        exec $PHP_BIN $*
     fi
 fi
+
