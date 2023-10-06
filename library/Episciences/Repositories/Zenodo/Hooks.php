@@ -9,11 +9,10 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
     public static function hookCleanXMLRecordInput(array $input): array
     {
-        $search = 'xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/';
-        $replace = 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/';
 
         if (array_key_exists('record', $input)) {
-            $input['record'] = str_replace($search, $replace, $input['record']);
+            $input['record'] = Episciences_Repositories_Common::checkAndCleanRecord($input['record']);
+
         }
 
         return $input;
@@ -39,6 +38,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             [$checksumType, $checksum] = explode(':', $file['checksum']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
+            $tmpData['source'] = $hookParams['repoId'];
             $tmpData['file_name'] = $file['key'];
             $tmpData['file_type'] = $file['type'];
             $tmpData['file_size'] = $file['size'];
@@ -92,6 +92,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
+
+        self::enrichmentProcess($response);
 
         return $response ?: [];
     }
@@ -153,7 +155,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
             $found = Episciences_Tools::extractPattern('/' . $pattern . '/', $hookParams['record']);
 
-            if(!empty($found)){
+            if (!empty($found)) {
                 $found[0] = str_replace('<dc:relation>doi:', '', $found[0]);
                 $found[0] = str_replace('</dc:relation>', '', $found[0]);
                 /** array */
@@ -263,10 +265,74 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
     }
 
-    public static function isRequiredVersion(): array
+    public static function hookIsRequiredVersion(): array
     {
-        return [
-            'result' => false
-        ];
+        return ['result' => !Episciences_Repositories_Common::isRequiredVersion()];
+
     }
+
+    /**
+     * @param array $data
+     * @return void
+     */
+    private static function enrichmentProcess(array &$data = []): void
+    {
+
+        if (empty($data)) {
+            return;
+        }
+
+        $authors = [];
+
+        $metadata = $data['metadata'];
+
+        if (isset($metadata['license']['id']) && $metadata['license']['id'] !== '') {
+            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::LICENSE_ENRICHMENT] = $metadata['license']['id'];
+        }
+
+        if (isset($metadata['creators']) && is_array($metadata['creators'])) {
+
+            foreach ($metadata['creators'] as $author) {
+
+                $affiliations = [];
+
+                if (isset($author['name']) && $author['name'] !== '') {
+                    $name = $author['name'];
+
+                    $explodedName = explode(', ', $name);
+
+                    $tmp['fullname'] = $name;
+                    $tmp['given'] = isset($explodedName[1]) ? trim($explodedName[1]) : '';
+                    $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
+
+                    if (isset($author['orcid']) && $author['orcid'] !== '') {
+                        $tmp['orcid'] = $author['orcid'];
+                    }
+
+                    if (isset($author['affiliation'])) {
+
+                        $affiliations[] = ['name' => $author['affiliation']];
+                        $tmp['affiliation'] = $affiliations;
+
+                    }
+
+                    $authors[] = $tmp;
+                }
+
+            }
+
+        }
+
+        if(!empty($authors)){
+            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::CONTRIB_ENRICHMENT] = $authors;
+        }
+
+        if (isset($metadata['resource_type'])){
+            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $metadata['resource_type'];
+        }
+
+
+    }
+
+
 }

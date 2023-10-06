@@ -2556,15 +2556,16 @@ class Episciences_PapersManager
 
     /**
      * Update paper metadata
-     * @param int $docId
+     * @param Episciences_Paper $paper
      * @return int
      * @throws Exception
-     * @throws Zend_Db_Adapter_Exception
      */
-    public static function updateRecordData(int $docId): int
+    public static function updateRecordData(Episciences_Paper $paper): int
     {
 
-        if ($docId <= 0) {
+        $docId = $paper->getDocId();
+
+        if (!$docId) {
             return 0;
         }
 
@@ -2596,21 +2597,26 @@ class Episciences_PapersManager
 
         if ($oai) {
             $record = $oai->getRecord($repoIdentifier);
-        } else {
-
-            $record = Episciences_Repositories::callHook(
+            $response = Episciences_Repositories::callHook(
                 'hookApiRecords', [
                     'identifier' => $identifier,
                     'repoId' => $repoId,
                     'version' => $version
                 ]
-            )['record'];
+            );
+        } else {
 
 
-            if (isset($record['enrichment'])){
-                // todo bioRxiv & medRxiv enrichment updates
-            }
+            $response = Episciences_Repositories::callHook(
+                'hookApiRecords', [
+                    'identifier' => $identifier,
+                    'repoId' => $repoId,
+                    'version' => $version
+                ]
+            );
 
+
+            $record = $response['record'];
 
         }
 
@@ -2622,17 +2628,21 @@ class Episciences_PapersManager
                 'repoId' => $repoId
             ]);
 
+
+        $enrichment = $response['enrichment'] ?? [];
+        $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
+
         if (array_key_exists('record', $result)) {
             $record = $result['record'];
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($docId);
+
+            $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId ];
+
             // add all files
             $hookFiles = Episciences_Repositories::callHook(
-                'hookFilesProcessing', [
-                    'repoId' => $repoId,
-                    'identifier' => $identifier,
-                    'docId' => $docId
-                ]
+                'hookFilesProcessing',
+                (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
             );
 
             if (isset($hookFiles['affectedRows'])){

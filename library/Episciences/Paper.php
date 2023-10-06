@@ -321,6 +321,18 @@ class Episciences_Paper
 
     ];
 
+    public const DEFAULT_TYPE = 'article';
+    public const DATASET_TYPE = 'dataset';
+    public const DATA_PAPER_TYPE = 'dataPaper';
+    public const OTHER_TYPE = 'other';
+
+    public const ENUM_TYPES = [
+        self::DEFAULT_TYPE,
+        self::DATASET_TYPE,
+        self::DATA_PAPER_TYPE,
+        self::OTHER_TYPE
+    ];
+
     /**
      * @var int
      */
@@ -408,7 +420,8 @@ class Episciences_Paper
     private $_datasets;
     /** @var string */
     private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
-    public $hasHook; // @see self:: setRepoid();
+    public $hasHook; // @see self::setRepoid()
+    protected string $_type = self::DEFAULT_TYPE;
 
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'doaj', 'zbjats', 'json'];
 
@@ -903,8 +916,13 @@ class Episciences_Paper
     public function setRepoid($repoId): self
     {
         $this->_repoId = (int)$repoId;
+
         $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
-            $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID;
+            (
+                $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ||
+                Episciences_Repositories::isDataverse($repoId)
+            );
+
         return $this;
     }
 
@@ -1905,6 +1923,7 @@ class Episciences_Paper
     public function updateXml()
     {
         $xml = $this->getRecord();
+
         if (!$xml) {
             return false;
         }
@@ -1965,7 +1984,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
         $node->appendChild($dom->createElement('repoLabel', Episciences_Repositories::getLabel($this->getRepoid())));
-
+        $node->appendChild($dom->createElement('submissionType', ucfirst($this->getType())));
 
         //get licence paper
         if (!empty($this->getDocid())) {
@@ -2674,7 +2693,7 @@ class Episciences_Paper
         $confirm = '<p style="margin:1em;">';
         $confirm .= '<button class="' . $style . '" onclick="hideResultMessage();">';
         $confirm .= '<span class="glyphicon glyphicon-ok-circle"></span>&nbsp;';
-        $confirm .= $translator ? $translator->translate('Remplacer') : 'Replace' ;
+        $confirm .= $translator ? $translator->translate('Remplacer') : 'Replace';
         $confirm .= '</button>';
         $confirm .= $exitLink;
         $confirm .= '</p>';
@@ -2704,7 +2723,7 @@ class Episciences_Paper
             // Arrêt du processus de publication
             if ($status === self::STATUS_ABANDONED) {
 
-                $selfMsg = $translator?
+                $selfMsg = $translator ?
                     $translator->translate("On ne peut pas re-proposer un article <strong>abandonné</strong>, Pour de plus amples renseignements, veuillez contacter le comité éditorial.") :
                     "You can't re-propose an abandoned article. For more information please contact the editorial committee.";
 
@@ -2744,7 +2763,7 @@ class Episciences_Paper
 
                     $selfMsg .= $translator ?
                         $translator->translate('pour répondre à la demande de modification.') :
-                    "to meet the demand of requested changes.";
+                        "to meet the demand of requested changes.";
 
 
                 }
@@ -2763,7 +2782,7 @@ class Episciences_Paper
                 $selfMsg = $result['message'];
                 $selfMsg .= $translator ?
                     $translator->translate("Cet article est en cours d'évaluation.") :
-                "This article is under review.";
+                    "This article is under review.";
                 $selfMsg .= $canNotChangeIt;
                 $result['message'] = $selfMsg;
             } elseif ($status === self::STATUS_ACCEPTED) { /*Accepté*/
@@ -2777,7 +2796,7 @@ class Episciences_Paper
                     $selfMsg = $result['message'];
                     $selfMsg .= $translator ?
                         $translator->translate('Cet article a déjà été soumis et refusé. Avez-vous apporté des modifications majeures au document ?') :
-                    "This article has already been submitted and refused. Have you made any major changes to the document?";
+                        "This article has already been submitted and refused. Have you made any major changes to the document?";
                     $selfMsg .= $confirm;
                     $result['message'] = $selfMsg;
                     $result['oldPaperId'] = $this->getPaperid();
@@ -2788,7 +2807,7 @@ class Episciences_Paper
                     $message = $warning . $canNotChangeIt . ' ';
                     $message .= $translator ?
                         $translator->translate('Cet article a déjà été soumis et refusé, merci de contacter le comité editorial.') :
-                    "This article has already been submitted and refused, please contact the editorial committee.";
+                        "This article has already been submitted and refused, please contact the editorial committee.";
                     $result['message'] = $message;
                 }
 
@@ -2803,7 +2822,7 @@ class Episciences_Paper
                 $selfMsg .= ' [<strong>v' . $this->getVersion() . '</strong>] ';
                 $selfMsg .= $translator ?
                     $translator->translate('du document existe déjà dans la revue.') :
-                "of the document already exists in journal.";
+                    "of the document already exists in journal.";
                 $selfMsg .= '&nbsp;';
                 $selfMsg .= '<a class="btn btn-default btn-sm" href="' . $link . '">';
                 $selfMsg .= '<span class="fas fa-redo" style="margin-right: 5px;"></span>';
@@ -2814,7 +2833,7 @@ class Episciences_Paper
             } else { // others status
                 $result['message'] = $translator ?
                     $translator->translate("Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer.") :
-                "The publication process of this article is in progress, so you will not be able to replace it.";
+                    "The publication process of this article is in progress, so you will not be able to replace it.";
             }
 
             $result['oldDocId'] = (int)$docId;
@@ -3053,7 +3072,6 @@ class Episciences_Paper
     /**
      * save paper to database
      * @return bool
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      */
     public function save(): bool
@@ -3079,7 +3097,8 @@ class Episciences_Paper
                 'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
                 'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
                 'FLAG' => $this->getFlag(),
-                'PASSWORD' => $this->getPassword()
+                'PASSWORD' => $this->getPassword(),
+                'TYPE' => $this->getType(),
             ];
 
             if ($this->getPublication_date()) {
@@ -3097,18 +3116,21 @@ class Episciences_Paper
                 if (!$this->getPaperid()) {
                     $this->setPaperid($this->getDocid());
                     $this->save();
-                    // insert author dc:creator to json author in the database
-                    Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($this, $this->getPaperid());
+
                     //insert licence when save paper
-                    $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int) $this->getVersion());
-                    Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
-                    // try to enrich with TEI HAL
-                    Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB((string) $this->getRepoid(),$this->getPaperid(),$this->getIdentifier(),(int) $this->getVersion());
+                    try {
+                        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
+                        Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
+
+                    } catch (\GuzzleHttp\Exception\GuzzleException | JsonException $e) {
+                        trigger_error($e->getMessage());
+                    }
                 } else {
                     // keep datalinked and insert line with the new doc id
                     Episciences_Paper_DatasetsManager::updateAllByDocId($this);
                     $this->setPosition($this->applyPositioningStrategy());
                 }
+
                 return true;
             }
 
@@ -4092,18 +4114,18 @@ class Episciences_Paper
         $formatedDatasets = [];
         $sourcesList = [];
         $iSourceList = 1;
-        foreach ($notFormatedDatasets as $unorderedDatasets){
+        foreach ($notFormatedDatasets as $unorderedDatasets) {
             /** @var Episciences_Paper_Dataset $unorderedDatasets */
             $typeLd = '';
             if (((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::SCHOLEXPLORER_ID) && $unorderedDatasets->getMetatext() !== null) {
                 $typeLd = Episciences_Paper_DatasetsMetadataManager::getTypeLdMetadata($unorderedDatasets->getMetatext());
-            } elseif ((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::EPI_USER_ID && $unorderedDatasets->getCode() !== null && $unorderedDatasets->getCode() !== "swhidId_s"){
+            } elseif ((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::EPI_USER_ID && $unorderedDatasets->getCode() !== null && $unorderedDatasets->getCode() !== "swhidId_s") {
                 $typeLd = $unorderedDatasets->getCode();
             } else {
                 $typeLd = $unorderedDatasets->getName();
             }
             $sourceLabel = $unorderedDatasets->getSourceLabel($unorderedDatasets->getSourceId());
-            if (!array_key_exists($sourceLabel,$sourcesList)) {
+            if (!array_key_exists($sourceLabel, $sourcesList)) {
                 $sourcesList[$sourceLabel] = $iSourceList;
                 $iSourceList++;
             }
@@ -4127,7 +4149,7 @@ class Episciences_Paper
         if (isset($formatedDatasets['software'])) {
             $formatedDatasets['software'] = Episciences_Paper_DatasetsManager::putUserLdFirst($formatedDatasets['software']);
         }
-        if (!empty($formatedDatasets)){
+        if (!empty($formatedDatasets)) {
             $formatedDatasets["listSources"] = $sourcesList;
         }
         return $formatedDatasets;
@@ -4495,7 +4517,8 @@ class Episciences_Paper
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function getCoAuthors() : array {
+    public function getCoAuthors(): array
+    {
         return $this->_coAuthors = Episciences_PapersManager::getCoAuthors($this->getDocid());
     }
 
@@ -4529,16 +4552,28 @@ class Episciences_Paper
     }
 
 
-
-    public function getBibRef() :array {
+    public function getBibRef(): array
+    {
         if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
             ($this->getStatus() === self::STATUS_CE_READY_TO_PUBLISH ||
                 $this->getStatus() === self::STATUS_PUBLISHED)) {
-            $urlPdf= APPLICATION_URL . '/' . $this->getDocid() . '/pdf';
+            $urlPdf = APPLICATION_URL . '/' . $this->getDocid() . '/pdf';
             $citations = Episciences_BibliographicalsReferencesTools::getBibRefFromApi($urlPdf);
             return $citations;
         }
         return [];
     }
+
+    public function getType(): string
+    {
+        return $this->_type;
+    }
+
+    public function setType(string $type = self::DEFAULT_TYPE): \Episciences_Paper
+    {
+        $this->_type = !in_array($type, self::ENUM_TYPES) ? self::DEFAULT_TYPE : $type;
+        return $this;
+    }
+
 
 }

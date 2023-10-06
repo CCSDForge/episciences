@@ -101,6 +101,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         }
 
         define('SESSION_NAMESPACE', APPLICATION_MODULE . '-' . RVCODE);
+
+        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
     }
 
     /**

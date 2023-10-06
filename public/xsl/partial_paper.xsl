@@ -70,6 +70,7 @@
                                 <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Proposé par : ')"/>
                                 <xsl:value-of select="episciences/submitter"/> (<xsl:value-of
                                     select="php:function('Episciences_View_Helper_Date::Date', string(episciences/submission_date))"/>)
+                                <span class="label label-default pull-right"><xsl:value-of select="php:function('Ccsd_Tools::translate',string(episciences/submissionType))"/></span>
                             </div>
                         </xsl:if>
                     </i>
