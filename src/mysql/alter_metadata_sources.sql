@@ -92,7 +92,7 @@ SET
     `doi_prefix` = '10.5281',
     `api_url` = 'https://zenodo.org/api/',
     `doc_url` = 'https://zenodo.org/record/%%ID',
-    `paper_url` = 'https://zenodo.org/record/files/%%ID'
+    `paper_url` = ''
 WHERE
     `metadata_sources`.`id` = 4;
 
@@ -136,9 +136,8 @@ WHERE
             'user'
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
 
+INSERT INTO `metadata_sources` (`id`, `name`, `type`, `status`, `identifier`, `base_url`, `doi_prefix`, `api_url`, `doc_url`, `paper_url`) VALUES
+(14, 'DaRUS', 'dataverse', 1, NULL, NULL, '10.18419', 'https://darus.uni-stuttgart.de/api/v1/', 'https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=%%ID', ''),
+(15, 'Recherche Data Gouv', 'dataverse', 1, NULL, NULL, '10.15454', 'https://entrepot.recherche.data.gouv.fr/api/v1/', 'https://entrepot.recherche.data.gouv.fr/dataset.xhtml?persistentId=%%ID', '');
 
-UPDATE `metadata_sources` SET `paper_url` = '' WHERE `metadata_sources`.`id` = 4;
-UPDATE `metadata_sources` SET `doc_url` = 'https://entrepot.recherche.data.gouv.fr/dataset.xhtml?persistentId=%%ID' WHERE `metadata_sources`.`id` = 15;
-UPDATE `metadata_sources` SET `doc_url` = 'https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=%%ID' WHERE `metadata_sources`.`id` = 14;
-UPDATE `metadata_sources` SET `name` = 'Recherche Data Gouv' WHERE `metadata_sources`.`id` = 15;
 
