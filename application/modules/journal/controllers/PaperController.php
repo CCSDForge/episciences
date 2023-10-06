@@ -25,14 +25,42 @@ class PaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
 
         // check if paper exists
-        if (!$paper || $paper->hasHook || $paper->getRvid() !== RVID || $paper->getRepoid() === 0) {
+        if (!$paper || $paper->getRvid() !== RVID || $paper->getRepoid() === 0) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             return;
         }
 
+        $pdf_name = null;
+        $url = null;
 
-        $pdf_name = $paper->getIdentifier() . '.pdf';
+        if ($paper->hasHook) {
+
+            $files = $paper->getFiles();
+
+
+            /** @var Episciences_Paper_File $file */
+
+            foreach ($files as $file) {
+
+                if ($file->getFileType() === 'pdf'){
+                    $pdf_name = $file->getFileName();
+                    $url = Episciences_Repositories::isDataverse($paper->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
+                    break;
+                }
+
+            }
+        } else {
+            $pdf_name = $paper->getIdentifier() . '.pdf';
+            $url = $paper->getPaperUrl();
+        }
+
+        if (!$pdf_name || !$url) {
+            $this->view->message = 'Not found PDF';
+            $this->renderScript('error/http_error.phtml');
+            return;
+        }
+
 
         $this->requestingAnUnpublishedFile($paper);
 
@@ -57,7 +85,6 @@ class PaperController extends PaperDefaultController
         $client = new Client($clientHeaders);
         $mainDocumentContent = '';
         try {
-            $url = $paper->getPaperUrl();
             $res = $client->get($url);
             $mainDocumentContent = $res->getBody()->getContents();
         } catch (GuzzleHttp\Exception\RequestException $e) {
@@ -476,7 +503,7 @@ class PaperController extends PaperDefaultController
 
         $this->view->hasHook = $hasHook;
         $this->view->isRequiredVersion = $hasHook ? Episciences_Repositories::callHook(
-            'isRequiredVersion', [
+            'hookIsRequiredVersion', [
                 'repoId' => $paper->getRepoid()
             ])['result'] : true;
 
@@ -1725,7 +1752,10 @@ class PaperController extends PaperDefaultController
         $hasHook = $paper->isTmp() && isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
         $currentVersion = 1;
 
-        if ($paper->hasHook || $hasHook) {
+        if (
+            ($paper->hasHook || $hasHook) &&
+            !Episciences_Repositories::isDataverse((int)$post[self::SEARCH_DOC_STR]['h_repoId'])
+        ) {
 
             $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post[self::SEARCH_DOC_STR]['docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId']]);
 
@@ -1734,8 +1764,14 @@ class PaperController extends PaperDefaultController
             }
 
             $conceptIdentifier = null;
+            $hookParams = ['identifier' => $post[self::SEARCH_DOC_STR]['h_docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId']];
 
-            $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $post[self::SEARCH_DOC_STR]['h_docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId']]);
+            if (isset($post[self::SEARCH_DOC_STR]['version']) && $post[self::SEARCH_DOC_STR]['version'] !== ''){
+                $hookParams['version'] = $post[self::SEARCH_DOC_STR]['version'];
+
+            }
+
+            $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', $hookParams);
 
             if (isset($hookApiRecord['conceptrecid'])) {
                 $conceptIdentifier = $hookApiRecord['conceptrecid'];
@@ -1838,8 +1874,24 @@ class PaperController extends PaperDefaultController
                 $newPaper->saveOtherVolumes();
             }
 
-            Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $newPaper->getRepoid(), 'identifier' => $newPaper->getIdentifier(), 'docId' => $newPaper->getDocid()]);
+            $enrichment = [];
+            $isEnrichment = isset($post['h_enrichment']) && $post['h_enrichment'] !== '';
 
+            if ($isEnrichment) {
+                try {
+                    $enrichment = json_decode($post['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
+                    Episciences_Submit::enrichmentProcess($newPaper, $enrichment);
+
+                } catch (Exception $e) {
+                    error_log($e->getMessage());
+                }
+            }
+
+            $hookParams = ['repoId' => $newPaper->getRepoid(), 'identifier' => $newPaper->getIdentifier(), 'docId' => $newPaper->getDocid()];
+
+            $response = Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
+
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', array_merge($hookParams, ['response' => $response]));
             // Author comment
             $author_comment = new Episciences_Comment();
             // admin can submit new version
@@ -3368,7 +3420,8 @@ class PaperController extends PaperDefaultController
             $result = 0;
 
             try {
-                $result = Episciences_PapersManager::updateRecordData($docId);
+                $paper = Episciences_PapersManager::get($docId);
+                $result = Episciences_PapersManager::updateRecordData($paper);
 
                 if ($result !== 0) {
                     $message = "Les métadonnées de cet article ont bien été mises à jour.";
@@ -3377,7 +3430,7 @@ class PaperController extends PaperDefaultController
                 }
 
                 // update index even if nothing changed
-                $paper = Episciences_PapersManager::get($docId);
+
                 if ($paper->isPublished()) {
                     $resOfIndexing = Episciences_Paper::indexPaper($docId, Ccsd_Search_Solr_Indexer::O_UPDATE);
                     if (!$resOfIndexing) {

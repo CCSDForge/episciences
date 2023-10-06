@@ -13,12 +13,28 @@ class Episciences_Paper_FilesManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
             ->from(T_PAPER_FILES)
-            ->where('doc_id = ?', $docId);
+            ->where('doc_id = ?', $docId)
+            ->order('file_size DESC');
 
         $rows = $db->fetchAssoc($sql);
 
         foreach ($rows as $value) {
-            $oResult[] = new Episciences_Paper_File($value);
+            $file = new Episciences_Paper_File($value);
+
+            if (Episciences_Repositories::isDataverse($file->getSource())) {
+
+                $dUrl = Episciences_Repositories::getApiUrl($file->getSource());
+                $dUrl .= '/access/datafile/:persistentId?persistentId=';
+                $dUrl .= Episciences_Repositories_Dataverse_Hooks::IDENTIFIER_PREFIX;
+                $dUrl .= str_replace('https://doi.org/', '', $file->getSelfLink());
+                $file->_downloadLike = $dUrl;
+
+            } else {
+                $file->_downloadLike = $file->getSelfLink();
+
+            }
+
+            $oResult[] = $file;
         }
 
         return $oResult;
@@ -95,10 +111,10 @@ class Episciences_Paper_FilesManager
                 $file = new Episciences_Paper_File($file);
             }
 
-            $values[] = '(' . $db->quote($file->getDocId()) . ',' . $db->quote($file->getFileName()) . ',' . $db->quote($file->getChecksum()) . ',' . $db->quote($file->getChecksumType()) . ',' . $db->quote($file->getSelfLink()) . ',' . $db->quote($file->getFileSize()) . ',' . $db->quote($file->getFileType()) . ')';
+            $values[] = '(' . $db->quote($file->getDocId()) . ',' . $db->quote($file->getSource()) . ',' . $db->quote($file->getFileName()) . ',' . $db->quote($file->getChecksum()) . ',' . $db->quote($file->getChecksumType()) . ',' . $db->quote($file->getSelfLink()) . ',' . $db->quote($file->getFileSize()) . ',' . $db->quote($file->getFileType()) . ')';
         }
 
-        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_FILES) . ' (`doc_id`, `file_name`, `checksum`, `checksum_type`, `self_link`, `file_size`, `file_type`) VALUES ';
+        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_FILES) . ' (`doc_id`, `source`, `file_name`, `checksum`, `checksum_type`, `self_link`, `file_size`, `file_type`) VALUES ';
 
         if (!empty($values)) {
             try {

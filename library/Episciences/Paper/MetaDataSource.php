@@ -8,6 +8,13 @@ class Episciences_Paper_MetaDataSource
     protected string $_name;
 
     protected string $_type;
+    protected ?string $_identifier;
+    protected ?string $_doiPrefix;
+    protected ?string $_apiUrl;
+    protected ?string $_docUrl;
+    protected ?string $_paperUrl;
+
+    protected bool $_status;
 
 
     /**
@@ -103,6 +110,71 @@ class Episciences_Paper_MetaDataSource
     public function setType(string $type): self
     {
         $this->_type = $type;
+        return $this;
+    }
+
+    public function getStatus(): bool
+    {
+        return $this->_status;
+    }
+
+    public function setStatus(bool $status): self
+    {
+        $this->_status = $status;
+        return $this;
+    }
+    public function getIdentifier(): string
+    {
+        return $this->_oaiIdentifier;
+    }
+
+    public function setIdentifier(string $identifier = null): self
+    {
+        $this->_identifier = $identifier;
+        return $this;
+    }
+
+    public function getDoiPrefix(): string
+    {
+        return $this->_oaiPrefix;
+    }
+
+    public function setDoiPrefix(string $doiPrefix = null): self
+    {
+        $this->_doirefix = $doiPrefix;
+        return  $this;
+    }
+
+    public function getApiUrl(): string
+    {
+        return $this->_apiUrl;
+    }
+
+    public function setApiUrl(string $apiUrl = null): self
+    {
+        $this->_apiUrl = $apiUrl;
+        return $this;
+    }
+
+    public function getDocUrl(): string
+    {
+        return $this->_docUrl;
+    }
+
+    public function setDocUrl(string $docUrl = null): self
+    {
+        $this->_docUrl = $docUrl;
+        return $this;
+    }
+
+    public function getPaperUrl(): string
+    {
+        return $this->_paperUrl;
+    }
+
+    public function setPaperUrl(string $paperUrl = null): self
+    {
+        $this->_paperUrl = $paperUrl;
         return $this;
     }
 }

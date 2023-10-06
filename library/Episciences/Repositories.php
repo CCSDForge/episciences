@@ -9,24 +9,24 @@ use GuzzleHttp\Exception\GuzzleException;
 class Episciences_Repositories
 {
 
-    public const TYPE_DATA = 'data';
-    const TYPE_PAPERS = 'papers';
+    public const TYPE_DATAVERSE = 'dataverse';
+    public const TYPE_PAPERS_REPOSITORY = 'repository';
 
-    public const  REPO_LABEL = 'label';
+    public const  REPO_LABEL = 'name';
     public const  REPO_IDENTIFIER = 'identifier';
-    public const  REPO_DOCURL = 'docurl';
-    public const  REPO_PAPERURL = 'paperurl';
-    public const  REPO_BASEURL = 'baseurl';
+    public const  REPO_DOCURL = 'doc_url';
+    public const  REPO_PAPERURL = 'paper_url';
+    public const  REPO_BASEURL = 'base_url';
     public const  REPO_EXAMPLE = 'example';
     public const  REPO_TYPE = 'type';
     public const  REPO_API_URL = 'api_url';
 
     public const REPO_DOI_PREFIX = 'doi_prefix';
 
-    public const EPISCIENCES_REPO_ID = '0';
+    // IDs in metadata_sources table : Episciences repository => '0'
     public const HAL_REPO_ID = '1';
     public const ARXIV_REPO_ID = '2';
-    //public const CWI_REPO_ID = '3';
+    public const CWI_REPO_ID = '3';
     public const ZENODO_REPO_ID = '4';
     public const SCHOLEXPLORER_ID = '5';
     public const DATACITE_REPO_ID = '7';
@@ -37,124 +37,71 @@ class Episciences_Repositories
 
     public const EPI_USER_ID = '12';
 
-    // todo : to be converted to a database table
-    private static array $_repositories = [
-        self::EPISCIENCES_REPO_ID => [
-            self::REPO_LABEL => 'Episciences',
-            self::REPO_IDENTIFIER => null,
-            self::REPO_DOCURL => '/tmp_files/%%ID',
-            self::REPO_PAPERURL => '/tmp_files/%%ID'
+    private static array $_repositories = [];
 
-        ],
-        self::HAL_REPO_ID => [
-            self::REPO_LABEL => 'Hal',
-            self::REPO_BASEURL => 'https://api.archives-ouvertes.fr/oai/hal/',
-            self::REPO_IDENTIFIER => 'oai:HAL:%%IDv%%VERSION',
-            self::REPO_EXAMPLE => 'hal-01234567',
-            self::REPO_DOCURL => 'https://hal.science/%%IDv%%VERSION',
-            self::REPO_PAPERURL => 'https://hal.science/%%IDv%%VERSION/document',
-            self::REPO_TYPE => self::TYPE_PAPERS,
-            self::REPO_API_URL => 'https://api.archives-ouvertes.fr'
-        ],
-        self::ARXIV_REPO_ID => [
-            // identifier example: 1511.01076
-            self::REPO_LABEL => 'arXiv',
-            self::REPO_EXAMPLE => '0123.45678',
-            self::REPO_BASEURL => 'http://export.arXiv.org/oai2',
-            self::REPO_IDENTIFIER => 'oai:arXiv.org:%%ID',
-            self::REPO_DOCURL => 'https://arxiv.org/abs/%%IDv%%VERSION',
-            self::REPO_PAPERURL => 'https://arxiv.org/pdf/%%IDv%%VERSION',
-            self::REPO_TYPE => self::TYPE_PAPERS,
-            self::REPO_DOI_PREFIX => '10.48550'
-        ],
-        // OAI is down.
-        /*  self::CWI_REPO_ID => [
-                self::REPO_LABEL => 'CWI',
-                self::REPO_EXAMPLE => '22211',
-                self::REPO_BASEURL => 'https://ir.cwi.nl/oai/',
-                self::REPO_IDENTIFIER => 'oai:cwi.nl:%%ID',
-                self::REPO_DOCURL => 'http://persistent-identifier.org/?identifier=urn:nbn:nl:ui:18-%%ID',
-                self::REPO_PAPERURL => 'https://ir.cwi.nl/pub/%%ID/%%ID.pdf',
-                self::REPO_TYPE => self::TYPE_PAPERS
-            ],*/
-
-        self::ZENODO_REPO_ID => [
-            // example https://zenodo.org/oai2d?verb=GetRecord&identifier=oai:zenodo.org:3752641&metadataPrefix=oai_dc
-            self::REPO_LABEL => 'Zenodo',
-            self::REPO_EXAMPLE => '123456 / (DOI)10.5281/zenodo.123456',
-            self::REPO_BASEURL => 'https://zenodo.org/oai2d',
-            self::REPO_IDENTIFIER => 'oai:zenodo.org:%%ID',
-            self::REPO_DOCURL => 'https://zenodo.org/record/%%ID',
-            self::REPO_PAPERURL => 'https://zenodo.org/record/files/%%ID',
-            self::REPO_DOI_PREFIX => '10.5281',
-            self::REPO_TYPE => self::TYPE_DATA,
-            self::REPO_API_URL => 'https://zenodo.org/api/'
-
-        ],
-        self::BIO_RXIV_ID => [
-            self::REPO_EXAMPLE => '(DOI)10.1101/339747',
-            self::REPO_TYPE => self::TYPE_PAPERS,
-            self::REPO_API_URL => 'https://api.biorxiv.org/details/biorxiv/',
-            self::REPO_BASEURL => null,
-            self::REPO_DOI_PREFIX => Episciences_Repositories_BioMedRxiv::DOI_PREFIX,
-            self::REPO_LABEL => 'bioRxiv',
-            self::REPO_IDENTIFIER => 'oai:bioRxiv.org:%%ID',
-            self::REPO_DOCURL => 'https://www.biorxiv.org/content/%%IDv%%VERSION',
-            self::REPO_PAPERURL => 'https://www.biorxiv.org/content/%%IDv%%VERSION.full.pdf'
-
-        ],
-        self::MED_RXIV_ID => [
-            self::REPO_EXAMPLE => '(DOI)10.1101/339747',
-            self::REPO_TYPE => self::TYPE_PAPERS,
-            self::REPO_API_URL => 'https://api.biorxiv.org/details/medrxiv/',
-            self::REPO_BASEURL => null,
-            self::REPO_DOI_PREFIX => Episciences_Repositories_BioMedRxiv::DOI_PREFIX,
-            self::REPO_LABEL => 'medRxiv',
-            self::REPO_IDENTIFIER => 'oai:bioRxiv.org:%%ID',
-            self::REPO_DOCURL => 'https://www.medrxiv.org/content/%%IDv%%VERSION',
-            self::REPO_PAPERURL => 'https://www.medrxiv.org/content/%%IDv%%VERSION.full.pdf'
-
-        ],
+    public const IDENTIFIER_EXEMPLES = [
+        self::HAL_REPO_ID => 'hal-01234567',
+        self::ARXIV_REPO_ID => '0123.45678',
+        self::CWI_REPO_ID => '22211',
+        self::ZENODO_REPO_ID => '123456 / (DOI)10.5281/zenodo.123456',
+        self::BIO_RXIV_ID => '(DOI) 10.1101/339747',
+        self::MED_RXIV_ID => '(DOI) 10.1101/339747'
     ];
-
 
     public static function getRepositories(): array
     {
+
+        if (empty(self::$_repositories)) {
+
+            try {
+                self::$_repositories = array_filter(Zend_Registry::get('metadataSources'), static function ($source) {
+                    return (
+                        $source[self::REPO_LABEL] !== 'Software Heritage' &&
+                        ($source[self::REPO_TYPE] === self::TYPE_DATAVERSE || $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY)
+                    );
+                });
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage(), E_USER_ERROR);
+            }
+
+        }
+
         return self::$_repositories;
+
     }
 
     public static function getRepoIdByLabel($label)
     {
-        $r = Episciences_Tools::search_multiarray(self::$_repositories, $label);
+        $r = Episciences_Tools::search_multiarray(self::getRepositories(), $label);
         return ($r) ? $r[0] : null;
     }
 
     public static function getLabel($repoId)
     {
-        return isset (self::$_repositories[$repoId]) ? self::$_repositories[$repoId][self::REPO_LABEL] : '';
+        return isset (self::getRepositories()[$repoId]) ? self::getRepositories()[$repoId][self::REPO_LABEL] : '';
     }
 
     public static function getBaseUrl($repoId)
     {
-        return self::$_repositories[$repoId][self::REPO_BASEURL];
+        return self::getRepositories()[$repoId][self::REPO_BASEURL];
     }
 
     public static function getIdentifier($repoId, $identifier, $version = null)
     {
         if ($version) {
-            return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::$_repositories[$repoId][self::REPO_IDENTIFIER]);
+            return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
         }
-        return str_replace(['%%ID', 'v%%VERSION'], [$identifier, ''], self::$_repositories[$repoId][self::REPO_IDENTIFIER]);
+        return str_replace(['%%ID', 'v%%VERSION'], [$identifier, ''], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
     }
 
     public static function getDocUrl($repoId, $identifier, $version = null)
     {
-        return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::$_repositories[$repoId][self::REPO_DOCURL]);
+        return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_DOCURL]);
     }
 
     public static function getApiUrl($repoId)
     {
-        return self::$_repositories[$repoId][self::REPO_API_URL] ?? '';
+        return self::getRepositories()[$repoId][self::REPO_API_URL] ?? '';
     }
 
     /**
@@ -162,15 +109,16 @@ class Episciences_Repositories
      * @param $identifier
      * @param null $version
      * @return string
+     * @throws Zend_Exception
      */
     public static function getPaperUrl($repoId, $identifier, $version = null): string
     {
-        return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::$_repositories[$repoId][self::REPO_PAPERURL]);
+        return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_PAPERURL]);
     }
 
     public static function getRepoDoiPrefix($repoId)
     {
-        return Ccsd_Tools::ifsetor(self::$_repositories[$repoId][self::REPO_DOI_PREFIX], self::REPO_DOI_PREFIX);
+        return Ccsd_Tools::ifsetor(self::getRepositories()[$repoId][self::REPO_DOI_PREFIX], self::REPO_DOI_PREFIX);
     }
 
     /**
@@ -184,6 +132,7 @@ class Episciences_Repositories
         if (!class_exists($className)) {
             $className = '';
         }
+
         return $className;
     }
 
@@ -193,7 +142,8 @@ class Episciences_Repositories
      */
     private static function makeHookClassNameByRepoId(int $repoId): string
     {
-        return __CLASS__ . '_' . ucfirst(self::getLabel($repoId)) . '_Hooks';
+        $label = !self::isDataverse($repoId) ? self::getLabel($repoId) : self::TYPE_DATAVERSE;
+        return __CLASS__ . '_' . ucfirst($label) . '_Hooks';
     }
 
     /**
@@ -231,10 +181,30 @@ class Episciences_Repositories
                 continue;
             }
 
-            $labels[$repoId] = $repository['label'];
+            $labels[$repoId] = $repository[self::REPO_LABEL];
         }
 
         return $labels;
+
+    }
+
+    public static function isDataverse(int $repoId): bool
+    {
+
+
+        if (!isset(self::getRepositories()[$repoId][self::REPO_TYPE])) {
+            return false;
+        }
+
+        return self::getRepositories()[$repoId][self::REPO_TYPE] === self::TYPE_DATAVERSE;
+    }
+
+    public static function getIdentifierExemple(int $repoId) :string
+    {
+
+        return !self::isDataverse($repoId) ?
+            self::IDENTIFIER_EXEMPLES[(string)$repoId] :
+            Episciences_Repositories_Dataverse_Hooks::DATAVERSE_IDENTIFIER_EXEMPLE;
 
     }
 }

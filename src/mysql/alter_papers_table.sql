@@ -1,1 +1,2 @@
 ALTER TABLE `PAPERS` ADD `PASSWORD` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL AFTER `FLAG`;
+ALTER TABLE `PAPERS` ADD `TYPE` ENUM('article','dataset','dataPaper','proceedingAct','other') NOT NULL DEFAULT 'article' AFTER `DOI`, ADD INDEX `type` (`TYPE`);

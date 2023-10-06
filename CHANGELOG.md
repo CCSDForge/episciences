@@ -15,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-
 ## Unreleased
 ### Added
 - Display revision deadlines and make them editable: [#367](https://github.com/CCSDForge/episciences/issues/367) 
@@ -29,8 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - icon to make it easier to identify the user in revision requests section.
 - script to import volumes and volume metadata from journals translation files into the database.
 - Integration of api and application for the bibliographical references
+- [#374](https://github.com/CCSDForge/episciences/issues/374): Importing orcid and affiliations from Zenodo
+- Compatibility Dataverse
 
 ### Changed
+-  repositories config. is now stored in DB. @see /scr/mysql/alter_metadata_sources.sql
 - Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
     * optional file attachment in "Contact without sending a new version" and "answer without any modifications".
 - UX: icon to make it easier to identify the user in revision requests section

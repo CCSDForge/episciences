@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @property string $_downloadLike
+ */
 class Episciences_Paper_File
 {
 
@@ -32,6 +35,7 @@ class Episciences_Paper_File
 
     /** @var string */
     protected $_selfLink;
+    protected int $_source;
 
     /** @var DateTime */
     protected $_timeModified = 'CURRENT_TIMESTAMP';
@@ -240,6 +244,17 @@ class Episciences_Paper_File
     public function setTimeModified(string $timeModified): Episciences_Paper_File
     {
         $this->_timeModified = new DateTime($timeModified);
+        return $this;
+    }
+
+    public function getSource(): int
+    {
+        return $this->_source;
+    }
+
+    public function setSource(int $source): self
+    {
+        $this->_source = $source;
         return $this;
     }
 

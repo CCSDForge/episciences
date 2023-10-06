@@ -11,11 +11,8 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
     public const RESPONSE_FORMAT = 'json';
 
     public const DOI_PREFIX = '10.1101';
-    public const ENRICHMENT = 'enrichment';
-    public const CONTRIB_ENRICHMENT = 'contributors';
     public const INSTITUTIONS = 'institutions';
     public const LICENSE = 'license';
-    public const CITATIONS = 'citations';
     public const KEYWORDS = 'kwd';
 
 
@@ -95,9 +92,9 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
             'record' => self::toDublinCore($requestedVersion)
         ];
 
-        if (isset($requestedVersion[self::ENRICHMENT])) {
-            unset($requestedVersion[self::ENRICHMENT][self::KEYWORDS], $requestedVersion[self::ENRICHMENT][self::LICENSE]); // data already added to the DC @see self::toDublinCore
-            $result[self::ENRICHMENT] = $requestedVersion[self::ENRICHMENT];
+        if (isset($requestedVersion[Episciences_Repositories_Common::ENRICHMENT])) {
+            unset($requestedVersion[Episciences_Repositories_Common::ENRICHMENT][self::KEYWORDS], $requestedVersion[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::ENRICHMENT]); // data already added to the DC @see self::toDublinCore
+            $result[Episciences_Repositories_Common::ENRICHMENT] = $requestedVersion[Episciences_Repositories_Common::ENRICHMENT];
         }
 
 
@@ -166,12 +163,9 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
         $this->doiPrefix = $doiPrefix;
     }
 
-    public static function isRequiredVersion(): array
+    public static function hookIsRequiredVersion(): array
     {
-        return [
-            'result' => true
-        ];
-
+        return ['result' => Episciences_Repositories_Common::isRequiredVersion()];
     }
 
     /**
@@ -181,7 +175,6 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
     private static function toDublinCore(array $currentVersion): string
     {
 
-        $result = '';
         $urlIdentifier = '';
 
         if (isset($currentVersion['server'], $currentVersion['doi'])) {
@@ -198,23 +191,16 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
             trigger_error($message);
         }
 
-        $headers = [
-            'identifier' => $urlIdentifier,
-            'datestamp' => $currentVersion['date'] ?? '',
-            'setSpec' => [$currentVersion['category'] ?? '']
-
-        ];
-
         $strAuthors = $currentVersion['authors'] ?? '';
         $authors = explode(';', $strAuthors);
 
         $subject = $currentVersion['category'] ?? [];
 
         if (
-            isset($currentVersion[self::ENRICHMENT][self::KEYWORDS]) &&
-            !empty(($currentVersion[self::ENRICHMENT][self::KEYWORDS]))
+            isset($currentVersion[Episciences_Repositories_Common::ENRICHMENT][self::KEYWORDS]) &&
+            !empty(($currentVersion[Episciences_Repositories_Common::ENRICHMENT][self::KEYWORDS]))
         ) {
-            $subject = $currentVersion[self::ENRICHMENT][self::KEYWORDS];
+            $subject = $currentVersion[Episciences_Repositories_Common::ENRICHMENT][self::KEYWORDS];
         }
 
         $xmlElements = [
@@ -228,8 +214,8 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
             'source' => [$urlIdentifier],
         ];
 
-        if (isset($currentVersion[self::ENRICHMENT][self::LICENSE]) && $currentVersion[self::ENRICHMENT][self::LICENSE] !== '') {
-            $xmlElements['rights'][] = $currentVersion[self::ENRICHMENT][self::LICENSE];
+        if (isset($currentVersion[Episciences_Repositories_Common::ENRICHMENT][self::LICENSE]) && $currentVersion[Episciences_Repositories_Common::ENRICHMENT][self::LICENSE] !== '') {
+            $xmlElements['rights'][] = $currentVersion[Episciences_Repositories_Common::ENRICHMENT][self::LICENSE];
         }
 
         $license = (
@@ -246,45 +232,18 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
             $xmlElements['rights'][] = 'info:eu-repo/semantics/openAccess';
         }
 
-        $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
 
-        $xml->formatOutput = true;
-        $xml->substituteEntities = true;
-        $xml->preserveWhiteSpace = false;
+        $elements = [
+            'headers' => [
+                'identifier' => $urlIdentifier,
+                'datestamp' => $currentVersion['date'] ?? '',
+                'setSpec' => [$currentVersion['category'] ?? '']
 
+            ],
+            'body' => $xmlElements
+        ];
 
-        try {
-
-            $record = $xml->createElement('record');
-
-            $header = $xml->createElement('header');
-            $record->appendChild(self::addXmlElements($xml, $header, $headers));
-
-
-            $dc = $xml->createElement('oai_dc:dc');
-            $dc->setAttributeNS(
-                'http://www.w3.org/2000/xmlns/',
-                'xmlns:oai_dc',
-                'http://www.openarchives.org/OAI/2.0/oai_dc/'
-            );
-            $dc->setAttributeNS('http://www.w3.org/2000/xmlns/',
-                'xmlns:dc',
-                'http://purl.org/dc/elements/1.1/'
-            );
-
-            $metadata = $xml->createElement('metadata');
-            $metadata->appendChild(self::addXmlElements($xml, $dc, $xmlElements, 'dc:'));
-
-            $record->appendChild($metadata);
-
-            $result = $xml->saveXML($record);
-
-
-        } catch (DOMException $e) {
-            trigger_error($e->getMessage());
-        }
-
-        return $result;
+        return Episciences_Repositories_Common::toDublinCore($elements);
 
     }
 
@@ -368,7 +327,6 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
 
     }
 
-
     private static function enrichmentFromJatsXmlProcess(array &$values = []): void
     {
 
@@ -409,11 +367,11 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
             !empty($citations)
         ) {
 
-            $values[self::ENRICHMENT] = [
-                self::CONTRIB_ENRICHMENT => $contributors,
+            $values[Episciences_Repositories_Common::ENRICHMENT] = [
+                Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $contributors,
                 self::INSTITUTIONS => $institutions,
-                self::LICENSE => $license,
-                self::CITATIONS => $citations,
+                Episciences_Repositories_Common::LICENSE_ENRICHMENT => $license,
+                Episciences_Repositories_Common::REFERENCES_EPI_CITATIONS => $citations,
                 self::KEYWORDS => $kwd
             ];
         }
@@ -441,14 +399,21 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
 
                 foreach ($contrib as $cVals) {
 
-                    $contributors[] = [
+                    $orcid = isset($cVals['contrib-id']) ? preg_replace('#^http(s*)://orcid.org/#', '', $cVals['contrib-id']) : '';
+
+                    $tmp = [
                         'degrees' => $cVals['degrees'] ?? '',
                         'fullname' => $cVals['name']['given-names'] . '' . $cVals['name']['surname'],
                         'family' => $cVals['name']['surname'],
                         'given' => $cVals['name']['given-names'],
-                        'orcidUrl' => $cVals['contrib-id'] ?? '',
                         'email' => $cVals['email'] ?? '',
                     ];
+
+                    if ($orcid !== '') {
+                        $tmp['orcid'] = $orcid;
+                    }
+
+                    $contributors[] = $tmp;
 
                 }
 
@@ -488,10 +453,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                 $authorStr = '';
                 $title = '';
                 $page = '';
-
-
                 $stringName = $currentCitation['string-name'] ?? [];
-
 
                 foreach ($stringName as $index => $sn) {
 
@@ -523,23 +485,26 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
 
                 }
 
-                $citations[] = [
-                    'author' => $authorStr,
-                    'year' => $currentCitation['year'] ?? '',
-                    'date_in_citation' => $currentCitation['date-in-citation'] ?? '',
-                    'title' => $title,
-                    'source_title' => $currentCitation['source'] ?? '',
-                    'volume' => $currentCitation['volume'] ?? '',
-                    'issue' => $currentCitation['issue'] ?? '',
-                    'page' => $page,
-                    'doi' => $currentCitation['doi'] ?? '',
-                    'oa_link' => $currentCitation['ext-link'] ?? '',
-                    'publisher_name' => $currentCitation['publisher-name'] ?? ''
-                ];
+                if ($authorStr !== '') {
+                    $currentCitation['authorsStr'] = trim($authorStr);
+                }
+
+                if ($title !== '') {
+                    $currentCitation['title'] = trim($title);
+                }
+
+                if ($page !== '') {
+                    $currentCitation['page'] = trim($page);
+                }
+
+                $tmp = Episciences_Repositories_Common::formatReferences($currentCitation);
+
+                if (!empty($tmp)) {
+                    $citations[] = $tmp;
+                }
             }
         }
     }
-
 
     private static function extractLicenseFromString(string $string): string
     {
@@ -572,7 +537,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
 
     private static function cleanRepairKeywords(array &$keywords = []): void
     {
-        foreach ($keywords as $index => $keyword){
+        foreach ($keywords as $index => $keyword) {
             if (is_array($keyword)) { // exp. ['italic => "Cebus"] bioRxiv => 10.1101/011908v1
                 $keywords[$index] = array_shift($keyword);
             }
