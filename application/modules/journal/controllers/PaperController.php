@@ -33,23 +33,23 @@ class PaperController extends PaperDefaultController
 
         $pdf_name = null;
         $url = null;
+        $count = 0;
 
         if ($paper->hasHook) {
 
             $files = $paper->getFiles();
 
-
             /** @var Episciences_Paper_File $file */
 
             foreach ($files as $file) {
 
-                if (
-                    $file->getFileType() === 'pdf' &&
-                    $file->getFileSize() < MAX_PDF_SIZE
-                ){
-                    $pdf_name = $file->getFileName();
-                    $url = Episciences_Repositories::isDataverse($paper->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
-                    break;
+                if ($file->getFileType() === 'pdf'){
+                    ++$count;
+                    if ($file->getFileSize() <= MAX_PDF_SIZE) {
+                        $pdf_name = $file->getFileName();
+                        $url = Episciences_Repositories::isDataverse($paper->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
+                        break;
+                    }
                 }
 
             }
@@ -59,7 +59,7 @@ class PaperController extends PaperDefaultController
         }
 
         if (!$pdf_name || !$url) {
-            $this->view->message = 'no PDF files found';
+            $this->view->message = $count > 0 ? 'PDF size is over ' .  Episciences_Tools::toHumanReadable(MAX_PDF_SIZE) : 'no PDF files found';
             $this->renderScript('error/http_error.phtml');
             return;
         }
