@@ -196,6 +196,7 @@ function defineSimpleConstants()
     define('DUPLICATE_ENTRY_SQLSTATE', 23000);
     define('TINYMCE_DIR', '/js/tinymce/');
     define('MAX_PWD_INPUT_SIZE', 40);
+    define('MAX_PDF_SIZE', 500 * MO);
 }
 
 
