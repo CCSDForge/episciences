@@ -43,7 +43,10 @@ class PaperController extends PaperDefaultController
 
             foreach ($files as $file) {
 
-                if ($file->getFileType() === 'pdf'){
+                if (
+                    $file->getFileType() === 'pdf' &&
+                    $file->getFileSize() < MAX_PDF_SIZE
+                ){
                     $pdf_name = $file->getFileName();
                     $url = Episciences_Repositories::isDataverse($paper->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
                     break;
@@ -56,7 +59,7 @@ class PaperController extends PaperDefaultController
         }
 
         if (!$pdf_name || !$url) {
-            $this->view->message = 'Not found PDF';
+            $this->view->message = 'no PDF files found';
             $this->renderScript('error/http_error.phtml');
             return;
         }
