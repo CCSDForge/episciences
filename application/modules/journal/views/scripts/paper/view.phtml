@@ -336,7 +336,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 
 <?php endif; // end if $isAllowedToSeeNoPublicDetails ?>
 
-<?php if ($this->enabledBib && $paper->getRepoid() !== (int) Episciences_Repositories::ZENODO_REPO_ID): ?>
+<?php if ($this->enabledBib): ?>
     <div id="biblio-refs" class="panel panel-default collapsable">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('References') ?></h2>
