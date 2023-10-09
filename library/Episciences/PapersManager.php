@@ -2577,7 +2577,7 @@ class Episciences_PapersManager
 
         $identifier = $result['IDENTIFIER'];
         $repoId = (int)$result['REPOID'];
-        $version = (int)$result['VERSION'];
+        $version = (float)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];
         $doiTrim = [];
         if (!empty($result['DOI'])) {

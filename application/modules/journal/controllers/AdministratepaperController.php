@@ -4503,7 +4503,7 @@ class AdministratepaperController extends PaperDefaultController
 
         foreach ($availableVersions as $index => $value) {
 
-            if ((int)$value > $paper->getVersion()) {
+            if ((float)$value > $paper->getVersion()) {
                 continue;
             }
 
@@ -4513,7 +4513,7 @@ class AdministratepaperController extends PaperDefaultController
         $vString = "version la plus récente dans l’archive ouverte";
         $hasHook = $paper->hasHook; // zenodo repository
         $this->view->hasHook = $hasHook;
-        $this->view->label = !$hasHook ? 'La ' . $vString : "L'identifiant de la " . $vString;
+        $this->view->label = $paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ? ("L'identifiant de la " . $vString) : ('La ' . $vString);
         $this->view->type = 'select';
         $this->view->options = $availableVersions;
         $this->view->docId = $paper->getDocid();
@@ -4604,6 +4604,27 @@ class AdministratepaperController extends PaperDefaultController
 
                     }
                 }
+            } elseif (Episciences_Repositories::isDataverse($repoId)) {
+                $url = $api;
+                $url .= 'datasets/:persistentId/?persistentId=';
+                $url .= $paper->getIdentifier();
+                $response = Episciences_Tools::callApi($url);
+
+                if(
+                    isset($response['status']) &&
+                    mb_strtolower($response['status']) === Episciences_Repositories_Dataverse_Hooks::SUCCESS_CODE
+                    ){
+
+                    $latestVersion = $response['data']['latestVersion']['versionNumber'] ?? 1;
+                    $versionMinorNumber = $response['data']['latestVersion']['versionMinorNumber'] ?? 0;
+
+                    $version = (float)($latestVersion . '.' . $versionMinorNumber);
+
+                    while ($version > 0){
+                        $versions[] =  $version . '.' . $versionMinorNumber;
+                        $version -= 1.0;
+                    }
+                }
             }
 
         } else {
@@ -4640,7 +4661,7 @@ class AdministratepaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-        $latestPostedVersion = isset($post['latest-repository-version']) ? (int)$post['latest-repository-version'] : 0; // version or identifier
+        $latestPostedVersion = isset($post['latest-repository-version']) ? (float)$post['latest-repository-version'] : 0; // version or identifier
 
         if (!$latestPostedVersion) {
             return false;

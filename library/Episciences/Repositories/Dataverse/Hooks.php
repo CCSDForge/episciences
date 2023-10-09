@@ -8,6 +8,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
     public const SUCCESS_CODE = 'ok';
     public const ERROR_CODE = 'error';
     public const TO_COMPILE_OAI_DC = 'toCompileOaiDc';
+    public const VERSION_MINOR_NUMBER = 0;
 
     public static function hookCleanXMLRecordInput(array $input): array
     {

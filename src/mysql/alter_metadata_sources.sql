@@ -13,8 +13,8 @@ ALTER TABLE
     ADD `base_url` VARCHAR(100) NULL COMMENT 'OAI base url' AFTER `identifier`,
     ADD `doi_prefix` VARCHAR(10) NOT NULL AFTER `base_url`,
     ADD `api_url` VARCHAR(100) NOT NULL AFTER `doi_prefix`,
-    ADD `doc_url` VARCHAR(100) NOT NULL AFTER `api_url`,
-    ADD `paper_url` VARCHAR(100) NOT NULL AFTER `doc_url`;
+    ADD `doc_url` VARCHAR(150) NOT NULL COMMENT 'See the document''s page on' AFTER `api_url`,
+    ADD `paper_url` VARCHAR(100) NOT NULL COMMENT 'PDF' AFTER `doc_url`;
 
 
 UPDATE
@@ -137,7 +137,8 @@ WHERE
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
 
 INSERT INTO `metadata_sources` (`id`, `name`, `type`, `status`, `identifier`, `base_url`, `doi_prefix`, `api_url`, `doc_url`, `paper_url`) VALUES
-(14, 'DaRUS', 'dataverse', 1, NULL, NULL, '10.18419', 'https://darus.uni-stuttgart.de/api/v1/', 'https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=%%ID', ''),
-(15, 'Recherche Data Gouv', 'dataverse', 1, NULL, NULL, '10.15454', 'https://entrepot.recherche.data.gouv.fr/api/v1/', 'https://entrepot.recherche.data.gouv.fr/dataset.xhtml?persistentId=%%ID', '');
+(14, 'DaRUS', 'dataverse', 1, NULL, NULL, '10.18419', 'https://darus.uni-stuttgart.de/api/v1/', 'https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=%%ID&version=%%VERSION.%%V_MINOR_NUMBER', ''),
+(15, 'Recherche Data Gouv', 'dataverse', 1, NULL, NULL, '10.15454', 'https://entrepot.recherche.data.gouv.fr/api/v1/', 'https://entrepot.recherche.data.gouv.fr/dataset.xhtml?persistentId=%%ID&version=%%VERSION.%%V_MINOR_NUMBER', '')
+;
 
 

@@ -94,9 +94,9 @@ class Episciences_Repositories
         return str_replace(['%%ID', 'v%%VERSION'], [$identifier, ''], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
     }
 
-    public static function getDocUrl($repoId, $identifier, $version = null)
+    public static function getDocUrl($repoId, $identifier, $version = null, $versionMinorNumber = Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER)
     {
-        return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_DOCURL]);
+        return str_replace(['%%ID', '%%VERSION', '%%V_MINOR_NUMBER'], [$identifier, $version, $versionMinorNumber], self::getRepositories()[$repoId][self::REPO_DOCURL]);
     }
 
     public static function getApiUrl($repoId)
