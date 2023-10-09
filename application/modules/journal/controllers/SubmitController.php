@@ -216,6 +216,10 @@ class SubmitController extends DefaultController
             // transform xml record for display, using xslt
             $respond['record'] = preg_replace('#xmlns="(.*)"#', '', $respond['record']);
 
+            if($params['repoId'] === Episciences_Repositories::CWI_REPO_ID){
+                $respond['record'] = Episciences_Repositories_Common::checkAndCleanRecord($respond['record']);
+            }
+
             $input = array_merge($respond, ['repoId' => $params['repoId']]);
 
             $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', $input);

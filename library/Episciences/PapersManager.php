@@ -2622,6 +2622,10 @@ class Episciences_PapersManager
 
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
+        if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID){
+            $record = Episciences_Repositories_Common::checkAndCleanRecord($record);
+        }
+
         $result = Episciences_Repositories::callHook(
             'hookCleanXMLRecordInput', [
                 'record' => $record,
