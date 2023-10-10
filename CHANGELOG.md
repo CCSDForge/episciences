@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- RT#194519: the order of the papers is corrupted on the page listing the papers in a volume.
 
 ## Unreleased
 ### Added
