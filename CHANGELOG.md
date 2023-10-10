@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- RT#194519: the order of the papers is corrupted on the page listing the papers in a volume.
 
 ## 1.0.40.15 - 2023-09-15
 ### Fixed
