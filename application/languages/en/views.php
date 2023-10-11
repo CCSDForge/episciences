@@ -336,7 +336,7 @@ return [
     "que vous connaissez son identifiant" => "that you have its identifier at hand",
 
     "L'identifiant de l'article, sa version et l'archive ouverte dont il provient sont les seules informations dont vous avez besoin pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre article avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien de l'article que vous souhaitez soumettre à la revue." =>
-        "The document's identifier, its version and the repository it is located on are information that need to be entered in the form below. Metadata will automatically be retrieved and you will see a summary of your submission before confirming the submission - please check that this is the document you wish to submit.",
+        "The document's identifier, its version and the repository it is located on are information that need to be entered in the form below. Metadata will automatically be retrieved and you will see a summary of your document before confirming the submission - please check that this is the document you wish to submit.",
 
     "L'article ne peut pas être supprimé en raison de son statut." => "This article can not be deleted because of its status.",
     "L'article ne peut être supprimé que par son déposant." => "This article can only be deleted by its submitter",
@@ -838,7 +838,7 @@ return [
 
     // User login/logout
     "Déconnexion du serveur d'authentification du" => 'Logging out from',
-    "Déconnexion réussie" => 'You\'ve been successfuly logged out',
+    "Déconnexion réussie" => 'You\'ve been successfully logged out',
     "Échec de la déconnexion" => 'Logging out failed',
     "Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !" => "You've been redirected to this page, your account on this application does not seem to be the right one!",
 
@@ -1123,8 +1123,8 @@ return [
     "Réassigner l'article" => "Reassign paper",
     "Le status de la relecture a été changé avec succès" => 'The status of this review/rating has been successfully updated',
 
-    'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.' => 'Error: XML source of this document appears to be corrupted. Metadatas cannot be parsed.',
-    'Merci de contacter le support pour vérifier le document et ses métadonnées' => "Please contact the support to check the document and it's metadatas",
+    'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.' => 'Error: XML source of this document appears to be corrupted. Metadata cannot be parsed.',
+    'Merci de contacter le support pour vérifier le document et ses métadonnées' => "Please contact the support to check the document and it's metadata",
 
 
     "Erreur lors de l'activation du compte" => "Activation error",
@@ -1930,12 +1930,12 @@ return [
     'software_bloc_label' => 'Softwares',
     'Ajouter un logiciel' => 'Add software',
     'Ajouter une publication' => 'Add publication',
-    'Erreur, vous essayez peut-être d\'insérer des données liées déjà existantes.' => 'Error, you maybe try to insert an already existing linked data',
+    'Erreur, vous essayez peut-être d\'insérer des données liées déjà existantes.' => 'Error, sorry it seems you are trying to insert an already existing linked data',
     'Ajout de la donnée liée bien prise en compte' => 'Linked data added successfully',
-    'Suppression de la donnée liée bien prise en compte' => 'Linked data have been successfully deleted',
-    'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the linked data ?',
+    'Suppression de la donnée liée bien prise en compte' => 'Linked data has been deleted successfully',
+    'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the linked data?',
     'Format de donnée non reconnu' => 'Data format not recognised',
-    "Vous essayez d'insérer des données liées déjà existantes" => 'You are trying to insert linked data that already exists',
+    "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing linked data',
     "Si vous souhaitez affiner les informations concernant le papier à l'aide de données liées, un bloc sera disponible à cet effet sur la page du document." => "After this initial submission, you can add related documents such as a dataset or software. This additional information will be used for evaluation and publication.",
     'software' => 'Software',
     'doi' => 'DOI',
@@ -2422,9 +2422,9 @@ return [
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",
-    "Requires" => "requires",
+    "Requires" => "Requires",
     "IsRequiredBy" => "Is required by",
-    "Finances" => "finances",
+    "Finances" => "Finances",
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
 ];
