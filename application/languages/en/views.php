@@ -2372,7 +2372,7 @@ return [
     'Confirmer la modification' => 'Confirm update',
 
     // settings redirect error mail
-    "Courriel de retour'" => "Redirection address",
+    "Courriel de retour" => "Bounce address",
     "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels" => "Select the address that will receive the bounced emails",
     "Adresse de courriel pour le retour des échecs d'envoi" => "E-mail address for the return of failed deliveries (bounced emails)",
     //API password
