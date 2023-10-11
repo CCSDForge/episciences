@@ -50,9 +50,16 @@ class Episciences_Paper_ProjectsManager
         return $db->fetchAssoc($select);
     }
 
+    /**
+     * @param $paperId
+     * @return string|string[]
+     * @throws JsonException
+     * @throws Zend_Exception
+     */
     public static function formatProjectsForview($paperId)
     {
         $rawInfo = self::getProjectsByPaperId($paperId);
+        $translator = Zend_Registry::get('Zend_Translate');
         if (!empty($rawInfo)) {
             $rawFunding = [];
             $templateProject = "";
@@ -61,25 +68,31 @@ class Episciences_Paper_ProjectsManager
             }
             foreach ($rawFunding as $source_id_name => $fundingInfo) {
                 $templateProject .= "<ul class='list-unstyled'>";
-                $templateProject .= " <small class='label label-info'>" . Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . $source_id_name . "</small>";
+                $templateProject .= " <small class='label label-info'>" . $translator->translate('Source :') . ' ' . $source_id_name . "</small>";
                 foreach ($fundingInfo as $counter => $funding) {
                     foreach ($funding as $kf => $vfunding) {
-                        if ($vfunding['projectTitle'] !== self::UNIDENTIFIED) {
+                        if (isset($vfunding['projectTitle']) && $vfunding['projectTitle'] !== self::UNIDENTIFIED) {
                             $templateProject .= '<li><em>' . htmlspecialchars($vfunding['projectTitle']) . "</em>";
-                            if ($vfunding['funderName'] !== self::UNIDENTIFIED) {
-                                $templateProject .= "; " . Zend_Registry::get('Zend_Translate')->translate("Funder") . ": " . htmlspecialchars($vfunding['funderName']);
+                            if (isset($vfunding['funderName']) && $vfunding['funderName'] !== self::UNIDENTIFIED) {
+                                $templateProject .= "; " . $translator->translate("Funder") . ": " . htmlspecialchars($vfunding['funderName']);
                             }
-                        } elseif ($vfunding['funderName'] !== self::UNIDENTIFIED) {
-                            $templateProject .= "<li>" . Zend_Registry::get('Zend_Translate')->translate("Funder") . ": " . htmlspecialchars($vfunding['funderName']);
+                        } elseif (isset($vfunding['funderName']) && $vfunding['funderName'] !== self::UNIDENTIFIED) {
+                            $templateProject .= "<li>" . $translator->translate("Funder") . ": " . htmlspecialchars($vfunding['funderName']);
                         }
-                        if ($vfunding['code'] !== self::UNIDENTIFIED && ($vfunding['funderName'] !== self::UNIDENTIFIED || $vfunding['projectTitle'] !== self::UNIDENTIFIED)) {
+                        if (
+                            isset($vfunding['code']) && $vfunding['code'] !== self::UNIDENTIFIED &&
+                            (
+                                (isset($vfunding['funderName']) && $vfunding['funderName'] !== self::UNIDENTIFIED) ||
+                                (isset($vfunding['projectTitle']) && $vfunding['projectTitle'] !== self::UNIDENTIFIED)
+                            )
+                        ) {
                             $templateProject .= "; Code: " . htmlspecialchars($vfunding['code']);
                         }
                         if (isset($vfunding['callId']) && $vfunding['callId'] !== self::UNIDENTIFIED) {
-                            $templateProject .= "; " . Zend_Registry::get('Zend_Translate')->translate("callId") . ": " . htmlspecialchars($vfunding['callId']);
+                            $templateProject .= "; " . $translator->translate("callId") . ": " . htmlspecialchars($vfunding['callId']);
                         }
                         if (isset($vfunding['projectFinancing']) && $vfunding['projectFinancing'] !== self::UNIDENTIFIED) {
-                            $templateProject .= "; " . Zend_Registry::get('Zend_Translate')->translate("projectFinancing") . ": " . htmlspecialchars($vfunding['projectFinancing']);
+                            $templateProject .= "; " . $translator->translate("projectFinancing") . ": " . htmlspecialchars($vfunding['projectFinancing']);
                         }
 
                         if (isset($vfunding['url']) && $vfunding['url'] !== ''){

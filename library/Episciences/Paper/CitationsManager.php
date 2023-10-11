@@ -89,14 +89,18 @@ class Episciences_Paper_CitationsManager
         return ['template'=>$templateCitation,'counterCitations'=>$counterCitations];
     }
 
-    public static function sortAuthorAndYear($arrayMetadata) {
+    /**
+     * @param array $arrayMetadata
+     * @return array
+     */
+    public static function sortAuthorAndYear(array $arrayMetadata = []) {
         $arrayAuthor = [];
         $arrayYear = [];
         foreach ($arrayMetadata as $value) {
-            if ($value['author']!=="") {
+            if (isset($value['author']) && $value['author']!== "") {
                 $arrayAuthor[] = $value;
-            } else {
-                $arrayYear[] = $value;
+            } elseif(isset($value['year']) && $value['year']) {
+                $arrayYear[] = $value['year'];
             }
         }
         array_multisort(array_column($arrayAuthor,'author'),SORT_ASC,SORT_NATURAL|SORT_FLAG_CASE,$arrayAuthor);
