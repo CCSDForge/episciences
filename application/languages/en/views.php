@@ -331,12 +331,12 @@ return [
     "Cette page a été consultée %s fois." => "This page has been seen %s times.",
     "Le PDF de cet article a été téléchargé %s fois." => "This article's PDF has been downloaded %s times.",
 
-    "Vous êtes sur le point de proposer un article. Veuillez vérifier :" => "You are about to submit a paper. Please check:",
-    "que votre article a été déposé dans une archive ouverte (%s)" => "that your paper is deposited on an open access repository (%s)",
+    "Vous êtes sur le point de proposer un article. Veuillez vérifier :" => "You are about to submit a document. Please check:",
+    "que votre article a été déposé dans une archive ouverte (%s)" => "that your document is deposited on an open access repository (%s)",
     "que vous connaissez son identifiant" => "that you have its identifier at hand",
 
     "L'identifiant de l'article, sa version et l'archive ouverte dont il provient sont les seules informations dont vous avez besoin pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre article avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien de l'article que vous souhaitez soumettre à la revue." =>
-        "The paper's identifier, its version and the repository it is located on are information that need to be entered in the form below. Metadata will automatically be retrieved and you will see a summary of your paper before confirming the submission - please check that this is the manuscript you wish to submit to the journal.",
+        "The document's identifier, its version and the repository it is located on are information that need to be entered in the form below. Metadata will automatically be retrieved and you will see a summary of your submission before confirming the submission - please check that this is the document you wish to submit.",
 
     "L'article ne peut pas être supprimé en raison de son statut." => "This article can not be deleted because of its status.",
     "L'article ne peut être supprimé que par son déposant." => "This article can only be deleted by its submitter",
