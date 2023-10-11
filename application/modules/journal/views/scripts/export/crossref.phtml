@@ -336,10 +336,15 @@ $timestamp = $dateTime->format('YmdHisv');
                     <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
                         <?php if (in_array(lcfirst($linkedData['relationship']), $interWorkRelationship, true)) :?>
                             <related_item>
-                                <?php if ($linkedData['link'] === 'url') {
-                                    $linkedData['link'] = 'uri';
-                                } ?>
-                                <inter_work_relation identifier-type="<?= $this->escape(strtolower($linkedData['link'])) ?>" relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo $this->escape($linkedData['value']); ?></inter_work_relation>
+                                <?php
+                                $identifierType = strtolower($linkedData['link']);
+                                if ($identifierType === 'url') {
+                                    $identifierType = 'uri';
+                                } elseif ($identifierType === 'swhid') {
+                                    $identifierType = 'other';
+                                }
+                                ?>
+                                <inter_work_relation identifier-type="<?= $this->escape($identifierType) ?>" relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo $this->escape($linkedData['value']); ?></inter_work_relation>
                             </related_item>
                         <?php endif; ?>
                     <?php } ?>
