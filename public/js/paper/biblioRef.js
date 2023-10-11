@@ -30,12 +30,18 @@ function visualizeBiblioRefs(){
                 });
                 if (response.message !== undefined){
                     $( "<div>"+response.message+"</div>" ).appendTo( "#biblio-refs-container" );
+                    alreadyCalled = true;
                 }
-            }).error(function (xhr){
-                let apiResponse = JSON.parse(xhr.responseText);
-                $( "<div>"+apiResponse.message+"</div>" ).appendTo( "#biblio-refs-container" );
+            }).error(function (xhr) {
+                try {
+                    let apiResponse = JSON.parse(xhr.responseText);
+                    $("<div>" + apiResponse.message + "</div>").appendTo("#biblio-refs-container");
+
+                } catch (e) {
+                    console.log(e.name + " : " + e.message);
+                }
+
             });
-            alreadyCalled = true;
         }
 
 }
