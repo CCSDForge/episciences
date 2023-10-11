@@ -7,7 +7,7 @@
     "privilege": "member"
   },
   {
-    "label": "Proposer un article",
+    "label": "Proposer un document",
     "controller": "submit",
     "action": "index",
     "resource": "submit-index",

@@ -2,11 +2,16 @@ $(document).ready(function () {
     let $searchDocRepoId = $('#search_doc-repoId');
     let $searchDocDocId = $('#search_doc-docId');
     let $versionBloc = $('#search_doc-version-element');
+    let $isDataverseRepo = false;
+    let $submitEntry = $("a[href='/submit/index']");
 
 
     setPlaceholder();
 
     $(window).on('load', function () {
+
+        checkDataverse();
+
         if ($versionBloc.length > 0)
             toggleVersionBloc();
     });
@@ -25,7 +30,6 @@ $(document).ready(function () {
         let hasHookRequest = ajaxRequest('/submit/ajaxhashook', {repoId: repoValue});
         hasHookRequest.done(function (response) {
 
-
             let oResponse = JSON.parse(response);
 
             if (oResponse) {
@@ -34,15 +38,15 @@ $(document).ready(function () {
                 hasHook = oResponse.hasHook;
                 isRequiredVersion = oResponse.isRequiredVersion.result;
 
-                if(!isRequiredVersion){
+                if (!isRequiredVersion) {
                     $versionBloc.hide();
 
                 } else {
                     $versionBloc.show();
                 }
 
-                if($searchDocRepoId.val() === zenodoRepoId){
-                    if(zSubmitStatus){ // to be enabled : @ see /config/dist-pwd.json
+                if ($searchDocRepoId.val() === zenodoRepoId) {
+                    if (zSubmitStatus) { // to be enabled : @ see /config/dist-pwd.json
                         insertZSubmitElement(zSubmitUrl);
                     }
                 } else {
@@ -57,6 +61,10 @@ $(document).ready(function () {
             }
         });
 
+        $searchDocRepoId.change(function () {
+            checkDataverse();
+        });
+
     }
 
     function setPlaceholder() {
@@ -69,20 +77,38 @@ $(document).ready(function () {
     $searchDocDocId.change(function () {
 
         let input = $(this).val();
+
         if (isValidHttpUrl(input)) {
 
             let url = new URL(input);
             let identifier = url.pathname;
+            let urlSearch = url.search;
 
-            identifier = identifier.replace(/\/\w+\//, '')
-            identifier = identifier.replace(/^\//, '');
-            identifier = identifier.replace(/v\d+/, '')
+            if (!$isDataverseRepo && urlSearch === '') {
+                identifier = identifier.replace(/\/\w+\//, '')
+                identifier = identifier.replace(/^\//, '');
 
-            // Delete VERSION from IDENTIFIER
+            } else {
+                identifier = urlSearch.replace('?persistentId=', '');
+            }
+
+            identifier = identifier.replace(/v\d+|(&version=\d+).\d+/, '') // Delete VERSION from IDENTIFIER
             $(this).val(identifier);
-
         }
-
     });
 
+    function checkDataverse() {
+
+        let isDataverseRequest = ajaxRequest('/submit/ajaxisdataverse', {repoId: $searchDocRepoId.val()});
+        isDataverseRequest.done(function (response) {
+            let oResponse = JSON.parse(response);
+            $isDataverseRepo = oResponse.hasOwnProperty('isDataverse') ? oResponse.isDataverse : false;
+            if ($submitEntry.length > 0) {
+                let submitEntryTitle = $isDataverseRepo ? 'Proposer un jeu de données' : 'Proposer un article';
+                $submitEntry.text(translate(submitEntryTitle));
+            }
+
+        })
+
+    }
 });

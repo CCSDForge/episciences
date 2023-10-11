@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Submit
 {
+    public const SUBMIT_DOCUMENT_LABEL = 'Proposer un document';
     protected $_db = null;
 
     public function __construct()

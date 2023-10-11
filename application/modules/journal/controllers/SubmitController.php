@@ -338,4 +338,26 @@ class SubmitController extends DefaultController
         }
 
     }
+
+    public function ajaxisdataverseAction()
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        if (!$request->isXmlHttpRequest() || !$request->isPost()) {
+            return;
+        }
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $repoId = (int)$request->get('repoId');
+
+        try {
+            echo json_encode(['isDataverse' => Episciences_Repositories::isDataverse($repoId)], JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+        }
+
+    }
 }

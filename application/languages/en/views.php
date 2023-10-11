@@ -1344,7 +1344,7 @@ return [
     "Archive" => "Repository",
     "Rechercher" => "Search",
     "Envoyer" => "Send",
-    "Proposer un article" => "Submit an article",
+    Episciences_Submit::SUBMIT_DOCUMENT_LABEL => "Submit a document",
     "Proposer cet article" => "Submit this article",
     "Soumettre à" => "Submit to",
     "Proposer pour le volume :" => "Submit in the volume :",
