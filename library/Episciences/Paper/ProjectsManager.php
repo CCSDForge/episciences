@@ -68,7 +68,7 @@ class Episciences_Paper_ProjectsManager
             }
             foreach ($rawFunding as $source_id_name => $fundingInfo) {
                 $templateProject .= "<ul class='list-unstyled'>";
-                $templateProject .= " <small class='label label-info'>" . $translator->translate('Source :') . ' ' . $source_id_name . "</small>";
+                $templateProject .= " <small class='label label-default'>" . $translator->translate('Source :') . ' ' . $source_id_name . "</small>";
                 foreach ($fundingInfo as $counter => $funding) {
                     foreach ($funding as $kf => $vfunding) {
                         if (isset($vfunding['projectTitle']) && $vfunding['projectTitle'] !== self::UNIDENTIFIED) {
