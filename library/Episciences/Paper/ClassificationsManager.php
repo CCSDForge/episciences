@@ -59,7 +59,7 @@ class Episciences_Paper_ClassificationsManager
             }
             foreach ($rawClassification as $source_id_name => $classificationInfo) {
                 $templateClassification .= "<ul class='list-unstyled'>";
-                $templateClassification .= " <small class='label label-info'>" . Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . $source_id_name . "</small>";
+                $templateClassification .= " <small class='label label-default'>" . Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . $source_id_name . "</small>";
                 foreach ($classificationInfo as $info){
                     $templateClassification .= "<li>".$info['type']."; ".$info['classification']."</li>";
                 }

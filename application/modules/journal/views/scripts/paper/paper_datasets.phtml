@@ -26,7 +26,7 @@ $currentSmall = "";
                                  */
                                 foreach ($metadataArray as $k => $meta) : ?>
                                     <?php if ($k !== "metatext"): ?>
-                                        <small class="label label-info"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($sourceId) ?></small>
+                                        <small class="label label-default"> <?= $this->translate('Source :') . ' ' . $meta->getSourceLabel($sourceId) ?></small>
                                     <?php endif;?>
                                     <?php if ($k !== "metatext" && is_null($meta->getMetatext())) : ?>
                                         <?=strtoupper($this->translate($meta->getName())) ?> <a href="<?= $meta->getLink() ?>"><?= $meta->getValue() ?></a>

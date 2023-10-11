@@ -114,7 +114,7 @@ class Episciences_Paper_ProjectsManager
             }
             foreach ($rawFunding as $source_id_name => $fundingInfo){
                 $templateProject .= "<ul class='list-unstyled'>";
-                $templateProject .= " <small class='label label-info'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' .$source_id_name."</small>";
+                $templateProject .= " <small class='label label-default'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' .$source_id_name."</small>";
                 foreach ($fundingInfo as $counter => $funding){
                     foreach ($funding as $kf => $vfunding){
                         if ($vfunding['projectTitle'] !== "unidentified")   {

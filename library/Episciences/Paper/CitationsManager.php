@@ -50,7 +50,7 @@ class Episciences_Paper_CitationsManager
         $counterCitations = 0;
         $doiOrgDomain = 'https://doi.org/';
         foreach ($allCitation as $value) {
-            $templateCitation .= "<small class='label label-info'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . htmlspecialchars($value['source_id_name']) ."</small>";
+            $templateCitation .= "<small class='label label-default'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . htmlspecialchars($value['source_id_name']) ."</small>";
             $decodeCitations = json_decode($value['citation'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
             $counterCitations += count($decodeCitations);
             $decodeCitations = self::sortAuthorAndYear($decodeCitations);
