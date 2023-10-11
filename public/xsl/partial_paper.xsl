@@ -105,29 +105,23 @@
                         </div>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:variable name="doc_rights" select="metadata/oai_dc:dc/dc:rights/text()"/>
-                        <xsl:if test="$doc_rights != 'info:eu-repo/semantics/openAccess'">
-
-                            <div class="small">
-                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
-                                <a rel="noopener" target="_blank">
-
-                                    <xsl:if test="not (contains($doc_rights, '[CC_NO]'))">
-                                        <xsl:attribute name="href">
-                                            <xsl:value-of select="$doc_rights"/>
-                                        </xsl:attribute>
-
-                                    </xsl:if>
-
-                                    <xsl:value-of
-                                            select="php:function('Ccsd_Tools::translate', string($doc_rights))"/>
-                                </a>
-                            </div>
-
-                        </xsl:if>
-
+                        <xsl:for-each select="metadata/oai_dc:dc/dc:rights">
+                            <xsl:variable name="doc_rights" select="metadata/oai_dc:dc/dc:rights/text()"/>
+                            <xsl:if test="$doc_rights != 'info:eu-repo/semantics/openAccess'">
+                                <div class="small">
+                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
+                                    <a rel="noopener" target="_blank">
+                                        <xsl:if test="not (contains($doc_rights, '[CC_NO]'))">
+                                            <xsl:attribute name="href">
+                                                <xsl:value-of select="$doc_rights"/>
+                                            </xsl:attribute>
+                                        </xsl:if>
+                                        <xsl:value-of select="php:function('Ccsd_Tools::translate', string($doc_rights))"/>
+                                    </a>
+                                </div>
+                            </xsl:if>
+                        </xsl:for-each>
                     </xsl:otherwise>
-
                 </xsl:choose>
 
                 <div class="small">

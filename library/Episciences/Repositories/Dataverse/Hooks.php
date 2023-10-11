@@ -396,9 +396,9 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
 
                                 if ($cVal['typeName'] === 'projectName') {
-                                    $tmp['projectName'] = $extractedValue;
+                                    $projectTitle = $extractedValue;
                                 } elseif ($cVal['typeName'] === 'projectTitle') {
-                                    $tmp['projectTitle'] = $extractedValue;
+                                    $projectTitle = $extractedValue;
                                 } elseif ($cVal['typeName'] === 'projectAcronym') {
 
                                     $tmp['acronym'] = $extractedValue;
@@ -407,7 +407,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
                                     $tmp['url'] = $extractedValue;
                                 }
 
-                                $tmp['projectName'] = $tmp['projectName'] ?? Episciences_Paper_ProjectsManager::UNIDENTIFIED;
+                                $tmp['projectTitle'] = $projectTitle ?? Episciences_Paper_ProjectsManager::UNIDENTIFIED;
                                 $tmp['acronym'] = $tmp['acronym'] ?? Episciences_Paper_ProjectsManager::UNIDENTIFIED;
                                 $tmp['funderName'] = $tmp['funderName'] ?? Episciences_Paper_ProjectsManager::UNIDENTIFIED;
                                 $tmp['code'] = $tmp['code'] ?? Episciences_Paper_ProjectsManager::UNIDENTIFIED;

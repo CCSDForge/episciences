@@ -2595,29 +2595,18 @@ class Episciences_PapersManager
             $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
         }
 
+        $response = Episciences_Repositories::callHook(
+            'hookApiRecords', [
+                'identifier' => $identifier,
+                'repoId' => $repoId,
+                'version' => $version
+            ]
+        );
+
         if ($oai) {
             $record = $oai->getRecord($repoIdentifier);
-            $response = Episciences_Repositories::callHook(
-                'hookApiRecords', [
-                    'identifier' => $identifier,
-                    'repoId' => $repoId,
-                    'version' => $version
-                ]
-            );
         } else {
-
-
-            $response = Episciences_Repositories::callHook(
-                'hookApiRecords', [
-                    'identifier' => $identifier,
-                    'repoId' => $repoId,
-                    'version' => $version
-                ]
-            );
-
-
             $record = $response['record'];
-
         }
 
         $record = preg_replace('#xmlns="(.*)"#', '', $record);

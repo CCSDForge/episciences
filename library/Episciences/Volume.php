@@ -450,7 +450,7 @@ class Episciences_Volume
                     }
                 }
                 ksort($sorted_papers);
-                $sorted_papers = array_merge($sorted_papers, $unsorted_papers);
+                $sorted_papers += $unsorted_papers;
             } else {
                 $sorted_papers = $papers;
             }
