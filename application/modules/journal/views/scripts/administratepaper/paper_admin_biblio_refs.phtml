@@ -1,13 +1,17 @@
-<div class="panel-body in">
-
-    <div class="row">
-        <div id="container-processing-biblio-refs" class="col-md-12">
-            <a id="epi-citation-app" class="btn btn-default btn-sm" target="_blank"
-               href="<?= $this->apiEpiBibCitation ?>/login?url=<?= $this->urlcallapibib ?>" style="margin-bottom: 8px;"><i
-                        class="fas fa-edit"></i> <?= $this->translate('Gérer les références bibliographiques') ?>
-            </a>
-            <div id="biblio-refs-container"></div>
-            <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>" data-api="<?=$this->apiEpiBibCitation?>" data-all="1" hidden></div>
+<?php if (isset($this->apiEpiBibCitation, $this->urlcallapibib)): ?>
+    <div class="panel-body in">
+        <div class="row">
+            <div id="container-processing-biblio-refs" class="col-md-12">
+                <a id="epi-citation-app" class="btn btn-default btn-sm" target="_blank"
+                   href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?=$this->repoId?>&url=<?= $this->urlcallapibib ?>"
+                   style="margin-bottom: 8px;"><i
+                            class="fas fa-edit"></i> <?= $this->translate('Gérer les références bibliographiques') ?>
+                </a>
+                <div id="biblio-refs-container"></div>
+                <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>"
+                     data-api="<?= $this->apiEpiBibCitation ?>" data-all="1" hidden></div>
+            </div>
         </div>
     </div>
-</div>
+
+<?php endif ?>

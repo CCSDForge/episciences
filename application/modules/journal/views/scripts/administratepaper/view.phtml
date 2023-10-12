@@ -84,7 +84,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
         <div class="panel-body in" style="max-height: 350px; overflow: auto;">
             <?php
             //REFERENCES EPI CITATIONS ****************************************************************
-            echo $this->partial('administratepaper/paper_admin_biblio_refs.phtml', ['paper' => $paper, 'urlcallapibib' => $this->urlcallapibib, 'apiEpiBibCitation' => $this->apiEpiBibCitation]);
+            echo $this->partial('administratepaper/paper_admin_biblio_refs.phtml', ['paper' => $paper, 'urlcallapibib' => $this->urlcallapibib, 'apiEpiBibCitation' => $this->apiEpiBibCitation, 'repoId' => $paper->getRepoid()]);
             ?>
         </div>
     </div>
