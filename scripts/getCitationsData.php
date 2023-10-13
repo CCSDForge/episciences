@@ -21,10 +21,11 @@ require_once "JournalScript.php";
 class getCitationsData extends JournalScript
 {
     const OPENCITATIONS_API_CITATIONS = 'https://opencitations.net/index/api/v1/citations/';
-    const OPENCITATIONS_API_METADATA = 'https://opencitations.net/index/api/v1/metadata/';
+    const OPENALEX_API_METADATA = 'https://api.openalex.org/works/';
     const OPENCITATIONS_EPISCIENCES_USER_AGENT = 'CCSD Episciences support@episciences.org';
     public const ONE_MONTH = 3600 * 24 * 31;
     public const CITATIONS_PREFIX_VALUE = "coci => ";
+    public const PARAMS_OALEX = "?select=title,authorships,open_access,biblio,primary_location,locations,publication_year,best_oa_location";
     /**
      * @var bool
      */
@@ -61,6 +62,7 @@ class getCitationsData extends JournalScript
         $select = $db
             ->select()
             ->from(T_PAPERS, ["DOI", "DOCID"])->where('DOI != ""')->where("STATUS = ? ", Episciences_Paper::STATUS_PUBLISHED)->order('DOCID DESC');
+        $noLocations = 0;
         foreach ($db->fetchAll($select) as $value) {
             $trimDoi = trim($value['DOI']);
             $fileName = $trimDoi . "_citations.json";
@@ -83,7 +85,8 @@ class getCitationsData extends JournalScript
             if (!empty($apiCallCitationCache) && reset($apiCallCitationCache) !== "") {
                 $globalArrayCiteDOI = []; // array of all doi which cite the doi looped
                 foreach ($apiCallCitationCache as $citationsValues) {
-                    $globalArrayCiteDOI[] = str_replace(self::CITATIONS_PREFIX_VALUE, "", $citationsValues['citing']);
+                    $globalArrayCiteDOI[] = preg_replace("~;(?<=;)\s.*~","",str_replace(self::CITATIONS_PREFIX_VALUE, "", $citationsValues['citing']));
+
                 }
                 $globalInfoMetadata = [];
                 $i = 0;
@@ -107,18 +110,25 @@ class getCitationsData extends JournalScript
                     $this->displayInfo('METADATA FOUND IN CACHE ' . $doiWhoCite, true);
                     $metadataInfoCitation = json_decode($setsMetadata->get(), true, 512, JSON_THROW_ON_ERROR);
                     if (reset($metadataInfoCitation) !== "") {
-                        foreach ($metadataInfoCitation as $infoCitation) {
-                            $globalInfoMetadata[$i]['author'] = $infoCitation['author'];
-                            $globalInfoMetadata[$i]['year'] = $infoCitation['year'];
-                            $globalInfoMetadata[$i]['title'] = $infoCitation['title'];
-                            $globalInfoMetadata[$i]['source_title'] = $infoCitation['source_title'];
-                            $globalInfoMetadata[$i]['volume'] = $infoCitation['volume'];
-                            $globalInfoMetadata[$i]['issue'] = $infoCitation['issue'];
-                            $globalInfoMetadata[$i]['page'] = $infoCitation['page'];
-                            $globalInfoMetadata[$i]['doi'] = $infoCitation['doi'];
-                            $globalInfoMetadata[$i]['oa_link'] = $infoCitation['oa_link'];
+                            $globalInfoMetadata[$i]['author'] = Episciences_OpenalexTools::getAuthors($metadataInfoCitation['authorships']);
+                            $globalInfoMetadata[$i]['year'] = $metadataInfoCitation['publication_year'];
+                            $globalInfoMetadata[$i]['title'] = $metadataInfoCitation['title'];
+                            $getBestOpenAccessInfo = Episciences_OpenalexTools::getBestOaInfo(
+                                $metadataInfoCitation['primary_location'],
+                                $metadataInfoCitation['locations'],
+                                $metadataInfoCitation['best_oa_location']
+                            );
+                            if ($getBestOpenAccessInfo === "") {
+                                $noLocations++;
+                                $this->log('NO LOCATION FOR '. $doiWhoCite);
+                            }
+                            $globalInfoMetadata[$i]['source_title'] = $getBestOpenAccessInfo['source_title'];
+                            $globalInfoMetadata[$i]['volume'] = is_null($metadataInfoCitation['biblio']['volume']) ? "" : $metadataInfoCitation['biblio']['volume'];
+                            $globalInfoMetadata[$i]['issue'] = is_null($metadataInfoCitation['biblio']['issue']) ? "" : $metadataInfoCitation['biblio']['issue'];
+                            $globalInfoMetadata[$i]['page'] = Episciences_OpenalexTools::getPages($metadataInfoCitation['biblio']['first_page'],$metadataInfoCitation['biblio']['last_page']);
+                            $globalInfoMetadata[$i]['doi'] = $doiWhoCite;
+                            $globalInfoMetadata[$i]['oa_link'] = $getBestOpenAccessInfo['oa_link'];
                             $i++;
-                        }
                     }
                 }
                 if (!empty($globalInfoMetadata)) {
@@ -139,9 +149,8 @@ class getCitationsData extends JournalScript
             } else {
                 $this->displayInfo('NO VALUE IN CACHE FOR ' . $value['DOCID'], true);
             }
-
         }
-
+        $this->log('Number of no Location'.$noLocations);
         $this->displayInfo('Citation Data Enrichment completed. Good Bye ! =)', true);
     }
 
@@ -169,21 +178,20 @@ class getCitationsData extends JournalScript
     {
 
         $client = new Client();
-        $openCitationMetadataCall = '';
+        $openAlexMetadataCall = '';
         try {
-            return $client->get(self::OPENCITATIONS_API_METADATA . $doi, [
+            return $client->get(self::OPENALEX_API_METADATA ."https://doi.org/". $doi . self::PARAMS_OALEX . "&mailto=". OPENALEX_MAILTO, [
                 'headers' => [
                     'User-Agent' => self::OPENCITATIONS_EPISCIENCES_USER_AGENT,
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
-                    'authorization' => OPENCITATIONS_TOKEN
                 ]
             ])->getBody()->getContents();
         } catch (GuzzleException $e) {
             trigger_error($e->getMessage());
         }
         sleep(1);
-        return $openCitationMetadataCall;
+        return $openAlexMetadataCall;
     }
 
     /**

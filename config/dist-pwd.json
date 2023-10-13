@@ -138,5 +138,8 @@
   },
   "OPENCITATIONS": {
     "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN"
+  },
+  "OPENALEX": {
+    "MAILTO": "YOUR-MAIL-TO"
   }
 }
