@@ -923,9 +923,9 @@ return [
     "Civilité" => 'Title',
     "Photo" => 'Picture',
     "Complément de nom" => 'Middle Name',
-    'Login Twitter ou Mastodon' => 'Twitter or Mastodon username',
+    'Login X (anciennement Twitter)' => 'X (ex. Twitter) or Mastodon username',
     'Site(s) Web' => 'Web Site(s)',
-    'Saisissez votre compte Twitter (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your Twitter account (e.g @anonymous) or Mastodon account (e.g @username@server)',
+    'Saisissez votre compte X (anciennement Twitter) (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your X (ex. Twitter) account (e.g @anonymous) or Mastodon account (e.g @username@server)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
 
     // User activation
