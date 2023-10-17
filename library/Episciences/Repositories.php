@@ -78,7 +78,7 @@ class Episciences_Repositories
             // example https://zenodo.org/oai2d?verb=GetRecord&identifier=oai:zenodo.org:3752641&metadataPrefix=oai_dc
             self::REPO_LABEL => 'Zenodo',
             self::REPO_EXAMPLE => '123456 / (DOI)10.5281/zenodo.123456',
-            self::REPO_BASEURL => 'https://zenodo.org/oai2d',
+            self::REPO_BASEURL => null, //'https://zenodo.org/oai2d' (Internal server error for oai_dc format)
             self::REPO_IDENTIFIER => 'oai:zenodo.org:%%ID',
             self::REPO_DOCURL => 'https://zenodo.org/record/%%ID',
             self::REPO_PAPERURL => 'https://zenodo.org/record/files/%%ID',

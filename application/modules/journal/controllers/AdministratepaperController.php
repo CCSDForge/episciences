@@ -4560,7 +4560,7 @@ class AdministratepaperController extends PaperDefaultController
                     $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
                 }
                 $result['version'] = $latestPostedVersion;
-                $result['isDataRecordUpdated'] = Episciences_PapersManager::updateRecordData($docId) > 0;
+                $result['isDataRecordUpdated'] = Episciences_PapersManager::updateRecordData($paper) > 0;
             }
 
         }

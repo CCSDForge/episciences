@@ -25,63 +25,53 @@ class PaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
 
         // check if paper exists
-        if (!$paper || $paper->hasHook || $paper->getRvid() !== RVID || $paper->getRepoid() === 0) {
+        if (!$paper || $paper->getRvid() !== RVID || $paper->getRepoid() === 0) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             return;
         }
 
+        $pdf_name = null;
+        $url = null;
+        $count = 0;
 
-        $pdf_name = $paper->getIdentifier() . '.pdf';
+        if ($paper->hasHook) {
+
+            $files = $paper->getFiles();
+
+            /** @var Episciences_Paper_File $file */
+
+            foreach ($files as $file) {
+
+                if ($file->getFileType() === 'pdf'){
+                    ++$count;
+                    if ($file->getFileSize() <= MAX_PDF_SIZE) {
+                        $pdf_name = $file->getFileName();
+                        $url = $file->getSelfLink();
+                        break;
+                    }
+                }
+
+            }
+        } else {
+            $pdf_name = $paper->getIdentifier() . '.pdf';
+            $url = $paper->getPaperUrl();
+        }
+
+        if (!$pdf_name || !$url) {
+            $this->view->message = $count > 0 ? 'PDF size is over ' .  Episciences_Tools::toHumanReadable(MAX_PDF_SIZE) : 'no PDF files found';
+            $this->renderScript('error/http_error.phtml');
+            return;
+        }
+
 
         $this->requestingAnUnpublishedFile($paper);
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
+        $mainDocumentContent = $this->getMainDocumentContent($paper, $url);
+
         $this->updatePaperStats($paper, Episciences_Paper_Visits::CONSULT_TYPE_FILE);
-
-        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
-        $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
-
-        $clientHeaders = [
-            'headers' =>
-                [
-                    'User-Agent' => DOMAIN,
-                    'connect_timeout' => 10,
-                    'timeout' => 20
-                ]
-        ];
-
-        Episciences_Tools::mbstringBinarySafeEncoding();
-
-        $client = new Client($clientHeaders);
-        $mainDocumentContent = '';
-        try {
-            $url = $paper->getPaperUrl();
-            $res = $client->get($url);
-            $mainDocumentContent = $res->getBody()->getContents();
-        } catch (GuzzleHttp\Exception\RequestException $e) {
-
-            // we failed to get content via http, try a local backup
-            if ($hasDocumentBackupFile) {
-                $mainDocumentContent = $paperDocBackup->getDocumentBackupFile();
-            }
-
-            if (empty($mainDocumentContent)) {
-                // Attempt to get content via local backup failed
-                // exit with error
-                $this->view->message = $e->getMessage();
-                $this->renderScript('error/http_error.phtml');
-                return;
-            }
-
-        }
-
-        Episciences_Tools::resetMbstringEncoding();
-
-        if (!$hasDocumentBackupFile && !empty($mainDocumentContent)) {
-            $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
-        }
 
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -3258,7 +3248,8 @@ class PaperController extends PaperDefaultController
             $result = 0;
 
             try {
-                $result = Episciences_PapersManager::updateRecordData($docId);
+                $paper = Episciences_PapersManager::get($docId);
+                $result = Episciences_PapersManager::updateRecordData($paper);
 
                 if ($result !== 0) {
                     $message = "Les métadonnées de cet article ont bien été mises à jour.";
@@ -3267,7 +3258,7 @@ class PaperController extends PaperDefaultController
                 }
 
                 // update index even if nothing changed
-                $paper = Episciences_PapersManager::get($docId);
+
                 if ($paper->isPublished()) {
                     $resOfIndexing = Episciences_Paper::indexPaper($docId, Ccsd_Search_Solr_Indexer::O_UPDATE);
                     if (!$resOfIndexing) {
@@ -3498,20 +3489,6 @@ class PaperController extends PaperDefaultController
         $this->render('answerrequest');
     }
 
-    /**
-     * * Update paper stats
-     * @param Episciences_Paper $paper
-     * @param string $consultType
-     * @throws Zend_Db_Adapter_Exception
-     */
-    private function updatePaperStats(Episciences_Paper $paper, string $consultType = Episciences_Paper_Visits::CONSULT_TYPE_NOTICE): void
-    {
-        // Only paper is published and user is not the contributor
-        if ($paper->isPublished() && Episciences_Auth::getUid() !== $paper->getUid()) {
-            Episciences_Paper_Visits::add($paper->getDocid(), $consultType);
-        }
-
-    }
 
     /**
      * @param Zend_Controller_Request_Http $request

@@ -9,11 +9,10 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
     public static function hookCleanXMLRecordInput(array $input): array
     {
-        $search = 'xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/';
-        $replace = 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/';
 
         if (array_key_exists('record', $input)) {
-            $input['record'] = str_replace($search, $replace, $input['record']);
+            $input['record'] = Episciences_Repositories_Common::checkAndCleanRecord($input['record']);
+
         }
 
         return $input;
@@ -27,24 +26,35 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookFilesProcessing(array $hookParams): array
     {
+
+        $href = 'https://zenodo.org/records/';
+        $href .= $hookParams['identifier'];
+        $href .= '/files/';
+
         $data = [];
         $tmpData = [];
-        $response = self::checkResponse($hookParams);
-        /** @var array $files */
-        $files = array_key_exists('files', $response) ? $response['files'] : [];
 
-        /** @var array $file */
-        foreach ($files as $file) {
+        $files = $hookParams['files'] ?? [];
 
-            [$checksumType, $checksum] = explode(':', $file['checksum']);
+        if (empty($files)) {
+            $response = self::checkResponse($hookParams);
+            $files = $response['files'] ?? [];
+        }
+
+
+        foreach ($files as $file) { // changes following Zenodo site update (13/10/2023)
+
+            $explodedChecksum = explode(':', $file['checksum']);
+            $explodedFileName = explode('.', $file['filename']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
-            $tmpData['file_name'] = $file['key'];
-            $tmpData['file_type'] = $file['type'];
-            $tmpData['file_size'] = $file['size'];
-            $tmpData['checksum'] = $checksum;
-            $tmpData['checksum_type'] = $checksumType;
-            $tmpData['self_link'] = $file['links']['self'];
+            $tmpData['source'] = $hookParams['repoId'];
+            $tmpData['file_name'] = $explodedFileName[0] ?? 'undefined';
+            $tmpData['file_type'] = $explodedFileName[count($explodedFileName) -1] ?? 'undefined';
+            $tmpData['file_size'] = $file['filesize'];
+            $tmpData['checksum'] = $explodedChecksum[0] ?? null;
+            $tmpData['checksum_type'] = $explodedChecksum[1] ?? null;
+            $tmpData['self_link'] = $href . $file['filename'];
 
             $data[] = $tmpData;
 
@@ -93,6 +103,14 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
 
+        if ($response){
+            self::enrichmentProcess($response);
+        }
+
+        if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])){
+            $response['record'] = Episciences_Repositories_Common::toDublinCore($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]);
+        }
+
         return $response ?: [];
     }
 
@@ -104,7 +122,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     {
         $version = 1;
         $response = self::checkResponse($hookParams);
-        if (!empty($response)) {
+        if (!empty($response) && isset($response['metadata']['relations'])) {
             $version = $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
         }
 
@@ -117,16 +135,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookIsOpenAccessRight(array $hookParams): array
     {
-        $isOpenAccessRight = false;
-        $pattern = '<dc:rights>info:eu-repo\/semantics\/openAccess<\/dc:rights>';
-
-        if (array_key_exists('record', $hookParams)) {
-            $found = Episciences_Tools::extractPattern('/' . $pattern . '/', $hookParams['record']);
-            $isOpenAccessRight = !empty($found);
-        }
-
-
-        return ['isOpenAccessRight' => $isOpenAccessRight];
+        return Episciences_Repositories_Common::isOpenAccessRight($hookParams);
     }
 
     public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
@@ -162,7 +171,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
             $found = Episciences_Tools::extractPattern('/' . $pattern . '/', $hookParams['record']);
 
-            if(!empty($found)){
+            if (!empty($found)) {
                 $found[0] = str_replace('<dc:relation>doi:', '', $found[0]);
                 $found[0] = str_replace('</dc:relation>', '', $found[0]);
                 /** array */
@@ -248,8 +257,14 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $data = [];
         $tmpData = [];
+        $affectedRows = 0;
 
-        /** @var array $datastes */
+        if (empty($linkedIdentifiers)){
+            $response['affectedRows'] = $affectedRows;
+            return $response;
+        }
+
+
         foreach ($linkedIdentifiers as $linkedIdentifier) {
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['value'] = $linkedIdentifier['identifier'];
@@ -271,5 +286,151 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         return $response;
 
     }
+
+    public static function hookIsRequiredVersion(): array
+    {
+        return ['result' => !Episciences_Repositories_Common::isRequiredVersion()];
+
+    }
+
+    /**
+     * @param array $data
+     * @return void
+     */
+    private static function enrichmentProcess(array &$data = []): void
+    {
+        if (empty($data)) {
+            return;
+        }
+
+        $identifiers= [];
+        $datestamp = '';
+        $xmlElements = [];
+        $headers = [];
+        $body = [];
+
+        if (isset($data['doi_url'])) {
+            $urlIdentifier = $data['doi_url'];
+            $headers['identifier'] = $urlIdentifier;
+            $identifiers[] = $urlIdentifier;
+        }
+
+        if (isset($data['links']['self_html']) && $data['links']['self_html'] !== '' ){
+            $identifiers[] = $data['links']['self_html'];
+        }
+
+        if (isset($data['links']['self_doi']) && $data['links']['self_doi'] !== '' ){
+            $identifiers[] = $data['links']['self_doi'];
+        }
+
+        if (isset($data['modified'])) {
+            $datestamp = $data['modified'];
+        } elseif (isset($data['created'])) {
+            $datestamp = $data['created'];
+        }
+
+        if ('' !== $datestamp) {
+            $datestamp = date_create($datestamp)->format('Y-m-d');
+            $headers['datestamp'] = $datestamp;
+        }
+
+        $creatorsDc = [];
+        $type = []; // type & subtype;
+        $authors = []; // enrichment
+        $metadata = $data['metadata'];
+
+        if (isset($metadata['upload_type'])){
+            $type['type'] = $metadata['upload_type'];
+        }
+
+        if(isset($metadata['publication_type'])){
+            $type['subtype'] = $metadata['publication_type'];
+        }
+
+
+        if (isset($metadata['creators']) && is_array($metadata['creators'])) {
+
+            foreach ($metadata['creators'] as $author) {
+
+                $affiliations = [];
+
+                if (isset($author['name']) && $author['name'] !== '') {
+                    $name = $author['name'];
+                    $creatorsDc[] = $name;
+                    $explodedName = explode(', ', $name);
+                    $tmp['fullname'] = $name;
+                    $tmp['given'] = isset($explodedName[1]) ? trim($explodedName[1]) : '';
+                    $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
+
+                    if (isset($author['orcid']) && $author['orcid'] !== '') {
+                        $tmp['orcid'] = $author['orcid'];
+                    }
+
+                    if (isset($author['affiliation'])) {
+
+                        $affiliations[] = ['name' => $author['affiliation']];
+                        $tmp['affiliation'] = $affiliations;
+
+                    }
+
+                    $authors[] = $tmp;
+                }
+            }
+        }
+
+        $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
+
+        $description[] = [
+            'value' => trim(str_replace(['<p>', '</p>'], '', $metadata['description'])),
+            'language' => $language
+                ];
+
+
+        $body['title'] = $metadata['title'] ?? '';
+        $body['creator'] = $creatorsDc;
+        $body['subject'] = $metadata['keywords'] ?? [];
+        $body['description'] = $description;
+        $body['language'] = $language;
+        $body['type'] = $type['subtype'] ?? $type['type'] ?? '';
+        $body['date'] = $datestamp;
+        $body['identifier'] = $identifiers;
+
+        if (isset($metadata['license']) && $metadata['license'] !== '') {
+
+            $license = $metadata['license'];
+
+            if (str_contains(strtolower($license), 'cc-')) {
+                $license = 'https://creativecommons.org/licenses/' . $license;
+            } else {
+                $license = strtoupper($license);
+            }
+
+            $body['rights'][] = $license;
+            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::LICENSE_ENRICHMENT] = $license;
+        }
+
+        if (isset($metadata['access_right']) && $metadata['access_right'] === 'open') {
+            $body['rights'][] = 'info:eu-repo/semantics/openAccess';
+        }
+
+        $xmlElements['headers'] = $headers;
+        $xmlElements['body'] = $body;
+
+        $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC] = $xmlElements;
+
+        if (!empty($authors)) {
+            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::CONTRIB_ENRICHMENT] = $authors;
+        }
+
+        if (!empty($type)) {
+            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
+        }
+
+
+        if(isset($data[Episciences_Repositories_Common::FILES])) {
+            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
+        }
+    }
+
 
 }

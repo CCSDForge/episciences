@@ -2504,15 +2504,16 @@ class Episciences_PapersManager
 
     /**
      * Update paper metadata
-     * @param int $docId
+     * @param Episciences_Paper $paper
      * @return int
      * @throws Exception
-     * @throws Zend_Db_Adapter_Exception
      */
-    public static function updateRecordData(int $docId): int
+    public static function updateRecordData(Episciences_Paper $paper): int
     {
 
-        if ($docId <= 0) {
+        $docId = $paper->getDocId();
+
+        if (!$docId) {
             return 0;
         }
 
@@ -2524,7 +2525,7 @@ class Episciences_PapersManager
 
         $identifier = $result['IDENTIFIER'];
         $repoId = (int)$result['REPOID'];
-        $version = (int)$result['VERSION'];
+        $version = (float)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];
         $doiTrim = [];
         if (!empty($result['DOI'])) {
@@ -2534,30 +2535,72 @@ class Episciences_PapersManager
         $status = (int)$result['STATUS'];
 
         $repoIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier, $version);
-        $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
-        $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
 
-        $record = $oai->getRecord($repoIdentifier);
+        $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
+
+        if ($baseUrl) {
+            $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
+            $record = $oai->getRecord($repoIdentifier);
+
+        } else {
+            $response = Episciences_Repositories::callHook(
+                'hookApiRecords', [
+                    'identifier' => $identifier,
+                    'repoId' => $repoId,
+                    'version' => $version
+                ]
+            );
+
+            $record = $response['record'];
+        }
+
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
-        $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', ['record' => $record, 'repoId' => $repoId]);
+        $result = Episciences_Repositories::callHook(
+            'hookCleanXMLRecordInput', [
+            'record' => $record,
+            'repoId' => $repoId
+        ]);
+
+
+        $enrichment = $response['enrichment'] ?? [];
 
         if (array_key_exists('record', $result)) {
             $record = $result['record'];
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($docId);
+
+            $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
+
             // add all files
-            $hookFiles = Episciences_Repositories::callHook('hookFilesProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
-            $affectedRows += $hookFiles['affectedRows'];
+            $hookFiles = Episciences_Repositories::callHook(
+                'hookFilesProcessing',
+                (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
+            );
+
+            if (isset($hookFiles['affectedRows'])) {
+                $affectedRows += $hookFiles['affectedRows'];
+
+            }
+
         }
 
         // delete all paper datasets
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($docId, $repoId);
 
         if (Episciences_Repositories::hasHook($repoId)) {
-            // add all linked data if has hook
-            $hookLikedData = Episciences_Repositories::callHook('hookLinkedDataProcessing', ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId]);
-            $affectedRows += $hookLikedData['affectedRows'];
+            // add all linked data : Zenodo only
+            $hookLikedData = Episciences_Repositories::callHook(
+                'hookLinkedDataProcessing', [
+                'repoId' => $repoId,
+                'identifier' => $identifier,
+                'docId' => $docId
+            ]);
+
+            if (isset($hookLikedData['affectedRows'])) {
+                $affectedRows += $hookLikedData['affectedRows'];
+            }
+
 
         } else {
             // add all datasets for Hal repository

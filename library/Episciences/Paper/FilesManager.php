@@ -13,7 +13,8 @@ class Episciences_Paper_FilesManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
             ->from(T_PAPER_FILES)
-            ->where('doc_id = ?', $docId);
+            ->where('doc_id = ?', $docId)
+            ->order('file_size DESC');
 
         $rows = $db->fetchAssoc($sql);
 
