@@ -140,13 +140,14 @@ class Episciences_VolumesManager
      */
     public static function sort($params): bool
     {
-        // Vérifier qu'on a le même nombre de volumes avant et après le tri
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->from(T_VOLUMES, 'COUNT(VID) AS results')
             ->where('RVID = ?', RVID);
-        $nbBeforeSort = (int)$db->fetchOne($select);
-        if ($nbBeforeSort !== count($params['sorted'])) {
+
+
+        if ((int)$db->fetchOne($select) < 1) {
             return false;
         }
 

@@ -188,6 +188,10 @@ class VolumeController extends Zend_Controller_Action
         echo $respond;
     }
 
+    /**
+     * @return false|void
+     * @throws Zend_Db_Adapter_Exception
+     */
     public function sortAction()
     {
         $request = $this->getRequest();

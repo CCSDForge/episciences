@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### fixed
+- RT#195453: sorting volumes and sections: drag and drop doesn't always work.
 
 ## 1.0.40.16 - 2023-10-11
 ### Fixed
