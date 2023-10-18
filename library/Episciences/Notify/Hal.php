@@ -117,7 +117,7 @@ class Episciences_Notify_Hal
         ];
 
 
-        $coarNotificationManager = new COARNotificationManager($conn, false, $cn_logger);
+        $coarNotificationManager = new COARNotificationManager($conn, $cn_logger);
 
 
         // Sender Episciences

@@ -73,15 +73,15 @@ class InboxNotifications extends Script
 
         }
 
-        $allNotifications = $notificationsCollection->findAll();
 
-        $count = count($allNotifications);
+
+        $count = count($notificationsCollection);
 
 
         $this->displaySuccess("Total number of notifications : " . $count . PHP_EOL, $this->isVerbose());
 
 
-        foreach ($allNotifications as $index => $notification) {
+        foreach ($notificationsCollection as $index => $notification) {
 
             /** @var COARNotification $notification */
             if (($notification instanceof COARNotification) && $this->notificationsProcess($notification) &&
@@ -119,7 +119,6 @@ class InboxNotifications extends Script
 
 
             $this->displayInfo("Current notification : " . $nOriginal . PHP_EOL, $this->isVerbose());
-
 
             if ($this->checkNotifyPayloads($notifyPayloads)) {
 

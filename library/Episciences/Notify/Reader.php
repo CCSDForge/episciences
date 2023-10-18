@@ -41,7 +41,6 @@ class Episciences_Notify_Reader
         try {
             $this->coarNotificationManager = new COARNotificationManager(
                 $this->getConnectionParamsArray(),
-                false,
                 $this->getLogger(),
                 INBOX_ID,
                 INBOX_URL
@@ -75,11 +74,11 @@ class Episciences_Notify_Reader
 
 
     /**
-     * @return ObjectRepository|null
+     * @return array
      */
-    public function getNotifications(): ?ObjectRepository
+    public function getNotifications(): array
     {
-        return $this->coarNotificationManager->get_notifications();
+        return $this->coarNotificationManager->getNotifications();
     }
 
     /**
