@@ -108,6 +108,10 @@ class SectionController extends Zend_Controller_Action
         echo $respond;
     }
 
+    /**
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     */
     public function sortAction()
     {
         $request = $this->getRequest();

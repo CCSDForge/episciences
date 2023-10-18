@@ -112,13 +112,13 @@ class Episciences_SectionsManager
      */
 	public static function sort($params)
 	{
-		// Vérifier qu'on a le même nombre de rubriques avant et après le tri
 		$db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
 		$select = $db->select()
 		->from(T_SECTIONS, 'COUNT(SID) AS results')
 		->where('RVID = ?', RVID);
-		$nbBeforeSort = $db->fetchOne($select);
-		if ($nbBeforeSort != count($params['sorted'])) {
+
+		if ((int)$db->fetchOne($select) < 1) {
 			return false;
 		}
 
