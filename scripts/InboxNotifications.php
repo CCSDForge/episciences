@@ -43,7 +43,6 @@ class InboxNotifications extends Script
         // Language choice
         Zend_Registry::set('languages', ['fr', Episciences_Review::DEFAULT_LANG]);
         Zend_Registry::set('Zend_Locale', new Zend_Locale(Episciences_Review::DEFAULT_LANG));
-        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
 
         $this->checkAppEnv();
 
@@ -53,6 +52,9 @@ class InboxNotifications extends Script
 
         $this->initApp();
         $this->initDb();
+
+        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
+
 
         try {
             $this->initTranslator(Episciences_Review::DEFAULT_LANG);
