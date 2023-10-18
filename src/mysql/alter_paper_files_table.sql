@@ -1,1 +1,2 @@
 ALTER TABLE `paper_files` ADD `source` INT NOT NULL DEFAULT '4' AFTER `doc_id`, ADD INDEX `source` (`source`);
+ALTER TABLE `paper_files` CHANGE `checksum_type` `checksum_type` CHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MD5';

@@ -88,7 +88,7 @@ UPDATE
     `metadata_sources`
 SET
     `identifier` = 'oai:zenodo.org:%%ID',
-    `base_url` = 'https://zenodo.org/oai2d',
+    `base_url` = null,
     `doi_prefix` = '10.5281',
     `api_url` = 'https://zenodo.org/api/',
     `doc_url` = 'https://zenodo.org/record/%%ID',

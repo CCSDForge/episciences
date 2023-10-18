@@ -307,12 +307,8 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
-
-        if (null === $request) {
-            return;
-        }
-
         $params = $request->getParams();
+
         $docId = $params['docId'];
         $filename = $params['filename'];
         $extension = $params['first-extension'];
@@ -323,7 +319,6 @@ class FileController extends DefaultController
         }
 
         $file = $filename . '.' . $extension;
-
         $paper = Episciences_PapersManager::get($docId);
 
         // check if paper exists
@@ -337,22 +332,10 @@ class FileController extends DefaultController
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
-        // update paper stats (only if user is not the contributor)
-        if (Episciences_Auth::getUid() !== $paper->getUid()) {
-            Episciences_Paper_Visits::add($paper->getDocid(), Episciences_Paper_Visits::CONSULT_TYPE_FILE);
-        }
+        /** @var Episciences_Paper_File | null $oFile */
+        $oFile = $paper->getFileByName($filename);
 
-        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
-        $paperDocBackup->setPathFileName($paperDocBackup->getPath() . $file);
-        $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
-
-        /** @var Episciences_Paper_File $oFile */
-        $oFile = $paper->getFileByName($file);
-
-        if ($oFile) {
-            $url = $oFile->getSelfLink();
-            $fileSize = $oFile->getFileSize();
-        } else {
+        if (!$oFile) {
 
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
@@ -360,59 +343,15 @@ class FileController extends DefaultController
             return;
         }
 
+        $url = $oFile->getSelfLink();
 
-        if (MAX_FILE_SIZE < $fileSize) {
-            header('Location: ' . $url);
-            return;
-        }
+        $mainDocumentContent = $this->getMainDocumentContent($paper, $url);
 
-        $clientHeaders = [
-            'headers' =>
-                [
-                    'User-Agent' => DOMAIN,
-                    'connect_timeout' => 10,
-                    'timeout' => 20
-                ]
-        ];
-
-        $mainDocumentContent = '';
-        $client = new Client($clientHeaders);
-
-        try {
-            $response = $client->get($url);
-            $hResponse = $response->getHeaders();
-            $contentType = is_array($hResponse['Content-Type']) ? $hResponse['Content-Type'][0] : $hResponse['Content-Type'];
-            $mainDocumentContent = $response->getBody()->getContents();
-
-        } catch (GuzzleHttp\Exception\RequestException $e) {
-
-            // we failed to get content via http, try a local backup
-            if ($hasDocumentBackupFile) {
-                $mainDocumentContent = $paperDocBackup->getDocumentBackupFile();
-            }
-
-            if ($mainDocumentContent === '') {
-                // Attempt to get content via local backup failed
-                // exit with error
-                $this->view->message = $e->getMessage();
-                $this->renderScript('error/http_error.phtml');
-                return;
-            }
-
-            $contentType = Episciences_Tools::getMimeType($file);
-
-        }
-
-        if (!$hasDocumentBackupFile) {
-            $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
-        }
-
-
+        $this->updatePaperStats($paper, Episciences_Paper_Visits::CONSULT_TYPE_FILE);
         header("Content-Disposition: attachment; filename=$file");
-        header('Content-type: ' . $contentType);
+        header('Content-type: ' . $oFile->getFileType());
         header('Cache-Control: private, max-age=0, must-revalidate');
         header('Pragma: public');
-
 
         echo $mainDocumentContent;
 
@@ -474,8 +413,8 @@ class FileController extends DefaultController
             $fileUrl = '/docfiles/ce/' . $docId . '/' . $fileName . '/' . $pcId;
         } else {
             $fileUrl = '/';
-            $fileUrl .=  substr(Episciences_Tools::getAttachmentsPath((string)$paperId), mb_strlen(REVIEW_FILES_PATH));
-            $fileUrl.= $fileName;
+            $fileUrl .= substr(Episciences_Tools::getAttachmentsPath((string)$paperId), mb_strlen(REVIEW_FILES_PATH));
+            $fileUrl .= $fileName;
         }
         return $fileUrl;
     }

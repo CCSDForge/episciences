@@ -257,7 +257,7 @@
                         </div>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:for-each select="metadata/oai_dc:dc/dc:rights">
+                        <!--xsl:for-each select="metadata/oai_dc:dc/dc:rights"-->
                             <xsl:variable name="doc_rights" select="metadata/oai_dc:dc/dc:rights/text()"/>
                             <xsl:if test="$doc_rights != 'info:eu-repo/semantics/openAccess'">
                                 <div class="small">
@@ -272,7 +272,7 @@
                                     </a>
                                 </div>
                             </xsl:if>
-                        </xsl:for-each>
+                        <!--/xsl:for-each-->
                     </xsl:otherwise>
                 </xsl:choose>
 

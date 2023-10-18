@@ -165,12 +165,12 @@ class Episciences_Paper_File
     }
 
     /**
-     * @param string $fileType
+     * @param string|null $fileType
      * @return Episciences_Paper_File
      */
-    public function setFileType(string $fileType): Episciences_Paper_File
+    public function setFileType(string $fileType = null): Episciences_Paper_File
     {
-        $this->_fileType = $fileType;
+        $this->_fileType = $fileType ?? 'pdf';
         return $this;
     }
 
@@ -201,12 +201,12 @@ class Episciences_Paper_File
     }
 
     /**
-     * @param string $checksumType
+     * @param string|null $checksumType
      * @return Episciences_Paper_File
      */
-    public function setChecksumType(string $checksumType): Episciences_Paper_File
+    public function setChecksumType(string $checksumType = null): Episciences_Paper_File
     {
-        $this->_checksumType = $checksumType;
+        $this->_checksumType = $checksumType ?? 'MD5';
         return $this;
     }
 
@@ -219,12 +219,12 @@ class Episciences_Paper_File
     }
 
     /**
-     * @param string $link
+     * @param string|null $link
      * @return Episciences_Paper_File
      */
-    public function setSelfLink(string $link): Episciences_Paper_File
+    public function setSelfLink(string $link = null): Episciences_Paper_File
     {
-        $this->_selfLink = $link;
+        $this->_selfLink = $link ?? '#';
         return $this;
     }
 
@@ -256,6 +256,18 @@ class Episciences_Paper_File
     {
         $this->_source = $source;
         return $this;
+    }
+
+    public function getName(): string
+    {
+        $name = $this->getFileName();
+
+        if ($this->getFileType()) {
+            $name .= '.';
+            $name .=  $this->getFileType();
+        }
+
+        return $name;
     }
 
 }
