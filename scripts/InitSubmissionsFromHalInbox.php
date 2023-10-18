@@ -14,7 +14,7 @@ $script
     ->setCoarNotifyId(NOTIFY_TARGET_HAL_URL) // repository URL
     ->setCoarNotifyType([   // expected type
         'Offer',
-        'coar-notify:ReviewAction'
+        'coar-notify:EndorsementAction'
     ])
     ->setCoarNotifyOrigin([ // origin of request
         'id' => NOTIFY_TARGET_HAL_URL, // defined in pwd.json
