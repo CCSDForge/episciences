@@ -44,8 +44,6 @@ class InboxNotifications extends Script
         Zend_Registry::set('languages', ['fr', Episciences_Review::DEFAULT_LANG]);
         Zend_Registry::set('Zend_Locale', new Zend_Locale(Episciences_Review::DEFAULT_LANG));
 
-        $this->checkAppEnv();
-
         defineSQLTableConstants();
         defineSimpleConstants();
         defineApplicationConstants();
@@ -198,24 +196,22 @@ class InboxNotifications extends Script
 
         if ($context !== self::COAR_NOTIFY_AT_CONTEXT) {
 
-            //$message .= "the '@context' property doesn't match: ";
-            //$message .= implode(', ', self::COAR_NOTIFY_AT_CONTEXT);
-            //$this->displayError($message, $this->isVerbose());
-            //   $result = false;
+            $message .= "the '@context' property doesn't match: ";
+            $message .= implode(', ', self::COAR_NOTIFY_AT_CONTEXT);
+            $this->displayWarning($message, $this->isVerbose());
             // Test always fails but context is valid ???
 
         } elseif (!$isValidOrigin) {
 
             $message .= "the 'origin' property doesn't match: ";
             $message .= $this->getCoarNotifyOrigin()['inbox'];
-            $this->displayError($message, $this->isVerbose());
-            //$result = false;
+            $this->displayWarning($message, $this->isVerbose());
+
 
         } elseif ($type !== $this->getCoarNotifyType()) {
             $message .= "the 'type' property doesn't match: ";
             $message .= implode(', ', $this->getCoarNotifyType());
-            $this->displayError($message, $this->isVerbose());
-            $result = false;
+            $this->displayWarning($message, $this->isVerbose());
 
         } elseif (
             !isset($notifyPayloads['target']['id']) ||
