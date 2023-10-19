@@ -12,6 +12,7 @@ $(document).ready(function () {
         })
         .dataTable({
             stateSave: true,
+            ordering: false,
             sDom: "<'dt-header row'<'left col-xs-6'l><'right col-xs-6'f>r>t<'dt-footer row'<'left col-xs-6'i><'right col-xs-6'p>>",
             aoColumnDefs:
                 [{

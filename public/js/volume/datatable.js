@@ -6,6 +6,7 @@ $(document).ready(function () {
         },
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, translate("all")]],
         stateSave: true,
+        ordering: false,
         "pagingType": "numbers",
         "columnDefs": [{
             "searchable": false,
