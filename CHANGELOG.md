@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## 1.0.40.18 - 2023-10-19
+## Changed
+- Removed sorting option from volumes & sections tables, the feature was confusing and conflicting with another one: drag n drop to sort the volumes/sections 
+
 ## 1.0.40.17 - 2023-10-18
 ### Fixed
 - Sorting volumes and sections: drag and drop doesn't always work.
