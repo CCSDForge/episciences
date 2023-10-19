@@ -24,14 +24,14 @@ $files = $paper->getFiles();
                 <?php foreach ($paper->getFiles() as $oFile) : ?>
                     <?php
                     if ($paper->isPublished()) {
-                        $href = '/' . $paper->getDocid() . "/$action/" . $oFile->getFileName();
+                        $href = '/' . $paper->getDocid() . "/$action/" . $oFile->getName();
                     } else {
                         $href = $oFile->getSelfLink();
                     }
                     ?>
                     <tr>
                         <td>
-                            <a href="<?= $href ?>"><?= $oFile->getFileName() ?></a>
+                            <a href="<?= $href ?>"><?= $oFile->getName() ?></a>
                             <br/>
                             <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
                                 <!-- i class="fas fa-question-circle text-muted" data-toggle="tooltip" data-placement="top"

@@ -2623,7 +2623,6 @@ class Episciences_PapersManager
 
 
         $enrichment = $response['enrichment'] ?? [];
-        $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
 
         if (array_key_exists('record', $result)) {
             $record = $result['record'];
@@ -2667,6 +2666,8 @@ class Episciences_PapersManager
             $affectedRows += Episciences_Submit::datasetsProcessing($docId);
 
         }
+
+        $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
 
         Episciences_Paper_AuthorsManager::verifyExistOrInsert($docId, $paperId);
         //insert licence when save paper

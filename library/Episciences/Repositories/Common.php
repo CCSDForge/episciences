@@ -10,6 +10,8 @@ class Episciences_Repositories_Common
     public const CONTRIB_ENRICHMENT = 'authors';
     public const LICENSE_ENRICHMENT = 'license';
     public const RESOURCE_TYPE_ENRICHMENT = 'type';
+    public const TO_COMPILE_OAI_DC = 'toCompileOaiDc';
+    public const FILES = 'files';
 
     public const AVAILABLE_ENRICHMENT = [
         self::CONTRIB_ENRICHMENT,
@@ -22,11 +24,10 @@ class Episciences_Repositories_Common
     {
 
         $isOpenAccessRight = false;
-        $pattern = '<dc:rights>info:eu-repo\/semantics\/openAccess<\/dc:rights>';
+        $pattern = '<dc:rights>info:eu-repo/semantics/openAccess</dc:rights>';
 
         if (array_key_exists('record', $hookParams)) {
-            $found = Episciences_Tools::extractPattern('/' . $pattern . '/', $hookParams['record']);
-            $isOpenAccessRight = !empty($found);
+            $isOpenAccessRight = !empty(Episciences_Tools::extractPattern('~' . $pattern . '~', $hookParams['record']));
         }
 
 

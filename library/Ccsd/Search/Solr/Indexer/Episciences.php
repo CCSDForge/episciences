@@ -152,7 +152,8 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
             'revue_creation_date_tdate' => $revue_date_creation,
 
             'repo_id_i' => $paperData->getRepoid(),
-            'repo_title_s' => $repositories[$paperData->getRepoid()]['label']];
+            'repo_title_s' => $repositories[$paperData->getRepoid()][Episciences_Repositories::REPO_LABEL]
+        ];
 
 
         $titles = $paperData->getMetadata('title');

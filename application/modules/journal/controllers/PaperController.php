@@ -69,49 +69,9 @@ class PaperController extends PaperDefaultController
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
+        $mainDocumentContent = $this->getMainDocumentContent($paper, $url);
+
         $this->updatePaperStats($paper, Episciences_Paper_Visits::CONSULT_TYPE_FILE);
-
-        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
-        $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
-
-        $clientHeaders = [
-            'headers' =>
-                [
-                    'User-Agent' => DOMAIN,
-                    'connect_timeout' => 10,
-                    'timeout' => 20
-                ]
-        ];
-
-        Episciences_Tools::mbstringBinarySafeEncoding();
-
-        $client = new Client($clientHeaders);
-        $mainDocumentContent = '';
-        try {
-            $res = $client->get($url);
-            $mainDocumentContent = $res->getBody()->getContents();
-        } catch (GuzzleHttp\Exception\RequestException $e) {
-
-            // we failed to get content via http, try a local backup
-            if ($hasDocumentBackupFile) {
-                $mainDocumentContent = $paperDocBackup->getDocumentBackupFile();
-            }
-
-            if (empty($mainDocumentContent)) {
-                // Attempt to get content via local backup failed
-                // exit with error
-                $this->view->message = $e->getMessage();
-                $this->renderScript('error/http_error.phtml');
-                return;
-            }
-
-        }
-
-        Episciences_Tools::resetMbstringEncoding();
-
-        if (!$hasDocumentBackupFile && !empty($mainDocumentContent)) {
-            $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
-        }
 
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -3662,21 +3622,6 @@ class PaperController extends PaperDefaultController
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
         $this->render('answerrequest');
-    }
-
-    /**
-     * * Update paper stats
-     * @param Episciences_Paper $paper
-     * @param string $consultType
-     * @throws Zend_Db_Adapter_Exception
-     */
-    private function updatePaperStats(Episciences_Paper $paper, string $consultType = Episciences_Paper_Visits::CONSULT_TYPE_NOTICE): void
-    {
-        // Only paper is published and user is not the contributor
-        if ($paper->isPublished() && Episciences_Auth::getUid() !== $paper->getUid()) {
-            Episciences_Paper_Visits::add($paper->getDocid(), $consultType);
-        }
-
     }
 
     /**
