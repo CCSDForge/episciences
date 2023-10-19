@@ -1,4 +1,5 @@
 <?php
+use GuzzleHttp\Client;
 
 
 class DefaultController extends Zend_Controller_Action
@@ -250,6 +251,93 @@ class DefaultController extends Zend_Controller_Action
 
             );
 
+
+    }
+
+
+    /**
+     * * Update paper stats (only if article is published and user is not the contributor)
+     * @param Episciences_Paper $paper
+     * @param string $consultType
+     * @throws Zend_Db_Adapter_Exception
+     */
+    protected function updatePaperStats(Episciences_Paper $paper, string $consultType = Episciences_Paper_Visits::CONSULT_TYPE_NOTICE): void
+    {
+        if ($paper->isPublished() && Episciences_Auth::getUid() !== $paper->getUid()) {
+            Episciences_Paper_Visits::add($paper->getDocid(), $consultType);
+        }
+
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param string $url
+     * @return string|null
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    protected function getMainDocumentContent(Episciences_Paper $paper, string $url): ?string
+    {
+        $mainDocumentContent = '';
+        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
+        $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
+
+        $clientHeaders = [
+            'headers' =>
+                [
+                    'User-Agent' => DOMAIN,
+                    'connect_timeout' => 10,
+                    'timeout' => 20
+                ]
+        ];
+
+        Episciences_Tools::mbstringBinarySafeEncoding();
+
+        $client = new Client($clientHeaders);
+        $saveCopy = false;
+
+        try {
+            $res = $client->get($url);
+            $headers = $res->getHeaders();
+            $mainDocumentContent = $res->getBody()->getContents();
+
+            if (isset($headers['content-length'])){
+                $contentLength = is_array($headers['content-length']) ? $headers['content-length'][0] : $headers['content-length'];
+
+                if((int)$contentLength <= MAX_PDF_SIZE) {
+                    $saveCopy = true;
+                }
+
+            }
+
+        } catch (GuzzleHttp\Exception\RequestException $e) {
+
+            // we failed to get content via http, try a local backup
+            if ($hasDocumentBackupFile) {
+                $mainDocumentContent = $paperDocBackup->getDocumentBackupFile();
+            }
+
+            if (empty($mainDocumentContent)) {
+                // Attempt to get content via local backup failed
+                // exit with error
+                $this->view->message = $e->getMessage();
+                $this->renderScript('error/http_error.phtml');
+                return null;
+            }
+
+        }
+
+        Episciences_Tools::resetMbstringEncoding();
+
+        if (
+            $saveCopy &&
+            !$hasDocumentBackupFile &&
+            !empty($mainDocumentContent)
+        ) {
+            $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
+        }
+
+
+        return $mainDocumentContent;
 
     }
 
