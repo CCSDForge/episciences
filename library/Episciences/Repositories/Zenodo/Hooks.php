@@ -380,7 +380,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
 
         $description[] = [
-            'value' => trim(str_replace(['<p>', '</p>'], '', $metadata['description'])),
+            'value' => trim(str_replace(['<p>', '</p>'], '', Episciences_Tools::epi_html_decode($metadata['description']))), // (exp. #10027122)
             'language' => $language
                 ];
 
