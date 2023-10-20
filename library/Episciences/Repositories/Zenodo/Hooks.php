@@ -48,7 +48,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $explodedFileName = explode('.', $file['filename']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
-            $tmpData['source'] = $hookParams['repoId'];
             $tmpData['file_name'] = $explodedFileName[0] ?? 'undefined';
             $tmpData['file_type'] = $explodedFileName[count($explodedFileName) -1] ?? 'undefined';
             $tmpData['file_size'] = $file['filesize'];
@@ -395,9 +394,9 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $body['date'] = $datestamp;
         $body['identifier'] = $identifiers;
 
-        if (isset($metadata['license']) && $metadata['license'] !== '') {
+        $license = $metadata['license']['id'] ?? '';
 
-            $license = $metadata['license'];
+        if ($license !== '') {
 
             if (str_contains(strtolower($license), 'cc-')) {
                 $license = 'https://creativecommons.org/licenses/' . $license;
