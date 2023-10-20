@@ -347,7 +347,7 @@ class Episciences_Submit
             'class' => 'btn btn-primary',
             'decorators' => [
                 ['ViewHelper', ['class' => 'form-control input']],
-                ['HtmlTag', ['tag' => 'div', 'class' => "col-md-3", 'style' => 'margin-top: 20px; margin-bottom: 20px']]
+                ['HtmlTag', ['tag' => 'div', 'class' => "col-md-4", 'style' => 'margin-top: 20px; margin-bottom: 20px']]
             ]
         ]);
         $group[] = 'submitPaper';
