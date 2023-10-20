@@ -21,7 +21,7 @@ $files = $paper->getFiles();
                 </thead>
                 <tbody>
                 <?php /** @var  Episciences_Paper_File $oFile */ ?>
-                <?php foreach ($paper->getFiles() as $oFile) : ?>
+                <?php foreach ($files as $oFile) : ?>
                     <?php
                     if ($paper->isPublished()) {
                         $href = '/' . $paper->getDocid() . "/$action/" . $oFile->getName();
