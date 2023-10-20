@@ -2010,6 +2010,15 @@ class AdministratepaperController extends PaperDefaultController
             $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
             //delete paper password
             $paper->setPassword();
+
+
+            $currentType = $paper->getType();
+
+            if ($currentType && $paper->getTypeWithKey() === Episciences_Paper::DEFAULT_TYPE) {
+                $currentType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE;
+                $paper->setType($currentType);
+            }
+
             if ($paper->save()) {
                 $resOfIndexing = $paper->indexUpdatePaper();
 

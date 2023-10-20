@@ -26,14 +26,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookFilesProcessing(array $hookParams): array
     {
-
-        $href = 'https://zenodo.org/records/';
-        $href .= $hookParams['identifier'];
-        $href .= '/files/';
-
         $data = [];
-        $tmpData = [];
-
         $files = $hookParams['files'] ?? [];
 
         if (empty($files)) {
@@ -44,29 +37,27 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         foreach ($files as $file) { // changes following Zenodo site update (13/10/2023)
 
+            $tmpData = [];
             $explodedChecksum = explode(':', $file['checksum']);
-            $explodedFileName = explode('.', $file['filename']);
+            $explodedFileName = explode('.', $file['key']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['source'] = $hookParams['repoId'];
-            $tmpData['file_name'] = $explodedFileName[0] ?? 'undefined';
-            $tmpData['file_type'] = $explodedFileName[1] ?? 'undefined';
-            $tmpData['file_size'] = $file['filesize'];
-            $tmpData['checksum'] = $explodedChecksum[0] ?? null;
-            $tmpData['checksum_type'] = $explodedChecksum[1] ?? null;
-            $tmpData['self_link'] = $href . $file['filename'];
+            $tmpData['file_name'] = $explodedFileName[array_key_first($explodedFileName)] ?? 'undefined';
+            $tmpData['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
+            $tmpData['file_size'] = $file['size'];
+            $tmpData['checksum'] = $explodedChecksum[array_key_last($explodedChecksum)] ?? null;
+            $tmpData['checksum_type'] = $explodedChecksum[array_key_first($explodedChecksum)] ?? null;
+            $tmpData['self_link'] = $file['links']['self'];
 
             $data[] = $tmpData;
 
-            $tmpData = [];
 
         }
 
-        unset($tmpData);
+        $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
 
-        $response['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
-
-        return $response;
+        return $hookParams;
 
     }
 
@@ -335,17 +326,26 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         $creatorsDc = [];
-        $type = []; // type & subtype;
+        $type = []; // title, type & subtype;
         $authors = []; // enrichment
         $metadata = $data['metadata'];
 
-        if (isset($metadata['upload_type'])){
-            $type['type'] = $metadata['upload_type'];
+        if (isset($metadata['resource_type'])) {
+            $type = array_values($metadata['resource_type']);
+
+        } else {
+            if (isset($metadata['upload_type'])) {
+                $type[Episciences_Paper::TYPE_TYPE_INDEX] = $metadata['upload_type'];
+            }
+
+            if (isset($metadata['publication_type'])) {
+                $type[Episciences_Paper::TYPE_SUBTYPE_INDEX] = $metadata['publication_type'];
+            }
         }
 
-        if(isset($metadata['publication_type'])){
-            $type['subtype'] = $metadata['publication_type'];
-        }
+        $dcType = mb_strtolower($type[Episciences_Paper::TITLE_TYPE_INDEX] ??
+            $type[Episciences_Paper::TYPE_TYPE_INDEX] ??
+            $type[Episciences_Paper::TYPE_SUBTYPE_INDEX]);
 
 
         if (isset($metadata['creators']) && is_array($metadata['creators'])) {
@@ -381,17 +381,20 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
 
         $description[] = [
-            'value' => trim(str_replace(['<p>', '</p>'], '', Episciences_Tools::epi_html_decode($metadata['description']))), // (exp. #10027122)
+            'value' => trim(str_replace(['<p>', '</p>'], '', Episciences_Tools::epi_html_decode($metadata['description'], ['HTML.AllowedElements' =>'p']))), // (exp. #10027122)
             'language' => $language
                 ];
-
 
         $body['title'] = $metadata['title'] ?? '';
         $body['creator'] = $creatorsDc;
         $body['subject'] = $metadata['keywords'] ?? [];
         $body['description'] = $description;
         $body['language'] = $language;
-        $body['type'] = $type['subtype'] ?? $type['type'] ?? '';
+
+        if ($dcType) {
+            $body['type'] = $dcType;
+        }
+
         $body['date'] = $datestamp;
         $body['identifier'] = $identifiers;
 

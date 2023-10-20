@@ -804,6 +804,13 @@ class Episciences_Submit
 
             if ($oai) {
                 $result['record'] = $oai->getRecord($identifier);
+                $type = Episciences_Tools::xpath($result['record'], '//dc:type');
+
+                if (!empty($type)) {
+                    $result[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
+                }
+
+
             } else {
                 $result['record'] = $hookApiRecord ['record'] ?? null;
 
@@ -1912,9 +1919,66 @@ class Episciences_Submit
                 ];
 
                 $insertedRows += Episciences_Paper_ProjectsManager::insert($data);
+            } elseif ($key === Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT && !empty($values) && !$paper->isPublished()) {
+                $paper->setType(self::processAndPrepareType($values));
+                try {
+                    if($paper->save()){
+                        ++$insertedRows;
+                    }
+                } catch (Zend_Db_Adapter_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+
+
             }
         }
         return $insertedRows;
+    }
+
+    /**
+     * @param array | string | false $type
+     * @return array
+     */
+
+    public static function processAndPrepareType($type): array
+    {
+
+        if (!$type) {
+            return [];
+        }
+
+        $processedType = [];
+
+        if (!is_array($type)) {
+            $type = [$type];
+        }
+
+        foreach ($type as $currentType) {
+
+            if (str_contains($currentType, 'info:eu-repo/semantics/')) {
+                $processedType[Episciences_Paper::TITLE_TYPE] = str_replace('info:eu-repo/semantics/', '', $currentType);
+                continue;
+            }
+
+            if (empty($processedType) && isset($type[Episciences_Paper::TITLE_TYPE_INDEX])) {
+                $processedType[Episciences_Paper::TITLE_TYPE] =  $type[Episciences_Paper::TITLE_TYPE_INDEX];
+
+            }
+
+            if(isset($type[Episciences_Paper::TYPE_TYPE_INDEX])){
+                $processedType[Episciences_Paper::TYPE_TYPE] =  $type[Episciences_Paper::TYPE_TYPE_INDEX];
+            }
+
+            if(isset($type[Episciences_Paper::TYPE_SUBTYPE_INDEX])){
+                $processedType[Episciences_Paper::TYPE_SUBTYPE] =  $type[Episciences_Paper::TYPE_SUBTYPE_INDEX];
+            }
+
+            return $processedType;
+
+        }
+
+        return $processedType;
+
     }
 
 }

@@ -16,7 +16,8 @@ class Episciences_Repositories_Common
     public const AVAILABLE_ENRICHMENT = [
         self::CONTRIB_ENRICHMENT,
         self::CITATIONS,
-        self::PROJECTS
+        self::PROJECTS,
+        self::RESOURCE_TYPE_ENRICHMENT
     ];
 
 

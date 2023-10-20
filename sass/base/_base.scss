@@ -154,3 +154,7 @@ input[type="radio"] {
 abbr[data-original-title], abbr[title] {
   border-bottom: none;
 }
+
+.force-word-wrap{
+  word-wrap: break-word;
+}

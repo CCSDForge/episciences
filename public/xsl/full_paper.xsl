@@ -149,7 +149,7 @@
                     </i>
                 </p>
                 <xsl:value-of select="episciences/listAffi" disable-output-escaping="yes"/>
-                <p class="small" style="text-align: justify">
+                <p class="small force-word-wrap" style="">
                     <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($description))"/>
                 </p>
 
@@ -257,9 +257,9 @@
                         </div>
                     </xsl:when>
                     <xsl:otherwise>
-                        <!--xsl:for-each select="metadata/oai_dc:dc/dc:rights"-->
-                            <xsl:variable name="doc_rights" select="metadata/oai_dc:dc/dc:rights/text()"/>
-                            <xsl:if test="$doc_rights != 'info:eu-repo/semantics/openAccess'">
+                        <xsl:for-each select="metadata/oai_dc:dc/dc:rights">
+                            <xsl:variable name="doc_rights" select="."/>
+                            <xsl:if test="not (contains($doc_rights, 'info:eu-repo/semantics/'))">
                                 <div class="small">
                                     <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                                     <a rel="noopener" target="_blank">
@@ -272,7 +272,7 @@
                                     </a>
                                 </div>
                             </xsl:if>
-                        <!--/xsl:for-each-->
+                        </xsl:for-each>
                     </xsl:otherwise>
                 </xsl:choose>
 

@@ -2569,6 +2569,8 @@ class Episciences_PapersManager
             return 0;
         }
 
+        $enrichment = [];
+
         $affectedRows = 0;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -2605,8 +2607,16 @@ class Episciences_PapersManager
 
         if ($oai) {
             $record = $oai->getRecord($repoIdentifier);
+            $type = Episciences_Tools::xpath($record, '//dc:type');
+
+            if (!empty($type)) {
+                $enrichment[Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
+            }
+
         } else {
             $record = $response['record'];
+            $enrichment = $response['enrichment'] ?? [];
+
         }
 
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
@@ -2622,7 +2632,6 @@ class Episciences_PapersManager
             ]);
 
 
-        $enrichment = $response['enrichment'] ?? [];
 
         if (array_key_exists('record', $result)) {
             $record = $result['record'];

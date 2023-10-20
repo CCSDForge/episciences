@@ -349,10 +349,15 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
         $license = '';
         $citations = [];
         $kwd = [];
+        $type = [];
 
-
-        $json = json_encode($simpleXlmDoc);
-        $doc = json_decode($json, true);
+        try {
+            $json = json_encode($simpleXlmDoc, JSON_THROW_ON_ERROR);
+            $doc = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+            return;
+        }
 
         $articleMeta = $doc['front']['article-meta'] ?? [];
         $references = $doc['back']['ref-list']['ref'] ?? [];
@@ -360,29 +365,41 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
         self::articleMetaProcess($articleMeta, $license, $contributors, $institutions, $kwd);
         self::referencesProcess($references, $citations);
 
+        if (isset($articleMeta['article-categories']['subj-group'])) {
+            self::typeProcess($articleMeta['article-categories']['subj-group'], $type);
+        }
+
         if (
             !empty($contributors) ||
-            !empty($institutions) ||
             !empty($license) ||
-            !empty($citations)
+            !empty($citations) ||
+            !empty($type)
         ) {
 
             $values[Episciences_Repositories_Common::ENRICHMENT] = [
                 Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $contributors,
-                self::INSTITUTIONS => $institutions,
                 Episciences_Repositories_Common::LICENSE_ENRICHMENT => $license,
                 Episciences_Repositories_Common::REFERENCES_EPI_CITATIONS => $citations,
-                self::KEYWORDS => $kwd
+                self::KEYWORDS => $kwd,
+                Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => $type
             ];
         }
     }
 
 
+    /**
+     * @param array $articleMeta
+     * @param string $strLicense
+     * @param array $contributors
+     * @param array $institutions
+     * @param array $keyWords
+     * @return void
+     */
     private static function articleMetaProcess(
         array  $articleMeta,
         string &$strLicense = '',
         array  &$contributors = [],
-               &$institutions = [],
+        array  &$institutions = [],
         array  &$keyWords = []
     ): void
     {
@@ -395,15 +412,48 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
 
             if ($ak === 'contrib-group') {
 
+                $aff = $aVals['aff'] ?? [];
+
+                foreach ($aff as $affVals) {
+
+                    if (!is_array($affVals)) { // bioRxiv
+                        $institutions[1] = ['name' => implode(', ', $aff)];
+                        break;
+                    }
+
+                    // medRxiv
+                    $name = $affVals['institution'] ?? $aff['institution'] ?? '';
+                    $label = $affVals['label'] ?? null;
+                    if (isset($affVals['country']) || isset($aff['country'])) {
+                        $name .= ', ';
+                        if (isset($affVals['country'])) {
+                            $name .= $affVals['country'];
+                        } elseif ($aff['country']) {
+                            $name .= $aff['country'];
+                        }
+                    }
+                        $institutions[$label] = ['name' => $name];
+                }
+
                 $contrib = $aVals['contrib'] ?? [];
 
                 foreach ($contrib as $cVals) {
+
+                    $xref = $cVals['xref'] ?? [];
+
+                    if (!is_array($xref)) {
+                        $xref = [$xref];
+                    }
+
+                    $contribLabelAffiliation = array_filter($xref, static function ($value) {
+                        return is_numeric($value);
+                    }); // affiliation labels
 
                     $orcid = isset($cVals['contrib-id']) ? preg_replace('#^http(s*)://orcid.org/#', '', $cVals['contrib-id']) : '';
 
                     $tmp = [
                         'degrees' => $cVals['degrees'] ?? '',
-                        'fullname' => $cVals['name']['given-names'] . '' . $cVals['name']['surname'],
+                        'fullname' => $cVals['name']['given-names'] . ' ' . $cVals['name']['surname'],
                         'family' => $cVals['name']['surname'],
                         'given' => $cVals['name']['given-names'],
                         'email' => $cVals['email'] ?? '',
@@ -413,19 +463,16 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                         $tmp['orcid'] = $orcid;
                     }
 
+                    foreach ($contribLabelAffiliation as $label) {
+                        if (isset($institutions[$label])) {
+                            $tmp['affiliation'][] = $institutions[$label];
+                        }
+
+                    }
+
                     $contributors[] = $tmp;
 
                 }
-
-                $aff = $aVals['aff'] ?? [];
-
-                foreach ($aff as $affVals) {
-                    $institutions[] = [
-                        'name' => $affVals['institution'] ?? $affVals, // @see medrxiv 10.1101/2023.06.18.23291577
-                        'country' => $affVals['country'] ?? ''
-                    ];
-                }
-
 
             } elseif ($ak === 'permissions') {
                 $strLicense = isset($aVals[self::LICENSE]['p']) ?
@@ -461,7 +508,11 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                         continue;
                     }
 
-                    $authorStr .= $sn['surname'] . ', ' . $sn['given-names'];
+                    $authorStr .= $sn['surname'] ?? '';
+
+                    if (isset($sn['given-names'])) {
+                        $authorStr .= ', ' . $sn['given-names'];
+                    }
 
                     if ($index <= count($sn) - 1) {
                         $authorStr .= '; ';
@@ -489,8 +540,8 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                     $currentCitation['authorsStr'] = trim($authorStr);
                 }
 
-                if ($title !== '') {
-                    $currentCitation['title'] = trim($title);
+                if (!empty($title)) {
+                    $currentCitation['title'] = trim(is_array($title) ? $title[array_key_first($title)] : $title);
                 }
 
                 if ($page !== '') {
@@ -543,4 +594,29 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
             }
         }
     }
+
+    /**
+     * @param array $rawRypes
+     * @param array $type
+     * @return void
+     */
+    private static function typeProcess(array $rawTypes = [], array &$type = []): void
+    {
+        foreach ($rawTypes as $values) {
+            if (is_array($values)) {
+                foreach ($values as $k => $value) {
+
+                    if ($k !== 'subject' && $k !== 'subj-group-type') {
+                        continue;
+                    }
+
+                    $type[] = $value;
+                }
+            } else {
+                $type[] = $values;
+            }
+        }
+
+    }
+
 }

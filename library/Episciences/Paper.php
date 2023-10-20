@@ -320,17 +320,28 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION
 
     ];
+    public const TITLE_TYPE = 'title';
+    public const TYPE_TYPE = 'type';
+    public const TYPE_SUBTYPE = 'subtype';
 
-    public const DEFAULT_TYPE = 'article';
+    public const TITLE_TYPE_INDEX = 0;
+    public const TYPE_TYPE_INDEX = 1;
+    public const TYPE_SUBTYPE_INDEX = 2;
+
+    public const DEFAULT_TYPE = 'preprint';
+    public const TEXT_TYPE = 'text';
+    public const ARTICLE_TYPE = 'article';
     public const DATASET_TYPE = 'dataset';
     public const DATA_PAPER_TYPE = 'dataPaper';
     public const OTHER_TYPE = 'other';
 
     public const ENUM_TYPES = [
         self::DEFAULT_TYPE,
+        self::TEXT_TYPE,
+        self::ARTICLE_TYPE,
         self::DATASET_TYPE,
         self::DATA_PAPER_TYPE,
-        self::OTHER_TYPE
+        self::OTHER_TYPE,
     ];
 
     /**
@@ -421,7 +432,7 @@ class Episciences_Paper
     /** @var string */
     private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
     public $hasHook; // @see self::setRepoid()
-    protected string $_type = self::DEFAULT_TYPE;
+    protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE];
 
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'doaj', 'zbjats', 'json'];
 
@@ -474,6 +485,13 @@ class Episciences_Paper
                     // if method is setRecord, wait before running it
                     $record = $value;
                 } else {
+                    if (($key === 'type') && $value) {
+                        try {
+                            $value = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+                        } catch (JsonException $e) {
+                            trigger_error($e->getMessage());
+                        }
+                    }
                     $this->$method($value);
                 }
             }
@@ -1984,7 +2002,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
         $node->appendChild($dom->createElement('repoLabel', Episciences_Repositories::getLabel($this->getRepoid())));
-        $node->appendChild($dom->createElement('submissionType', ucfirst($this->getType())));
+        $node->appendChild($dom->createElement('submissionType', ucfirst($this->getTypeWithKey())));
 
         //get licence paper
         if (!empty($this->getDocid())) {
@@ -2447,7 +2465,7 @@ class Episciences_Paper
      * @param $xml
      * @return $this
      */
-    public function setMetadata($xml)
+    public function setMetadata(string $xml) : self
     {
         $metadata = [];
 
@@ -2463,6 +2481,8 @@ class Episciences_Paper
             $metadata['authors'] = Episciences_Tools::xpath($xml, '//dc:creator', true);
             $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
             $metadata['language'] = Episciences_Tools::xpath($xml, '//dc:language');
+            $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:type');
+            $metadata['licenses'] = $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:rights');
         } catch (Exception $e) {
             $metadata['title'] = 'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.';
             $metadata['description'] = 'Merci de contacter le support pour vérifier le document et ses métadonnées';
@@ -3079,27 +3099,39 @@ class Episciences_Paper
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $docId = $this->getDocid();
 
+        $type = $this->getType();
+
+        if ($type) {
+            try {
+                $type = $this->getType() ? json_encode($this->getType(), JSON_THROW_ON_ERROR) : $this->getType();
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+
         if (!$docId) {
             // INSERT
-            $data = [
-                'PAPERID' => $this->getPaperid(),
-                'DOI' => $this->getDoi(),
-                'VERSION' => $this->getVersion(),
-                'RVID' => $this->getRvid(),
-                'VID' => $this->getVid(),
-                'SID' => $this->getSid(),
-                'UID' => $this->getUid(),
-                'STATUS' => $this->getStatus(),
-                'IDENTIFIER' => $this->getIdentifier(),
-                'REPOID' => $this->getRepoid(),
-                'RECORD' => $this->getRecord(),
-                'WHEN' => new Zend_Db_Expr('NOW()'),
-                'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
-                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
-                'FLAG' => $this->getFlag(),
-                'PASSWORD' => $this->getPassword(),
-                'TYPE' => $this->getType(),
-            ];
+
+                $data = [
+                    'PAPERID' => $this->getPaperid(),
+                    'DOI' => $this->getDoi(),
+                    'VERSION' => $this->getVersion(),
+                    'RVID' => $this->getRvid(),
+                    'VID' => $this->getVid(),
+                    'SID' => $this->getSid(),
+                    'UID' => $this->getUid(),
+                    'STATUS' => $this->getStatus(),
+                    'IDENTIFIER' => $this->getIdentifier(),
+                    'REPOID' => $this->getRepoid(),
+                    'RECORD' => $this->getRecord(),
+                    'WHEN' => new Zend_Db_Expr('NOW()'),
+                    'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
+                    'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
+                    'FLAG' => $this->getFlag(),
+                    'PASSWORD' => $this->getPassword(),
+                    'TYPE' => $type
+                ];
+
 
             if ($this->getPublication_date()) {
                 $data['PUBLICATION_DATE'] = $this->getPublication_date();
@@ -3150,7 +3182,8 @@ class Episciences_Paper
             'SUBMISSION_DATE' => $this->getSubmission_date(),
             'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
             'FLAG' => $this->getFlag(),
-            'PASSWORD' => $this->getPassword()
+            'PASSWORD' => $this->getPassword(),
+            'TYPE' => $type
         ];
         if ($this->getIdentifier()) {
             $data['IDENTIFIER'] = $this->getIdentifier();
@@ -4564,16 +4597,42 @@ class Episciences_Paper
         return [];
     }
 
-    public function getType(): string
+    public function getType(): array
     {
         return $this->_type;
     }
 
-    public function setType(string $type = self::DEFAULT_TYPE): \Episciences_Paper
+    /**
+     * @param array|null $type
+     * @return $this
+     */
+
+    public function setType( array $type = null): \Episciences_Paper
     {
-        $this->_type = !in_array($type, self::ENUM_TYPES) ? self::DEFAULT_TYPE : $type;
+        $this->_type = $type ?? [self::TITLE_TYPE => self::DEFAULT_TYPE];
         return $this;
     }
 
+
+    public function getTypeWithKey(string $key = null): string
+    {
+
+        $strType = '';
+
+        if ($key) {
+            return $this->_type[$key] ?? $strType;
+        }
+
+        if (isset($this->_type[self::TITLE_TYPE])) {
+            $strType = $this->_type[self::TITLE_TYPE];
+        } elseif (isset($this->_type[self::TYPE_TYPE])) {
+            $strType = $this->_type[self::TYPE_TYPE];
+        } elseif (isset($this->_type[self::TYPE_SUBTYPE])) {
+            $strType = $this->_type[self::TYPE_SUBTYPE];
+        }
+
+        return $strType;
+
+    }
 
 }

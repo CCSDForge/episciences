@@ -1,2 +1,4 @@
 ALTER TABLE `PAPERS` ADD `PASSWORD` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL AFTER `FLAG`;
-ALTER TABLE `PAPERS` ADD `TYPE` ENUM('article','dataset','dataPaper','proceedingAct','other') NOT NULL DEFAULT 'article' AFTER `DOI`, ADD INDEX `type` (`TYPE`);
+-- ALTER TABLE `PAPERS` ADD `TYPE` ENUM('article','dataset','dataPaper','proceedingAct','other') NOT NULL DEFAULT 'article' AFTER `DOI`, ADD INDEX `type` (`TYPE`);
+ALTER TABLE `PAPERS` ADD `TYPE` JSON NULL DEFAULT NULL AFTER `DOI`;
+UPDATE PAPERS SET `TYPE` = '{"title": "article"}' WHERE STATUS = 16;

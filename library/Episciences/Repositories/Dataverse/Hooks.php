@@ -19,40 +19,22 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
     public static function hookFilesProcessing(array $hookParams): array
     {
 
-        $files = $hookParams['files'] ?? [];
-        $response = [];
+        $files = $hookParams['files'];
+        $docId = $hookParams['docId'];
+        $repoId = $hookParams['repoId'];
 
-        $data = [];
-        $tmpData = [];
+        $files = array_map( static function($file) use ($docId, $repoId) {
+            $file['doc_id'] = $docId;
+            $file['source'] = $repoId;
+            return $file;
 
-        foreach ($files as $file) {
-            $type = 'undefined';
-            $explodedContentType = explode('/', $file['dataFile']['contentType']);
+        }, $files);
 
-            if (isset($explodedContentType[1])) {
-                $type = $explodedContentType[1];
-            }
 
-            $tmpData['doc_id'] = $hookParams['docId'];
-            $tmpData['source'] = $hookParams['repoId'];
-            $tmpData['file_name'] = $file['dataFile']['filename'] ?? $file['label'];
-            $tmpData['file_type'] = $type;
-            $tmpData['file_size'] = $file['dataFile']['filesize'];
-            $tmpData['checksum'] = $file['dataFile']['checksum']['value'];
-            $tmpData['checksum_type'] = $file['dataFile']['checksum']['type'];
-            $tmpData['self_link'] = $file['dataFile']['pidURL'];
 
-            $data[] = $tmpData;
+        $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($files);
 
-            $tmpData = [];
-
-        }
-
-        unset($tmpData);
-
-        $response['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
-
-        return $response;
+        return $hookParams;
     }
 
     public static function hookApiRecords(array $hookParams): array
@@ -429,6 +411,11 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
             if (in_array($key, $extractedOaiDcFields, true)) {
                 $result[self::TO_COMPILE_OAI_DC][$key] = $$key;
+
+                if ($key === 'kindOfDatas') {
+                    $result[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $$key;
+                }
+
             } elseif ($key === 'publications') {
                 $result[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::CITATIONS] = $$key;
             } else {
@@ -440,8 +427,52 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
         $result[self::TO_COMPILE_OAI_DC]['creators'] = $creators;
         $result[self::TO_COMPILE_OAI_DC]['license'] = $license;
-        $result[Episciences_Repositories_Common::ENRICHMENT]['files'] = $data['files'] ?? [];
+
+        $files = $data['files'] ?? [];
+
+        $result[Episciences_Repositories_Common::ENRICHMENT]['files'] = self::processFiles($files);
 
         $data = $result;
     }
+
+    private static function processFiles(array $files = []): array
+    {
+
+        if (empty($files)) {
+            return $files;
+        }
+
+        $processedFiles = [];
+
+
+        foreach ($files as $val) {
+
+            $tmp = [];
+            $dataFile = $val['dataFile'];
+
+            $type = 'undefined';
+            $explodedContentType = explode('/', $dataFile['contentType']);
+
+            if (isset($explodedContentType[0])) {
+                $type = $explodedContentType[0];
+            }
+
+
+            $tmp['file_name'] = $dataFile['filename'] ?? $dataFile['label'];
+            $tmp['file_type'] = $type;
+            $tmp['file_size'] = $dataFile['filesize'];
+            $tmp['checksum'] = $dataFile['checksum']['value'];
+            $tmp['checksum_type'] = $dataFile['checksum']['type'];
+            $tmp['self_link'] = $dataFile['pidURL'];
+
+            $processedFiles[] = $tmp;
+
+
+
+        }
+
+        return $processedFiles;
+
+    }
+
 }
