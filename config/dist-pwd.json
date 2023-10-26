@@ -141,5 +141,8 @@
   },
   "OPENALEX": {
     "MAILTO": "YOUR-MAIL-TO"
+  },
+  "CROSSREFAPI": {
+    "MAILTO": "YOUR-MAIL-TO"
   }
 }
