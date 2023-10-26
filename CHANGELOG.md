@@ -14,8 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-### fixed
-- Zenodo submissions is out of service following the update of 13/10/2023.
+
+## Unreleased
+### Fixed
+- Fixed Zenodo submissions following the [major update of Zenodo on 2023-10-13](https://blog.zenodo.org/2023/10/13/2023-10-13-zenodo-rdm/).
+- Fixed arXiv bibfeed
 
 ## 1.0.40.18 - 2023-10-19
 ## Changed

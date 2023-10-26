@@ -42,8 +42,8 @@ class ArxivController extends Zend_Controller_Action
             'status' => Episciences_Paper::STATUS_PUBLISHED]];
 
         if ($request->getParam('limit') !== 'all') {
-            $settings['limit'] = 1;
-            $settings['offset'] = 1000;
+            $settings['limit'] = 1000;
+            $settings['offset'] = 1;
         }
 
         $papers = Episciences_PapersManager::getList($settings);
