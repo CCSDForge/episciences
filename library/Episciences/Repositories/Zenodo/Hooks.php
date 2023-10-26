@@ -26,14 +26,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookFilesProcessing(array $hookParams): array
     {
-
-        $href = 'https://zenodo.org/records/';
-        $href .= $hookParams['identifier'];
-        $href .= '/files/';
-
         $data = [];
-        $tmpData = [];
-
         $files = $hookParams['files'] ?? [];
 
         if (empty($files)) {
@@ -44,28 +37,26 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         foreach ($files as $file) { // changes following Zenodo site update (13/10/2023)
 
+            $tmpData = [];
             $explodedChecksum = explode(':', $file['checksum']);
-            $explodedFileName = explode('.', $file['filename']);
+            $explodedFileName = explode('.', $file['key']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
-            $tmpData['file_name'] = $explodedFileName[0] ?? 'undefined';
-            $tmpData['file_type'] = $explodedFileName[count($explodedFileName) -1] ?? 'undefined';
-            $tmpData['file_size'] = $file['filesize'];
-            $tmpData['checksum'] = $explodedChecksum[0] ?? null;
-            $tmpData['checksum_type'] = $explodedChecksum[1] ?? null;
-            $tmpData['self_link'] = $href . $file['filename'];
+            $tmpData['file_name'] = $explodedFileName[array_key_first($explodedFileName)] ?? 'undefined';
+            $tmpData['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
+            $tmpData['file_size'] = $file['size'];
+            $tmpData['checksum']  = $explodedChecksum[array_key_last($explodedChecksum)] ?? null;
+            $tmpData['checksum_type'] = $explodedChecksum[array_key_first($explodedChecksum)] ?? null;
+            $tmpData['self_link'] = $file['links']['self'];
 
             $data[] = $tmpData;
 
-            $tmpData = [];
 
         }
 
-        unset($tmpData);
+        $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
 
-        $response['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
-
-        return $response;
+        return $hookParams;
 
     }
 
@@ -102,11 +93,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
 
-        if ($response){
+        if ($response) {
             self::enrichmentProcess($response);
         }
 
-        if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])){
+        if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
             $response['record'] = Episciences_Repositories_Common::toDublinCore($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]);
         }
 
@@ -258,7 +249,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $tmpData = [];
         $affectedRows = 0;
 
-        if (empty($linkedIdentifiers)){
+        if (empty($linkedIdentifiers)) {
             $response['affectedRows'] = $affectedRows;
             return $response;
         }
@@ -302,7 +293,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             return;
         }
 
-        $identifiers= [];
+        $identifiers = [];
         $datestamp = '';
         $xmlElements = [];
         $headers = [];
@@ -314,11 +305,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $identifiers[] = $urlIdentifier;
         }
 
-        if (isset($data['links']['self_html']) && $data['links']['self_html'] !== '' ){
+        if (isset($data['links']['self_html']) && $data['links']['self_html'] !== '') {
             $identifiers[] = $data['links']['self_html'];
         }
 
-        if (isset($data['links']['self_doi']) && $data['links']['self_doi'] !== '' ){
+        if (isset($data['links']['self_doi']) && $data['links']['self_doi'] !== '') {
             $identifiers[] = $data['links']['self_doi'];
         }
 
@@ -338,11 +329,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $authors = []; // enrichment
         $metadata = $data['metadata'];
 
-        if (isset($metadata['upload_type'])){
+        if (isset($metadata['upload_type'])) {
             $type['type'] = $metadata['upload_type'];
         }
 
-        if(isset($metadata['publication_type'])){
+        if (isset($metadata['publication_type'])) {
             $type['subtype'] = $metadata['publication_type'];
         }
 
@@ -382,7 +373,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $description[] = [
             'value' => trim(str_replace(['<p>', '</p>'], '', Episciences_Tools::epi_html_decode($metadata['description']))), // (exp. #10027122)
             'language' => $language
-                ];
+        ];
 
 
         $body['title'] = $metadata['title'] ?? '';
@@ -426,7 +417,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
 
-        if(isset($data[Episciences_Repositories_Common::FILES])) {
+        if (isset($data[Episciences_Repositories_Common::FILES])) {
             $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
         }
     }
