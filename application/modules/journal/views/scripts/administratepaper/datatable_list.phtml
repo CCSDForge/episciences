@@ -13,7 +13,7 @@ foreach ($this->list as $paper) : ?>
     <?php
 
     $href ='/' . $controller . '/view?id=' . $paper->getDocid();
-    $canReviewed = (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) && (Episciences_Auth::getUid() !== $paper->getUid()) && $paper->canBeReviewed();
+    $canBeReviewed = (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) && (Episciences_Auth::getUid() !== $paper->getUid()) && $paper->canBeReviewed();
 
     try {
         $editors = $paper->getEditors();
