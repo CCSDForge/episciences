@@ -10,6 +10,16 @@ $action = $request->getActionName();
 $url = $request->getScheme() . '://' . $request->getHttpHost() . $request->getRequestUri();
 $reviewers = $paper->getReviewers();
 $ratings = $paper->getRatings();
+$canBeReviewed =
+    (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) &&
+    (Episciences_Auth::getUid() !== $paper->getUid()) &&
+    $paper->canBeReviewed();
+try {
+    $jsonCanBeReviewed = json_encode($canBeReviewed, JSON_THROW_ON_ERROR);
+} catch (JsonException $e) {
+    trigger_error($e->getMessage());
+    $jsonCanBeReviewed = false;
+}
 ?>
 
 <style>
@@ -122,7 +132,7 @@ $ratings = $paper->getRatings();
                                                 class="btn btn-default fas fa-ellipsis-v popover-link context-button"
                                                 role="button"
                                                 data-paper_status="<?= $paper->getStatus() ?>"
-                                                data-can_be_reviewed="<?= json_encode($paper->canBeReviewed()) ?>"
+                                                data-can_be_reviewed="<?= $jsonCanBeReviewed ?>"
                                                 data-docid="<?= $paper->getDocid() ?>"
                                                 data-status="<?= $status ?>"
                                                 data-rating="<?= (array_key_exists('rating', $invitation['reviewer'])) ? $invitation['reviewer']['rating']['status'] : 0 ?>"
@@ -292,7 +302,8 @@ $ratings = $paper->getRatings();
         'paper' => $paper,
         'controller' => $controller,
         'action' => $action,
-        'volume' => $this->volume
+        'volume' => $this->volume,
+        'canBeReviewed' => $canBeReviewed
     ]);
     ?>
 </div>
