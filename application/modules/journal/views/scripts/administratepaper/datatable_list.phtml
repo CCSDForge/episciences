@@ -13,6 +13,7 @@ foreach ($this->list as $paper) : ?>
     <?php
 
     $href ='/' . $controller . '/view?id=' . $paper->getDocid();
+    $canReviewed = (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) && (Episciences_Auth::getUid() !== $paper->getUid()) && $paper->canBeReviewed();
 
     try {
         $editors = $paper->getEditors();
@@ -266,6 +267,7 @@ foreach ($this->list as $paper) : ?>
                         'controller' => $controller,
                         'action' => $action,
                         'volume' => ($paper->getVid()) ? $this->volumes[$paper->getVid()] : null,
+                        'canBeReviewed' => $canBeReviewed
                     ])
                     ?>
                 </div>

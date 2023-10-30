@@ -497,8 +497,8 @@ class UserDefaultController extends Zend_Controller_Action
                 $casUserMapper->find($selectedUserId, $user);
                 $user->setScreenName();
                 $user->setIs_valid();
-                $user->setRegistration_date();
-                $user->setModification_date();
+                $user->setRegistrationDate();
+                $user->setModificationDate();
                 $screenName = $user->getScreenName();
 
                 $user->setApiPassword(password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT));
@@ -524,7 +524,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             $user = new Episciences_User($form->getValues());
             $user->setTime_registered();
-            $user->setRegistration_date(); // Episciences registration
+            $user->setRegistrationDate(); // Episciences registration
             $user->setScreenName();
 
             if ($isAllowedToAddUserAccounts) {
