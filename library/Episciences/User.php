@@ -438,8 +438,7 @@ class Episciences_User extends Ccsd_User_Models_User
             'LASTNAME' => $this->getLastname(),
             'FIRSTNAME' => $this->getFirstname(),
             'MIDDLENAME' => $this->getMiddlename(),
-            'REGISTRATION_DATE' => $this->getRegistration_date(),
-            'MODIFICATION_DATE' => $this->getModification_date(),
+            'REGISTRATION_DATE' => $this->getRegistrationDate(),
             'IS_VALID' => $this->getIs_valid(),
             'ORCID' => $this->getOrcid()
         ];
@@ -523,7 +522,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return mixed
      */
-    public function getRegistration_date()
+    public function getRegistrationDate()
     {
         return $this->_registration_date;
     }
@@ -532,7 +531,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param mixed $registrationDate
      * @return Episciences_User
      */
-    public function setRegistration_date($registrationDate = null): \Episciences_User
+    public function setRegistrationDate($registrationDate = null): \Episciences_User
     {
         if (null === $registrationDate) {
             $registrationDate = date("Y-m-d H:i:s");
@@ -547,7 +546,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return mixed
      */
-    public function getModification_date()
+    public function getModificationDate()
     {
         return $this->_modification_date;
     }
@@ -556,7 +555,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param mixed $modificationDate
      * @return Episciences_User
      */
-    public function setModification_date($modificationDate = null): \Episciences_User
+    public function setModificationDate($modificationDate = null): \Episciences_User
     {
         if (null === $modificationDate) {
             $modificationDate = date("Y-m-d H:i:s");
@@ -697,7 +696,7 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         if (!isset($result['MODIFICATION_DATE'])) {
-            $result['MODIFICATION_DATE'] = $this->setModification_date()->getModification_date(); // cas registration
+            $result['MODIFICATION_DATE'] = $this->setModificationDate()->getModificationDate(); // cas registration
         }
 
         if (!isset($result['USERNAME']) || ($result['USERNAME'] === '')) {
@@ -753,8 +752,8 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setLangueid($result['LANGUEID']);
         $this->setApiPassword($result['API_PASSWORD']); // Episciences api password
         $this->setIs_valid($result['IS_VALID']); // Episciences validation
-        $this->setRegistration_date($result['REGISTRATION_DATE']);  // Episciences registration date
-        $this->setModification_date($result['MODIFICATION_DATE']);  // Episciences modification date
+        $this->setRegistrationDate($result['REGISTRATION_DATE']);  // Episciences registration date
+        $this->setModificationDate($result['MODIFICATION_DATE']);  // Episciences modification date
         $this->setAffiliations($result['AFFILIATIONS']);
         $this->setOrcid($result['ORCID']);
 

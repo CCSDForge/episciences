@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- bug updating dates for user profiles (User profile modification date updated automatically /!\ https://github.com/CCSDForge/episciences/blob/main/src/mysql/ALTER_USER_TABLE.sql)
 - RT#196365: bug with feature "Re-invite this reviewer". 
 - A difference between the address displayed in the profile and the one displayed when the address was modified. 
 - Fixed Zenodo submissions following the [major update of Zenodo on 2023-10-13](https://blog.zenodo.org/2023/10/13/2023-10-13-zenodo-rdm/).
