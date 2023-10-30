@@ -83,6 +83,8 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * sign in an admin as another user
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Session_Exception
@@ -111,13 +113,15 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $user = new Episciences_User();
-        $res = $user->findWithCAS($uidToSu);
+        $res = $user->find($uidToSu);
 
-        if ($res === false) {
+        if (empty($res)) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Ce compte n'existe pas.");
             $this->redirect($this->view->url(['controller' => 'user', 'action' => 'list'], null, true));
             return;
         }
+
+        $this->synchroniseLocalUserFromCasIfNecessary($user);
 
         // save uidFrom
 
@@ -134,15 +138,20 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
-     * Login utilisateur
-     * Après login redirige :
-     * - sur la page de modification de compte si pas de champs Application Episciences
-     * - sur la page de destination envoyé en paramètre à CAS
-     * - sur le compte utilisateur si pas de page de destination envoyé en
-     * paramètre à CAS
+     *   Login utilisateur
+     *   Après login redirige :
+     *   - sur la page de modification de compte si pas de champs Application Episciences
+     *   - sur la page de destination envoyé en paramètre à CAS
+     *   - sur le compte utilisateur si pas de page de destination envoyé en
+     *   paramètre à CAS
+     * @return void
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws Zend_Session_Exception
      */
-    public function loginAction()
+    public function loginAction(): void
     {
         $localUser = new Episciences_User();
 
@@ -205,6 +214,7 @@ class UserDefaultController extends Zend_Controller_Action
                     $localUser->find(Episciences_Auth::getUid());
                     $localeSession = new Zend_Session_Namespace('Zend_Translate');
                     $localeSession->lang = Episciences_Auth::getLangueid();
+                    $this->synchroniseLocalUserFromCasIfNecessary($localUser);
                 } else {
                     $localUser->setScreenName();
                 }
@@ -644,6 +654,10 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * edit user account
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public function editAction(): void
@@ -925,7 +939,11 @@ class UserDefaultController extends Zend_Controller_Action
         $userUid = $request->isPost() ? $request->getPost('USER_UID') : $request->getParam('userid');
         $userUid = (int)$userUid;
 
-        if ($userUid && Episciences_Auth::isSecretary()) {
+        if (
+            $userUid &&
+            $userUid !== Episciences_Auth::getUid() &&
+            Episciences_Auth::isSecretary()
+        ) {
             $user = new Episciences_User();
             try {
                 $user->find($userUid);
@@ -1668,5 +1686,34 @@ class UserDefaultController extends Zend_Controller_Action
 
         return $loginsListStr;
 
+    }
+
+    /**
+     * @param Episciences_User $user
+     * @return void
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+
+    private function synchroniseLocalUserFromCasIfNecessary(Episciences_User $user): void
+    {
+        $localUserData = $user->toArray();
+        unset($localUserData['ROLES'], $localUserData['affiliations'], $localUserData['web_sites'], $localUserData['social_medias']); // to fix PHP Notice: Array to string conversion
+        $res = $user->findWithCAS($user->getUid());
+
+        if($res === null){
+            trigger_error("This account could not be found.", E_USER_ERROR);
+        }
+
+        $casUserData = $user->toArray();
+        unset($casUserData['ROLES'], $casUserData['affiliations'], $casUserData['web_sites'], $casUserData['social_medias']);
+
+        if(!empty(array_diff($localUserData, $casUserData))){
+            $data = array_merge($localUserData, $casUserData);
+            $user = new Episciences_User($data);
+            $user->save(false, false);
+        }
     }
 }
