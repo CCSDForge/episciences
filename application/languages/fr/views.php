@@ -309,4 +309,8 @@ return [
     "IsFinancedBy" => "Est financé par",
     "IsVersionOf" => "Est une version de",
 
+    // DOCUMENT TYPES
+    "Preprint" => "Pré-publication",
+    'Text' => "Pré-publication",
+    'Dataset' => 'Jeux de données',
 ];
