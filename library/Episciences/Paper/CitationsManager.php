@@ -53,7 +53,6 @@ class Episciences_Paper_CitationsManager
         $counterCitations = 0;
         $doiOrgDomain = 'https://doi.org/';
         foreach ($allCitation as $value) {
-            $templateCitation .= "<small class='label label-default'>".Zend_Registry::get('Zend_Translate')->translate('Source :') . ' ' . htmlspecialchars($value['source_id_name']) ."</small>";
             $decodeCitations = json_decode($value['citation'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
             $counterCitations += count($decodeCitations);
             $decodeCitations = self::sortAuthorAndYear($decodeCitations);
@@ -94,6 +93,7 @@ class Episciences_Paper_CitationsManager
 
             }
             $templateCitation.="</ul>";
+            $templateCitation .= "<small class='label label-default'>".Zend_Registry::get('Zend_Translate')->translate('Sources :') . ' ' . "OpenCitations, OpenAlex & Crossref" ."</small>";
             $templateCitation.="<br>";
         }
         return ['template'=>$templateCitation,'counterCitations'=>$counterCitations];
@@ -103,19 +103,14 @@ class Episciences_Paper_CitationsManager
      * @param array $arrayMetadata
      * @return array
      */
-    public static function sortAuthorAndYear(array $arrayMetadata = []) {
-        $arrayAuthor = [];
-        $arrayYear = [];
-        foreach ($arrayMetadata as $value) {
-            if (isset($value['author']) && $value['author']!== "") {
-                $arrayAuthor[] = $value;
-            } elseif(isset($value['year']) && $value['year']) {
-                $arrayYear[] = $value['year'];
-            }
-        }
-        array_multisort(array_column($arrayAuthor,'author'),SORT_ASC,SORT_NATURAL|SORT_FLAG_CASE,$arrayAuthor);
-        array_multisort(array_column($arrayYear,'year'),SORT_DESC,$arrayYear);
-        return array_merge($arrayYear,$arrayAuthor);
+    public static function sortAuthorAndYear(array $arrayMetadata = []) : array {
+        usort($arrayMetadata, static function($a, $b) {
+            return strcmp($a['author'], $b['author']);
+        });
+        usort($arrayMetadata, static function($a, $b) {
+            return $b['year'] - $a['year'];
+        });
+        return $arrayMetadata;
     }
 
     public static function formatAuthors($author){

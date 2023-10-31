@@ -1,12 +1,10 @@
 <?php
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_OpenalexTools {
-    public const OPENALEX_API_METADATA = 'https://api.openalex.org/works/';
-    public const OPENCITATIONS_EPISCIENCES_USER_AGENT = 'CCSD Episciences support@episciences.org';
-
     public const PARAMS_OALEX = "?select=title,authorships,open_access,biblio,primary_location,locations,publication_year,best_oa_location,type_crossref";
 
     public const ONE_MONTH = 3600 * 24 * 31;
@@ -53,14 +51,14 @@ class Episciences_OpenalexTools {
         $openAlexMetadataCall = '';
         try {
             usleep(500000);
-            return $client->get(self::OPENALEX_API_METADATA ."https://doi.org/". $doi . self::PARAMS_OALEX . "&mailto=". OPENALEX_MAILTO, [
+            return $client->get(OPENALEX_APIURL ."https://doi.org/". $doi . self::PARAMS_OALEX . "&mailto=". OPENALEX_MAILTO, [
                 'headers' => [
-                    'User-Agent' => self::OPENCITATIONS_EPISCIENCES_USER_AGENT,
+                    'User-Agent' => EPISCIENCES_USER_AGENT,
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
                 ]
             ])->getBody()->getContents();
-        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+        } catch (GuzzleException $e) {
             trigger_error($e->getMessage());
         }
         return $openAlexMetadataCall;

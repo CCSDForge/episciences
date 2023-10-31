@@ -4,13 +4,11 @@ use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_OpencitationsTools {
-    public const OPENCITATIONS_API_CITATIONS = 'https://opencitations.net/index/api/v1/citations/';
-    public const OPENCITATIONS_EPISCIENCES_USER_AGENT = 'CCSD Episciences support@episciences.org';
 
     public const ONE_MONTH = 3600 * 24 * 31;
     public const CITATIONS_PREFIX_VALUE = "coci => ";
     /**
-     * @param $doi
+     * @param string $doi
      * @return mixed
      * @throws \Psr\Cache\InvalidArgumentException
      */
@@ -48,9 +46,9 @@ class Episciences_OpencitationsTools {
         $openCitationCall = '';
         try {
             usleep(500000);
-            return $client->get(self::OPENCITATIONS_API_CITATIONS . $doi, [
+            return $client->get(OPENCITATIONS_APIURL . $doi, [
                 'headers' => [
-                    'User-Agent' => self::OPENCITATIONS_EPISCIENCES_USER_AGENT,
+                    'User-Agent' => EPISCIENCES_USER_AGENT,
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
                     'authorization' => OPENCITATIONS_TOKEN

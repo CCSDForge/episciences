@@ -5,13 +5,11 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_CrossrefTools
 {
-    const CROSSREF_URL = "https://api.crossref.org";
-    const OPENCITATIONS_EPISCIENCES_USER_AGENT = 'CCSD Episciences support@episciences.org';
-
     public const ONE_MONTH = 3600 * 24 * 31;
 
     /**
-     * @param $doiWhoCite
+     * @param string $doiWhoCite
+     * @return mixed
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
@@ -43,7 +41,7 @@ class Episciences_CrossrefTools
 
 
     /**
-     * @param $doi
+     * @param string $doi
      * @return string
      */
     public static function getMetadatasCrossref(string $doi){
@@ -51,9 +49,9 @@ class Episciences_CrossrefTools
         $crossrefCall = '';
         try {
             usleep(500000);
-            return $client->get(self::CROSSREF_URL."/works/".$doi."?mailto=".CROSSREFAPI_MAILTO, [
+            return $client->get(CROSSREF_APIURL.$doi."?mailto=".CROSSREF_MAILTO, [
                 'headers' => [
-                    'User-Agent' => self::OPENCITATIONS_EPISCIENCES_USER_AGENT,
+                    'User-Agent' => EPISCIENCES_USER_AGENT,
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
                 ]
@@ -104,9 +102,9 @@ class Episciences_CrossrefTools
         if ($typeCrossref === 'proceedings-article') {
             $setsMetadataCr = self::callCrossRefOrGetCacheMetadata($doiWhoCite);
             $metadataInfoCitationCr = json_decode($setsMetadataCr->get(), true, 512, JSON_THROW_ON_ERROR);
-            $globalInfoMetadata = self::addEventLocationIfExist($metadataInfoCitationCr, $globalInfoMetadata, $i);
-            return $globalInfoMetadata;
+            return self::addEventLocationInArray($metadataInfoCitationCr, $globalInfoMetadata, $i);
         }
+        $globalInfoMetadata[$i]['event_place'] = "";
         return $globalInfoMetadata;
     }
     /**
@@ -115,11 +113,13 @@ class Episciences_CrossrefTools
      * @param int $i
      * @return array
      */
-    public static function addEventLocationIfExist($metadataInfoCitationCr, array $globalInfoMetadata, int $i): array
+    public static function addEventLocationInArray($metadataInfoCitationCr, array $globalInfoMetadata, int $i): array
     {
         if (reset($metadataInfoCitationCr) !== "") {
             $getEventPlace = Episciences_CrossrefTools::getEventPlace($metadataInfoCitationCr);
             $globalInfoMetadata[$i]['event_place'] = $getEventPlace;
+        } else {
+            $globalInfoMetadata[$i]['event_place'] = "";
         }
         return $globalInfoMetadata;
     }

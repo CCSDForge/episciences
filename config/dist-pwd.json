@@ -11,6 +11,7 @@
     "SECRET_KEY": "YourSecretAuthKey",
     "API_URL": "https://host:8000/api/",
     "API_SECRET_KEY": "YourSecretAuthKey",
+    "USER_AGENT": "yourUserAgent",
     "Z_SUBMIT": {
       "URL": "https://zsubmit-env.domain.org",
       "STATUS": 0
@@ -137,12 +138,15 @@
     "DATABASE": "GeoLite2-City.mmdb"
   },
   "OPENCITATIONS": {
-    "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN"
+    "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN",
+    "APIURL": "https://opencitations.net/index/api/v1/citations/"
   },
   "OPENALEX": {
-    "MAILTO": "YOUR-MAIL-TO"
+    "MAILTO": "YOUR-MAIL-TO",
+    "APIURL": "https://api.openalex.org/works/"
   },
-  "CROSSREFAPI": {
-    "MAILTO": "YOUR-MAIL-TO"
+  "CROSSREF": {
+    "MAILTO": "YOUR-MAIL-TO",
+    "APIURL": "https://api.crossref.org/works/"
   }
 }
