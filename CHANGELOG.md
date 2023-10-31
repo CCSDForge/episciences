@@ -6,7 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- 
-
 ### Added
 ### Changed
 ### Deprecated
@@ -15,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+
+## 1.0.40.19 - 2023-10-19
 ### Fixed
 - [#392](https://github.com/CCSDForge/episciences/issues/392): Translations updated and fixed
-- bug updating dates for user profiles (User profile modification date updated automatically /!\ https://github.com/CCSDForge/episciences/blob/main/src/mysql/ALTER_USER_TABLE.sql)
-- RT#196365: bug with feature "Re-invite this reviewer". 
-- A difference between the address displayed in the profile and the one displayed when the address was modified. 
+- Fixed a bug updating dates for user profiles (User profile modification date updated automatically /!\ https://github.com/CCSDForge/episciences/blob/main/src/mysql/ALTER_USER_TABLE.sql)
+- Fixed a bug with feature "Re-invite this reviewer". 
+- Fixed a difference between the address displayed in the profile and the one displayed when the address was modified. 
 - Fixed Zenodo submissions following the [major update of Zenodo on 2023-10-13](https://blog.zenodo.org/2023/10/13/2023-10-13-zenodo-rdm/).
 - Fixed arXiv bibfeed
 
