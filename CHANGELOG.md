@@ -16,10 +16,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+
+### Added
+- Display revision deadlines and make them editable: [#367](https://github.com/CCSDForge/episciences/issues/367)
+- .env file (/!\ /.env.exemple)
+- bioRxiv and medRxiv preprint servers.
+- New version crossref export 4.3 -> 5.3
+- bibliographical references in export crossref
+- affiliation acronym in crossref and TEI export
+- possibility to research acronym in affiliation input ROR
+- icon to make it easier to identify the user in revision requests section.
+- script to import volumes and volume metadata from journals translation files into the database. /!\ todo: before starting the script: ALTER VOLUME AND VOLUME_METADATA TABLES @see /scr/mysql/alter_volume_and_volume_metadata_tables.sql
+- Integration of api and application for the bibliographical references
+- [#374](https://github.com/CCSDForge/episciences/issues/374): Importing orcid and affiliations from Zenodo
+- Compatibility Dataverse
+
+### Changed
+- Repositories config. is now stored in DB. /!\ todo : ALTER METADATA_SOURCES TABLE @see /scr/mysql/alter_metadata_sources.sql
+- Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
+    * optional file attachment in "Contact without sending a new version" and "answer without any modifications".
+- UX: icon to make it easier to identify the user in revision requests section
+- Some adjustments: titles and descriptions volume's, titles and content metadata volumes are now stored
+  in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
+- [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and ethical
+- Template for DataLinked
 ### Fixed
-- bug updating dates for user profiles (User profile modification date updated automatically /!\ https://github.com/CCSDForge/episciences/blob/main/src/mysql/ALTER_USER_TABLE.sql)
-- RT#196365: bug with feature "Re-invite this reviewer". 
-- A difference between the address displayed in the profile and the one displayed when the address was modified. 
+- [#353](https://github.com/CCSDForge/episciences/issues/353)
+
+## 1.0.40.19 - 2023-10-19
+### Fixed
+- [#392](https://github.com/CCSDForge/episciences/issues/392): Translations updated and fixed
+- Fixed a bug updating dates for user profiles (User profile modification date updated automatically /!\ https://github.com/CCSDForge/episciences/blob/main/src/mysql/ALTER_USER_TABLE.sql)
+- Fixed a bug with feature "Re-invite this reviewer". 
+- Fixed a difference between the address displayed in the profile and the one displayed when the address was modified. 
 - Fixed Zenodo submissions following the [major update of Zenodo on 2023-10-13](https://blog.zenodo.org/2023/10/13/2023-10-13-zenodo-rdm/).
 - Fixed arXiv bibfeed
 
@@ -35,35 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - The order of the papers was corrupted on the page listing the papers in a volume.
 
-## Unreleased
-### Added
-- Display revision deadlines and make them editable: [#367](https://github.com/CCSDForge/episciences/issues/367) 
-- .env file (/!\ /.env.exemple)
-- script to import volumes and volume metadata from journals translation files into the database (/!\ @see /src/mysql/alter_volume_and_volume_metadata_tables.sql)
-- bioRxiv and medRxiv preprint servers.
-- New version crossref export 4.3 -> 5.3
-- bibliographical references in export crossref
-- affiliation acronym in crossref and TEI export
-- possibility to research acronym in affiliation input ROR
-- icon to make it easier to identify the user in revision requests section.
-- script to import volumes and volume metadata from journals translation files into the database.
-- Integration of api and application for the bibliographical references
-- [#374](https://github.com/CCSDForge/episciences/issues/374): Importing orcid and affiliations from Zenodo
-- Compatibility Dataverse
-
-### Changed
--  repositories config. is now stored in DB. @see /scr/mysql/alter_metadata_sources.sql
-- Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
-    * optional file attachment in "Contact without sending a new version" and "answer without any modifications".
-- UX: icon to make it easier to identify the user in revision requests section
-- Some adjustments: titles and descriptions volume's, titles and content metadata volumes are now stored
-  in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
-- Modified (some adjustments): volume - titles and descriptions -, metadata volume's - titles and content - are now
-  stored in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
-- [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and ethical
-- Template for DataLinked
-### Fixed
-- [#353](https://github.com/CCSDForge/episciences/issues/353)
 ## 1.0.40.15 - 2023-09-15
 ### Fixed
 - Fixed a case where the button to send a response to the reviewer seems to be missing (RT#193137)

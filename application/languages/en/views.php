@@ -1124,7 +1124,7 @@ return [
     "Le status de la relecture a été changé avec succès" => 'The status of this review/rating has been successfully updated',
 
     'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.' => 'Error: XML source of this document appears to be corrupted. Metadata cannot be parsed.',
-    'Merci de contacter le support pour vérifier le document et ses métadonnées' => "Please contact the support to check the document and it's metadata",
+    'Merci de contacter le support pour vérifier le document et ses métadonnées' => "Please contact the support to check the document and its metadata",
 
 
     "Erreur lors de l'activation du compte" => "Activation error",
@@ -2358,7 +2358,7 @@ return [
     'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
 
-    //Chanage email address
+    // Change email address
     "Modification de l'adresse e-mail d'un autre compte utilisateur" => "Changing the e-mail address of another user account",
 
     'Modifier mon courriel' => 'Change my email address',
