@@ -819,7 +819,7 @@ return [
 
     // User login/logout
     "Déconnexion du serveur d'authentification du" => 'Logging out from',
-    "Déconnexion réussie" => 'You\'ve been successfuly logged out',
+    "Déconnexion réussie" => 'You\'ve been successfully logged out',
     "Échec de la déconnexion" => 'Logging out failed',
     "Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !" => "You've been redirected to this page, your account on this application does not seem to be the right one!",
 
@@ -1103,8 +1103,8 @@ return [
     "Réassigner l'article" => "Reassign paper",
     "Le status de la relecture a été changé avec succès" => 'The status of this review/rating has been successfully updated',
 
-    'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.' => 'Error: XML source of this document appears to be corrupted. Metadatas cannot be parsed.',
-    'Merci de contacter le support pour vérifier le document et ses métadonnées' => "Please contact the support to check the document and it's metadatas",
+    'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.' => 'Error: XML source of this document appears to be corrupted. Metadata cannot be parsed.',
+    'Merci de contacter le support pour vérifier le document et ses métadonnées' => "Please contact the support to check the document and it's metadata",
 
 
     "Erreur lors de l'activation du compte" => "Activation error",
@@ -1372,7 +1372,7 @@ return [
     "Remplacer" => 'Replace',
     "Accédez directement à l'article" => "Directly access the article",
     "Rechercher un utilisateur d'Episciences" => "Search an Episcience user",
-    'Liste des articles que j\'ai proposée à "%s".' => 'List of papers I\'ve submitted to "%s".',
+    'Liste des articles que j\'ai proposés à "%s".' => 'List of papers I\'ve submitted to "%s".',
     'Votre article a bien été enregistré.' => "Your article has been submitted.",
     'La nouvelle version de votre article a bien été enregistrée.' => "Your new version has been saved.",
     "Le document n'a pas été trouvé ou n'a pas pu être chargé." => "The document could not be found, or could not be loaded.",
