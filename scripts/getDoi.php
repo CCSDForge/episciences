@@ -14,6 +14,7 @@ $localopts = [
     'paperid=i' => "Paper ID",
     'dry-run' => 'Work with Test API',
     'check' => 'Check DOI submission status',
+    'update' => 'Update all public DOIs',
     'rvid=i' => 'RVID of a journal',
     'assign-accepted' => 'Assign DOI to all accepted papers',
     'assign-published' => 'Assign DOI to all accepted papers',
@@ -62,32 +63,28 @@ class getDoi extends JournalScript
     /**
      * getDoi constructor.
      * @param $localopts
-     * @throws Zend_Db_Statement_Exception
      */
     public function __construct($localopts)
     {
-
-        // missing required parameters will be asked later
+        // Set required parameters to an empty array
         $this->setRequiredParams([]);
+
+        // Merge local options with existing arguments
         $this->setArgs(array_merge($this->getArgs(), $localopts));
+
+        // Call the parent constructor
         parent::__construct();
 
-        if ($this->getParam('dry-run')) {
-            $this->setDryRun(true);
-        } else {
-            $this->setDryRun(false);
-        }
+        // Set dry run flag
+        $this->setDryRun($this->getParam('dry-run')?? false);
 
-        $journalHostname = $this->getParam('journal-hostname');
-        if ($journalHostname === null) {
-            $journalHostname = '';
-        }
-        $this->setJournalHostname($journalHostname);
-
+        // Set journal hostname
+        $this->setJournalHostname($this->getParam('journal-hostname')?? '');
     }
 
+
     /**
-     * @return mixed|void
+     * @return void
      * @throws GuzzleException
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
@@ -136,30 +133,20 @@ class getDoi extends JournalScript
 
             if ($this->getParam('check')) {
 
-                $collectionOfDois = Episciences_Paper_DoiQueueManager::findDoisByStatus($review->getRvid(), Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_REQUESTED);
-                foreach ($collectionOfDois as $doiData) {
-
-                    $this->setPaper($doiData['paper']);
-                    $this->setDoiQueue($doiData['doiq']);
-
-                    $response = $this->RequestCrossrefDoiStatus();
-                    $status = $this->readCrossrefStatusResponse($response->getBody());
-
-
-                    $episciences_Paper_DoiQueue = $this->getDoiQueue();
-                    if (((int)$status > 0) && ($episciences_Paper_DoiQueue->getDoi_status() !== Episciences_Paper_DoiQueue::STATUS_PUBLIC)) {
-                        $episciences_Paper_DoiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
-                        echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' Setting status to: ' . Episciences_Paper_DoiQueue::STATUS_PUBLIC;
-                        if (Episciences_Paper_DoiQueueManager::update($episciences_Paper_DoiQueue)) {
-                            echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' DOI status is now: ' . Episciences_Paper_DoiQueue::STATUS_PUBLIC . PHP_EOL;
-                        }
-                    } else {
-                        echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' DOI status is: ' . $episciences_Paper_DoiQueue->getDoi_status() . PHP_EOL;
-                    }
-                }
+                $this->checkRequestedDois($review);
                 exit;
             }
 
+        } elseif ($this->getParam('update')) {
+            $doisToRefresh = Episciences_Paper_DoiQueueManager::getPublicDoiToUpdate();
+            $nbOfDoisToUpdate = count($doisToRefresh);
+            printf(PHP_EOL . 'Found %s DOIs to update' . PHP_EOL, $nbOfDoisToUpdate);
+            if ($nbOfDoisToUpdate > 0) {
+                foreach ($doisToRefresh as $oneDoi) {
+                    $this->sendOneDoiToCrossref($oneDoi);
+                }
+            }
+            exit;
         }
 
 
@@ -172,11 +159,11 @@ class getDoi extends JournalScript
 
         if (!$this->isDryRun()) {
             $confirmation = $this->ask('Please confirm sending to production API', ['Yes', 'No', 'Help'], self::BASH_RED);
-            if ($confirmation == 1) {
+            if ($confirmation === 1) {
                 die(PHP_EOL . 'Process canceled: nothing was sent.' . PHP_EOL);
             }
 
-            if ($confirmation == 2) {
+            if ($confirmation === 2) {
                 $this->displayHelp();
                 exit;
             }
@@ -201,7 +188,7 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Review_DoiSettings $doiSettings
      */
-    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings)
+    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings): void
     {
         $this->_doiSettings = $doiSettings;
     }
@@ -209,9 +196,9 @@ class getDoi extends JournalScript
     /**
      * @param string $paperStatus
      * @throws Zend_Db_Select_Exception
-     * @throws Zend_Exception
+     * @throws Zend_Exception|JsonException
      */
-    private function assignDois(string $paperStatus)
+    private function assignDois(string $paperStatus): void
     {
         $doiSettings = $this->getDoiSettings();
         $rvid = (int)$this->getParam('rvid');
@@ -252,9 +239,8 @@ class getDoi extends JournalScript
     }
 
     /**
-     * @param string $paperStatus
-     * @throws Zend_Db_Select_Exception
-     * @throws Zend_Exception
+     * @throws GuzzleException
+     * @throws Zend_Db_Statement_Exception
      */
     private function requestDois(): void
     {
@@ -284,15 +270,25 @@ class getDoi extends JournalScript
 
         foreach ($res as $doiToProcess) {
 
-            $this->setPaper($doiToProcess['paper']);
-            $this->setDoiQueue($doiToProcess['doiq']);
-            echo PHP_EOL . 'Processing paperId: ' . $this->getPaper()->getPaperid() . PHP_EOL;
-            $this->getMetadataFile();
-            $response = $this->postMetadataFile();
-            $this->updateMetadataQueue(Episciences_Paper_DoiQueue::STATUS_REQUESTED);
-            echo PHP_EOL . 'API Answered: ' . $response->getBody() . PHP_EOL;
+            $this->sendOneDoiToCrossref($doiToProcess);
 
         }
+    }
+
+    /**
+     * @param $doiToProcess
+     * @return void
+     * @throws GuzzleException
+     */
+    private function sendOneDoiToCrossref($doiToProcess): void
+    {
+        $this->setPaper($doiToProcess['paper']);
+        $this->setDoiQueue($doiToProcess['doiq']);
+        echo PHP_EOL . 'Processing paperId: ' . $this->getPaper()->getPaperid() . PHP_EOL;
+        $this->getMetadataFile();
+        $response = $this->postMetadataFile();
+        $this->updateMetadataQueue(Episciences_Paper_DoiQueue::STATUS_REQUESTED);
+        echo PHP_EOL . 'API Answered: ' . $response->getBody() . PHP_EOL;
     }
 
     /**
@@ -306,15 +302,15 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Paper $paper
      */
-    public function setPaper($paper)
+    public function setPaper($paper): void
     {
         $this->_paper = $paper;
     }
 
     /**
-     * @return mixed
+     * @return void
      */
-    private function getMetadataFile()
+    private function getMetadataFile(): void
     {
 
         $paperUrl = HTTP . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
@@ -326,15 +322,15 @@ class getDoi extends JournalScript
             trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
-        return file_put_contents($this->getMetadataPathFileName(), $res->getBody());
+        file_put_contents($this->getMetadataPathFileName(), $res->getBody());
     }
 
     /**
      * @return string
      */
-    private function getJournalUrl()
+    private function getJournalUrl(): string
     {
-        if ($this->getJournalHostname() != '') {
+        if ($this->getJournalHostname() !== '') {
             return $this->getJournalHostname();
         }
         return $this->getReview()->getCode() . '.' . DOMAIN;
@@ -351,7 +347,7 @@ class getDoi extends JournalScript
     /**
      * @param string $journalDomain
      */
-    public function setJournalHostname(string $journalDomain)
+    public function setJournalHostname(string $journalDomain): void
     {
         $this->_journalHostname = $journalDomain;
     }
@@ -367,7 +363,7 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Review $review
      */
-    public function setReview($review)
+    public function setReview($review): void
     {
         $this->_review = $review;
     }
@@ -435,7 +431,7 @@ class getDoi extends JournalScript
     /**
      * @param bool $dryRun
      */
-    public function setDryRun(bool $dryRun)
+    public function setDryRun(bool $dryRun): void
     {
         $this->_dryRun = $dryRun;
     }
@@ -461,9 +457,40 @@ class getDoi extends JournalScript
     /**
      * @param mixed $doiQueue
      */
-    public function setDoiQueue($doiQueue)
+    public function setDoiQueue($doiQueue): void
     {
         $this->_doiQueue = $doiQueue;
+    }
+
+    /**
+     * @param $review
+     * @return void
+     * @throws GuzzleException
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function checkRequestedDois($review): void
+    {
+        $collectionOfDois = Episciences_Paper_DoiQueueManager::findDoisByStatus($review->getRvid(), Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_REQUESTED);
+        foreach ($collectionOfDois as $doiData) {
+
+            $this->setPaper($doiData['paper']);
+            $this->setDoiQueue($doiData['doiq']);
+
+            $response = $this->RequestCrossrefDoiStatus();
+            $status = $this->readCrossrefStatusResponse($response->getBody());
+
+
+            $episciences_Paper_DoiQueue = $this->getDoiQueue();
+            if (((int)$status > 0) && ($episciences_Paper_DoiQueue->getDoi_status() !== Episciences_Paper_DoiQueue::STATUS_PUBLIC)) {
+                $episciences_Paper_DoiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
+                echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' Setting status to: ' . Episciences_Paper_DoiQueue::STATUS_PUBLIC;
+                if (Episciences_Paper_DoiQueueManager::update($episciences_Paper_DoiQueue)) {
+                    echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' DOI status is now: ' . Episciences_Paper_DoiQueue::STATUS_PUBLIC . PHP_EOL;
+                }
+            } else {
+                echo PHP_EOL . 'Paper ID # ' . $this->getPaper()->getPaperid() . ' DOI status is: ' . $episciences_Paper_DoiQueue->getDoi_status() . PHP_EOL;
+            }
+        }
     }
 
     /**
@@ -498,7 +525,7 @@ class getDoi extends JournalScript
      * @param $response
      * @return string
      */
-    private function readCrossrefStatusResponse($response)
+    private function readCrossrefStatusResponse($response): string
     {
         $doi_batch_diagnostic = simplexml_load_string($response);
         return (string)$doi_batch_diagnostic->batch_data->success_count;
@@ -508,5 +535,14 @@ class getDoi extends JournalScript
 }
 
 
-$script = new getDoi($localopts);
-$script->run();
+try {
+    $script = new getDoi($localopts);
+} catch (Zend_Db_Statement_Exception $e) {
+    echo $e->getMessage();
+    exit;
+}
+try {
+    $script->run();
+} catch (GuzzleException|Zend_Db_Select_Exception|Zend_Db_Statement_Exception|Zend_Exception $e) {
+    echo $e->getMessage();
+}
