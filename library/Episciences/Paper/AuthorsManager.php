@@ -108,7 +108,8 @@ class Episciences_Paper_AuthorsManager
                 if (array_key_exists('orcid', $value)) {
                     $orcid = htmlspecialchars($value['orcid']);
                     $orcidUrl = "https://orcid.org/" . $orcid;
-                    $templateString .= $fullname . ' <a rel="noopener" href=' . $orcidUrl . ' data-toggle="tooltip" data-placement="bottom" data-original-title=' . $orcid . ' target="_blank" ><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"/></a>';
+                    $templateString .= $fullname . ' <a rel="noopener" href=' . $orcidUrl . ' data-toggle="tooltip" data-placement="bottom" data-original-title=' . $orcid . ' target="_blank">'
+                        . '<img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
                     $orcidText .= $orcid;
                 } else {
                     $templateString .= ' ' . $fullname . ' ';
