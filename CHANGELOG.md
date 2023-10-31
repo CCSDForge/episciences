@@ -15,7 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## 1.0.40.19 - 2023-10-19
+## 1.0.40.20 - 2023-10-31
+### Changed
+- use ORCID's SVG File + PNG as fallback
+### Fixed
+- Use legacy branch of COAR notify library until next major update of Episciences
+
+
+## 1.0.40.19 - 2023-10-31
 ### Fixed
 - [#392](https://github.com/CCSDForge/episciences/issues/392): Translations updated and fixed
 - Fixed a bug updating dates for user profiles (User profile modification date updated automatically /!\ https://github.com/CCSDForge/episciences/blob/main/src/mysql/ALTER_USER_TABLE.sql)
