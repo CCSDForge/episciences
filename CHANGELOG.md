@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- Retrieval of document types and various improvements: 
+  /!\ todo :
+    - ALTER PAPERS TABLE @see /scr/mysql/alter_papers_table.sql (Unreleased section)
+    - ALTER PAPER_FILES TABLE @see /scr/mysql/alter_paper_files_table.sql
 - Display revision deadlines and make them editable: [#367](https://github.com/CCSDForge/episciences/issues/367)
 - .env file (/!\ /.env.exemple)
 - bioRxiv and medRxiv preprint servers.
