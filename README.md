@@ -17,7 +17,7 @@ The software is developed by the [Center for the Direct Scientific Communication
 ### Acknowledgments
 Episciences has received funding from:
 - [CNRS](https://www.cnrs.fr/)
-- [European Commission grant 101017452](https://www.episciences.org/page/Episciences) “OpenAIRE Nexus - OpenAIRE-Nexus Scholarly Communication Services for EOSC users”
+- [European Commission grant 101017452](https://cordis.europa.eu/project/id/101017452) “OpenAIRE Nexus - OpenAIRE-Nexus Scholarly Communication Services for EOSC users”
 
 ### Changelog
 All notable changes to this project will be documented in the [CHANGELOG.md](./CHANGELOG.md)
