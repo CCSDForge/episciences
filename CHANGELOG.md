@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Volumes & Sections list:
+    - display all available rows in the table (pagination disabled).
+    - using the search filter: in this case, drag & drop repositions all displayed items, making them appear at the top of the list
+    - bump jqueryui to 1.13.2
+    - refactoring : 'yarn encore prod' needed
+
 ### Added
 - Retrieval of document types and various improvements: 
   /!\ todo :

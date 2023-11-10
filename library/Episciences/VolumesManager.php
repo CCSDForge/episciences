@@ -39,10 +39,10 @@ class Episciences_VolumesManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = $db->select()->from(T_VOLUMES)->order('POSITION', 'ASC');
+        $select = $db->select()->from(T_VOLUMES)->order('POSITION ASC');
         if ($options) {
             foreach ($options as $cmd => $params) {
-                if (is_array($params)  && $cmd === 'limit' && count($params) === 2) {
+                if (is_array($params) && $cmd === 'limit' && count($params) === 2) {
                     $select->limit($params[0], $params[1]);
                 } else {
                     $select->$cmd($params);
@@ -138,6 +138,7 @@ class Episciences_VolumesManager
     }
 
     /**
+     * @Deprecated. Use Episciences_VolumesAndSectionsManager::sort
      * @param $params
      * @return bool
      * @throws Zend_Db_Adapter_Exception
@@ -298,7 +299,7 @@ class Episciences_VolumesManager
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
-    public static function getForm(string $referer = '', Episciences_Volume $volume = null ): \Ccsd_Form
+    public static function getForm(string $referer = '', Episciences_Volume $volume = null): \Ccsd_Form
     {
         if (empty($referer)) {
             $referer = '/volume/list';

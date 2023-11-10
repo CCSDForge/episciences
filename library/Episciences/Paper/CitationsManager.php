@@ -139,6 +139,6 @@ class Episciences_Paper_CitationsManager
     {
         $orcid = ltrim(htmlspecialchars($orcid),',');
         $orcid = ltrim(htmlspecialchars($orcid));
-        return '<small style="margin-left: 4px;"><a rel="noopener" href="https://orcid.org/' . htmlspecialchars($orcid) . '" data-toggle=tooltip data-placement="bottom" data-original-title=' . htmlspecialchars($orcid) . ' target="_blank"><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"/></a></small>';
+        return '<small style="margin-left: 4px;"><a rel="noopener" href="https://orcid.org/' . htmlspecialchars($orcid) . '" data-toggle=tooltip data-placement="bottom" data-original-title=' . htmlspecialchars($orcid) . ' target="_blank"><img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a></small>';
     }
 }

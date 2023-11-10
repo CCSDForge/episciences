@@ -8,12 +8,19 @@
 
 This repository hosts the software used for the Episciences publishing platform.
 
-More information: https://www.episciences.org/
+More information about Episciences: https://www.episciences.org/
 
 [All Episciences overlay journals](https://www.episciences.org/journals/)
 
-The software is developed by the [Center for the Direct Scientific Communication (CCSD)](https://www.ccsd.cnrs.fr/en/).
+The software is developed by the [Center for the Direct Scientific Communication (CCSD)](https://www.ccsd.cnrs.fr/en/). See [AUTHORS](./AUTHORS).
+
+### Acknowledgments
+Episciences has received funding from:
+- [CNRS](https://www.cnrs.fr/)
+- [European Commission grant 101017452](https://cordis.europa.eu/project/id/101017452) “OpenAIRE Nexus - OpenAIRE-Nexus Scholarly Communication Services for EOSC users”
+
+### Changelog
+All notable changes to this project will be documented in the [CHANGELOG.md](./CHANGELOG.md)
 
 ### License
-Episciences is free software licensed under the terms of the GPL Version 3. See LICENSE.
-
+Episciences is free software licensed under the terms of the GPL Version 3. See [LICENSE](./LICENSE).

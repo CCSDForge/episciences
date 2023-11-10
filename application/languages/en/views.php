@@ -694,6 +694,7 @@ return [
     "Nom du volume" => "Volume name",
     "Aucun volume enregistré" => "No volume yet",
     "Métadonnées" => "Metadata",
+    "Dans ce cas, le glisser-déposer repositionne tous les éléments affichés, les faisant apparaître en haut de la liste." => "In this case, drag & drop repositions all displayed items, making them appear at the top of the list.",
     //Start Git #85
     //"Ajouter une métadonnée" => "Add a metadata",
     "Modifier une métadonnée" => "Edit a metadata",
