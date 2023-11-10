@@ -202,7 +202,7 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost();
         $params['rvid'] = RVID;
 
-        Episciences_VolumesManager::sort($params);
+        Episciences_VolumesAndSectionsManager::sort($params);
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
     }

@@ -1,8 +1,17 @@
 $(document).ready(function () {
 
+    let $search;
+    let $sortWithSearchFilterAlert = $('#sort-with-search-filter-alert');
+
     $(".dataTable").dataTable({
         fnPreDrawCallback: function () {
-            $(this).closest('.dataTables_wrapper').find( "input[type='search']").prop('spellcheck', false);
+            $search = $(this).closest('.dataTables_wrapper').find("input[type='search']");
+            $search.prop('spellcheck', false);
+            if ($search.val() !== '') {
+                $sortWithSearchFilterAlert.show();
+            } else {
+                $sortWithSearchFilterAlert.hide();
+            }
         },
         "lengthMenu": [[-1], [translate("all")]],
         stateSave: true,
@@ -35,8 +44,18 @@ $(document).ready(function () {
                 type: 'POST',
                 data: {sorted: $(this).sortable("toArray")},
                 dataType: "json"
+            }).done(function (result) {
+
+                if(result > 1) {
+                    location.reload();
+                }
+
             });
         }
+    });
+
+    $search.on('change', function (e) {
+        $sortWithSearchFilterAlert.show();
     });
 
 });

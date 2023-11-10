@@ -17,7 +17,11 @@
 }
 
 .sortable-placeholder {
-  border: 1px solid #fcefa1 !important;
-  background: #fbf9ee url(../../public/img/smoothness/ui-bg_glass_55_fbf9ee_1x400.png) 50% 50% repeat-x !important;
-  color: #363636 !important;
+  width: 100%;
+  height: 35px;
+  background: #ddd !important;
+}
+
+.sortable-handle, .sortable-handle .glyphicon {
+  cursor: move;
 }

@@ -1,4 +1,5 @@
-<?php 
+<?php
+$this->layout()->pageTitle = $this->translate('Rubriques') . '<span class="badge badge-secondary" style="margin-left: 5px;">' . count($this->sections) .'</span>';
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
@@ -9,19 +10,6 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
 ?>
 
-<style>
-	.sortable-placeholder {
-		width: 100%;
-		height: 35px;
-		background: #ddd !important;
-	}
-	
-	.sortable-handle, .sortable-handle .glyphicon {
-		cursor: move;
-	}
-</style>
-
-
 <div class="form-actions">
     <a class="btn btn-default" href="/section/add">
     <span class="glyphicon glyphicon-book"></span>
@@ -31,6 +19,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 <hr />
 
 <?php if ($this->sections) : ?>
+    <?= $this->partial('partials/datatable-sort-with-search-filter-alert.phtml') ?>
 <div>
 	<table  class="table table-striped table-bordered dataTable" id="sections">
 		<thead>

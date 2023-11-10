@@ -121,7 +121,7 @@ class SectionController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
 
-        Episciences_SectionsManager::sort($params);
+        Episciences_VolumesAndSectionsManager::sort($params, 'SID');
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
     }

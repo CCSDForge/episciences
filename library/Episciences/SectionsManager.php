@@ -106,6 +106,7 @@ class Episciences_SectionsManager
 	}
 
     /**
+     * @Deprecated. Use Episciences_VolumesAndSectionsManager::sort
      * @param $params
      * @return bool
      * @throws Zend_Db_Adapter_Exception
