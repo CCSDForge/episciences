@@ -7,8 +7,10 @@
     $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
     $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
     $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+    $this->jQuery()->addJavascriptFile('/js/common/initMCE.js');
 
-    ?>
+
+?>
 
     <div class="panel panel-default">
         <div class="panel-body">
