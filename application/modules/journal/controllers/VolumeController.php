@@ -180,7 +180,7 @@ class VolumeController extends Zend_Controller_Action
         $request = $this->getRequest();
 
         $params = $request->getPost('params');
-        $id = ($params['id']) ? $params['id'] : $request->getQuery('id');
+        $id = $params['id'] ?? $request->getQuery('id');
 
         $respond = Episciences_VolumesManager::delete($id);
         $this->_helper->viewRenderer->setNoRender();

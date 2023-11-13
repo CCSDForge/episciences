@@ -288,18 +288,13 @@ class Episciences_Section
         // Si il s'agit d'une nouvelle rubrique
         if (!$this->getSid()) {
 
-            // Récupération de la position de la rubrique
-            $select = $this->_db->select()->from(T_SECTIONS, new Zend_Db_Expr('MAX(POSITION)+1'))->where('RVID = ?', $this->getRvid());
-            $position = $this->_db->fetchOne($select);
-            if (empty($position)) {
-                $position = 1;
-            }
-            $this->setPosition($position);
+            $this->setPosition(0);
 
             // Enregistrement de la rubrique
             if ($this->_db->insert(T_SECTIONS, ['RVID' => $this->getRvid(), 'POSITION' => $this->getPosition()])) {
                 $sid = $this->_db->lastInsertId();
                 $this->setSid($sid);
+                Episciences_VolumesAndSectionsManager::sort([], 'SID');
             } else {
                 return false;
             }

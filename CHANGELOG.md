@@ -38,7 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.0.40.18 - 2023-10-19
 ## Changed
-- Removed sorting option from volumes & sections tables, the feature was confusing and conflicting with another one: drag n drop to sort the volumes/sections 
+- Removed sorting option from volumes & sections tables, the feature was confusing and conflicting with another one: drag n drop to sort the volumes/sections
+- The new section/volume is now inserted in the first position instead of the last.
 
 ## 1.0.40.17 - 2023-10-18
 ### Fixed

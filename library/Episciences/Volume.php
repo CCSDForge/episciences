@@ -648,10 +648,11 @@ class Episciences_Volume
         // Ajout d'un nouveau volume
         if (empty($vid)) {
             // Récupération de la position du volume
-            $position = $this->getNewVolumePosition();
+            //$position = $this->getNewVolumePosition();
 
             // Enregistrement du volume
-            $vid = $this->addNewVolume($position, $data['bib_reference']);
+            $vid = $this->addNewVolume($data['bib_reference']);
+
             if ($vid === 0) {
                 return false;
             }
@@ -746,10 +747,10 @@ class Episciences_Volume
      * @param string|null $bibReference
      * @return int the New volume id OR 0 if we fail
      */
-    private function addNewVolume(int $position, string $bibReference = null): int
+    private function addNewVolume(string $bibReference = null): int
     {
         $values['RVID'] = RVID;
-        $values['POSITION'] = $position;
+        $values['POSITION'] = 0;
 
         if (!empty($bibReference)) {
             $values['BIB_REFERENCE'] = $bibReference;
@@ -765,6 +766,7 @@ class Episciences_Volume
             $vid = 0;
         } else {
             $vid = $this->_db->lastInsertId();
+            $result = Episciences_VolumesAndSectionsManager::sort();
         }
 
         return $vid;

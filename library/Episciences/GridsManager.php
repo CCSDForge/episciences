@@ -214,12 +214,12 @@ class Episciences_GridsManager
 
     /**
      * return criterion form (creation / edit)
-     * @param null $defaults
+     * @param array|null $defaults
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
-    public static function getCriterionForm($defaults = null)
+    public static function getCriterionForm(array $defaults = null): \Ccsd_Form
     {
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
@@ -317,7 +317,9 @@ class Episciences_GridsManager
 
         // custom rating
 
-        if (is_array($defaults['options']) && (count($defaults['options']))) {
+        if (
+            isset($defaults['options']) &&
+            is_array($defaults['options']) && (count($defaults['options']))) {
             $max = count($defaults['options']) - 1;
         } else {
             $max = 0;

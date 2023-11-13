@@ -10,15 +10,16 @@ class Episciences_VolumesAndSectionsManager
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function sort(array $params, string $colId = 'VID'): bool
+    public static function sort(array $params = [], string $colId = 'VID'): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
+        $isFromAjax = isset($params['sorted']);
         $table = T_VOLUMES;
         $cols = ['VID', 'POSITION'];
         $pattern = '#volume_(.*)#';
+        $paramsCount = 0;
 
-        if ($colId === 'SID'){
+        if ($colId === 'SID') {
             $table = T_SECTIONS;
             $cols = ['SID', 'POSITION'];
             $pattern = '#section_(.*)#';
@@ -33,35 +34,41 @@ class Episciences_VolumesAndSectionsManager
         $previousSort = $db->fetchCol($select); // previous sort
         $pCount = count($previousSort);
 
-
         if ($pCount < 2) { // at least two lines
-            echo 0;
+
+            if ($isFromAjax) {
+                echo 0;
+            }
+
             return false;
         }
 
-        $paramsCount = count($params['sorted']);
         $to = 0;
 
         //sort the block passed in parameter
-        foreach ($params['sorted'] as $i => $value) {
-            preg_match($pattern, $value, $matches);
-            if (empty($matches)) {
-                continue;
-            }
+        if ($isFromAjax) {
+            $paramsCount = count($params['sorted']);
+            foreach ($params['sorted'] as $i => $value) {
+                preg_match($pattern, $value, $matches);
+                if (empty($matches)) {
+                    continue;
+                }
 
-            $id = $matches[1];
-            $to = $i + 1;
+                $id = $matches[1];
+                $to = $i + 1;
 
+                if ($db->update($table, ['POSITION' => $to], ["$colId = ?" => $id])) {
 
-            if ($db->update($table, ['POSITION' => $to], ["$colId = ?" => $id])) {
+                    $key = array_search($id, $previousSort, false);
 
-                $key = array_search($id, $previousSort, false);
-
-                if (false !== $key) {
-                    unset($previousSort[$key]);
+                    if (false !== $key) {
+                        unset($previousSort[$key]);
+                    }
                 }
             }
+
         }
+
 
         //re-sort the remaining volumes or sections
         if ($paramsCount !== $pCount) {
@@ -73,7 +80,9 @@ class Episciences_VolumesAndSectionsManager
             }
         }
 
-        echo count($params['sorted']);
+        if ($isFromAjax) {
+            echo count($params['sorted']);
+        }
 
         return true;
     }
