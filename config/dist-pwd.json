@@ -122,7 +122,8 @@
   },
   "NOTIFY_TARGET_HAL": {
     "INBOX": "https://inbox.example.org/",
-    "URL": "https://hal.example.org/"
+    "URL": "https://hal.example.org/",
+    "LINKED_REPOSITORY": "HAL_ENV"
   },
   "INBOX": {
     "URL": "https://inbox.example.org/",

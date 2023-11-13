@@ -851,7 +851,7 @@ class Episciences_Submit
             }
 
             //Bloquer la soumission dans hal d'une notice vide :git #109
-            if ('Hal' === Episciences_Repositories::getLabel($repoId)) {
+            if (Episciences_Repositories::isFromHalRepository($repoId)) {
                 $isNotice = self::isHalNotice($result['record'], $id, 'dc');
                 if (!$isNotice) { // pas une notice
 

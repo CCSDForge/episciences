@@ -189,7 +189,7 @@ class InboxNotifications extends Script
          */
 
         $context = array_intersect(self::COAR_NOTIFY_AT_CONTEXT, $notifyPayloads['@context']);
-        $type = array_intersect($this->getCoarNotifyType(), $notifyPayloads['type']);
+        $type = array_intersect($this->getCoarNotifyType(), $notifyPayloads['type'] ?? []);
         $isValidOrigin = $this->getCoarNotifyOrigin()['inbox'] === $notifyPayloads['origin']['inbox'];
 
 
@@ -290,7 +290,21 @@ class InboxNotifications extends Script
         $data = $this->dataFromUrl($object);
         $data['rvid'] = $journal->getRvid();
 
-        $data['repoid'] = (int)Episciences_Repositories::HAL_REPO_ID;
+        $repoId = (int)Episciences_Repositories::HAL_REPO_ID;
+
+        if (defined('NOTIFY_TARGET_HAL_LINKED_REPOSITORY')) {
+
+            $repoId = $this->getRepoId();
+
+            if (null === $repoId){
+                $this->displayError('Undefined repository ID');
+                return false;
+
+            }
+        }
+
+        $data['repoid'] = $repoId;
+
         $data['uid'] = $this->getUidFromMailString($actor);
 
         $isVerbose = $this->isVerbose();
@@ -774,6 +788,31 @@ class InboxNotifications extends Script
     {
         $this->coarNotifyId = $coarNotifyId;
         return $this;
+    }
+
+    /**
+     * @return int|null
+     */
+    private function getRepoId(): ?int
+    {
+
+        $allRepositories = Episciences_Repositories::getRepositories();
+
+        foreach ($allRepositories as $repository) {
+
+            foreach ($repository as $rKey => $value) {
+
+                if ($rKey !== Episciences_Repositories::REPO_LABEL) {
+                    continue;
+                }
+
+                if ($value === NOTIFY_TARGET_HAL_LINKED_REPOSITORY) {
+                    return (int) $repository['id'];
+                }
+            }
+        }
+
+        return null;
     }
 }
 

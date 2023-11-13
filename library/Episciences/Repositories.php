@@ -36,6 +36,7 @@ class Episciences_Repositories
     public const MED_RXIV_ID = '11';
 
     public const EPI_USER_ID = '12';
+    public const HAL_LABEl = 'hal';
 
     private static array $_repositories = [];
 
@@ -199,13 +200,30 @@ class Episciences_Repositories
         return self::getRepositories()[$repoId][self::REPO_TYPE] === self::TYPE_DATAVERSE;
     }
 
-    public static function getIdentifierExemple(int $repoId) :string
+    public static function getIdentifierExemple(int $repoId): string
     {
 
-        return !self::isDataverse($repoId) ?
-            self::IDENTIFIER_EXEMPLES[(string)$repoId] :
-            Episciences_Repositories_Dataverse_Hooks::DATAVERSE_IDENTIFIER_EXEMPLE;
+        if (self::isDataverse($repoId)) {
+            return Episciences_Repositories_Dataverse_Hooks::DATAVERSE_IDENTIFIER_EXEMPLE;
+        }
+
+        if (isset(self::IDENTIFIER_EXEMPLES[(string)$repoId])) {
+            return self::IDENTIFIER_EXEMPLES[(string)$repoId];
+        }
+
+        if (self::isFromHalRepository($repoId)) {
+            return self::IDENTIFIER_EXEMPLES[self::HAL_REPO_ID];
+        }
+
+        return 'Uninitialized variable';
 
     }
+
+    public static function  isFromHalRepository(int $repoId): bool
+    {
+        return (str_contains(mb_strtolower(self::getLabel($repoId)), self::HAL_LABEl));
+
+    }
+
 }
 
