@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.40.21 - 2023-11-14
 ### Changed
 - Volumes & Sections list:
+  - Display the total number of volumes / sections
   - display all available rows in the table (pagination disabled). The pagination feature was conflicting with the drag and drop feature.
   - using the search filter: in this case, drag & drop repositions all displayed items, making them appear at the top of the list
   - bump jqueryui to 1.13.2
