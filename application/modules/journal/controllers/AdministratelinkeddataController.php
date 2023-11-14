@@ -42,10 +42,17 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                 $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
             }
         }
+        if($typeLd === 'doi' || Episciences_Tools::isDoiWithUrl($valueLd)) {
+            $epiDM = new Episciences_Paper_DatasetMetadata();
+            $epiDM->setMetatext(Episciences_DoiTools::getMetadataFromDoi($valueLd));
+            $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+        }
 
         if ($inputTypeLd === 'software' && $typeLd !== false) {
             $typeLd = 'software';
         }
+
+
 
         if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId,$typeLd,$valueLd, $idMetaDataLastId,$inputTypeLd) > 0) {
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_ADDED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
