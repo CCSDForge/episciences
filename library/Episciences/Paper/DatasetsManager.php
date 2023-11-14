@@ -332,6 +332,9 @@ class Episciences_Paper_DatasetsManager
                 break;
             case 'url':
                 $dataset->setName("software");
+                if ($code === 'dataset' || $code === 'publication'){
+                    $dataset->setName("url");
+                }
                 $dataset->setLink("url");
                 break;
             default:

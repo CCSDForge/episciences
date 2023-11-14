@@ -1,38 +1,39 @@
 <?php $metadatas = $this->metadatas; $keepUniqueIdentifier = [];
 ?>
-<i><?= $metadatas['title'] ?></i>
-<?php if (array_key_exists('creators',$metadatas)) : ?>
-    <?php foreach ($metadatas['creators'] as $key => $metadata) : ?>
-        <?php if(!empty($metadata['identifiers'])):?>
-            <p>
-                <?php foreach ($metadatas['creators'] as $cIndex => $creatorInfo) : ?>
-                    <?= $creatorInfo['name']?>
-                    <?php if (!empty($creatorInfo['identifiers'])): ?>
-                        <?php foreach ($creatorInfo['identifiers'] as $cId => $creatorIdentifier) : ?>
-                            <?php if ($creatorIdentifier['schema'] === 'ORCID'): ?>
-                                <a rel="noopener" href="<?="https://orcid.org/".$creatorIdentifier['identifier'] ?>" data-toggle="tooltip" data-placement="bottom" data-original-title="<?=$creatorIdentifier['identifier']?>" target="_blank"><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"></a>
-                            <?php endif;?>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                    <?php if ($cIndex !== array_key_last($metadatas['creators'])) {echo ';';} ?>
-                <?php endforeach; ?>
-            </p>
-        <?php endif;?>
-    <?php endforeach; ?>
-<?php endif; ?>
-<?php if (array_key_exists('identifiers',$metadatas)) : ?>
-    <ul class="list-unstyled">
-        <?php foreach ($metadatas['identifiers'] as $key => $metadata) : ?>
-            <li><?php if(!in_array($metadata['identifier'], $keepUniqueIdentifier, true)):?>
-                    <?php if($metadata['schema'] === 'doi'):?>
-                        <a href="<?= Episciences_Paper_DatasetsManager::URL_DOI.$metadata['identifier']?>"><?=$metadata['identifier']?></a>
-                    <?php else:?>
-                        <?= $metadata['identifier'] ?>
+<div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
+    <?php if (array_key_exists('creators',$metadatas)) : ?>
+        <?php foreach ($metadatas['creators'] as $key => $metadata) : ?>
+            <?php if(!empty($metadata['identifiers'])):?>
+                <p>
+                    <?php foreach ($metadatas['creators'] as $cIndex => $creatorInfo) : ?>
+                        <?= $creatorInfo['name']?>
+                        <?php if (!empty($creatorInfo['identifiers'])): ?>
+                            <?php foreach ($creatorInfo['identifiers'] as $cId => $creatorIdentifier) : ?>
+                                <?php if ($creatorIdentifier['schema'] === 'ORCID'): ?>
+                                    <a rel="noopener" href="<?="https://orcid.org/".$creatorIdentifier['identifier'] ?>" data-toggle="tooltip" data-placement="bottom" data-original-title="<?=$creatorIdentifier['identifier']?>" target="_blank"><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"></a>
+                                <?php endif;?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        <?php if ($cIndex !== array_key_last($metadatas['creators'])) {echo ';';} ?>
+                    <?php endforeach; ?>
+                </p>
+            <?php endif;?>
+        <?php endforeach; ?>
+        <i><?= $metadatas['title'] ?></i>
+    <?php endif; ?>
+    <?php if (array_key_exists('identifiers',$metadatas)) : ?>
+        <ul class="list-unstyled">
+            <?php foreach ($metadatas['identifiers'] as $key => $metadata) : ?>
+                <li><?php if(!in_array($metadata['identifier'], $keepUniqueIdentifier, true)):?>
+                        <?php if($metadata['schema'] === 'doi'):?>
+                            <a href="<?= Episciences_Paper_DatasetsManager::URL_DOI.$metadata['identifier']?>"><?=$metadata['identifier']?></a>
+                        <?php else:?>
+                            <?= $metadata['identifier'] ?>
+                        <?php endif;?>
+                        <?php $keepUniqueIdentifier[] = $metadata['identifier'] ?>
                     <?php endif;?>
-                    <?php $keepUniqueIdentifier[] = $metadata['identifier'] ?>
-                <?php endif;?>
-            </li>
-            <?php endforeach; ?>
-    </ul>
-<?php endif; ?>
-
+                </li>
+                <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+</div>

@@ -1836,6 +1836,14 @@ class Episciences_Tools
     }
 
     /**
+     * @param string $strDoi
+     * @return bool
+     */
+    public static function isDoiWithUrl(string $strDoi){
+        $pattern = '~^((https?://)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
+        return (bool)preg_match($pattern, $strDoi);
+    }
+    /**
      * @param string $halId
      * @return bool
      */
