@@ -13,12 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## 1.0.40.21 - 2023-11-14
+### Changed
 - Volumes & Sections list:
-  - display all available rows in the table (pagination disabled).
+  - display all available rows in the table (pagination disabled). The pagination feature was conflicting with the drag and drop feature.
   - using the search filter: in this case, drag & drop repositions all displayed items, making them appear at the top of the list
   - bump jqueryui to 1.13.2
-  - refactoring : 'yarn encore prod' needed
+- Fixed [#139](https://github.com/CCSDForge/episciences/issues/139) Put newly created volumes at the top of the list #139
 
 ## 1.0.40.20 - 2023-10-31
 ### Changed
