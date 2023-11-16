@@ -17,7 +17,11 @@ function visualizeBiblioRefs(){
                     if (obj.ref !== undefined) {
                         let strBiblioRef = '';
                         let parsedRawRef = JSON.parse(obj.ref);
-                        if (obj.isAccepted === 1) {
+                        let isAuthorizedToSeeAcc = false;
+                        if (typeof $("#visualize-biblio-refs").data('all') !== 'undefined' && $("#visualize-biblio-refs").data('all') === 1) {
+                            isAuthorizedToSeeAcc = true
+                        }
+                        if (obj.isAccepted === 1 && isAuthorizedToSeeAcc) {
                             strBiblioRef+= "<i class=\"fa-sharp fa-solid fa-check\" style='color: #009527;'></i> " ;
                         }
                         strBiblioRef+= parsedRawRef.raw_reference;
