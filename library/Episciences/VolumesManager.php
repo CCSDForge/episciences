@@ -335,9 +335,9 @@ class Episciences_VolumesManager
         $form->addElement('MultiTextAreaLang', 'description', [
             'label' => 'Description',
             'populate' => $lang,
-            'tiny' => false,
+            'tiny' => true,
             'rows' => 5,
-            'display' => Ccsd_Form_Element_MultiText::DISPLAY_SIMPLE
+            'display' => Ccsd_Form_Element_MultiText::DISPLAY_ADVANCED
         ]);
 
         // Référence bibliographique du volume

@@ -1,5 +1,9 @@
 <?php
-$this->layout()->pageTitle = $this->translate('Volumes') . '<span class="badge badge-secondary" style="margin-left: 5px;">' . count($this->volumes) .'</span>';
+
+if ($this->volumes) {
+    $this->layout()->pageTitle = $this->translate('Volumes') . '<span class="badge badge-secondary" style="margin-left: 5px;">' . count($this->volumes) . '</span>';
+}
+
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
