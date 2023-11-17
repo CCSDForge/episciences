@@ -331,12 +331,13 @@ return [
     "Cette page a été consultée %s fois." => "This page has been seen %s times.",
     "Le PDF de cet article a été téléchargé %s fois." => "This article's PDF has been downloaded %s times.",
 
-    "Vous êtes sur le point de proposer un article. Veuillez vérifier :" => "You are about to submit a document. Please check:",
-    "que votre article a été déposé dans une archive ouverte (%s)" => "that your document is deposited on an open access repository (%s)",
-    "que vous connaissez son identifiant" => "that you have its identifier at hand",
+    "Vous êtes sur le point de proposer un document à la revue. Veuillez vérifier que :" => "You are about to submit a document to this journal. Please check that:",
+    "Votre document est en ligne sur une des archives ouvertes ou entrepôts suivants : (%s)" => "Your document is online in one of the following open archives or repositories: (%s)",
+    "Vous connaissez son identifiant et son numéro de version" => "You know its identifier and its version number",
 
-    "L'identifiant de l'article, sa version et l'archive ouverte dont il provient sont les seules informations dont vous avez besoin pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre article avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien de l'article que vous souhaitez soumettre à la revue." =>
-        "The document's identifier, its version and the repository it is located on are information that need to be entered in the form below. Metadata will automatically be retrieved and you will see a summary of your document before confirming the submission - please check that this is the document you wish to submit.",
+    "L'identifiant du document, sa version et l'archive ouverte dont il provient sont les seules informations dont vous avez besoin pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre document avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien du document que vous souhaitez soumettre à la revue." =>
+        "The document identifier, its version and the open archive it comes from are the only information you need to fill in the form below. The metadata will be automatically retrieved, and you will see a summary of your document before confirming its submission - please check that this is the document you wish to submit to the journal.",
+    "Si cela s'applique à votre document, vous pourrez dans un second temps compléter votre proposition avec des identifiants de jeux de données et logiciels que vous avez déposés dans un entrepôt dédié." => "If this applies to your document, in a second phase, you will be able to complete your proposal with the identifiers of the data sets and software you have deposited in a dedicated repository.",
 
     "L'article ne peut pas être supprimé en raison de son statut." => "This article can not be deleted because of its status.",
     "L'article ne peut être supprimé que par son déposant." => "This article can only be deleted by its submitter",
@@ -1937,7 +1938,6 @@ return [
     'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the linked data?',
     'Format de donnée non reconnu' => 'Data format not recognised',
     "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing linked data',
-    "Si vous souhaitez affiner les informations concernant le papier à l'aide de données liées, un bloc sera disponible à cet effet sur la page du document." => "After this initial submission, you can add related documents such as a dataset or software. This additional information will be used for evaluation and publication.",
     'software' => 'Software',
     'doi' => 'DOI',
     'handle' => 'Handle',
