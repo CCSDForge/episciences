@@ -332,10 +332,10 @@ return [
     "Le PDF de cet article a été téléchargé %s fois." => "This article's PDF has been downloaded %s times.",
 
     "Vous êtes sur le point de proposer un document à la revue. Veuillez vérifier que :" => "You are about to submit a document to this journal. Please check that:",
-    "Votre document est en ligne sur une des archives ouvertes ou entrepôts suivants : (%s)" => "Your document is online in one of the following open archives or repositories: (%s)",
+    "Votre document est en ligne sur une des archives ouvertes ou entrepôts suivants : %s" => "Your document is online in one of the following open archives or repositories: %s",
     "Vous connaissez son identifiant et son numéro de version" => "You know its identifier and its version number",
 
-    "L'identifiant du document, sa version et l'archive ouverte dont il provient sont les seules informations dont vous avez besoin pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre document avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien du document que vous souhaitez soumettre à la revue." =>
+    "L'identifiant du document, sa version et l'archive ouverte dont il provient sont les seules informations nécessaires pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre document avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien du document que vous souhaitez soumettre à la revue." =>
         "The document identifier, its version and the open archive it comes from are the only information you need to fill in the form below. The metadata will be automatically retrieved, and you will see a summary of your document before confirming its submission - please check that this is the document you wish to submit to the journal.",
     "Si cela s'applique à votre document, vous pourrez dans un second temps compléter votre proposition avec des identifiants de jeux de données et logiciels que vous avez déposés dans un entrepôt dédié." => "If this applies to your document, in a second phase, you will be able to complete your proposal with the identifiers of the data sets and software you have deposited in a dedicated repository.",
 
