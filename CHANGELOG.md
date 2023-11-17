@@ -17,11 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- Volumes & Sections list:
-    - display all available rows in the table (pagination disabled).
-    - using the search filter: in this case, drag & drop repositions all displayed items, making them appear at the top of the list
-    - bump jqueryui to 1.13.2
-    - refactoring : 'yarn encore prod' needed
+
 
 ### Added
 - Adding a cover letter after a submission
@@ -53,6 +49,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template for DataLinked
 ### Fixed
 - [#353](https://github.com/CCSDForge/episciences/issues/353)
+
+## 1.0.40.21 - 2023-11-14
+### Changed
+- Volumes & Sections list:
+    - display all available rows in the table (pagination disabled).
+    - using the search filter: in this case, drag & drop repositions all displayed items, making them appear at the top of the list
+    - bump jqueryui to 1.13.2
+    - refactoring : 'yarn encore prod' needed
+    - Display the total number of volumes / sections
+    - display all available rows in the table (pagination disabled). The pagination feature was conflicting with the drag and drop feature.
+    - using the search filter: in this case, drag & drop repositions all displayed items, making them appear at the top of the list
+    - bump jqueryui to 1.13.2
+- Fixed [#139](https://github.com/CCSDForge/episciences/issues/139) Put newly created volumes at the top of the list #139
 
 ## 1.0.40.19 - 2023-10-19
 ### Fixed
