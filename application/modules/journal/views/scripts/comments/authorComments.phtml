@@ -1,0 +1,16 @@
+<?php
+$pageTitle = $this->pageTitle?? 'Mes commentaires';
+$title = $this->title ?? "Lettre d'accompagnement";
+$form = $this->form;
+?>
+<?php $this->layout()->pageTitle = $this->translate($pageTitle); ?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate($title) ?></h2>
+    </div>
+    <div class="panel-body in">
+        <?= $this->form ?>
+    </div>
+</div>
+<?php
+$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');

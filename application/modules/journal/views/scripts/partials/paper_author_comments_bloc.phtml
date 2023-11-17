@@ -1,23 +1,10 @@
-<?php if ($this->author_comments) : ?>
-    <?php
-    $i = 0;
-    foreach ($this->author_comments as $key => $value) {
-        if ($value['MESSAGE'] !== '' || $value['FILE'] != null) {
-            break;
-        }
-        $i++;
-    }
-    ?>
-    <?php // Affichage du bloc uniquement si présence d'un commentaire ou lettre d'accompagnement?>
-    <?php if ($i < count($this->author_comments)): ?>
-        <div class="panel panel-default collapsable">
-            <div class="panel-heading">
-                <h2 class="panel-title"><?php echo $this->translate("Commentaire de l'auteur / lettre d'accompagnement"); ?></h2>
-            </div>
-            <div class="panel-body in">
-                <?php echo $this->render('partials/paper_author_comments.phtml') ?>
-            </div>
-        </div>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate("Commentaire de l'auteur / lettre d'accompagnement"); ?></h2>
+    </div>
+    <div class="panel-body in">
+        <?= $this->render('partials/paper_author_comments.phtml') ?>
+    </div>
+</div>
 
-    <?php endif; ?>
-<?php endif; ?>
+

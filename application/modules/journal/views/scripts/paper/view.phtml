@@ -285,7 +285,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
         </div>
     <?php endif; ?>
     <?php // author's comments and cover letter ************************************************************************* ?>
-    <?php if ($this->author_comments && !$paper->isPublished()) : ?>
+    <?php if (!$paper->isPublished()) : ?>
         <?php // Author comments  *****************************************?>
         <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
     <?php endif; ?>

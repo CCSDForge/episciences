@@ -2116,13 +2116,17 @@ class Episciences_PapersManager
      * @return bool|Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      */
-    public static function get($docId, bool $withxsl = true)
+    public static function get($docId, bool $withxsl = true, int $rvId = RVID)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = $db->select()
             ->from(['papers' => T_PAPERS])
             ->where('DOCID = ?', $docId);
+
+        if ($rvId) {
+            $select->where('RVID = ?', $rvId);
+        }
 
         $data = $select->query()->fetch();
 

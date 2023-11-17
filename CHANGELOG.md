@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - refactoring : 'yarn encore prod' needed
 
 ### Added
+- Adding a cover letter after a submission
 - Retrieval of document types and various improvements: 
   /!\ todo :
     - ALTER PAPERS TABLE @see /scr/mysql/alter_papers_table.sql (Unreleased section)

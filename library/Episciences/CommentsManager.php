@@ -172,6 +172,18 @@ class Episciences_CommentsManager
             return [];
         }
 
+        $result = array_filter($result, static function ($value) {
+            return
+                (
+                    (
+                        isset($value['MESSAGE']) &&
+                        $value['MESSAGE'] !== ''
+                    ) ||
+                    isset($value['FILE'])
+                );
+
+        });
+
         // sort comment array
         return self::sortComments($result);
     }
@@ -414,13 +426,13 @@ class Episciences_CommentsManager
 
     /**
      * Retourne le formulaire d'edition de commentaire de l'auteur
-     * @param array $values
+     * @param array | null $values
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
 
-    public static function getEditAuthorCommentForm(array $values): \Ccsd_Form
+    public static function getEditAuthorCommentForm(array $values = null): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $form = self::getForm();
@@ -433,28 +445,29 @@ class Episciences_CommentsManager
         $descriptionAllowedToSeeCoverLetterTranslated = $translator->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
         $form->addElement('textarea', 'author_comment', [
             'label' => 'Commentaire', 'rows' => 5,
-            'value' => $values['MESSAGE'],
+            'value' => $values['MESSAGE'] ?? '',
             'description' => $descriptionAllowedToSeeCoverLetterTranslated,
-            'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]]
+            'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]],
+            'required' => !isset($values['MESSAGE'])
         ]);
         $group[] = 'author_comment';
         // Attached file
         $descriptions = self::getDescriptions();
         $description = $descriptions['description'];
         $description .= '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated;
-        $form->addElement('file', 'file_comment_author', array(
+        $form->addElement('file', 'file_comment_author', [
             'label' => "Lettre d'accompagnement",
             'description' => $description,
             'valueDisabled' => true,
-            'validators' => array(
-                'Count' => array(false, 1),
-                'Extension' => array(false, $descriptions['extensions']),
-                'Size' => array(false, MAX_FILE_SIZE)
-            )
-        ));
+            'validators' => [
+                'Count' => [false, 1],
+                'Extension' => [false, $descriptions['extensions']],
+                'Size' => [false, MAX_FILE_SIZE]
+            ]
+        ]);
 
         $group[] = 'file_comment_author';
-        if ($values['FILE']) {
+        if (isset($values['FILE'])) {
             $href = '<a href="/docfiles/comments/' . $values['DOCID'] . '/' . $values['FILE'] . '">' . $values['FILE'] . '</a>';
 
             $infos = $translator->translate('Ci-dessous votre ancienne lettre d’accompagnement, son remplacement est possible en joignant un nouveau fichier à votre commentaire.')
@@ -729,5 +742,49 @@ class Episciences_CommentsManager
 
     }
 
+    /**
+     * @param Episciences_Paper $paper
+     * @param array $coverLetter
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Json_Exception
+     */
+
+    public static function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null]): bool
+    {
+        // Save author comment and attached file
+        $authorComment = new Episciences_Comment();
+        $authorComment->setFilePath(REVIEW_FILES_PATH . $paper->getDocid() . '/comments/');
+        $authorComment->setType(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
+        $authorComment->setDocid($paper->getDocid());
+        $authorComment->setMessage($coverLetter["message"]);
+
+        $result = false;
+
+        //Avoid inserting an empty row in the table
+        if (
+            (
+                !empty($coverLetter['message']) ||
+                !empty($coverLetter["attachedFile"])
+            ) &&
+            $result = $authorComment->save()
+        ) {
+            error_log('SAVE_COVER_LETTER_FAILED_FOR_DOCID_ ', $paper->getDocid());
+        }
+
+        return $result;
+    }
+
+    /**
+     * Remove comment
+     * @param int $identifier
+     * @return bool
+     */
+    public static function deleteByIdentifier(int $identifier): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        return ($db->delete(T_PAPER_COMMENTS, ['PCID = ?' => $identifier]) > 0);
+    }
 
 }

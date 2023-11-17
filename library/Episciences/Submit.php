@@ -1096,7 +1096,7 @@ class Episciences_Submit
             "attachedFile" => $values['FILE_AUTHOR']
         ];
 
-        $this->saveCoverLetter($paper, $coverLetter);
+        Episciences_CommentsManager::saveCoverLetter($paper, $coverLetter);
 
         // Sauvegarder les options *************************************************************
         $this->saveAllAuthorSuggestions($data, $result);
@@ -1489,30 +1489,6 @@ class Episciences_Submit
 
             Episciences_Mail_Send::sendMailFromReview($recipient, $templateKey, $adminTags, $paper);
         }
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     * @param array $coverLetter
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Json_Exception
-     */
-    private function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null]): void
-    {
-        // Save author comment and attached file
-        $authorComment = new Episciences_Comment();
-        $authorComment->setFilePath(REVIEW_FILES_PATH . $paper->getDocid() . '/comments/');
-        $authorComment->setType(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
-        $authorComment->setDocid($paper->getDocid());
-        $authorComment->setMessage($coverLetter["message"]);
-
-        if ($paper->getUid())
-
-            //Eviter l'insertion d'une ligne vide dans la table
-            if ((!empty($coverLetter['message']) || !empty($coverLetter["attachedFile"])) && !$authorComment->save()) {
-                error_log('SAVE_COVER_LETTER_FAILED_FOR_DOCID_ ', $paper->getDocid());
-            }
     }
 
     /**
@@ -1922,7 +1898,7 @@ class Episciences_Submit
             } elseif ($key === Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT && !empty($values) && !$paper->isPublished()) {
                 $paper->setType(self::processAndPrepareType($values));
                 try {
-                    if($paper->save()){
+                    if ($paper->save()) {
                         ++$insertedRows;
                     }
                 } catch (Zend_Db_Adapter_Exception $e) {
@@ -1961,16 +1937,16 @@ class Episciences_Submit
             }
 
             if (empty($processedType) && isset($type[Episciences_Paper::TITLE_TYPE_INDEX])) {
-                $processedType[Episciences_Paper::TITLE_TYPE] =  $type[Episciences_Paper::TITLE_TYPE_INDEX];
+                $processedType[Episciences_Paper::TITLE_TYPE] = $type[Episciences_Paper::TITLE_TYPE_INDEX];
 
             }
 
-            if(isset($type[Episciences_Paper::TYPE_TYPE_INDEX])){
-                $processedType[Episciences_Paper::TYPE_TYPE] =  $type[Episciences_Paper::TYPE_TYPE_INDEX];
+            if (isset($type[Episciences_Paper::TYPE_TYPE_INDEX])) {
+                $processedType[Episciences_Paper::TYPE_TYPE] = $type[Episciences_Paper::TYPE_TYPE_INDEX];
             }
 
-            if(isset($type[Episciences_Paper::TYPE_SUBTYPE_INDEX])){
-                $processedType[Episciences_Paper::TYPE_SUBTYPE] =  $type[Episciences_Paper::TYPE_SUBTYPE_INDEX];
+            if (isset($type[Episciences_Paper::TYPE_SUBTYPE_INDEX])) {
+                $processedType[Episciences_Paper::TYPE_SUBTYPE] = $type[Episciences_Paper::TYPE_SUBTYPE_INDEX];
             }
 
             return $processedType;
