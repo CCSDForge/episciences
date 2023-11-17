@@ -411,7 +411,7 @@ return [
     "Vous ne pouvez pas voir la rubrique d'un article que vous avez déposé vous-même" => "You cannot see the section of an article submitted by yourself",
     "Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même" => "You cannot see the reviewers of an article submitted by yourself",
     "Vous ne pouvez pas voir les rédacteurs d'un article que vous avez déposé vous-même" => "You cannot see the editors of an article submitted by yourself",
-    "Le document demande n’existe pas." => "The required document does not exist.",
+    "Le document demandé n’existe pas." => "The required document does not exist.",
     "Vous n'avez pas accès à cet article." => "You do not have access to this article.",
     'Volume principal' => 'Master volume',
     'conflit signalé' => 'reported conflict',

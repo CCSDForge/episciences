@@ -3,7 +3,7 @@ require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.p
 
 class PaperDefaultController extends DefaultController
 {
-    public const MSG_PAPER_DOES_NOT_EXIST = "Le document demande n’existe pas.";
+    public const MSG_PAPER_DOES_NOT_EXIST = "Le document demandé n’existe pas.";
     public const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";
     public const MSG_REPORT_COMPLETED = "Votre rapport a été déjà renseigné.";
     public const ERROR = 'error';

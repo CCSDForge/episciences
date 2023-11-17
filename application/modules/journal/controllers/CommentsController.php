@@ -29,7 +29,7 @@ class CommentsController extends PaperController
         $url = '/' . $controllerName . '/view/id/' . $docid;
 
         if (!$paper) {
-            $message = $this->view->translate("Le document demande n’existe pas.");
+            $message = $this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST);
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
             $this->_helper->redirector->gotoUrl($url);
             return;
@@ -96,8 +96,11 @@ class CommentsController extends PaperController
      */
     public function editcommentAction()
     {
-        $pcid = (int)$this->getRequest()->getParam('pcid');
+        $request = $this->getRequest();
+
+        $pcid = (int)$request->getParam('pcid');
         $paper = null;
+        $url = '/';
 
         $oldComment = Episciences_CommentsManager::getComment($pcid); // array | false
 
@@ -106,7 +109,7 @@ class CommentsController extends PaperController
         }
 
         if (!$paper) {
-            $this->_helper->redirector->gotoUrl('/');
+            $this->_helper->redirector->gotoUrl($url);
             return;
         }
 
@@ -119,8 +122,10 @@ class CommentsController extends PaperController
         ) { // Le commentaire est edité uniquement par son auteur ou l'administrateur ou le rédacteur en chef.
             $form = Episciences_CommentsManager::getEditAuthorCommentForm($oldComment);
             /** @var Zend_Controller_Request_Http $request */
-            $request = $this->getRequest();
-            if ($request->isPost() && $form->isValid($request->getPost())) {
+            if (
+                $request->isPost() &&
+                $form->isValid($request->getPost())
+            ) {
                 $form_values = $form->getValues();
                 $newComment = new Episciences_Comment();
 
@@ -140,7 +145,13 @@ class CommentsController extends PaperController
                     $message = $this->view->translate("Une erreur est survenue lors de l'enregistrement de votre commentaire.");
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 } else {
-                    $url = Episciences_Auth::isSecretary() ? $this->buildAdminPaperUrl($oldComment['DOCID']) : $this->buildPublicPaperUrl($oldComment['DOCID']);
+
+                    if ($paper->isOwner()) {
+                        $url = '/' . PaperDefaultController::PAPER_URL_STR. $paper->getDocid();
+                    } elseif (Episciences_Auth::isSecretary()) {
+                        $url = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid();
+                    }
+
                     $message = $this->view->translate("Vos changements ont été enregistrés.");
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 }
@@ -148,13 +159,16 @@ class CommentsController extends PaperController
                 $this->_helper->redirector->gotoUrl($url);
                 return;
             }
-            $this->view->edit_comment_form = $form;
 
         } else {
             $message = "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire.";
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector->gotoUrl('/paper/submitted');
+            return;
         }
+
+        $this->view->edit_comment_form = $form;
+
 
     }
 
