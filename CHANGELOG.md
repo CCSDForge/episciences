@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Integration of api and application for the bibliographical references
 - [#374](https://github.com/CCSDForge/episciences/issues/374): Importing orcid and affiliations from Zenodo
 - Compatibility Dataverse
+- Integration of linked softwares and publications for an article (can be added manually by author and managers)
 
 ### Changed
 - Repositories config. is now stored in DB. /!\ todo : ALTER METADATA_SOURCES TABLE @see /scr/mysql/alter_metadata_sources.sql

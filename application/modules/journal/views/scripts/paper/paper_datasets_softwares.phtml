@@ -27,7 +27,7 @@ $keepOnlySourceUsed = [];
                         <?php endif; ?>
                         <?php if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir') : ?>
                             <a href="https://archive.softwareheritage.org/<?= $software->getValue() ?>"
-                               style="margin-top: 8px;">
+                               style="margin-top: 8px;" rel="noopener" target="_blank">
                                 <img src="https://archive.softwareheritage.org/badge/<?= $software->getValue() ?>"
                                      alt="Archived | <?= $software->getValue() ?>"/>
                             </a>
