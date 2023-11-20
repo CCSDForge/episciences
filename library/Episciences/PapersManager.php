@@ -2113,10 +2113,11 @@ class Episciences_PapersManager
      * fetch a paper object (or false if not found)
      * @param $docId
      * @param bool $withxsl
+     * @param int | null $rvId
      * @return bool|Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      */
-    public static function get($docId, bool $withxsl = true, int $rvId = RVID)
+    public static function get($docId, bool $withxsl = true, int $rvId = null)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2125,7 +2126,7 @@ class Episciences_PapersManager
             ->where('DOCID = ?', $docId);
 
         if ($rvId) {
-            $select->where('RVID = ?', $rvId);
+            $select->where('RVID = ?', RVID);
         }
 
         $data = $select->query()->fetch();
