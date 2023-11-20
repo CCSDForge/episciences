@@ -18,11 +18,19 @@ class CommentsController extends PaperController
         $pcid = (int)$this->getRequest()->getParam('pcid');
         $file = $this->getRequest()->getParam('file');
         $isTmp = (boolean)$this->getRequest()->getParam('istmp');
-        $paper = Episciences_PapersManager::get($docid);
+
+        $paper = Episciences_PapersManager::get($docid, false, RVID);
+
+        if (!$paper) {
+            return;
+        }
 
         $controllerName = 'paper';
 
-        if ($paper->getUid() != Episciences_Auth::getUid() && Episciences_Auth::isAllowedToManagePaper()) {
+        if (
+            Episciences_Auth::isAllowedToManagePaper() &&
+            $paper->getUid() !== Episciences_Auth::getUid()
+        ) {
             $controllerName = 'administratepaper';
         }
 
@@ -50,7 +58,7 @@ class CommentsController extends PaperController
 
         $paperId = ($paper->getPaperid()) ? $paper->getPaperid() : $paper->getDocid();
 
-        if ($isTmp) { // fichiers joints aux  commentaires des versions temporaires
+        if ($isTmp) { // fichiers joints aux commentaires des versions temporaires
 
             $dir = $paperId;
             $dir .= DIRECTORY_SEPARATOR;
@@ -105,7 +113,7 @@ class CommentsController extends PaperController
         $oldComment = Episciences_CommentsManager::getComment($pcid); // array | false
 
         if ($oldComment) {
-            $paper = Episciences_PapersManager::get($oldComment['DOCID']);
+            $paper = Episciences_PapersManager::get($oldComment['DOCID'], false, RVID);
         }
 
         if (!$paper) {
@@ -147,7 +155,7 @@ class CommentsController extends PaperController
                 } else {
 
                     if ($paper->isOwner()) {
-                        $url = '/' . PaperDefaultController::PAPER_URL_STR. $paper->getDocid();
+                        $url = '/' . PaperDefaultController::PAPER_URL_STR . $paper->getDocid();
                     } elseif (Episciences_Auth::isSecretary()) {
                         $url = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid();
                     }
@@ -187,7 +195,7 @@ class CommentsController extends PaperController
 
         $docId = (int)$request->getParam('docid');
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false, RVID);
 
         $url = '/';
 
