@@ -4173,10 +4173,18 @@ class Episciences_Paper
                 case 'publication' :
                 case 'dataset' :
                 case 'software':
-                    $formatedDatasets[$typeLd][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    if ($unorderedDatasets->getRelationship() !== null){
+                        $formatedDatasets[$typeLd][ucfirst($unorderedDatasets->getRelationship())][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    }else{
+                        $formatedDatasets[$typeLd]['Other'][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    }
                     break;
                 default :
-                    $formatedDatasets["publication"][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    if ($unorderedDatasets->getRelationship() !== null){
+                        $formatedDatasets["publication"][ucfirst($unorderedDatasets->getRelationship())][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    }else{
+                        $formatedDatasets["publication"]['Other'][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
+                    }
                     break;
             }
         }

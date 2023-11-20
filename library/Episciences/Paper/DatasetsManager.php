@@ -332,6 +332,9 @@ class Episciences_Paper_DatasetsManager
                 break;
             case 'url':
                 $dataset->setName("software");
+                if ($code === 'dataset' || $code === 'publication'){
+                    $dataset->setName("url");
+                }
                 $dataset->setLink("url");
                 break;
             default:
@@ -389,13 +392,14 @@ class Episciences_Paper_DatasetsManager
      */
     public static function putUserLdFirst(array $arrayLd): array
     {
-
-        if (isset($arrayLd[Episciences_Repositories::EPI_USER_ID])){
-            $epiUserLd = $arrayLd[Episciences_Repositories::EPI_USER_ID];
-            unset($arrayLd[Episciences_Repositories::EPI_USER_ID]);
-            $arrayLd = [Episciences_Repositories::EPI_USER_ID => $epiUserLd] + $arrayLd;
+        foreach ($arrayLd as $key => $ld){
+            if (isset($ld[Episciences_Repositories::EPI_USER_ID])){
+                $epiUserLd = $ld[Episciences_Repositories::EPI_USER_ID];
+                unset($ld[Episciences_Repositories::EPI_USER_ID]);
+                $arrayLd[$key] = [Episciences_Repositories::EPI_USER_ID => $epiUserLd] + $ld;
+            }
         }
+        krsort($arrayLd, SORT_FLAG_CASE | SORT_STRING);
         return $arrayLd;
     }
-
 }

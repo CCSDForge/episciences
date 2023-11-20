@@ -52,12 +52,20 @@ $(function () {
             url: "/administratelinkeddata/addld/",
             data:
             {
-                typeld: typeLd,
+                typeld:typeLd,
                 valueld:valueLd,
                 docId:docId,
                 paperId:paperId,
+            },
+            beforeSend: function () {
+                window.scroll({
+                    top: 0,
+                    left: 0,
+                    behavior: 'smooth'
+                });
             }
         }).success(function (response) {
+            window.location.hash = "";
             window.location.reload();
         });
     });
@@ -75,9 +83,17 @@ $(function () {
                         id: idLd,
                         docId:docId,
                         paperId:paperId,
-                    }
+                    },
+                beforeSend: function () {
+                    window.scroll({
+                        top: 0,
+                        left: 0,
+                        behavior: 'smooth'
+                    })
+                }
             }).success(function (response) {
                 if (JSON.parse(response)[0] === true){
+                    window.location.hash = "";
                     window.location.reload();
                 }
             });

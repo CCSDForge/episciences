@@ -49,7 +49,8 @@
     "doctrine/annotations": "^1.13",
     "vlucas/phpdotenv": "^5.5",
     "league/html-to-markdown": "^5.1",
-    "league/commonmark": "^2.4"
+    "league/commonmark": "^2.4",
+    "seboettg/citeproc-php": "^2.6"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",

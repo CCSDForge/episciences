@@ -1,4 +1,9 @@
 <?php
+
+use Seboettg\CiteProc\Exception\CiteProcException;
+use Seboettg\CiteProc\StyleSheet;
+use Seboettg\CiteProc\CiteProc;
+
 $datasets = $this->datasets;
 $paper = $this->paper;
 $listSources = $this->listSources;
@@ -9,32 +14,98 @@ $keepOnlySourceUsed = [];
         <h2 class="panel-title"><?= $this->translate('Datasets') ?></h2>
     </div>
     <div class="panel-body in">
-        <?php foreach ($datasets as $source => $datasetsArrayBySource) : ?>
-            <?php
-            $getSource = new Episciences_Paper_Dataset();
-            $getSource->setSourceId($source);
-            $getSource = $getSource->getSourceLabel($source);
-            ?>
-            <?php foreach ($datasetsArrayBySource as $dataset) : /** @var Episciences_Paper_Dataset $dataset */ ?>
-                <?php if ((string) $source === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?>
-                    <button id="remove-ld" data-ld="<?= $dataset->getId() ?>" class="btn btn-default btn-xs" type="button" ><i class="fa-solid fa-trash-can"></i></button>
-                <?php endif;?>
-                <?php if ($dataset->getRelationship() !== null){echo $this->escape($this->translate($dataset->getRelationship()));} ?>&nbsp;<?= ucfirst($this->translate($dataset->getName())) ?>
-                <?php if ((string) $source !== Episciences_Repositories::EPI_USER_ID) : ?>
-                    <sup><?=$listSources[$getSource]?></sup>
-                <?php endif;?>
-                <a href="<?= $dataset->getLink() ?>" target="_blank" rel="noopener" id="link-ld"><?= $dataset->getValue() ?></a><br>
-                <div style="margin-bottom: 4px"></div>
+        <?php foreach ($datasets as $nameRelationship => $datasetsArrayByRelationship) : ?>
+            <?php if ($nameRelationship !== null) {
+                echo "<span class='label label-default'>" . $this->escape($this->translate($nameRelationship)) . "</span>";
+            } ?>
+            <?php foreach ($datasetsArrayByRelationship as $source => $datasetsArrayBySource) : ?>
+                <?php
+                $sourceToSup = '';
+                $getSource = new Episciences_Paper_Dataset();
+                $getSource->setSourceId($source);
+                $getSource = $getSource->getSourceLabel($source);
+                ?>
+                <?php foreach ($datasetsArrayBySource as $dataset) :
+                    /** @var Episciences_Paper_Dataset $dataset */ ?>
+                    <div style="margin-top: 8px;">
+                        <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
+                            <?php if ((string)$source === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?>
+                                <button id="remove-ld" data-ld="<?= $dataset->getId() ?>"
+                                        class="btn btn-default btn-xs" type="button">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            <?php endif; ?>
+                            <?php if (!Episciences_Tools::isDoiWithUrl($dataset->getValue())) : ?><?= ucfirst($this->translate($dataset->getName())) ?>
+                            <?php endif; ?>
+                            <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && (string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID) : ?>
+                                <sup><?= $listSources[$getSource] ?></sup>
+                            <?php endif; ?>
+                            <?php if ((string)$source === Episciences_Repositories::SCHOLEXPLORER_ID) {
+                                $sourceToSup = $listSources[$getSource];
+                            } ?>
+                            <?php if (!Episciences_Tools::isDoiWithUrl($dataset->getLink())
+                                || (Episciences_Tools::isDoiWithUrl($dataset->getLink())
+                                    && (string)$dataset->getSourceId()
+                                    !== Episciences_Repositories::EPI_USER_ID
+                                    && (string)$dataset->getSourceId() !== Episciences_Repositories::SCHOLEXPLORER_ID)) : ?>
+                                <a href="<?= $dataset->getLink() ?>" target="_blank" rel="noopener"
+                                   id="link-ld"><?= $dataset->getValue() ?></a><sup> <?= $sourceToSup ?></sup><br>
+                            <?php endif; ?>
+                            <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
+                                && ($dataset->getName() === 'doi' || Episciences_Tools::isDoiWithUrl($dataset->getValue()))
+                                && $dataset->getMetatext() !== null) {
+                                try {
+                                    //pimp author names
+                                    $authorFunction = static function ($authorItem, $renderedText) {
+                                        if (isset($authorItem->ORCID)) {
+                                            return $renderedText . " " . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID) . ' data-toggle="tooltip" data-placement="bottom" data-original-title="' . str_replace("http://orcid.org/", "", $authorItem->ORCID) . '" target="_blank"><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"></a>';
+                                        }
+                                        return $renderedText;
+                                    };
+                                    $linkDOI = static function ($citationItem, $renderedText) {
+                                        if (isset($citationItem->DOI)) {
+                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'; //trick to undisplay prefix put in render
+                                        }
+                                        return $renderedText;
+                                    };
+                                    $additionalMarkup = [
+                                        "author" => $authorFunction,
+                                        "DOI" => $linkDOI,
+                                        "csl-entry" => static function ($cslItem, $renderedText) {
+                                            return str_replace(array("https://doi.org/", "http://doi.org/"), array('', 'https://doi.org/'), $renderedText); //trick to undisplay prefix put in render
+                                        }
+                                    ];
+                                    $addingBraceToJson = "[" . $dataset->getMetatext() . "]";
+                                    $style = StyleSheet::loadStyleSheet("apa");
+                                    $citeProc = new CiteProc($style, "en-US", $additionalMarkup);
+                                    echo $citeProc->render(json_decode($addingBraceToJson), "bibliography");
+                                } catch (CiteProcException $e) {
+                                    continue;
+                                }
+                            } ?>
+                            <?php if ((string)$source === Episciences_Repositories::SCHOLEXPLORER_ID && $dataset->getMetatext() !== null) {
+                                $decodedMetatext = json_decode($dataset->getMetatext(), true, 512, JSON_THROW_ON_ERROR);
+                                echo $this->partial('paper/paper_linked_data_metadatas.phtml',
+                                    ['metadatas' => $decodedMetatext, 'originalInfo' => ['value' => $dataset->getValue(), 'link' => $dataset->getLink(), 'sourceToSup' => $sourceToSup]
+                                    ]);
+                            } ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
             <?php endforeach; ?>
-            <?php if ((string) $source !== Episciences_Repositories::EPI_USER_ID && !array_key_exists($getSource,$keepOnlySourceUsed)){ $keepOnlySourceUsed[$listSources[$getSource]] = array_search($listSources[$getSource],$listSources);} ?>
+            <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && !array_key_exists($getSource, $keepOnlySourceUsed)) {
+                $keepOnlySourceUsed[$listSources[$getSource]] = array_search($listSources[$getSource], $listSources);
+            } ?>
         <?php endforeach; ?>
         <ul class="list-unstyled">
             <?php foreach ($keepOnlySourceUsed as $id => $label): ?>
-                <li><span class="label label-default"><?=$this->escape($id)?></span> <?= $label ?></li>
+                <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
             <?php endforeach; ?>
         </ul>
         <?php if (Episciences_Auth::isAllowedToManageOrcidAuthor() || $paper->isOwner()): ?>
-            <a class="btn btn-default btn-sm" id="anchor-dataset-add" href="#manage-linked-data"><span class="fas fa-database" style="margin-right: 5px"></span><?= $this->translate("Ajouter un jeu de données") ?></a>
+            <a class="btn btn-default btn-sm" id="anchor-dataset-add" href="#manage-linked-data"><span
+                        class="fas fa-database"
+                        style="margin-right: 5px"></span><?= $this->translate("Ajouter un jeu de données") ?></a>
         <?php endif; ?>
     </div>
 </div>
