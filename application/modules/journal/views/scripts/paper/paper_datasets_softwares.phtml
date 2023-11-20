@@ -9,44 +9,59 @@ $keepOnlySourceUsed = [];
         <h2 class="panel-title"><?= $this->translate('software_bloc_label') ?></h2>
     </div>
     <div class="panel-body in">
-        <?php foreach ($softwares as $source => $softwareArrayBySource) : ?>
-            <?php
-            $getSource = new Episciences_Paper_Dataset();
-            $getSource->setSourceId($source);
-            $getSource = $getSource->getSourceLabel($source);
-            ?>
-            <?php foreach ($softwareArrayBySource as $software) : /** @var Episciences_Paper_Dataset $software */ ?>
-                <?php if ((string) $source === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?>
-                    <button id="remove-ld" data-ld="<?= $software->getId() ?>" class="btn btn-default btn-xs" type="button" ><i class="fa-solid fa-trash-can"></i></button>
-                <?php endif;?>
-                <?php if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir') : ?>
-                    <a href="https://archive.softwareheritage.org/<?= $software->getValue() ?>">
-                        <img src="https://archive.softwareheritage.org/badge/<?= $software->getValue() ?>" alt="Archived | <?= $software->getValue() ?>"/>
-                    </a>
-                    <?php if ((string) $source !== Episciences_Repositories::EPI_USER_ID) : ?>
-                        <sup><?=$listSources[$getSource]?></sup>
-                    <?php endif;?>
-                <?php else: ?>
-                <?php if ($software->getRelationship() !== null){echo $this->escape($this->translate($software->getRelationship()));} ?>&nbsp;<?= $this->translate($software->getName()) ?> <sup><?= $listSources[$getSource]?></sup> <a href="<?= $software->getLink() ?>" target="_blank" rel="noopener" id="link-ld"><?= $software->getValue() ?></a>
-                <?php endif; ?>
-                <div style="margin-bottom: 4px"></div>
-                <?php if ($software->getName() === 'software'): ?>
+        <?php foreach ($softwares as $nameRelationship => $softwareArrayByRelationship) : ?>
+            <?php if ($nameRelationship !== null) {
+                echo "<span class='label label-default' style='margin-bottom: 8px;'>" . $this->escape($this->translate($nameRelationship)) . "</span><br>";
+            } ?>
+            <?php foreach ($softwareArrayByRelationship as $source => $softwareArrayBySource) : ?>
                 <?php
-                if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir'){
-                    $urlSwd = "https://archive.softwareheritage.org/browse/embed/".$software->getValue(); ?>
-                    <iframe style="width: 100%; height: 500px; border: 1px solid rgba(0, 0, 0, 0.125);" src=<?=$urlSwd?>></iframe>
-                <?php } ?>
-                <?php endif;?>
-            <?php if ((string) $source !== Episciences_Repositories::EPI_USER_ID && !array_key_exists($getSource,$keepOnlySourceUsed)) {$keepOnlySourceUsed[$listSources[$getSource]] = array_search($listSources[$getSource],$listSources);} ?>
+                $getSource = new Episciences_Paper_Dataset();
+                $getSource->setSourceId($source);
+                $getSource = $getSource->getSourceLabel($source);
+                ?>
+                <?php foreach ($softwareArrayBySource as $software) : /** @var Episciences_Paper_Dataset $software */ ?>
+                    <div style="margin-top: 8px;">
+                        <?php if ((string)$source === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?>
+                            <button id="remove-ld" data-ld="<?= $software->getId() ?>" class="btn btn-default btn-xs"
+                                    type="button"><i class="fa-solid fa-trash-can"></i></button>
+                        <?php endif; ?>
+                        <?php if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir') : ?>
+                            <a href="https://archive.softwareheritage.org/<?= $software->getValue() ?>"
+                               style="margin-top: 8px;">
+                                <img src="https://archive.softwareheritage.org/badge/<?= $software->getValue() ?>"
+                                     alt="Archived | <?= $software->getValue() ?>"/>
+                            </a>
+                            <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) : ?>
+                                <sup><?= $listSources[$getSource] ?></sup>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <a href="<?= $software->getLink() ?>"><?= $software->getValue() ?></a>
+                        <?php endif; ?>
+                        <div style="margin-bottom: 4px"></div>
+                        <?php if ($software->getName() === 'software'): ?>
+                            <?php
+                            if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir') {
+                                $urlSwd = "https://archive.softwareheritage.org/browse/embed/" . $software->getValue(); ?>
+                                <iframe style="width: 100%; height: 500px; border: 1px solid rgba(0, 0, 0, 0.125);"
+                                        src=<?= $urlSwd ?>></iframe>
+                            <?php } ?>
+                        <?php endif; ?>
+                        <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && !array_key_exists($getSource, $keepOnlySourceUsed)) {
+                            $keepOnlySourceUsed[$listSources[$getSource]] = array_search($listSources[$getSource], $listSources);
+                        } ?>
+                    </div>
+                <?php endforeach; ?>
             <?php endforeach; ?>
         <?php endforeach; ?>
         <ul class="list-unstyled">
             <?php foreach ($keepOnlySourceUsed as $id => $label): ?>
-                <li><span class="label label-default"><?=$this->escape($id)?></span> <?= $label ?></li>
+                <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
             <?php endforeach; ?>
         </ul>
         <?php if (Episciences_Auth::isAllowedToManageOrcidAuthor() || $paper->isOwner()): ?>
-            <a class="btn btn-default btn-sm" href="#manage-linked-data" id="anchor-software-add"><span class="fa-regular fa-hard-drive" style="margin-right: 5px"></span><?= $this->translate("Ajouter un logiciel") ?></a>
+            <a class="btn btn-default btn-sm" href="#manage-linked-data" id="anchor-software-add"><span
+                        class="fa-regular fa-hard-drive"
+                        style="margin-right: 5px"></span><?= $this->translate("Ajouter un logiciel") ?></a>
         <?php endif; ?>
     </div>
 </div>
