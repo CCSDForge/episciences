@@ -214,7 +214,7 @@ class UpdatePapers extends JournalScript
                         // skip Episciences repository
                         continue;
                     }
-                    $repositories[$i] = $repository['label'];
+                    $repositories[$i] = $repository[Episciences_Repositories::REPO_LABEL];
                 }
                 $repoid = $this->ask('Please pick one of these:', $repositories);
                 $this->setParam('repoid', $repoid);
