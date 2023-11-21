@@ -68,6 +68,7 @@ abstract class JournalScript extends Script
         if (!$this->hasParam(self::PARAM_RVCODE)) {
             $this->setParam(self::PARAM_RVCODE, $this->getJournal($this->getParam(self::PARAM_RVID))->getCode());
         }
+        defineProtocol();
     }
 
     /**

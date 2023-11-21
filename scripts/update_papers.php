@@ -70,9 +70,6 @@ class UpdatePapers extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
-
-        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
-
         $this->checkImportMethod();
         $this->checkRvid();
         $this->checkRepoId();

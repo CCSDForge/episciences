@@ -51,9 +51,6 @@ class InboxNotifications extends Script
         $this->initApp();
         $this->initDb();
 
-        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
-
-
         try {
             $this->initTranslator(Episciences_Review::DEFAULT_LANG);
 

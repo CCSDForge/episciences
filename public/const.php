@@ -11,7 +11,7 @@ function defineProtocol()
         $protocol = 'http';
     }
 
-    define('SERVER_PROTOCOL', $protocol);
+    defined('SERVER_PROTOCOL') || define('SERVER_PROTOCOL', $protocol);
 }
 
 /**

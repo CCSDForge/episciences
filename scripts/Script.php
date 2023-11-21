@@ -490,6 +490,9 @@ abstract class Script {
         Zend_Db_Table::setDefaultAdapter($db);
 
         $this->setDb($db);
+
+        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
+
     }
 
     public function setDb($db)

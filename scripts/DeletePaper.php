@@ -44,7 +44,8 @@ class DeletePaper extends JournalScript
         $this->checkRvid();
         $this->checkRvcode();
 
-        defineJournalConstants();
+        defineJournalConstants($this->getParam('rvcode'));
+
 
         $this->checkMethod();
 
@@ -145,6 +146,7 @@ class DeletePaper extends JournalScript
 
             if ($rvcode) {
                 $this->setParam('rvcode', $rvcode);
+                defineProtocol();
             } else {
                 $this->displayError('rvcode could not be found');
                 return false;
