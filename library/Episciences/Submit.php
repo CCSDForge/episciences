@@ -535,7 +535,7 @@ class Episciences_Submit
 
             if (
                 !isset($defaults['isRequiredIdentifier']) ||
-                $defaults['isRequiredIdentifier']
+                !$defaults['isRequiredIdentifier']
             ) {
                 unset($docIdOptions['disabled']);
             }
@@ -1725,7 +1725,7 @@ class Episciences_Submit
             $defaults = [
                 'hasHook' => $hasHook,
                 'isRequiredIdentifier' => $isRequiredIdentifier,
-                'docId' => !$isRequiredIdentifier ? $paper->getIdentifier() : '', //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
+                'docId' => $isRequiredIdentifier ? $paper->getIdentifier() : '', //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
                 'version' => $paper->getVersion(),
                 'repoId' => $repository
             ];
