@@ -124,7 +124,8 @@ return [
     "The resumptionToken does not exist or has already expired." => "Le jeton de reprise n'existe pas ou a déjà expiré.",
     "The verb provided in the request is illegal." => "Le verbe fourni dans la demande est illégal.",
     "The metadata format is not supported by this repository." => "Le format de métadonnées n'est pas pris en charge par cette archive",
-    "The value of the identifier is illegal for this archive, please check the identifier and the version of the document." => "La valeur de l'identifiant est illégale pour cette archive, merci de vérifier l'identifiant et la version du document.",
+    "To submit your document, please make sure it is online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s)." =>
+        "Pour pouvoir soumettre votre document, veuillez vous assurer que celui-ci a bien été mis en ligne dans l'archive ouverte. En cas de difficulté, contactez le support Episciences, à l'adresse %s, en indiquant l'identifiant du document (exemple d'identifiant pour un document déposé dans %s : %s).",
     "This document version does not exist in the open archive, please check the document version." => "Cette version du document n'existe pas dans l'archive ouverte, merci de vérifier la version du document.",
     "The combination of the given values results in an empty list." => "La combinaison des valeurs données entraîne une liste vide.",
     "There are no metadata formats available for the specified item." => "Aucun format de métadonnées n'est disponible pour l'élément spécifié.",

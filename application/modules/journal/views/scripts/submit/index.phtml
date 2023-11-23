@@ -21,7 +21,12 @@ $zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
     <div class="panel-body in">
         <p><?php echo $this->translate("Vous êtes sur le point de proposer un document à la revue. Veuillez vérifier que :"); ?></p>
         <ol>
-            <li><?php echo $this->translate("Votre document est en ligne sur une des archives ouvertes ou entrepôts suivants : %s", $this->repositories); ?></li>
+            <li>
+                <?php echo $this->translate("Votre document est en ligne sur une des archives ouvertes ou entrepôts suivants : %s", $this->repositories); ?>
+                <?php if (str_contains($this->repositories, $label = Episciences_Repositories::getLabel(Episciences_Repositories::ARXIV_REPO_ID))): ?>
+                    <br><em><?= sprintf($this->translate('Note : sur %s, ça peut être un peu long'), $label ) ?></em>
+                <?php endif; ?>
+            </li>
             <li><?php echo $this->translate("Vous connaissez son identifiant et son numéro de version"); ?></li>
         </ol>
         <p><?php echo $this->translate("L'identifiant du document, sa version et l'archive ouverte dont il provient sont les seules informations nécessaires pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre document avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien du document que vous souhaitez soumettre à la revue.") ?></p>

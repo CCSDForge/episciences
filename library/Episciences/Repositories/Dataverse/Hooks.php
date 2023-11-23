@@ -23,7 +23,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
         $docId = $hookParams['docId'];
         $repoId = $hookParams['repoId'];
 
-        $files = array_map( static function($file) use ($docId, $repoId) {
+        $files = array_map(static function ($file) use ($docId, $repoId) {
             $file['doc_id'] = $docId;
             $file['source'] = $repoId;
             return $file;
@@ -31,12 +31,16 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
         }, $files);
 
 
-
         $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($files);
 
         return $hookParams;
     }
 
+    /**
+     * @param array $hookParams
+     * @return array
+     * @throws Ccsd_Error
+     */
     public static function hookApiRecords(array $hookParams): array
     {
         $options = [];
@@ -52,19 +56,25 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
         $url .= '/?persistentId=';
         $url .= $hookParams['identifier'];
 
-        $response = Episciences_Tools::callApi($url, $options);
+        try {
+            $response = Episciences_Tools::callApi($url, $options);
+
+            if (false === $response || !isset($response['data'])) {
+                throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
+            }
+
+
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            throw new Exception($e->getMessage());
+        }
 
         $status = $response['status'] ?? null;
 
-        $data = $response['data'] ?? null; // current version
-
-
         if (
-            !$data ||
-            (
-                $status &&
-                mb_strtolower($status) !== self::SUCCESS_CODE
-            )
+
+            $status &&
+            mb_strtolower($status) !== self::SUCCESS_CODE
+
         ) {
 
 
@@ -74,7 +84,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
         }
 
 
-        $processedData = $data;
+        $processedData = $response['data'];
 
         self::dataProcess($processedData);
 
@@ -466,7 +476,6 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
             $tmp['self_link'] = $dataFile['pidURL'];
 
             $processedFiles[] = $tmp;
-
 
 
         }

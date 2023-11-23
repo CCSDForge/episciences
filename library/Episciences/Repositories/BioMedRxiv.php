@@ -14,6 +14,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
     public const INSTITUTIONS = 'institutions';
     public const LICENSE = 'license';
     public const KEYWORDS = 'kwd';
+    public const COLLECTION = 'collection';
 
 
     private string $doiPrefix = self::DOI_PREFIX;
@@ -43,6 +44,11 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
         return $input;
     }
 
+    /**
+     * @param array $hookParams
+     * @return array
+     * @throws Exception
+     */
     public static function hookApiRecords(array $hookParams): array
     {
 
@@ -64,10 +70,18 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
 
         $version = (int)$hookParams['version'];
 
-        $response = Episciences_Tools::callApi($url, $options);
+        try {
+            $response = Episciences_Tools::callApi($url, $options);
+
+            if (!array_key_exists(self::COLLECTION, $response) || empty($response[self::COLLECTION])){
+                throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
+            }
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            throw new Exception($e->getMessage());
+        }
 
         $messages = $response['messages'][array_key_first($response['messages'])];
-        $collection = $response['collection']; // all versions
+        $collection = $response[self::COLLECTION]; // all versions
 
         if (
             (
@@ -432,7 +446,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                             $name .= $aff['country'];
                         }
                     }
-                        $institutions[$label] = ['name' => $name];
+                    $institutions[$label] = ['name' => $name];
                 }
 
                 $contrib = $aVals['contrib'] ?? [];

@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Integration of linked softwares and publications for an article (can be added manually by author and managers)
 
 ### Changed
+- [394](https://github.com/CCSDForge/episciences/issues/394): Improvements to facilitate submissions.
 - Repositories config. is now stored in DB. /!\ todo : ALTER METADATA_SOURCES TABLE @see /scr/mysql/alter_metadata_sources.sql
 - Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
     * optional file attachment in "Contact without sending a new version" and "answer without any modifications".

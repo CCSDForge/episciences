@@ -164,8 +164,8 @@ $(function () {
             showResult(xml);
         });
 
-        request.fail(function () {
-            fail();
+        request.fail(function (response) {
+            fail(response);
         });
     }
 
@@ -265,8 +265,8 @@ $(function () {
     }
 
     // display an error if document not found
-    function fail() {
-        let message = '<div class="panel panel-danger"><div class="panel-body">' + translate("Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.") + '</div></div>';
+    function fail(response = null) {
+        let message = !response ? '<div class="panel panel-danger"><div class="panel-body">' + translate("Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.") + '</div></div>' : response;
         $result_container.html(message);
         $search_button.prop('disabled', false);
         $search_button.toggleClass('disabled');

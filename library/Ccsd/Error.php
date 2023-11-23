@@ -5,6 +5,7 @@
  */
 class Ccsd_Error extends Exception
 {
+    public const ID_DOES_NOT_EXIST_CODE = 'idDoesNotExist';
     protected $_type;
 
     /**
@@ -57,8 +58,8 @@ class Ccsd_Error extends Exception
             case 'cannotDisseminateFormat':
                 $message = 'The metadata format is not supported by this repository.';
                 break;
-            case 'idDoesNotExist' :
-                $message = 'The value of the identifier is illegal for this archive, please check the identifier and the version of the document.';
+            case self::ID_DOES_NOT_EXIST_CODE :
+                $message = "To submit your document, please make sure it is online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
                 break;
             case 'noRecordsMatch' :
                 $message = 'The combination of the given values results in an empty list.';

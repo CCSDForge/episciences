@@ -1469,6 +1469,7 @@ class Episciences_Tools
      * @param string $url
      * @param array $options
      * @return false|array|string
+     * @throws GuzzleException
      */
 
     public static function callApi(string $url, array $options = [])
@@ -1503,7 +1504,7 @@ class Episciences_Tools
         } catch (GuzzleException $e) {
 
             if ($e->getCode() !== 404) {
-                trigger_error($e->getMessage());
+                throw $e;
             }
         }
 

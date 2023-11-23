@@ -770,31 +770,31 @@ class Episciences_Submit
             $id = $hookCleanIdentifiers['identifier'];
         }
 
-        $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId, 'version' => $version]);
-
-        if (!empty($hookApiRecord)) {
-            $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
-        }
-
-        if (isset($hookVersion['version'])) {
-            $version = $hookVersion['version'];
-            $result['hookVersion'] = $version;
-        }
-
-        $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version);
-        $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
-
-        $oai = null;
-
-        if ($baseUrl) {
-            $oai = new Episciences_Oai_Client($baseUrl, 'xml');
-        }
-
-
         $translator = !Ccsd_Tools::isFromCli() ? Zend_Registry::get('Zend_Translate') : null;
 
-
         try {
+
+            $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId, 'version' => $version]);
+
+            if (!empty($hookApiRecord)) {
+                $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
+            }
+
+            if (isset($hookVersion['version'])) {
+                $version = $hookVersion['version'];
+                $result['hookVersion'] = $version;
+            }
+
+            $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version);
+            $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
+
+            $oai = null;
+
+            if ($baseUrl) {
+                $oai = new Episciences_Oai_Client($baseUrl, 'xml');
+            }
+
+
             // version, identifier, repoid
             $paper = new Episciences_Paper(['rvid' => $rvId, 'version' => $version, 'repoid' => $repoId, 'identifier' => $id]);
             // On prend pas en compte la version de l'artcile lors de la vérification de son existance en local.
@@ -815,7 +815,7 @@ class Episciences_Submit
                 $result['record'] = $hookApiRecord ['record'] ?? null;
 
                 if (isset($hookApiRecord['error']) || empty($result['record'])) {
-                    throw new Ccsd_Oai_Error('idDoesNotExist', 'identifier', $identifier);
+                    throw new Ccsd_Oai_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE, 'identifier', $identifier);
                 }
 
             }
@@ -933,11 +933,17 @@ class Episciences_Submit
         } catch (Ccsd_Error $e) { // customized message : visible to the user
             $result['status'] = 0;
 
+            $error = $translator->translate($e->parseError());
+
+            if (str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE)) {
+                $error = sprintf($error, EPISCIENCES_SUPPORT, Episciences_Repositories::getLabel($repoId), Episciences_Repositories::getIdentifierExemple($repoId));
+            }
+
             if (!$translator) {
-                $result['error'] = $e->parseError();
+                $result['error'] = $error;
 
             } else {
-                $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate($e->parseError());
+                $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
             }
             return ($result);
         } catch (Exception $e) { // other exceptions: generic message
@@ -947,7 +953,7 @@ class Episciences_Submit
                 $result['error'] = $e->getMessage();
 
             } else {
-                $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $translator->translate("Le document n'a pas été trouvé ou n'a pas pu être chargé.");
+                $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $e->getMessage();
 
             }
 

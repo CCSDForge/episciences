@@ -289,7 +289,7 @@ abstract class Ccsd_Oai_Server
             }
         }
         if ((null !== $identifier) && !$this->existId($identifier)) {
-            $error = new Ccsd_Oai_Error('idDoesNotExist', 'identifier', $identifier);
+            $error = new Ccsd_Oai_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE, 'identifier', $identifier);
             if ($this->_xml instanceof Ccsd_DOMDocument) {
                 $errorNode = $this->_xml->createElement('error', $error->getMessage());
                 $errorNode->setAttribute('code', $error->getCode());
@@ -336,7 +336,7 @@ abstract class Ccsd_Oai_Server
                         break;
                     case 'identifier':
                         if (!$this->existId($val)) {
-                            $error = new Ccsd_Oai_Error('idDoesNotExist', 'identifier', $val);
+                            $error = new Ccsd_Oai_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE, 'identifier', $val);
                             if ($this->_xml instanceof Ccsd_DOMDocument) {
                                 $errorNode = $this->_xml->createElement('error', $error->getMessage());
                                 $errorNode->setAttribute('code', $error->getCode());

@@ -85,6 +85,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
+     * @throws Exception
      */
     public static function hookApiRecords(array $hookParams): array
     {
@@ -92,7 +93,16 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             return [];
         }
 
-        $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
+        try {
+            $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
+
+            if(false === $response){
+                throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE );
+            }
+
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            throw new Exception($e->getMessage());
+        }
 
         if ($response){
             self::enrichmentProcess($response);
