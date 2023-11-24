@@ -110,6 +110,8 @@ class ReviewerController extends PaperDefaultController
             $error = $this->view->translate("Cet article a été supprimé, il n'est plus nécessaire de le relire.");
         } elseif ($paper->isObsolete()) {
             $error = $this->view->translate("Cet article est obsolète, il n'est plus nécessaire de le relire.");
+        } elseif($paper->isRevisionRequested()){
+            $error = $this->view->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
         }
 
         return $error;

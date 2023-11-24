@@ -346,6 +346,9 @@ return [
     "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "This paper has already been published, it is useless to review it now.",
     "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "This paper has already been accepted, it is useless to review it now.",
     "Cet article a été refusé, il n'est plus nécessaire de le relire." => "This paper has been refused, it is useless to review it now.",
+    "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "This paper has been deleted, it is useless to review it now.",
+    "Cet article est obsolète, il n'est plus nécessaire de le relire." =>"This paper is obsolete, it is useless to review it now.",
+    "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "This paper is under revision, it is useless to review it now.",
 
     "Articles de l'auteur" => "Articles of this author",
     "Ajouter un DOI" => 'Add a DOI',

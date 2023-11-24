@@ -3,7 +3,7 @@
 <?php if ($this->errors) : ?>
     <div class="panel panel-danger">
         <div class="panel-heading">
-            <h3 class="panel-title"><?php echo $this->translate('Erreur') ?></h3>
+            <h3 class="panel-title"><span class="fa-solid fa-triangle-exclamation fa-beat" style="margin-right: 5px;"></span><?= $this->translate('Erreur') ?></h3>
         </div>
         <div class="panel-body">
             <?php foreach ($this->errors as $error) : ?>
