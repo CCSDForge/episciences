@@ -6,6 +6,7 @@
 class Ccsd_Error extends Exception
 {
     public const ID_DOES_NOT_EXIST_CODE = 'idDoesNotExist';
+    public const ARXIV_VERSION_DOES_NOT_EXIST_CODE = 'arXivVersionDoesNotExist';
     protected $_type;
 
     /**
@@ -73,8 +74,8 @@ class Ccsd_Error extends Exception
             case 'docIsNotice' :
                 $message = 'You can not submit an empty record: you must first modify the deposit on the open archive to attach the PDF file of your article without formatting.';
                 break;
-            case 'arXivVersionDoesNotExist' :
-                $message = "This document version does not exist in the open archive, please check the document version.";
+            case self::ARXIV_VERSION_DOES_NOT_EXIST_CODE :
+                $message = "This version of the document does not exist or is not online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
                 break;
             case 'hookIsNotOpenAccessRight':
             case 'hookUnboundVersions':

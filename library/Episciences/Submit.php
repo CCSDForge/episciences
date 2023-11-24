@@ -934,9 +934,17 @@ class Episciences_Submit
             $result['status'] = 0;
 
             $error = $translator->translate($e->parseError());
+            $mailToStr = '<a href="mailto:';
+            $mailToStr .= EPISCIENCES_SUPPORT;
+            $mailToStr .=  '">';
+            $mailToStr .=  EPISCIENCES_SUPPORT;
+            $mailToStr .=  '</a>';
 
-            if (str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE)) {
-                $error = sprintf($error, EPISCIENCES_SUPPORT, Episciences_Repositories::getLabel($repoId), Episciences_Repositories::getIdentifierExemple($repoId));
+            if (
+                str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE) ||
+                str_contains($e->getMessage(), Ccsd_Error::ARXIV_VERSION_DOES_NOT_EXIST_CODE)
+            ) {
+                $error = sprintf($error, $mailToStr, Episciences_Repositories::getLabel($repoId), Episciences_Repositories::getIdentifierExemple($repoId));
             }
 
             if (!$translator) {
