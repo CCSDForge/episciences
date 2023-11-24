@@ -231,9 +231,13 @@ function updateModalButton(step) {
         $modal_button.on('click', function (e) {
             tinyMCE.triggerSave();
             let form_values = $('#send_form').serialize();
+            let docId = $('#docid').val();
             $modal_body.html(getLoader());
             let request = ajaxRequest('/administratemail/send', form_values );
-            request.done(function(result){
+            request.done(function(result,xhr){
+                if (xhr === 'success'){
+                    localStorage.removeItem('mailContent'+docId);
+                }
                 $modal_body.html(translate(result));
                 $modal_footer.hide();
             });

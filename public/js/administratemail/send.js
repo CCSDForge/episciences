@@ -107,6 +107,36 @@ $(document).ready(function () {
             refreshPaperHistory($jsDocId);
         }
     });
+
+    if (tinyMCE.activeEditor !== null) {
+
+        tinyMCE.activeEditor.on('keyup',function (){
+            let msgContent = this.getContent();
+            setWithExpiry('mailContent'+$jsDocId,msgContent,7200000);
+        });
+
+        tinyMCE.activeEditor.on('init', function() {
+            if (getWithExpiry('mailContent'+$jsDocId) !== null) {
+                tinyMCE.activeEditor.setContent(getWithExpiry('mailContent'+$jsDocId));
+            }
+        });
+    }
+    let isdirty = 0;
+    $('#send_form').on('change input', function() {
+        isdirty = 1;
+    });
+    $('#modal-box').on("hide.bs.modal", function (e) {
+        let editorContent = tinyMCE.activeEditor.getContent();
+        if ((isdirty || $("span#bcc_tags div").length || $("span#cc_tags div").length || editorContent !== '') && $('#add_contacts_box').css('display') === 'none'){
+            if(!confirm("Are you sure, you want to close?")) return false;
+        }
+        if ($('#add_contacts_box').css('display') === 'block') {
+            e.preventDefault();
+            $('#add_contacts_box').hide();
+            $('#send_form').show();
+            updateModalButton('send_mail');
+        }
+    });
 });
 
 // recipient input autocomplete
@@ -212,3 +242,33 @@ function setDefaultRecipient() {
         //resizeInput('#to', 'add');
     }
 }
+
+function setWithExpiry(key, value, ttl) {
+    const now = new Date()
+
+    // `item` is an object which contains the original value
+    // as well as the time when it's supposed to expire
+    const item = {
+        value: value,
+        expiry: now.getTime() + ttl,
+    }
+    localStorage.setItem(key, JSON.stringify(item))
+}
+function getWithExpiry(key) {
+    const itemStr = localStorage.getItem(key)
+    // if the item doesn't exist, return null
+    if (!itemStr) {
+        return null
+    }
+    const item = JSON.parse(itemStr)
+    const now = new Date()
+    // compare the expiry time of the item with the current time
+    if (now.getTime() > item.expiry) {
+        // If the item is expired, delete the item from storage
+        // and return null
+        localStorage.removeItem(key)
+        return null
+    }
+    return item.value
+}
+
