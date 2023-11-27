@@ -3600,7 +3600,7 @@ class Episciences_Paper
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $locale = !$locale ? $translator->getLocale() : $locale;
-        $section = Episciences_VolumesManager::find($this->getSid());
+        $section = Episciences_SectionsManager::find($this->getSid());
         return !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
     }
 

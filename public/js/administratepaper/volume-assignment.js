@@ -53,20 +53,22 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,
                     success: function (result) {
-                        if (result == 1) {
+                        if (parseInt(result) === 1) {
                             let vid = $('#master_volume_select').val();
                             $(button).popover('destroy');
 
-                            if (!isPartial) { // not partial
+                            if (!isPartial) {// not partial
 
-                                // refresh master volume
-                                refreshVolumes({vid: vid, docId: docid, from: 'view'}, 'master',  $('#master_volume_name_' + docid) );
+                                // // refresh master volume
+                                // refreshVolumes({vid: vid, docId: docid, from: 'view'}, 'master',  $('#master_volume_name_' + docid) );
+                                //
+                                // // refresh secondary volumes
+                                // refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
+                                //
+                                // // refresh paper history
+                                // refreshPaperHistory(docid);
 
-                                // refresh secondary volumes
-                                refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
-
-                                // refresh paper history
-                                refreshPaperHistory(docid);
+                                location.replace(location.href);
 
                             } else { // refresh all master volumes display
 
@@ -151,7 +153,7 @@ function getOtherVolumesForm(button, docid, partial) {
                             $(button).popover('destroy');
 
                             // refresh secondary volumes display
-                            refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
+                            refreshVolumes($(this).serialize() + "&docid=" + docid, 'others', $('#other_volumes_list_' + docid));
                             // refresh paper history
                             refreshPaperHistory(docid);
                         }
