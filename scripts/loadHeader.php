@@ -51,7 +51,7 @@ defineSimpleConstants();
 defineSQLTableConstants();
 defineApplicationConstants();
 defineJournalConstants();
-
+defineProtocol();
 
 // Environnement
 define('APPLICATION_ENV', (isset($opts->e) && in_array($opts->e, $listEnv)) ? $opts->e : $defaultEnv);

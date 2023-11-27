@@ -49,6 +49,12 @@ function getSectionForm(button, docid, partial) {
                 let saveSection = ajaxRequest('/administratepaper/savesection', jData);
                 saveSection.done(function (result) {
                     if (result) {
+
+                        if (!isPartial) {
+                            location.replace(location.href);
+                            return true;
+                        }
+
                         $(button).popover('destroy');
                         $section_container.hide();
                         $section_container.html(getLoader());
@@ -85,9 +91,9 @@ function getSectionForm(button, docid, partial) {
                             });
                         }
                         // refresh paper history
-                        if (!isPartial) { // not partial
-                            refreshPaperHistory(docid);
-                        }
+                        // if (!isPartial) { // not partial
+                        //     refreshPaperHistory(docid);
+                        // }
                     }
                 });
             }

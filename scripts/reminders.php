@@ -73,12 +73,19 @@ try {
 
     Zend_Registry::set('Zend_Translate', $translator);
     Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
+    Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
 
     $date = new Zend_Date();
 
     displayMessage(PHP_EOL . PHP_EOL, 'default', true);
     displayMessage("********* Starting reminders script ***********", 'bold', true);
     displayMessage("********* " . $date . " ***********" . PHP_EOL, 'default', true);
+
+    if (!isset($opts->rvcode)) {
+        die('ERROR: MISSING RVCODE' . PHP_EOL);
+    }
+
+    defineJournalConstants($opts->rvcode);
 
 // fetch reminders
     $sql = $db->select()->from(T_MAIL_REMINDERS)->order('RVID')->order('TYPE');
