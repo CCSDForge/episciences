@@ -2050,6 +2050,9 @@ class Episciences_Paper
 //            $node->appendChild($dom->createElement('classification', ""));
 //        }
 
+        (Episciences_Auth::isAllowedToManageOrcidAuthor($this->isOwner())) ? $node->appendChild($dom->createElement('rightOrcid', '1'))
+            : $node->appendChild($dom->createElement('rightOrcid', "0"));
+
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());

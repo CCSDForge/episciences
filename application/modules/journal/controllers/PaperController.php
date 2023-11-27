@@ -528,9 +528,9 @@ class PaperController extends PaperDefaultController
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
-        if (($request->isXmlHttpRequest() && $request->isPost()) && Episciences_Auth::isAllowedToManageOrcidAuthor()) {
-            $body = $request->getRawBody();
-            $data = json_decode($body, true, JSON_UNESCAPED_UNICODE);
+        $body = $request->getRawBody();
+        $data = json_decode($body, true, JSON_UNESCAPED_UNICODE);
+        if (($request->isXmlHttpRequest() && $request->isPost()) && (Episciences_Auth::isAllowedToManageOrcidAuthor($data['rightOrcid']))) {
             $dbAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($data['paperid']);
             $arrayAuthorDb = [];
             foreach ($dbAuthor as $value) {
@@ -581,7 +581,7 @@ class PaperController extends PaperDefaultController
 
         $request = $this->getRequest();
 
-        if (($request->isXmlHttpRequest() && $request->isPost()) && Episciences_Auth::isAllowedToManageOrcidAuthor()) {
+        if (($request->isXmlHttpRequest() && $request->isPost()) && (Episciences_Auth::isAllowedToManageOrcidAuthor() || Episciences_Auth::isAuthor())) {
             $body = $request->getRawBody();
             $data = json_decode($body, true, JSON_UNESCAPED_UNICODE);
             $affi = Episciences_Paper_AuthorsManager::findAffiliationsOneAuthorByPaperId($data['paperId'], $data['idAuthor']);
