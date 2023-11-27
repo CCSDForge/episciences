@@ -58,6 +58,7 @@ As recommended, if the software is archived by [Software Heritage](https://www.s
 - UX: icon to make it easier to identify the user in revision requests section
 
 - Closed [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and Ethical charter
+- Switched to [OpenAlex](https://openalex.org/) to obtain the text of citations
 - Template for datasets
 - Internal updates:
   - Repositories config. is now stored in Database.
