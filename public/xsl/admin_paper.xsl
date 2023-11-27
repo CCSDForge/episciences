@@ -348,6 +348,9 @@
                                 <xsl:value-of
                                         select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
                             </button>
+                            <div id="rightOrcid" style="display:none;">
+                                <xsl:value-of select="episciences/rightOrcid/text()"/>
+                            </div>
                         </xsl:otherwise>
                     </xsl:choose>
 

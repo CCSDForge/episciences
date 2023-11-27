@@ -17,7 +17,7 @@ $currentSmall = "";
         echo $this->partial('paper/paper_datasets_datas.phtml', ['datasets' => $metadata['dataset'], 'paper' => $paper, 'listSources' => $metadata['listSources'] ]);
     } ?>
 <?php endif; ?>
-<?php if (Episciences_Auth::isAllowedToManageOrcidAuthor() || $paper->isOwner()): ?>
+<?php if (Episciences_Auth::isAllowedToManageOrcidAuthor($paper->isOwner())): ?>
     <div class="panel panel-default collapsable" id="manage-linked-data">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Liens publications - données - logiciels') ?></h2>

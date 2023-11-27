@@ -70,7 +70,8 @@ function submitNewOrcidAuthors(){
         });
         let dataT = {
             "paperid": $("div#paperid-for-author").text(),
-            "authors":arrayMerge
+            "authors":arrayMerge,
+            "rightOrcid": $("div#rightOrcid").text()
         };
         $.ajax({
             url: url,
