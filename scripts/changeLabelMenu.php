@@ -44,9 +44,10 @@ class changeLabelMenu extends JournalScript
 
             $language="";
 
+            defineSQLTableConstants();
             $this->initApp(false);
             $this->initDb();
-            defineSQLTableConstants();
+
             $journals = Episciences_ReviewsManager::getList();
 
             $oldlabel = !$this->hasParam('oldlabel') ? $this->ask("Please enter the label you want to change") : $this->getParam('oldlabel');
