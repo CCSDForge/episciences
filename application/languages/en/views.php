@@ -1404,6 +1404,7 @@ return [
     "Lettre d'accompagnement" => 'Cover letter',
     'Visible par : ' => 'Visible by: ',
     "Progression : " => "Progression:",
+    "Dernière modification" => "Last modified",
 
     "Vous n'êtes pas l'auteur de cet article." => "You are not the author of this article.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
