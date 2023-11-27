@@ -81,6 +81,12 @@ try {
     displayMessage("********* Starting reminders script ***********", 'bold', true);
     displayMessage("********* " . $date . " ***********" . PHP_EOL, 'default', true);
 
+    if (!isset($opts->rvcode)) {
+        die('ERROR: MISSING RVCODE' . PHP_EOL);
+    }
+
+    defineJournalConstants($opts->rvcode);
+
 // fetch reminders
     $sql = $db->select()->from(T_MAIL_REMINDERS)->order('RVID')->order('TYPE');
     $isDebug = isset($opts->debug);
