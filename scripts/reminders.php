@@ -73,6 +73,7 @@ try {
 
     Zend_Registry::set('Zend_Translate', $translator);
     Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
+    Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
 
     $date = new Zend_Date();
 
