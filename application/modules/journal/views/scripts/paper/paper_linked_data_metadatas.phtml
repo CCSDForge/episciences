@@ -3,7 +3,7 @@ $keepUniqueIdentifier = [];
 $originalInfo = $this->originalInfo;
 ?>
 <div>
-    <?php if (array_key_exists('creators', $metadatas)) : ?>
+    <?php if ( (array_key_exists('creators', $metadatas)) && (is_array($metadatas['creators']))) : ?>
     <i><?= $metadatas['title'] ?></i>
     <?php foreach ($metadatas['creators'] as $key => $metadata) : ?>
         <?php if (!empty($metadata['identifiers'])): ?>
@@ -15,8 +15,9 @@ $originalInfo = $this->originalInfo;
                             <?php if ($creatorIdentifier['schema'] === 'ORCID'): ?>
                                 <a rel="noopener" href="<?= "https://orcid.org/" . $creatorIdentifier['identifier'] ?>"
                                    data-toggle="tooltip" data-placement="bottom"
-                                   data-original-title="<?= $creatorIdentifier['identifier'] ?>" target="_blank"><img
-                                            src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"></a>
+                                   data-original-title="<?= $creatorIdentifier['identifier'] ?>" target="_blank">
+                                    <img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/>
+                                </a>
                             <?php endif; ?>
                         <?php endforeach; ?>
                     <?php endif; ?>
