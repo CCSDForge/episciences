@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## ## 1.0.41.1 - 2023-11-28
+### Changed
 - [394](https://github.com/CCSDForge/episciences/issues/394): Improvements to facilitate submissions.
 
 ## 1.0.41 - 2023-11-27
