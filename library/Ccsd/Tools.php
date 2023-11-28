@@ -612,7 +612,7 @@ class Ccsd_Tools
                 $lang = Zend_Registry::get('lang');
             }
 
-            if (!$translator->isTranslated($str)) {
+            if ($lang !== 'fr' && !$translator->isTranslated($str)) { // log missing translations unless and only if the language is not French
                 error_log('Missing translation: ' . $str);
                 return $str;
             }

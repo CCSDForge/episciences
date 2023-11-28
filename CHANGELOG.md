@@ -14,41 +14,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
 ## Unreleased
+- [394](https://github.com/CCSDForge/episciences/issues/394): Improvements to facilitate submissions.
+
+## 1.0.41 - 2023-11-27
 ### Added
-- Adding a cover letter after a submission
-- Retrieval of document types and various improvements: 
-  /!\ todo :
-    - ALTER PAPERS TABLE @see /scr/mysql/alter_papers_table.sql (Unreleased section)
-    - ALTER PAPER_FILES TABLE @see /scr/mysql/alter_paper_files_table.sql
-- Display revision deadlines and make them editable: [#367](https://github.com/CCSDForge/episciences/issues/367)
-- .env file (/!\ /.env.exemple)
-- bioRxiv and medRxiv preprint servers.
-- New version crossref export 4.3 -> 5.3
-- bibliographical references in export crossref
-- affiliation acronym in crossref and TEI export
-- possibility to research acronym in affiliation input ROR
-- icon to make it easier to identify the user in revision requests section.
-- script to import volumes and volume metadata from journals translation files into the database. /!\ todo: before starting the script: ALTER VOLUME AND VOLUME_METADATA TABLES @see /scr/mysql/alter_volume_and_volume_metadata_tables.sql
-- Integration of api and application for the bibliographical references
-- [#374](https://github.com/CCSDForge/episciences/issues/374): Importing orcid and affiliations from Zenodo
-- Compatibility Dataverse
-- Integration of linked softwares and publications for an article (can be added manually by author and managers)
+- New supported servers: [bioRxiv](https://www.biorxiv.org/) and [medRxiv](https://www.medrxiv.org/) preprint servers
+- New supported servers: Support for any data repositories powered by Dataverse. 2 examples are available: [DaRUS (University of Stuttgart)](https://darus.uni-stuttgart.de/) and [Recherche Data Gouv](https://recherche.data.gouv.fr/)
+- New feature to automatically extract and manage bibliographical references [with a new application](https://github.com/CCSDForge/episciences-citations)
+- Reviewed and accepted bibliographical references will be exported to Crossref
+- [New API](https://github.com/CCSDForge/episciences-api) available for journals and internal usage
+
+- It is possible to link documents with software, datasets and publications:
+Previously it was only available with documents hosted on HAL, the feature is now available for any repository, by adding the links on the document's page. 
+As recommended, if the software is archived by [Software Heritage](https://www.softwareheritage.org/?lang=en) and a [SWHID](https://www.swhid.org/) is provided, a widget from Software Heritage may be displayed on the web page of the document, showing the archived repository
+  - Fixed [#213](https://github.com/CCSDForge/episciences/issues/213): Supplementary material DOI cannot be indicated
+  - Closed [#326](https://github.com/CCSDForge/episciences/issues/326): Accept SWHID reference on Episciences platform for software artifact
+  - Closed [#327](https://github.com/CCSDForge/episciences/issues/327): Accept HAL reference on Episciences platform for software artifact
+  - Closed [#328](https://github.com/CCSDForge/episciences/issues/328): Add a reference to the archived software artifact on reviewer's peer-reviewing form
+  - Closed [#329](https://github.com/CCSDForge/episciences/issues/329): Add a reference to the archived software artifact on record landing page
+  - Closed [#330](https://github.com/CCSDForge/episciences/issues/330): Add a reference to the archived software artifact on exported metadata (OpenAIRE, Crossref, etc.)
+- It is now possible to add a cover letter after the initial submission
+- Closed [#367](https://github.com/CCSDForge/episciences/issues/367) Display revision deadlines and make them editable: 
+
+- Author affiliations:
+  - Added the affiliation acronyms in Crossref DOI and TEI export formats
+  - Adding an affiliation from ROR: possibility to search by acronym
+  - Closed [#374](https://github.com/CCSDForge/episciences/issues/374): ORCID and affiliations are retrieved from Zenodo
+
+- UI/UX:
+  - Document types are now displayed on the document's page(ie preprint, article, ...)
+  - icon to make it easier to identify the user in revision requests section.
+  
+- Internal updates:
+  - script to import volumes and volume metadata from journals translation files into the database
+  - .env file
+  - New version of Crossref Schema 4.3 -> 5.3 used for DOIs
+
 
 ### Changed
 - Accept/reject an invitation: This action is now blocked with an alert message "This paper is under revision, it is useless to review it now."
-- [394](https://github.com/CCSDForge/episciences/issues/394): Improvements to facilitate submissions.
-- Repositories config. is now stored in DB. /!\ todo : ALTER METADATA_SOURCES TABLE @see /scr/mysql/alter_metadata_sources.sql
-- Answer revision request: [#313](https://github.com/CCSDForge/episciences/issues/313):
+
+- Answer revision request: Closed [#313](https://github.com/CCSDForge/episciences/issues/313):
     * optional file attachment in "Contact without sending a new version" and "answer without any modifications".
 - UX: icon to make it easier to identify the user in revision requests section
-- Some adjustments: titles and descriptions volume's, titles and content metadata volumes are now stored
-  in the T_VOLUMES and T_VOLUME_METADATAS tables respectively.
-- [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and ethical
-- Template for DataLinked
+
+- Closed [323](https://github.com/CCSDForge/episciences/issues/323) change default label for home and Ethical charter
+- Switched to [OpenAlex](https://openalex.org/) to obtain the text of citations
+- Template for datasets
+- Internal updates:
+  - Repositories config. is now stored in Database.
+  - Titles and descriptions volume's, titles and content metadata volumes are now stored as JSON
+
 ### Fixed
-- [#353](https://github.com/CCSDForge/episciences/issues/353)
+- Fixed [#353](https://github.com/CCSDForge/episciences/issues/353) Adding a DOI to a proceeding volume does not save the DOI status
 
 ## 1.0.40.21 - 2023-11-14
 ### Changed

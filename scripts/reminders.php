@@ -98,17 +98,13 @@ try {
 
     $remindersData = $db->fetchAll($sql);
 
-    $settings = [];
+    $settings = ['is' => ['code' => $opts->rvcode]];
 
-    if (isset($opts->rvcode)) {
 
-        if (!defined('RVCODE')) {
-            define('RVCODE', $opts->rvcode);
-        }
-
-        defineJournalConstants();
-        $settings = ['is' => ['code' => $opts->rvcode]];
+    if (!defined('RVCODE')) {
+        define('RVCODE', $opts->rvcode);
     }
+
 
     // loop through each journal
     $reviews = Episciences_ReviewsManager::getList($settings);
@@ -121,8 +117,8 @@ try {
         $rvId = $review->getRvid();
         $status = $review->getStatus();
 
-        if(empty($status)){
-            displayMessage($rvCode . ': NOT ACTIVATED ( STATUS = ' . $status . ' )' , 'red', true);
+        if (empty($status)) {
+            displayMessage($rvCode . ': NOT ACTIVATED ( STATUS = ' . $status . ' )', 'red', true);
             continue;
         }
 
@@ -146,7 +142,7 @@ try {
 
         $languages = $website->getLanguages();
         if (empty($languages)) {
-            displayMessage($rvCode . ': EMPTY WEBSITE LANGUAGES' , 'red', true);
+            displayMessage($rvCode . ': EMPTY WEBSITE LANGUAGES', 'red', true);
             continue;
         }
 
@@ -192,7 +188,7 @@ try {
                 if (isset($tags['%%ARTICLE_ID%%'])) {
                     $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
                     $mail->setDocid($paper->getDocid());
-                    displayMessage('DOCID > #' . $paper->getDocid(), 'default', true );
+                    displayMessage('DOCID > #' . $paper->getDocid(), 'default', true);
                 }
 
                 $mail->setFrom($rvCode . '@' . DOMAIN, $rvCode);
@@ -215,7 +211,7 @@ try {
                 }
 
                 $mail->addTo($recipient['email'], $recipient['fullname']);
-                displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'] , 'default', true);
+                displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
 
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
