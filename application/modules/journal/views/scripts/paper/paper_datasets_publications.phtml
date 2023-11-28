@@ -58,7 +58,7 @@ $keepOnlySourceUsed = [];
                                     //pimp author names
                                     $authorFunction = static function ($authorItem, $renderedText) {
                                         if (isset($authorItem->ORCID)) {
-                                            return $renderedText . " " . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID) . ' data-toggle="tooltip" data-placement="bottom" data-original-title="' . str_replace("http://orcid.org/", "", $authorItem->ORCID) . '" target="_blank"><img src="/img/ORCID-iD.png" alt="ORCID-iD" height="16px"></a>';
+                                            return $renderedText . " " . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID) . ' data-toggle="tooltip" data-placement="bottom" data-original-title="' . str_replace("http://orcid.org/", "", $authorItem->ORCID) . '" target="_blank"><img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
 
                                         }
                                         return $renderedText;
