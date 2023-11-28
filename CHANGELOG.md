@@ -46,6 +46,10 @@ As recommended, if the software is archived by [Software Heritage](https://www.s
 - UI/UX:
   - Document types are now displayed on the document's page(ie preprint, article, ...)
   - icon to make it easier to identify the user in revision requests section.
+
+- Statistics, 2 new indicators:
+  - The number of accepted articles (submitted in the same year) [A]
+  - Acceptance rate over the whole year [(A\S)x100] : [ A, S : the number of submissions over the whole year]
   
 - Internal updates:
   - script to import volumes and volume metadata from journals translation files into the database
