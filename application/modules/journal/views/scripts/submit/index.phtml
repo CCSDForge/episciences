@@ -23,9 +23,6 @@ $zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
         <ol>
             <li>
                 <?php echo $this->translate("Votre document est en ligne sur une des archives ouvertes ou entrepôts suivants : %s", $this->repositories); ?>
-                <?php if (str_contains($this->repositories, $label = Episciences_Repositories::getLabel(Episciences_Repositories::ARXIV_REPO_ID))): ?>
-                    <br><em><?= sprintf($this->translate('Note : sur %s, ça peut être un peu long'), $label ) ?></em>
-                <?php endif; ?>
             </li>
             <li><?php echo $this->translate("Vous connaissez son identifiant et son numéro de version"); ?></li>
         </ol>

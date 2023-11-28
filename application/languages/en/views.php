@@ -884,7 +884,6 @@ return [
     "Créer un utilisateur" => 'Create User',
     "Créer cet utilisateur" => 'Create this User',
     "Bonnes pratiques" => "Guidelines",
-    'Note : sur %s, ça peut être un peu long' => 'Note: on %s it can be a bit long',
 
     "Voir ce compte." => "See this account.",
     "Se connecter avec ce compte." => "Sign in with this account",
