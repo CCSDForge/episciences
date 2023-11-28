@@ -60,11 +60,21 @@ class Episciences_Paper_CitationsManager
                 $templateCitation.="<ul class='list-unstyled'>";
                 $templateCitation.="<li>";
                 $citationMetadataArray = array_map('strip_tags',$citationMetadataArray);
-                if ($citationMetadataArray['type'] === 'book-chapter'){
-                    $citationMetadataArray = self::reorganizeForBookChapter($citationMetadataArray);
-                } elseif ($citationMetadataArray['type'] === 'proceedings-article'){
-                    $citationMetadataArray = self::reorganizeForProceedingsArticle($citationMetadataArray);
+
+                $citationType = $citationMetadataArray['type'] ?? null;
+
+                switch ($citationType) {
+                    case 'book-chapter':
+                        $citationMetadataArray = self::reorganizeForBookChapter($citationMetadataArray);
+                        break;
+                    case 'proceedings-article':
+                        $citationMetadataArray = self::reorganizeForProceedingsArticle($citationMetadataArray);
+                        break;
+                    default:
+                        // this is fine
+                        break;
                 }
+
                 foreach ($citationMetadataArray as $keyMetadata => $metadata) {
                     if ($metadata !== ""){
                         if ($keyMetadata === 'source_title') {
