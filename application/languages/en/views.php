@@ -884,6 +884,7 @@ return [
     "Créer un utilisateur" => 'Create User',
     "Créer cet utilisateur" => 'Create this User',
     "Bonnes pratiques" => "Guidelines",
+    "Comment proposer un document :" => "Guidelines:",
 
     "Voir ce compte." => "See this account.",
     "Se connecter avec ce compte." => "Sign in with this account",
@@ -2424,6 +2425,7 @@ return [
     "IsPartOf" => "Is part of",
     "HasPart" => "Has part",
     "references" => "References",
+    "Références"=> "References",
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",
