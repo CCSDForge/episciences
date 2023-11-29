@@ -59,13 +59,17 @@ function defineApplicationConstants()
 /**
  * define review constants
  */
-function defineJournalConstants(string $rvCode = null)
+function defineJournalConstants(string $rvCode = null) : void
 {
 
-    // define review code
-    if ((null === $rvCode) && !defined('RVCODE') && getenv('RVCODE')) {
-        define('RVCODE', getenv('RVCODE'));
-        $rvCode = RVCODE;
+    if (!defined('RVCODE')) {
+
+        if (!$rvCode && getenv('RVCODE')) {
+            $rvCode = getenv('RVCODE');
+        }
+
+        define('RVCODE', $rvCode);
+
     }
 
     if ($rvCode) {
@@ -197,7 +201,7 @@ function defineSimpleConstants()
     define('TINYMCE_DIR', '/js/tinymce/');
     define('MAX_PWD_INPUT_SIZE', 40);
     define('MAX_PDF_SIZE', 500 * MO);
-    define ('ENCODING_TYPE', 'UTF-8');
+    define('ENCODING_TYPE', 'UTF-8');
 }
 
 
@@ -257,15 +261,15 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('EPISCIENCES_API_SECRET_KEY', '');
         define('EPISCIENCES_UID', 0);
         define('EPISCIENCES_Z_SUBMIT', 0);
-        define('EPISCIENCES_USER_AGENT','');
+        define('EPISCIENCES_USER_AGENT', '');
         define('NOTIFY_TARGET_HAL_INBOX', '');
         define('NOTIFY_TARGET_HAL_URL', '');
-        define('OPENALEX_MAILTO','');
-        define('OPENALEX_APIURL','');
-        define('CROSSREF_MAILTO','');
-        define('CROSSREF_APIURL','');
-        define('OPENCITATIONS_MAILTO','');
-        define('OPENCITATIONS_APIURL','');
-        define('OPENCITATIONS_TOKEN','');
+        define('OPENALEX_MAILTO', '');
+        define('OPENALEX_APIURL', '');
+        define('CROSSREF_MAILTO', '');
+        define('CROSSREF_APIURL', '');
+        define('OPENCITATIONS_MAILTO', '');
+        define('OPENCITATIONS_APIURL', '');
+        define('OPENCITATIONS_TOKEN', '');
     }
 }
