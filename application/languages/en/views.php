@@ -2436,4 +2436,5 @@ return [
     "Finances" => "Finances",
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
+    'IsRelatedTo'=>'Is related to',
 ];

@@ -309,6 +309,7 @@ return [
     "Finances" => "Finance",
     "IsFinancedBy" => "Est financé par",
     "IsVersionOf" => "Est une version de",
+    'IsRelatedTo'=>'Est lié à',
 
     // DOCUMENT TYPES
     "Preprint" => "Pré-publication",
