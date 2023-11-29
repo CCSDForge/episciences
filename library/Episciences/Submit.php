@@ -752,7 +752,7 @@ class Episciences_Submit
      * @param $repoId
      * @param $id
      * @param int|null $version
-     * @param null $latestObsoleteDocId
+     * @param null | array $latestObsoleteDocId
      * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
      * @param int|null $rvId
      * @return array
