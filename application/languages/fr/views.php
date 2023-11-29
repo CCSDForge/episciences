@@ -120,6 +120,7 @@ return [
     Episciences_Paper_Logger::CODE_LD_REMOVED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_REMOVED],
     // Erreurs OAI
     "The operation ended with an error. Please try again." => "L'opération s'est terminée avec une erreur. Merci de réessayer.",
+    Ccsd_Error::DEFAULT_PREFIX_CODE . ' ' . 'Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).'  => "L'opération s'est terminée avec cette erreur : <strong><small>[%s]</small></strong>. Merci de réessayer. En cas de difficulté, contactez le support Episciences, à l'adresse %s, en indiquant l'identifiant du document (exemple d'identifiant pour un document déposé dans %s : %s).",
     "The argument included in the request is not valid." => "L'argument inclus dans la demande n'est pas valide.",
     "The resumptionToken does not exist or has already expired." => "Le jeton de reprise n'existe pas ou a déjà expiré.",
     "The verb provided in the request is illegal." => "Le verbe fourni dans la demande est illégal.",

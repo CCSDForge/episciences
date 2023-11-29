@@ -6,6 +6,7 @@
 class Ccsd_Error extends Exception
 {
     public const ID_DOES_NOT_EXIST_CODE = 'idDoesNotExist';
+    public const DEFAULT_PREFIX_CODE = 'The operation ended with this error: <strong><small>[%s]</small></strong>.';
     public const ARXIV_VERSION_DOES_NOT_EXIST_CODE = 'arXivVersionDoesNotExist';
     protected $_type;
 
@@ -83,9 +84,12 @@ class Ccsd_Error extends Exception
                 $message = $explode[1];
                 break;
             default :
-                //todo interpréter les messages CURL exp. CURL_ERROR_6 { Couldn't resolve host name. }
-                $message = "The operation ended with an error. Please try again.";
-                trigger_error($this->getMessage());
+
+                $message = self::DEFAULT_PREFIX_CODE;
+                $message .= ' ';
+                $message .= "Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+
+                error_log($this->getMessage());
         }
 
         return $message;
