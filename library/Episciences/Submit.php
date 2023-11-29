@@ -794,11 +794,9 @@ class Episciences_Submit
                 $oai = new Episciences_Oai_Client($baseUrl, 'xml');
             }
 
-
-            // version, identifier, repoid
             $paper = new Episciences_Paper(['rvid' => $rvId, 'version' => $version, 'repoid' => $repoId, 'identifier' => $id]);
-            // On prend pas en compte la version de l'artcile lors de la vérification de son existance en local.
-            if (!$isNewVersionOf) { // resoumettre un article via "proposer un article" (submit/index)
+            //The version of the article is not taken into account when checking its existence locally.
+            if (!$isNewVersionOf) { // re-submit an article via "Submit an article". (submit/index)
                 $paper->setVersion(null);
             }
 
@@ -812,10 +810,14 @@ class Episciences_Submit
 
 
             } else {
+
                 $result['record'] = $hookApiRecord ['record'] ?? null;
 
-                if (isset($hookApiRecord['error']) || empty($result['record'])) {
-                    throw new Ccsd_Oai_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE, 'identifier', $identifier);
+                if (
+                    isset($hookApiRecord['error']) ||
+                    empty($result['record'])
+                ) {
+                    throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
                 }
 
             }
@@ -884,7 +886,7 @@ class Episciences_Submit
                 $arXivRawRecord = $oai->getArXivRawRecord($identifier);
                 $versionHistory = self::extractVersionsFromArXivRaw($arXivRawRecord);
 
-                if (!in_array($version, $versionHistory)) {
+                if (!in_array($version, $versionHistory, false)) {
                     $error = 'arXivVersionDoesNotExist:';
                     throw new Ccsd_Error($error);
                 }
@@ -931,20 +933,25 @@ class Episciences_Submit
             }
 
         } catch (Ccsd_Error $e) { // customized message : visible to the user
-            $result['status'] = 0;
 
-            $error = $translator->translate($e->parseError());
+            $result['status'] = 0;
+            $parsedError = $e->parseError();
+
             $mailToStr = '<a href="mailto:';
             $mailToStr .= EPISCIENCES_SUPPORT;
-            $mailToStr .=  '">';
-            $mailToStr .=  EPISCIENCES_SUPPORT;
-            $mailToStr .=  '</a>';
+            $mailToStr .= '">';
+            $mailToStr .= EPISCIENCES_SUPPORT;
+            $mailToStr .= '</a>';
+
+            $error = $translator ? $translator->translate($parsedError) : $parsedError;
 
             if (
                 str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE) ||
                 str_contains($e->getMessage(), Ccsd_Error::ARXIV_VERSION_DOES_NOT_EXIST_CODE)
             ) {
                 $error = sprintf($error, $mailToStr, Episciences_Repositories::getLabel($repoId), Episciences_Repositories::getIdentifierExemple($repoId));
+            } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
+                $error = sprintf($error, $e->getMessage(), $mailToStr, Episciences_Repositories::getLabel($repoId), Episciences_Repositories::getIdentifierExemple($repoId));
             }
 
             if (!$translator) {
@@ -953,7 +960,9 @@ class Episciences_Submit
             } else {
                 $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
             }
+
             return ($result);
+
         } catch (Exception $e) { // other exceptions: generic message
             $result['status'] = 0;
 
@@ -1324,11 +1333,10 @@ class Episciences_Submit
         $historyVersions = $rawRecord['metadata']['arXivRaw']['version'];
         $versions = [];
         foreach ($historyVersions as $index => $version) {
-            if (is_array($version)) {
-                $versions[] = substr($version['version'], 1); // supprimer le caractère 'v'
+            if (is_array($version)) { // exp. ['v1', 'v2', 'v3'..]
+                $versions[] = substr($version['version'], 1);
             } else if ($index === 'version') {
                 $versions[] = substr($version, 1);
-                // ne pas parcourir les autres elements
                 return $versions;
             }
         }
