@@ -26,13 +26,17 @@ class Episciences_OpencitationsTools {
             $respCitationsApi = self::retrieveAllCitationsByDoi($trimDoi);
             if ($respCitationsApi !== '' && $respCitationsApi !== '[]') {
                 $sets->set($respCitationsApi);
+                $cache->save($sets);
+                if (PHP_SAPI === 'cli') {
+                    echo PHP_EOL .'PUT CACHE CALL FOR ' . $trimDoi . PHP_EOL;
+                }
             } else {
+                if (PHP_SAPI === 'cli') {
+                    echo PHP_EOL .'EMPTY RESPONSE ' . $trimDoi . PHP_EOL;
+                }
                 $sets->set(json_encode([""]));
+                return $sets;
             }
-            if (PHP_SAPI === 'cli') {
-                echo PHP_EOL .'PUT CACHE CALL FOR ' . $trimDoi . PHP_EOL;
-            }
-            $cache->save($sets);
         }
         if (PHP_SAPI === 'cli') {
             echo PHP_EOL .'GET CACHE CALL FOR ' . $trimDoi . PHP_EOL;
@@ -68,7 +72,19 @@ class Episciences_OpencitationsTools {
     public static function cleanDoisCitingFound(array $apiCallCitationCache): array
     {
         $globalArrayCiteDOI = array_map(static function ($citationsValues) {
+            $citationHasDoi = 0;
             $doi = str_replace(self::CITATIONS_PREFIX_VALUE, "", $citationsValues['citing']);
+            $separateAllIds = explode(" ",$doi);
+            foreach ($separateAllIds as $id) {
+                if (preg_match("~^doi:~",$id)){
+                    $doi = str_replace('doi:',"",$id);
+                    $citationHasDoi = 1;
+                    break;
+                }
+            }
+            if ($citationHasDoi === 0) {
+                $doi = '';
+            }
             return preg_replace("~;(?<=;)\s.*~", "", $doi);
         }, $apiCallCitationCache);
         return $globalArrayCiteDOI;
