@@ -313,8 +313,10 @@ class Episciences_Paper_CitationsManager
         $globalInfoMetadata = [];
         $i = 0;
         foreach ($globalArrayCiteDOI as $doiWhoCite) {
-            $globalInfoMetadata = self::processCitationsByDoiCited($doiWhoCite, $globalInfoMetadata, $i);
-            $i++;
+            if ($doiWhoCite !== "") {
+                $globalInfoMetadata = self::processCitationsByDoiCited($doiWhoCite, $globalInfoMetadata, $i);
+                $i++;
+            }
         }
         self::insertOrUpdateCitationsByDocId($globalInfoMetadata, $docId);
     }
