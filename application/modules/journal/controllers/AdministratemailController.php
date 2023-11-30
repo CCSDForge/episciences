@@ -140,7 +140,6 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         $this->_helper->redirector->gotoUrl('/administratemail/templates');
-        return;
     }
 
     /**
