@@ -71,6 +71,10 @@ return [
     "Vous n'avez pas les droits suffisants pour accéder à cet article" => "You don't have the required permissions to see this paper",
     'Accès refusé' => 'Access denied',
     "Vous ne disposez pas des droits nécessaires pour accéder à cette page." => "You are not authorized to access this page.",
+    "Les modifications n'ont pas abouti !" => "The changes were unsuccessful!",
+    "Les modifications n'ont pas abouti : article introuvable !" => "The changes were unsuccessful: article not found!",
+    "Les modifications n'ont pas abouti : auteur introuvable !" => "The changes were unsuccessful: author not found! ",
+    "Les modifications n'ont pas abouti : type incorrect !" => "The changes were unsuccessful: incorrect type!",
 
     // Navigation
     "Accueil" => "Home",
@@ -2436,4 +2440,5 @@ return [
     "Finances" => "Finances",
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
+    'IsRelatedTo'=>'Is related to',
 ];

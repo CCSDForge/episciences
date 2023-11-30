@@ -33,8 +33,10 @@ function visualizeBiblioRefs(){
                     }
                 });
                 if (response.message !== undefined){
-                    $( "<div>"+response.message+"</div>" ).appendTo( "#biblio-refs-container" );
+                    // $( "<div>"+response.message+"</div>" ).appendTo( "#biblio-refs-container" );
                     alreadyCalled = true;
+                } else {
+                    $("#biblio-refs").show();
                 }
             }).error(function (xhr) {
                 try {

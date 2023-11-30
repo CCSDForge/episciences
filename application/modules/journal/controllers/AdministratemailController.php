@@ -136,11 +136,10 @@ class AdministratemailController extends Zend_Controller_Action
         if ($template->save()) {
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
         } else {
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Les modifications ont échoué');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
         }
 
         $this->_helper->redirector->gotoUrl('/administratemail/templates');
-        return;
     }
 
     /**
