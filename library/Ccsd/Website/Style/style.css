@@ -25,3 +25,13 @@ div, table,label, input, button, select, textarea {
     font-size: %font_size%px;
     color: %color%;
 }
+/* style for accepted paper
+    when no accepted paper
+*/
+/*div#browse-accepted-papers-empty div {*/
+
+/*}*/
+
+/*div#browse-accepted-papers-empty::after {*/
+
+/*}*/
