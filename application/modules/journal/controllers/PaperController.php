@@ -511,7 +511,7 @@ class PaperController extends PaperDefaultController
             $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
             $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
             $enabledBib = true;
-            if (Episciences_Auth::isLogged() &&  $paper->isOwner())
+            if ((Episciences_Auth::isLogged() &&  $paper->isOwner()) || Episciences_Auth::isAllowedToManagePaper())
             {
                 $enabledManageFromPublicPage = true;
             }

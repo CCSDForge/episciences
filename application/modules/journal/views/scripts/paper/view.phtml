@@ -337,7 +337,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php endif; // end if $isAllowedToSeeNoPublicDetails ?>
 
 <?php if ($this->enabledBib): ?>
-    <div id="biblio-refs" class="panel panel-default collapsable">
+    <div id="biblio-refs" class="panel panel-default collapsable" <?php if(!$this->enabledManageFromPublicPage){ echo 'style="display: none;"';} ?>>
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Références') ?></h2>
         </div>
