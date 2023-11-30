@@ -43,7 +43,7 @@ class PaperController extends PaperDefaultController
 
             foreach ($files as $file) {
 
-                if ($file->getFileType() === 'pdf'){
+                if ($file->getFileType() === 'pdf') {
                     ++$count;
                     if ($file->getFileSize() <= MAX_PDF_SIZE) {
                         $pdf_name = $file->getFileName();
@@ -59,7 +59,7 @@ class PaperController extends PaperDefaultController
         }
 
         if (!$pdf_name || !$url) {
-            $this->view->message = $count > 0 ? 'PDF size is over ' .  Episciences_Tools::toHumanReadable(MAX_PDF_SIZE) : 'no PDF files found';
+            $this->view->message = $count > 0 ? 'PDF size is over ' . Episciences_Tools::toHumanReadable(MAX_PDF_SIZE) : 'no PDF files found';
             $this->renderScript('error/http_error.phtml');
             return;
         }
@@ -467,8 +467,8 @@ class PaperController extends PaperDefaultController
         $this->view->hasHook = $hasHook;
         $this->view->isRequiredVersion = $hasHook ? Episciences_Repositories::callHook(
             'hookIsRequiredVersion', [
-                'repoId' => $paper->getRepoid()
-            ])['result'] : true;
+            'repoId' => $paper->getRepoid()
+        ])['result'] : true;
 
         $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;
 
@@ -511,8 +511,15 @@ class PaperController extends PaperDefaultController
             $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
             $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
             $enabledBib = true;
-            if ((Episciences_Auth::isLogged() &&  $paper->isOwner()) || Episciences_Auth::isAllowedToManagePaper())
-            {
+            if (
+                Episciences_Auth::isLogged() &&
+                (
+                    $paper->isOwner() ||
+                    Episciences_Auth::isSecretary() ||
+                    $paper->isEditor(Episciences_Auth::getUid()) ||
+                    $paper->getCopyEditor(Episciences_Auth::getUid())
+                )
+            ) {
                 $enabledManageFromPublicPage = true;
             }
         }
@@ -625,7 +632,7 @@ class PaperController extends PaperDefaultController
         }
         $arrayAffi = [];
         $acronyms = $request->getPost("affiliationAcronym");
-        $acronyms = explode('||',$acronyms);
+        $acronyms = explode('||', $acronyms);
         foreach ($affiliations as $key => $affiliation) {
             if ($affiliation !== "") {
                 $affiliation = explode('#', $affiliation);
@@ -640,7 +647,7 @@ class PaperController extends PaperDefaultController
                     ];
                     if ($strAcronym !== '') {
                         $idArray["id"][0]['acronym'] = trim($strAcronym);
-                        $nameRor['name'] = Episciences_Paper_AuthorsManager::eraseAcronymInName($nameRor['name'],$rawstrAcronym);
+                        $nameRor['name'] = Episciences_Paper_AuthorsManager::eraseAcronymInName($nameRor['name'], $rawstrAcronym);
                     }
                     $arrayAffi[] = array_merge($nameRor, $idArray);
                 } else {
@@ -1170,7 +1177,7 @@ class PaperController extends PaperDefaultController
                     $tags,
                     $paper,
                     Episciences_Auth::getUid(),
-                    [ $oAnswer->getFile() => $oAnswer->getFilePath()],
+                    [$oAnswer->getFile() => $oAnswer->getFilePath()],
                     true
                 );
             }
@@ -1457,7 +1464,7 @@ class PaperController extends PaperDefaultController
             trigger_error('Answer revision with tmp version: mail not sent to managers: empty recipients');
         }
 
-            // link to public article page
+        // link to public article page
         $publicUrl = $this->view->url([
             self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
             self::ACTION => 'view',
@@ -1729,7 +1736,7 @@ class PaperController extends PaperDefaultController
             $conceptIdentifier = null;
             $hookParams = ['identifier' => $post[self::SEARCH_DOC_STR]['h_docId'], 'repoId' => $post[self::SEARCH_DOC_STR]['h_repoId']];
 
-            if (isset($post[self::SEARCH_DOC_STR]['version']) && $post[self::SEARCH_DOC_STR]['version'] !== ''){
+            if (isset($post[self::SEARCH_DOC_STR]['version']) && $post[self::SEARCH_DOC_STR]['version'] !== '') {
                 $hookParams['version'] = $post[self::SEARCH_DOC_STR]['version'];
 
             }
