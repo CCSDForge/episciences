@@ -75,6 +75,8 @@ return [
     "Les modifications n'ont pas abouti : article introuvable !" => "The changes were unsuccessful: article not found!",
     "Les modifications n'ont pas abouti : auteur introuvable !" => "The changes were unsuccessful: author not found! ",
     "Les modifications n'ont pas abouti : type incorrect !" => "The changes were unsuccessful: incorrect type!",
+    "Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !" => "The changes were unsuccessful: deadline is not given with revision request!",
+
 
     // Navigation
     "Accueil" => "Home",
@@ -364,6 +366,7 @@ return [
     "Mettre à jour le DOI" => "Update DOI",
     "Date limite de réponse" => "Revision deadline",
     "Date limite de réponse :" => "Revision deadline:",
+    "Veuillez préciser une date limite" => "Please specify a deadline",
 
     "Volume spécial :" => "Special Issue:",
     "Spécial" => "Special",
@@ -2441,4 +2444,8 @@ return [
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
     'IsRelatedTo'=>'Is related to',
+
+    // Journal's settings
+    "Exiger que la demande de révision soit assortie d'un délai" => "To require that a deadline is given with revision request",
+
 ];

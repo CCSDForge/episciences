@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Added
+- [#388](https://github.com/CCSDForge/episciences/issues/388): new option to require a deadline to be indicated when requesting a revision.
 ## ## 1.0.41.1 - 2023-11-28
 ### Changed
 - [394](https://github.com/CCSDForge/episciences/issues/394): Improvements to facilitate submissions.

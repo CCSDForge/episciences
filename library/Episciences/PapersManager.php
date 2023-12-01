@@ -1887,6 +1887,7 @@ class Episciences_PapersManager
     public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null, bool $withAutoReassignment = true, int $docId = null): \Ccsd_Form
     {
         $formId = $withAutoReassignment ? $type . '_revision-form' : 'accepted-ask-final-version-form';
+        $isRequiredRevisionDeadline = false;
 
         $minDate = date('Y-m-d');
         $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
@@ -1895,6 +1896,7 @@ class Episciences_PapersManager
 
         if (null !== $review) { // git #123 : Ne jamais réassigner automatiquement les relecteurs, que ce soit pour des demandes de modif mineures ou majeures
             $automaticallyReassignSameReviewers = $review->getSetting(Episciences_Review::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION);
+            $isRequiredRevisionDeadline = (bool)$review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE);
             if ($type === 'minor') {
                 $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MINOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
             } elseif ($type === 'major') {
@@ -1932,7 +1934,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', [
@@ -1957,16 +1959,23 @@ class Episciences_PapersManager
             'disabled' => true,
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
-        // revision deadline (optional)
-        $form->addElement('date', $type . '-revision-deadline', [
+        // revision deadline (optional ?)
+        $deadlineOptions = [
             'id' => $formId . '-revision-deadline',
             'label' => 'Date limite de réponse',
             'class' => 'form-control',
             'pattern' => '[A-Za-z]{3}',
-            'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle'),
+            'placeholder' => !$isRequiredRevisionDeadline ? Zend_Registry::get('Zend_Translate')->translate('Optionnelle') : Zend_Registry::get('Zend_Translate')->translate('Veuillez préciser une date limite'),
             'attr-mindate' => $minDate,
             'attr-maxdate' => $maxDate
-        ]);
+        ];
+
+        if ($isRequiredRevisionDeadline) {
+            $deadlineOptions['required'] = true;
+        }
+
+
+        $form->addElement('date', $type . '-revision-deadline', $deadlineOptions);
 
         $form->addElement('text', $type . '-revision-subject', [
             'id' => $formId . '-revision-subject',

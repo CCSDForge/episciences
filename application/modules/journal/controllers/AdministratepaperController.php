@@ -4375,6 +4375,15 @@ class AdministratepaperController extends PaperDefaultController
             $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
+            if (
+                !$deadline &&
+                $review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE)
+            ) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !");
+                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+
+            }
+
             $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
                 in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
 
@@ -4619,18 +4628,18 @@ class AdministratepaperController extends PaperDefaultController
                 $url .= $paper->getIdentifier();
                 $response = Episciences_Tools::callApi($url);
 
-                if(
+                if (
                     isset($response['status']) &&
                     mb_strtolower($response['status']) === Episciences_Repositories_Dataverse_Hooks::SUCCESS_CODE
-                    ){
+                ) {
 
                     $latestVersion = $response['data']['latestVersion']['versionNumber'] ?? 1;
                     $versionMinorNumber = $response['data']['latestVersion']['versionMinorNumber'] ?? 0;
 
                     $version = (float)($latestVersion . '.' . $versionMinorNumber);
 
-                    while ($version > 0){
-                        $versions[] =  $version . '.' . $versionMinorNumber;
+                    while ($version > 0) {
+                        $versions[] = $version . '.' . $versionMinorNumber;
                         $version -= 1.0;
                     }
                 }

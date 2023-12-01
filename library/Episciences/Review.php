@@ -122,6 +122,7 @@ class Episciences_Review
 
     public const SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS =
         'refusedArticleAuthorsMsgSentToReviewers';
+    public const SETTING_TO_REQUIRE_REVISION_DEADLINE = 'toRequireRevisionDeadline';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -209,7 +210,8 @@ class Episciences_Review
             self::SETTING_ARXIV_PAPER_PASSWORD,
             self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_DISPLAY_STATISTICS,
-            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
+            self::SETTING_TO_REQUIRE_REVISION_DEADLINE
         ];
 
 
@@ -956,6 +958,7 @@ class Episciences_Review
         // Allow post-acceptance revisions of articles
 
         $form = $this->addFinalDecisionForm($form);
+        $form = $this->toRequireRevisionDeadlineForm($form);
         $form = $this->addStatisticsForm($form);
 
         //redirection mail for errors
@@ -1026,10 +1029,11 @@ class Episciences_Review
         $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
 
         $form->addDisplayGroup([
+            self::SETTING_TO_REQUIRE_REVISION_DEADLINE,
             self::SETTING_SYSTEM_IS_COI_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DISPLAY_STATISTICS,
-            self::SETTING_CONTACT_ERROR_MAIL
+            self::SETTING_CONTACT_ERROR_MAIL,
         ], 'additionalParams', ['legend' => 'Paramètres supplémentaires']);
 
         $form->getDisplayGroup('additionalParams')->removeDecorator('DtDdWrapper');
@@ -1597,6 +1601,30 @@ class Episciences_Review
         );
     }
 
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Form_Exception
+     */
+
+    private function toRequireRevisionDeadlineForm(Ccsd_Form $form): \Ccsd_Form
+    {
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        return $form->addElement('checkbox', self::SETTING_TO_REQUIRE_REVISION_DEADLINE, [
+                'label' => "Exiger que la demande de révision soit assortie d'un délai",
+                'description' => "",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+    }
+
     private function addStatisticsForm(Ccsd_Form $form): \Ccsd_Form
     {
         $checkboxDecorators = [
@@ -1763,6 +1791,8 @@ class Episciences_Review
         $settingsValues[self::SETTING_DISPLAY_STATISTICS] = $this->getSetting(self::SETTING_DISPLAY_STATISTICS);
         $settingsValues[self::SETTING_CONTACT_ERROR_MAIL] = $this->getSetting(self::SETTING_CONTACT_ERROR_MAIL);
         $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
+        $settingsValues[self::SETTING_TO_REQUIRE_REVISION_DEADLINE] = $this->getSetting(self::SETTING_TO_REQUIRE_REVISION_DEADLINE);
+
 
 
         $values = [];
