@@ -1652,7 +1652,7 @@ class Episciences_Submit
 
             $client = new Client($cHeaders);
 
-            if (Episciences_Repositories::getLabel($paper->getRepoid()) === 'Hal') {
+            if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
                 $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhidId_s,researchData_s&version_i:' . $paper->getversion();
                 $response = $client->get($url);
                 $result = json_decode($response->getBody()->getContents(), true);
