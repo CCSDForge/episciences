@@ -692,7 +692,7 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
     let content = body.getContent();
     let replace = '<span class="revision_deadline">' + translate('dès que possible', locale) + '</span>';
 
-    if (isISOdate(date) && isValidDate(date) && !isBackDated(date, locale)) {
+    if (isISOdate(date) && isValidDate(date) && !isBackDated(date)) {
 
         let localeDate = getLocaleDate(date, {
             language: locale,
@@ -819,8 +819,8 @@ function enableModalSubmitButton(){
     }
 }
 
-function isBackDated(input, locale){
-    return new Date().toLocaleDateString(locale) > new Date(input).toLocaleDateString(locale);
+function isBackDated(input){
+    return new Date().toISOString() > new Date(input).toISOString();
 }
 
 /**
