@@ -4375,14 +4375,22 @@ class AdministratepaperController extends PaperDefaultController
             $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
 
-            if (
-                !$deadline &&
-                $review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE)
-            ) {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !");
+            if (!$deadline) {
+                if (
+                    $review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE)) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !");
+                    $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                    return;
+
+                }
+
+            } elseif (!Ccsd_Tools_String::validateDate($deadline)) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj.");
                 $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
 
             }
+
 
             $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
                 in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);

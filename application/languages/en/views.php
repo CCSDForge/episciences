@@ -1288,7 +1288,7 @@ return [
     'Optionnelle' => 'Optional',
     'Cliquer ici pour ouvrir le calendrier' => 'Click here to open the calendar',
     'Version révisée attendue avant le :' => 'Revised version expected before:',
-
+    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj."  =>"Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
 
     /**
      * Tips
