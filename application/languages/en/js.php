@@ -200,4 +200,7 @@ return [
     "Proposer un article" => "Submit an article",
     "Proposer un jeu de données" => "Submit a Dataset",
 
+    // revision request
+    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd."
+
 ];

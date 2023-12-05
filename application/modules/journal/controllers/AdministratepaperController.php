@@ -4377,10 +4377,20 @@ class AdministratepaperController extends PaperDefaultController
 
             if (
                 !$deadline &&
-                $review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE)
-            ) {
+                $review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE)) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !");
                 $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+
+            }
+
+            if (
+                $deadline &&
+                !Ccsd_Tools_String::validateDate($deadline)
+            ) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj.");
+                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
 
             }
 

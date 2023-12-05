@@ -76,12 +76,12 @@ if (Episciences_Auth::isSecretary()) : ?>
                 <!-- revision request -->
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".minor-revision-modal"><?= $this->translate('Demander des modifications mineures') ?></a>
+                       data-target=".minor-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications mineures') ?></a>
                 </li>
 
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".major-revision-modal"><?= $this->translate('Demander des modifications majeures') ?></a>
+                       data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
                 </li>
 
             <?php elseif ($paper->isAccepted()) : ?>
@@ -183,12 +183,12 @@ if (Episciences_Auth::isSecretary()) : ?>
                 <!-- revision request -->
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".minor-revision-modal"><?= $this->translate('Demander des modifications mineures') ?></a>
+                       data-target=".minor-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications mineures') ?></a>
                 </li>
 
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".major-revision-modal"><?= $this->translate('Demander des modifications majeures') ?></a>
+                       data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
                 </li>
 
             <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) : ?>
@@ -384,10 +384,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     <?php if (!$isInRevision) : ?>
                         <li>
                             <a href="#" data-toggle="modal"
-                               data-target=".minor-revision-modal"><?= $this->translate('Demander des modifications mineures') ?></a>
+                               data-target=".minor-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications mineures') ?></a>
                         </li>
                         <li><a href="#" data-toggle="modal"
-                               data-target=".major-revision-modal"><?= $this->translate('Demander des modifications majeures') ?></a>
+                               data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
                         </li>
                     <?php endif; ?>
                 <?php else : // if there is not enough rating reports, display a notice ?>

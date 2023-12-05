@@ -805,14 +805,24 @@ let fixHelperSortable = function (e, ui) {
     return ui;
 };
 
-function disableModalSubmitButton(){
+function disableModalSubmitButton($selector = null) {
+
+    if($selector){
+        $selector.prop('disabled', true);
+        return;
+    }
 
     if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
         $modal_button.prop('disabled', true);
     }
 }
 
-function enableModalSubmitButton(){
+function enableModalSubmitButton($selector = null) {
+
+    if($selector){
+        $selector.prop('disabled', false);
+        return;
+    }
 
     if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
         $modal_button.prop('disabled', false);
