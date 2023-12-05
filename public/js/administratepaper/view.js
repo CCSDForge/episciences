@@ -162,16 +162,48 @@ $(document).ready(function () {
 
     // update deadline
     $("[id$='-revision-deadline']").on('change keyup past', (function () {
+        let $minorSubmit = $('button[id^="submit-modal-minor-revision"]');
+        let $majorSubmit = $('button[id^="submit-modal-major-revision"]');
 
         let locale = (author) && author.langueid !== siteLocale ? defaultLocale : author.langueid;
+
         let deadline = $(this).val();
-        let id = $(this).attr('id');
 
-        let messageId = id.substring(0, id.length - 8) + 'message'; // 8: length (deadline)
+        let isValid = isRequiredRevisionDeadline ? (deadline !== '') : true; // configurable, see journal's settings
 
-        let oBody = getObjectNameFromTinyMce(messageId); // object
+        if (deadline !== '') {
 
-        updateDeadlineTag(oBody, 'revision_deadline', deadline, locale);
+            if (
+                !isISOdate(deadline) ||
+                !isValidDate(deadline)
+            ) {
+                alert(translate("La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj."));
+                disableModalSubmitButton($minorSubmit);
+                disableModalSubmitButton($majorSubmit);
+                return;
+            }
+
+    }
+
+        if (isValid) {
+
+            let id = $(this).attr('id');
+
+            let messageId = id.substring(0, id.length - 8) + 'message'; // 8: length (deadline)
+
+            let oBody = getObjectNameFromTinyMce(messageId); // object
+
+            updateDeadlineTag(oBody, 'revision_deadline', deadline, locale);
+
+            enableModalSubmitButton($minorSubmit);
+            enableModalSubmitButton($majorSubmit);
+
+
+        } else {
+            disableModalSubmitButton($minorSubmit);
+            disableModalSubmitButton($majorSubmit);
+
+        }
 
     }));
 
@@ -186,13 +218,13 @@ $(document).ready(function () {
         $("#btn-hide-citations").hide();
         $("#btn-show-citations").show();
     });
-    $('input#copycoauthor').click(function(){
+    $('input#copycoauthor').click(function () {
         let coAuthorsMailStr = $('input#coauthormail').val();
         if ($(this).prop('checked')) {
             $("input[name='cc']").val(coAuthorsMailStr);
         } else {
-            let inputcc =  $("input[name='cc']");
-            inputcc.val(inputcc.val().replace(coAuthorsMailStr,''));
+            let inputcc = $("input[name='cc']");
+            inputcc.val(inputcc.val().replace(coAuthorsMailStr, ''));
         }
     });
 
@@ -698,12 +730,12 @@ function getVersionEditingForm(button, docId) {
 
 }
 
-function removeDoi(button,paperId,docId,doi) {
-    let removeDoi = ajaxRequest('/administratepaper/ajaxrequestremovedoi', {paperId: paperId,docId: docId, doi: doi});
+function removeDoi(button, paperId, docId, doi) {
+    let removeDoi = ajaxRequest('/administratepaper/ajaxrequestremovedoi', {paperId: paperId, docId: docId, doi: doi});
     let $doiStatusLoader = $('#doi-status-loader');
     $doiStatusLoader.html(getLoader());
     $doiStatusLoader.show();
-    removeDoi.done(function (response){
+    removeDoi.done(function (response) {
         let result = JSON.parse(response);
         console.log(result);
         if (result > 0) {
@@ -712,9 +744,13 @@ function removeDoi(button,paperId,docId,doi) {
     });
 }
 
-function removeCoAuthor (docId, uid, rvid) {
-    let removeCoAuthor = ajaxRequest('/administratepaper/ajaxrequestremovecoauthor', {docId: docId, uid: uid, rvid: rvid});
-    removeCoAuthor.done(function (response){
+function removeCoAuthor(docId, uid, rvid) {
+    let removeCoAuthor = ajaxRequest('/administratepaper/ajaxrequestremovecoauthor', {
+        docId: docId,
+        uid: uid,
+        rvid: rvid
+    });
+    removeCoAuthor.done(function (response) {
         location.reload();
     });
 }
@@ -742,7 +778,7 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
         $('form[action^="/administratepaper/updaterevisiondeadline"]').on('submit', function () {
             let $revisionDeadline = $("#revision-deadline");
             // Traitement AJAX du formulaire
-            let sRequest = ajaxRequest('/administratepaper/updaterevisiondeadline', $(this).serialize() + "&docid=" + docId + "&pcid=" + commentId , 'POST', 'json');
+            let sRequest = ajaxRequest('/administratepaper/updaterevisiondeadline', $(this).serialize() + "&docid=" + docId + "&pcid=" + commentId, 'POST', 'json');
             sRequest.done(function (response) {
                 // Destruction du popup
                 $(button).popover('destroy');
@@ -760,4 +796,15 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
     });
 
 
+}
+
+function valide($target) {
+    let $selector = $target.attr('data-target');
+    let id = $selector.substring(1, $selector.length);
+
+    if (isRequiredRevisionDeadline) {
+        $('#submit-modal-' + id).prop('disabled', true);
+    } else {
+        $('#submit-modal-' + id).prop('disabled', false);
+    }
 }

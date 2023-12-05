@@ -692,7 +692,7 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
     let content = body.getContent();
     let replace = '<span class="revision_deadline">' + translate('dès que possible', locale) + '</span>';
 
-    if (isISOdate(date) && isValidDate(date) && !isBackDated(date, locale)) {
+    if (isISOdate(date) && isValidDate(date) && !isBackDated(date)) {
 
         let localeDate = getLocaleDate(date, {
             language: locale,
@@ -805,22 +805,32 @@ let fixHelperSortable = function (e, ui) {
     return ui;
 };
 
-function disableModalSubmitButton(){
+function disableModalSubmitButton($selector = null) {
+
+    if($selector){
+        $selector.prop('disabled', true);
+        return;
+    }
 
     if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
         $modal_button.prop('disabled', true);
     }
 }
 
-function enableModalSubmitButton(){
+function enableModalSubmitButton($selector = null) {
+
+    if($selector){
+        $selector.prop('disabled', false);
+        return;
+    }
 
     if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
         $modal_button.prop('disabled', false);
     }
 }
 
-function isBackDated(input, locale){
-    return new Date().toLocaleDateString(locale) > new Date(input).toLocaleDateString(locale);
+function isBackDated(input){
+    return new Date().toISOString() > new Date(input).toISOString();
 }
 
 /**
