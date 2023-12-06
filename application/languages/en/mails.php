@@ -30,11 +30,11 @@ return [
     "paper_submission_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Your article has been submitted",
 
     // Confirmation de nouvelle version d'un article pour les auteurs et co auteur si existant
-    "paper_new_version_submission_author_tpl_name" => "New version of your paper",
+    "paper_new_version_submission_author_tpl_name" => "New version of the paper for the author and co-author",
     "paper_new_version_submission_author_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - New version has been submitted",
 
     // Confirmation de nouvelle version temporaire d'un article pour les auteurs et co auteur si existant
-    "paper_new_version_temporary_submission_author_tpl_name" => "New temporary version of your paper",
+    "paper_new_version_temporary_submission_author_tpl_name" => "New temporary version of your paper for the author and co-author",
     "paper_new_version_temporary_submission_author_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - New temporary version has been submitted",
 
     // Suppression d'un article par son auteur - copie destinée à l'auteur
