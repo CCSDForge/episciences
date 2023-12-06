@@ -35,24 +35,27 @@ $keepOnlySourceUsed = [];
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             <?php endif; ?>
-                            <?php if (!Episciences_Tools::isDoiWithUrl($dataset->getValue())) : ?><?= ucfirst($this->translate($dataset->getName())) ?>
-                            <?php endif; ?>
+<!--                            --><?php //if (!Episciences_Tools::isDoiWithUrl($dataset->getValue())) : ?><!----><?php //= ucfirst($this->translate($dataset->getName())) ?>
+<!--                            --><?php //endif; ?>
                             <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && (string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID) : ?>
                                 <sup><?= $listSources[$getSource] ?></sup>
                             <?php endif; ?>
                             <?php if ((string)$source === Episciences_Repositories::SCHOLEXPLORER_ID) {
                                 $sourceToSup = $listSources[$getSource];
                             } ?>
-                            <?php if (!Episciences_Tools::isDoiWithUrl($dataset->getLink())
-                                || (Episciences_Tools::isDoiWithUrl($dataset->getLink())
-                                    && (string)$dataset->getSourceId()
+
+                            <?php if (($dataset->getName() === 'arXiv' && $dataset->getMetatext() === null)
+                                || (!Episciences_Tools::isDoiWithUrl($dataset->getLink()) && $dataset->getName() !== 'arXiv')
+                                || (Episciences_Tools::isDoiWithUrl($dataset->getLink()) && (string)$dataset->getSourceId()
                                     !== Episciences_Repositories::EPI_USER_ID
-                                    && (string)$dataset->getSourceId() !== Episciences_Repositories::SCHOLEXPLORER_ID)) : ?>
+                                    && (string)$dataset->getSourceId()
+                                    !== Episciences_Repositories::SCHOLEXPLORER_ID)) : ?>
                                 <a href="<?= $dataset->getLink() ?>" target="_blank" rel="noopener"
                                    id="link-ld"><?= $dataset->getValue() ?></a><sup> <?= $sourceToSup ?></sup><br>
                             <?php endif; ?>
                             <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
-                                && ($dataset->getName() === 'doi' || Episciences_Tools::isDoiWithUrl($dataset->getValue()))
+                                && ($dataset->getName() === 'doi'
+                                    || Episciences_Tools::isDoiWithUrl($dataset->getValue()) || $dataset->getName() === 'arXiv')
                                 && $dataset->getMetatext() !== null) {
                                 try {
                                     //pimp author names

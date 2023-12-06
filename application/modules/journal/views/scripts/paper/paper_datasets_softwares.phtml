@@ -35,7 +35,22 @@ $keepOnlySourceUsed = [];
                                 <sup><?= $listSources[$getSource] ?></sup>
                             <?php endif; ?>
                         <?php else: ?>
-                            <a href="<?= $software->getLink() ?>"><?= $software->getValue() ?></a>
+                            <?php if (!Episciences_Tools::isHal($software->getValue())): ?>
+                                <a href="<?= $software->getLink() ?>"><?= $software->getValue() ?></a>
+                            <?php endif;?>
+                        <?php endif; ?>
+                        <?php if ($software->getMetatext() !== null && Episciences_Tools::isHal($software->getValue())): ?>
+                            <div style="display: inline;">
+                                <?php
+                                $metadataHal = json_decode($software->getMetatext(),true);
+                                if(isset($metadataHal['swhidId'])){
+                                    echo Episciences_SoftwareHeritageTools::replaceByBadgeHalCitation(
+                                            $metadataHal["swhidId"],$metadataHal['citationFull']);
+                                } else {
+                                    echo $metadataHal['citationFull'] ;
+                                }
+                                ?>
+                            </div>
                         <?php endif; ?>
                         <div style="margin-bottom: 4px"></div>
                         <?php if ($software->getName() === 'software'): ?>
