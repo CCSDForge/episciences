@@ -14,9 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## 1.0.41.2 - 2023-12-05
 ### Fixed
 - [408](https://github.com/CCSDForge/episciences/issues/408)Update metadata" seems to delete existing metadata
-## ## 1.0.41.1 - 2023-11-28
+- Fixed Misleading error message about a document not found
+
+### Changed
+- The bibliographic references panel is now hidden when empty 
+- Removed cache from OpenCitation API when the response is empty
+
+## 1.0.41.1 - 2023-11-28
 ### Changed
 - [394](https://github.com/CCSDForge/episciences/issues/394): Improvements to facilitate submissions.
 
