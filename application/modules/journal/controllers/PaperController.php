@@ -1273,7 +1273,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS]; // see js/library/es.fileupload.js
+        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? []; // see js/library/es.fileupload.js
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
