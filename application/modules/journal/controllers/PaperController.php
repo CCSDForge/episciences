@@ -59,6 +59,7 @@ class PaperController extends PaperDefaultController
         }
 
         if (!$pdf_name || !$url) {
+            Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->view->message = $count > 0 ? 'PDF size is over ' . Episciences_Tools::toHumanReadable(MAX_PDF_SIZE) : 'no PDF files found';
             $this->renderScript('error/http_error.phtml');
             return;
@@ -1273,7 +1274,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS]; // see js/library/es.fileupload.js
+        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? []; // see js/library/es.fileupload.js
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
