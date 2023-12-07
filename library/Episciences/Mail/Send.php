@@ -228,7 +228,10 @@ class Episciences_Mail_Send
             $template->setRvcode($journalOptions['rvCode']);
         }
 
-        $template->findByKey($templateType);
+        if (!$template->findByKey($templateType)) {
+            trigger_error(sprintf('Template key [%s] was not found in [MAIL_TEMPLATE]: Empty mail sent to: [%s<%s>]', $templateType, $recipient->getScreenName(), $recipient->getEmail()));
+        }
+
         $template->loadTranslations(null, $journalOptions['rvCode']);
 
         $locale = $recipient->getLangueid();
