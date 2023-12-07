@@ -39,14 +39,15 @@ $keepOnlySourceUsed = [];
                                 <a href="<?= $software->getLink() ?>"><?= $software->getValue() ?></a>
                             <?php endif;?>
                         <?php endif; ?>
-                        <?php if ($software->getMetatext() !== null && Episciences_Tools::isHal($software->getValue())): ?>
+                        <?php if ($software->getMetatext() !== null && Episciences_Tools::isHal($software->getValue())
+                            && (string)$source === Episciences_Repositories::EPI_USER_ID): ?>
                             <div style="display: inline;">
                                 <?php
                                 $metadataHal = json_decode($software->getMetatext(),true);
                                 if(isset($metadataHal['swhidId'])){
                                     echo Episciences_SoftwareHeritageTools::replaceByBadgeHalCitation(
                                             $metadataHal["swhidId"],$metadataHal['citationFull']);
-                                } else {
+                                } elseif(isset($metadataHal['citationFull'])) {
                                     echo $metadataHal['citationFull'] ;
                                 }
                                 ?>
