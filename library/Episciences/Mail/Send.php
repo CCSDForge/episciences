@@ -237,7 +237,7 @@ class Episciences_Mail_Send
         $locale = $recipient->getLangueid();
         $template->setLocale($locale);
 
-        $mail = new Episciences_Mail(self::ENCODING_TYPE);
+        $mail = new Episciences_Mail(self::ENCODING_TYPE, $journalOptions['rvCode']);
 
         if ($paper) {
             $mail->setDocid($paper->getDocid());
