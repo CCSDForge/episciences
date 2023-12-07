@@ -21,11 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - [322](https://github.com/CCSDForge/episciences/issues/322)  manage closing mail author
 - changing right to adding orcid when you're owner of paper (before was only for paper's managers)
-- [133](https://github.com/CCSDForge/episciences/issues/133) Add default style for the accepted page 
+- [133](https://github.com/CCSDForge/episciences/issues/133) Add default style for the accepted page
+
+## 1.0.41.2 - 2023-12-05
 ### Fixed
 - [408](https://github.com/CCSDForge/episciences/issues/408)Update metadata" seems to delete existing metadata
+- Fixed Misleading error message about a document not found
 
-## ## 1.0.41.1 - 2023-11-28
+### Changed
+- The bibliographic references panel is now hidden when empty 
+- Removed cache from OpenCitation API when the response is empty
+
+## 1.0.41.1 - 2023-11-28
 ### Changed
 - [394](https://github.com/CCSDForge/episciences/issues/394): Improvements to facilitate submissions.
 
