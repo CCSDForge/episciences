@@ -55,7 +55,11 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $epiDM->setMetatext(json_encode($arraySoftware));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
         }
-
+        $checkArxivUrl = Episciences_Tools::checkIsArxivUrl($valueLd);
+        if ($checkArxivUrl){
+            $typeLd = 'arxiv';
+            $valueLd = $checkArxivUrl[1];
+        }
         if ($inputTypeLd === 'software' && $typeLd === 'software' && Episciences_Paper_DatasetsManager::CheckSwhidType($valueLd) === 'dir') {
             $codeMetaFromDir = Episciences_SoftwareHeritageTools::getCodeMetaFromDirSwh($valueLd);
             if ($codeMetaFromDir !== '') {

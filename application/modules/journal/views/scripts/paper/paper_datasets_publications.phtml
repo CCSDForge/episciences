@@ -61,7 +61,8 @@ $keepOnlySourceUsed = [];
                                 </div>
                             <?php endif; ?>
                             <?php if (((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID)
-                                && ($publication->getName() === 'doi' || Episciences_Tools::isDoiWithUrl($publication->getValue()) || (Episciences_Tools::isDoiWithUrl($publication->getValue()) || $publication->getName() === 'arXiv'))
+                                && ($publication->getName() === 'doi' || Episciences_Tools::isDoiWithUrl($publication->getValue())
+                                    || (Episciences_Tools::isDoiWithUrl($publication->getValue()) || $publication->getName() === 'arXiv'))
                                 && $publication->getMetatext() !== null ) {
                                 try {
                                     //pimp author names

@@ -1866,6 +1866,13 @@ class Episciences_Tools
         return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
     }
 
+    public static function checkIsArxivUrl(string $url)
+    {
+        $matches = [];
+        preg_match("/^https?:\/\/arxiv\.org\/abs\/((?:\d{4}.\d{4,5}|[a-z\-]+(?:\.[A-Z]{2})?\/\d{7})(?:v\d+)?)/"
+        , $url , $matches);
+        return $matches;
+    }
     /**
      * @param $value
      * @return false|string

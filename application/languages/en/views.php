@@ -1957,6 +1957,7 @@ return [
     'Suppression de la donnée liée bien prise en compte' => 'Linked data has been deleted successfully',
     'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the linked data?',
     'Format de donnée non reconnu' => 'Data format not recognised',
+    "L'identifiant HAL n'est pas de type logiciel" => 'The HAL identifier is not of software type',
     "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing linked data',
     'software' => 'Software',
     'doi' => 'DOI',
