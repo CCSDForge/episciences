@@ -76,7 +76,7 @@ class Episciences_CrossrefTools
 
     /**
      * @param $getBestOpenAccessInfo
-     * @param $doiWhoCite
+     * @param string $doiWhoCite
      * @return string
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
@@ -94,7 +94,7 @@ class Episciences_CrossrefTools
             $setsMetadataCr = self::callCrossRefOrGetCacheMetadata($doiWhoCite);
             $metadataInfoCitationCr = json_decode($setsMetadataCr->get(), true, 512, JSON_THROW_ON_ERROR);
             if (reset($metadataInfoCitationCr) !== "") {
-                $getLocationFromCr = Episciences_CrossrefTools::getLocation($metadataInfoCitationCr);
+                $getLocationFromCr = self::getLocation($metadataInfoCitationCr);
             }
         }
         return $getLocationFromCr;
@@ -105,11 +105,11 @@ class Episciences_CrossrefTools
      * @param $doiWhoCite
      * @param $globalInfoMetadata
      * @param int $i
-     * @return array|mixed
+     * @return array
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function addLocationEvent($typeCrossref, $doiWhoCite, $globalInfoMetadata, int $i)
+    public static function addLocationEvent($typeCrossref, $doiWhoCite, $globalInfoMetadata, int $i): array
     {
         if ($typeCrossref === 'proceedings-article') {
             $setsMetadataCr = self::callCrossRefOrGetCacheMetadata($doiWhoCite);
@@ -128,7 +128,7 @@ class Episciences_CrossrefTools
     public static function addEventLocationInArray($metadataInfoCitationCr, array $globalInfoMetadata, int $i): array
     {
         if (reset($metadataInfoCitationCr) !== "") {
-            $getEventPlace = Episciences_CrossrefTools::getEventPlace($metadataInfoCitationCr);
+            $getEventPlace = self::getEventPlace($metadataInfoCitationCr);
             $globalInfoMetadata[$i]['event_place'] = $getEventPlace;
         } else {
             $globalInfoMetadata[$i]['event_place'] = "";
