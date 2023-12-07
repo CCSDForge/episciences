@@ -283,7 +283,6 @@ class InboxNotifications extends Script
 
         $apply = false;
         $canBeReplaced = false;
-        define('RVCODE', $journal->getCode());
         $data = $this->dataFromUrl($object);
         $data['rvid'] = $journal->getRvid();
 
@@ -489,7 +488,7 @@ class InboxNotifications extends Script
 
                         $message = 'The article (identifier = ' . $data['identifier'] . ') has been submitted';
 
-                        $this->notifyAuthorAndEditorialCommitee($journal, $paper, $author);
+                        $this->notifyAuthorAndEditorialCommittee($journal, $paper, $author);
 
                         $this->logAction($paper);
 
@@ -587,7 +586,7 @@ class InboxNotifications extends Script
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    private function notifyAuthorAndEditorialCommitee(Episciences_Review $journal, Episciences_Paper $paper, Episciences_User $author): void
+    private function notifyAuthorAndEditorialCommittee(Episciences_Review $journal, Episciences_Paper $paper, Episciences_User $author): void
     {
 
         $rvCode = $journal->getCode();
@@ -620,6 +619,8 @@ class InboxNotifications extends Script
         $aLocale = $author->getLangueid();
 
         $commonTags = [
+            Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getCode(),
+            Episciences_Mail_Tags::TAG_REVIEW_NAME => $journal->getName(),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $author->getFullName()

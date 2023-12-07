@@ -53,7 +53,7 @@ class Episciences_Mail extends Zend_Mail
      * @param null $charset
      * @throws Zend_Mail_Exception
      */
-    public function __construct($charset = null)
+    public function __construct($charset = null, $rvCode = RVCODE)
     {
         if (isset($charset)) {
             parent::__construct($charset);
@@ -76,7 +76,7 @@ class Episciences_Mail extends Zend_Mail
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_LAST_NAME, Episciences_Auth::getLastname());
 
         }
-        $review = Episciences_ReviewsManager::find(RVCODE);
+        $review = Episciences_ReviewsManager::find($rvCode);
         $review->loadSettings();
         $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
         if ($mailError === false || $mailError === "0") {

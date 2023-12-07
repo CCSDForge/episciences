@@ -148,6 +148,7 @@
   },
   "CROSSREF": {
     "MAILTO": "YOUR-MAIL-TO",
-    "APIURL": "https://api.crossref.org/works/"
+    "APIURL": "https://api.crossref.org/works/",
+    "PLUS_API_TOKEN": "Ash-nazg-durbatulûk"
   }
 }

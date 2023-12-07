@@ -271,5 +271,7 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('OPENCITATIONS_MAILTO', '');
         define('OPENCITATIONS_APIURL', '');
         define('OPENCITATIONS_TOKEN', '');
+        define('CROSSREF_PLUS_API_TOKEN', '');
+
     }
 }
