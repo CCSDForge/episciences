@@ -6,6 +6,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 class Episciences_CrossrefTools
 {
     public const ONE_MONTH = 3600 * 24 * 31;
+    public const CROSSREF_PLUS_API_TOKEN_HEADER_NAME = 'Crossref-Plus-API-Token';
 
     /**
      * @param string $doiWhoCite
@@ -44,22 +45,33 @@ class Episciences_CrossrefTools
      * @param string $doi
      * @return string
      */
-    public static function getMetadatasCrossref(string $doi){
+    public static function getMetadatasCrossref(string $doi): string
+    {
         $client = new Client();
-        $crossrefCall = '';
-        try {
+        $crossrefApiResponse = '';
+
+        $headers = [
+            'headers' => [
+                'User-Agent' => EPISCIENCES_USER_AGENT,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ]
+        ];
+
+        if (defined(CROSSREF_PLUS_API_TOKEN) && CROSSREF_PLUS_API_TOKEN !== '') {
+            $headers['headers'][self::CROSSREF_PLUS_API_TOKEN_HEADER_NAME] = 'Bearer ' . CROSSREF_PLUS_API_TOKEN;
+        } else {
+            // try to remain below rate limit with 0.5s sleep when no Crossref metadata plus token is available
             usleep(500000);
-            return $client->get(CROSSREF_APIURL.$doi."?mailto=".CROSSREF_MAILTO, [
-                'headers' => [
-                    'User-Agent' => EPISCIENCES_USER_AGENT,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                ]
-            ])->getBody()->getContents();
-        } catch (GuzzleException $e) {
-            trigger_error($e->getMessage());
         }
-        return $crossrefCall;
+
+        try {
+            $crossrefApiResponse =  $client->get(CROSSREF_APIURL.$doi."?mailto=".CROSSREF_MAILTO, [$headers])->getBody()->getContents();
+        } catch (GuzzleException $e) {
+            trigger_error(sprintf("Code: %s Message: %s", $e->getCode(), $e->getMessage()));
+        }
+
+        return $crossrefApiResponse;
     }
 
     /**
