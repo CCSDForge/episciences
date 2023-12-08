@@ -306,7 +306,7 @@ class Episciences_Paper_ProjectsManager
      * @return array
      * @throws JsonException
      */
-    public function FormatFundingANREuToArray($rawArray, string $identifier, array $globalArrayJson): array
+    public static function FormatFundingANREuToArray($rawArray, string $identifier, array $globalArrayJson): array
     {
         $cache = new FilesystemAdapter('enrichmentFunding', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         foreach ($rawArray as $halValue) {
