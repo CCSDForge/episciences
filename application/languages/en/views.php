@@ -38,10 +38,15 @@ return [
     "rédacteurs" => "editors",
 
     "Relecteur" => ["Reviewer", "Reviewers"],
-
+    // DOCUMENT TYPES
     'article' => ['article', 'articles'],
     'Article'=> 'Article',
     'Preprint'=>'Preprint',
+    'ConferenceObject' => 'Conference paper',
+    'Text' => "Preprint",
+    'Dataset' => 'Jeux de données',
+
+
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
     'Télécharger' => 'Download',
     'Taille' => 'Size',
