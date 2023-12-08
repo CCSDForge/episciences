@@ -485,16 +485,18 @@ class InboxNotifications extends Script
 
                         // enrichment
 
+                        $enrichment = $data[Episciences_Repositories_Common::ENRICHMENT] ?? [];
+
                         if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
                             Episciences_Submit::datasetsProcessing($paper->getDocid());
                         }
 
-                        if (!isset($data[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
+                        if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
                             // insert author dc:creator to json author in the database
                             Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
                         }
 
-                        Episciences_Submit::enrichmentProcess($paper, $data[Episciences_Repositories_Common::CONTRIB_ENRICHMENT]);
+                        Episciences_Submit::enrichmentProcess($paper, $enrichment);
 
                         try {
 
@@ -560,7 +562,7 @@ class InboxNotifications extends Script
 
         if (!$casUser) {
             $message = 'Notification id = ';
-            $message .= $data[self::NOTIFICATION_ID];
+            $message .= $data[self::NOTIFICATION_ID] ?? 'undefined';
             $message .= ' not processed:';
             $message .= ' CAS UID = ' . $uid . ' not found. Original string was: ' . $data['uid'];
             $this->displayError($message . PHP_EOL);
