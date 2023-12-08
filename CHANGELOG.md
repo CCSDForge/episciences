@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - [414](https://github.com/CCSDForge/episciences/issues/414): volume page does not show volume description anymore
+- [409](https://github.com/CCSDForge/episciences/issues/409): DOI url in bibliographical url
 
 ## 1.0.41.2 - 2023-12-05
 ### Fixed
