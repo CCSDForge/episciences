@@ -37,32 +37,31 @@ class getDoi extends JournalScript
     /**
      * @var Episciences_Paper
      */
-    protected $_paper;
+    protected Episciences_Paper $_paper;
     /**
      * @var Episciences_Review
      */
-    protected $_review;
+    protected Episciences_Review $_review;
     /**
      * @var Episciences_Paper_DoiQueue
      */
-    protected $_doiQueue;
+    protected Episciences_Paper_DoiQueue $_doiQueue;
     /**
      * @var Episciences_Review_DoiSettings
      */
-    protected $_doiSettings;
+    protected Episciences_Review_DoiSettings $_doiSettings;
     /**
      * @var bool
      */
-    protected $_dryRun = true;
+    protected bool $_dryRun = true;
     /**
      * @var string
      */
-    protected $_journalHostname;
+    protected string $_journalHostname;
 
     /**
      * getDoi constructor.
      * @param $localopts
-     * @throws Zend_Db_Statement_Exception
      */
     public function __construct($localopts)
     {
@@ -201,7 +200,7 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Review_DoiSettings $doiSettings
      */
-    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings)
+    public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings): void
     {
         $this->_doiSettings = $doiSettings;
     }
@@ -211,7 +210,7 @@ class getDoi extends JournalScript
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Exception
      */
-    private function assignDois(string $paperStatus)
+    private function assignDois(string $paperStatus): void
     {
         $doiSettings = $this->getDoiSettings();
         $rvid = (int)$this->getParam('rvid');
@@ -306,15 +305,15 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Paper $paper
      */
-    public function setPaper($paper)
+    public function setPaper(Episciences_Paper $paper): void
     {
         $this->_paper = $paper;
     }
 
     /**
-     * @return mixed
+     * @return void
      */
-    private function getMetadataFile()
+    private function getMetadataFile(): void
     {
 
         $paperUrl = SERVER_PROTOCOL . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
@@ -326,15 +325,15 @@ class getDoi extends JournalScript
             trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
-        return file_put_contents($this->getMetadataPathFileName(), $res->getBody());
+        file_put_contents($this->getMetadataPathFileName(), $res->getBody());
     }
 
     /**
      * @return string
      */
-    private function getJournalUrl()
+    private function getJournalUrl(): string
     {
-        if ($this->getJournalHostname() != '') {
+        if ($this->getJournalHostname() !== '') {
             return $this->getJournalHostname();
         }
         return $this->getReview()->getCode() . '.' . DOMAIN;
@@ -351,7 +350,7 @@ class getDoi extends JournalScript
     /**
      * @param string $journalDomain
      */
-    public function setJournalHostname(string $journalDomain)
+    public function setJournalHostname(string $journalDomain): void
     {
         $this->_journalHostname = $journalDomain;
     }
@@ -367,7 +366,7 @@ class getDoi extends JournalScript
     /**
      * @param Episciences_Review $review
      */
-    public function setReview($review)
+    public function setReview(Episciences_Review $review): void
     {
         $this->_review = $review;
     }
@@ -435,19 +434,19 @@ class getDoi extends JournalScript
     /**
      * @param bool $dryRun
      */
-    public function setDryRun(bool $dryRun)
+    public function setDryRun(bool $dryRun): void
     {
         $this->_dryRun = $dryRun;
     }
 
     /**
      * @param string $doiStatus
-     * @return int
+     * @return void
      */
-    private function updateMetadataQueue($doiStatus = Episciences_Paper_DoiQueue::STATUS_REQUESTED): int
+    private function updateMetadataQueue(string $doiStatus = Episciences_Paper_DoiQueue::STATUS_REQUESTED): void
     {
         $this->getDoiQueue()->setDoi_status($doiStatus);
-        return Episciences_Paper_DoiQueueManager::update($this->getDoiQueue());
+        Episciences_Paper_DoiQueueManager::update($this->getDoiQueue());
     }
 
     /**
@@ -461,7 +460,7 @@ class getDoi extends JournalScript
     /**
      * @param mixed $doiQueue
      */
-    public function setDoiQueue($doiQueue)
+    public function setDoiQueue($doiQueue): void
     {
         $this->_doiQueue = $doiQueue;
     }
@@ -498,7 +497,7 @@ class getDoi extends JournalScript
      * @param $response
      * @return string
      */
-    private function readCrossrefStatusResponse($response)
+    private function readCrossrefStatusResponse($response): string
     {
         $doi_batch_diagnostic = simplexml_load_string($response);
         return (string)$doi_batch_diagnostic->batch_data->success_count;
