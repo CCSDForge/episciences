@@ -1115,7 +1115,7 @@ return [
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version repointing',
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New reviewing deadline',
-    Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission > Inbox',
+    Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission: automatically transferred from',
     Episciences_Paper_Logger::CODE_LD_ADDED => 'Linked data added',
     Episciences_Paper_Logger::CODE_LD_REMOVED => 'Linked data removed',
     Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'New révision deadline',

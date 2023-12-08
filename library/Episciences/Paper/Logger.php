@@ -179,7 +179,7 @@ class Episciences_Paper_Logger
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur",
         self::CODE_VERSION_REPOSITORY_UPDATED => 'Re-pointage de version',
         self::CODE_NEW_REVIEWING_DEADLINE => 'Nouvelle date limite de rendu de relecture',
-        self::CODE_INBOX_COAR_NOTIFY_REVIEW => 'Nouvelle soumission > Inbox',
+        self::CODE_INBOX_COAR_NOTIFY_REVIEW => "Nouvelle soumission : transférée automatiquement depuis",
         self::CODE_LD_ADDED => "Ajout d'une donnée liée",
         self::CODE_LD_REMOVED => "Suppression d'une donnée liée",
     ];
