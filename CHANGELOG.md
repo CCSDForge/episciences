@@ -15,7 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-###added
+### Fixed
+- [414](https://github.com/CCSDForge/episciences/issues/414): volume page does not show volume description anymore
+
+### Added
 - [#388](https://github.com/CCSDForge/episciences/issues/388): new option to require a deadline to be indicated when requesting a revision.
 
 ### Changed

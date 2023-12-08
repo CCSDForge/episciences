@@ -1,49 +1,58 @@
 <?php
-$this->layout()->pageTitle = $this->translate($this->volume->getNameKey());
-$metadatas = $this->volume->getMetadatas();
-$indexedPapers = $this->volume->getIndexedPapers();
 /**
  * @var Episciences_Volume $volume
  */
 $volume = $this->volume;
+$this->layout()->pageTitle = $volume->getNameKey();
+$metadatas = $volume->getMetadatas();
+$indexedPapers = $volume->getIndexedPapers();
+
 ?>
 <div id="volume">
 
-
     <div class="row">
         <div class="col-sm-12">
-            <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($this->volume->getDescriptionKey())) : ?>
 
-                <div id="description" class="col-sm-12">
-                    <p class="text-justify text-primary"><?= $this->translate($this->volume->getDescriptionKey()) ?></p>
-                </div>
+            <div id="description" class="col-sm-12">
+                <p class="text-justify text-primary"><?= $volume->getDescriptionKey() ?></p>
+            </div>
 
-            <?php endif; ?>
             <?php if ($metadatas) : ?>
                 <div id="metadatas" class="volume-metadata">
-                    <?= $this->partial('volume/volume-metadatas.phtml', ['metadatas' => $metadatas, 'volume' => $this->volume]) ?>
+                    <?= $this->partial('volume/volume-metadatas.phtml', ['metadatas' => $metadatas, 'volume' => $volume]) ?>
 
                 </div>
             <?php else: ?>
                 <?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1"): ?>
                     <div class="col-sm-12">
-                            <p><b style="font-size: 14px"><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME);} ?></b></p>
-                            <p>
-                                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM).";"; } ?>
-                                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== ''){ echo "N°".$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER).";"; } ?>
-                            </p>
-                            <p>
-                                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) !== ''){echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION).";";} ?>
-                                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== '' && $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== '') {
-                                    if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) === $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) ){
-                                        echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE);
-                                    } else {
-                                        echo Zend_Registry::get('Zend_Translate')->translate('Du').' '.$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE).' '.Zend_Registry::get('Zend_Translate')->translate('Au').' '.$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE);
-                                    }
+                        <p>
+                            <b style="font-size: 14px"><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== '') {
+                                    echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME);
+                                } ?></b></p>
+                        <p>
+                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== '') {
+                                echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) . ";";
+                            } ?>
+                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== '') {
+                                echo "N°" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) . ";";
+                            } ?>
+                        </p>
+                        <p>
+                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) !== '') {
+                                echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) . ";";
+                            } ?>
+                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== '' && $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== '') {
+                                if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) === $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE)) {
+                                    echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE);
+                                } else {
+                                    echo Zend_Registry::get('Zend_Translate')->translate('Du') . ' ' . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) . ' ' . Zend_Registry::get('Zend_Translate')->translate('Au') . ' ' . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE);
                                 }
-                                ?>
-                            </p>
-                            <p><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== ''){ echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME).";"; } ?></p>
+                            }
+                            ?>
+                        </p>
+                        <p><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== '') {
+                                echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) . ";";
+                            } ?></p>
                     </div>
                     <div class="col-sm-12">
                         <p>
@@ -60,7 +69,7 @@ $volume = $this->volume;
 
     <?php if ($indexedPapers) : ?>
 
-        <?= $this->partial('volume/volume-indexed-papers.phtml', ['indexedPapers' => $indexedPapers, 'volume' => $this->volume]) ?>
+        <?= $this->partial('volume/volume-indexed-papers.phtml', ['indexedPapers' => $indexedPapers, 'volume' => $volume]) ?>
     <?php else: ?>
         <div class="row">
             <blockquote style="padding:1em;">
