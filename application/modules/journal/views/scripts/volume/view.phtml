@@ -1,27 +1,26 @@
 <?php
-$this->layout()->pageTitle = $this->translate($this->volume->getNameKey());
-$metadatas = $this->volume->getMetadatas();
-$indexedPapers = $this->volume->getIndexedPapers();
 /**
  * @var Episciences_Volume $volume
  */
 $volume = $this->volume;
+$this->layout()->pageTitle = $volume->getNameKey();
+$metadatas = $volume->getMetadatas();
+$indexedPapers = $volume->getIndexedPapers();
+
 ?>
 <div id="volume">
 
 
     <div class="row">
         <div class="col-sm-12">
-            <?php if (Zend_Registry::get('Zend_Translate')->isTranslated($this->volume->getDescriptionKey())) : ?>
 
                 <div id="description" class="col-sm-12">
-                    <p class="text-justify text-primary"><?= $this->translate($this->volume->getDescriptionKey()) ?></p>
+                    <p class="text-justify text-primary"><?= $volume->getDescriptionKey() ?></p>
                 </div>
 
-            <?php endif; ?>
             <?php if ($metadatas) : ?>
                 <div id="metadatas" class="volume-metadata">
-                    <?= $this->partial('volume/volume-metadatas.phtml', ['metadatas' => $metadatas, 'volume' => $this->volume]) ?>
+                    <?= $this->partial('volume/volume-metadatas.phtml', ['metadatas' => $metadatas, 'volume' => $volume]) ?>
 
                 </div>
             <?php else: ?>
@@ -60,7 +59,7 @@ $volume = $this->volume;
 
     <?php if ($indexedPapers) : ?>
 
-        <?= $this->partial('volume/volume-indexed-papers.phtml', ['indexedPapers' => $indexedPapers, 'volume' => $this->volume]) ?>
+        <?= $this->partial('volume/volume-indexed-papers.phtml', ['indexedPapers' => $indexedPapers, 'volume' => $volume]) ?>
     <?php else: ?>
         <div class="row">
             <blockquote style="padding:1em;">
