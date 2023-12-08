@@ -69,8 +69,10 @@ function submitNewOrcidAuthors(){
             arrayMerge.push(tmp);
         });
         let dataT = {
+            "docid": $("div#docid-for-author").text(),
             "paperid": $("div#paperid-for-author").text(),
-            "authors":arrayMerge
+            "authors":arrayMerge,
+            "rightOrcid": $("div#rightOrcid").text(),
         };
         $.ajax({
             url: url,

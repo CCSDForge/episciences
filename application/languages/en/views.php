@@ -38,10 +38,15 @@ return [
     "rédacteurs" => "editors",
 
     "Relecteur" => ["Reviewer", "Reviewers"],
-
+    // DOCUMENT TYPES
     'article' => ['article', 'articles'],
     'Article'=> 'Article',
     'Preprint'=>'Preprint',
+    'ConferenceObject' => 'Conference paper',
+    'Text' => "Preprint",
+    'Dataset' => 'Jeux de données',
+
+
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
     'Télécharger' => 'Download',
     'Taille' => 'Size',
@@ -76,6 +81,7 @@ return [
     "Les modifications n'ont pas abouti : auteur introuvable !" => "The changes were unsuccessful: author not found! ",
     "Les modifications n'ont pas abouti : type incorrect !" => "The changes were unsuccessful: incorrect type!",
     "Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !" => "The changes were unsuccessful: deadline is not given with revision request!",
+    "Vous ne disposez pas des droits nécessaires pour mettre à jours les ORCID" => "You are not authorized to update ORCID",
 
 
     // Navigation

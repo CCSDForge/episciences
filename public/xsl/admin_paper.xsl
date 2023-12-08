@@ -8,27 +8,32 @@
     <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
     <xsl:template match="/record">
-        <!-- Modal -->
-        <form id="post-orcid-author" action="/paper/postorcidauthor" method="POST">
-            <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label" aria-hidden="true">
-                <div class="modal-dialog modal-orcid" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="author-modal-orcid-label-title">  <xsl:value-of
-                                    select="php:function('Ccsd_Tools::translate', 'Ajouter les ORCID aux auteurs')"/></h5>
-                        </div>
-                        <div id="modal-body-authors" class="modal-body">
-                            <input class='hidden' id='modal-called' value='0'></input>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-success" id="valid-new-orcid">Save changes</button>
+        <xsl:variable name="rightOrcid" select="episciences/rightOrcid/text()"/>
+        <xsl:if test="$rightOrcid = '1'">
+            <!-- Modal -->
+            <form id="post-orcid-author" action="/paper/postorcidauthor" method="POST">
+                <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label" aria-hidden="true">
+                    <div class="modal-dialog modal-orcid" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="author-modal-orcid-label-title">  <xsl:value-of
+                                        select="php:function('Ccsd_Tools::translate', 'Ajouter les ORCID aux auteurs')"/></h5>
+                            </div>
+                            <div id="modal-body-authors" class="modal-body">
+                                <input class='hidden' id='modal-called' value='0'></input>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-success" id="valid-new-orcid">Save changes</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </form>
-        <div class="hidden" id="paperid-for-author">  <xsl:value-of select="episciences/paperId"/></div>
+            </form>
+            <div class="hidden" id="paperid-for-author"><xsl:value-of select="episciences/paperId"/></div>
+            <div class="hidden" id="docid-for-author"><xsl:value-of select="episciences/id"/></div>
+        </xsl:if>
+
         <xsl:variable name="client_language" select="php:function('Episciences_Tools::getLocale')"/>
         <xsl:variable name="doc_language" select="metadata/oai_dc:dc/dc:language"/>
         <xsl:variable name="title">
@@ -330,8 +335,6 @@
                                 </a>
                             </xsl:if>
 
-
-
                             <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
                                 <xsl:attribute name="onclick">
                                     <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
@@ -340,14 +343,18 @@
                                 <xsl:value-of
                                         select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
                             </button>
-                            <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
-                                <xsl:attribute name="onclick">
-                                    <xsl:value-of select="'updateOrcidAuthors()'"/>
-                                </xsl:attribute>
-                                <span class="fab fa-orcid" style="margin-right: 5px"></span>
-                                <xsl:value-of
-                                        select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
-                            </button>
+                            <xsl:if test="$rightOrcid = '1'">
+                                <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
+                                    <xsl:attribute name="onclick">
+                                        <xsl:value-of select="'updateOrcidAuthors()'"/>
+                                    </xsl:attribute>
+                                    <span class="fab fa-orcid" style="margin-right: 5px"></span>
+                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
+                                </button>
+                                <div id="rightOrcid" style="display:none;">
+                                    <xsl:value-of select="$rightOrcid"/>
+                                </div>
+                            </xsl:if>
                         </xsl:otherwise>
                     </xsl:choose>
 
