@@ -538,12 +538,44 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $body = $request->getRawBody();
         $data = json_decode($body, true, JSON_UNESCAPED_UNICODE);
-        if (($request->isXmlHttpRequest() && $request->isPost()) && (Episciences_Auth::isAllowedToManageOrcidAuthor($data['rightOrcid']))) {
+
+        if ($request->isXmlHttpRequest() && $request->isPost()) {
+
+            $docId = $data['docid'] ?? null;
+
+            if (!$docId) {
+                trigger_error('postOrcidAuthorAction: EMPTY docID');
+                return;
+            }
+
+            try {
+                $paper = Episciences_PapersManager::get($docId, false, RVID);
+
+                if (!$paper) {
+                    trigger_error('postOrcidAuthorAction: PAPER OBJECT not found');
+                    return;
+                }
+
+                $isAllowedToManageOrcidAuthor = $paper->isAllowedToManageOrcidAuthor(true);
+
+                if (!$isAllowedToManageOrcidAuthor) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Vous ne disposez pas des droits nécessaires pour mettre à jours les ORCID");
+                    return;
+                }
+
+
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+                return;
+            }
+
+
             $dbAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($data['paperid']);
             $arrayAuthorDb = [];
             foreach ($dbAuthor as $value) {
                 $arrayAuthorDb = json_decode($value['authors'], true, JSON_UNESCAPED_UNICODE);
             }
+
             //we can do that because we have the same number of author at the same place
             $arrayAuthorForm = $data['authors'];
             foreach ($arrayAuthorDb as $key => $value) {
@@ -566,9 +598,9 @@ class PaperController extends PaperDefaultController
             $newAuthorInfos->setPaperId($data['paperid']);
             $updateAuthor = Episciences_Paper_AuthorsManager::update($newAuthorInfos);
             if ($updateAuthor > 0) {
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage('Vos modifications ont bien été prises en compte');
             } else {
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Informations déjà prises en compte');
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage('Informations déjà prises en compte');
             }
 
         } else {

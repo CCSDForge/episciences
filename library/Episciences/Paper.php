@@ -1372,7 +1372,7 @@ class Episciences_Paper
                 $this->isEditable() &&
                 !$this->isAccepted() &&
                 !$this->isRevisionRequested() &&
-                !$this->isCopyEditingProcessStarted()&&
+                !$this->isCopyEditingProcessStarted() &&
                 !$this->isReadyToPublish()
             );
     }
@@ -1947,6 +1947,9 @@ class Episciences_Paper
      */
     public function updateXml()
     {
+
+        $isAllowedToListOnlyAssignedPapers = Episciences_Auth::isAllowedToListOnlyAssignedPapers();
+
         $xml = $this->getRecord();
 
         if (!$xml) {
@@ -2007,7 +2010,7 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
         $node->appendChild($dom->createElement('isImported', $this->isImported()));
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
-        $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || Episciences_Auth::isAllowedToListOnlyAssignedPapers() || $this->getUid() === Episciences_Auth::getUid()));
+        $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || $isAllowedToListOnlyAssignedPapers || $this->getUid() === Episciences_Auth::getUid()));
         $node->appendChild($dom->createElement('repoLabel', Episciences_Repositories::getLabel($this->getRepoid())));
         $node->appendChild($dom->createElement('submissionType', ucfirst($this->getTypeWithKey())));
 
@@ -2050,8 +2053,11 @@ class Episciences_Paper
 //            $node->appendChild($dom->createElement('classification', ""));
 //        }
 
-        (Episciences_Auth::isAllowedToManageOrcidAuthor($this->isOwner())) ? $node->appendChild($dom->createElement('rightOrcid', '1'))
+
+        ($this->isAllowedToManageOrcidAuthor(true)) ? $node->appendChild($dom->createElement('rightOrcid', '1'))
             : $node->appendChild($dom->createElement('rightOrcid', "0"));
+
+        $node->appendChild($dom->createElement('isOwner', $this->isOwner()));
 
         // fetch volume data
         if ($this->getVid()) {
@@ -2475,7 +2481,7 @@ class Episciences_Paper
      * @param $xml
      * @return $this
      */
-    public function setMetadata(string $xml) : self
+    public function setMetadata(string $xml): self
     {
         $metadata = [];
 
@@ -3122,25 +3128,25 @@ class Episciences_Paper
         if (!$docId) {
             // INSERT
 
-                $data = [
-                    'PAPERID' => $this->getPaperid(),
-                    'DOI' => $this->getDoi(),
-                    'VERSION' => $this->getVersion(),
-                    'RVID' => $this->getRvid(),
-                    'VID' => $this->getVid(),
-                    'SID' => $this->getSid(),
-                    'UID' => $this->getUid(),
-                    'STATUS' => $this->getStatus(),
-                    'IDENTIFIER' => $this->getIdentifier(),
-                    'REPOID' => $this->getRepoid(),
-                    'RECORD' => $this->getRecord(),
-                    'WHEN' => new Zend_Db_Expr('NOW()'),
-                    'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
-                    'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
-                    'FLAG' => $this->getFlag(),
-                    'PASSWORD' => $this->getPassword(),
-                    'TYPE' => $type
-                ];
+            $data = [
+                'PAPERID' => $this->getPaperid(),
+                'DOI' => $this->getDoi(),
+                'VERSION' => $this->getVersion(),
+                'RVID' => $this->getRvid(),
+                'VID' => $this->getVid(),
+                'SID' => $this->getSid(),
+                'UID' => $this->getUid(),
+                'STATUS' => $this->getStatus(),
+                'IDENTIFIER' => $this->getIdentifier(),
+                'REPOID' => $this->getRepoid(),
+                'RECORD' => $this->getRecord(),
+                'WHEN' => new Zend_Db_Expr('NOW()'),
+                'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
+                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
+                'FLAG' => $this->getFlag(),
+                'PASSWORD' => $this->getPassword(),
+                'TYPE' => $type
+            ];
 
 
             if ($this->getPublication_date()) {
@@ -3164,7 +3170,7 @@ class Episciences_Paper
                         $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
                         Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
 
-                    } catch (\GuzzleHttp\Exception\GuzzleException | JsonException $e) {
+                    } catch (\GuzzleHttp\Exception\GuzzleException|JsonException $e) {
                         trigger_error($e->getMessage());
                     }
                 } else {
@@ -4176,16 +4182,16 @@ class Episciences_Paper
                 case 'publication' :
                 case 'dataset' :
                 case 'software':
-                    if ($unorderedDatasets->getRelationship() !== null){
+                    if ($unorderedDatasets->getRelationship() !== null) {
                         $formatedDatasets[$typeLd][ucfirst($unorderedDatasets->getRelationship())][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
-                    }else{
+                    } else {
                         $formatedDatasets[$typeLd]['Other'][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
                     }
                     break;
                 default :
-                    if ($unorderedDatasets->getRelationship() !== null){
+                    if ($unorderedDatasets->getRelationship() !== null) {
                         $formatedDatasets["publication"][ucfirst($unorderedDatasets->getRelationship())][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
-                    }else{
+                    } else {
                         $formatedDatasets["publication"]['Other'][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
                     }
                     break;
@@ -4625,7 +4631,7 @@ class Episciences_Paper
      * @return $this
      */
 
-    public function setType( array $type = null): \Episciences_Paper
+    public function setType(array $type = null): \Episciences_Paper
     {
         $this->_type = $type ?? [self::TITLE_TYPE => self::DEFAULT_TYPE];
         return $this;
@@ -4651,6 +4657,34 @@ class Episciences_Paper
 
         return $strType;
 
+    }
+
+    /**
+     * @param bool $strict : [true] only if the document has already been assigned (excepted for secretary and owner)
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    public function isAllowedToManageOrcidAuthor(bool $strict = false): bool
+    {
+
+        if ($this->isOwner() || Episciences_Auth::isSecretary()) {
+            return true;
+        }
+
+        if ($strict) {
+            $paper = Episciences_PapersManager::get($this->getLatestVersionId(), false, RVID);
+            return $paper->isEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid());
+
+        }
+
+        return Episciences_Auth::isCopyEditor() || Episciences_Auth::isEditor();
+
+    }
+
+    public function isLatestVersion(): bool
+    {
+        return $this->getDocid() === (int)$this->getLatestVersionId();
     }
 
 }

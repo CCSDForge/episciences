@@ -365,4 +365,28 @@ class Episciences_Auth extends Ccsd_Auth
 
     }
 
+
+    public static function isAllowedFormatOnlyAssignedPapers(): bool
+    {
+
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+
+            return (
+                !self::isSecretary() &&
+                (
+                    self::isCopyEditor()
+                ) &&
+                (
+                    isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) && !empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS])
+                )
+            );
+
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage());
+            return false;
+        }
+
+    }
+
 }
