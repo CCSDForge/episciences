@@ -935,7 +935,7 @@ class Episciences_Submit
         } catch (Ccsd_Error $e) { // customized message : visible to the user
 
             $result['status'] = 0;
-            $parsedError = $e->parseError();
+            $error = $translator ? $translator->translate($e->parseError()) :$e->parseError();
 
             $mailToStr = '<a href="mailto:';
             $mailToStr .= EPISCIENCES_SUPPORT;
@@ -1054,11 +1054,17 @@ class Episciences_Submit
         }
 
         if ($paper->save()) {
+
             $docId = $paper->getDocid();
+
             if (!$canReplace && !$paper->getPaperid()) {
                 $paper->setPaperid($docId);
                 $paper->save();
             }
+
+            /** @var Episciences_User $user */
+            $user = Episciences_Auth::getUser();
+            $user->addRole(Episciences_Acl::ROLE_AUTHOR);
 
             !$canReplace ?
                 $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => Episciences_Paper::STATUS_SUBMITTED]) :
@@ -1084,28 +1090,23 @@ class Episciences_Submit
                 self::datasetsProcessing($paper->getDocid());
             }
 
-            /** @var Episciences_User $user */
-            $user = Episciences_Auth::getUser();
-            $user->addRole(Episciences_Acl::ROLE_AUTHOR);
-
-            if ($isEnrichment) {
-                self::enrichmentProcess($paper, $enrichment);
-            } else {
-
+            if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
                 // insert author dc:creator to json author in the database
                 Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
+            }
 
-                try {
+            self::enrichmentProcess($paper, $enrichment);
 
-                    if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) { // try to enrich with TEI HAL
-                        Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
-                    }
+            try {
 
-                } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                    trigger_error($e->getMessage());
+                if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) { // try to enrich with TEI HAL
+                    Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
                 }
 
+            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+                trigger_error($e->getMessage());
             }
+
 
         } else {
             $message = '<strong>' . $translator->translate("Une erreur s'est produite pendant l'enregistrement de votre article.") . '</strong>';
