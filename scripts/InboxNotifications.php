@@ -71,7 +71,6 @@ class InboxNotifications extends Script
         }
 
 
-
         $count = count($notificationsCollection);
 
 
@@ -292,7 +291,7 @@ class InboxNotifications extends Script
 
             $repoId = $this->getRepoId();
 
-            if (null === $repoId){
+            if (null === $repoId) {
                 $this->displayError('Undefined repository ID');
                 return false;
 
@@ -300,11 +299,9 @@ class InboxNotifications extends Script
         }
 
         $data['repoid'] = $repoId;
-
         $data['uid'] = $this->getUidFromMailString($actor);
 
         $isVerbose = $this->isVerbose();
-
 
         $this->displayInfo('Submit to the journal : ' . $journal->getCode() . PHP_EOL, $isVerbose);
         $this->displayInfo('Actor : ' . $actor . PHP_EOL, $isVerbose);
@@ -315,17 +312,22 @@ class InboxNotifications extends Script
 
             $result = $this->getRecord($data['repoid'], $data['identifier'], $data['version'], $journal->getRvid());
 
+            if (isset($result['record'])) {
+                $data['record'] = $result['record'];
+            }
+
+            if (isset($result[Episciences_Repositories_Common::ENRICHMENT])) {
+                $data[Episciences_Repositories_Common::ENRICHMENT] = $result[Episciences_Repositories_Common::ENRICHMENT];
+            }
+
+
             if (isset($result['error'])) {
 
                 $this->displayError($result['error'] . PHP_EOL);
 
             } elseif ($result['status'] === 1) {
 
-
-                $data['record'] = $result['record'];
-
                 $apply = true;
-
 
                 $this->displaySuccess('Success' . PHP_EOL, $isVerbose);
                 $this->displaySuccess('Ready to submit' . PHP_EOL, $isVerbose);
@@ -337,7 +339,6 @@ class InboxNotifications extends Script
 
                 $newVerErrors = $result['newVerErrors'] ?? null;
 
-
                 if ($newVerErrors && isset($result['newVerErrors']['message'])) {
 
                     $this->displayTrace('Can be replaced...' . PHP_EOL);
@@ -346,10 +347,7 @@ class InboxNotifications extends Script
 
                         $this->displayInfo($result['newVerErrors']['message'], $this->isVerbose());
 
-
                         if ($newVerErrors['canBeReplaced']) {
-
-                            $data['record'] = $result['record'];
 
                             $canBeReplaced = true;
 
@@ -443,7 +441,6 @@ class InboxNotifications extends Script
         $paper = new Episciences_Paper($data);
         $paper->setSubmission_date();
 
-
         if ($caBeReplaced) {
 
             $values['search_doc']['docId'] = $paper->getIdentifier();
@@ -485,6 +482,32 @@ class InboxNotifications extends Script
                 if (!$this->isDebug()) {
 
                     if ($paper->save()) {
+
+                        // enrichment
+
+                        $enrichment = $data[Episciences_Repositories_Common::ENRICHMENT] ?? [];
+
+                        if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
+                            Episciences_Submit::datasetsProcessing($paper->getDocid());
+                        }
+
+                        if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
+                            // insert author dc:creator to json author in the database
+                            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
+                        }
+
+                        Episciences_Submit::enrichmentProcess($paper, $enrichment);
+
+                        try {
+
+                            if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) { // try to enrich with TEI HAL
+                                Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
+                            }
+
+                        } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+                            $this->displayCritical($e->getMessage());
+                        }
+
 
                         $message = 'The article (identifier = ' . $data['identifier'] . ') has been submitted';
 
@@ -539,7 +562,7 @@ class InboxNotifications extends Script
 
         if (!$casUser) {
             $message = 'Notification id = ';
-            $message .= $data[self::NOTIFICATION_ID];
+            $message .= $data[self::NOTIFICATION_ID] ?? 'undefined';
             $message .= ' not processed:';
             $message .= ' CAS UID = ' . $uid . ' not found. Original string was: ' . $data['uid'];
             $this->displayError($message . PHP_EOL);
@@ -805,7 +828,7 @@ class InboxNotifications extends Script
                 }
 
                 if ($value === NOTIFY_TARGET_HAL_LINKED_REPOSITORY) {
-                    return (int) $repository['id'];
+                    return (int)$repository['id'];
                 }
             }
         }

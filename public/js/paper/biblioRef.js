@@ -27,7 +27,15 @@ function visualizeBiblioRefs() {
                         }
                         strBiblioRef += parsedRawRef.raw_reference;
                         if (parsedRawRef.doi !== undefined) {
-                            strBiblioRef += " " + "<a href='https://doi.org/" + parsedRawRef.doi + "' rel='noopener' target='_blank'>" + parsedRawRef.doi + "</a>"
+                            let regexDoi = /^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i;
+                            let found = parsedRawRef.doi.match(regexDoi);
+                            let addUrl;
+                            if (found !== null) {
+                                addUrl = 'https://doi.org/'+found[0];
+                            } else {
+                                addUrl = parsedRawRef.doi;
+                            }
+                            strBiblioRef += " " + "<a href='" + addUrl + "' rel='noopener' target='_blank'>" + parsedRawRef.doi + "</a>"
                         }
                         $("<div>" + strBiblioRef + "</div><br>").appendTo("#biblio-refs-container");
 

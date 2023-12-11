@@ -34,7 +34,7 @@ $logs_with_details = [
 <?php foreach ($this->logs as $log) : ?>
 
     <?php if (in_array($log['ACTION'], $logs_with_details, false)) : ?>
-    <?php $logHref = '/administratepaper/log?id=' . $log['LOGID']; ?>
+        <?php $logHref = '/administratepaper/log?id=' . $log['LOGID']; ?>
         <a class="modal-opener" href="<?= $logHref ?>" data-width="50%" data-hidesubmit="true" title="<?= $this->translate($log['ACTION']) ?>">
     <?php endif; ?>
 
@@ -60,7 +60,7 @@ $logs_with_details = [
             }
 
             $status = isset($detail['status']) && in_array($detail['status'], array_merge(Episciences_Paper::STATUS_CODES, Episciences_Paper::OTHER_STATUS_CODE), false) ?
-                $this->translate(Episciences_Paper::$_statusLabel[$detail['status']])  :
+                $this->translate(Episciences_Paper::$_statusLabel[$detail['status']]) :
                 $this->translate('undefined status');
             $tag = (isset($detail['user']['tag']) && !empty($detail['user']['tag'])) ? (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
             $fullName = $detail['user']['fullname'] ?? 'undefined';
@@ -94,7 +94,7 @@ $logs_with_details = [
                     ?>
 
                     <?= '(V' . $detail['version']['old'] . ' > ' . 'V' . $detail['version']['new'] . ')' ?>
-                    <?= $this->translate(' :')  ?>
+                    <?= $this->translate(' :') ?>
                     <?= $fullName ?>
                     <?php break; ?>
                 <?php
@@ -122,13 +122,13 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER:
                 case  Episciences_Paper_Logger::CODE_COI_REVERTED:
-                ?>
+                    ?>
                     <?= $this->translate(' :') ?>
                     <?= $fullName ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT: ?>
-                    <?php if (array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $detail) && $detail[Episciences_Reviewer::STATUS_UNINVITED] === Episciences_Reviewer::STATUS_UNINVITED ): ?>
+                    <?php if (array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $detail) && $detail[Episciences_Reviewer::STATUS_UNINVITED] === Episciences_Reviewer::STATUS_UNINVITED): ?>
                         <?= '[ ' . $this->translate(Episciences_Reviewer::STATUS_UNINVITED) . ' ]' ?>
                     <?php endif; ?>
                     <?= $this->translate(' :') ?>
@@ -189,7 +189,7 @@ $logs_with_details = [
                     <?= $this->translate(' :') ?>
                     <?= strtoupper($this->translate($detail['conflict']['answer'])) . ' > ' ?>
                     <?= $fullName ?>
-                <?php break; ?>
+                    <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE: ?>
                     <?= $this->translate(' :') ?>
@@ -197,12 +197,16 @@ $logs_with_details = [
                     <?php break; ?>
                 <?php case Episciences_Paper_Logger::CODE_LD_ADDED: ?>
                 <?php case Episciences_Paper_Logger::CODE_LD_REMOVED: ?>
-                    <?= $this->translate('par').' '.$detail['username'] ?>
+                    <?= $this->translate('par') . ' ' . $detail['username'] ?>
                     <?= $this->translate(' :') ?>
-                    <?= $detail['typeLd']. " =>" ?>
+                    <?= $detail['typeLd'] . " =>" ?>
                     <?= $detail['valueLd'] ?>
                     <?php break; ?>
-
+                <?php case Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW: ?>
+                    <?php if (isset($detail['origin'])) : ?>
+                        <?= ' ' . Episciences_Repositories::getLabel($detail['origin']) ?>
+                    <?php endif; ?>
+                    <?php break; ?>
                 <?php endswitch ?>
 
             <span class="log-detail-icon glyphicon glyphicon-plus"></span>
