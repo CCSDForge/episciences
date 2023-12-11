@@ -59,7 +59,7 @@ function defineApplicationConstants()
 /**
  * define review constants
  */
-function defineJournalConstants(string $rvCode = null) : void
+function defineJournalConstants(string $rvCode = null): void
 {
 
     if (!defined('RVCODE')) {
@@ -272,6 +272,12 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('OPENCITATIONS_APIURL', '');
         define('OPENCITATIONS_TOKEN', '');
         define('CROSSREF_PLUS_API_TOKEN', '');
-
+        define('DOI_AGENCY', '');
+        define('DOI_TESTAPI', '');
+        define('DOI_API', '');
+        define('DOI_LOGIN', '');
+        define('DOI_PASSWORD', '');
+        define('DOI_TESTAPI_QUERY', '');
+        define('DOI_API_QUERY', '');
     }
 }
