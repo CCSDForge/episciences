@@ -128,6 +128,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY = 'paper_submission_other_recipient_copy';
     public const TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION = 'paper_accepted_ask_authors_final_version';
     public const TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION = 'paper_formatted_by_journal_waiting_author_validation';
+    public const TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY = 'inbox_paper_submission_author_copy';
 
     // available in all templates
     public const COMMON_TAGS = [
@@ -1526,7 +1527,8 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY => [self::DESCRIPTION => "notification informant les rédacteurs de la mise à jour de la version de l'article", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY => [self::DESCRIPTION => "notification informant les rédacteurs en chef, administrateurs et secrétaire de rédaction qu'un nouvel article a été proposé", self::RECIPIENT => 'selon le paramétrage de la revue, tous les rédacteurs en chef, administrateurs et secrétaire de rédaction'],
         self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => [self::DESCRIPTION => "demande de modifications mineures de l'article après son acceptation (si et seulement si l'option 'Permettre la demande de revision' est autoirisée par la revue)", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
-        self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => [self::DESCRIPTION => "notification invitant l'auteur à confirmer la version aux normes de la revue (mise en forme par le préparateur de copie)", self::RECIPIENT => self::AUTHOR_RECEP_EXP]
+        self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => [self::DESCRIPTION => "notification invitant l'auteur à confirmer la version aux normes de la revue (mise en forme par le préparateur de copie)", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => "confirmation de la soumission automatique de l'article depuis le serveur de preprint", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
 
     ];
 
@@ -1601,7 +1603,8 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION,
         self::TYPE_USER_LOST_LOGIN,
         self::TYPE_USER_LOST_PASSWORD,
-        self::TYPE_USER_REGISTRATION
+        self::TYPE_USER_REGISTRATION,
+        self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY
     ];
 
     /**
@@ -1911,7 +1914,8 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION => self::reminder_article_blocked_in_accepted_state_editor_version_tags,
             self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => self::paper_accepted_tmp_version_managers_copy_tags,
             self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => self::paper_accepted_ask_authors_final_version_tags,
-            self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => self::paper_formatted_by_journal_waiting_author_validation_tags
+            self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => self::paper_formatted_by_journal_waiting_author_validation_tags,
+            self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => self::paper_submission_author_copy_tags
         ];
 
         if (array_key_exists($key, $map)) {
