@@ -63,19 +63,15 @@ class InboxNotifications extends Script
 
         $notificationsCollection = $reader->getNotifications();
 
-        if (!$notificationsCollection) {
-
-            $this->displayCritical('Failed to retrieve notifications' . PHP_EOL);
-            die();
-
-        }
-
 
         $count = count($notificationsCollection);
 
+        if ($count < 1) {
+            $this->displayInfo("No notifications to process" . PHP_EOL, $this->isVerbose());
+            return;
+        }
 
         $this->displaySuccess("Total number of notifications : " . $count . PHP_EOL, $this->isVerbose());
-
 
         foreach ($notificationsCollection as $index => $notification) {
 
