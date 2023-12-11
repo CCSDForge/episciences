@@ -74,11 +74,12 @@ class Episciences_Notify_Reader
 
 
     /**
+     * @param string $direction
      * @return array
      */
-    public function getNotifications(): array
+    public function getNotifications(string $direction = 'in'): array
     {
-        return $this->coarNotificationManager->getNotifications();
+        return $this->coarNotificationManager->getNotifications($direction);
     }
 
     /**
