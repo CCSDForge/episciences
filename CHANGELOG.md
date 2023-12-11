@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+### added
+- New template: inbox_paper_submission_author_copy: Your submission made via a preprint server - Author copy.
 ### Fixed
 - [414](https://github.com/CCSDForge/episciences/issues/414): volume page does not show volume description anymore
 - [409](https://github.com/CCSDForge/episciences/issues/409): DOI url in bibliographical url

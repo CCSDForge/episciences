@@ -2346,6 +2346,7 @@ return [
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the paper",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the paper",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => 'Confirmation of automatic article submission via a preprint server',
 
     // Mot de passe papier
     "Facultatif" => "Optional",
