@@ -423,6 +423,10 @@ return [
     "paper_submission_updated_author_copy_tpl_name" => "Updated article - Author copy",
     "paper_submission_updated_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Your article has been updated",
 
+    // Confirmation de la soumission automatique d'un article depuis le serveur de preprint – copie destinée à l'auteur
+    "inbox_paper_submission_author_copy_tpl_name" => "Your submission made via a preprint server - Author copy",
+    "inbox_paper_submission_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Your article has been submitted - please complete your submission",
+
     //templates
     "vous aviez envoyé" => "you have sent",
     "a envoyé" => "has sent",

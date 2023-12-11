@@ -1944,12 +1944,12 @@ return [
     'En cours de publication' => 'Being published',
     // datasets
     'Liens publications - données - logiciels' => 'Linked publications - datasets - softwares',
-    'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Softwares',
-    'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Softwares',
+    'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',
+    'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Software',
     'Jeux de données' => 'Datasets',
     'Voir' => 'View',
     'Ajouter un jeu de données' => 'Add dataset',
-    'software_bloc_label' => 'Softwares',
+    'software_bloc_label' => 'Software',
     'Ajouter un logiciel' => 'Add software',
     'Ajouter une publication' => 'Add publication',
     'Erreur, vous essayez peut-être d\'insérer des données liées déjà existantes.' => 'Error, sorry it seems you are trying to insert an already existing linked data',
@@ -2355,6 +2355,7 @@ return [
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the paper",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the paper",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => 'Confirmation of automatic article submission via a preprint server',
 
     // Mot de passe papier
     "Facultatif" => "Optional",

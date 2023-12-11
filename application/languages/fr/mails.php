@@ -47,6 +47,9 @@ return [
     "paper_deleted_reviewer_copy_tpl_name" => "Article supprimé - Copie à destination des relecteurs",
     "paper_deleted_reviewer_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un article a été supprimé",
 
+    // Confirmation de la soumission automatique d'un article depuis le serveur de preprint – copie destinée à l'auteur
+    "inbox_paper_submission_author_copy_tpl_name" => "Votre soumission effectuée via le serveur de preprint - Copie à destination de l'auteur",
+    "inbox_paper_submission_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Votre article a bien été soumis - merci de compléter votre soumission",
 
     // PAPER - ASSIGNATION DE REDACTEURS ***********************************************************************************************************
     "paper_editor_assign_tpl_group" => "Article - assignation de rédacteurs",
