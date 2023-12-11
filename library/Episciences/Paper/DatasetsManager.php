@@ -3,19 +3,19 @@
 class Episciences_Paper_DatasetsManager
 {
 
-    public CONST RELATION_TYPE_SOFTWARE = 'references';
-    public CONST URL_DOI = 'https://doi.org/';
-    public CONST URL_ARXIV = 'https://arxiv.org/abs/';
+    public const RELATION_TYPE_SOFTWARE = 'references';
+    public const URL_DOI = 'https://doi.org/';
+    public const URL_ARXIV = 'https://arxiv.org/abs/';
 
-    public CONST URL_SWH = 'https://archive.softwareheritage.org/';
+    public const URL_SWH = 'https://archive.softwareheritage.org/';
 
-    public CONST URL_HDL = 'https://hdl.handle.net/';
+    public const URL_HDL = 'https://hdl.handle.net/';
 
-    public CONST URL_HAL = 'https://hal.science/';
+    public const URL_HAL = 'https://hal.science/';
 
-    public CONST URL_PMID = 'https://pubmed.ncbi.nlm.nih.gov/';
+    public const URL_PMID = 'https://pubmed.ncbi.nlm.nih.gov/';
 
-    public CONST URL_PMC = 'https://www.ncbi.nlm.nih.gov/pmc/articles/';
+    public const URL_PMC = 'https://www.ncbi.nlm.nih.gov/pmc/articles/';
 
     /**
      * @param int $docId
@@ -129,7 +129,7 @@ class Episciences_Paper_DatasetsManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return ($db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $docId]) > 0);
+        return $db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $docId]) > 0;
 
     }
 
@@ -147,9 +147,8 @@ class Episciences_Paper_DatasetsManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        return (
-            $db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $docId, 'source_id = ?' => $repoId]) > 0
-        );
+        return $db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $docId, 'source_id = ?' => $repoId]) > 0;
+
 
     }
 
@@ -164,7 +163,7 @@ class Episciences_Paper_DatasetsManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return ($db->delete(T_PAPER_DATASETS, ['id = ?' => $id]) > 0);
+        return $db->delete(T_PAPER_DATASETS, ['id = ?' => $id]) > 0;
 
     }
 
