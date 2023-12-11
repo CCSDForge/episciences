@@ -26,7 +26,7 @@ class InboxNotifications extends Script
 
         define('SERVER_PROTOCOL', 'https');
         $this->setRequiredParams([]);
-        $this->setArgs(array_merge($this->getArgs(), ['delNotifs=dpn' => "delete processed inbox notifications"]));
+        $this->setArgs(array_merge($this->getArgs(), ['delNotifs|dpn' => "delete processed inbox notifications"]));
         parent::__construct();
 
         $this->coarNotifyId = $id;
