@@ -15,28 +15,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-### added
-- New template: inbox_paper_submission_author_copy: Your submission made via a preprint server - Author copy.
-### Fixed
-- [414](https://github.com/CCSDForge/episciences/issues/414): volume page does not show volume description anymore
-- [409](https://github.com/CCSDForge/episciences/issues/409): DOI url in bibliographical url
-
-### Added
-- [#388](https://github.com/CCSDForge/episciences/issues/388): new option to require a deadline to be indicated when requesting a revision.
-
 ### Changed
 - [322](https://github.com/CCSDForge/episciences/issues/322)  manage closing mail author
 - changing right to adding orcid when you're owner of paper (before was only for paper's managers)
 - [133](https://github.com/CCSDForge/episciences/issues/133) Add default style for the accepted page
+### added
+- New template: inbox_paper_submission_author_copy: Your submission made via a preprint server - Author copy.
+- [#388](https://github.com/CCSDForge/episciences/issues/388): new option to require a deadline to be indicated when requesting a revision.
+
+
+## v1.0.41.3 - 2023-12-11
+### Fixed
+- [414](https://github.com/CCSDForge/episciences/issues/414): volume page does not show volume description anymore
+- [409](https://github.com/CCSDForge/episciences/issues/409): https://doi.org/ was automatically added to avery PIDs even if they were not DOIs 
 
 ## 1.0.41.2 - 2023-12-05
 ### Fixed
-- [408](https://github.com/CCSDForge/episciences/issues/408)Update metadata" seems to delete existing metadata
+- [408](https://github.com/CCSDForge/episciences/issues/408)"Update metadata" button seems to delete existing metadata
 - Fixed Misleading error message about a document not found
 
 ### Changed
 - The bibliographic references panel is now hidden when empty 
-- Removed cache from OpenCitation API when the response is empty
+- Removed cache from OpenCitation API calls when the response is empty
 
 ## 1.0.41.1 - 2023-11-28
 ### Changed
