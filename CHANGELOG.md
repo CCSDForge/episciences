@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+### Fixed
+- [413](https://github.com/CCSDForge/episciences/issues/413): Crossref export bibliographical references
 
 ## v1.0.41.3 - 2023-12-11
 ### Fixed
