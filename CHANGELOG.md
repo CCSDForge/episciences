@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+### Fixed
+- [413](https://github.com/CCSDForge/episciences/issues/413): Crossref export bibliographical references
 ### Changed
 - [322](https://github.com/CCSDForge/episciences/issues/322)  manage closing mail author
 - changing right to adding orcid when you're owner of paper (before was only for paper's managers)
