@@ -935,7 +935,7 @@ class Episciences_Submit
         } catch (Ccsd_Error $e) { // customized message : visible to the user
 
             $result['status'] = 0;
-            $error = $translator ? $translator->translate($e->parseError()) :$e->parseError();
+            $parsedError = $e->parseError();
 
             $mailToStr = '<a href="mailto:';
             $mailToStr .= EPISCIENCES_SUPPORT;
