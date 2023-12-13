@@ -376,8 +376,8 @@ $timestamp = $dateTime->format('YmdHisv');
                         <?php $iRef = 1 ?>
                         <?php foreach ($bibliographicalRef as $refInfo): ?>
                             <citation key="ref<?=$iRef?>">
-                                <?php if (array_key_exists('doi',$refInfo) && Episciences_tools::isDoi($refInfo['doi'])): ?>
-                                    <doi><?=$refInfo['doi']?></doi>
+                                <?php if (array_key_exists('doi',$refInfo) && Episciences_tools::isDoiWithUrl($refInfo['doi'])): ?>
+                                    <doi><?=str_replace('https://doi.org/','',$refInfo['doi'])?></doi>
                                 <?php elseif (array_key_exists('unstructured_citation',$refInfo)): ?>
                                     <unstructured_citation><?=$refInfo['unstructured_citation']?></unstructured_citation>
                                 <?php endif; ?>
