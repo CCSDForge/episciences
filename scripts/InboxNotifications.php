@@ -692,7 +692,7 @@ class InboxNotifications extends Script
 
         if (!empty($recipients) && !$this->isDebug()) {
 
-            $paperUrl = SERVER_PROTOCOL . '://' . $journal->getCode() . DOMAIN . '/administratepaper/view?id=' . $paper->getDocid();
+            $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/administratepaper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
             $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY;
             $adminTags = $commonTags;

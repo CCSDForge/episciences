@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - [413](https://github.com/CCSDForge/episciences/issues/413): Crossref export bibliographical references
+- Fixed: RT#200861: wrong link in the email template for paper's managers.
 
 ## v1.0.41.3 - 2023-12-11
 ### Fixed
