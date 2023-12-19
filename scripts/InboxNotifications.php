@@ -17,6 +17,7 @@ class InboxNotifications extends Script
     ];
     public const NOTIFICATION_ID = 'notificationId';
     public const INBOX_SERVICE_TYPE = ['Service'];
+    public const OBJECT_IDENTIFIER_URL = 'ietf:cite-as';
     private array $coarNotifyOrigin;
     private array $coarNotifyType;
     private $coarNotifyId;
@@ -134,7 +135,7 @@ class InboxNotifications extends Script
                         $this->displayWarning('notification ' . $notification->getId() . ' ignored: undefined Actor' . PHP_EOL, true);
                     }
 
-                    $object = filter_var($notifyPayloads['object']['id'], FILTER_VALIDATE_URL, FILTER_FLAG_PATH_REQUIRED); // preprint URL
+                    $object = filter_var($notifyPayloads['object'][self::OBJECT_IDENTIFIER_URL], FILTER_VALIDATE_URL, FILTER_FLAG_PATH_REQUIRED); // preprint URL
 
 
                     if (!$object) {
@@ -692,7 +693,7 @@ class InboxNotifications extends Script
 
         if (!empty($recipients) && !$this->isDebug()) {
 
-            $paperUrl = SERVER_PROTOCOL . '://' . $journal->getCode() . DOMAIN . '/administratepaper/view?id=' . $paper->getDocid();
+            $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/administratepaper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
             $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY;
             $adminTags = $commonTags;
