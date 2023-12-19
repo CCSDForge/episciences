@@ -146,12 +146,12 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         if (isset($hookParams['repoId'], $hookParams['record'], $hookParams['conceptIdentifier'])) {
 
-            $pattern = '<dc:relation>doi:';
-            $pattern .= Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '\/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
+            $pattern = '<dc:relation>';
+            $pattern .= Episciences_Paper::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
             $pattern .= $hookParams['conceptIdentifier'];
-            $pattern .= '<\/dc:relation>';
+            $pattern .= '</dc:relation>';
 
-            $found = Episciences_Tools::extractPattern('/' . $pattern . '/', $hookParams['record']);
+            $found = Episciences_Tools::extractPattern('#' . $pattern . '#', $hookParams['record']);
 
             $hasDoiInfoRepresentsAllVersions = !empty($found);
         }
@@ -165,15 +165,15 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $conceptIdentifier = null;
         if (isset($hookParams['repoId'], $hookParams['record'])) {
 
-            $pattern = '<dc:relation>doi:';
-            $pattern .= Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '\/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
+            $pattern = '<dc:relation>';
+            $pattern .= Episciences_Paper::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
             $pattern .= '\d+';
-            $pattern .= '<\/dc:relation>';
+            $pattern .= '</dc:relation>';
 
-            $found = Episciences_Tools::extractPattern('/' . $pattern . '/', $hookParams['record']);
+            $found = Episciences_Tools::extractPattern('#' . $pattern . '#', $hookParams['record']);
 
             if (!empty($found)) {
-                $found[0] = str_replace('<dc:relation>doi:', '', $found[0]);
+                $found[0] = str_replace('<dc:relation>', '', $found[0]);
                 $found[0] = str_replace('</dc:relation>', '', $found[0]);
                 /** array */
                 $found[0] = self::hookCleanIdentifiers(array_merge(['id' => $found[0]], $hookParams));
@@ -409,6 +409,13 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $body['identifier'] = $identifiers;
 
         $license = $metadata['license']['id'] ?? '';
+
+        $conceptId = $data['conceptrecid'] ?? null;
+
+        if ($conceptId) {
+            $conceptIdentifierUrlDoi = sprintf('%s/%s.%s',Episciences_Paper::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID),mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)), $conceptId );
+            $body['relation'] = $conceptIdentifierUrlDoi;
+        }
 
         if ($license !== '') {
             
