@@ -7,6 +7,7 @@
 
 class ExportController extends Zend_Controller_Action
 {
+    const TEXT_XML_CHARSET_UTF_8 = 'text/xml; charset=utf-8';
 
     /**
      * exporte en format BIBTEX
@@ -133,7 +134,9 @@ class ExportController extends Zend_Controller_Action
         $contentTypes = [
             'bibtex' => 'text/plain; charset=utf-8',
             'json' => 'text/json; charset=utf-8',
-            'xml' => 'text/xml; charset=utf-8',
+            'xml' => self::TEXT_XML_CHARSET_UTF_8,
+            'dc' => self::TEXT_XML_CHARSET_UTF_8,
+            'tei' => self::TEXT_XML_CHARSET_UTF_8,
         ];
 
         header('Content-Type: '. $contentTypes[$format]?? $contentTypes['xml']);
