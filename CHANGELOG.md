@@ -14,11 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## v1.0.41.4 - 2023-12-20
 ### Fixed
-- [413](https://github.com/CCSDForge/episciences/issues/413): Crossref export bibliographical references
-- Fixed: RT#200861: wrong link in the email template for paper's managers.
-- RT#200980: Unable to submit a new version from Zenodo.
+- [413](https://github.com/CCSDForge/episciences/issues/413): Crossref Export for bibliographical references when the reference has no DOI
+- Wrong link to the paper's URL in the email template for paper's managers.
+- Unable to submit a new version from Zenodo.
 
 ## v1.0.41.3 - 2023-12-11
 ### Fixed
