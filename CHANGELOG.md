@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wrong link to the paper's URL in the email template for paper's managers.
 - Unable to submit a new version from Zenodo.
 
+### Changed
+- The version number for articles "formatted by the author, awaiting final version" is no longer available: the feature could prevent the author from answering the request for a final version
+
 ## v1.0.41.3 - 2023-12-11
 ### Fixed
 - [414](https://github.com/CCSDForge/episciences/issues/414): volume page does not show volume description anymore
