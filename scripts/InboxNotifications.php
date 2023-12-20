@@ -429,7 +429,10 @@ class InboxNotifications extends Script
      * @param array $data
      * @param bool $caBeReplaced
      * @return bool
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public function addSubmission(Episciences_Review $journal, array $data, bool $caBeReplaced = false): bool
     {
@@ -540,6 +543,12 @@ class InboxNotifications extends Script
         return $isAdded;
     }
 
+    /**
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws JsonException
+     */
     private function addLocalUserInNotExist(array $data, int $rvId): ?Episciences_User
     {
         if ($this->isVerbose()) {
@@ -572,6 +581,7 @@ class InboxNotifications extends Script
         if (!$user->hasRoles($uid, $rvId)) {
 
             if (!$this->isDebug() && $user->save(false, false, $rvId) && $this->isVerbose()) {
+                $user->find($uid);
                 $this->displayInfo('local User added [UID = ' . $uid . PHP_EOL, true);
             }
 
@@ -636,7 +646,7 @@ class InboxNotifications extends Script
 
         $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
-        $aLocale = $author->getLangueid();
+        $aLocale = $author->getLangueid(true);
 
         $commonTags = [
             Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getCode(),

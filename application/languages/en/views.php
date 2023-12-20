@@ -1901,7 +1901,7 @@ return [
     'Paramètres généraux (affichés dans le pied de page)' => 'General settings (displayed in the footer)',
     'en cours' => 'pending',
     'CGU' => 'TOU',
-    "Conditions Générales d'Utilisation" => 'Term Of Use',
+    "Conditions Générales d'Utilisation" => 'Terms Of Use',
     'Paramètres supplémentaires' => 'Additional settings',
     'Visibilité des statistiques' => 'Statistics visibility',
     'Par défaut (cachée)' => 'Default (hidden)',

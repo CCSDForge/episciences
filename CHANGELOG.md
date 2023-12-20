@@ -14,11 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
 ### Fixed
-- [413](https://github.com/CCSDForge/episciences/issues/413): Crossref export bibliographical references
-- Fixed: RT#200861: wrong link in the email template for paper's managers.
-- RT#200980: Unable to submit a new version from Zenodo.
+- Typo [423](https://github.com/CCSDForge/episciences/issues/423)
+- Crossref export of bibliographical references: fixed unescaped HTML, added a log for XML errors
+
+
+## v1.0.41.4 - 2023-12-20
+### Fixed
+- [413](https://github.com/CCSDForge/episciences/issues/413): Crossref Export for bibliographical references when the reference has no DOI
+- Wrong link to the paper's URL in the email template for paper's managers.
+- Unable to submit a new version from Zenodo.
+
+### Changed
+- The version number for articles "formatted by the author, awaiting final version" is no longer available: the feature could prevent the author from answering the request for a final version
 
 ### Changed
 - [322](https://github.com/CCSDForge/episciences/issues/322)  manage closing mail author
