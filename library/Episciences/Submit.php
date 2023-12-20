@@ -755,10 +755,11 @@ class Episciences_Submit
      * @param null | array $latestObsoleteDocId
      * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
      * @param int|null $rvId
+     * @param bool $isEpiNotify
      * @return array
      * @throws Zend_Exception
      */
-    public static function getDoc($repoId, $id, int $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true, int $rvId = RVID): array
+    public static function getDoc($repoId, $id, int $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true, int $rvId = RVID, bool $isEpiNotify = false): array
     {
         $isNewVersionOf = !empty($latestObsoleteDocId);
         $result = [];
@@ -848,7 +849,7 @@ class Episciences_Submit
             if ($result['status'] === 2) {
                 $paper = Episciences_PapersManager::get($docId);
                 if ($manageNewVersionErrors) {
-                    $result['newVerErrors'] = $paper->manageNewVersionErrors(['version' => $version, 'isNewVersionOf' => $isNewVersionOf, 'rvId' => $rvId]);
+                    $result['newVerErrors'] = $paper->manageNewVersionErrors(['version' => $version, 'isNewVersionOf' => $isNewVersionOf, 'rvId' => $rvId, 'isEpiNotify' => $isEpiNotify]);
                 }
             }
 
@@ -1099,7 +1100,7 @@ class Episciences_Submit
 
             try {
 
-                if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) { // try to enrich with TEI HAL
+                if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) { // try to enrich with TEI HAL
                     Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
                 }
 
@@ -1171,7 +1172,7 @@ class Episciences_Submit
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale)
             ];
 
-        Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper);
+        Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper, null, [], false, $paper->getCoAuthors());
 
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));

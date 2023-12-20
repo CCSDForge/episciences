@@ -2054,7 +2054,7 @@ class AdministratepaperController extends PaperDefaultController
                     . '</a>');
 
                 // if HAL, send coar notify message
-                if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
+                if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
                     $notification = new Episciences_Notify_Hal($paper, $journal);
                     try {
                         $idAnnounce = $notification->announceEndorsement();
@@ -4565,7 +4565,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ('' !== $api) {
 
-            if ((int)Episciences_Repositories::HAL_REPO_ID === $repoId) {
+            if (Episciences_Repositories::isFromHalRepository($repoId)) {
 
                 $url = $api . '/search/?indent=true&q=' . $paper->getIdentifier() . '&fl=label_xml';
 

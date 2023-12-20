@@ -100,10 +100,10 @@ class Episciences_Reviewer extends Episciences_User
      * @param int $docId
      * @return mixed|null
      */
-    public function getInvitation($docId)
+    public function getInvitation($docId, $rvId = RVID)
     {
         if (empty($this->_invitations)) {
-            $this->loadInvitations();
+            $this->loadInvitations($rvId);
         }
         return $this->_invitations[$docId] ?? null;
     }

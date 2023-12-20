@@ -63,7 +63,16 @@ $logs_with_details = [
                 $this->translate(Episciences_Paper::$_statusLabel[$detail['status']]) :
                 $this->translate('undefined status');
             $tag = (isset($detail['user']['tag']) && !empty($detail['user']['tag'])) ? (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
-            $fullName = $detail['user']['fullname'] ?? 'undefined';
+
+            $fullName = 'undefined';
+
+            if (isset($detail['user']['fullname'])) {
+                $fullName = $detail['user']['fullname'];
+
+            } elseif (isset($detail['user']['SCREEN_NAME'])) {
+                $fullName = $detail['user']['SCREEN_NAME'];
+            }
+
 
             ?>
             <?php switch ($log['ACTION']): ?>
