@@ -430,6 +430,7 @@ class ExportController extends Zend_Controller_Action
         }
 
         echo '<error>Error loading XML source. Please report to Journal Support.</error>';
+        trigger_error('XML Fail in export: ' . $output, E_USER_WARNING);
         return false;
     }
 
