@@ -1054,6 +1054,8 @@ class Episciences_Submit
             $redirector->gotoUrl('submit');
         }
 
+        $paper->setWhen();
+
         if ($paper->save()) {
 
             $docId = $paper->getDocid();

@@ -850,9 +850,9 @@ class Episciences_Paper
      * @param $when
      * @return $this
      */
-    public function setWhen($when): self
+    public function setWhen($when = null): self
     {
-        $this->_when = $when;
+        $this->_when = $when ?: new Zend_Db_Expr('NOW()');
         return $this;
     }
 
