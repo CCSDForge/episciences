@@ -525,18 +525,18 @@ class Episciences_Submit
             $subform = new Ccsd_Form_SubForm();
             $placeholder = $translator->translate("Saisir l'identifiant du document");
 
+            $isRequiredIdentifier = $defaults['isRequiredIdentifier'] ?? true; // The identifier field will be empty
+
+
             $docIdOptions = [
                 'label' => 'Identifiant du document',
                 'disabled' => true,
-                'required' => true,
+                'required' => $isRequiredIdentifier,
                 'placeholder' => $placeholder,
                 'style' => 'width:33%;',
             ];
 
-            if (
-                !isset($defaults['isRequiredIdentifier']) ||
-                !$defaults['isRequiredIdentifier']
-            ) {
+            if (!$isRequiredIdentifier) {
                 unset($docIdOptions['disabled']);
             }
 
@@ -1742,7 +1742,7 @@ class Episciences_Submit
         $repository = $paper->getRepoid();
         $hasHook = $paper->hasHook;
 
-        $isRequiredIdentifier = !$hasHook || $repository === (int)Episciences_Repositories::ZENODO_REPO_ID;
+        $isRequiredIdentifier = !$hasHook || $repository !== (int)Episciences_Repositories::ZENODO_REPO_ID; //  The identifier field will be empty
 
         if ($repository) {
             $defaults = [
