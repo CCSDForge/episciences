@@ -379,7 +379,7 @@ $timestamp = $dateTime->format('YmdHisv');
                                 <?php if (array_key_exists('doi',$refInfo) && Episciences_tools::isDoiWithUrl($refInfo['doi'])): ?>
                                     <doi><?=str_replace('https://doi.org/','',$refInfo['doi'])?></doi>
                                 <?php elseif (array_key_exists('unstructured_citation',$refInfo)): ?>
-                                    <unstructured_citation><?=$refInfo['unstructured_citation']?></unstructured_citation>
+                                    <unstructured_citation><?= $this->escape($refInfo['unstructured_citation']) ?></unstructured_citation>
                                 <?php endif; ?>
                                 <?php $iRef++;?>
                             </citation>
