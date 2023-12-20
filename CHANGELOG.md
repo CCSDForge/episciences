@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## Unreleased
+### Fixed
+- Typo [423](https://github.com/CCSDForge/episciences/issues/423)
+- Crossref export of bibliographical references: fixed unescaped HTML, added a log for XML errors
+
+
 ## v1.0.41.4 - 2023-12-20
 ### Fixed
 - [413](https://github.com/CCSDForge/episciences/issues/413): Crossref Export for bibliographical references when the reference has no DOI
