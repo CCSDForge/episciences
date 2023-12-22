@@ -46,12 +46,14 @@ $keepOnlySourceUsed = [];
 
                             <?php if (($dataset->getName() === 'arXiv' && $dataset->getMetatext() === null)
                                 || (!Episciences_Tools::isDoiWithUrl($dataset->getLink()) && $dataset->getName() !== 'arXiv')
-                                || (Episciences_Tools::isDoiWithUrl($dataset->getLink()) && (string)$dataset->getSourceId()
-                                    !== Episciences_Repositories::EPI_USER_ID
+                                || (Episciences_Tools::isDoiWithUrl($dataset->getLink())
                                     && (string)$dataset->getSourceId()
-                                    !== Episciences_Repositories::SCHOLEXPLORER_ID)) : ?>
-                                <a href="<?= $dataset->getLink() ?>" target="_blank" rel="noopener"
-                                   id="link-ld"><?= $dataset->getValue() ?></a><sup> <?= $sourceToSup ?></sup><br>
+                                    !== Episciences_Repositories::EPI_USER_ID
+                                    && (string)$dataset->getSourceId() !== Episciences_Repositories::SCHOLEXPLORER_ID)): ?>
+                                <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID && $dataset->getMetatext() === null) : ?>
+                                    <a href="<?= $dataset->getLink() ?>" target="_blank" rel="noopener"
+                                       id="link-ld"><?= $dataset->getValue() ?></a><sup> <?= $sourceToSup ?></sup>
+                                <?php endif; ?>
                             <?php endif; ?>
                             <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
                                 && ($dataset->getName() === 'doi'
@@ -86,6 +88,14 @@ $keepOnlySourceUsed = [];
                                     continue;
                                 }
                             } ?>
+                            <?php if ($dataset->getMetatext() !== null && Episciences_Tools::isHal($dataset->getValue())): ?>
+                                <div style="display: inline;">
+                                    <?php
+                                    $metadataHal = json_decode($dataset->getMetatext(),true);
+                                    echo $metadataHal['citationFull'];
+                                    ?>
+                                </div>
+                            <?php endif; ?>
                             <?php if ((string)$source === Episciences_Repositories::SCHOLEXPLORER_ID && $dataset->getMetatext() !== null) {
                                 $decodedMetatext = json_decode($dataset->getMetatext(), true, 512, JSON_THROW_ON_ERROR);
                                 echo $this->partial('paper/paper_linked_data_metadatas.phtml',
