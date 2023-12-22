@@ -440,7 +440,7 @@ class Episciences_Volume
             $sorted_papers = [];
             $unsorted_papers = [];
 
-            if (is_array($positions) && !empty($positions)) {
+            if (!empty($positions)) {
                 $positions = array_flip($positions);
                 foreach ($papers as $paper) {
                     if (array_key_exists($paper['paperid'], $positions)) {
