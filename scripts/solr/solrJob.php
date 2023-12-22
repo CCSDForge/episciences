@@ -53,6 +53,8 @@ if ($debug) {
 }
 
 
+Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
+
 $cronValue = strtolower($opts->cron);
 
 Ccsd_Log::message('Indexation dans Apache Solr  | Solarium library version: ' . Solarium\Client::VERSION, $debug, '', $indexer->getLogFilename());

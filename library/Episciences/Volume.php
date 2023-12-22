@@ -440,7 +440,7 @@ class Episciences_Volume
             $sorted_papers = [];
             $unsorted_papers = [];
 
-            if (is_array($positions) && !empty($positions)) {
+            if (!empty($positions)) {
                 $positions = array_flip($positions);
                 foreach ($papers as $paper) {
                     if (array_key_exists($paper['paperid'], $positions)) {
@@ -450,7 +450,10 @@ class Episciences_Volume
                     }
                 }
                 ksort($sorted_papers);
-                $sorted_papers += $unsorted_papers;
+
+                // Here we must use array_merge to avoid overwriting keys and thus loosing papers
+                // The arrays contain numeric keys, so the later value will not overwrite the original value, but will be appended.
+                $sorted_papers = array_merge($sorted_papers, $unsorted_papers);
             } else {
                 $sorted_papers = $papers;
             }

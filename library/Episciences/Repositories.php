@@ -56,10 +56,9 @@ class Episciences_Repositories
 
             try {
                 self::$_repositories = array_filter(Zend_Registry::get('metadataSources'), static function ($source) {
-                    return (
-                        $source[self::REPO_LABEL] !== 'Software Heritage' &&
-                        ($source[self::REPO_TYPE] === self::TYPE_DATAVERSE || $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY)
-                    );
+                    return $source[self::REPO_LABEL] !== 'Software Heritage' &&
+                           ($source[self::REPO_TYPE] === self::TYPE_DATAVERSE ||
+                            $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY);
                 });
             } catch (Zend_Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
