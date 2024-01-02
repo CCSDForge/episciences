@@ -15,6 +15,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
     public const BIND_HOSTNAME = ':hostname';
     public const BIND_ORIGIN = ':origin';
     public const BIND_LIMIT = ':limit';
+    public const BIND_DOCID = ':docid';
     public static int $maxSelectFromIndexQueue = 1000;
     public static int $maxDocsInBuffer = 1;
     public static string $coreName;
@@ -122,10 +123,8 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
         return array_column($arrayOfCode, 0);
     }
 
-    /**
-     * @return Zend_Db_Adapter_Pdo_Mysql $_db
-     */
-    public function getDb(): Zend_Db_Adapter_Pdo_Mysql
+
+    public function getDb(): Zend_Db_Adapter_Abstract
     {
         return $this->db;
     }
@@ -418,7 +417,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
      * @return bool
      * @throws Zend_Db_Statement_Exception
      */
-    private function putProcessedRowInError($docId)
+    private function putProcessedRowInError($docId): bool
     {
         $sql = "UPDATE INDEX_QUEUE SET STATUS = 'error', MESSAGE = :message WHERE HOSTNAME = :hostname AND DOCID = :docid AND ORIGIN=:origin AND CORE = :core AND PID = :pid AND STATUS = 'locked' LIMIT 1";
         Ccsd_Log::message('Index queue errors found by ' . $this->getHostname(), $this->isDebugMode(), 'INFO', $this->getLogFilename());
@@ -439,7 +438,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
         }
 
         foreach ($docId as $oneDocid) {
-            $stmt->bindParam(':docid', $oneDocid, PDO::PARAM_INT);
+            $stmt->bindParam(self::BIND_DOCID, $oneDocid, PDO::PARAM_INT);
             $res = $stmt->execute();
             if ($res) {
                 Ccsd_Log::message('DOCID : ' . $oneDocid . ' in index queue now in state : *error* ' . $this->getErrorMessage(), $this->isDebugMode(), '', $this->getLogFilename());
@@ -625,7 +624,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
 
 
         foreach ($arrayOfDocId as $docid) {
-            $stmt->bindParam(':docid', $docid, PDO::PARAM_INT);
+            $stmt->bindParam(self::BIND_DOCID, $docid, PDO::PARAM_INT);
             $stmt->bindParam(self::BIND_PID, $getmypid, PDO::PARAM_INT);
             $stmt->bindParam(self::BIND_HOSTNAME, $hostname, PDO::PARAM_STR);
             $stmt->bindParam(self::BIND_ORIGIN, $origin, PDO::PARAM_STR);
@@ -766,10 +765,6 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
             $doc = $this->getDoc();
         }
 
-        if (!is_array($dataToIndex)) {
-            return $doc;
-        }
-
         foreach ($dataToIndex as $fieldName => $fieldValue) {
 
             if ($indexPrefix !== null) {
@@ -792,7 +787,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
     /**
      * @return Document
      */
-    public function getDoc()
+    public function getDoc(): Document
     {
         return $this->doc;
     }
@@ -801,7 +796,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
      * @param Solarium\QueryType\Update\Query\Document $doc
      * @return Ccsd_Search_Solr_Indexer
      */
-    public function setDoc($doc): Ccsd_Search_Solr_Indexer
+    public function setDoc(Document $doc): Ccsd_Search_Solr_Indexer
     {
         $this->doc = $doc;
         return $this;
