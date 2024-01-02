@@ -147,7 +147,7 @@ class Ccsd_Search_Solr
      */
     public function getEndPointUrl(): string
     {
-        return sprintf("%s://%s:%s/%s/%s/", ENDPOINTS_SEARCH_PROTOCOL, ENDPOINTS_SEARCH_HOST, ENDPOINTS_SEARCH_PORT, $this->getCore(), $this->getHandler());
+        return sprintf("%s://%s:%s%s/%s/%s/", ENDPOINTS_SEARCH_PROTOCOL, ENDPOINTS_SEARCH_HOST, ENDPOINTS_SEARCH_PORT, ENDPOINTS_SEARCH_PATH, $this->getCore(), $this->getHandler());
     }
 
     /**

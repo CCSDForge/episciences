@@ -36,11 +36,10 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     /**
      * @param int $docId
-     * @param Document $ndx
-     * @return bool|mixed
-     * @throws Zend_Db_Statement_Exception
+     * @param Document $docToIndex
+     * @return Document
      */
-    protected function addMetadataToDoc(int $docId, Document $ndx)
+    protected function addMetadataToDoc(int $docId, Document $docToIndex)
     {
 
         // Suffixes (conventions)
@@ -66,61 +65,28 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $volumeTranslations = $review['TRANSLATIONS']['volumes'] ?? null;
 
-        /** @var string[] $authors */
-        $authors = $paperData->getMetadata('authors');
+        $this->indexAuthors($paperData, $docToIndex);
+        $this->indexKeywords($paperData, $docToIndex);
 
-        // Récupération des infos sur les auteurs
-        if (is_array($authors)) {
-            $author_sort = [];
-            foreach ($authors as $author) {
-                $this->indexOneAuthor($author, $ndx);
-                $author_sort[] = $author;
-            }
-            $author_fullname_sort = substr(implode(' ', $author_sort), 0, 50);
-            $ndx->addField('author_fullname_sort', $author_fullname_sort);
-
-        } elseif (is_string($authors)) {
-            $this->indexOneAuthor($authors, $ndx);
-            $author_fullname_sort = self::cleanAuthorName($authors);
-            $ndx->addField('author_fullname_sort', $author_fullname_sort);
-        }
-
-
-        // Récupération des mots-clés
-        $subjects = $paperData->getMetadata('subjects');
-        if (is_array($subjects)) {
-            foreach ($subjects as $keyword) {
-                if (is_array($keyword)) {
-                    foreach ($keyword as $kwd) {
-                        $ndx->addField('keyword_t', $kwd);
-                    }
-                } else {
-                    $ndx->addField('keyword_t', $keyword);
-                }
-            }
-        }
 
         // Date de soumission
-        $submission_date = ($paperData->getSubmission_date()) ? date_format(new DateTime($paperData->getSubmission_date()), "Y-m-d\Th:i:s\Z") : null;
+        $submission_date = ($paperData->getSubmission_date()) ? $this->getFormattedDate($paperData->getSubmission_date()) : null;
 
-        // Date de publication
-        if ($paperData->getPublication_date()) {
-            $publication_date = date_format(new DateTime($paperData->getPublication_date()), "Y-m-d\Th:i:s\Z");
+        $publication_date = $paperData->getPublication_date();
+        if ($publication_date) {
+            $publication_date = $this->getFormattedDate($publication_date);
             $publication_date_array = explode('-', $publication_date);
-            $publication_year = $publication_date_array[0];
-            $publication_month = $publication_date_array[1];
-            $publication_day = explode('T', $publication_date_array[2])[0];
+            [$publication_year, $publication_month, $publication_day] = $publication_date_array;
         } else {
-            $publication_date = null;
+            $publication_year = null;
+            $publication_month = null;
+            $publication_day = null;
         }
+
 
         $review_title = $this->cleanChars($review['NAME']);
 
-        try {
-            $revue_date_creation = date_format(new DateTime($review['CREATION']), "Y-m-d\Th:i:s\Z");
-        } catch (Exception $e) {
-            $revue_date_creation = '1970-01-01T00:00:00Z';
-        }
+        $revue_date_creation = $this->getFormattedDate($review['CREATION']);
         $es_doc_url = 'https://' . $review['CODE'] . '.' . DOMAIN . '/' . $paperData->getPaperid();
         $es_pdf_url = $es_doc_url . '/pdf';
 
@@ -191,74 +157,18 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
                     $fieldValue = trim($fieldValue);
                 }
 
-                $ndx->addField($fieldName, $fieldValue);
+                $docToIndex->addField($fieldName, $fieldValue);
             }
         }
 
-        // master volume data
-        if ($paperData->getVid()) {
-            $volume = $this->getVolume($paperData->getVid());
-            if (!$volume) {
-                Ccsd_Log::message("Update doc " . $docId . " : le volume (" . $paperData->getVid() . ") de cet article n'existe pas/plus.", true, 'WARN');
-            } else {
-                $ndx->addField('volume_id_i', $paperData->getVid());
-                $ndx->addField('volume_status_i', $volume['SETTINGS']['status']);
-                if (is_array($volumeTranslations)) {
-                    foreach ($volumeTranslations as $lang => $translations) {
-                        if (array_key_exists('volume_' . $paperData->getVid() . '_title', $translations)) {
-                            $ndx->addField($lang . '_volume_title_t', $translations['volume_' . $paperData->getVid() . '_title']);
-                        }
-                    }
-                }
-            }
+        $this->indexVolume($paperData, $docId, $docToIndex, $volumeTranslations, $paperVolumesData);
+        $this->indexSection($paperData, $docToIndex, $review['TRANSLATIONS']['sections']);
 
-            // Facette "volume_fs"
-            $ndx->addField('volume_fs', $paperData->getVid() . parent::SOLR_FACET_SEPARATOR . 'volume_' . $paperData->getVid() . '_title');
-        }
-
-        // secondary volumes data
-        if (!empty($paperVolumesData)) {
-            foreach ($paperVolumesData as $vid) {
-                $volume = $this->getVolume($vid);
-                if (!$volume) {
-                    Ccsd_Log::message("Update doc " . $docId . " : le volume secondaire (" . $vid . ") de cet article n'existe pas/plus.", true, 'WARN');
-                    continue;
-                }
-                $ndx->addField('secondary_volume_id_i', $vid);
-                if (is_array($volumeTranslations)) {
-                    foreach ($volumeTranslations as $lang => $translations) {
-                        if (array_key_exists('volume_' . $vid . '_title', $translations)) {
-                            $ndx->addField($lang . '_secondary_volume_title_t', $translations['volume_' . $vid . '_title']);
-                        }
-                    }
-                }
-
-                // Facette "volume_fs"
-                $ndx->addField('secondary_volume_fs', $vid . parent::SOLR_FACET_SEPARATOR . 'volume_' . $vid . '_title');
-            }
-        }
-
-        // section data
-        if ($paperData->getSid()) {
-            $ndx->addField('section_id_i', $paperData->getSid());
-            $sectionTranslations = $review['TRANSLATIONS']['sections'];
-            if (is_array($sectionTranslations)) {
-                foreach ($sectionTranslations as $lang => $translations) {
-                    $ndx->addField($lang . '_section_title_t', $translations['section_' . $paperData->getSid() . '_title']);
-                }
-            }
-
-            // Facette "section_fs"
-            $ndx->addField('section_fs', $paperData->getSid() . parent::SOLR_FACET_SEPARATOR . 'section_' . $paperData->getSid() . '_title');
-        }
-
-        $ndx->addField('indexing_date_tdate', date("Y-m-d\Th:i:s\Z"));
-
-        // Facets ************************
-        $ndx->addField('revue_title_fs', $paperData->getRvid() . parent::SOLR_FACET_SEPARATOR . $review_title);
+        $docToIndex->addField('indexing_date_tdate', date("Y-m-d\Th:i:s\Z"));
+        $docToIndex->addField('revue_title_fs', $paperData->getRvid() . parent::SOLR_FACET_SEPARATOR . $review_title);
 
 
-        return $ndx;
+        return $docToIndex;
     }
 
     protected function getDocidData($docId)
@@ -275,7 +185,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     }
 
-    protected function getPaperVolumesData($docId)
+    protected function getPaperVolumesData($docId): array
     {
         $db = $this->getDb();
         $select = $db->select()->from('VOLUME_PAPER', ['VID'])->where('DOCID = ?', $docId);
@@ -336,6 +246,32 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     }
 
     /**
+     * @param $paperData
+     * @param Document $ndx
+     * @return void
+     */
+    private function indexAuthors($paperData, Document $ndx): void
+    {
+        /** @var string[] $authors */
+        $authors = $paperData->getMetadata('authors');
+
+        if (is_array($authors)) {
+            $author_sort = [];
+            foreach ($authors as $author) {
+                $this->indexOneAuthor($author, $ndx);
+                $author_sort[] = $author;
+            }
+            $author_fullname_sort = substr(implode(' ', $author_sort), 0, 50);
+            $ndx->addField('author_fullname_sort', $author_fullname_sort);
+
+        } elseif (is_string($authors)) {
+            $this->indexOneAuthor($authors, $ndx);
+            $author_fullname_sort = self::cleanAuthorName($authors);
+            $ndx->addField('author_fullname_sort', $author_fullname_sort);
+        }
+    }
+
+    /**
      * @param string $authors
      * @param Document $ndx
      */
@@ -359,6 +295,37 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     }
 
     /**
+     * @param $paperData
+     * @param Document $ndx
+     * @return void
+     */
+    private function indexKeywords($paperData, Document $ndx): void
+    {
+        $subjects = $paperData->getMetadata('subjects');
+        if (is_array($subjects)) {
+            foreach ($subjects as $keyword) {
+                if (is_array($keyword)) {
+                    foreach ($keyword as $kwd) {
+                        $ndx->addField('keyword_t', $kwd);
+                    }
+                } else {
+                    $ndx->addField('keyword_t', $keyword);
+                }
+            }
+        }
+    }
+
+    private function getFormattedDate(string $dateToFormat, string $format = 'Y-m-d\TH:i:s\Z')
+    {
+        try {
+            $revue_date_creation = date_format(new DateTime($dateToFormat), $format);
+        } catch (Exception $e) {
+            $revue_date_creation = '1970-01-01T00:00:00Z';
+        }
+        return $revue_date_creation;
+    }
+
+    /**
      * Nettoie une chaine avant de l'indexer
      *
      * @param string $inputString
@@ -369,6 +336,60 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $outputString = html_entity_decode($inputString);
         $outputString = Ccsd_Tools_String::stripCtrlChars($outputString);
         return trim($outputString);
+    }
+
+    /**
+     * @param $paperData
+     * @param int $docId
+     * @param Document $docToIndex
+     * @param $volumeTranslations
+     * @param array $paperVolumesData
+     * @return array
+     */
+    private function indexVolume($paperData, int $docId, Document $docToIndex, $volumeTranslations, array $paperVolumesData): array
+    {
+        if ($paperData->getVid()) {
+            $volume = $this->getVolume($paperData->getVid());
+            if (!$volume) {
+                Ccsd_Log::message("Update doc " . $docId . " : le volume (" . $paperData->getVid() . ") de cet article n'existe pas/plus.", true, 'WARN');
+            } else {
+                $docToIndex->addField('volume_id_i', $paperData->getVid());
+                $docToIndex->addField('volume_status_i', $volume['SETTINGS']['status']);
+                if (is_array($volumeTranslations)) {
+                    foreach ($volumeTranslations as $lang => $translations) {
+                        if (array_key_exists('volume_' . $paperData->getVid() . '_title', $translations)) {
+                            $docToIndex->addField($lang . '_volume_title_t', $translations['volume_' . $paperData->getVid() . '_title']);
+                        }
+                    }
+                }
+            }
+
+            // Facette "volume_fs"
+            $docToIndex->addField('volume_fs', $paperData->getVid() . parent::SOLR_FACET_SEPARATOR . 'volume_' . $paperData->getVid() . '_title');
+        }
+
+        // secondary volumes data
+        if (!empty($paperVolumesData)) {
+            foreach ($paperVolumesData as $vid) {
+                $volume = $this->getVolume($vid);
+                if (!$volume) {
+                    Ccsd_Log::message("Update doc " . $docId . " : le volume secondaire (" . $vid . ") de cet article n'existe pas/plus.", true, 'WARN');
+                    continue;
+                }
+                $docToIndex->addField('secondary_volume_id_i', $vid);
+                if (is_array($volumeTranslations)) {
+                    foreach ($volumeTranslations as $lang => $translations) {
+                        if (array_key_exists('volume_' . $vid . '_title', $translations)) {
+                            $docToIndex->addField($lang . '_secondary_volume_title_t', $translations['volume_' . $vid . '_title']);
+                        }
+                    }
+                }
+
+                // Facette "volume_fs"
+                $docToIndex->addField('secondary_volume_fs', $vid . parent::SOLR_FACET_SEPARATOR . 'volume_' . $vid . '_title');
+            }
+        }
+        return array($lang, $translations);
     }
 
     private function getVolume($vid)
@@ -451,6 +472,28 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $inputString = Ccsd_Tools_String::stripCtrlChars($inputString, '');
 
         return trim($inputString);
+    }
+
+    /**
+     * @param $paperData
+     * @param Document $docToIndex
+     * @param $sections
+     * @return void
+     */
+    private function indexSection($paperData, Document $docToIndex, $sections): void
+    {
+        if ($paperData->getSid()) {
+            $docToIndex->addField('section_id_i', $paperData->getSid());
+            $sectionTranslations = $sections;
+            if (is_array($sectionTranslations)) {
+                foreach ($sectionTranslations as $lang => $translations) {
+                    $docToIndex->addField($lang . '_section_title_t', $translations['section_' . $paperData->getSid() . '_title']);
+                }
+            }
+
+            // Facette "section_fs"
+            $docToIndex->addField('section_fs', $paperData->getSid() . parent::SOLR_FACET_SEPARATOR . 'section_' . $paperData->getSid() . '_title');
+        }
     }
 
 }

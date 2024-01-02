@@ -282,6 +282,7 @@ function fixUndefinedConstantsForCodeAnalysis()
 
         define('ENDPOINTS_SEARCH_HOST', '');
         define('ENDPOINTS_SEARCH_PORT', '');
+        define('ENDPOINTS_SEARCH_PATH', '');
         define('ENDPOINTS_SEARCH_TIMEOUT', '');
         define('ENDPOINTS_SEARCH_USERNAME', '');
         define('ENDPOINTS_SEARCH_PASSWORD', '');
