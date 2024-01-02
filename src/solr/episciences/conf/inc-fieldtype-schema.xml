@@ -119,5 +119,8 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate" indexed="true" stored="true"/>
 
+    <!-- Support for nested documents -->
+    <fieldType name="_nest_path_" class="solr.NestPathField" />
+    <!-- // Support for nested documents -->
 
 </types>

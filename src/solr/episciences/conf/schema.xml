@@ -14,6 +14,10 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
     <field name="docid" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
     <!-- Identifiant unique de chaque document ======================================================= -->
 
+    <!-- Support for nested documents -->
+    <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
+    <field name="_nest_path_" type="_nest_path_" />
+    <!-- // Support for nested documents -->
 
     <field name="doi_s" type="string" indexed="true" stored="true" multiValued="false" />
 
@@ -97,11 +101,13 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
     <field name="revue_code_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="revue_creation_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="revue_title_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="revue_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+    <field name="revue_title_t" type="text" indexed="true" stored="false" multiValued="false" required="false"/>
     <copyField source="revue_title_s" dest="revue_title_t"/>
     <field name="revue_issn_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
+    <!-- Deprecated
     <field name="revue_title_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+    -->
 
     <!-- Revue =================================================================================================== -->
 
@@ -109,10 +115,8 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
     <!-- Volume principal ======================================================================================== -->
     <field name="volume_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="volume_status_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
-
-    <dynamicField name="*_volume_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
     <field name="volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+    <dynamicField name="*_volume_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
     <copyField source="*_volume_title_t" dest="volume_title_t"/>
 
     <field name="volume_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
@@ -120,10 +124,8 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
 
     <!-- Volumes secondaires ====================================================================================== -->
     <field name="secondary_volume_id_i" type="int" indexed="true" stored="true" multiValued="true" required="false"/>
-
-    <dynamicField name="*_secondary_volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
     <field name="secondary_volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+    <dynamicField name="*_secondary_volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
     <copyField source="*_secondary_volume_title_t" dest="secondary_volume_title_t"/>
 
     <field name="secondary_volume_fs" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
@@ -144,10 +146,12 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
 
 
     <!-- Repository =================================================================================================== -->
+    <!-- Deprecated
     <field name="repo_id_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
     <field name="repo_title_s" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="repo_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
     <copyField source="repo_title_s" dest="repo_title_t"/>
+    -->
     <!-- Repository =================================================================================================== -->
 
 
