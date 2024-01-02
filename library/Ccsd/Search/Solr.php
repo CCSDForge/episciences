@@ -5,46 +5,32 @@ use Solarium\Client;
 class Ccsd_Search_Solr
 {
 
-    const SOLR_ALPHA_SEPARATOR = '_AlphaSep_';
-    const ENDPOINT_MASTER = 'master';
-    const SOLR_FACET_SEPARATOR = '_FacetSep_';
-    const SOLR_JOIN_SEPARATOR = '_JoinSep_';
-    const SOLR_MAX_RETURNED_FACETS_RESULTS = 1000;
-    const ENDPOINT_SEARCH = 'search';
-    const ENDPOINT_INDEXING = 'indexing';
+    public const SOLR_ALPHA_SEPARATOR = '_AlphaSep_';
+    public const SOLR_FACET_SEPARATOR = '_FacetSep_';
+    public const SOLR_JOIN_SEPARATOR = '_JoinSep_';
+    public const SOLR_MAX_RETURNED_FACETS_RESULTS = 1000;
+    public const ENDPOINT_SEARCH = 'search';
+    public const ENDPOINT_INDEXING = 'indexing';
     /**
      * @var Solarium\Client
      */
-    protected static $_solrIndexingClient;
+    protected static ?Client $solrIndexingClient = null;
 
-    /**
-     * @var Solarium\Client
-     */
-    protected static $_solrSearchClient;
 
-    /**
-     * @var array
-     */
-    protected static $_indexingEndpoint;
-    /**
-     * @var array
-     */
-    protected static $_searchEndpoint;
+    protected static ?Client $solrSearchClient = null;
+
+
+    protected static ?array $searchEndpoint = null;
     /**
      * Core Solr
-     * @var string
      */
-    private $_core;
+    private string $core;
     /**
      * Handler de requête pour solr
-     * @var string
      */
-    private $_handler;
+    private string $handler;
 
-    /**
-     * Ccsd_Search_Solr constructor.
-     * @param array $options
-     */
+
     public function __construct(array $options = [])
     {
         $this->setOptions($options);
@@ -54,7 +40,7 @@ class Ccsd_Search_Solr
      * @param array $options
      * @return $this
      */
-    public function setOptions(array $options = [])
+    public function setOptions(array $options = []): Ccsd_Search_Solr
     {
         $this->setCore(ENDPOINTS_CORENAME);
         if (isset($options['handler'])) {
@@ -70,34 +56,34 @@ class Ccsd_Search_Solr
      */
     public static function getSolrSearchClient(): Client
     {
-        if (self::$_solrSearchClient === null) {
-            $client = new Client(self::getSearchEndpoint());
-            $client->getPlugin('postbigrequest');
+        if (self::$solrSearchClient === null) {
+            $adapter = new Solarium\Core\Client\Adapter\Curl();
+            $eventDispatcher = new Symfony\Component\EventDispatcher\EventDispatcher();
+            $client = new Solarium\Client($adapter, $eventDispatcher, self::getSolrEndpoint());
             self::setSolrSearchClient($client);
         }
-        return self::$_solrSearchClient;
+        return self::$solrSearchClient;
     }
 
     /**
      * @param Client $solrSearchClient
      */
-    public static function setSolrSearchClient(Client $solrSearchClient)
+    public static function setSolrSearchClient(Client $solrSearchClient): void
     {
-        self::$_solrSearchClient = $solrSearchClient;
+        self::$solrSearchClient = $solrSearchClient;
     }
 
     /**
      * @return array
      */
-    public static function getSearchEndpoint(): array
+    public static function getSolrEndpoint(): array
     {
-        if (!self::$_searchEndpoint) {
+        if (!self::$searchEndpoint) {
             $endpoint = [
                 'endpoint' => [
                     self::ENDPOINT_SEARCH => [
                         'host' => ENDPOINTS_SEARCH_HOST,
                         'port' => ENDPOINTS_SEARCH_PORT,
-                        'path' => ENDPOINTS_SEARCH_PATH,
                         'timeout' => ENDPOINTS_SEARCH_TIMEOUT,
                         'username' => ENDPOINTS_SEARCH_USERNAME,
                         'password' => ENDPOINTS_SEARCH_PASSWORD,
@@ -107,15 +93,15 @@ class Ccsd_Search_Solr
             ];
             self::setSearchEndpoint($endpoint);
         }
-        return self::$_searchEndpoint;
+        return self::$searchEndpoint;
     }
 
     /**
      * @param array $searchEndpoint
      */
-    public static function setSearchEndpoint(array $searchEndpoint)
+    public static function setSearchEndpoint(array $searchEndpoint): void
     {
-        self::$_searchEndpoint = $searchEndpoint;
+        self::$searchEndpoint = $searchEndpoint;
     }
 
     /**
@@ -123,62 +109,31 @@ class Ccsd_Search_Solr
      */
     public static function getSolrIndexingClient(): Solarium\Client
     {
-        if (self::$_solrIndexingClient === null) {
-            $client = new Solarium\Client(self::getIndexingEndpoint());
+        if (self::$solrIndexingClient === null) {
+            $adapter = new Solarium\Core\Client\Adapter\Curl();
+            $eventDispatcher = new Symfony\Component\EventDispatcher\EventDispatcher();
+            $client = new Solarium\Client($adapter, $eventDispatcher, self::getSolrEndpoint());
             $client->getPlugin('postbigrequest');
             self::setSolrIndexingClient($client);
         }
-        return self::$_solrIndexingClient;
+        return self::$solrIndexingClient;
     }
 
     /**
      * @param Solarium\Client $solrClient
      */
-    public static function setSolrIndexingClient(Solarium\Client $solrClient)
+    public static function setSolrIndexingClient(Solarium\Client $solrClient): void
     {
-        self::$_solrIndexingClient = $solrClient;
+        self::$solrIndexingClient = $solrClient;
     }
 
-    /**
-     * @return array
-     */
-    public static function getIndexingEndpoint(): array
-    {
-
-        if (!self::$_indexingEndpoint) {
-            $endpoint = [
-                'endpoint' => [
-                    self::ENDPOINT_INDEXING => [
-                        'host' => ENDPOINTS_INDEXING_HOST,
-                        'port' => ENDPOINTS_INDEXING_PORT,
-                        'path' => ENDPOINTS_INDEXING_PATH,
-                        'timeout' => ENDPOINTS_INDEXING_TIMEOUT,
-                        'username' => ENDPOINTS_INDEXING_USERNAME,
-                        'password' => ENDPOINTS_INDEXING_PASSWORD,
-                        'core' => ENDPOINTS_CORENAME
-                    ]
-                ]
-            ];
-            self::setIndexingEndpoint($endpoint);
-        }
-
-        return self::$_indexingEndpoint;
-    }
-
-    /**
-     * @param array $indexingEndpoint
-     */
-    public static function setIndexingEndpoint(array $indexingEndpoint)
-    {
-        self::$_indexingEndpoint = $indexingEndpoint;
-    }
 
     public static function facetStringResultAsArray($string)
     {
         return explode(self::SOLR_FACET_SEPARATOR, $string);
     }
 
-    public static function getConstantesFacet()
+    public static function getConstantesFacet(): array
     {
         return [
             self::SOLR_ALPHA_SEPARATOR,
@@ -188,53 +143,47 @@ class Ccsd_Search_Solr
     }
 
     /**
-     * @param string $endpointType
      * @return string
      */
-    public function getEndPointUrl(string $endpointType = self::ENDPOINT_SEARCH): string
+    public function getEndPointUrl(): string
     {
-        if ($endpointType === self::ENDPOINT_INDEXING) {
-            return ENDPOINTS_INDEXING_PROTOCOL . '://' . ENDPOINTS_INDEXING_HOST . ':' . ENDPOINTS_INDEXING_PORT . ENDPOINTS_INDEXING_PATH . '/' . $this->getCore() . '/' . $this->getHandler() . '/';
-        }
-        return ENDPOINTS_SEARCH_PROTOCOL . '://' . ENDPOINTS_SEARCH_HOST . ':' . ENDPOINTS_SEARCH_PORT . ENDPOINTS_SEARCH_PATH . '/' . $this->getCore() . '/' . $this->getHandler() . '/';
-
-
+        return sprintf("%s://%s:%s/%s/%s/", ENDPOINTS_SEARCH_PROTOCOL, ENDPOINTS_SEARCH_HOST, ENDPOINTS_SEARCH_PORT, $this->getCore(), $this->getHandler());
     }
 
     /**
-     *
      * @return string $_core
      */
-    public function getCore()
+    public function getCore(): string
     {
-        return $this->_core;
+        return $this->core;
     }
 
     /**
      * Get solr Core
-     * @param string $_core
+     * @param string $core
+     * @return Ccsd_Search_Solr
      */
-    public function setCore($_core)
+    public function setCore(string $core): Ccsd_Search_Solr
     {
-        $this->_core = $_core;
+        $this->core = $core;
         return $this;
     }
 
     /**
      * @return string
      */
-    public function getHandler()
+    public function getHandler(): string
     {
-        return $this->_handler;
+        return $this->handler;
     }
 
     /**
-     * @param string $_handler
+     * @param string $handler
      * @return $this
      */
-    public function setHandler($_handler = 'select')
+    public function setHandler(string $handler = 'select'): Ccsd_Search_Solr
     {
-        $this->_handler = $_handler;
+        $this->handler = $handler;
         return $this;
     }
 

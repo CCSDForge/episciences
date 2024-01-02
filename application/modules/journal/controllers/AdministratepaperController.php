@@ -2027,7 +2027,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (!$resOfIndexing) {
                     try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                     } catch (Exception $e) {
                         trigger_error($e->getMessage());
                     }
@@ -2688,7 +2688,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (!$resOfIndexing) {
                     try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                     } catch (Exception $e) {
                         trigger_error($e->getMessage());
                     }
@@ -4278,7 +4278,7 @@ class AdministratepaperController extends PaperDefaultController
 
                         if (!$resOfIndexing) {
                             try {
-                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                             } catch (Exception $e) {
                                 trigger_error($e->getMessage(), E_USER_ERROR);
                             }

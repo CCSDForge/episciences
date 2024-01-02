@@ -2,7 +2,7 @@
 ini_set("display_errors", '1');
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_STRICT);
 $timestart = microtime(true);
-define('APPLICATION_PATH', __DIR__ . '/../../application');
+const APPLICATION_PATH = __DIR__ . '/../../application';
 set_include_path(__DIR__ . '/../../library');
 
 
@@ -15,11 +15,11 @@ $localopts = [
     'buffer|b=i' => " Nombre de doc à envoyer en même temps à l'indexeur",
 ];
 
-require_once(__DIR__ . '/../../public/bdd_const.php');
+require_once __DIR__ . '/../../public/bdd_const.php';
 require_once __DIR__ . '/../loadHeader.php';
 
 // Autoloader
-require_once('Zend/Loader/Autoloader.php');
+require_once 'Zend/Loader/Autoloader.php';
 $autoloader = Zend_Loader_Autoloader::getInstance();
 $autoloader->setFallbackAutoloader(true);
 # accepted core: episciences
@@ -57,7 +57,7 @@ Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::
 
 $cronValue = strtolower($opts->cron);
 
-Ccsd_Log::message('Indexation dans Apache Solr  | Solarium library version: ' . Solarium\Client::VERSION, $debug, '', $indexer->getLogFilename());
+Ccsd_Log::message('Indexation dans Apache Solr  | Solarium library version: ' . Solarium\Client::getVersion(), $debug, '', $indexer->getLogFilename());
 
 
 // indexation via CRON

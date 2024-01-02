@@ -151,7 +151,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
 
         // indexation via CRONourrions travailler avec vous sur cette question afin de rendre HAL le plus
         if (($cron == $UPDATE) || ($cron == $DELETE)) {
-            Ccsd_Log::message($indexer::$_coreName . " Données récupérées dans la table d'indexation", $debug, '', $indexer->getLogFilename());
+            Ccsd_Log::message($indexer::$coreName . " Données récupérées dans la table d'indexation", $debug, '', $indexer->getLogFilename());
             $indexer->setOrigin(mb_strtoupper($cron));
             $arrayOfDocId = $indexer->getListOfDocidFromIndexQueue();
             $indexer->processArrayOfDocid($arrayOfDocId);

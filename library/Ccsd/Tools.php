@@ -902,10 +902,10 @@ class Ccsd_Tools
      * @param string $core solr core
      * @param string $handler solr handler
      * @param int $timeout curl request timeout in seconds
-     * @return mixed
+     * @return bool|string
      * @throws Exception
      */
-    public static function solrCurl($queryString, $core = 'hal', $handler = 'select', $timeout = 40)
+    public static function solrCurl(string $queryString, string $core = 'episciences', string $handler = 'select', int $timeout = 40)
     {
         $options = [];
         // Doit être définit dans l'application cliente
@@ -919,11 +919,7 @@ class Ccsd_Tools
         $s = new Ccsd_Search_Solr($options);
 
         $endPointUrl = $s->getEndPointUrl();
-
-
-        if ($handler != 'schema') {
-            $endPointUrl .= '?';
-        }
+        $endPointUrl .= '?';
         $endPointUrl .= $queryString;
 
 
@@ -938,7 +934,7 @@ class Ccsd_Tools
 
         $info = curl_exec($curlHandler);
 
-        if (curl_errno($curlHandler) == CURLE_OK) {
+        if (curl_errno($curlHandler) === CURLE_OK) {
             return $info;
         }
 
@@ -953,34 +949,22 @@ class Ccsd_Tools
     /**
      * @param string $text
      * @return string
-     * Utilisee dans des feuille de style...
      */
     public static function protectLatex($text): string
     {
         /* lfarhi : on ne met pas $,^,~,_ { et } car il y a du latex dans certains champs avec ces caractères
          * */
-        $text_replace = str_replace(
-            ["&", "#", "%"], ["\\&", "\\#", "\\%"], $text);
-        return $text_replace;
+        return str_replace(["&", "#", "%"], ["\\&", "\\#", "\\%"], $text);
     }
+
 
 
     /**
      * @param string $text
+     * @param bool $doGreek
      * @return string
      */
-    public static function protectUnderscore($text): string
-    {
-
-        return str_replace(
-            ["_"], ["\\_"], $text);
-    }
-
-    /**
-     * @param string $text
-     * @return string
-     */
-    public static function htmlToTex($text, $doGreek = true): string
+    public static function htmlToTex(string $text, bool $doGreek = true): string
     {
         // Pour vrais < il faut absoluement un espace apres afin de ne pas etre retire par le strip_tags
         // formule math avec <
@@ -1021,7 +1005,7 @@ class Ccsd_Tools
      * @param string $text
      * @return string
      */
-    public static function decodeLatex($text, $greekRecode = true)
+    public static function decodeLatex(string $text, $greekRecode = true): string
     {
 
         if (!empty($text)) {

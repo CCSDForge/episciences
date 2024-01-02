@@ -1,14 +1,14 @@
 <?php
 
 
-use Solarium\QueryType\Update\Query\Document\Document;
+use Solarium\QueryType\Update\Query\Document;
 
 class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 {
 
-    public static string $_coreName = 'episciences';
+    public static string $coreName = 'episciences';
 
-    public static int $_maxDocsInBuffer = 50;
+    public static int $maxDocsInBuffer = 50;
 
     public static string $dbConfName = 'episciences';
 
@@ -20,16 +20,16 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     public function __construct(array $options)
     {
-        $options['core'] = self::$_coreName;
-        $options['maxDocsInBuffer'] = self::$_maxDocsInBuffer;
+        $options['core'] = self::$coreName;
+        $options['maxDocsInBuffer'] = self::$maxDocsInBuffer;
         parent::__construct($options);
     }
 
     /**
      * Set the select request to get the list of Id to index
-     * @param $select
+     * @param Zend_Db_Select $select
      */
-    protected function selectIds($select)
+    protected function selectIds(Zend_Db_Select $select)
     {
         $select->from('PAPERS', 'DOCID')->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
     }
@@ -116,7 +116,11 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $review_title = $this->cleanChars($review['NAME']);
 
-        $revue_date_creation = date_format(new DateTime($review['CREATION']), "Y-m-d\Th:i:s\Z");
+        try {
+            $revue_date_creation = date_format(new DateTime($review['CREATION']), "Y-m-d\Th:i:s\Z");
+        } catch (Exception $e) {
+            $revue_date_creation = '1970-01-01T00:00:00Z';
+        }
         $es_doc_url = 'https://' . $review['CODE'] . '.' . DOMAIN . '/' . $paperData->getPaperid();
         $es_pdf_url = $es_doc_url . '/pdf';
 
