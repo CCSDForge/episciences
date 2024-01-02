@@ -165,8 +165,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $this->indexSection($paperData, $docToIndex, $review['TRANSLATIONS']['sections']);
 
         $docToIndex->addField('indexing_date_tdate', date("Y-m-d\Th:i:s\Z"));
-        $docToIndex->addField('revue_title_fs', $paperData->getRvid() . parent::SOLR_FACET_SEPARATOR . $review_title);
-
 
         return $docToIndex;
     }
