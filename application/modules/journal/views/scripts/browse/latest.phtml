@@ -5,10 +5,20 @@
 
 
         <?php $locale = Episciences_Tools::getLocale(); ?>
+
         <?php foreach ($this->articles['response']['docs'] as $doc) : ?>
+            <?php $title = $this->escape($doc['paper_title_t'][0]);
+            $doi = 'https://doi.org/' . $this->escape($doc['doi_s']);
+            $volume = $doc[$locale . '_volume_title_t'] ?: $doc['volume_title_t'][0];
+            if (array_key_exists($locale . '_section_title_t', $doc)) {
+                $section = $doc[$locale . '_section_title_t'] ?: '';
+            } else {
+                $section = '';
+            }
+            ?>
             <div class="article-block">
                 <div class="article-title"><a
-                            href="/<?php echo $this->escape($doc['docid']); ?>"><?php echo Episciences_Tools::getTitleFromIndexedPaper($doc, $locale); ?></a>
+                            href="<?= $doi ?>"><?= $title ?></a>
                 </div>
                 <div class="authors"><span class="authors-label"><?php echo $this->translate('Auteurs : ') ?></span>
                     <?php
@@ -47,7 +57,7 @@
                                 $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
-                            if (substr($authorList, -1) !== '.') {
+                            if (mb_substr($authorList, -1) !== '.') {
                                 $authorList .= '.';
                             }
                         }
@@ -57,7 +67,7 @@
                     ?>
                     </i></div>
                 <p style="text-align: justify" class="small"><?php
-                    $abstract = Episciences_Tools::getAbstractFromIndexedPaper($doc, $locale);
+                    $abstract = $this->escape($doc['abstract_t'][0]);
                     if ($abstract) {
                         echo '<br/><blockquote><small>';
                         echo Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
@@ -65,16 +75,15 @@
                     }
                     ?></p>
                 <hr>
-                <?php if (array_key_exists('volume_id_i', $doc)) : ?>
-                    <div class="small">
-                        <?php echo $this->translate('Volume : '); ?>
-                        <?= Episciences_VolumesManager::translateVolumeKey('volume_' . $doc['volume_id_i'] . '_title') ?>
+                <?php if ($volume) : ?>
+                    <div class="volume">
+                        <a href="/volume/view/id/<?php echo $this->escape($doc['volume_id_i']) ?>"><?php echo $volume; ?></a>
                     </div>
                 <?php endif; ?>
-                <?php if (array_key_exists('section_id_i', $doc)) : ?>
-                    <div class="small">
-                        <?php echo $this->translate('Rubrique : '); ?>
-                        <?php echo $this->translate('section_' . $doc['section_id_i'] . '_title'); ?>
+
+                <?php if ($section) : ?>
+                    <div class="section">
+                        <a href="/section/view/id/<?php echo $this->escape($doc['section_id_i']) ?>"><?php echo $section; ?></a>
                     </div>
                 <?php endif; ?>
                 <?php if (array_key_exists('publication_date_tdate', $doc)) : ?>
