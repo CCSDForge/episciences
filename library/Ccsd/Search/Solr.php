@@ -58,6 +58,7 @@ class Ccsd_Search_Solr
     {
         if (self::$solrSearchClient === null) {
             $adapter = new Solarium\Core\Client\Adapter\Curl();
+            $adapter->setTimeout(ENDPOINTS_SEARCH_TIMEOUT);
             $eventDispatcher = new Symfony\Component\EventDispatcher\EventDispatcher();
             $client = new Solarium\Client($adapter, $eventDispatcher, self::getSolrEndpoint());
             self::setSolrSearchClient($client);
@@ -111,6 +112,7 @@ class Ccsd_Search_Solr
     {
         if (self::$solrIndexingClient === null) {
             $adapter = new Solarium\Core\Client\Adapter\Curl();
+            $adapter->setTimeout(ENDPOINTS_INDEXING_TIMEOUT);
             $eventDispatcher = new Symfony\Component\EventDispatcher\EventDispatcher();
             $client = new Solarium\Client($adapter, $eventDispatcher, self::getSolrEndpoint());
             $client->getPlugin('postbigrequest');

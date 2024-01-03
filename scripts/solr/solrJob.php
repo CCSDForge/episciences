@@ -40,7 +40,7 @@ if (posix_getuid() === 0) {
 }
 
 if ($opts->buffer) {
-    $options ['maxDocsInBuffer'] = (int)$opts->buffer;
+    $options [Ccsd_Search_Solr_Indexer_Core::OPTION_MAX_DOCS_IN_BUFFER] = (int)$opts->buffer;
 }
 
 $indexer = new Ccsd_Search_Solr_Indexer_Episciences($options);

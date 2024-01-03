@@ -16,6 +16,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
     public const BIND_ORIGIN = ':origin';
     public const BIND_LIMIT = ':limit';
     public const BIND_DOCID = ':docid';
+    public const BIND_MESSAGE = ':message';
     public static int $maxSelectFromIndexQueue = 1000;
     public static int $maxDocsInBuffer = 1;
     public static string $coreName;
@@ -42,8 +43,8 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
     {
         if (!empty($options)) {
             $this->setOptions($options);
-            if (isset($options ['maxDocsInBuffer'])) {
-                static::$maxDocsInBuffer = (int)$options ['maxDocsInBuffer'];
+            if (isset($options [Ccsd_Search_Solr_Indexer_Core::OPTION_MAX_DOCS_IN_BUFFER])) {
+                static::$maxDocsInBuffer = (int)$options [Ccsd_Search_Solr_Indexer_Core::OPTION_MAX_DOCS_IN_BUFFER];
             }
             $this->setConfig();
             parent::__construct($options);
@@ -429,7 +430,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
         $message = $this->getErrorMessage();
         $stmt->bindParam(self::BIND_PID, $pid, PDO::PARAM_INT);
         $stmt->bindParam(self::BIND_HOSTNAME, $hostname, PDO::PARAM_STR);
-        $stmt->bindParam(':message', $message, PDO::PARAM_STR);
+        $stmt->bindParam(self::BIND_MESSAGE, $message, PDO::PARAM_STR);
         $stmt->bindParam(self::BIND_ORIGIN, $origin, PDO::PARAM_STR);
         $stmt->bindParam(self::BIND_CORE, static::$coreName, PDO::PARAM_STR);
 
@@ -757,9 +758,9 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
      * @param array $dataToIndex
      * @param string|null $indexPrefix
      * @param Solarium\QueryType\Update\Query\Document|null $doc
-     * @return null|Solarium\QueryType\Update\Query\Document
+     * @return Solarium\QueryType\Update\Query\Document
      */
-    protected function addArrayOfMetaToDoc(array $dataToIndex, string $indexPrefix = null, Document $doc = null)
+    protected function addArrayOfMetaToDoc(array $dataToIndex, string $indexPrefix = null, Document $doc = null): Document
     {
         if ($doc === null) {
             $doc = $this->getDoc();
@@ -812,6 +813,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
      */
     private static function addMetaToDoc(string $fieldName, $dataToIndex, Document $doc): Document
     {
+        $fieldName = trim($fieldName);
         if (is_string($dataToIndex)) {
             $dataToIndex = Ccsd_Tools_String::stripCtrlChars($dataToIndex);
             $dataToIndex = trim($dataToIndex);

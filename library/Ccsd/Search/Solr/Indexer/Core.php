@@ -16,7 +16,8 @@ require_once __DIR__ . "/../../../Runable.php";
 class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
 {
 
-    static private $coresList = [];
+    public const OPTION_MAX_DOCS_IN_BUFFER = 'maxDocsInBuffer';
+    private static $coresList = [];
     /** @var string Name of indexer class
      * declared here , be must absolutly be declared in subclass
      * This value is a foo value
@@ -33,7 +34,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
      *
      * @var array
      */
-    protected $indexerOptions =  ['maxDocsInBuffer' => 0];
+    protected $indexerOptions =  [self::OPTION_MAX_DOCS_IN_BUFFER => 0];
     /**
      * Set indexerOptions accordingly with command line arguments
      * @param Zend_Console_Getopt $getopt
@@ -41,7 +42,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
     protected function treadIndexerOptions($getopt) {
         $this->indexerOptions ['env'] = APPLICATION_ENV;
         if ($getopt->buffer) {
-            $this->indexerOptions ['maxDocsInBuffer'] = (int)$getopt->buffer;
+            $this->indexerOptions [self::OPTION_MAX_DOCS_IN_BUFFER] = (int)$getopt->buffer;
         }
     }
 

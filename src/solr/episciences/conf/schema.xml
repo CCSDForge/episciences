@@ -8,223 +8,237 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
 -->
 
 <schema name="episciences" version="1.6">
-  <fields>
+    <fields>
 
-    <!-- Identifiant unique de chaque document ======================================================= -->
-    <field name="docid" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-    <!-- Identifiant unique de chaque document ======================================================= -->
+        <!-- Identifiant unique de chaque document ======================================================= -->
+        <field name="docid" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+        <!-- Identifiant unique de chaque document ======================================================= -->
 
-    <!-- Support for nested documents -->
-    <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
-    <field name="_nest_path_" type="_nest_path_" />
-    <!-- // Support for nested documents -->
+        <!-- Support for nested documents -->
+        <field name="_root_" type="string" indexed="true" stored="false" docValues="false"/>
+        <field name="_nest_path_" type="_nest_path_"/>
+        <!-- // Support for nested documents -->
 
-    <field name="doi_s" type="string" indexed="true" stored="true" multiValued="false" />
+        <field name="doi_s" type="string" indexed="true" stored="true" multiValued="false"/>
 
-    <!-- Permanent id across all document versions ; links to multiple docids -->
-    <field name="paperid" type="int" indexed="true" stored="true" multiValued="false" />
+        <!-- Permanent id across all document versions ; links to multiple docids -->
+        <field name="paperid" type="int" indexed="true" stored="true" multiValued="false"/>
 
-    <!-- Identifiant du document au sein de l'archive dont il est issu ======================================================= -->
-    <field name="identifier_s" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-    <!-- Identifiant du document au sein de l'archive dont il est issu ======================================================= -->
+        <!-- Identifiant du document au sein de l'archive dont il est issu ======================================================= -->
+        <field name="identifier_s" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+        <!-- Identifiant du document au sein de l'archive dont il est issu ======================================================= -->
 
-    <!-- Langue du document ======================================================= -->
-    <field name="language_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Langue du document ======================================================= -->
+        <!-- Langue du document ======================================================= -->
+        <field name="language_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- Langue du document ======================================================= -->
 
-    <!-- Versioning auto de chaque document ======================================================= -->
-    <field name="_version_" type="long" indexed="true" stored="true"/>
-    <!-- Versioning auto de chaque document ======================================================= -->
-
-
-    <!-- Statut du doc (accepté, refusé..) =================================================================================================== -->
-    <field name="status_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Statut du doc (accepté, refusé..) =================================================================================================== -->
+        <!-- Versioning auto de chaque document ======================================================= -->
+        <field name="_version_" type="long" indexed="true" stored="true"/>
+        <!-- Versioning auto de chaque document ======================================================= -->
 
 
-    <!-- Version du document ======================================================= -->
-    <field name="version_td" type="double" indexed="false" stored="true" multiValued="false" required="false"/>
-    <!-- Version du document ======================================================= -->
+        <!-- Statut du doc (accepté, refusé..) =================================================================================================== -->
+        <field name="status_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- Statut du doc (accepté, refusé..) =================================================================================================== -->
 
 
-    <!-- Date de publication ======================================================= -->
-    <field name="publication_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"/>
-    <field name="publication_date_year_fs" type="int" indexed="true" stored="true" multiValued="false"/>
-    <field name="publication_date_month_fs" type="int" indexed="true" stored="true" multiValued="false"/>
-    <field name="publication_date_day_fs" type="int" indexed="true" stored="true" multiValued="false"/>
-    <!-- Date de publication ======================================================= -->
-
-    <!-- URL de la page du document [sur Episciences] =================================================================================================== -->
-    <field name="es_doc_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
-    <!-- URL de la page du document [sur Episciences] =================================================================================================== -->
-
-    <!-- URL du document (fichier PDF) [sur Episciences] =================================================================================================== -->
-    <field name="es_pdf_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
-    <!-- URL de la page du document [sur Episciences] =================================================================================================== -->
+        <!-- Version du document ======================================================= -->
+        <field name="version_td" type="double" indexed="false" stored="true" multiValued="false" required="false"/>
+        <!-- Version du document ======================================================= -->
 
 
-    <!-- URL de la page du document [dans l'archive] =================================================================================================== -->
-    <field name="doc_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
-    <!-- URL de la page du document =================================================================================================== -->
+        <!-- Date de publication ======================================================= -->
+        <field name="publication_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"/>
+        <field name="publication_date_year_fs" type="int" indexed="true" stored="true" multiValued="false"/>
+        <field name="publication_date_month_fs" type="int" indexed="true" stored="true" multiValued="false"/>
+        <field name="publication_date_day_fs" type="int" indexed="true" stored="true" multiValued="false"/>
+        <!-- Date de publication ======================================================= -->
 
-    <!-- URL du document (fichier PDF) [dans l'archive] ================================================================================================= -->
-    <field name="paper_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
-    <!-- URL du document (fichier PDF) ================================================================================================= -->
+        <!-- URL de la page du document [sur Episciences] =================================================================================================== -->
+        <field name="es_doc_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
+        <!-- URL de la page du document [sur Episciences] =================================================================================================== -->
 
-
-    <!-- Titre ================================================================================================= -->
-    <dynamicField name="*_paper_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
-    <field name="paper_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <copyField source="*_paper_title_t" dest="paper_title_t"/>
-
-    <field name="title_autocomplete" type="text_autocomplete" indexed="true" stored="true" multiValued="true" required="false"/>
-    <field name="title_sort" type="alphaOnlySort" indexed="true" stored="false" omitNorms="true" multiValued="false"/>
-    <field name="title_abbreviation_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Titre ================================================================================================= -->
+        <!-- URL du document (fichier PDF) [sur Episciences] =================================================================================================== -->
+        <field name="es_pdf_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
+        <!-- URL de la page du document [sur Episciences] =================================================================================================== -->
 
 
-    <!-- Abstract =================================================================================================== -->
-    <dynamicField name="*_abstract_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
-    <field name="abstract_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <copyField source="*_abstract_t" dest="abstract_t"/>
-    <!-- Abstract =================================================================================================== -->
+        <!-- URL de la page du document [dans l'archive] =================================================================================================== -->
+        <field name="doc_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
+        <!-- URL de la page du document =================================================================================================== -->
 
-    <!-- Keywords =================================================================================================== -->
-    <field name="keyword_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <!-- Keywords =================================================================================================== -->
-
-    <!-- Revue =================================================================================================== -->
-    <field name="revue_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="revue_status_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
-    <field name="revue_code_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="revue_creation_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="revue_title_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="revue_title_t" type="text" indexed="true" stored="false" multiValued="false" required="false"/>
-    <copyField source="revue_title_s" dest="revue_title_t"/>
-    <field name="revue_issn_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-
-    <!-- Deprecated
-    <field name="revue_title_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    -->
-
-    <!-- Revue =================================================================================================== -->
+        <!-- URL du document (fichier PDF) [dans l'archive] ================================================================================================= -->
+        <field name="paper_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
+        <!-- URL du document (fichier PDF) ================================================================================================= -->
 
 
-    <!-- Volume principal ======================================================================================== -->
-    <field name="volume_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="volume_status_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
-    <field name="volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <dynamicField name="*_volume_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <copyField source="*_volume_title_t" dest="volume_title_t"/>
+        <!-- Titre ================================================================================================= -->
+        <dynamicField name="*_paper_title_t" type="text" indexed="true" stored="true" multiValued="false"
+                      required="false"/>
+        <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
+        <field name="paper_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+        <copyField source="*_paper_title_t" dest="paper_title_t"/>
 
-    <field name="volume_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Volume =================================================================================================== -->
-
-    <!-- Volumes secondaires ====================================================================================== -->
-    <field name="secondary_volume_id_i" type="int" indexed="true" stored="true" multiValued="true" required="false"/>
-    <field name="secondary_volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <dynamicField name="*_secondary_volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <copyField source="*_secondary_volume_title_t" dest="secondary_volume_title_t"/>
-
-    <field name="secondary_volume_fs" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
-    <!-- Volume =================================================================================================== -->
+        <field name="title_autocomplete" type="text_autocomplete" indexed="true" stored="true" multiValued="true"
+               required="false"/>
+        <field name="title_sort" type="alphaOnlySort" indexed="true" stored="false" omitNorms="true"
+               multiValued="false"/>
+        <field name="title_abbreviation_t" type="text" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+        <!-- Titre ================================================================================================= -->
 
 
-    <!-- Rubrique =================================================================================================== -->
-    <field name="section_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- Abstract =================================================================================================== -->
+        <dynamicField name="*_abstract_t" type="text" indexed="true" stored="true" multiValued="false"
+                      required="false"/>
+        <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
+        <field name="abstract_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+        <copyField source="*_abstract_t" dest="abstract_t"/>
+        <!-- Abstract =================================================================================================== -->
 
-    <dynamicField name="*_section_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
-    <field name="section_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
-    <copyField source="*_section_title_t" dest="section_title_t"/>
+        <!-- Keywords =================================================================================================== -->
+        <field name="keyword_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+        <!-- Keywords =================================================================================================== -->
 
-    <field name="section_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Rubrique =================================================================================================== -->
-
-
-
-    <!-- Repository =================================================================================================== -->
-    <!-- Deprecated
-    <field name="repo_id_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
-    <field name="repo_title_s" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="repo_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <copyField source="repo_title_s" dest="repo_title_t"/>
-    -->
-    <!-- Repository =================================================================================================== -->
+        <!-- Revue =================================================================================================== -->
+        <field name="revue_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="revue_code_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="revue_title_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="revue_title_t" type="text" indexed="true" stored="false" multiValued="false" required="false"/>
+        <copyField source="revue_title_s" dest="revue_title_t"/>
 
 
-    <!-- Déposant =================================================================================================== -->
-    <field name="submitter_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="submitter_email_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="submitter_firstname_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="submitter_lastname_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- Deprecated
+        <field name="revue_creation_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+          <field name="revue_status_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
+         <field name="revue_issn_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="revue_title_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        -->
 
-    <!-- Submitter fullname pour affichage -->
-    <field name="submitter_fullname_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Submitter fullname pour facette -->
-    <field name="submitter_fullname_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Submitter fullname pour recherche -->
-    <field name="submitter_fullname_t" type="text" indexed="true" stored="false" multiValued="false" required="false"/>
-    <field name="submitter_fullname_autocomplete" type="text_autocomplete" indexed="true" stored="true" multiValued="false" required="false"/>
-
-    <copyField source="submitter_fullname_s" dest="submitter_fullname_t"/>
-    <!-- Déposant =================================================================================================== -->
-
-    <!-- Auteurs =================================================================================================== -->
-    <!-- Author fullname pour affichage -->
-    <field name="author_fullname_s" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
-    <!-- Author fullname pour facette -->
-    <field name="author_fullname_fs" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
-    <!-- Author fullname pour recherche -->
-    <field name="author_fullname_t" type="text" indexed="true" stored="false" multiValued="true" required="false"/>
-    <field name="author_fullname_autocomplete" type="text_autocomplete" indexed="true" stored="true" multiValued="true" required="false"/>
-    <copyField source="author_fullname_s" dest="author_fullname_t"/>
-
-    <!-- Liste des auteurs par ordre d'apparition, en une seule chaine pour le tri par auteur -->
-    <field name="author_fullname_sort" type="alphaOnlySort" indexed="true" stored="true" omitNorms="true" multiValued="false"/>
-    <!-- Auteurs =================================================================================================== -->
+        <!-- Revue =================================================================================================== -->
 
 
-    <!-- Dates =================================================================================================== -->
-    <!-- dates au format 1995-12-31T23:59:59Z -->
-    <field name="submission_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="es_submission_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="es_publication_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- Volume principal ======================================================================================== -->
+        <field name="volume_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="volume_status_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
+        <field name="volume_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+        <dynamicField name="*_volume_title_t" type="text" indexed="true" stored="true" multiValued="false"
+                      required="false"/>
+        <copyField source="*_volume_title_t" dest="volume_title_t"/>
 
-    <!-- Date d'indexation du document -->
-    <field name="indexing_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false" required="true"/>
+        <field name="volume_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- Volume =================================================================================================== -->
 
-    <!-- Découpage pour pivot facet ou field collapsing -->
-    <field name="es_publication_date_year_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="es_publication_date_month_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="es_publication_date_day_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <!-- Dates =================================================================================================== -->
+        <!-- Volumes secondaires ====================================================================================== -->
+        <field name="secondary_volume_id_i" type="int" indexed="true" stored="true" multiValued="true"
+               required="false"/>
+        <field name="secondary_volume_title_t" type="text" indexed="true" stored="true" multiValued="true"
+               required="false"/>
+        <dynamicField name="*_secondary_volume_title_t" type="text" indexed="true" stored="true" multiValued="true"
+                      required="false"/>
+        <copyField source="*_secondary_volume_title_t" dest="secondary_volume_title_t"/>
 
-
-    <!-- catchall fields, containing all other searchable text fields (cf copyField à la fin de ce schema) -->
-    <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
-    <!-- catchall fields, containing all other searchable text fields (cf copyField à la fin de ce schema) -->
-
-
-  </fields>
-
-
-  <!-- field to use to determine and enforce document uniqueness. -->
-  <uniqueKey>docid</uniqueKey>
+        <field name="secondary_volume_fs" type="string" indexed="true" stored="true" multiValued="true"
+               required="false"/>
+        <!-- Volume =================================================================================================== -->
 
 
-  <copyField source="paper_title_t" dest="text"/>
-  <copyField source="*_paper_title_t" dest="text"/>
-  <copyField source="*_abstract_t" dest="text"/>
-  <copyField source="*_volume_title_t" dest="text"/>
-  <copyField source="*_secondary_volume_title_t" dest="text"/>
-  <copyField source="*_section_title_t" dest="text"/>
-  <copyField source="author_fullname_s" dest="text"/>
+        <!-- Rubrique =================================================================================================== -->
+        <field name="section_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+
+        <dynamicField name="*_section_title_t" type="text" indexed="true" stored="true" multiValued="false"
+                      required="false"/>
+        <!-- tous les titres, dans toutes les langues, juste pour la recherche -->
+        <field name="section_title_t" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+        <copyField source="*_section_title_t" dest="section_title_t"/>
+
+        <field name="section_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- Rubrique =================================================================================================== -->
 
 
+        <!-- Repository =================================================================================================== -->
+        <!-- Deprecated
+        <field name="repo_id_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
+        <field name="repo_title_s" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="repo_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+        <copyField source="repo_title_s" dest="repo_title_t"/>
+        -->
+        <!-- Repository =================================================================================================== -->
 
 
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="inc-fieldtype-schema.xml"/>
+        <!-- Déposant =================================================================================================== -->
+        <!-- Deprecated
+        <field name="submitter_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="submitter_email_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="submitter_firstname_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="submitter_lastname_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="submitter_fullname_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="submitter_fullname_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <field name="submitter_fullname_t" type="text" indexed="true" stored="false" multiValued="false" required="false"/>
+        <field name="submitter_fullname_autocomplete" type="text_autocomplete" indexed="true" stored="true" multiValued="false" required="false"/>
+        <copyField source="submitter_fullname_s" dest="submitter_fullname_t"/>
+         -->
+        <!-- Déposant =================================================================================================== -->
+
+        <!-- Auteurs =================================================================================================== -->
+        <field name="author_fullname_s" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
+        <field name="author_fullname_fs" type="string" indexed="true" stored="true" multiValued="true"
+               required="false"/>
+        <field name="author_fullname_t" type="text" indexed="true" stored="false" multiValued="true" required="false"/>
+        <field name="author_fullname_autocomplete" type="text_autocomplete" indexed="true" stored="true"
+               multiValued="true" required="false"/>
+        <copyField source="author_fullname_s" dest="author_fullname_t"/>
+
+        <!-- Liste des auteurs par ordre d'apparition, en une seule chaine pour le tri par auteur -->
+        <field name="author_fullname_sort" type="alphaOnlySort" indexed="true" stored="false" omitNorms="true"
+               multiValued="false"/>
+        <!-- Auteurs =================================================================================================== -->
+
+
+        <!-- Dates =================================================================================================== -->
+        <!-- dates au format 1995-12-31T23:59:59Z -->
+        <field name="submission_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+        <field name="es_submission_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+        <field name="es_publication_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+
+        <!-- Date d'indexation du document -->
+        <field name="indexing_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"
+               required="true"/>
+
+        <!-- Découpage pour pivot facet ou field collapsing -->
+        <field name="es_publication_date_year_fs" type="string" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+        <field name="es_publication_date_month_fs" type="string" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+        <field name="es_publication_date_day_fs" type="string" indexed="true" stored="true" multiValued="false"
+               required="false"/>
+        <!-- Dates =================================================================================================== -->
+
+
+        <!-- catchall fields, containing all other searchable text fields (cf copyField à la fin de ce schema) -->
+        <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
+        <!-- catchall fields, containing all other searchable text fields (cf copyField à la fin de ce schema) -->
+
+
+    </fields>
+
+
+    <!-- field to use to determine and enforce document uniqueness. -->
+    <uniqueKey>docid</uniqueKey>
+
+
+    <copyField source="paper_title_t" dest="text"/>
+    <copyField source="*_paper_title_t" dest="text"/>
+    <copyField source="*_abstract_t" dest="text"/>
+    <copyField source="*_volume_title_t" dest="text"/>
+    <copyField source="*_secondary_volume_title_t" dest="text"/>
+    <copyField source="*_section_title_t" dest="text"/>
+    <copyField source="author_fullname_s" dest="text"/>
+
+
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="inc-fieldtype-schema.xml"/>
 </schema>
