@@ -64,11 +64,15 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
 
 
         <!-- URL de la page du document [dans l'archive] =================================================================================================== -->
+        <!-- Deprecated -->
         <field name="doc_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
+        <!-- //Deprecated -->
         <!-- URL de la page du document =================================================================================================== -->
 
         <!-- URL du document (fichier PDF) [dans l'archive] ================================================================================================= -->
+        <!-- Deprecated -->
         <field name="paper_url_s" type="string" indexed="false" stored="true" multiValued="false" required="false"/>
+        <!-- // Deprecated -->
         <!-- URL du document (fichier PDF) ================================================================================================= -->
 
 
@@ -108,13 +112,13 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
         <copyField source="revue_title_s" dest="revue_title_t"/>
 
 
-        <!-- Deprecated
+        <!-- Deprecated -->
         <field name="revue_creation_date_tdate" type="tdate" indexed="true" stored="true" multiValued="false"
                required="false"/>
           <field name="revue_status_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
          <field name="revue_issn_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
         <field name="revue_title_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-        -->
+        <!-- // Deprecated -->
 
         <!-- Revue =================================================================================================== -->
 
@@ -158,17 +162,17 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
 
 
         <!-- Repository =================================================================================================== -->
-        <!-- Deprecated
+        <!-- Deprecated -->
         <field name="repo_id_i" type="int" indexed="false" stored="true" multiValued="false" required="false"/>
         <field name="repo_title_s" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
         <field name="repo_title_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
         <copyField source="repo_title_s" dest="repo_title_t"/>
-        -->
+        <!-- // Deprecated -->
         <!-- Repository =================================================================================================== -->
 
 
         <!-- Déposant =================================================================================================== -->
-        <!-- Deprecated
+        <!-- Deprecated -->
         <field name="submitter_id_i" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
         <field name="submitter_email_s" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
         <field name="submitter_firstname_t" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
@@ -178,7 +182,7 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
         <field name="submitter_fullname_t" type="text" indexed="true" stored="false" multiValued="false" required="false"/>
         <field name="submitter_fullname_autocomplete" type="text_autocomplete" indexed="true" stored="true" multiValued="false" required="false"/>
         <copyField source="submitter_fullname_s" dest="submitter_fullname_t"/>
-         -->
+        <!-- // Deprecated -->
         <!-- Déposant =================================================================================================== -->
 
         <!-- Auteurs =================================================================================================== -->
