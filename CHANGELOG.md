@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Typo [423](https://github.com/CCSDForge/episciences/issues/423)
 - Crossref export of bibliographical references: fixed unescaped HTML, added a log for XML errors
-
+- Remove domain prefixing SWH for all softwares, add the right domain for softwares (other than SWH), add correct domain for softwares in TEI
 
 ## v1.0.41.4 - 2023-12-20
 ### Fixed

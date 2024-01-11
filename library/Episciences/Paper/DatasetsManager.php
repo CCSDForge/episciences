@@ -40,7 +40,9 @@ class Episciences_Paper_DatasetsManager
                     $value['link'] = self::URL_ARXIV.$value['value'];
                     break;
                 case 'SWHID':
-                    $value['link'] = self::URL_SWH.$value['value'];
+                    $value['link'] = (Episciences_Tools::isSoftwareHeritageId($value['value'])) ?
+                        self::URL_SWH. $value['link'] :
+                        self::getUrlLinkedData($value['value'],Episciences_Tools::checkValueType($value['value']));
                     break;
                 case 'handle':
                     $value['link'] = self::URL_HDL.$value['value'];
@@ -270,10 +272,13 @@ class Episciences_Paper_DatasetsManager
                 $url = self::URL_DOI.$linkedValue;
                 break;
             case 'arXiv':
+            case 'arxiv':
                 $url = self::URL_ARXIV.$linkedValue;
                 break;
             case 'SWHID':
-                $url = self::URL_SWH.$linkedValue;
+                $url = (Episciences_Tools::isSoftwareHeritageId($linkedValue)) ?
+                    self::URL_SWH.$linkedValue :
+                    self::getUrlLinkedData($linkedValue,Episciences_Tools::checkValueType($linkedValue));
                 break;
             case 'handle':
                 $url = self::URL_HDL.$linkedValue;
