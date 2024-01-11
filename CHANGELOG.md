@@ -15,11 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## v1.0.41.5 - 2024-01-11
 ### Fixed
 - Typo [423](https://github.com/CCSDForge/episciences/issues/423)
 - Crossref export of bibliographical references: fixed unescaped HTML, added a log for XML errors
-- Remove domain prefixing SWH for all softwares, add the right domain for softwares (other than SWH), add correct domain for softwares in TEI
+- Remove domain prefixing SWH for all software, add the right domain for software (other than SWH), add correct domain for software in TEI
 
 ## v1.0.41.4 - 2023-12-20
 ### Fixed
