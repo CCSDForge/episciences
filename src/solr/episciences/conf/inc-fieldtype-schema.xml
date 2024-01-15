@@ -1,0 +1,126 @@
+<!--
+/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+CCSD
+Managed with zookeeper
+# bin/solr zk upconfig -n episciences -d /path/to/configset
+reload colection
+FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upload-a-configuration-set
+/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+-->
+
+  <types>
+    <fieldType name="text" class="solr.TextField" positionIncrementGap="100" indexed="true" stored="false">
+      <analyzer>
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory" preserveOriginal="1" generateWordParts="1"
+                generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"
+                splitOnCaseChange="0"/>
+        <filter class="solr.ICUFoldingFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    
+    <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of words on case-change, alpha numeric boundaries, and non-alphanumeric chars, so that a query of "wifi" or "wi fi" could
+	 match a document containing "Wi-Fi". Synonyms and stopwords are customized by external files, and stemming is enabled. Duplicate tokens at the same position (which may result from Stemmed Synonyms or WordDelim
+	 parts) are removed. -->
+    <fieldType name="textStopWords" class="solr.TextField" positionIncrementGap="100" indexed="true" stored="false">
+      <analyzer>
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory" preserveOriginal="1" generateWordParts="1"
+                generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"
+                splitOnCaseChange="0"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
+        <filter class="solr.ICUFoldingFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    <fieldType name="text_autocomplete" class="solr.TextField"
+               positionIncrementGap="100" indexed="true" stored="false"
+               multiValued="true">
+      <analyzer>
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.ICUFoldingFilterFactory"/>
+        <filter class="solr.ShingleFilterFactory"
+                minShingleSize="2"
+                maxShingleSize="4"
+                outputUnigrams="true"
+                outputUnigramsIfNoShingles="true"/>
+      </analyzer>
+    </fieldType>
+    
+    <fieldtype name="identifier" class="solr.TextField" indexed="true" stored="false">
+      <analyzer type="query">
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory"
+                generateWordParts="1"
+                generateNumberParts="1"
+                catenateWords="0"
+                catenateNumbers="0"
+                catenateAll="0"
+                preserveOriginal="1"
+		/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+      <analyzer type="index">
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory"
+                generateWordParts="1"
+                generateNumberParts="1"
+                catenateWords="1"
+                catenateNumbers="1"
+                catenateAll="0"
+                preserveOriginal="1"
+		/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+    
+
+    <!-- The StrField type is not analyzed, but indexed/stored verbatim.
+       It supports doc values but in that case the field needs to be
+       single-valued and either required or have a default value.
+      -->
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" indexed="true" stored="true"/>
+    <fieldType name="facetString" class="solr.StrField" sortMissingLast="true" indexed="false" stored="true"
+               docValues="true"/>
+
+    <!-- Comme text mais sans la tokenisation -->
+
+    <fieldType name="stringCaseInsensitive" class="solr.TextField" sortMissingLast="true" omitNorms="true"
+               indexed="true" stored="false">
+        <analyzer>
+            <charFilter class="solr.HTMLStripCharFilterFactory"/>
+            <tokenizer class="solr.KeywordTokenizerFactory"/>
+            <filter class="solr.TrimFilterFactory"/>
+            <filter class="solr.ICUFoldingFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+
+    <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" indexed="true" stored="true"/>
+    <fieldType name="int" class="solr.IntPointField" docValues="true"/>
+    <fieldType name="long" class="solr.LongPointField" docValues="true"/>
+    <fieldType name="double" class="solr.DoublePointField" docValues="true"/>
+    <fieldType name="tdate" class="solr.DatePointField" docValues="true"/>
+
+
+    <fieldType name="alphaOnlySort" class="solr.ICUCollationField" locale="" strength="primary"
+               sortMissingLast="true" indexed="true" stored="false"/>
+
+    <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
+    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate" indexed="true" stored="true"/>
+
+    <!-- Support for nested documents -->
+    <fieldType name="_nest_path_" class="solr.NestPathField" />
+    <!-- // Support for nested documents -->
+
+</types>

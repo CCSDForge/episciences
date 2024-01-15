@@ -11,8 +11,8 @@ return [
     "Annuler" => "Cancel",
     'Confirmer' => 'Confirm',
     "Voulez-vous supprimer ce fichier ?" => "Do you want to delete this file?",
-    "cliquez ICI" => "click HERE",
-    "Partager"=>"Share",
+    "Partager" => "Share",
+    "Filtrer" => "Filter",
     "Pour répondre à cette demande" => "To answer this request",
     "Voulez-vous déposer une nouvelle version ?" => "Do you want to upload a new version?",
     "Le comité éditorial demande que vous apportiez des modifications à votre article." => "The editorial committee asks that you bring modifications to your article.",
@@ -68,7 +68,7 @@ return [
     "Article bloqué à l'état accepté" => "Article blocked in accepted state",
     'Saisir un nombre de jours' => 'Enter a number of days',
     'un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder for an unanswered review invitation can be send x days after the invitation (defined in Journal Management/Review/Settings)',
-    'un rappel automatique de la date limite pour une relecture peut être envoyé x jours avant cette date (définie dans Gérer la revue/Revue/Paramètres)' =>'an automatic reminder before reviewing deadline can bend x days before the review deadline (defined in Journal Management/Review/Settings)',
+    'un rappel automatique de la date limite pour une relecture peut être envoyé x jours avant cette date (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder before reviewing deadline can bend x days before the review deadline (defined in Journal Management/Review/Settings)',
     'un rappel automatique de la date limite pour une relecture peut être envoyé x jours après cette date (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder after reviewing deadline can bend x days after the review deadline (defined in Journal Management/Review/Settings)',
     'un rappel automatique de la date limite de modification peut être envoyé x jours avant cette date (définie dans la demande de modification)' => 'an automatic reminder before revision deadline can bend x days before the revision deadline (defined in the revision request)',
     'un rappel automatique de la date limite de modification peut être envoyé x jours après cette date (définie dans la demande de modification)' => 'an automatic reminder after revision deadline can bend x days after the revision deadline (defined in the revision request)',
@@ -185,7 +185,7 @@ return [
     "Merci de penser à bien joindre les fichiers pour l'auteur ou ajouter un lien vers un site de téléchargement des fichiers." => "Please remember to attach the required files for the author or add a link to a download site.",
     "OK, continuer sans fichier(s) joint(s)." => "OK, continue without attachment(s).",
 
-    "Cette adresse est inconnue et n'est peut-être pas valide."=> 'This address is unknown by the journal and might not be valid.',
+    "Cette adresse est inconnue et n'est peut-être pas valide." => 'This address is unknown by the journal and might not be valid.',
 
     // edit publication date
     'Veuillez indiquer une date valide !' => 'Please enter a valid date!',

@@ -111,7 +111,7 @@ class Episciences_HTMLPurifier extends HTMLPurifier
         // La chose étrange est le chemin par défaut (vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache) si vous n'en configurez pas un.
         $cacheDirectory = $options['Cache.SerializerPath']; // Pour stocker les définitions sérialisées.
 
-        if (!file_exists($cacheDirectory) && !mkdir($cacheDirectory, 0700, true) && !is_dir($cacheDirectory)) {
+        if (!file_exists($cacheDirectory) && !mkdir($cacheDirectory, 0777, true) && !is_dir($cacheDirectory)) {
             trigger_error(sprintf('HTML purifier directory "%s" can not be created', $cacheDirectory), E_USER_ERROR);
         }
 

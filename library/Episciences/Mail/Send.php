@@ -95,7 +95,7 @@ class Episciences_Mail_Send
         if (!empty($coauthors)) {
             foreach ($coauthors as $coAuthor) {
                 /** @var Episciences_User $coAuthor */
-                $form->addElement('hidden', 'coauthorsInfo-'.$coAuthor->getUid(), [
+                $form->addElement('hidden', 'coauthorsInfo-' . $coAuthor->getUid(), [
                     'id' => 'coAuthorsInfo',
                     'value' => Zend_Json::encode([
                         'uid' => $coAuthor->getUid(),
@@ -105,7 +105,7 @@ class Episciences_Mail_Send
                         'screen_name' => $coAuthor->getScreenName(),
                         'mail' => $coAuthor->getEmail(),
                         'label' => $coAuthor->getFullName() . ' <' . $coAuthor->getEmail() . '>',
-                        'htmlLabel' => "<div>".$coAuthor->getFullName()."</div><div class=\"grey\">".$coAuthor->getEmail()."</div>"
+                        'htmlLabel' => "<div>" . $coAuthor->getFullName() . "</div><div class=\"grey\">" . $coAuthor->getEmail() . "</div>"
                     ])
                 ]);
             }
@@ -205,7 +205,7 @@ class Episciences_Mail_Send
      * @throws Zend_Mail_Exception
      * @throws Exception
      */
-    public static function sendMailFromReview (
+    public static function sendMailFromReview(
         Episciences_User  $recipient,
         string            $templateType,
         array             $tags = [],
@@ -214,7 +214,7 @@ class Episciences_Mail_Send
         array             $attachmentsFiles = [],
         bool              $makeACopy = false,
         array             $CC = [],
-        ?array $journalOptions = null
+        ?array            $journalOptions = null
     ): bool
     {
 
@@ -248,7 +248,13 @@ class Episciences_Mail_Send
                 $mail->addTag($tag, $value);
             }
         }
-        $mail->setFromReview($journalOptions['rvCode']);
+
+        if (isset($journalOptions['sender']) && $journalOptions['sender'] instanceof Episciences_User) {
+            $mail->setFromWithTags($journalOptions['sender']);
+        } else {
+            $mail->setFromReview($journalOptions['rvCode']);
+        }
+
         $mail->setTo($recipient, $journalOptions['rvCode']);
         /** @var Episciences_User $ccRep */
         if (!empty($CC)) {

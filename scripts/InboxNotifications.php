@@ -18,6 +18,10 @@ class InboxNotifications extends Script
     public const NOTIFICATION_ID = 'notificationId';
     public const INBOX_SERVICE_TYPE = ['Service'];
     public const OBJECT_IDENTIFIER_URL = 'ietf:cite-as';
+    public const FIRST_SUBMISSION = 'firstSubmission';
+    public const NEW_VERSION = 'newVersion';
+    public const VERSION_UPDATE = 'versionUpdate';
+    public const PAPER_CONTEXT = 'previousPaperObject';
     private array $coarNotifyOrigin;
     private array $coarNotifyType;
     private $coarNotifyId;
@@ -99,6 +103,10 @@ class InboxNotifications extends Script
     }
 
 
+    /**
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     */
     public function notificationsProcess(COARNotification $notification): bool
     {
 
@@ -128,7 +136,8 @@ class InboxNotifications extends Script
 
                 if ($journal) {
 
-                    $journal->loadSettings();
+                    Zend_Registry::set('reviewSettings', $journal->getSettings());
+
                     $actor = $notifyPayloads['actor']['id'] ?? null; // uid
 
                     if (!$actor) {
@@ -143,7 +152,7 @@ class InboxNotifications extends Script
                     } else {
 
                         try {
-                            $isProcessed = $this->initSubmission($journal, $actor, $object);
+                            $isProcessed = $this->initSubmission($journal, $actor, $object, $notifyPayloads);
                         } catch (Zend_Db_Statement_Exception $e) {
                             $this->displayCritical($e->getMessage() . PHP_EOL);
                         }
@@ -271,16 +280,21 @@ class InboxNotifications extends Script
      * @param Episciences_Review $journal
      * @param string $actor
      * @param string $object
+     * @param array $notifyPayloads
      * @return bool
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    private function initSubmission(Episciences_Review $journal, string $actor, string $object): bool
+    private function initSubmission(Episciences_Review $journal, string $actor, string $object, array $notifyPayloads = []): bool
     {
 
         $apply = false;
-        $canBeReplaced = false;
+        $newVerErrors = null;
         $data = $this->dataFromUrl($object);
         $data['rvid'] = $journal->getRvid();
+        $data['notifyPayloads'] = $notifyPayloads;
 
         $repoId = (int)Episciences_Repositories::HAL_REPO_ID;
 
@@ -307,7 +321,7 @@ class InboxNotifications extends Script
 
         try {
 
-            $result = $this->getRecord($data['repoid'], $data['identifier'], $data['version'], $journal->getRvid());
+            $result = $this->getRecord($data['repoid'], $data['identifier'], $data['version'], $journal->getRvid(), true);
 
             if (isset($result['record'])) {
                 $data['record'] = $result['record'];
@@ -334,7 +348,7 @@ class InboxNotifications extends Script
 
                 $this->displayWarning('Existing article...' . PHP_EOL);
 
-                $newVerErrors = $result['newVerErrors'] ?? null;
+                $newVerErrors = $result['newVerErrors'];
 
                 if ($newVerErrors && isset($result['newVerErrors']['message'])) {
 
@@ -344,10 +358,10 @@ class InboxNotifications extends Script
 
                         $this->displayInfo($result['newVerErrors']['message'], $this->isVerbose());
 
-                        if ($newVerErrors['canBeReplaced']) {
-
-                            $canBeReplaced = true;
-
+                        if (
+                            $newVerErrors['canBeReplaced'] || // replace existing version before the reviewing process begins
+                            isset($newVerErrors[self::PAPER_CONTEXT]) // new version following a request for the final version or modification
+                        ) {
                             $apply = true;
                         }
 
@@ -366,7 +380,7 @@ class InboxNotifications extends Script
 
         }
 
-        return $apply && $this->addSubmission($journal, $data, $canBeReplaced);
+        return $apply && $this->addSubmission($journal, $data, $newVerErrors);
 
     }
 
@@ -412,108 +426,132 @@ class InboxNotifications extends Script
      * @param string $identifier
      * @param int|null $version
      * @param int|null $rvId
+     * @param bool $isEpiNotify : from Episciences - COAR Notification Manager inbox
      * @return array
      * @throws Zend_Exception
      */
-    private function getRecord(int $repoId, string $identifier, int $version = null, int $rvId = null): array
+    private function getRecord(int $repoId, string $identifier, int $version = null, int $rvId = null, bool $isEpiNotify = true): array
     {
         if ($this->isVerbose()) {
             $this->displayInfo('get record...' . PHP_EOL, true);
         }
 
-        return Episciences_Submit::getDoc($repoId, $identifier, $version, null, true, $rvId);
+        return Episciences_Submit::getDoc($repoId, $identifier, $version, null, true, $rvId, $isEpiNotify);
     }
 
     /**
      * @param Episciences_Review $journal
      * @param array $data
-     * @param bool $caBeReplaced
+     * @param array|null $options
      * @return bool
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws JsonException
      */
-    public function addSubmission(Episciences_Review $journal, array $data, bool $caBeReplaced = false): bool
+    public function addSubmission(Episciences_Review $journal, array $data, array $options = null): bool
     {
+        $isDebug = $this->isDebug();
         $isAdded = false;
+        $canBeReplaced = $options['canBeReplaced'] ?? false;
+        $isFirstSubmission = !isset($options[self::PAPER_CONTEXT]);
 
-        $paper = new Episciences_Paper($data);
-        $paper->setSubmission_date();
+        $logDetails = isset($data['notifyPayloads']) ? ['notifyPayloads' => $data['notifyPayloads']] : [];
 
-        if ($caBeReplaced) {
-
-            $values['search_doc']['docId'] = $paper->getIdentifier();
-            $values['search_doc']['version'] = $paper->getVersion();
-            $values['search_doc']['repoId'] = $paper->getRepoid();
-
-            try {
-
-                $uResult = $paper->updatePaper($values);
-
-                if (isset($uResult['message'])) {
-
-                    if ($uResult ['code'] === 0) {
-                        $this->displaySuccess($uResult['message'], $this->isVerbose());
-                    } else {
-
-                        $this->displayWarning($uResult['message'], $this->isVerbose());
-                    }
-
-                }
-
-            } catch (Exception $e) {
-                $this->$this->displayCritical($e->getMessage());
-            }
-
-        }
-
+        $paper = new Episciences_Paper($data); // received submission
+        $paper->setWhen($paper->setSubmission_date());
 
         if ($paper->alreadyExists()) {
-            $message = 'this article (identifier = ';
+
+            $message = 'This article (identifier = ';
             $message .= $data['identifier'];
             $message .= ') has already been submitted';
 
             $this->displayWarning($message . PHP_EOL);
 
-        } elseif ($author = $this->addLocalUserInNotExist($data, $journal->getRvid())) {
-            try {
 
-                if (!$this->isDebug()) {
+        } elseif (null === $this->addLocalUserInNotExist($data)) {
+            return false;
+        }
+
+        /** @var Episciences_Paper $context */
+        $context = !$isFirstSubmission ? $options[self::PAPER_CONTEXT] : null; // previous paper
+
+        if (!$isFirstSubmission && $context->getStatus() !== Episciences_Paper::STATUS_REFUSED) {
+
+
+            if ($canBeReplaced) {
+
+
+                $logDetails = array_merge($logDetails, ['oldVersion' => $context->getVersion(), 'oldStatus' => $context->getStatus()]);
+
+                $values['search_doc']['docId'] = $paper->getIdentifier();
+                $values['search_doc']['version'] = $paper->getVersion();
+                $values['search_doc']['repoId'] = $paper->getRepoid();
+                $values['rvid'] = $journal->getRvid();
+                $values['isEpiNotify'] = true;
+
+                try {
+
+                    $uResult = $context->updatePaper($values);
+
+                    if (isset($uResult['message'])) {
+
+                        if ($uResult ['code'] === 0) {
+                            $this->displaySuccess($uResult['message'], $this->isVerbose());
+                        } else {
+                            $this->displayWarning($uResult['message'], $this->isVerbose());
+
+                            if (!$isDebug) {
+
+                                $context->setVersion($paper->getVersion());
+                                $context->setRecord($paper->getRecord());
+                                $context->setWhen($paper->getWhen());
+                                $context->save();
+                                $this->logAction($context, $logDetails, self::VERSION_UPDATE);
+                                // delete all paper datasets
+                                Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($context->getDocid(), $context->getRepoid());
+                                $this->enrichment($context, $data);
+                                $this->notifyAuthorAndEditorialCommittee($journal, $context, ['canBeReplaced' => $canBeReplaced, 'oldStatus' => $logDetails['oldStatus']]);
+
+                                $isAdded = true;
+
+                            }
+
+                        }
+
+                    }
+
+
+                } catch (Exception $e) {
+                    $this->$this->displayCritical($e->getMessage());
+                }
+
+            } elseif (!$isDebug) {
+
+                try {
+                    $isAdded = $this->saveNewVersion($context, $paper, $journal, $logDetails);
+                } catch (Exception $e) {
+                    $this->$this->displayCritical($e->getMessage());
+                }
+
+                $this->enrichment($paper, $data);
+            }
+
+            $message = 'The article (identifier = ' . $paper->getIdentifier() . ') has been submitted';
+            $this->displaySuccess($message . PHP_EOL, $this->isVerbose());
+
+
+        } else {
+            try {
+                if (!$isDebug) {
 
                     if ($paper->save()) {
 
-                        // enrichment
-
-                        $enrichment = $data[Episciences_Repositories_Common::ENRICHMENT] ?? [];
-
-                        if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
-                            Episciences_Submit::datasetsProcessing($paper->getDocid());
-                        }
-
-                        if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
-                            // insert author dc:creator to json author in the database
-                            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
-                        }
-
-                        Episciences_Submit::enrichmentProcess($paper, $enrichment);
-
-                        try {
-
-                            if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) { // try to enrich with TEI HAL
-                                Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
-                            }
-
-                        } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                            $this->displayCritical($e->getMessage());
-                        }
-
-
                         $message = 'The article (identifier = ' . $data['identifier'] . ') has been submitted';
-
-                        $this->notifyAuthorAndEditorialCommittee($journal, $paper, $author);
-
-                        $this->logAction($paper);
+                        $this->enrichment($paper, $data);
+                        $this->logAction($paper, $logDetails);
+                        $this->notifyAuthorAndEditorialCommittee($journal, $paper);
 
                         $this->displaySuccess($message . PHP_EOL, $this->isVerbose());
 
@@ -549,18 +587,18 @@ class InboxNotifications extends Script
      * @throws Zend_Db_Adapter_Exception
      * @throws JsonException
      */
-    private function addLocalUserInNotExist(array $data, int $rvId): ?Episciences_User
+    private function addLocalUserInNotExist(array $data): ?Episciences_User
     {
         if ($this->isVerbose()) {
             $this->displayInfo('Add local User if not exist' . PHP_EOL, true);
         }
 
-        $uid = $this->getUidFromMailString($data['uid']);
-
+        $rvId = $data['rvid'];
+        $uid = $data['uid'] ?? 0;
         $user = new Episciences_User();
 
         try {
-            $casUser = $user->findWithCAS($uid);
+            $casUser = $user->findWithCAS($data['uid']);
         } catch (Zend_Db_Statement_Exception $e) {
             $this->displayCritical($e->getMessage());
             return null;
@@ -580,8 +618,10 @@ class InboxNotifications extends Script
 
         if (!$user->hasRoles($uid, $rvId)) {
 
-            if (!$this->isDebug() && $user->save(false, false, $rvId) && $this->isVerbose()) {
-                $user->find($uid);
+            if (
+                !$this->isDebug() &&
+                $user->save(false, false, $rvId) && $this->isVerbose()
+            ) {
                 $this->displayInfo('local User added [UID = ' . $uid . PHP_EOL, true);
             }
 
@@ -609,15 +649,27 @@ class InboxNotifications extends Script
     /**
      * @param Episciences_Review $journal
      * @param Episciences_Paper $paper
-     * @param Episciences_User $author
+     * @param array $options
      * @return void
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    private function notifyAuthorAndEditorialCommittee(Episciences_Review $journal, Episciences_Paper $paper, Episciences_User $author): void
+    private function notifyAuthorAndEditorialCommittee(Episciences_Review $journal, Episciences_Paper $paper, array $options = []): void
     {
+        $originalRequest = $options['originalRequest'] ?? null;
+        $canBeReplaced = $options['canBeReplaced'] ?? false;
+        $isPreviousPaperRefused = $canBeReplaced && isset($options['oldStatus']) && $options['oldStatus'] === Episciences_Paper::STATUS_REFUSED;
+        $author = $paper->getSubmitter();
+        $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY;
+
+        $managersTemplateKey = $canBeReplaced ? Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY : Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY; // first submission
+
+        $isFirstSubmission = (
+            $originalRequest === null ||
+            ($originalRequest instanceof Episciences_Comment  && $originalRequest->getDocid() !== $paper->getDocid())
+        );
 
         $rvCode = $journal->getCode();
 
@@ -639,11 +691,6 @@ class InboxNotifications extends Script
 
         $this->displayInfo('Send notifications' . PHP_EOL, $isVerbose);
 
-
-        $recipients = [];
-
-        $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY;
-
         $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
         $aLocale = $author->getLangueid(true);
@@ -662,6 +709,7 @@ class InboxNotifications extends Script
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale)
             ];
 
+
         if (
             !$this->isDebug() &&
             Episciences_Mail_Send::sendMailFromReview(
@@ -672,67 +720,94 @@ class InboxNotifications extends Script
                 null,
                 [],
                 false,
-                [],
+                $paper->getCoAuthors(),
                 $journalOptions
             )
         ) {
             $this->displaySuccess('Author: ' . $author->getScreenName() . ' notified' . PHP_EOL, $isVerbose);
         }
 
+        $recipients = [];
+
+        if (!$isFirstSubmission) {
+            $recipients = $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
+        }
+
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients), $journal->getRvid());
 
-        if ((int)$journal->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) === 1) {
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
-            // conflicts UIDs
-            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]);
+        unset($recipients[$paper->getUid()]);
 
-            foreach ($recipients as $recipient) {
+        $principalRecipient = !empty($recipients) ? $recipients[array_key_first($recipients)] : null;
 
-                $rUid = $recipient->getUid();
+        if (!$isFirstSubmission) { // new version
 
-                if (array_key_exists($rUid, $cUidS)) {
-                    unset($recipients[$rUid]);
-                }
+
+            if ($paper->isEditor($originalRequest->getUid())) {
+
+                $principalRecipient = $paper->getEditor($originalRequest->getUid());
+
+            } else {
+                $principalRecipient = !empty($recipients) ? $recipients[array_key_first($paper->getEditors())] : null;
             }
 
         }
 
+        $cc = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
 
-        unset($recipients[$paper->getUid()]);
 
-
-        if (!empty($recipients) && !$this->isDebug()) {
+        if (!$this->isDebug() && $principalRecipient) {
 
             $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/administratepaper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
-            $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY;
+            if (!$isFirstSubmission) {// new version
+
+                $commentType = $originalRequest->getType();
+
+                if ($commentType === Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION) {
+                    $managersTemplateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMITTED;
+                } elseif ($commentType === Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED) {
+                    $managersTemplateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY;
+                }
+
+            }
+
             $adminTags = $commonTags;
 
             $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl;
 
-            /** @var Episciences_User $recipient */
+            $adminTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] =
+                $paper->getTitle($principalRecipient->getLangueid(), true);
+            $adminTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] =
+                $paper->formatAuthorsMetadata($principalRecipient->getLangueid());
 
-            foreach ($recipients as $recipient) {
 
-                $adminTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] =
-                    $paper->getTitle($recipient->getLangueid(), true);
-                $adminTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] =
-                    $paper->formatAuthorsMetadata($recipient->getLangueid());
+            if ($isPreviousPaperRefused) {
+                $message = 'Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : ';
 
-                Episciences_Mail_Send::sendMailFromReview(
-                    $recipient,
-                    $templateKey,
-                    $adminTags,
-                    $paper,
-                    null,
-                    [],
-                    false,
-                    [],
-                    $journalOptions
-                );
+                $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $options['docId']);;
 
-                $this->displaySuccess($recipient->getScreenName() . ' notified > OK' . PHP_EOL, $isVerbose);
+                $message = $translator->translate($message, $principalRecipient->getLangueid(), true);
+                $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $message;
+
             }
+
+
+            Episciences_Mail_Send::sendMailFromReview(
+                $principalRecipient,
+                $managersTemplateKey,
+                $adminTags,
+                $paper,
+                null,
+                [],
+                false,
+                $cc,
+                $journalOptions
+            );
+
+
+            $this->displaySuccess($principalRecipient->getScreenName() . ' notified > OK' . PHP_EOL, $isVerbose);
 
             $this->displaySuccess('All editorial committee notified > OK' . PHP_EOL, $isVerbose);
 
@@ -742,13 +817,16 @@ class InboxNotifications extends Script
 
     /**
      * @param Episciences_Paper $paper
-     * @param bool $isJustAVersionUpdate
+     * @param array $details
+     * @param string $submissionType
      * @return void
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    private function logAction(Episciences_Paper $paper, bool $isJustAVersionUpdate = false): void
+    private function logAction(Episciences_Paper $paper, array $details = [], string $submissionType = self::FIRST_SUBMISSION): void
     {
+
+        $details = array_merge(['origin' => $paper->getRepoid()], $details);
 
         if ($this->isVerbose()) {
             $this->displayInfo('log action...', true);
@@ -759,34 +837,50 @@ class InboxNotifications extends Script
             $paper->log(
                 Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW,
                 EPISCIENCES_UID,
-                ['origin' => $paper->getRepoid(), 'paper' => $paper->toArray()]
+                $details
             );
 
-            !$isJustAVersionUpdate ?
-                $paper->log(
-                    Episciences_Paper_Logger::CODE_STATUS,
-                    EPISCIENCES_UID,
-                    ['status' => Episciences_Paper::STATUS_SUBMITTED]
-                ) :
+            if ($submissionType === self::VERSION_UPDATE) {
                 $paper->log(
                     Episciences_Paper_Logger::CODE_PAPER_UPDATED,
                     EPISCIENCES_UID,
                     [
                         'user' => (new Episciences_User())->find(EPISCIENCES_UID),
                         'version' => [
-                            'old' => Episciences_PapersManager::get($paper->getLatestVersionId(), false)->getVersion(),
+                            'old' => $details['oldVersion']?? 1,
                             'new' => $paper->getVersion()
                         ]
                     ]
                 );
+            } elseif ($submissionType === self::NEW_VERSION) {
+
+            } else {
+                $paper->log(
+                    Episciences_Paper_Logger::CODE_STATUS,
+                    EPISCIENCES_UID,
+                    ['status' => Episciences_Paper::STATUS_SUBMITTED]
+                );
+            }
 
             if ($this->isVerbose()) {
-                $this->displayInfo(
-                    !$isJustAVersionUpdate ?
-                        'New submission' :
-                        'Article updated' . PHP_EOL,
-                    true
-                );
+                if ($submissionType === self::VERSION_UPDATE) {
+                    $this->displayInfo(
+                        'Article version updated' . PHP_EOL,
+                        true
+                    );
+                } elseif ($submissionType === self::NEW_VERSION) {
+
+                    $this->displayInfo(
+                        'New version submitted',
+                        true
+                    );
+
+                } else {
+                    $this->displayInfo(
+                        'New submission submitted',
+                        true
+                    );
+                }
             }
 
 
@@ -841,6 +935,267 @@ class InboxNotifications extends Script
         }
 
         return null;
+    }
+
+
+    /**
+     * @param Episciences_Paper $context
+     * @param Episciences_Paper $newPaper
+     * @param Episciences_Review $journal
+     * @param array $logDetails
+     * @return bool
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Json_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function saveNewVersion(Episciences_Paper $context, Episciences_Paper $newPaper, Episciences_Review $journal, array $logDetails = []): bool
+    {
+
+        $context->loadOtherVolumes();
+        $journal->loadSettings();
+
+        $comments = Episciences_CommentsManager::getRevisionRequests($context->getDocid(), [Episciences_CommentsManager::TYPE_REVISION_REQUEST]);
+
+        $comment = new Episciences_Comment($comments[array_key_first($comments)]);
+
+        $reassignReviewers = $comment->getOption('reassign_reviewers');
+        $isAlreadyAccepted = $comment->getOption('isAlreadyAccepted');
+
+
+        $paperId = ($context->getPaperid()) ?: $context->getDocid();
+        $reviewers = $context->getReviewers(null, true);
+        $editors = $context->getEditors(true, true);
+        $copyEditors = $context->getCopyEditors(true, true);
+        $coAuthors = $context->getCoAuthors();
+
+
+        $newPaper->setDocid(null);
+        $newPaper->setPaperid($paperId);
+        $newPaper->setWhen($context->getSubmission_date());
+
+        $isAssignedReviewers = $reassignReviewers && $reviewers;
+
+        $isCopyEditingProcessStarted = $context->isCopyEditingProcessStarted();
+
+
+        if ($isCopyEditingProcessStarted) {
+            $status = ($newPaper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) ?
+                Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION :
+                Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
+        } elseif ($isAlreadyAccepted && !$isAssignedReviewers) {
+
+            $status = ((int)$journal->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) === 1) ?
+                Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING :
+                Episciences_Paper::STATUS_ACCEPTED;
+        } else {
+            $status = $isAssignedReviewers ? $newPaper::STATUS_OK_FOR_REVIEWING : $newPaper::STATUS_SUBMITTED;
+        }
+
+        $newPaper->setStatus($status);
+
+        $newPaper->save();
+
+        $newPaperStatusDetails = ['status' => $status];
+
+        if ($isAlreadyAccepted) {
+            $newPaperStatusDetails['isAlreadyAccepted'] = $isAlreadyAccepted;
+        }
+
+        $this->logAction($newPaper, array_merge($logDetails, $newPaperStatusDetails), self::NEW_VERSION);
+
+        if ($context->getOtherVolumes()) { // github #48
+            $newPaper->setOtherVolumes($context->getOtherVolumes());
+            $newPaper->saveOtherVolumes();
+        }
+
+
+        $context->setStatus(Episciences_Paper::STATUS_OBSOLETE);
+        $context->setVid();
+        $context->setOtherVolumes();
+        $context->setPassword();
+        $context->save();
+
+        $context->log(Episciences_Paper_Logger::CODE_STATUS, null, ['status' => $context->getStatus()]);
+
+
+        if (!$isCopyEditingProcessStarted && $reviewers) {
+            foreach ($reviewers as $reviewer) {
+                if (!$reviewer->getInvitation($context->getDocid(), $journal->getRvid())) {
+                    continue;
+                }
+                $aid = $context->unassign($reviewer->getUid(), Episciences_User_Assignment::ROLE_REVIEWER);
+
+                $context->log(Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT, null, ['aid' => $aid, 'user' => $reviewer->toArray()]);
+            }
+        }
+
+        if (!empty($editors)) {
+            foreach ($editors as $editor) {
+                $aid = $context->unassign($editor->getUid(), Episciences_User_Assignment::ROLE_EDITOR);
+                $context->log(Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT, null, ["aid" => $aid, "user" => $editor->toArray()]);
+            }
+        }
+
+
+        if (!empty($copyEditors)) {
+            foreach ($copyEditors as $copyEditor) {
+                $aid = $context->unassign($copyEditor->getUid(), Episciences_User_Assignment::ROLE_COPY_EDITOR);
+                $context->log(Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT, null, ["aid" => $aid, "user" => $copyEditor->toArray()]);
+            }
+        }
+
+        if ($reviewers && $reassignReviewers) {
+            $sender = new Episciences_Editor();
+            $sender->findWithCAS($comment->getUid());
+            $this->reinviteReviewers($reviewers, $context, $newPaper, $sender, $journal);
+        }
+
+        if ($editors) {
+            $this->reassignPaperManagers($editors, $newPaper);
+        }
+
+        if ($copyEditors) {
+            $this->reassignPaperManagers($copyEditors, $newPaper, Episciences_User_Assignment::ROLE_COPY_EDITOR);
+        }
+
+
+        if (!empty($coAuthors)) {
+            Episciences_User_AssignmentsManager::reassignPaperCoAuthors($coAuthors, $newPaper);
+        }
+
+        $this->notifyAuthorAndEditorialCommittee($journal, $newPaper, ['originalRequest' => $comment]);
+        return true;
+
+    }
+
+    /**
+     * @param array $reviewers
+     * @param Episciences_Paper $context
+     * @param Episciences_Paper $paper
+     * @param Episciences_User|null $sender
+     * @param Episciences_Review $journal
+     * @return void
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+
+    private function reinviteReviewers(array $reviewers, Episciences_Paper $context, Episciences_Paper $paper, Episciences_User $sender = null, Episciences_Review $journal): void
+    {
+        $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION;
+
+        // link to previous version page
+        $context_url = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
+
+        // new deadline is today + default deadline interval (journal setting)
+        $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), $journal->getSetting(Episciences_Review::SETTING_RATING_DEADLINE));
+
+
+        // loop through each reviewer
+        /** @var Episciences_Reviewer $reviewer */
+        foreach ($reviewers as $reviewer) {
+            /** @var Episciences_User_Assignment $oAssignment */
+            $oAssignment = $reviewer->assign($paper->getDocid(), ['deadline' => $deadline, 'status' => Episciences_User_Assignment::STATUS_PENDING])[0];
+
+            $oInvitation = new Episciences_User_Invitation(['aid' => $oAssignment->getId(), 'sender_uid' => EPISCIENCES_UID]);
+
+            if ($oInvitation->save()) {
+                $oInvitation = Episciences_User_InvitationsManager::findById($oInvitation->getId());
+            }
+
+
+            // link to rating invitation page
+            $invitation_url = sprintf(SERVER_PROTOCOL . "://%s.%s/reviewer/invitation?id=%s", $journal->getCode(), DOMAIN, $oInvitation->getId());
+
+
+            // update assignment with invitation_id
+            $oAssignment->setInvitation_id($oInvitation->getId());
+            $oAssignment->save();
+
+            $locale = $reviewer->getLangueid();
+
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $context->getTitle($locale, true),
+                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $context->formatAuthorsMetadata(),
+                Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($context->getWhen(), $locale),
+                Episciences_Mail_Tags::TAG_PAPER_URL => $context_url,
+                Episciences_Mail_Tags::TAG_INVITATION_URL => $invitation_url,
+                Episciences_Mail_Tags::TAG_INVITATION_DEADLINE => Episciences_View_Helper_Date::Date($oInvitation->getExpiration_date(), $locale),
+                Episciences_Mail_Tags::TAG_RATING_DEADLINE => Episciences_View_Helper_Date::Date($oAssignment->getDeadline(), $locale)
+
+            ];
+
+            $journalOptions = ['rvCode' => $journal->getCode(), 'rvId' => $journal->getRvid()];
+
+            if ($sender) {
+                $journalOptions['sender'] = $sender;
+            }
+
+            Episciences_Mail_Send::sendMailFromReview($reviewer, $templateKey, $tags, $paper, null, [], false, [], $journalOptions);
+
+        }
+
+    }
+
+
+    private function reassignPaperManagers(array $paperManagers, Episciences_Paper $paper, string $roleId = Episciences_User_Assignment::ROLE_EDITOR): array
+    {
+
+        $action = Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT;
+
+        if ($roleId === Episciences_User_Assignment::ROLE_COPY_EDITOR) {
+            $action = Episciences_Paper_Logger::CODE_COPY_EDITOR_ASSIGNMENT;
+        }
+
+        foreach ($paperManagers as $manager) {
+
+            $aid = $paper->assign($manager->getUid(), $roleId, Episciences_User_Assignment::STATUS_ACTIVE);
+            $paper->log($action, null, ["aid" => $aid, "user" => $manager->toArray()]);
+
+        }
+
+        return $paperManagers;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param array $additionalPaperData
+     * @return void
+     */
+
+
+    private function enrichment(Episciences_Paper $paper, array $additionalPaperData = []): void
+    {
+
+        $enrichment = $additionalPaperData[Episciences_Repositories_Common::ENRICHMENT] ?? [];
+
+        if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
+            Episciences_Submit::datasetsProcessing($paper->getDocid());
+        }
+
+        if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
+            // insert author dc:creator to json author in the database
+            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
+        }
+
+        Episciences_Submit::enrichmentProcess($paper, $enrichment);
+
+        try {
+
+            if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) { // try to enrich with TEI HAL
+                Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
+            }
+
+        } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+            $this->displayCritical($e->getMessage());
+        }
+
     }
 }
 

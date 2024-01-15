@@ -248,9 +248,15 @@ class ExportController extends Zend_Controller_Action
         $this->view->previousVersionsUrl = $previousVersionsUrl;
         $paperLanguage = $paper->getMetadata('language');
 
-        if ($format==='zbjats') {
+        if ($format === 'zbjats') {
             $nbPages = $this->getDocumentBackupNbOfPages($paper);
             $this->view->nbPages = $nbPages;
+            $url = APPLICATION_URL . '/' . $paper->getDocid();
+            $pdf = $url . '/pdf';
+            $refBibJson = Episciences_BibliographicalsReferencesTools::getBibRefFromApi($pdf);
+            if ($refBibJson !== "") {
+                $this->view->bibRef = Episciences_ZbjatsTools::jsonToZbjatBibRef($refBibJson);
+            }
         }
 
 

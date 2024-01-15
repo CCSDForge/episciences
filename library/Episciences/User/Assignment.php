@@ -130,7 +130,7 @@ class Episciences_User_Assignment
             'INVITATION_ID' => $this->getInvitation_id(),
             'ITEMID' => $this->getItemid(),
             'ITEM' => $this->getItem(),
-            'RVID' => RVID,
+            'RVID' => !$this->getRvid() ? RVID : $this->getRvid(),
             'UID' => $this->getUid(),
             'TMP_USER' => $this->isTmp_user(),
             'ROLEID' => $this->getRoleid(),

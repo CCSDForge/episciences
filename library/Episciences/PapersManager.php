@@ -3883,6 +3883,7 @@ class Episciences_PapersManager
         if ($isCoiEnabled) {
 
             $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paperId]);
+            /** @var Episciences_User $recipient */
 
             foreach ($recipients as $recipient) {
 

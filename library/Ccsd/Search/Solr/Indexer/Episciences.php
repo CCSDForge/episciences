@@ -1,138 +1,101 @@
 <?php
-
-
-use Solarium\QueryType\Update\Query\Document\Document;
-
+use Solarium\QueryType\Update\Query\Document;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 {
 
-    public static string $_coreName = 'episciences';
+    public static string $coreName = 'episciences';
 
-    public static int $_maxDocsInBuffer = 50;
+    public static int $maxDocsInBuffer = 50;
 
-    public static string $dbConfName = 'episciences';
+    private ArrayAdapter $cache;
 
-    private array $_reviews = [];
 
-    private array $_volumes = [];
-
-    private array $_sections = [];
 
     public function __construct(array $options)
     {
-        $options['core'] = self::$_coreName;
-        $options['maxDocsInBuffer'] = self::$_maxDocsInBuffer;
+        $options['core'] = self::$coreName;
+        $maxDocsInBuffer = $options[Ccsd_Search_Solr_Indexer_Core::OPTION_MAX_DOCS_IN_BUFFER] ?? self::$maxDocsInBuffer;
+        if (is_numeric($maxDocsInBuffer)) {
+            self::$maxDocsInBuffer = $maxDocsInBuffer;
+        }
+        $this->initCache();
         parent::__construct($options);
+    }
+
+    private function initCache(): void
+    {
+        $this->setCache(new ArrayAdapter(60, true, 60 * 5, 1000));
     }
 
     /**
      * Set the select request to get the list of Id to index
-     * @param $select
+     * @param Zend_Db_Select $select
      */
-    protected function selectIds($select)
+    protected function selectIds(Zend_Db_Select $select)
     {
         $select->from('PAPERS', 'DOCID')->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
     }
 
     /**
-     * @param int $docId
-     * @param Document $ndx
-     * @return bool|mixed
+     * Adds metadata to the document.
+     *
+     * @param int $docId The ID of the document.
+     * @param Document $docToIndex The document to index.
+     * @return false|Document The indexed document.
      * @throws Zend_Db_Statement_Exception
      */
-    protected function addMetadataToDoc(int $docId, Document $ndx)
+    protected function addMetadataToDoc(int $docId, Document $docToIndex)
     {
 
         // Suffixes (conventions)
         // _t : text (correspondance approximative : insensible à la casse, aux accents)
         // _s : string (correspondance exacte)
 
-        $repositories = Episciences_Repositories::getRepositories();
-
         $paperData = $this->getDocidData($docId);
-        $paperVolumesData = $this->getPaperVolumesData($docId);
 
         if ($paperData === null) {
             Ccsd_Log::message('Update doc ' . $docId . ' : cet article n\'existe pas/plus.', true, 'WARN');
             return false;
         }
 
-        // Récupération des infos du déposant
-        $submitter = $paperData->getSubmitter();
-
-
         // Récupération des infos de la revue
-        $review = $this->getReview($paperData->getRvid());
-
-        $volumeTranslations = $review['TRANSLATIONS']['volumes'] ?? null;
-
-        /** @var string[] $authors */
-        $authors = $paperData->getMetadata('authors');
-
-        // Récupération des infos sur les auteurs
-        if (is_array($authors)) {
-            $author_sort = [];
-            foreach ($authors as $author) {
-                $this->indexOneAuthor($author, $ndx);
-                $author_sort[] = $author;
-            }
-            $author_fullname_sort = substr(implode(' ', $author_sort), 0, 50);
-            $ndx->addField('author_fullname_sort', $author_fullname_sort);
-
-        } elseif (is_string($authors)) {
-            $this->indexOneAuthor($authors, $ndx);
-            $author_fullname_sort = self::cleanAuthorName($authors);
-            $ndx->addField('author_fullname_sort', $author_fullname_sort);
-        }
+        $journal = $this->getJournalMetadata($paperData->getRvid());
 
 
-        // Récupération des mots-clés
-        $subjects = $paperData->getMetadata('subjects');
-        if (is_array($subjects)) {
-            foreach ($subjects as $keyword) {
-                if (is_array($keyword)) {
-                    foreach ($keyword as $kwd) {
-                        $ndx->addField('keyword_t', $kwd);
-                    }
-                } else {
-                    $ndx->addField('keyword_t', $keyword);
-                }
-            }
-        }
+        $this->indexAuthors($paperData, $docToIndex);
+        $this->indexKeywords($paperData, $docToIndex);
+
 
         // Date de soumission
-        $submission_date = ($paperData->getSubmission_date()) ? date_format(new DateTime($paperData->getSubmission_date()), "Y-m-d\Th:i:s\Z") : null;
+        $submission_date = ($paperData->getSubmission_date()) ? $this->getFormattedDate($paperData->getSubmission_date()) : null;
 
-        // Date de publication
-        if ($paperData->getPublication_date()) {
-            $publication_date = date_format(new DateTime($paperData->getPublication_date()), "Y-m-d\Th:i:s\Z");
-            $publication_date_array = explode('-', $publication_date);
-            $publication_year = $publication_date_array[0];
-            $publication_month = $publication_date_array[1];
-            $publication_day = explode('T', $publication_date_array[2])[0];
+        $publication_date = $paperData->getPublication_date();
+        if ($publication_date) {
+            $publication_date_array = explode('-', $this->getFormattedDate($paperData->getSubmission_date(), 'Y-m-d'));
+            [$publication_year, $publication_month, $publication_day] = $publication_date_array;
+            $publication_date = $this->getFormattedDate($publication_date);
         } else {
-            $publication_date = null;
+            $publication_year = null;
+            $publication_month = null;
+            $publication_day = null;
         }
 
-        $review_title = $this->cleanChars($review['NAME']);
 
-        $revue_date_creation = date_format(new DateTime($review['CREATION']), "Y-m-d\Th:i:s\Z");
-        $es_doc_url = 'https://' . $review['CODE'] . '.' . DOMAIN . '/' . $paperData->getPaperid();
+        $review_title = $this->cleanChars($journal->getName());
+
+
+        $es_doc_url = sprintf("https://%s.%s/%s", $journal->getCode(), DOMAIN, $paperData->getPaperid());
         $es_pdf_url = $es_doc_url . '/pdf';
 
         $dataToIndex = [
             'docid' => $docId,
-            'doi_s' => $paperData->getDoi(),
             'paperid' => $paperData->getPaperid(),
+            'doi_s' => $paperData->getDoi(),
+
             'language_s' => Ccsd_Tools::xpath($paperData->getRecord(), '//dc:language'),
             'identifier_s' => $paperData->getIdentifier(),
             'version_td' => $paperData->getVersion(),
-            //'doc_url_s' => $paperData->getDocUrl(),
-            //'paper_url_s' => $paperData->getDocUrl(),
-            'submitter_id_i' => $submitter->getUid(),
-            'submitter_firstname_t' => $submitter->getFirstname(),
-            'submitter_lastname_t' => $submitter->getLastname(),
-            'submitter_email_s' => $submitter->getEmail(),
 
             'es_submission_date_tdate' => $submission_date,
             'es_publication_date_tdate' => $publication_date,
@@ -144,119 +107,29 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
             'publication_date_month_fs' => $publication_month,
             'publication_date_day_fs' => $publication_day,
 
-            'revue_issn_s' => $review['SETTINGS']['ISSN'] ?? null,
             'revue_id_i' => $paperData->getRvid(),
-            'revue_status_i' => $review['STATUS'],
-            'revue_code_t' => $review['CODE'],
-            'revue_title_s' => $review_title,
-            'revue_creation_date_tdate' => $revue_date_creation,
-
-            'repo_id_i' => $paperData->getRepoid(),
-            'repo_title_s' => $repositories[$paperData->getRepoid()][Episciences_Repositories::REPO_LABEL]
+            'revue_code_t' => $journal->getCode(),
+            'revue_title_s' => $review_title
         ];
 
+        $docToIndex = $this->addArrayOfMetaToDoc($dataToIndex, null, $docToIndex);
 
-        $titles = $paperData->getMetadata('title');
-        foreach ($titles as $locale => $title) {
-            if (Zend_Locale::isLocale($locale)) {
-                $titlesToIndex[$locale . '_paper_title_t'] = $title;
-            }
-        }
-        if (empty($titlesToIndex)) {
-            $titlesToIndex['paper_title_t'] = $titles;
-        }
-
-        $abstracts = $paperData->getAllAbstracts();
-        foreach ($abstracts as $locale => $abstract) {
-            if (Zend_Locale::isLocale($locale)) {
-                $abstractsToIndex[$locale . '_abstract_t'] = $abstract;
-            }
-        }
-        if (empty($abstractsToIndex)) {
-            $abstractsToIndex['abstract_t'] = $abstracts;
-        }
-
-        $dataToIndex = array_merge($dataToIndex, $titlesToIndex, $abstractsToIndex);
+        $docToIndex = $this->indexTitles($paperData->getMetadata('title'), $docToIndex);
+        $docToIndex = $this->indexAbstracts($paperData->getAllAbstracts(), $docToIndex);
 
 
-        foreach ($dataToIndex as $fieldName => $fieldValue) {
-            if ($fieldValue) {
-                if (is_array($fieldValue)) {
-                    $fieldValue = array_map('trim', $fieldValue);
-                } else {
-                    $fieldValue = trim($fieldValue);
-                }
+        $this->indexVolume($paperData->getVid(), $docToIndex);
+        $this->indexSecondaryVolumes($paperData, $docToIndex);
+        $this->indexSection($paperData->getSid(), $docToIndex);
 
-                $ndx->addField($fieldName, $fieldValue);
-            }
-        }
+        $docToIndex->addField('indexing_date_tdate', date("Y-m-d\Th:i:s\Z"));
 
-        // master volume data
-        if ($paperData->getVid()) {
-            $volume = $this->getVolume($paperData->getVid());
-            if (!$volume) {
-                Ccsd_Log::message("Update doc " . $docId . " : le volume (" . $paperData->getVid() . ") de cet article n'existe pas/plus.", true, 'WARN');
-            } else {
-                $ndx->addField('volume_id_i', $paperData->getVid());
-                $ndx->addField('volume_status_i', $volume['SETTINGS']['status']);
-                if (is_array($volumeTranslations)) {
-                    foreach ($volumeTranslations as $lang => $translations) {
-                        if (array_key_exists('volume_' . $paperData->getVid() . '_title', $translations)) {
-                            $ndx->addField($lang . '_volume_title_t', $translations['volume_' . $paperData->getVid() . '_title']);
-                        }
-                    }
-                }
-            }
-
-            // Facette "volume_fs"
-            $ndx->addField('volume_fs', $paperData->getVid() . parent::SOLR_FACET_SEPARATOR . 'volume_' . $paperData->getVid() . '_title');
-        }
-
-        // secondary volumes data
-        if (!empty($paperVolumesData)) {
-            foreach ($paperVolumesData as $vid) {
-                $volume = $this->getVolume($vid);
-                if (!$volume) {
-                    Ccsd_Log::message("Update doc " . $docId . " : le volume secondaire (" . $vid . ") de cet article n'existe pas/plus.", true, 'WARN');
-                    continue;
-                }
-                $ndx->addField('secondary_volume_id_i', $vid);
-                if (is_array($volumeTranslations)) {
-                    foreach ($volumeTranslations as $lang => $translations) {
-                        if (array_key_exists('volume_' . $vid . '_title', $translations)) {
-                            $ndx->addField($lang . '_secondary_volume_title_t', $translations['volume_' . $vid . '_title']);
-                        }
-                    }
-                }
-
-                // Facette "volume_fs"
-                $ndx->addField('secondary_volume_fs', $vid . parent::SOLR_FACET_SEPARATOR . 'volume_' . $vid . '_title');
-            }
-        }
-
-        // section data
-        if ($paperData->getSid()) {
-            $ndx->addField('section_id_i', $paperData->getSid());
-            $sectionTranslations = $review['TRANSLATIONS']['sections'];
-            if (is_array($sectionTranslations)) {
-                foreach ($sectionTranslations as $lang => $translations) {
-                    $ndx->addField($lang . '_section_title_t', $translations['section_' . $paperData->getSid() . '_title']);
-                }
-            }
-
-            // Facette "section_fs"
-            $ndx->addField('section_fs', $paperData->getSid() . parent::SOLR_FACET_SEPARATOR . 'section_' . $paperData->getSid() . '_title');
-        }
-
-        $ndx->addField('indexing_date_tdate', date("Y-m-d\Th:i:s\Z"));
-
-        // Facets ************************
-        $ndx->addField('revue_title_fs', $paperData->getRvid() . parent::SOLR_FACET_SEPARATOR . $review_title);
-
-
-        return $ndx;
+        return $docToIndex;
     }
 
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
     protected function getDocidData($docId)
     {
 
@@ -271,64 +144,60 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     }
 
-    protected function getPaperVolumesData($docId)
+    private function getJournalMetadata(int $rvid): Episciences_Review
     {
-        $db = $this->getDb();
-        $select = $db->select()->from('VOLUME_PAPER', ['VID'])->where('DOCID = ?', $docId);
-        return $db->fetchCol($select);
+        $cache = $this->getCache();
+        $cacheName = 'rvid.' . $rvid;
+        $journal = $cache->getItem($cacheName);
+
+        if (!$journal->isHit()) {
+            $journalDataFromDb = Episciences_Review::getData($rvid);
+            $journalMetadata = new Episciences_Review($journalDataFromDb);
+            $cache->save($journal->set($journalMetadata));
+        } else {
+            $journalMetadata = $journal->get();
+        }
+
+        return $journalMetadata;
+    }
+
+    public function getCache(): ArrayAdapter
+    {
+        return $this->cache;
+    }
+
+    public function setCache(ArrayAdapter $cache): void
+    {
+        $this->cache = $cache;
     }
 
     // Renvoie les données d'une revue ainsi que ses fichiers de traduction
 
-    private function getReview($rvid)
+    /**
+     * @param $paperData
+     * @param Document $ndx
+     * @return void
+     */
+    private function indexAuthors($paperData, Document $ndx): void
     {
-        if (!array_key_exists($rvid, $this->_reviews)) {
+        /** @var string[] $authors */
+        $authors = $paperData->getMetadata('authors');
 
-            // Data ***
-            $select = $this->getDb()
-                ->select()
-                ->from('REVIEW')
-                ->where('RVID = ?', $rvid);
-            $review = $this->getDb()->fetchRow($select);
-
-            $select = $this->getDb()
-                ->select()
-                ->from('REVIEW_SETTING', ['SETTING', 'VALUE'])
-                ->where('RVID = ?', $rvid);
-            $review['SETTINGS'] = $this->getDb()->fetchPairs($select);
-
-            $translations = [];
-
-            // Scan the translation folder for available languages
-            $rvcode = $review['CODE'];
-            $path = APPLICATION_PATH . '/../data/' . $rvcode . '/languages/';
-
-
-            $langs = scandir($path);
-
-            if ($langs !== false) {
-                array_splice($langs, 0, 2);
-                // For each language, we get the translation files
-                foreach ($langs as $lang) {
-
-                    $files = scandir($path . $lang);
-                    array_splice($files, 0, 2);
-
-                    foreach ($files as $file) {
-                        $filepath = $path . $lang . '/' . $file;
-                        $filename = basename($filepath, '.php');
-                        $translations[$filename][$lang] = Episciences_Tools::readTranslation($filepath, $lang);
-                    }
-                }
+        if (is_array($authors)) {
+            $author_sort = [];
+            foreach ($authors as $author) {
+                $this->indexOneAuthor($author, $ndx);
+                $author_sort[] = $author;
             }
+            $author_fullname_sort = mb_substr(implode(' ', $author_sort), 0, 30);
+            $author_fullname_sort = str_replace([' ', ','], '', $author_fullname_sort);
+            $ndx->addField('author_fullname_sort', $author_fullname_sort);
 
-            $review['TRANSLATIONS'] = $translations;
-
-            $this->_reviews[$rvid] = $review;
-            return $review;
+        } elseif (is_string($authors)) {
+            $this->indexOneAuthor($authors, $ndx);
+            $author_fullname_sort = self::cleanAuthorName($authors);
+            $ndx->addField('author_fullname_sort', $author_fullname_sort);
         }
-
-        return $this->_reviews[$rvid];
     }
 
     /**
@@ -355,6 +224,37 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     }
 
     /**
+     * @param $paperData
+     * @param Document $ndx
+     * @return void
+     */
+    private function indexKeywords($paperData, Document $ndx): void
+    {
+        $subjects = $paperData->getMetadata('subjects');
+        if (is_array($subjects)) {
+            foreach ($subjects as $keyword) {
+                if (is_array($keyword)) {
+                    foreach ($keyword as $kwd) {
+                        $ndx->addField('keyword_t', $kwd);
+                    }
+                } else {
+                    $ndx->addField('keyword_t', $keyword);
+                }
+            }
+        }
+    }
+
+    private function getFormattedDate(string $dateToFormat, string $format = 'Y-m-d\TH:i:s\Z')
+    {
+        try {
+            $revue_date_creation = date_format(new DateTime($dateToFormat), $format);
+        } catch (Exception $e) {
+            $revue_date_creation = '1970-01-01T00:00:00Z';
+        }
+        return $revue_date_creation;
+    }
+
+    /**
      * Nettoie une chaine avant de l'indexer
      *
      * @param string $inputString
@@ -367,36 +267,154 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return trim($outputString);
     }
 
-    private function getVolume($vid)
+
+    private function indexTitles($titles, $docToIndex)
     {
-        if (array_key_exists($vid, $this->_volumes)) {
-            return $this->_volumes[$vid];
+
+        foreach ($titles as $locale => $title) {
+            if (Zend_Locale::isLocale($locale)) {
+                $titlesToIndex[$locale . '_paper_title_t'] = $title;
+            }
+        }
+        if (empty($titlesToIndex)) {
+            $titlesToIndex['paper_title_t'] = $titles;
+        }
+        return $this->addArrayOfMetaToDoc($titlesToIndex, null, $docToIndex);
+    }
+
+
+    private function indexAbstracts($abstracts, Document $docToIndex): Document
+    {
+
+        foreach ($abstracts as $locale => $abstract) {
+            if (Zend_Locale::isLocale($locale)) {
+                $abstractsToIndex[$locale . '_abstract_t'] = $abstract;
+            }
+        }
+        if (empty($abstractsToIndex)) {
+            $abstractsToIndex['abstract_t'] = $abstracts;
+        }
+        return $this->addArrayOfMetaToDoc($abstractsToIndex, null, $docToIndex);
+    }
+
+    private function indexVolume($vid, Document $docToIndex): void
+    {
+        if ($vid === 0) {
+            return;
         }
 
-// Data ***
-        $select = $this->getDb()
-            ->select()
-            ->from('VOLUME')
-            ->where('VID = ?', $vid);
-        $volume = $this->getDb()->fetchRow($select);
 
-        if (!$volume) {
-            $this->_volumes[$vid] = null;
-            return null;
+        $volume = $this->getVolumeFromDbOrCache($vid);
+
+        if ($volume) {
+            $docToIndex->addField('volume_id_i', $vid);
+            $docToIndex->addField('volume_status_i', $volume->getStatus());
+            $volumeTranslationsTitles = $volume->getTitles();
+            if (is_array($volumeTranslationsTitles)) {
+
+                // We take the first language found because the field is not multivalued
+                $firstLanguageFound = array_key_first($volumeTranslationsTitles);
+                $docToIndex->addField('volume_fs', $vid . parent::SOLR_FACET_SEPARATOR . $volumeTranslationsTitles[$firstLanguageFound]);
+
+                foreach ($volumeTranslationsTitles as $lang => $translations) {
+                    $docToIndex->addField($lang . '_volume_title_t', $translations);
+                }
+            }
+        } else {
+            $message = sprintf("Update doc : le volume (%s) de cet article n'existe pas/plus.", $vid);
+            Ccsd_Log::message($message, true, 'WARN');
         }
+    }
 
-        // Settings ***
-        $select = $this->getDb()
-            ->select()
-            ->from('VOLUME_SETTING', [
-                'SETTING',
-                'VALUE'
-            ])
-            ->where('VID = ?', $vid);
-        $volume['SETTINGS'] = $this->getDb()->fetchPairs($select);
+    /**
+     * @param $vid
+     * @return bool|Episciences_Volume|mixed
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function getVolumeFromDbOrCache($vid)
+    {
+        $cache = $this->getCache();
+        $cacheName = 'volume.' . $vid;
+        $volumeCacheItem = $cache->getItem($cacheName);
 
-        $this->_volumes[$vid] = $volume;
+        if (!$volumeCacheItem->isHit()) {
+            $volume = Episciences_VolumesManager::find($vid);
+            if ($volume) {
+                $cache->save($volumeCacheItem->set($volume));
+            }
+        } else {
+            $volume = $volumeCacheItem->get();
+        }
         return $volume;
+    }
+
+    private function indexSecondaryVolumes($paperData, Document $docToIndex): void
+    {
+
+        $secondaryVolumes = Episciences_Volume_PapersManager::findPaperVolumes($paperData->getDocid());
+
+        foreach ($secondaryVolumes as $oneSecondaryVolume) {
+            $vid = $oneSecondaryVolume->getVid();
+
+            $volume = $this->getVolumeFromDbOrCache($vid);
+
+            if ($volume) {
+                $docToIndex->addField('secondary_volume_id_i', $vid);
+                $volumeTranslationsTitles = $volume->getTitles();
+                if (is_array($volumeTranslationsTitles)) {
+                    foreach ($volumeTranslationsTitles as $lang => $translations) {
+                        $docToIndex->addField($lang . '_secondary_volume_title_t', $translations);
+                        $docToIndex->addField('secondary_volume_fs', $vid . parent::SOLR_FACET_SEPARATOR . $translations);
+                    }
+                }
+            } else {
+                $message = sprintf("Update doc %s : le volume secondaire (%s) de cet article n'existe pas/plus.", $paperData->getDocid(), $vid);
+                Ccsd_Log::message($message, true, 'WARN');
+            }
+        }
+    }
+
+    private function indexSection($sectionId, Document $docToIndex): void
+    {
+
+        if ($sectionId === 0) {
+            return;
+        }
+
+        $cache = $this->getCache();
+        $cacheName = 'section.' . $sectionId;
+        $sectionCacheItem = $cache->getItem($cacheName);
+
+        if (!$sectionCacheItem->isHit()) {
+            $section = Episciences_SectionsManager::find($sectionId);
+            if ($section) {
+                $cache->save($sectionCacheItem->set($section));
+            }
+        } else {
+            $section = $sectionCacheItem->get();
+        }
+
+
+        if (!$section) {
+            $message = sprintf("Update doc : la section (%s) de cet article n'existe pas/plus.", $sectionId);
+            Ccsd_Log::message($message, true, 'WARN');
+            return;
+        }
+
+        $docToIndex->addField('section_id_i', $sectionId);
+
+        $sectionTranslations = $section->getTitle();
+        if (is_array($sectionTranslations)) {
+
+            // We take the first language found because the field is not multivalued
+            $firstLanguageFound = array_key_first($sectionTranslations);
+            $docToIndex->addField('section_fs', $sectionId . parent::SOLR_FACET_SEPARATOR . $sectionTranslations[$firstLanguageFound]);
+
+            foreach ($sectionTranslations as $lang => $translations) {
+                $docToIndex->addField($lang . '_section_title_t', $translations);
+            }
+        }
+
 
     }
 

@@ -2027,7 +2027,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (!$resOfIndexing) {
                     try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                     } catch (Exception $e) {
                         trigger_error($e->getMessage());
                     }
@@ -2054,7 +2054,7 @@ class AdministratepaperController extends PaperDefaultController
                     . '</a>');
 
                 // if HAL, send coar notify message
-                if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
+                if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
                     $notification = new Episciences_Notify_Hal($paper, $journal);
                     try {
                         $idAnnounce = $notification->announceEndorsement();
@@ -2688,7 +2688,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (!$resOfIndexing) {
                     try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                     } catch (Exception $e) {
                         trigger_error($e->getMessage());
                     }
@@ -3798,7 +3798,7 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * Applique les changements(actions)
+     * Applique les changements (actions)
      * @param Zend_Controller_Request_Http $request
      * @param Episciences_Paper $paper
      * @param bool $isCopyEditingComment
@@ -3912,13 +3912,15 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
-        // Les mêmes fichiers attachées dans l'email envoyé aux rédacteurs et préparateurs de copie
+        // Les mêmes fichiers attachés dans l'email envoyé aux rédacteurs et préparateurs de copie
 
         $authorAttachments = [];
 
+        $source = Episciences_Tools::getAttachmentsPath();
+
 
         foreach ($attachments as $file) {
-            $authorAttachments[$file] = REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . DIRECTORY_SEPARATOR;
+            $authorAttachments[$file] = $source;
         }
 
 
@@ -3937,12 +3939,13 @@ class AdministratepaperController extends PaperDefaultController
                 $path .= DIRECTORY_SEPARATOR;
                 $path .= $comment->getPcid();
                 $path .= DIRECTORY_SEPARATOR;
-                $source = REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . DIRECTORY_SEPARATOR;
+                //$source = REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . DIRECTORY_SEPARATOR;
                 $comment->setFilePath($path);
+                $source = Episciences_Tools::getAttachmentsPath();
 
                 Episciences_Tools::cpFiles($attachments, $source, $path);
 
-                // Envoi de mails aux rédacteurs + préparateurs de copie de l'artciles + notifier les rédacteurs en chef, secrétaires de rédaction et administrateurs, si le bon paramétrage a été choisi.
+                // Envoi de mails aux rédacteurs + préparateurs de copie de l'article + notifier les rédacteurs en chef, secrétaires de rédaction et administrateurs, si le bon paramétrage a été choisi.
                 $this->paperStatusChangedNotifyManagers($paper, $managerTemplateType, Episciences_Auth::getUser(), $tags, $authorAttachments);
 
             }
@@ -4278,7 +4281,7 @@ class AdministratepaperController extends PaperDefaultController
 
                         if (!$resOfIndexing) {
                             try {
-                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                             } catch (Exception $e) {
                                 trigger_error($e->getMessage(), E_USER_ERROR);
                             }
@@ -4565,7 +4568,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ('' !== $api) {
 
-            if ((int)Episciences_Repositories::HAL_REPO_ID === $repoId) {
+            if (Episciences_Repositories::isFromHalRepository($repoId)) {
 
                 $url = $api . '/search/?indent=true&q=' . $paper->getIdentifier() . '&fl=label_xml';
 

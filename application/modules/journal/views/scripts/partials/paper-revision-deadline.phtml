@@ -1,18 +1,25 @@
-<?php if ($this->paper->_revisionDeadline) : ?>
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+if (
+    $paper->isRevisionRequested() &&
+    $paper->_revisionDeadline
+) :
+    ?>
     <p>
         <small><?= $this->translate("Version révisée attendue avant le :") ?>
-            <strong id="revision-deadline"><?= $this->Date($this->paper->_revisionDeadline) ?></strong></small>
+            <strong id="revision-deadline"><?= $this->Date($paper->_revisionDeadline) ?></strong></small>
         <?php
         if (
             Zend_Controller_Front::getInstance()->getRequest()->getControllerName() === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER &&
 
             (
                 Episciences_Auth::isAdministrator() ||
-                $this->paper->isEditor(Episciences_Auth::getUid())
+                $paper->isEditor(Episciences_Auth::getUid())
             )
         ) : ?>
             <button class="btn btn-xs btn-default"
-                    onclick="getRevisionDeadlineForm(this, <?= $this->paper->getDocid() ?>, <?= $this->currentDemand['PCID'] ?>)">
+                    onclick="getRevisionDeadlineForm(this, <?= $paper->getDocid() ?>, <?= $this->currentDemand['PCID'] ?>)">
                 <span class="fa-solid fa-calendar-days fa-xs" style="margin-right: 5px"></span>
                 <?= $this->translate('Modifier') ?>
             </button>

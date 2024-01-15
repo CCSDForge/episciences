@@ -22,6 +22,8 @@ $journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
 
 $journalSettings = Zend_Registry::get('reviewSettings');
 
+// bibliographical ref
+$bibRefList = $this->bibRef;
 
 $timestamp = time();
 ?><!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1d2 20140930//EN"
@@ -215,6 +217,68 @@ $timestamp = time();
     </front>
 
     <body></body>
+    <?php if (!empty($bibRefList)): ?>
+        <back>
+            <ref-list>
+                <?php foreach ($bibRefList as $ref): ?>
+                <ref>
+                    <element-citation>
+                        <?php if(isset($ref['authors'])) {
+                            foreach ($ref['authors'] as $author){
+                                echo "<name>";
+                                if (isset($author['surname'])) {
+                                    echo "<surname>".$this->escape($author['surname'])."</surname>";
+                                }
+                                if (isset($author['given-names'])) {
+                                    echo "<given-names>".$this->escape($author['given-names'])."</given-names>";
+                                }
+                                echo "</name>";
+                            }
+                        } ?>
+                        <?php if(isset($ref['article-title'])) {
+                            if (isset($ref['lang-article'])) {
+                                echo "<article-title xml:lang='".$this->escape($ref['lang-article'])."'>".$this->escape($ref['article-title'])."</article-title>";
+                            } else {
+                                echo "<article-title>".$this->escape($ref['article-title'])."</article-title>";
+                            }
 
-
+                        } ?>
+                        <?php if(isset($ref['doi'])) {
+                            echo "<object-id pub-id-type='doi'>".$this->escape($ref['doi'])."</object-id>";
+                        } ?>
+                        <?php if(isset($ref['source'])) {
+                            echo "<source>".$this->escape($ref['source'])."</source>";
+                        } ?>
+                        <?php if(isset($ref['issn'])) {
+                            echo "<issn>".$this->escape($ref['issn'])."</issn>";
+                        } ?>
+                        <?php if(isset($ref['eissn'])) {
+                            echo "<issn specific-use='electronic'>".$this->escape($ref['eissn'])."</issn>";
+                        } ?>
+                        <?php if(isset($ref['isbn'])) {
+                            echo "<isbn>".$this->escape($ref['isbn'])."</isbn>";
+                        } ?>
+                        <?php if(isset($ref['year'])) {
+                            echo "<year>".$this->escape($ref['year'])."</year>";
+                        } ?>
+                        <?php if(isset($ref['volume'])) {
+                            echo "<volume>".$this->escape($ref['volume'])."</volume>";
+                        } ?>
+                        <?php if(isset($ref['issue'])) {
+                            echo "<issue>".$this->escape($ref['issue'])."</issue>";
+                        } ?>
+                        <?php if(isset($ref['fpage']) && isset($ref['lpage'])) {
+                            echo "<fpage>".$this->escape($ref['fpage'])."</fpage>";
+                        } elseif (isset($ref['fpage']) && !isset($ref['lpage'])) {
+                            echo "<size units='pages'>".$this->escape($ref['fpage'])."</size>";
+                        } ?>
+                        <?php if(isset($ref['lpage'])) {
+                            echo "<lpage>".$this->escape($ref['lpage'])."</lpage>";
+                        } ?>
+                    </element-citation>
+                </ref>
+                <?php endforeach; ?>
+            </ref-list>
+        </back>
+    <?php endif; ?>
 </article>

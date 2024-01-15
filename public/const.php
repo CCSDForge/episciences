@@ -279,5 +279,16 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('DOI_PASSWORD', '');
         define('DOI_TESTAPI_QUERY', '');
         define('DOI_API_QUERY', '');
+
+        define('ENDPOINTS_SEARCH_HOST', '');
+        define('ENDPOINTS_SEARCH_PORT', 0);
+        define('ENDPOINTS_SEARCH_PATH', '');
+        define('ENDPOINTS_SEARCH_TIMEOUT', 0);
+        define('ENDPOINTS_SEARCH_USERNAME', '');
+        define('ENDPOINTS_SEARCH_PASSWORD', '');
+        define('ENDPOINTS_CORENAME', '');
+        define('ENDPOINTS_SEARCH_PROTOCOL', '');
+        define('ENDPOINTS_INDEXING_HOST', '');
+        define('ENDPOINTS_INDEXING_TIMEOUT', 0);
     }
 }
