@@ -684,7 +684,9 @@ class Episciences_Review
         $result = $this->_db->fetchAll($select);
 
         $volumes = [];
+
         foreach ($result as $volume) {
+            Episciences_VolumesManager::dataProcess($volume, 'decode');
             $oVolume = new Episciences_Volume($volume);
             $volumes[$oVolume->getVid()] = $oVolume;
         }
