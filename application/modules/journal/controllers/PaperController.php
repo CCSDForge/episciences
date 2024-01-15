@@ -910,10 +910,8 @@ class PaperController extends PaperDefaultController
 
         $path = $cAnswer->getFilePath();
         $mailPath = Episciences_Tools::getAttachmentsPath((string)$paper->getPaperid());
-
-
-        // Le fichier attaché à la réponse se trouve dans un autre path car au moment de la réponse, on a pas encore l'id de la réponse.
-        // Déplacemnet du fichier
+        
+        // Le fichier joint à la réponse se trouve dans un autre path : l'ID de la réponse n'est pas encore connu.
         $delete = [];
 
         $parentPathContent = scandir($parentPath);
@@ -926,9 +924,9 @@ class PaperController extends PaperDefaultController
             }
         }
 
-        // Supprimer les fichiers du répertoire parent
+        // Suppression des fichiers précédemment déplacés du répertoire parent
         foreach ($delete as $file) {
-            // Fichier attachés aux mails pointe vers REVIEW_FILES_PATH . 'attachments/'
+
             if ($sendMail) {
                 $file = Episciences_Tools::filenameRotate($mailPath, $file);
                 Episciences_Tools::cpFiles((array)$file, $parentPath, $mailPath, true);

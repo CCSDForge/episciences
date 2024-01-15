@@ -1111,12 +1111,12 @@ class Episciences_Tools
 
         foreach ($filesList as $file) {
             if (!copy($source . $file, $dest . $file)) {
-                trigger_error('FAILED_TO_COPY_FILE_ERROR: ' . $file . '( SOURCE: ' . $source . 'DESTINATION: ' . $dest . ' )');
+                trigger_error('FAILED_TO_COPY_FILE_ERROR: ' . $file . '( SOURCE: ' . $source . ', DESTINATION: ' . $dest . ' )');
                 $nbFilesNotCopied++;
             }
         }
 
-        return ($nbFilesNotCopied == count($filesList)) ? false : true;
+        return $nbFilesNotCopied !== count($filesList); // return true if all files were copied
 
     }
 

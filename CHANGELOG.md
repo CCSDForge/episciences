@@ -15,11 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+###
+- PHP Notice: FAILED_TO_COPY_FILE_ERROR
+
+## v1.0.41.5 - 2024-01-11
 ### Fixed
 - Typo [423](https://github.com/CCSDForge/episciences/issues/423)
 - Crossref export of bibliographical references: fixed unescaped HTML, added a log for XML errors
-
+- Fix #417 Identifiers other than SWHID for Software solutions: remove domain prefixing SWH for all software, add the right domain for software (other than SWH), add correct domain for software in TEI
 
 ## v1.0.41.4 - 2023-12-20
 ### Fixed

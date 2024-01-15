@@ -655,7 +655,7 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($row && !$this->hasLocalData()) {
             $this->setScreenName();
-        };
+        }
 
         return $row;
     }
