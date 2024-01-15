@@ -1,88 +1,102 @@
 <div id="latest-articles">
+    <?php if (empty($this->articles['response']['docs'])) : ?>
+        <div class="no-results"><?php echo $this->translate('Aucun article pour le moment'); ?></div>
+    <?php else: ?>
 
-	<?php if (empty($this->articles['response']['docs'])) : ?>
-	<div class="no-results"><?php echo $this->translate('Aucun article pour le moment'); ?></div>
-	<?php endif; ?>
 
-	<?php $locale = Episciences_Tools::getLocale(); ?>
-	<?php foreach ($this->articles['response']['docs'] as $doc) : ?>
-	<div class="article-block">
-		<div class="article-title"><a href="/<?php echo $this->escape($doc['docid']); ?>"><?php echo Episciences_Tools::getTitleFromIndexedPaper($doc, $locale); ?></a></div>
-		<div class="authors"><span class="authors-label"><?php echo $this->translate('Auteurs : ') ?></span> 
-		<?php
-		if (array_key_exists('author_fullname_s', $doc)) {
-			$arrayOfAuthors = [];
-	        $authorSeparator = '&nbsp;;&nbsp;';
-	        $maxNumberOfAuthors = 10;
-	        $outputFormat = '<a data-toggle="tooltip" data-placement="bottom" title="' . $this->translate("Articles de l'auteur") . '" href="%s">%s</a>';
-	        $arrayOfAuthorsWithURL = [];
-	
-	        foreach ($doc['author_fullname_s'] as $author) {
-	        	$tab = '';
-	            $tab = Ccsd_Search_Solr::facetStringResultAsArray($author);
-	            $arrayOfAuthors[] = $tab[0];
-			}
-	
-			if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
-	        	$multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
-	
-	        	foreach ($multiArraysOfAuthors[0] as $authorName) {
-	            	$url = $this->url(array(
-	                	'controller' => 'search',
-	                    'action' => 'index',
-	                    'q' => '*',
-						'author_fullname_t' => $this->escape($authorName)), null, TRUE);
-					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
-				}
-	            $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
-			} else {
-	
-				foreach ($arrayOfAuthors as $authorName) {
-					$url = $this->url(array(
-							'controller' => 'search',
-							'action' => 'index',
-							'q' => '*',
-							'author_fullname_t' => $this->escape($authorName)), null, TRUE);
-					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
-				}
-				$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
-				if (substr($authorList, - 1) != '.') {
-					$authorList .= '.';
-				}
-			}
-	
-	        echo $authorList;
-		}
-		?>
-		</i></div>
-		<p style="text-align: justify" class="small"><?php
-		$abstract = Episciences_Tools::getAbstractFromIndexedPaper($doc, $locale);
-		if ($abstract) {
-			echo '<br/><blockquote><small>';
-	        echo Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
-	        echo '</small></blockquote>';
-		}
-		?></p>
-		<hr>
-		<?php if (array_key_exists('volume_id_i', $doc)) : ?>
-	        <div class="small">
-	        	<?php echo $this->translate('Volume : '); ?>
-		        <?= Episciences_VolumesManager::translateVolumeKey('volume_'.$doc['volume_id_i'].'_title') ?>
-	        </div>
-		<?php endif;?>
-		<?php if (array_key_exists('section_id_i', $doc)) : ?>
-	        <div class="small">
-	        	<?php echo $this->translate('Rubrique : '); ?>
-		        <?php echo $this->translate('section_'.$doc['section_id_i'].'_title'); ?>
-	        </div>
-		<?php endif;?>
-		<?php if (array_key_exists('publication_date_tdate', $doc)) : ?>
-	        <div class="small">
-		        <?php echo $this->translate('Publié le '); ?>
-		        <?php echo $this->Date($doc['publication_date_tdate']); ?>
-	        </div>
-		<?php endif;?>
-	</div>
-	<?php endforeach;  // end results ?>
+        <?php $locale = Episciences_Tools::getLocale(); ?>
+
+        <?php foreach ($this->articles['response']['docs'] as $doc) : ?>
+            <?php $title = $this->escape($doc['paper_title_t'][0]);
+            $doi = 'https://doi.org/' . $this->escape($doc['doi_s']);
+            $volume = $doc[$locale . '_volume_title_t'] ?: $doc['volume_title_t'][0];
+            if (array_key_exists($locale . '_section_title_t', $doc)) {
+                $section = $doc[$locale . '_section_title_t'] ?: '';
+            } else {
+                $section = '';
+            }
+            ?>
+            <div class="article-block">
+                <div class="article-title"><a
+                            href="<?= $doi ?>"><?= $title ?></a>
+                </div>
+                <div class="authors"><span class="authors-label"><?php echo $this->translate('Auteurs : ') ?></span>
+                    <?php
+                    if (array_key_exists('author_fullname_s', $doc)) {
+                        $arrayOfAuthors = [];
+                        $authorSeparator = '&nbsp;;&nbsp;';
+                        $maxNumberOfAuthors = 10;
+                        $outputFormat = '<a data-toggle="tooltip" data-placement="bottom" title="' . $this->translate("Articles de l'auteur") . '" href="%s">%s</a>';
+                        $arrayOfAuthorsWithURL = [];
+
+                        foreach ($doc['author_fullname_s'] as $author) {
+                            $tab = Ccsd_Search_Solr::facetStringResultAsArray($author);
+                            $arrayOfAuthors[] = $tab[0];
+                        }
+
+                        if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
+                            $multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
+
+                            foreach ($multiArraysOfAuthors[0] as $authorName) {
+                                $url = $this->url(array(
+                                    'controller' => 'search',
+                                    'action' => 'index',
+                                    'q' => '*',
+                                    'author_fullname_t' => $this->escape($authorName)), null, TRUE);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                            }
+                            $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
+                        } else {
+
+                            foreach ($arrayOfAuthors as $authorName) {
+                                $url = $this->url(array(
+                                    'controller' => 'search',
+                                    'action' => 'index',
+                                    'q' => '*',
+                                    'author_fullname_t' => $this->escape($authorName)), null, true);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                            }
+                            $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
+                            if (mb_substr($authorList, -1) !== '.') {
+                                $authorList .= '.';
+                            }
+                        }
+
+                        echo $authorList;
+                    }
+                    ?>
+                    </i></div>
+                <p style="text-align: justify" class="small"><?php
+                    $abstract = $this->escape($doc['abstract_t'][0]);
+                    if ($abstract) {
+                        echo '<br/><blockquote><small>';
+                        echo Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
+                        echo '</small></blockquote>';
+                    }
+                    ?></p>
+                <hr>
+                <?php if ($volume) : ?>
+                    <div class="volume">
+                        <a href="/volume/view/id/<?php echo $this->escape($doc['volume_id_i']) ?>"><?php echo $volume; ?></a>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($section) : ?>
+                    <div class="section">
+                        <a href="/section/view/id/<?php echo $this->escape($doc['section_id_i']) ?>"><?php echo $section; ?></a>
+                    </div>
+                <?php endif; ?>
+                <?php if (array_key_exists('publication_date_tdate', $doc)) : ?>
+                    <div class="small">
+                        <?php echo $this->translate('Publié le '); ?>
+                        <?php echo $this->Date($doc['publication_date_tdate']); ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach;  // end results ?>
+    <?php endif; ?>
 
 </div>
+
+
+

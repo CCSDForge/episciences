@@ -674,7 +674,7 @@ class Episciences_Tools
      * @throws Exception
      * @see /library/Ccsd/Search/Solr/configs/endpoints.ini
      */
-    public static function solrCurl($queryString, $core = 'episciences', $handler = 'select', $addDefaultFilters = false)
+    public static function solrCurl(string $queryString, string $core = 'episciences', string $handler = 'select', bool $addDefaultFilters = false)
     {
         if ($addDefaultFilters) {
             //Ajout des filtres par defaut de l'environnement
@@ -1850,6 +1850,17 @@ class Episciences_Tools
      */
     public static function isHal(string $halId): bool {
         return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?/", $halId);
+    }
+
+    /**
+     * @param string $halId
+     * @return array
+     */
+    public static function getHalIdAndVer(string $halId): array
+    {
+        $matches = [];
+        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId,$matches);
+        return $matches;
     }
 
     /**
