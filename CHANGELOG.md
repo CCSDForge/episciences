@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### added
 - New template: inbox_paper_submission_author_copy: Your submission made via a preprint server - Author copy.
 - [#388](https://github.com/CCSDForge/episciences/issues/388): new option to require a deadline to be indicated when requesting a revision.
-
+- [#420](https://github.com/CCSDForge/episciences/issues/420): Add bibliographical references in zbjats export
 
 ## v1.0.41.3 - 2023-12-11
 ### Fixed

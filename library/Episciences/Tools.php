@@ -1853,6 +1853,17 @@ class Episciences_Tools
     }
 
     /**
+     * @param string $halId
+     * @return array
+     */
+    public static function getHalIdAndVer(string $halId): array
+    {
+        $matches = [];
+        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId,$matches);
+        return $matches;
+    }
+
+    /**
      * @param string $swhid
      * @return bool
      */

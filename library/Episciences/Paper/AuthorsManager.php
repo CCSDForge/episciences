@@ -305,9 +305,9 @@ class Episciences_Paper_AuthorsManager
      * @return bool
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function getHalTei(string $identifier, int $version): bool
+    public static function getHalTei(string $identifier, int $version = 0): bool
     {
-        $fileTeiHal = 'hal-tei-' . $identifier . '-' . $version . ".xml";
+        $fileTeiHal = $version === 0 ? 'hal-tei-' . $identifier . ".xml" : 'hal-tei-' . $identifier . '-' . $version . ".xml";
         $cacheTei = new FilesystemAdapter('halTei', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         $setsGlobalTei = $cacheTei->getItem($fileTeiHal);
         $setsGlobalTei->expiresAfter(self::ONE_MONTH);
@@ -325,10 +325,16 @@ class Episciences_Paper_AuthorsManager
      * @param int $version
      * @return string
      */
-    public static function getTeiHalByIdentifier(string $identifier, int $version): string
+    public static function getTeiHalByIdentifier(string $identifier, int $version = 0): string
     {
         $client = new guzzleClient();
-        $url = "https://api.archives-ouvertes.fr/search/?q=((halId_s:" . $identifier . " OR halIdSameAs_s:" . $identifier . ") AND version_i:" . $version . ")&wt=xml-tei";
+        if ($version === 0){
+            // last version picked
+            $url = "https://api.archives-ouvertes.fr/search/?q=((halId_s:" . $identifier . " OR halIdSameAs_s:" . $identifier . "))&wt=xml-tei";
+
+        } else {
+            $url = "https://api.archives-ouvertes.fr/search/?q=((halId_s:" . $identifier . " OR halIdSameAs_s:" . $identifier . ") AND version_i:" . $version . ")&wt=xml-tei";
+        }
         $teiHalResp = '';
         $timeOut = 3;
         if (PHP_SAPI === 'cli') {
@@ -359,9 +365,9 @@ class Episciences_Paper_AuthorsManager
      * @throws \Psr\Cache\InvalidArgumentException
      */
 
-    public static function getHalTeiCache(string $identifier, int $version): string
+    public static function getHalTeiCache(string $identifier, int $version = 0): string
     {
-        $fileTeiHal = 'hal-tei-' . $identifier . '-' . $version . ".xml";
+        $fileTeiHal = $version === 0 ? 'hal-tei-' . $identifier . ".xml" : 'hal-tei-' . $identifier . '-' . $version . ".xml";
         $cacheTei = new FilesystemAdapter('halTei', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         $setsGlobalTei = $cacheTei->getItem($fileTeiHal);
         $setsGlobalTei->expiresAfter(self::ONE_MONTH);
