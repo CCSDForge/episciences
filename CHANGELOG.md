@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ###
 - PHP Notice: FAILED_TO_COPY_FILE_ERROR
+- Script ZBJATS : Bypass all /pdf route that return 404 error
 
 ## v1.0.41.5 - 2024-01-11
 ### Fixed
