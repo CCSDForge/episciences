@@ -2,6 +2,7 @@
 
 
 use GuzzleHttp\Client as client;
+use GuzzleHttp\Exception\GuzzleException;
 
 $localopts = [
     'rvid=i' => 'RVID of a journal',
@@ -69,14 +70,25 @@ class zbjatZipper extends JournalScript
                         throw new \RuntimeException(sprintf('Directory "%s" was not created', $dirnameVol));
                     }
                     if ($paper->isPublished()) {
-                        $resourcexml = \GuzzleHttp\Psr7\Utils::tryFopen($dirnameVol . "article" . $iArticle . '.xml', 'w');
-                        $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/zbjats", ['sink' => $resourcexml]);
-                        echo PHP_EOL . 'get Zbjats for ' . $paper->getDocid() . PHP_EOL;
-
-                        $resourcepdf = \GuzzleHttp\Psr7\Utils::tryFopen($dirnameVol . "article" . $iArticle . '.pdf', 'w');
-                        $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/pdf", ['sink' => $resourcepdf]);
-                        echo PHP_EOL . 'get PDF for ' . $paper->getDocid() . PHP_EOL;
-
+                        try {
+                            $getPdf = $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/pdf");
+                            if ($getPdf->getStatusCode() === 200) {
+                                $fp = fopen($dirnameVol . "article" . $iArticle . '.pdf', 'wb');
+                                fwrite($fp, $getPdf->getBody()->getContents());
+                                echo PHP_EOL . 'get PDF for ' . $paper->getDocid() . PHP_EOL . 'URL => ' . 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/pdf".PHP_EOL;
+                                fclose($fp);
+                                $getXml = $client->request('GET', 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/zbjats");
+                                if ($getXml->getStatusCode() === 200) {
+                                    $fp = fopen($dirnameVol . "article" . $iArticle . '.xml', 'wb');
+                                    fwrite($fp, $getXml->getBody()->getContents());
+                                    echo PHP_EOL . 'get XML for ' . $paper->getDocid() . PHP_EOL . 'URL => ' . 'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/zbjat".PHP_EOL;
+                                    fclose($fp);
+                                }
+                            }
+                        } catch (GuzzleException $e) {
+                            echo PHP_EOL ."PDF NOT FOUND ON EPISCIENCES ".'http://' . $review->getCode() . '.episciences.org' . "/" . $paper->getDocid() . "/pdf" . PHP_EOL;
+                            continue;
+                        }
                         $iArticle++;
                     }
                 }
