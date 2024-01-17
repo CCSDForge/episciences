@@ -52,6 +52,7 @@ return [
     'Taille' => 'Size',
     'Id permanent' => 'Permanent Id',
     'Id document' => 'Document Id',
+    'Id : ' => 'Id: ',
 
 
     "Historique" => "History",
@@ -1640,7 +1641,7 @@ return [
 
     "Ajouter un logo" => "Add a logo",
     "Type" => "Type",
-    "Texte" => "Text",
+    "Texte" => "Preprint",
     "Image" => "Image",
     "Libellé" => "Label",
 
