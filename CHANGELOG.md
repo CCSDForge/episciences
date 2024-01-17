@@ -15,10 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-###
+### Fixed
 - PHP Notice: FAILED_TO_COPY_FILE_ERROR
 - Script ZBJATS : Bypass all /pdf route that return 404 error
 - Application error: Argument 1 passed to Episciences_Volume::setTitles() must be of the type array or null, string give.
+- "false positive" for missing translations in logs.
 
 ## v1.0.41.5 - 2024-01-11
 ### Fixed

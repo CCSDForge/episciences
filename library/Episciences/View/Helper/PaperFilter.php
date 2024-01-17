@@ -80,7 +80,7 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
         // volumes
         $options = [''	=>	$this->view->translate('Tous')];
         foreach($review->getVolumes() as $oVolume) {
-            $options[$oVolume->getVid()] = $this->view->translate($oVolume->getNameKey());
+            $options[$oVolume->getVid()] = $oVolume->getNameKey();
         }
 
         $form->addElement(new Zend_Form_Element_Multiselect(array(

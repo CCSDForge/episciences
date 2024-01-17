@@ -63,7 +63,7 @@
                 <?php // article volume ******************************************* ?>
                 <td class="text-center"><?php
                     if (array_key_exists($paper->getVid(), $this->volumes)) {
-                        echo $this->translate($this->volumes[$paper->getVid()]->getNameKey());
+                        echo $this->volumes[$paper->getVid()]->getNameKey();
                     } else {
                         echo '-';
                     }

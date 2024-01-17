@@ -22,7 +22,7 @@
             <select class="form-control" name="vid" id="master_volume_select">
                 <option><?php echo $this->translate('Hors volume') ?></option>
                 <?php foreach ($this->volumes as $volume) : ?>
-                    <option <?= ($volume->getVid() === $this->vid) ? 'selected="selected"' : '' ?> value="<?= $volume->getVid() ?>"><?= $this->translate($volume->getNameKey()) ?></option>
+                    <option <?= ($volume->getVid() === $this->vid) ? 'selected="selected"' : '' ?> value="<?= $volume->getVid() ?>"><?= $volume->getNameKey() ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
