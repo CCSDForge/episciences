@@ -52,6 +52,7 @@ return [
     'Taille' => 'Size',
     'Id permanent' => 'Permanent Id',
     'Id document' => 'Document Id',
+    'Id : ' => 'Id: ',
 
 
     "Historique" => "History",
