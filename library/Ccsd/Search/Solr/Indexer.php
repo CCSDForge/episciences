@@ -22,7 +22,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
     public static string $coreName;
     protected static ?Query $update = null;
     private string $logFilename = '';
-    private bool $debugMode;
+    private bool $debugMode = false;
     private Document $doc;
     private Zend_Db_Adapter_Abstract $db;
     private array $bufferedDocidList = [];

@@ -16,11 +16,9 @@ class Episciences_ZbjatsTools
         foreach ($jsonRefBib as $refBib) {
             $doiInfo = '';
             $dir = CACHE_PATH_METADATA . 'zbjatRefBib/';
-            if (!file_exists($dir)) {
-                $result = mkdir($dir);
-                if (!$result) {
-                    continue;
-                }
+            if (!is_dir($dir) && !mkdir($dir, 0776, true) && !is_dir($dir)) {
+                trigger_error('Upload file failed: directory "%s" was not created', $dir);
+                continue;
             }
             if (isset($refBib['doi']) && $refBib['doi'] !== '') {
                 $cacheZbjatJsonRefBib = new FilesystemAdapter('zbjatRefBib', 0, CACHE_PATH_METADATA);
