@@ -1640,7 +1640,7 @@ return [
 
     "Ajouter un logo" => "Add a logo",
     "Type" => "Type",
-    "Texte" => "Text",
+    "Texte" => "Preprint",
     "Image" => "Image",
     "Libellé" => "Label",
 
