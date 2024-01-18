@@ -266,14 +266,18 @@ class InboxNotifications extends Script
     {
 
         if (!$url) {
+            $this->displayWarning('EMPTY TARGET IDENTIFIER' . PHP_EOL);
             return '';
         }
 
         $parse = parse_url($url);
 
-        return isset($parse['host']) ?
+        $rvCode = isset($parse['host']) ?
             mb_substr($parse['host'], 0, (mb_strlen($parse['host']) - mb_strlen(DOMAIN)) - 1) :
             '';
+
+        $this->displayDebug('CURRENT RVCODE: ' . $rvCode . PHP_EOL);
+        return $rvCode;
     }
 
     /**
@@ -668,7 +672,7 @@ class InboxNotifications extends Script
 
         $isFirstSubmission = (
             $originalRequest === null ||
-            ($originalRequest instanceof Episciences_Comment  && $originalRequest->getDocid() !== $paper->getDocid())
+            ($originalRequest instanceof Episciences_Comment && $originalRequest->getDocid() !== $paper->getDocid())
         );
 
         $rvCode = $journal->getCode();
@@ -728,6 +732,9 @@ class InboxNotifications extends Script
         }
 
         $recipients = [];
+        $cc = [];
+        $refMessage = '';
+        $principalRecipient = null;
 
         if (!$isFirstSubmission) {
             $recipients = $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
@@ -739,25 +746,15 @@ class InboxNotifications extends Script
 
         unset($recipients[$paper->getUid()]);
 
-        $principalRecipient = !empty($recipients) ? $recipients[array_key_first($recipients)] : null;
-
-        if (!$isFirstSubmission) { // new version
-
-
-            if ($paper->isEditor($originalRequest->getUid())) {
-
-                $principalRecipient = $paper->getEditor($originalRequest->getUid());
-
-            } else {
-                $principalRecipient = !empty($recipients) ? $recipients[array_key_first($paper->getEditors())] : null;
-            }
+        // new version
+        if (!$isFirstSubmission && $paper->isEditor($originalRequest->getUid())) {
+            $principalRecipient = $paper->getEditor($originalRequest->getUid());
+            $cc = $paper->extractCCRecipients($recipients, $principalRecipient->getUid());
+            $recipients = array($principalRecipient);
 
         }
 
-        $cc = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
-
-
-        if (!$this->isDebug() && $principalRecipient) {
+        if (!$this->isDebug()) {
 
             $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/administratepaper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
@@ -777,37 +774,44 @@ class InboxNotifications extends Script
 
             $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl;
 
-            $adminTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] =
-                $paper->getTitle($principalRecipient->getLangueid(), true);
-            $adminTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] =
-                $paper->formatAuthorsMetadata($principalRecipient->getLangueid());
-
-
             if ($isPreviousPaperRefused) {
-                $message = 'Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : ';
+                $refMessage = 'Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : ';
 
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $options['docId']);;
 
-                $message = $translator->translate($message, $principalRecipient->getLangueid(), true);
-                $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $message;
-
             }
 
+            foreach ($recipients as $recipient) {
 
-            Episciences_Mail_Send::sendMailFromReview(
-                $principalRecipient,
-                $managersTemplateKey,
-                $adminTags,
-                $paper,
-                null,
-                [],
-                false,
-                $cc,
-                $journalOptions
-            );
+                $adminTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] =
+                    $paper->getTitle($recipient->getLangueid(), true);
+                $adminTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] =
+                    $paper->formatAuthorsMetadata($recipient->getLangueid());
+
+                if ($refMessage !== '') {
+
+                    $refMessage = $translator->translate($refMessage, $principalRecipient->getLangueid(), true);
+                    $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $refMessage;
+
+                }
 
 
-            $this->displaySuccess($principalRecipient->getScreenName() . ' notified > OK' . PHP_EOL, $isVerbose);
+                Episciences_Mail_Send::sendMailFromReview(
+                    $principalRecipient,
+                    $managersTemplateKey,
+                    $adminTags,
+                    $paper,
+                    null,
+                    [],
+                    false,
+                    $cc,
+                    $journalOptions
+                );
+
+                $this->displaySuccess($recipient->getScreenName() . ' notified > OK' . PHP_EOL, $isVerbose);
+
+
+            }
 
             $this->displaySuccess('All editorial committee notified > OK' . PHP_EOL, $isVerbose);
 
@@ -847,12 +851,12 @@ class InboxNotifications extends Script
                     [
                         'user' => (new Episciences_User())->find(EPISCIENCES_UID),
                         'version' => [
-                            'old' => $details['oldVersion']?? 1,
+                            'old' => $details['oldVersion'] ?? 1,
                             'new' => $paper->getVersion()
                         ]
                     ]
                 );
-            } elseif ($submissionType === self::NEW_VERSION) {
+
 
             } else {
                 $paper->log(

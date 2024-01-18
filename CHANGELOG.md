@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+### changed
+- Epi-notify-from-hal: processing new versions + enhancements.
 ### Fixed
 - PHP Notice: FAILED_TO_COPY_FILE_ERROR
 - Script ZBJATS : Bypass all /pdf route that return 404 error
