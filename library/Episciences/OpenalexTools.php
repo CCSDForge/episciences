@@ -6,7 +6,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_OpenalexTools {
     public const PARAMS_OALEX = "?select=title,authorships,open_access,biblio,primary_location,locations,publication_year,best_oa_location,type_crossref";
-
+    public const UNWANTED_HAL_STRING_OPENALEX = ["HAL (Le Centre pour la Communication Scientifique Directe)"];
     public const ONE_MONTH = 3600 * 24 * 31;
 
     /**
@@ -97,12 +97,20 @@ class Episciences_OpenalexTools {
 
     /**
      * @param array $locations
-     * @return mixed|void
+     * @return array|string
      */
     public static function getFirstAlternativeLocations(array $locations) {
         foreach ($locations as $location){
             if (!is_null($location['source'])){
-                $arrayOa = ['source_title' => $location['source']['display_name'], 'oa_link' => ""];
+                if ($location['source']['type'] !== 'journal'){
+                    $journal = self::getJournalNameInLocations($locations);
+                    if ($journal === '') {
+                        $journal = $location['source']['display_name'];
+                    }
+                } else {
+                    $journal = $location['source']['display_name'];
+                }
+                $arrayOa = ['source_title' => $journal, 'oa_link' => ""];
                 if ($location['is_oa'] === true){
                     $arrayOa['oa_link'] = $location['source']['landing_page_url'];
                 }
@@ -118,16 +126,56 @@ class Episciences_OpenalexTools {
      */
     public static function getBestOaInfo($primaryLocation, array $locations, $bestOaLocation) {
         if ($bestOaLocation !== null && !is_null($bestOaLocation['source'])) {
-          return ['source_title' => $bestOaLocation['source']['display_name'],'oa_link' => $bestOaLocation['landing_page_url']];
+            $journal = $bestOaLocation['source']['display_name'];
+            return ['source_title' => $journal,'oa_link' => $bestOaLocation['landing_page_url']];
         }
         if ($primaryLocation['is_oa'] === true && !is_null($primaryLocation['source'])) {
-            return ['source_title' => $primaryLocation['source']['display_name'],'oa_link' => $primaryLocation['landing_page_url']];
+            $journal = $primaryLocation['source']['display_name'];
+            return ['source_title' => $journal,'oa_link' => $primaryLocation['landing_page_url']];
         }
         foreach ($locations as $location) {
             if ($location['is_oa'] === true && !is_null($location['source'])) {
-                return ['source_title' => $location['source']['display_name'],'oa_link' => $location['landing_page_url']];
+                if ($location['source']['type'] !== 'journal') {
+                    $journal = self::getJournalNameInLocations($locations);
+                    if ($journal === '') {
+                        $journal = $location['source']['display_name'];
+                    }
+                } else {
+                    $journal = $location['source']['display_name'];
+                }
+                return ['source_title' => $journal,'oa_link' => $location['landing_page_url']];
             }
         }
         return self::getFirstAlternativeLocations($locations);
+    }
+
+    /**
+     * @param array $locations
+     * @return string
+     */
+    public static function getJournalNameInLocations(array $locations): string {
+        foreach ($locations as $location) {
+            if (!is_null($location['source']) && $location['source']['type'] === "journal") {
+                return $location['source']['display_name'];
+            }
+            if (!is_null($location['source'])
+                && $location['version'] === "publishedVersion"
+                && $location['is_accepted'] === "true"
+                && $location['is_published'] === "true") {
+                return $location['source']['display_name'];
+            }
+        }
+        return '';
+    }
+
+    /**
+     * @param string $location
+     * @return string
+     */
+    public static function removeHalStringFromLocation(string $location): string {
+        if (in_array($location,self::UNWANTED_HAL_STRING_OPENALEX)){
+            $location = '';
+        }
+        return $location;
     }
 }
