@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ###
 - PHP Notice: FAILED_TO_COPY_FILE_ERROR
 - Application error: Argument 1 passed to Episciences_Volume::setTitles() must be of the type array or null, string give.
+- Epi-notify-from-hal: in some cases, members of the editorial board of another journal  were receiving notifications by mistake.
 
 ## v1.0.41.5 - 2024-01-11
 ### Fixed
