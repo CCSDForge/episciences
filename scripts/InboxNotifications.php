@@ -1097,12 +1097,13 @@ class InboxNotifications extends Script
         // new deadline is today + default deadline interval (journal setting)
         $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), $journal->getSetting(Episciences_Review::SETTING_RATING_DEADLINE));
 
+        $params = ['deadline' => $deadline, 'status' => Episciences_User_Assignment::STATUS_PENDING, 'rvid' => $journal->getRvid()];
 
         // loop through each reviewer
         /** @var Episciences_Reviewer $reviewer */
         foreach ($reviewers as $reviewer) {
             /** @var Episciences_User_Assignment $oAssignment */
-            $oAssignment = $reviewer->assign($paper->getDocid(), ['deadline' => $deadline, 'status' => Episciences_User_Assignment::STATUS_PENDING])[0];
+            $oAssignment = $reviewer->assign($paper->getDocid(), $params)[0];
 
             $oInvitation = new Episciences_User_Invitation(['aid' => $oAssignment->getId(), 'sender_uid' => EPISCIENCES_UID]);
 
