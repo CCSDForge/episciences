@@ -8,7 +8,7 @@
 
         <?php foreach ($this->articles['response']['docs'] as $doc) : ?>
             <?php $title = $this->escape($doc['paper_title_t'][0]);
-            $doi = 'https://doi.org/' . $this->escape($doc['doi_s']);
+            $docUrl = '/' . $this->escape($doc['docid']);
             $volume = $doc[$locale . '_volume_title_t'] ?: $doc['volume_title_t'][0];
             if (array_key_exists($locale . '_section_title_t', $doc)) {
                 $section = $doc[$locale . '_section_title_t'] ?: '';
@@ -18,7 +18,7 @@
             ?>
             <div class="article-block">
                 <div class="article-title"><a
-                            href="<?= $doi ?>"><?= $title ?></a>
+                            href="<?= $docUrl ?>"><?= $title ?></a>
                 </div>
                 <div class="authors"><span class="authors-label"><?php echo $this->translate('Auteurs : ') ?></span>
                     <?php
