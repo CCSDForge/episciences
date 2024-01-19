@@ -734,7 +734,6 @@ class InboxNotifications extends Script
         $recipients = [];
         $cc = [];
         $refMessage = '';
-        $principalRecipient = null;
 
         if (!$isFirstSubmission) {
             $recipients = $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
@@ -790,14 +789,14 @@ class InboxNotifications extends Script
 
                 if ($refMessage !== '') {
 
-                    $refMessage = $translator->translate($refMessage, $principalRecipient->getLangueid(), true);
+                    $refMessage = $translator->translate($refMessage, $recipient->getLangueid(), true);
                     $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $refMessage;
 
                 }
 
 
                 Episciences_Mail_Send::sendMailFromReview(
-                    $principalRecipient,
+                    $recipient,
                     $managersTemplateKey,
                     $adminTags,
                     $paper,
