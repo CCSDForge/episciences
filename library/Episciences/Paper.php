@@ -3753,11 +3753,8 @@ class Episciences_Paper
                 $isAccepted = isset($detail['status']) &&
                     (
                         (int)$detail['status'] === self::STATUS_ACCEPTED ||
+                        (int)$detail['status'] === self::STATUS_TMP_VERSION_ACCEPTED
 
-                        (
-                            (int)$detail['status'] === self::STATUS_TMP_VERSION_ACCEPTED &&
-                            $this->isTmp()
-                        )
                     );
 
 

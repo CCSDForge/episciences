@@ -227,9 +227,8 @@ class Episciences_Review
             $this->setOptions($options);
         }
 
-        if (null === self::$_currentReviewId) {
-            self::setCurrentReviewId($this->getRvid());
-        }
+        self::setCurrentReviewId($this->getRvid()); // /!\ Instead of checking if $currentReviewId !== null => Side effect: once the value is initialized (@see InboxNotifications::notifyAuthorAndEditorialCommittee)
+
     }
 
     /**
@@ -1174,11 +1173,11 @@ class Episciences_Review
                 'description' => "L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv",
                 'value' => 0,
 
-            'multioptions' => [
-                0 => 'Non',
-                1 => 'Facultatif',
-                2 => 'Requis',
-            ],
+                'multioptions' => [
+                    0 => 'Non',
+                    1 => 'Facultatif',
+                    2 => 'Requis',
+                ],
 
             ]
         );
@@ -1475,11 +1474,11 @@ class Episciences_Review
         );
 
         $form->addElement('checkbox', self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS, [
-                'label' => "Activer la fonctionnalité",
-                'description' => "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs.",
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators
-            ]);
+            'label' => "Activer la fonctionnalité",
+            'description' => "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs.",
+            'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+            'decorators' => $checkboxDecorators
+        ]);
 
         return $form;
     }
@@ -1595,8 +1594,8 @@ class Episciences_Review
                 'description' => "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels",
                 'value' => 0,
                 'multiOptions' => [
-                    0 => 'error@'.DOMAIN,
-                    1 => $this->getCode().'-error@'.DOMAIN,
+                    0 => 'error@' . DOMAIN,
+                    1 => $this->getCode() . '-error@' . DOMAIN,
                 ],
 
             ]
@@ -1638,7 +1637,7 @@ class Episciences_Review
         ];
 
 
-        return  $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
+        return $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
                 'label' => 'Visibilité des statistiques',
                 'description' => "",
                 'value' => 0,
@@ -1839,7 +1838,7 @@ class Episciences_Review
          }*/
 
         // Enregistrement des traductions
-       Episciences_Tools::writeTranslations($translations, $path, $file); // not necessary for the moment
+        Episciences_Tools::writeTranslations($translations, $path, $file); // not necessary for the moment
 
         $this->checkAndCreateIfNotExistsCryptoFile();
 
@@ -2385,11 +2384,11 @@ class Episciences_Review
     /**
      * @return void
      */
-    private function  checkAndCreateIfNotExistsCryptoFile(): void
+    private function checkAndCreateIfNotExistsCryptoFile(): void
     {
 
 
-        if(in_array(Episciences_Repositories::ARXIV_REPO_ID, self::getSetting(self::SETTING_REPOSITORIES)) && $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD)){
+        if (in_array(Episciences_Repositories::ARXIV_REPO_ID, self::getSetting(self::SETTING_REPOSITORIES)) && $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD)) {
 
             $path = self::getCryptoFilePath();
 
@@ -2411,7 +2410,8 @@ class Episciences_Review
     /**
      * @return string
      */
-    public static function getCryptoFilePath(): string{
+    public static function getCryptoFilePath(): string
+    {
         return REVIEW_FILES_PATH . RVCODE . '-crypto.json';
     }
 
