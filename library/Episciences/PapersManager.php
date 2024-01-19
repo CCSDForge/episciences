@@ -590,8 +590,9 @@ class Episciences_PapersManager
                     $valuesName[$key] = $value;
 
                 } else if (method_exists($value, $method_name)) {
-                    $valuesName[$key] = Ccsd_Tools::translate($value->$method_name());
+                    $valuesName[$key] = $value instanceof Episciences_Volume ? $value->$method_name() : Ccsd_Tools::translate($value->$method_name());
                 }
+
                 if (preg_match("/$word/i", $valuesName[$key])) {
                     $arrayValues[] = $key;
                 }

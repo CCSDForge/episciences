@@ -32,7 +32,7 @@ $docId = $this->article->getDocid();
         <?php endif; ?>
         <span id="master_volume_name_<?= $docId; ?>">
             <?php if ($vid && array_key_exists($vid, $this->volumes)) : ?>
-                <?= $this->translate($this->volumes[$vid]->getNameKey()); ?>
+                <?= $this->volumes[$vid]->getNameKey() ?>
                 <?= $this->partial('partials/paper_volume_position.phtml', [
                     'docId' => $docId,
                     'vid' => $vid,
