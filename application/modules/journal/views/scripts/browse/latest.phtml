@@ -9,7 +9,19 @@
         <?php foreach ($this->articles['response']['docs'] as $doc) : ?>
             <?php $title = $this->escape($doc['paper_title_t'][0]);
             $docUrl = '/' . $this->escape($doc['docid']);
-            $volume = $doc[$locale . '_volume_title_t'] ?: $doc['volume_title_t'][0];
+
+            $localVolumeTitleIndex = $locale . '_volume_title_t';
+
+            if (array_key_exists($localVolumeTitleIndex, $doc)) {
+                $volume = $doc[$localVolumeTitleIndex];
+            } elseif (array_key_exists('volume_title_t', $doc) && $doc['volume_title_t'][0]) {
+                $volume = $doc['volume_title_t'][0];
+            } else {
+                $volume = '';
+            }
+
+
+
             if (array_key_exists($locale . '_section_title_t', $doc)) {
                 $section = $doc[$locale . '_section_title_t'] ?: '';
             } else {
