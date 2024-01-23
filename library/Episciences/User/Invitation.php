@@ -74,6 +74,7 @@ class Episciences_User_Invitation
         if (is_array($options)) {
             $this->setOptions($options);
         }
+
     }
 
     public function setOptions(array $options): \Episciences_User_Invitation
@@ -97,8 +98,10 @@ class Episciences_User_Invitation
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        $rvId = !defined('RVID') ? Episciences_Review::$_currentReviewId : RVID;
+
         // Délai avant expiration de l'invitation (en jours)
-        $review = Episciences_ReviewsManager::find(RVID);
+        $review = Episciences_ReviewsManager::find($rvId);
         $review->loadSettings();
         $expiration_delay = ($review->getSetting('invitation_deadline')) ?: Episciences_Review::DEFAULT_INVITATION_DEADLINE;
 

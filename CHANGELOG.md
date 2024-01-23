@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### TODO:
+- INSERT INTO `MAIL_TEMPLATE` (`ID`, `PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, `POSITION`) VALUES (NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1)
+
 ### changed
 - Epi-notify-from-hal: processing new versions + enhancements.
 ### Fixed
@@ -23,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "false positive" for missing translations in logs.
 - Epi-notify-from-hal: in some cases, members of the editorial board of another journal  were receiving notifications by mistake.
 - RT#203491.
+- Script Citation: Improvement in obtaining the source journal from openAlex's response
+
 
 ## v1.0.41.5 - 2024-01-11
 ### Fixed

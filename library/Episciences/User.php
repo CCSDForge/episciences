@@ -421,7 +421,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $uid = ($casId) ?: $this->getUid();
         $this->setUid($uid);
 
-        $langId = ($this->getLangueid()) ?: Zend_Registry::get('Zend_Locale')->getLanguage();
+        $langId = $this->getLangueid() ?: Zend_Registry::get('Zend_Locale')->getLanguage();
 
         if ($this->getScreenName() === '') {
             $this->setScreenName();

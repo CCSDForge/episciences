@@ -1566,7 +1566,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId. '-cc','value'=> $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
@@ -1649,7 +1649,7 @@ class Episciences_PapersManager
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
 
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
@@ -1731,7 +1731,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value'=> $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         $bccVal = '';
 
@@ -2135,8 +2135,13 @@ class Episciences_PapersManager
             ->from(['papers' => T_PAPERS])
             ->where('DOCID = ?', $docId);
 
+
+        if (defined('RVID') && !Ccsd_Tools::isFromCli()) {
+            $rvId = RVID;
+        }
+
         if ($rvId) {
-            $select->where('RVID = ?', RVID);
+            $select->where('RVID = ?', $rvId);
         }
 
         $data = $select->query()->fetch();
@@ -2636,16 +2641,15 @@ class Episciences_PapersManager
 
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
-        if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID){
+        if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
             $record = Episciences_Repositories_Common::checkAndCleanRecord($record);
         }
 
         $result = Episciences_Repositories::callHook(
             'hookCleanXMLRecordInput', [
-                'record' => $record,
-                'repoId' => $repoId
-            ]);
-
+            'record' => $record,
+            'repoId' => $repoId
+        ]);
 
 
         if (array_key_exists('record', $result)) {
@@ -2653,7 +2657,7 @@ class Episciences_PapersManager
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($docId);
 
-            $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId ];
+            $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
 
             // add all files
             $hookFiles = Episciences_Repositories::callHook(
@@ -2661,7 +2665,7 @@ class Episciences_PapersManager
                 (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
             );
 
-            if (isset($hookFiles['affectedRows'])){
+            if (isset($hookFiles['affectedRows'])) {
                 $affectedRows += $hookFiles['affectedRows'];
 
             }
@@ -2675,12 +2679,12 @@ class Episciences_PapersManager
             // add all linked data : Zenodo only
             $hookLikedData = Episciences_Repositories::callHook(
                 'hookLinkedDataProcessing', [
-                    'repoId' => $repoId,
-                    'identifier' => $identifier,
-                    'docId' => $docId
-                ]);
+                'repoId' => $repoId,
+                'identifier' => $identifier,
+                'docId' => $docId
+            ]);
 
-            if (isset($hookLikedData['affectedRows'])){
+            if (isset($hookLikedData['affectedRows'])) {
                 $affectedRows += $hookLikedData['affectedRows'];
             }
 
@@ -2930,7 +2934,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc','value'=> $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $prefix . '-bcc']);
@@ -3365,7 +3369,7 @@ class Episciences_PapersManager
         }
         $form->addElement('multiTextSimple', 'affiliations', $affiliationInfo);
         if (isset($option['acronymList'])) {
-            $form->addElement('hidden', 'affiliationAcronym',['value' => $option['acronymList']]);
+            $form->addElement('hidden', 'affiliationAcronym', ['value' => $option['acronymList']]);
         } else {
             $form->addElement('hidden', 'affiliationAcronym');
         }
@@ -3727,7 +3731,7 @@ class Episciences_PapersManager
     public static function getCoAuthors($docId): array
     {
         //get coauthors
-        $coAuthors = Episciences_User_AssignmentsManager::findAll(['ITEMID'=> $docId, 'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR]);
+        $coAuthors = Episciences_User_AssignmentsManager::findAll(['ITEMID' => $docId, 'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR]);
         $coAuthorsList = [];
         foreach ($coAuthors as $coAuthor) {
             $coAuthorUser = new Episciences_User();
@@ -3816,7 +3820,7 @@ class Episciences_PapersManager
     {
 
         $currentForm->addElement('hidden', 'docid', [
-            'id' => $formPrefix . '-hdocid-'. $docId,
+            'id' => $formPrefix . '-hdocid-' . $docId,
             'value' => $docId
         ]);
 
@@ -3909,7 +3913,7 @@ class Episciences_PapersManager
      * @param $docId
      * @return string
      */
-    public static function buildDocumentPath($docId) : string
+    public static function buildDocumentPath($docId): string
     {
         return REVIEW_FILES_PATH . $docId;
     }
@@ -3921,7 +3925,7 @@ class Episciences_PapersManager
     public static function getAllDocIdByPaperId(int $paperId)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?',$paperId);
+        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?', $paperId);
         return $db->fetchAll($select);
     }
 }

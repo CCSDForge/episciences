@@ -250,7 +250,7 @@ class Episciences_Mail_Send
         }
 
         if (isset($journalOptions['sender']) && $journalOptions['sender'] instanceof Episciences_User) {
-            $mail->setFromWithTags($journalOptions['sender']);
+            $mail->setFromWithTags($journalOptions['sender'], $journalOptions['rvCode']);
         } else {
             $mail->setFromReview($journalOptions['rvCode']);
         }

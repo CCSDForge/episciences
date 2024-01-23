@@ -314,6 +314,7 @@ class Episciences_Paper
     ];
 
     public const All_STATUS_WAITING_FOR_FINAL_VERSION = [
+        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
         self::STATUS_TMP_VERSION_ACCEPTED,
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION,
@@ -1336,7 +1337,7 @@ class Episciences_Paper
             $sql->where('VERSION = ?', $this->getVersion());
         }
 
-        $sql->where('REPOID = ?', $this->getRepoid());
+       //$sql->where('REPOID = ?', $this->getRepoid());
 
         // Si plusieurs version de l'article, on recupère l'article dans sa dernière version
         $sql->order('WHEN DESC');
@@ -2244,11 +2245,17 @@ class Episciences_Paper
             } else {
 
                 $paper = Episciences_PapersManager::get($this->getPaperid(), false);
-                $this->setDocUrl(Episciences_Repositories::getDocUrl(
-                    $paper->getRepoid(),
-                    $paper->getIdentifier(),
-                    (int)$this->getVersion()
-                ));
+
+                if ($paper) {
+                    $this->setDocUrl(Episciences_Repositories::getDocUrl(
+                        $paper->getRepoid(),
+                        $paper->getIdentifier(),
+                        (int)$this->getVersion()
+                    ));
+
+                } else {
+                    trigger_error('The original version no longer exists!?');
+                }
 
             }
 
@@ -2783,7 +2790,7 @@ class Episciences_Paper
 
                 if ($isEpiNotify) {
                     $result[InboxNotifications::PAPER_CONTEXT] = $this;
-                    $result['message'] = '*** Version Update ***';
+                    $result['message'] = '*** Update Version ***';
                 }
 
 
@@ -2791,12 +2798,30 @@ class Episciences_Paper
                 $isNewSubmission &&
                 (
                     in_array($status, self::STATUS_WITH_EXPECTED_REVISION, true) ||
-                    in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true)
+                    in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true) ||
+                    $this->getStatus() === self::STATUS_OBSOLETE
                 )
             ) {
 
                 if ($isEpiNotify) {
-                    $result[InboxNotifications::PAPER_CONTEXT] = $this;
+
+                    if ($status === self::STATUS_OBSOLETE) { // probably latest version is tmp (tmp repository != original repository)
+
+                        // check latest version first
+
+                        $latestVersionId = $this->getLatestVersionId();
+
+                        if ($latestVersionId) {
+                            $result[InboxNotifications::PAPER_CONTEXT] = Episciences_PapersManager::get($latestVersionId, false);
+                        }
+
+
+                    } else {
+
+                        $result[InboxNotifications::PAPER_CONTEXT] = $this;
+
+                    }
+
                     $result['message'] = '*** New version ***';
                 } else {
 

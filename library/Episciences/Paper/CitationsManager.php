@@ -240,6 +240,7 @@ class Episciences_Paper_CitationsManager
         } else {
             $globalInfoMetadata[$i]['oa_link'] = ($getLocationFromCr === "" && !is_null($getBestOpenAccessInfo['oa_link'])) ? $getBestOpenAccessInfo['oa_link'] : "";
         }
+        $globalInfoMetadata[$i]['source_title'] = Episciences_OpenalexTools::removeHalStringFromLocation($globalInfoMetadata[$i]['source_title']);
 
         return $globalInfoMetadata;
     }
@@ -307,7 +308,7 @@ class Episciences_Paper_CitationsManager
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function extractCitationsAndInsertInDb($apiCallCitationCache, $docId): void
+    public static function extractCitationsAndInsertInDb($apiCallCitationCache, $docId): void
     {
         $globalArrayCiteDOI = Episciences_OpencitationsTools::cleanDoisCitingFound($apiCallCitationCache);
         $globalInfoMetadata = [];
