@@ -39,7 +39,6 @@ class Episciences_Reviewer extends Episciences_User
     }
 
 
-
     /**
      * @return array
      */
@@ -107,7 +106,6 @@ class Episciences_Reviewer extends Episciences_User
         }
         return $this->_invitations[$docId] ?? null;
     }
-
 
 
     public function loadAssignments()
@@ -201,12 +199,12 @@ class Episciences_Reviewer extends Episciences_User
     public function assign($docId, $params = [])
     {
         $params = [
-            'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
+            'rvid' => $params['rvid'] ?? RVID,
             'itemid' => $docId,
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
-            'deadline' => Ccsd_Tools::ifsetor($params['deadline'], null),
-            'status' => Ccsd_Tools::ifsetor($params['status'], Episciences_User_Assignment::STATUS_ACTIVE)
+            'deadline' => $params['deadline'] ?? null,
+            'status' => $params['status'] ?? Episciences_User_Assignment::STATUS_ACTIVE
         ];
 
         return Episciences_UsersManager::assign($this->getUid(), $params);
@@ -536,7 +534,7 @@ class Episciences_Reviewer extends Episciences_User
      * @param int $rvId
      * @return Zend_Db_Select
      */
-    private function loadInvitationsQuery(int $rvId = RVID ): \Zend_Db_Select
+    private function loadInvitationsQuery(int $rvId = RVID): \Zend_Db_Select
     {
         // Inner Join 1
         $ua0 = $this->_db

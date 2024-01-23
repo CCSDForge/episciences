@@ -177,12 +177,11 @@ class Episciences_Mail extends Zend_Mail
     public function writeMail($rvCode = RVCODE, int $rvId = RVID, bool $debug = false): bool
     {
 
-
         if (!$this->getFrom()) {
             if (php_sapi_name() !== 'cli' && Episciences_Auth::isLogged()) {
-                $this->setFromWithTags(Episciences_Auth::getUser());
+                $this->setFromWithTags(Episciences_Auth::getUser(), $rvCode);
             } else {
-                $this->setFrom(RVCODE . '@' . DOMAIN, RVCODE);
+                $this->setFrom($rvCode . '@' . DOMAIN, $rvCode);
             }
         }
 
@@ -229,10 +228,11 @@ class Episciences_Mail extends Zend_Mail
     /**
      * set an unique sender from an Episciences_User, set reply-tp, and set sender tags
      * @param Episciences_User $sender
+     * @param string $rvCode
      * @return bool
      * @throws Zend_Mail_Exception
      */
-    public function setFromWithTags(Episciences_User $sender)
+    public function setFromWithTags(Episciences_User $sender, $rvCode = RVCODE)
     {
         if (empty($sender->getEmail())) {
             return false;
@@ -248,7 +248,7 @@ class Episciences_Mail extends Zend_Mail
         $this->addTag(Episciences_Mail_Tags::TAG_SENDER_FIRST_NAME, $sender->getFirstname());
         $this->addTag(Episciences_Mail_Tags::TAG_SENDER_LAST_NAME, $sender->getLastname());
 
-        $this->setFrom(RVCODE . '@' . DOMAIN, $sender->getFullName());
+        $this->setFrom($rvCode . '@' . DOMAIN, $sender->getFullName());
 
         return true;
     }

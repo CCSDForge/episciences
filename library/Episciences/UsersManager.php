@@ -177,16 +177,16 @@ class Episciences_UsersManager
 
         // prepare assignment values
         $assignmentValues = [
-            'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
+            'rvid' => $params['rvid'] ?? RVID,
             'itemid' => $params['itemid'],
             'item' => $params['item'],
             'roleid' => $params['roleid'],
-            'tmp_user' => Ccsd_Tools::ifsetor($params['tmp_user'], 0),
-            'status' => Ccsd_Tools::ifsetor($params['status'], $status)
+            'tmp_user' => $params['tmp_user'] ??  0,
+            'status' => $params['status'] ?? $status
         ];
 
-        if ($status == Episciences_User_Assignment::STATUS_ACTIVE) {
-            $assignmentValues['deadline'] = Ccsd_Tools::ifsetor($params['deadline'], null);
+        if ($status === Episciences_User_Assignment::STATUS_ACTIVE) {
+            $assignmentValues['deadline'] = $params['deadline'] ?? null;
         }
 
         // if only one id was given, push it in an array for processing

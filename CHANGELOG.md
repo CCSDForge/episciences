@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### TODO:
+- INSERT INTO `MAIL_TEMPLATE` (`ID`, `PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, `POSITION`) VALUES (NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1)
+
 ### changed
 - Epi-notify-from-hal: processing new versions + enhancements.
 ### Fixed
