@@ -104,7 +104,7 @@ class Episciences_Comment
 
     public function getOption($name)
     {
-        return (array_key_exists($name, $this->_options)) ? $this->_options[$name] : null;
+        return $this->_options[$name] ?? null;
     }
 
 

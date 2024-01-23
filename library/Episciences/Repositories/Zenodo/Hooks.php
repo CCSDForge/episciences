@@ -101,7 +101,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             }
 
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-            throw new Exception($e->getMessage());
+            throw new Ccsd_Error($e->getMessage());
         }
 
         if ($response){

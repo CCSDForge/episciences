@@ -133,28 +133,38 @@ class getLinkData extends JournalScript
                     $arrayResult = json_decode(file_get_contents($fileName), true, 512, JSON_THROW_ON_ERROR);
                     $relationship = $arrayResult[0]['relationship']['name'];
                     $targetString = json_encode($arrayResult[0]['target'], JSON_THROW_ON_ERROR);
-                    $lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext' => $targetString]);
-                    foreach ($arrayResult[0]['target']['identifiers'] as $identifier) {
-                        try {
-                            $enrichment = Episciences_Paper_DatasetsManager::insert([[
-                                'docId' => $docId,
-                                'code' => "null",
-                                'name' => $identifier['schema'],
-                                'value' => $identifier['identifier'],
-                                'link' => $identifier['schema'],
-                                'sourceId' => Episciences_Repositories::SCHOLEXPLORER_ID,
-                                'relationship' => $relationship,
-                                'idPaperDatasetsMeta' => $lastMetatextInserted
-                            ]]);
-                            if ($enrichment >= 1) {
-                                $this->displayInfo('DB info inserted for ' . $doiTrim, true);
+                    $arrayResult = array_map(static function($valuesResult) {
+                        if($valuesResult["relationship"]['inverseRelationship'] === 'IsRelatedTo'
+                            && $valuesResult["target"]['objectType'] === "publication") {
+                            return false;
+                        }
+                        return $valuesResult;
+                    },$arrayResult);
+                    $arrayResult = array_filter($arrayResult);
+                    if (!empty($arrayResult)){
+                        $lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext' => $targetString]);
+                        foreach ($arrayResult[0]['target']['identifiers'] as $identifier) {
+                            try {
+                                $enrichment = Episciences_Paper_DatasetsManager::insert([[
+                                    'docId' => $docId,
+                                    'code' => "null",
+                                    'name' => $identifier['schema'],
+                                    'value' => $identifier['identifier'],
+                                    'link' => $identifier['schema'],
+                                    'sourceId' => Episciences_Repositories::SCHOLEXPLORER_ID,
+                                    'relationship' => $relationship,
+                                    'idPaperDatasetsMeta' => $lastMetatextInserted
+                                ]]);
+                                if ($enrichment >= 1) {
+                                    $this->displayInfo('DB info inserted for ' . $doiTrim, true);
+                                }
+                            } catch (Exception $e) {
+                                $message = 'data existing ' . $e->getMessage();
+
+                                $this->displayInfo('[:error] ' . $message, true, static::BASH_RED);
+
+                                continue;
                             }
-                        } catch (Exception $e) {
-                            $message = 'data existing ' . $e->getMessage();
-
-                            $this->displayInfo('[:error] ' . $message, true, static::BASH_RED);
-
-                            continue;
                         }
                     }
                 } else {

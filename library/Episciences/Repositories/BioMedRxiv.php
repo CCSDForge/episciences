@@ -77,7 +77,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                 throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
             }
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-            throw new Exception($e->getMessage());
+            throw new Ccsd_Error($e->getMessage());
         }
 
         $messages = $response['messages'][array_key_first($response['messages'])];

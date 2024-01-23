@@ -14,6 +14,7 @@ $this->suggestedRefuse = false;
 $this->suggestedAccept = false;
 $this->suggestedRevision = false;
 $coAuthorsList = $this->coAuthorsList;
+$isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE));
 ?>
 
 <style>
@@ -348,6 +349,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
     var available_languages = <?php echo $this->available_languages?>;
     let siteLocale  = '<?= $this->siteLocale ?>';
     let defaultLocale = '<?= $this->defaultLocale ?>';
+    let isRequiredRevisionDeadline = <?= $isRequiredRevisionDeadline ?>;
 </script>
 
 <?php

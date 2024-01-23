@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## v1.0.41.7 - 2024-01-23
+
+### Changed
+- [COAR Notify] processing new versions + enhancements
+- Improvements on the indexing process with Apache Solr 
+
+### Fixed
+- Script ZBJATS : Skip documents which are not articles with a PDF, such as datasets
+- Application error: Argument 1 passed to Episciences_Volume::setTitles() must be of the type array or null, string give.
+- "false positive" for missing translations in logs.
+- [COAR Notify] when processing several submission at the same time, notification of submissions were sent to wrong recipients
+- RT#203491.
+- Citations of published papers: Improvement in obtaining the source journal from openAlex's response
+
 ## v1.0.41.6 - 2024-01-15
 ### Fixed
 - PHP Notice: FAILED_TO_COPY_FILE_ERROR
@@ -33,6 +47,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The version number for articles "formatted by the author, awaiting final version" is no longer available: the feature could prevent the author from answering the request for a final version
+- [322](https://github.com/CCSDForge/episciences/issues/322)  manage closing mail author
+- changing right to adding orcid when you're owner of paper (before was only for paper's managers)
+- [133](https://github.com/CCSDForge/episciences/issues/133) Add default style for the accepted page
+
+### Added
+- New email template: inbox_paper_submission_author_copy: Your submission made via a preprint server - Author copy.
+- [#388](https://github.com/CCSDForge/episciences/issues/388): new option to require a deadline to be indicated when requesting a revision.
+- [#420](https://github.com/CCSDForge/episciences/issues/420): Add bibliographical references in zbjats export
 
 ## v1.0.41.3 - 2023-12-11
 ### Fixed

@@ -590,8 +590,9 @@ class Episciences_PapersManager
                     $valuesName[$key] = $value;
 
                 } else if (method_exists($value, $method_name)) {
-                    $valuesName[$key] = Ccsd_Tools::translate($value->$method_name());
+                    $valuesName[$key] = $value instanceof Episciences_Volume ? $value->$method_name() : Ccsd_Tools::translate($value->$method_name());
                 }
+
                 if (preg_match("/$word/i", $valuesName[$key])) {
                     $arrayValues[] = $key;
                 }
@@ -1565,7 +1566,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId. '-cc','value'=> $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
@@ -1648,7 +1649,7 @@ class Episciences_PapersManager
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
 
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
@@ -1730,7 +1731,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value'=> $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         $bccVal = '';
 
@@ -1887,6 +1888,7 @@ class Episciences_PapersManager
     public static function getRevisionForm($default, string $type = 'minor', Episciences_Review $review = null, bool $withAutoReassignment = true, int $docId = null): \Ccsd_Form
     {
         $formId = $withAutoReassignment ? $type . '_revision-form' : 'accepted-ask-final-version-form';
+        $isRequiredRevisionDeadline = false;
 
         $minDate = date('Y-m-d');
         $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
@@ -1895,6 +1897,7 @@ class Episciences_PapersManager
 
         if (null !== $review) { // git #123 : Ne jamais réassigner automatiquement les relecteurs, que ce soit pour des demandes de modif mineures ou majeures
             $automaticallyReassignSameReviewers = $review->getSetting(Episciences_Review::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION);
+            $isRequiredRevisionDeadline = (bool)$review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE);
             if ($type === 'minor') {
                 $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MINOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
             } elseif ($type === 'major') {
@@ -1932,7 +1935,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc','value' => $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', [
@@ -1957,16 +1960,23 @@ class Episciences_PapersManager
             'disabled' => true,
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
-        // revision deadline (optional)
-        $form->addElement('date', $type . '-revision-deadline', [
+        // revision deadline (optional ?)
+        $deadlineOptions = [
             'id' => $formId . '-revision-deadline',
             'label' => 'Date limite de réponse',
             'class' => 'form-control',
             'pattern' => '[A-Za-z]{3}',
-            'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle'),
+            'placeholder' => !$isRequiredRevisionDeadline ? Zend_Registry::get('Zend_Translate')->translate('Optionnelle') : Zend_Registry::get('Zend_Translate')->translate('Veuillez préciser une date limite'),
             'attr-mindate' => $minDate,
             'attr-maxdate' => $maxDate
-        ]);
+        ];
+
+        if ($isRequiredRevisionDeadline) {
+            $deadlineOptions['required'] = true;
+        }
+
+
+        $form->addElement('date', $type . '-revision-deadline', $deadlineOptions);
 
         $form->addElement('text', $type . '-revision-subject', [
             'id' => $formId . '-revision-subject',
@@ -2125,8 +2135,13 @@ class Episciences_PapersManager
             ->from(['papers' => T_PAPERS])
             ->where('DOCID = ?', $docId);
 
+
+        if (defined('RVID') && !Ccsd_Tools::isFromCli()) {
+            $rvId = RVID;
+        }
+
         if ($rvId) {
-            $select->where('RVID = ?', RVID);
+            $select->where('RVID = ?', $rvId);
         }
 
         $data = $select->query()->fetch();
@@ -2626,16 +2641,15 @@ class Episciences_PapersManager
 
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
-        if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID){
+        if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
             $record = Episciences_Repositories_Common::checkAndCleanRecord($record);
         }
 
         $result = Episciences_Repositories::callHook(
             'hookCleanXMLRecordInput', [
-                'record' => $record,
-                'repoId' => $repoId
-            ]);
-
+            'record' => $record,
+            'repoId' => $repoId
+        ]);
 
 
         if (array_key_exists('record', $result)) {
@@ -2643,7 +2657,7 @@ class Episciences_PapersManager
             // delete all paper files
             Episciences_Paper_FilesManager::deleteByDocId($docId);
 
-            $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId ];
+            $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
 
             // add all files
             $hookFiles = Episciences_Repositories::callHook(
@@ -2651,7 +2665,7 @@ class Episciences_PapersManager
                 (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
             );
 
-            if (isset($hookFiles['affectedRows'])){
+            if (isset($hookFiles['affectedRows'])) {
                 $affectedRows += $hookFiles['affectedRows'];
 
             }
@@ -2665,12 +2679,12 @@ class Episciences_PapersManager
             // add all linked data : Zenodo only
             $hookLikedData = Episciences_Repositories::callHook(
                 'hookLinkedDataProcessing', [
-                    'repoId' => $repoId,
-                    'identifier' => $identifier,
-                    'docId' => $docId
-                ]);
+                'repoId' => $repoId,
+                'identifier' => $identifier,
+                'docId' => $docId
+            ]);
 
-            if (isset($hookLikedData['affectedRows'])){
+            if (isset($hookLikedData['affectedRows'])) {
                 $affectedRows += $hookLikedData['affectedRows'];
             }
 
@@ -2920,7 +2934,7 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc','value'=> $existingMails]);
+        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc', 'value' => $existingMails]);
 
         // bcc
         $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $prefix . '-bcc']);
@@ -3355,7 +3369,7 @@ class Episciences_PapersManager
         }
         $form->addElement('multiTextSimple', 'affiliations', $affiliationInfo);
         if (isset($option['acronymList'])) {
-            $form->addElement('hidden', 'affiliationAcronym',['value' => $option['acronymList']]);
+            $form->addElement('hidden', 'affiliationAcronym', ['value' => $option['acronymList']]);
         } else {
             $form->addElement('hidden', 'affiliationAcronym');
         }
@@ -3717,7 +3731,7 @@ class Episciences_PapersManager
     public static function getCoAuthors($docId): array
     {
         //get coauthors
-        $coAuthors = Episciences_User_AssignmentsManager::findAll(['ITEMID'=> $docId, 'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR]);
+        $coAuthors = Episciences_User_AssignmentsManager::findAll(['ITEMID' => $docId, 'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR]);
         $coAuthorsList = [];
         foreach ($coAuthors as $coAuthor) {
             $coAuthorUser = new Episciences_User();
@@ -3806,7 +3820,7 @@ class Episciences_PapersManager
     {
 
         $currentForm->addElement('hidden', 'docid', [
-            'id' => $formPrefix . '-hdocid-'. $docId,
+            'id' => $formPrefix . '-hdocid-' . $docId,
             'value' => $docId
         ]);
 
@@ -3874,6 +3888,7 @@ class Episciences_PapersManager
         if ($isCoiEnabled) {
 
             $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paperId]);
+            /** @var Episciences_User $recipient */
 
             foreach ($recipients as $recipient) {
 
@@ -3898,7 +3913,7 @@ class Episciences_PapersManager
      * @param $docId
      * @return string
      */
-    public static function buildDocumentPath($docId) : string
+    public static function buildDocumentPath($docId): string
     {
         return REVIEW_FILES_PATH . $docId;
     }
@@ -3910,7 +3925,7 @@ class Episciences_PapersManager
     public static function getAllDocIdByPaperId(int $paperId)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?',$paperId);
+        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?', $paperId);
         return $db->fetchAll($select);
     }
 }

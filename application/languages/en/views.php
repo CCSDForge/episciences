@@ -38,15 +38,21 @@ return [
     "rédacteurs" => "editors",
 
     "Relecteur" => ["Reviewer", "Reviewers"],
-
+    // DOCUMENT TYPES
     'article' => ['article', 'articles'],
     'Article'=> 'Article',
     'Preprint'=>'Preprint',
+    'ConferenceObject' => 'Conference paper',
+    'Text' => "Preprint",
+    'Dataset' => 'Jeux de données',
+
+
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
     'Télécharger' => 'Download',
     'Taille' => 'Size',
     'Id permanent' => 'Permanent Id',
     'Id document' => 'Document Id',
+    'Id : ' => 'Id: ',
 
 
     "Historique" => "History",
@@ -75,6 +81,9 @@ return [
     "Les modifications n'ont pas abouti : article introuvable !" => "The changes were unsuccessful: article not found!",
     "Les modifications n'ont pas abouti : auteur introuvable !" => "The changes were unsuccessful: author not found! ",
     "Les modifications n'ont pas abouti : type incorrect !" => "The changes were unsuccessful: incorrect type!",
+    "Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !" => "The changes were unsuccessful: deadline is not given with revision request!",
+    "Vous ne disposez pas des droits nécessaires pour mettre à jours les ORCID" => "You are not authorized to update ORCID",
+
 
     // Navigation
     "Accueil" => "Home",
@@ -364,6 +373,7 @@ return [
     "Mettre à jour le DOI" => "Update DOI",
     "Date limite de réponse" => "Revision deadline",
     "Date limite de réponse :" => "Revision deadline:",
+    "Veuillez préciser une date limite" => "Please specify a deadline",
 
     "Volume spécial :" => "Special Issue:",
     "Spécial" => "Special",
@@ -1285,7 +1295,7 @@ return [
     'Optionnelle' => 'Optional',
     'Cliquer ici pour ouvrir le calendrier' => 'Click here to open the calendar',
     'Version révisée attendue avant le :' => 'Revised version expected before:',
-
+    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj."  =>"Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
 
     /**
      * Tips
@@ -1631,7 +1641,7 @@ return [
 
     "Ajouter un logo" => "Add a logo",
     "Type" => "Type",
-    "Texte" => "Text",
+    "Texte" => "Preprint",
     "Image" => "Image",
     "Libellé" => "Label",
 
@@ -2346,6 +2356,7 @@ return [
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the paper",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the paper",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => 'Confirmation of automatic article submission via a preprint server',
 
     // Mot de passe papier
     "Facultatif" => "Optional",
@@ -2441,4 +2452,8 @@ return [
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
     'IsRelatedTo'=>'Is related to',
+
+    // Journal's settings
+    "Exiger que la demande de révision soit assortie d'un délai" => "To require that a deadline is given with revision request",
+
 ];

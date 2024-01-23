@@ -100,12 +100,6 @@ try {
 
     $settings = ['is' => ['code' => $opts->rvcode]];
 
-
-    if (!defined('RVCODE')) {
-        define('RVCODE', $opts->rvcode);
-    }
-
-
     // loop through each journal
     $reviews = Episciences_ReviewsManager::getList($settings);
 

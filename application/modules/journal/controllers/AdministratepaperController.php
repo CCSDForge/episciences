@@ -2027,7 +2027,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (!$resOfIndexing) {
                     try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                     } catch (Exception $e) {
                         trigger_error($e->getMessage());
                     }
@@ -2054,7 +2054,7 @@ class AdministratepaperController extends PaperDefaultController
                     . '</a>');
 
                 // if HAL, send coar notify message
-                if ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) {
+                if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
                     $notification = new Episciences_Notify_Hal($paper, $journal);
                     try {
                         $idAnnounce = $notification->announceEndorsement();
@@ -2688,7 +2688,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (!$resOfIndexing) {
                     try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                     } catch (Exception $e) {
                         trigger_error($e->getMessage());
                     }
@@ -4281,7 +4281,7 @@ class AdministratepaperController extends PaperDefaultController
 
                         if (!$resOfIndexing) {
                             try {
-                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$_coreName);
+                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                             } catch (Exception $e) {
                                 trigger_error($e->getMessage(), E_USER_ERROR);
                             }
@@ -4380,6 +4380,23 @@ class AdministratepaperController extends PaperDefaultController
             $subject = $data[$type . 'revisionsubject'];
             $message = $data[$type . 'revisionmessage'];
             $deadline = $data[$type . 'revisiondeadline'] ?: null;
+
+            if (!$deadline) {
+                if (
+                    $review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE)) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !");
+                    $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                    return;
+
+                }
+
+            } elseif (!Ccsd_Tools_String::validateDate($deadline)) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj.");
+                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+
+            }
+
 
             $isAlreadyAccepted = $review->getSetting(Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION) &&
                 in_array($paper->getStatus(), Episciences_Paper::ACCEPTED_SUBMISSIONS, true);
@@ -4551,7 +4568,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ('' !== $api) {
 
-            if ((int)Episciences_Repositories::HAL_REPO_ID === $repoId) {
+            if (Episciences_Repositories::isFromHalRepository($repoId)) {
 
                 $url = $api . '/search/?indent=true&q=' . $paper->getIdentifier() . '&fl=label_xml';
 
@@ -4625,18 +4642,18 @@ class AdministratepaperController extends PaperDefaultController
                 $url .= $paper->getIdentifier();
                 $response = Episciences_Tools::callApi($url);
 
-                if(
+                if (
                     isset($response['status']) &&
                     mb_strtolower($response['status']) === Episciences_Repositories_Dataverse_Hooks::SUCCESS_CODE
-                    ){
+                ) {
 
                     $latestVersion = $response['data']['latestVersion']['versionNumber'] ?? 1;
                     $versionMinorNumber = $response['data']['latestVersion']['versionMinorNumber'] ?? 0;
 
                     $version = (float)($latestVersion . '.' . $versionMinorNumber);
 
-                    while ($version > 0){
-                        $versions[] =  $version . '.' . $versionMinorNumber;
+                    while ($version > 0) {
+                        $versions[] = $version . '.' . $versionMinorNumber;
                         $version -= 1.0;
                     }
                 }

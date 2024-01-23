@@ -538,10 +538,8 @@ class Episciences_Volume
         $this->setSettings($this->_db->fetchPairs($select));
     }
 
-    /**
-     *
-     */
-    public function loadMetadatas()
+
+    public function loadMetadatas(): void
     {
         $allMetadata = [];
 

@@ -5,6 +5,7 @@ use Symfony\Component\Filesystem\Filesystem;
 
 class Ccsd_Tools
 {
+    public const DEFAULT_CURL_OPT_TIMEOUT = 60;
 
     private static $_TRANS_CAR_LATEX_GREEK = [
         //lettres grecques
@@ -901,10 +902,10 @@ class Ccsd_Tools
      * @param string $core solr core
      * @param string $handler solr handler
      * @param int $timeout curl request timeout in seconds
-     * @return mixed
+     * @return bool|string
      * @throws Exception
      */
-    public static function solrCurl($queryString, $core = 'hal', $handler = 'select', $timeout = 40)
+    public static function solrCurl(string $queryString, string $core = 'episciences', string $handler = 'select', int $timeout = 40)
     {
         $options = [];
         // Doit être définit dans l'application cliente
@@ -918,11 +919,7 @@ class Ccsd_Tools
         $s = new Ccsd_Search_Solr($options);
 
         $endPointUrl = $s->getEndPointUrl();
-
-
-        if ($handler != 'schema') {
-            $endPointUrl .= '?';
-        }
+        $endPointUrl .= '?';
         $endPointUrl .= $queryString;
 
 
@@ -937,7 +934,7 @@ class Ccsd_Tools
 
         $info = curl_exec($curlHandler);
 
-        if (curl_errno($curlHandler) == CURLE_OK) {
+        if (curl_errno($curlHandler) === CURLE_OK) {
             return $info;
         }
 
@@ -952,34 +949,22 @@ class Ccsd_Tools
     /**
      * @param string $text
      * @return string
-     * Utilisee dans des feuille de style...
      */
     public static function protectLatex($text): string
     {
         /* lfarhi : on ne met pas $,^,~,_ { et } car il y a du latex dans certains champs avec ces caractères
          * */
-        $text_replace = str_replace(
-            ["&", "#", "%"], ["\\&", "\\#", "\\%"], $text);
-        return $text_replace;
+        return str_replace(["&", "#", "%"], ["\\&", "\\#", "\\%"], $text);
     }
+
 
 
     /**
      * @param string $text
+     * @param bool $doGreek
      * @return string
      */
-    public static function protectUnderscore($text): string
-    {
-
-        return str_replace(
-            ["_"], ["\\_"], $text);
-    }
-
-    /**
-     * @param string $text
-     * @return string
-     */
-    public static function htmlToTex($text, $doGreek = true): string
+    public static function htmlToTex(string $text, bool $doGreek = true): string
     {
         // Pour vrais < il faut absoluement un espace apres afin de ne pas etre retire par le strip_tags
         // formule math avec <
@@ -1020,7 +1005,7 @@ class Ccsd_Tools
      * @param string $text
      * @return string
      */
-    public static function decodeLatex($text, $greekRecode = true)
+    public static function decodeLatex(string $text, $greekRecode = true): string
     {
 
         if (!empty($text)) {
@@ -1106,7 +1091,7 @@ class Ccsd_Tools
             CURLOPT_HEADER => 0, // TRUE pour inclure l'en-tête dans la valeur de retour.
             CURLOPT_RETURNTRANSFER => 1, // TRUE pour retourner le transfert en tant que chaîne de caractères de la valeur retournée par curl_exec() au lieu de l'afficher directement.
             CURLOPT_CONNECTTIMEOUT => 15, // Le nombre de secondes à attendre durant la tentative de connexion
-            CURLOPT_TIMEOUT => 60, // Le temps maximum d'exécution de la fonction cURL exprimé en secondes
+            CURLOPT_TIMEOUT => self::DEFAULT_CURL_OPT_TIMEOUT, // Le temps maximum d'exécution de la fonction cURL exprimé en secondes
             CURLOPT_USERAGENT => $curlUserAgent, // Le contenu de l'en-tête "User-Agent: " à utiliser dans une requête HTTP.
             CURLOPT_FOLLOWLOCATION => true // TRUE pour suivre tous les en-têtes "Location: " que le serveur envoie dans les en-têtes HTTP (à noter que ceci est récursif, PHP suivra tous les en-têtes "Location: " qui lui sont envoyés à moins que CURLOPT_MAXREDIRS ne soit définie).
         ];

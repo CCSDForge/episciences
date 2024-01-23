@@ -50,7 +50,6 @@ require_once __DIR__ . '/../public/bdd_const.php';
 defineSimpleConstants();
 defineSQLTableConstants();
 defineApplicationConstants();
-defineJournalConstants();
 defineProtocol();
 
 // Environnement

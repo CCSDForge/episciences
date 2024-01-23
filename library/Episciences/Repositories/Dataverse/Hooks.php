@@ -65,7 +65,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
 
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-            throw new Exception($e->getMessage());
+            throw new Ccsd_Error($e->getMessage());
         }
 
         $status = $response['status'] ?? null;
