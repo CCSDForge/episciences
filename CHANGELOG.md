@@ -16,17 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## v1.0.41.7 - 2024-01-23
-
 ### Changed
-- [COAR Notify] processing new versions + enhancements
-- Improvements on the indexing process with Apache Solr 
+- [COAR Notify] processing of new versions + enhancements
+- Improvements on the indexing process with Apache Solr
 
 ### Fixed
 - Script ZBJATS : Skip documents which are not articles with a PDF, such as datasets
 - Application error: Argument 1 passed to Episciences_Volume::setTitles() must be of the type array or null, string give.
 - "false positive" for missing translations in logs.
 - [COAR Notify] when processing several submission at the same time, notification of submissions were sent to wrong recipients
-- RT#203491.
+- [Acceptance date] During the publication process, if the article is accepted with a temporary version, then its acceptance date is that of the 1st temporary version. The problem did not exist on published articles.
 - Citations of published papers: Improvement in obtaining the source journal from openAlex's response
 
 ## v1.0.41.6 - 2024-01-15
