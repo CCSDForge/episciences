@@ -44,7 +44,15 @@ if ($this->results) {
         */
 
         $title = $doc->paper_title_t[0];
-        $volume = ($doc->{$locale . '_volume_title_t'}) ?: $doc->volume_title_t[0];
+
+        if ($doc->{$locale . '_volume_title_t'}) {
+            $volume = $doc->{$locale . '_volume_title_t'};
+        } elseif (isset($doc->volume_title_t[0])) {
+            $volume = $doc->volume_title_t[0];
+        } else {
+            $volume = '';
+        }
+
         if ($doc->{$locale . '_section_title_t'}) {
             $section = $doc->{$locale . '_section_title_t'};
         } elseif (isset($doc->section_title_t[0])) {
