@@ -357,13 +357,13 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
 
     /**
      * @param Zend_Validate_Interface $validator
-     * @param array $value
+     * @param $result
      * @param $messages
      * @param $errors
-     * @param $result
+     * @param array $value
      * @param null $context
      */
-    public function execValidators (&$validator, $value = array (), &$messages, &$errors, &$result, $context = null)
+    public function execValidators (&$validator, &$result, &$messages, &$errors, $value = [], $context = null)
     {
         foreach ((array)$value as $i => $v) {
             if (!$validator->isValid($v, $context)) {
@@ -524,7 +524,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
                 }
 
                 if (!empty($value)) {
-                    $this->execValidators ($validator, $value, $messages, $errors, $result, $context);
+                    $this->execValidators ($validator, $result, $messages, $errors, $value, $context);
                 }
 
                 if ($result) {

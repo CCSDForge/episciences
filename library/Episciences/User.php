@@ -368,7 +368,7 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         $_screenName = self::cleanScreenName($_screenName);
-        $this->_screenName = filter_var($_screenName, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $this->_screenName = filter_var($_screenName, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
     }
 

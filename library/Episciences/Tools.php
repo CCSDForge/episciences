@@ -1519,7 +1519,7 @@ class Episciences_Tools
      * @return array|null
      */
 
-    public static function arrayFilterString(array $input = null, int $type = FILTER_SANITIZE_STRING, int $options = FILTER_FLAG_NO_ENCODE_QUOTES): ?array
+    public static function arrayFilterString(array $input = null, int $type = FILTER_DEFAULT, int $options = FILTER_FLAG_NO_ENCODE_QUOTES): ?array
     {
 
         if (empty($input)) {

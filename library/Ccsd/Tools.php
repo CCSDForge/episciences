@@ -435,13 +435,14 @@ class Ccsd_Tools
      */
     public static function space_clean($mixed, $strip_br = true, $allUtf8 = false)
     {
+
         if (is_array($mixed)) {
             $new = [];
             foreach ($mixed as $val) {
                 $new [] = self::space_clean($val);
             }
             $mixed = array_filter($new);
-        } else {
+        } elseif(!empty($mixed)) {
             $mixed = preg_replace("/[\x-\x8\xb-\xc\xe-\x1f]/", "", ($strip_br) ? self::br2space($mixed) : $mixed);
             $mixed = str_replace("\n", ' ', $mixed);
             $mixed = str_replace("\r", ' ', $mixed);
@@ -465,7 +466,7 @@ class Ccsd_Tools
      */
     public static function br2space($string)
     {
-        return (preg_replace("/<br[[:space:]]*\/?[[:space:]]*>/i", " ", $string));
+        return !empty($string) ? preg_replace("/<br[[:space:]]*\/?[[:space:]]*>/i", " ", $string) : $string;
     }
 
 

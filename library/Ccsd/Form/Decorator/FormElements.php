@@ -212,7 +212,7 @@ class Ccsd_Form_Decorator_FormElements extends Zend_Form_Decorator_FormElements
 
                 $attribs['class'] = 'form-group row ' ;
                 $matches = [];
-                if (preg_match('/(meta\-(section|complete))/', $item->getAttrib('class'), $matches) &&isset($matches[1])) {
+                if ($item->getAttrib('class') && preg_match('/(meta-(section|complete))/', $item->getAttrib('class'), $matches) &&isset($matches[1])) {
                     //pour le dépôt simplifié
                     $attribs['class'] .= ' ' . $matches[1];
                 }

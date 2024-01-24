@@ -251,13 +251,13 @@ abstract class Ccsd_Form_Element_MultiTextLang extends Ccsd_Form_Element_MultiTe
 
     /**
      * @param Zend_Form_Element $validator  // Zend_Validate_Interface devrait suffire... Mais NON! Merci Zend
-     * @param array $value
+     * @param $result
      * @param $messages
      * @param $errors
-     * @param $result
+     * @param array $value
      * @param null $context
      */
-    public function execValidators (&$validator, $value = array (), &$messages, &$errors, &$result, $context = null)
+    public function execValidators (&$validator, &$result, &$messages, &$errors, $value = [], $context = null)
     {
         foreach ((array)$value as $lang => $val) {
             if ($this->isPluriValues()) {

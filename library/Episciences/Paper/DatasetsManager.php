@@ -308,7 +308,7 @@ class Episciences_Paper_DatasetsManager
      * @param string $value
      * @return int
      */
-    public static function addDatasetFromSubmission(int $docId,string $name, string $value, $metaTextId = "", string $code): int {
+    public static function addDatasetFromSubmission(int $docId, string $name, string $value, string $code, $metaTextId = ""): int {
         $dataset = new Episciences_Paper_Dataset();
         $dataset->setDocId($docId);
         $dataset->setCode($code);

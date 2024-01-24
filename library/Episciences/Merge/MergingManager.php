@@ -368,7 +368,7 @@ class Episciences_Merge_MergingManager
     public static function getToken()
     {
         $token = (sha1(time() . uniqid(mt_rand(), true)));
-        $token = filter_var($token, FILTER_SANITIZE_STRING);
+        $token = filter_var($token, FILTER_DEFAULT);
         if (strlen($token) !== self::TOKEN_LENGTH) {
             throw new InvalidArgumentException("Le jeton n'est pas valide");
         }

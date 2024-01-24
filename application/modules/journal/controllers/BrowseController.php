@@ -1,8 +1,9 @@
 <?php
-use Episciences\Notify\Headers;
 
 class BrowseController extends Zend_Controller_Action
 {
+    use Episciences\Notify\Headers;
+
     public const JSON_MIMETYPE = 'application/json';
 
 
@@ -12,7 +13,7 @@ class BrowseController extends Zend_Controller_Action
      */
     public function init()
     {
-        Headers::addInboxAutodiscoveryHeader();
+        $this->addInboxAutodiscoveryHeader();
 
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
             $this->_helper->layout()->disableLayout();

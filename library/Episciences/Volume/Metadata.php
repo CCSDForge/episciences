@@ -2,7 +2,6 @@
 
 class Episciences_Volume_Metadata
 {
-    const TRANSLATION_PATH = REVIEW_LANG_PATH;
     const TRANSLATION_FILE = 'volumes.php';
     protected $_db = null;
     private $_id;
@@ -67,7 +66,7 @@ class Episciences_Volume_Metadata
             $langs = Episciences_Tools::getLanguages();
         }
 
-        Episciences_Tools::loadTranslations(self::TRANSLATION_PATH, self::TRANSLATION_FILE);
+        Episciences_Tools::loadTranslations(REVIEW_LANG_PATH, self::TRANSLATION_FILE);
         $this->loadTitles($langs);
         $this->loadContents($langs);
     }
