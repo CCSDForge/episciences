@@ -53,10 +53,10 @@ if ($this->results) {
             $section = '';
         }
 
-        $doi = 'https://doi.org/' . $this->escape($doc->doi_s);
+        $docid = $this->escape($doc->docid);
         ?>
 
-        <h3><a href="<?= $doi ?>"><?php echo $this->escape($title); ?></a></h3>
+        <h3><a href="/<?= $docid ?>"><?php echo $this->escape($title); ?></a></h3>
 
         <?php if ($doc->author_fullname_s) : ?>
             <span class="authors"><?php
