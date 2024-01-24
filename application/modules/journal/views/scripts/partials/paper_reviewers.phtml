@@ -268,7 +268,11 @@ try {
     ) : ?>
         <div id="upload_paper_report">
             <!-- Bouton de relecture  -->
-            <?php $isCompleted = json_decode($request->getParam('is_completed'), false); ?>
+            <?php try {
+                $isCompleted = $request->getParam('is_completed') && json_decode($request->getParam('is_completed'), false, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $isCompleted = false;
+            } ?>
             <button id="allowed_to_upload_paper_report" class="btn btn-default btn-sm pull-right"
                 <?php if ($isCompleted) {
                     echo "disabled=\"\"";

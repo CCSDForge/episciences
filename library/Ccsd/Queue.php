@@ -127,7 +127,7 @@ abstract class Ccsd_Queue
      */
     public function setSqlTableName(string $tableName)
     {
-        $this->_sqlTableName = filter_var($tableName, FILTER_SANITIZE_STRING);
+        $this->_sqlTableName = filter_var($tableName, FILTER_DEFAULT);
     }
 
     /**
@@ -143,7 +143,7 @@ abstract class Ccsd_Queue
      */
     public function setCore(string $core)
     {
-        $this->_core = filter_var($core, FILTER_SANITIZE_STRING);
+        $this->_core = filter_var($core, FILTER_DEFAULT);
     }
 
     /**
@@ -167,7 +167,7 @@ abstract class Ccsd_Queue
      */
     public function setHostname()
     {
-        $this->_hostname = filter_var(getHostname(), FILTER_SANITIZE_STRING);
+        $this->_hostname = filter_var(getHostname(), FILTER_DEFAULT);
     }
 
     /**
@@ -268,7 +268,7 @@ abstract class Ccsd_Queue
      */
     public function setApplication(string $application)
     {
-        $this->_application = filter_var($application, FILTER_SANITIZE_STRING);
+        $this->_application = filter_var($application, FILTER_DEFAULT);
     }
 
     /**
@@ -300,7 +300,7 @@ abstract class Ccsd_Queue
      */
     public function setStatus(string $status)
     {
-        $this->_status = filter_var($status, FILTER_SANITIZE_STRING);
+        $this->_status = filter_var($status, FILTER_DEFAULT);
     }
 
     /**
@@ -316,7 +316,7 @@ abstract class Ccsd_Queue
      */
     public function setMessage(string $message)
     {
-        $this->_message = filter_var($message, FILTER_SANITIZE_STRING);
+        $this->_message = filter_var($message, FILTER_DEFAULT);
     }
 
     /**

@@ -14,20 +14,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-### TODO:
-- INSERT INTO `MAIL_TEMPLATE` (`ID`, `PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, `POSITION`) VALUES (NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1)
 
-### changed
-- Epi-notify-from-hal: processing new versions + enhancements.
+## Unreleased
 ### Fixed
-- PHP Notice: FAILED_TO_COPY_FILE_ERROR
-- Script ZBJATS : Bypass all /pdf route that return 404 error
+- [Bug Report] Browse by authors or date: wrong links on the titles #435
+
+## v1.0.41.7 - 2024-01-23
+### Changed
+- [COAR Notify] processing of new versions + enhancements
+- Improvements on the indexing process with Apache Solr
+
+### Fixed
+- Script ZBJATS : Skip documents which are not articles with a PDF, such as datasets
 - Application error: Argument 1 passed to Episciences_Volume::setTitles() must be of the type array or null, string give.
 - "false positive" for missing translations in logs.
-- Epi-notify-from-hal: in some cases, members of the editorial board of another journal  were receiving notifications by mistake.
-- RT#203491.
-- Script Citation: Improvement in obtaining the source journal from openAlex's response
+- [COAR Notify] when processing several submission at the same time, notification of submissions were sent to wrong recipients
+- [Acceptance date] During the publication process, if the article is accepted with a temporary version, then its acceptance date is that of the 1st temporary version. The problem did not exist on published articles.
+- Citations of published papers: Improvement in obtaining the source journal from openAlex's response
 
+## v1.0.41.6 - 2024-01-15
+### Fixed
+- PHP Notice: FAILED_TO_COPY_FILE_ERROR
 
 ## v1.0.41.5 - 2024-01-11
 ### Fixed
@@ -43,13 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The version number for articles "formatted by the author, awaiting final version" is no longer available: the feature could prevent the author from answering the request for a final version
-
-### Changed
 - [322](https://github.com/CCSDForge/episciences/issues/322)  manage closing mail author
 - changing right to adding orcid when you're owner of paper (before was only for paper's managers)
 - [133](https://github.com/CCSDForge/episciences/issues/133) Add default style for the accepted page
-### added
-- New template: inbox_paper_submission_author_copy: Your submission made via a preprint server - Author copy.
+
+### Added
+- New email template: inbox_paper_submission_author_copy: Your submission made via a preprint server - Author copy.
 - [#388](https://github.com/CCSDForge/episciences/issues/388): new option to require a deadline to be indicated when requesting a revision.
 - [#420](https://github.com/CCSDForge/episciences/issues/420): Add bibliographical references in zbjats export
 

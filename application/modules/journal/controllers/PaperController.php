@@ -1,7 +1,5 @@
 <?php
 
-use Episciences\Notify\Headers;
-use Episciences\Signposting\Headers as spHeaders;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -12,6 +10,8 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
  */
 class PaperController extends PaperDefaultController
 {
+    use Episciences\Notify\Headers;
+    use Episciences\Signposting\Headers;
     /**
      *  display paper pdf
      * @throws GuzzleException
@@ -98,21 +98,23 @@ class PaperController extends PaperDefaultController
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
-            echo Headers::addInboxAutodiscoveryLDN();
+            echo $this->addInboxAutodiscoveryLDN();
             exit;
         }
 
         $this->view->doctype(Zend_View_Helper_Doctype::XHTML1_RDFA);
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = $request->getParam('id');
+        $docId = (int)$request->getParam('id');
+
         $zIdentifier = $request->get('z-identifier');
 
         $papersManager = new Episciences_PapersManager();
-        $paper = $papersManager::get($docId);
+
+        $paper = $papersManager::get($docId, RVID);
 
         // check if paper exists
-        if (!$paper || $paper->getRvid() !== RVID) {
+        if (!$paper) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             return;
@@ -149,12 +151,12 @@ class PaperController extends PaperDefaultController
 
 
         // INBOX autodiscovery @see https://www.w3.org/TR/ldn/#discovery
-        $headerLinks[] = Headers::getInboxHeaderString();
+        $headerLinks[] = $this->getInboxHeaderString();
 
         $paperHasDoi = $paper->hasDoi();
         $paperDoi = $paper->getDoi();
 
-        $allHeaderLinks = spHeaders::getPaperHeaderLinks($paperHasDoi, $paperUrl, $paperDoi, $headerLinks);
+        $allHeaderLinks = self::getPaperHeaderLinks($paperHasDoi, $paperUrl, $paperDoi, $headerLinks);
 
         $this->getResponse()->setHeader('Link', implode(', ', $allHeaderLinks));
 

@@ -54,7 +54,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
 
 
 
-        if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId,$typeLd,$valueLd, $idMetaDataLastId,$inputTypeLd) > 0) {
+        if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $valueLd, $inputTypeLd, $idMetaDataLastId) > 0) {
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_ADDED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
             echo json_encode([true], JSON_THROW_ON_ERROR);
         }

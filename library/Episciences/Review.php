@@ -400,10 +400,14 @@ class Episciences_Review
         if ($users) {
 
             foreach ($users as $uid => $user) {
+                $class_name = 'Episciences_';
                 if (is_array($role)) {
                     $role = $role[0];
+                    $class_name .=  ucfirst($role);
+                } else {
+                    $class_name .= 'User';
                 }
-                $class_name = 'Episciences_' . ucfirst($role);
+
                 $options = $user->toArray();
                 if (@class_exists($class_name)) {
                     $result[$uid] = new $class_name($options);

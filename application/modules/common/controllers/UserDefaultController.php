@@ -1471,7 +1471,7 @@ class UserDefaultController extends Zend_Controller_Action
             case Ccsd_User_Models_User::IMG_NAME_INITIALS:
                 $screenName = $this->getParam('name');
                 $screenName = urldecode($screenName);
-                $screenName = filter_var($screenName, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+                $screenName = filter_var($screenName, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
                 $imageMimeType = 'image/svg+xml';
                 break;
             case Ccsd_User_Models_User::IMG_NAME_THUMB:

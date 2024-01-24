@@ -153,7 +153,7 @@ class Ccsd_User_Models_UserTokens
      */
     public function setToken ($_token)
     {
-        $_token = filter_var($_token, FILTER_SANITIZE_STRING);
+        $_token = filter_var($_token, FILTER_DEFAULT);
         if (strlen($_token) != self::TOKEN_STRING_LENGTH ) {
             throw new InvalidArgumentException("Le jeton n'est pas valide");
         }
@@ -188,7 +188,7 @@ class Ccsd_User_Models_UserTokens
      */
     public function setUsage ($_usage)
     {
-        $this->_usage = filter_var($_usage, FILTER_SANITIZE_STRING);
+        $this->_usage = filter_var($_usage, FILTER_DEFAULT);
         return $this;
     }
 }
