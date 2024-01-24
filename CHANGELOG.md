@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Fixed
+- [Bug Report] Browse by authors or date: wrong links on the titles #435
+
 ## v1.0.41.7 - 2024-01-23
 ### Changed
 - [COAR Notify] processing of new versions + enhancements
