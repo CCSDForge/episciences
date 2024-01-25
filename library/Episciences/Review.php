@@ -72,7 +72,7 @@ class Episciences_Review
     public const SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS = 'systemCanAssignOnlySpecialVolumeEditors';
     public const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
     const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
-    public const SETTING_DISPLAY_STATISTICS = 'displayStatistics';
+    public const SETTING_DISPLAY_STATISTICS= 'displayStatistics';
 
     /**
      * Do not allow the selection of an editor in chief when the author has the option to
@@ -123,6 +123,7 @@ class Episciences_Review
     public const SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS =
         'refusedArticleAuthorsMsgSentToReviewers';
     public const SETTING_TO_REQUIRE_REVISION_DEADLINE = 'toRequireRevisionDeadline';
+    public const SETTING_START_STATS_AFTER_DATE = 'startStatsAfterDate';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -211,7 +212,8 @@ class Episciences_Review
             self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_DISPLAY_STATISTICS,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
-            self::SETTING_TO_REQUIRE_REVISION_DEADLINE
+            self::SETTING_TO_REQUIRE_REVISION_DEADLINE,
+            self::SETTING_START_STATS_AFTER_DATE
         ];
 
 
@@ -1034,7 +1036,8 @@ class Episciences_Review
             self::SETTING_SYSTEM_IS_COI_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DISPLAY_STATISTICS,
-            self::SETTING_CONTACT_ERROR_MAIL,
+            self::SETTING_START_STATS_AFTER_DATE,
+            self::SETTING_CONTACT_ERROR_MAIL
         ], 'additionalParams', ['legend' => 'Paramètres supplémentaires']);
 
         $form->getDisplayGroup('additionalParams')->removeDecorator('DtDdWrapper');
@@ -1637,7 +1640,7 @@ class Episciences_Review
         ];
 
 
-        return $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
+        $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
                 'label' => 'Visibilité des statistiques',
                 'description' => "",
                 'value' => 0,
@@ -1651,6 +1654,24 @@ class Episciences_Review
 
             ]
         );
+
+
+        $form->addElement('date', self::SETTING_START_STATS_AFTER_DATE, [
+            'id' => self::SETTING_START_STATS_AFTER_DATE,
+            'label' => '',
+            'value' => '',
+            'placeholder' => 'YYYY-MM-DD',
+            'style' => 'width: 18%',
+            'size' => '10',
+            'maxlength' => '10',
+            'maxsizelignt' => '10',
+            'description' => "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ",
+            'decorators' => $checkboxDecorators,
+            'pattern' => '(\d{4})-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d|30|31)',
+            'validators' => [new Zend_Validate_Date('Y-m-d')]
+        ]);
+
+        return $form;
 
 
     }
@@ -1793,6 +1814,7 @@ class Episciences_Review
         $settingsValues[self::SETTING_CONTACT_ERROR_MAIL] = $this->getSetting(self::SETTING_CONTACT_ERROR_MAIL);
         $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
         $settingsValues[self::SETTING_TO_REQUIRE_REVISION_DEADLINE] = $this->getSetting(self::SETTING_TO_REQUIRE_REVISION_DEADLINE);
+        $settingsValues[self::SETTING_START_STATS_AFTER_DATE] = $this->getSetting(self::SETTING_START_STATS_AFTER_DATE);
 
 
 
