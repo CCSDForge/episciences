@@ -1617,6 +1617,9 @@ class AdministratepaperController extends PaperDefaultController
         $reviewer = $request->getPost('reviewer');
         $reviewer = json_decode($reviewer, true);
 
+        if (!isset($reviewer['firstname'])) {
+            $reviewer['firstname'] = '';
+        }
         // save temporary user in USER_TMP table
         if (!$reviewer['id'] && $reviewer['invitation_type'] == 3) {
             $tmp_user = new Episciences_User_Tmp([
