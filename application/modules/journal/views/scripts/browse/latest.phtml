@@ -21,7 +21,6 @@
             }
 
 
-
             if (array_key_exists($locale . '_section_title_t', $doc)) {
                 $section = $doc[$locale . '_section_title_t'] ?: '';
             } else {
@@ -78,18 +77,24 @@
                     }
                     ?>
                     </i></div>
-                <p style="text-align: justify" class="small"><?php
-                    $abstract = $this->escape($doc['abstract_t'][0]);
-                    if ($abstract) {
+                <p style="text-align: justify" class="small">
+                    <?php
+                    if (isset($doc['abstract_t'][0])) {
+                        $abstract = $this->escape($doc['abstract_t'][0]);
                         echo '<br/><blockquote><small>';
                         echo Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
                         echo '</small></blockquote>';
                     }
-                    ?></p>
+                    ?>
+                </p>
                 <hr>
                 <?php if ($volume) : ?>
                     <div class="volume">
-                        <a href="/volume/view/id/<?php echo $this->escape($doc['volume_id_i']) ?>"><?php echo $volume; ?></a>
+                        <?php if (isset($doc['volume_id_i'])) : ?>
+                            <a href="/volume/view/id/<?php echo $this->escape($doc['volume_id_i']) ?>"><?php echo $volume; ?></a>
+                        <?php else : ?>
+                            <?php echo $volume; ?>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
