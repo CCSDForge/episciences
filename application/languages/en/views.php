@@ -1350,7 +1350,7 @@ return [
     'Changer le mot de passe' => "Change your password",
     'Entre 2 et 100 caractères' => 'From 2 to 100 characters',
     "Vous n'avez pas les droits nécessaires pour modifier ce compte." => "You don't have the required permissions to edit this account.",
-    "Veuillez saisir votre identifiant (16 chiffres), par exemple 0000-0001- 2345-6789, si vous en avez déjà un" => "Please enter your ID (16 digits), for example 0000-0001- 2345-6789, if you already have one",
+    "Veuillez saisir votre identifiant, si vous en avez déjà un (16 chiffres). Le dernier caractère de l'ORCID iD doit être compris entre 0 et 9 ou la lettre majuscule X. Exemple : 0000-0001- 2345-678X" => "Please enter your ID, if you already have one (16 digits). The last character of the ORCID iD must be between 0 and 9 or the capital letter X. Example: 0000-0001- 2345-678X",
     "Veuillez saisir le nom ou l'acronyme de votre structure" => "Please enter the name or acronym of your organization",
 
 
