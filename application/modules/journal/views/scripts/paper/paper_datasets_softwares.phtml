@@ -1,4 +1,8 @@
 <?php
+
+use Seboettg\CiteProc\CiteProc;
+use Seboettg\CiteProc\StyleSheet;
+
 $softwares = $this->softwares;
 $paper = $this->paper;
 $listSources = $this->listSources;
@@ -21,6 +25,11 @@ $keepOnlySourceUsed = [];
                 ?>
                 <?php foreach ($softwareArrayBySource as $software) : /** @var Episciences_Paper_Dataset $software */ ?>
                     <div style="margin-top: 8px;">
+                        <?php if (!(Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir')) : ?>
+                                <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
+                            <?php else: ?>
+                                <div style="margin-bottom: 4px;">
+                        <?php endif; ?>
                         <?php if ((string)$source === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?>
                             <button id="remove-ld" data-ld="<?= $software->getId() ?>" class="btn btn-default btn-xs"
                                     type="button"><i class="fa-solid fa-trash-can"></i></button>
@@ -35,7 +44,7 @@ $keepOnlySourceUsed = [];
                                 <sup><?= $listSources[$getSource] ?></sup>
                             <?php endif; ?>
                         <?php else: ?>
-                            <?php if (!Episciences_Tools::isHal($software->getValue())): ?>
+                            <?php if (Zend_Uri::check($software->getValue())): ?>
                                 <a href="<?= $software->getLink() ?>"><?= $software->getValue() ?></a>
                             <?php endif;?>
                         <?php endif; ?>
@@ -54,6 +63,39 @@ $keepOnlySourceUsed = [];
                             </div>
                         <?php endif; ?>
                         <div style="margin-bottom: 4px"></div>
+                        <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
+                            && ($software->getName() === 'doi'
+                                || Episciences_Tools::isDoiWithUrl($software->getValue()) || $software->getName() === 'arXiv')
+                            && $software->getMetatext() !== null) {
+                            try {
+                                //pimp author names
+                                $authorFunction = static function ($authorItem, $renderedText) {
+                                    if (isset($authorItem->ORCID)) {
+                                        return $renderedText . " " . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID) . ' data-toggle="tooltip" data-placement="bottom" data-original-title="' . str_replace("http://orcid.org/", "", $authorItem->ORCID) . '" target="_blank"><img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
+                                    }
+                                    return $renderedText;
+                                };
+                                $linkDOI = static function ($citationItem, $renderedText) {
+                                    if (isset($citationItem->DOI)) {
+                                        return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'; //trick to undisplay prefix put in render
+                                    }
+                                    return $renderedText;
+                                };
+                                $additionalMarkup = [
+                                    "author" => $authorFunction,
+                                    "DOI" => $linkDOI,
+                                    "csl-entry" => static function ($cslItem, $renderedText) {
+                                        return str_replace(array("https://doi.org/", "http://doi.org/"), array('', 'https://doi.org/'), $renderedText); //trick to undisplay prefix put in render
+                                    }
+                                ];
+                                $addingBraceToJson = "[" . $software->getMetatext() . "]";
+                                $style = StyleSheet::loadStyleSheet("apa");
+                                $citeProc = new CiteProc($style, "en-US", $additionalMarkup);
+                                echo $citeProc->render(json_decode($addingBraceToJson), "bibliography");
+                            } catch (CiteProcException $e) {
+                                continue;
+                            }
+                        } ?>
                         <?php if ($software->getName() === 'software'): ?>
                             <?php
                             if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir') {
@@ -65,6 +107,7 @@ $keepOnlySourceUsed = [];
                         <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && !array_key_exists($getSource, $keepOnlySourceUsed)) {
                             $keepOnlySourceUsed[$listSources[$getSource]] = array_search($listSources[$getSource], $listSources);
                         } ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php endforeach; ?>

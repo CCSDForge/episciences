@@ -27,13 +27,18 @@ class Episciences_SoftwareHeritageTools
         }
         return '';
     }
-    public static function getCitationsFullFromHal($halId) : string {
+    public static function getCitationsFullFromHal($halId,int $version = 0) : string {
         $client = new Client();
-        $toto = Episciences_Repositories::getApiUrl(
-                Episciences_Repositories::HAL_REPO_ID).'/search?q=((halId_s:'.$halId.' OR halIdSameAs_s:'.$halId.'))&fl=docType_s,citationFull_s,swhidId_s';
         try {
+
+            $strQuery = '((halId_s:'.$halId.' OR halIdSameAs_s:'.$halId.')';
+
+            if ($version !== 0){
+                $strQuery.=' AND version_i:'.$version;
+            }
+            $strQuery.= ')&fl=docType_s,citationFull_s,swhidId_s';
             $res = $client->request('GET',  Episciences_Repositories::getApiUrl(
-                    Episciences_Repositories::HAL_REPO_ID).'/search?q=((halId_s:'.$halId.' OR halIdSameAs_s:'.$halId.'))&fl=docType_s,citationFull_s,swhidId_s')
+                    Episciences_Repositories::HAL_REPO_ID).'/search?q='.$strQuery)
                 ->getBody()->getContents();
             $resJson = json_decode($res);
             if (json_last_error() === JSON_ERROR_NONE) {

@@ -92,7 +92,12 @@ $keepOnlySourceUsed = [];
                                 <div style="display: inline;">
                                     <?php
                                     $metadataHal = json_decode($dataset->getMetatext(),true);
-                                    echo $metadataHal['citationFull'];
+                                    if ($metadataHal['citationFull'] === NULL)  {
+                                        echo $dataset->getValue();
+                                    } else {
+                                        echo $metadataHal['citationFull']; // escape pas volontaire ,car hal renvoi html
+                                    }
+
                                     ?>
                                 </div>
                             <?php endif; ?>
