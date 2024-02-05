@@ -12,6 +12,8 @@ class Episciences_DoiTools
         $client = new Client();
         $arrayRes = [];
         if(Episciences_Tools::isArxiv($doi)) {
+            $regexRemoveVersion = "~v[\d{1,100}]~"; // doi org doesn't accept arxiv version in call
+            $doi = preg_replace($regexRemoveVersion,"",$doi);
             if (!preg_match("~(?i)(arxiv)~",$doi)){
                 $doi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ARXIV_REPO_ID).'/arxiv.'.$doi;
             } else{
