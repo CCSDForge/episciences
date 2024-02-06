@@ -1007,6 +1007,8 @@ class Episciences_Mail_Reminder
 
         if ($this->getRepetition()) {
 
+            $sql->where("SENDING_DATE < $date"); // RT#204568
+
             // interval between today and invitation date should be 0
             $interval0 = new Zend_Db_Expr(
                 'TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date) = 0"
