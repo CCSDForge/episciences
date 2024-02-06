@@ -177,7 +177,7 @@ class Episciences_Paper_Logger
         self::CODE_COI_REVERTED => "Conflit d'intérêts (CI) : annulé",
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepté, demande de la version finale à l'auteur",
         self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => "Accepté, en attente de validation par l'auteur",
-        self::CODE_VERSION_REPOSITORY_UPDATED => 'Re-pointage de version',
+        self::CODE_VERSION_REPOSITORY_UPDATED => 'Numéro de version mis à jour',
         self::CODE_NEW_REVIEWING_DEADLINE => 'Nouvelle date limite de rendu de relecture',
         self::CODE_INBOX_COAR_NOTIFY_REVIEW => "Nouvelle soumission : transférée automatiquement depuis",
         self::CODE_LD_ADDED => "Ajout d'une donnée liée",

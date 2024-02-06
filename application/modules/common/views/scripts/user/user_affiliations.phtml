@@ -1,19 +1,22 @@
 <?php if (!empty($this->affiliations)) : ?>
     <?php foreach ($this->affiliations as $index => $affiliation): ?>
         <small>
-            <?php if (isset($affiliation['label']) && !empty($affiliation['label'])) : ?>
+            <?php if (isset($affiliation['label']) && $affiliation['label'] !== '') : ?>
+                <div style="padding-top: 5px;">
+                    <?php if (isset($affiliation['rorId']) && $affiliation['rorId'] !== '') : ?>
+                        <a href="<?= $this->escape($affiliation['rorId']) ?>" target="_blank">
+                            <img src="/img/ROR-iD.png" alt="ROR-iD" height="<?= $this->height ?? 20 ?>px"/>
+                            <?= $this->escape($affiliation['label']) ?>
+                        </a>
+                    <?php else: ?>
+                        <img src="/img/NO-ROR-iD.png" alt="NO-ROR-iD" height="<?= $this->height ?? 20 ?>px"/>
+                        <?= $this->escape($affiliation['label']) ?>
+                    <?php endif; ?>
 
-                <?php if (isset($affiliation['rorId']) && !empty($affiliation['rorId'])) : ?>
-                    <a href="<?= $this->escape($affiliation['rorId']) ?>" target="_blank">
-                        <img src="/img/ROR-iD.png" alt="ROR-iD" height="<?= $this->height ?? 24 ?>px"/>
-                    </a>
-                <?php else: ?>
-                    <img src="/img/NO-ROR-iD.png" alt="NO-ROR-iD" height="<?= $this->height ?? 24 ?>px"/>
-                <?php endif; ?>
-                <?= $this->escape($affiliation['label']) ?>
+                </div>
             <?php endif; ?>
+
         </small>
-        <br>
 
     <?php endforeach; ?>
 <?php endif; ?>

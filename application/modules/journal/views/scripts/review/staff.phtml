@@ -25,20 +25,13 @@
                     </div>
 
                     <div class="details col-sm-10">
-
-                        <div>
+                        <div style="margin-top: 0.5em;">
                             <?= $this->partial('user/user_orcid.phtml', ['orcid' => $member->getOrcid()]) ?>
-
-                            <h3>
-                                <a href="/user/view/userid/<?= $this->escape($member->getUid()) ?>"><?= $this->escape($member->getScreenName()) ?></a>
-                            </h3>
+                            <h2 style="display: inline;"><a href="/user/view/userid/<?= $this->escape($member->getUid()) ?>"><?= $this->escape($member->getScreenName()) ?></a></h2>
                         </div>
 
-                        <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $member->getAffiliations()]) ?>
-
-                        <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $member->getWebSites(), 'socialMedias' => (array)$member->getSocialMedias()]) ?>
-
-
+                        <div><?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $member->getAffiliations()]) ?></div>
+                        <div><?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $member->getWebSites(), 'socialMedias' => (array)$member->getSocialMedias()]) ?></div>
 
                         <div class="fullname">
 
