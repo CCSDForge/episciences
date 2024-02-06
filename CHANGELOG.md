@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - [Bug Report] Browse by authors or date: wrong links on the titles #435
+- The system immediately sent automatic "Invitation to evaluator unanswered" reminders following an invitation.
+  following an invitation.
+- [RT#204568]: system has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers.
 
 ## v1.0.41.7 - 2024-01-23
 ### Changed
