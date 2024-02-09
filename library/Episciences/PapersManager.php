@@ -1043,10 +1043,10 @@ class Episciences_PapersManager
           ]);*/
 
         $form->addElement('select', 'user_lang', [
-            'label' => 'Langue',
+            'label' => 'Langue par défaut',
             'class' => 'form-control',
             'style' => 'width:auto;',
-            'multiOptions' => Episciences_Tools::getLanguages(),
+            'multiOptions' =>  ['en' => 'Anglais', 'fr' => 'Français'],
         ]);
 
         $form->addElement('button', 'next', [
