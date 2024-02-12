@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - [Bug Report] Browse by authors or date: wrong links on the titles #435
-- [RT#204568]: system has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers.
-### changed
+- System has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers.
+- Fixed ORCID max length of user profiles
+
+### Changed
 - Invite a new user form: make it possible to choose between two languages, even for uni-lingual sites & label renamed to 'Default Language'.
 
 ## v1.0.41.7 - 2024-01-23
