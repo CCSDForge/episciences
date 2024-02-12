@@ -170,6 +170,7 @@ return [
     "Délai avant expiration d'une invitation" => "Delay before invitation expires",
     "Permettre aux auteurs de choisir le volume" => 'Contributors can choose the volume',
     "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)" => "Contributors can submit a previously denied article again (new version)",
+    "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ" => "You can enter a statistics start date in the following format: YYYY-MM-DD",
     // Choix de la section
     "Choix de rubrique" => "Section choice",
     "L'auteur ne peut pas choisir la rubrique" => "Contributors can't choose a section",
@@ -1943,6 +1944,7 @@ return [
     "articles acceptés (soumis la même année)" => "accepted articles (submitted in the same year)",
     'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
+    "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
     // datasets
     'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',
