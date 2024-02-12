@@ -775,7 +775,7 @@ return [
     "Votre e-mail a bien été envoyé." => "Your e-mail has been sent.",
 
     // Relecture
-    "Souhaitez-vous relire cet article ?" => "Do you want to rate this article?",
+    "Souhaitez-vous relire cet article ?" => "Do you want to review this article?",
     "De la part de" => "On behalf of",
     "Messages envoyés à l'auteur" => "Messages sent to the author",
     "Votre rapport a été déjà renseigné." => "Your report has already been completed.",
@@ -1575,7 +1575,7 @@ return [
     "Invitation déclinée le : " => "Invitation declined on: ",
     "Cette invitation n'existe pas !" => "This invitation does not exist!",
     "Détails de la réponse" => "Details of the answer",
-    "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to rate this article anymore.",
+    "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to review this article anymore.",
 
 
     /**
@@ -2209,7 +2209,7 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewers that an author has deleted his/her article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned reviewers",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation notification from a reviewer (already known to the journal, i.e. they have already accepted at least one reviewing invitation) to rate an article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation notification from a reviewer (already known to the journal, i.e. they have already accepted at least one reviewing invitation) to review an article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::RECIPIENT] => 'reviewer (known by the journal)',
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer (the user does not yet have a profile in the journal's website, but he/she is known by the CCSD authentication system)",
