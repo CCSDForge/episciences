@@ -170,6 +170,7 @@ return [
     "Délai avant expiration d'une invitation" => "Delay before invitation expires",
     "Permettre aux auteurs de choisir le volume" => 'Contributors can choose the volume',
     "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)" => "Contributors can submit a previously denied article again (new version)",
+    "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ" => "You can enter a statistics start date in the following format: YYYY-MM-DD",
     // Choix de la section
     "Choix de rubrique" => "Section choice",
     "L'auteur ne peut pas choisir la rubrique" => "Contributors can't choose a section",
@@ -775,7 +776,7 @@ return [
     "Votre e-mail a bien été envoyé." => "Your e-mail has been sent.",
 
     // Relecture
-    "Souhaitez-vous relire cet article ?" => "Do you want to rate this article?",
+    "Souhaitez-vous relire cet article ?" => "Do you want to review this article?",
     "De la part de" => "On behalf of",
     "Messages envoyés à l'auteur" => "Messages sent to the author",
     "Votre rapport a été déjà renseigné." => "Your report has already been completed.",
@@ -1575,7 +1576,7 @@ return [
     "Invitation déclinée le : " => "Invitation declined on: ",
     "Cette invitation n'existe pas !" => "This invitation does not exist!",
     "Détails de la réponse" => "Details of the answer",
-    "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to rate this article anymore.",
+    "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to review this article anymore.",
 
 
     /**
@@ -1943,6 +1944,7 @@ return [
     "articles acceptés (soumis la même année)" => "accepted articles (submitted in the same year)",
     'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
+    "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
     // datasets
     'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',
@@ -2209,7 +2211,7 @@ return [
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewers that an author has deleted his/her article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned reviewers",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation notification from a reviewer (already known to the journal, i.e. they have already accepted at least one reviewing invitation) to rate an article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation notification from a reviewer (already known to the journal, i.e. they have already accepted at least one reviewing invitation) to review an article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::RECIPIENT] => 'reviewer (known by the journal)',
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer (the user does not yet have a profile in the journal's website, but he/she is known by the CCSD authentication system)",

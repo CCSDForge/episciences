@@ -1,6 +1,7 @@
 <?php
 $this->layout()->pageTitle = $this->translate('Statistiques');
-$this->layout()->description = $this->translate('Indicateurs de statistiques pour la revue') . ' <code>' . RVNAME . '</code>';
+$description = $this->translate('Indicateurs de statistiques pour la revue') . ' <code>' . RVNAME . '</code>';
+$this->layout()->description = $description;
 ?>
 <?php if ($this->errorMessage): ?>
     <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
@@ -18,6 +19,7 @@ $this->layout()->description = $this->translate('Indicateurs de statistiques pou
     <div class="col-md-12">
         <div id='loading-stats' style="display:none"></div>
         <?= $this->partial('stats/submissions.phtml', [
+            'totalArticles' => $this->totalArticles ?? null,
             'allSubmissions' => $this->allSubmissionsJs,
             'allPublications' => $this->allPublications,
             'allRefusals' => $this->allRefusals,
@@ -32,7 +34,10 @@ $this->layout()->description = $this->translate('Indicateurs de statistiques pou
             'chart4Title' => $this->chart4Title,
             'year' => $this->yearQuery,
             'acceptationRateSubmittedSameYear' => $this->acceptationRateSubmittedSameYear,
-            'acceptedSubmittedSameYaer' => $this->acceptedSubmittedSameYaer
+            'acceptedSubmittedSameYaer' => $this->acceptedSubmittedSameYaer,
+            'startStatsAfterDate' => $this->startStatsAfterDate,
+            'totalImportedArticles' => $this->totalImportedArticles,
+            'totalPublishedArticles' => $this->totalPublishedArticles,
         ]) ?>
     </div>
 
