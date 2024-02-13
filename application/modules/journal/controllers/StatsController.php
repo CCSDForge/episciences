@@ -87,12 +87,15 @@ class StatsController extends Zend_Controller_Action
         }
 
 
-        $firstYear = !$startStatsAfterDate ? $details[self::NB_SUBMISSIONS]['years']['first'] : (int)date('Y', strtotime($startStatsAfterDate));
-        $lastYear = $details[self::NB_SUBMISSIONS]['years']['last'];
 
-        for ($i = $firstYear; $i <= $lastYear; ++$i) {
-            $navYears[] = $i;
-        }
+       $navYears = $details[self::NB_SUBMISSIONS]['years']['indicator'];
+
+       if ($startStatsAfterDate){
+           $navYears = array_filter($navYears, static function($year) use($startStatsAfterDate){
+               return $year >= (int)date('Y', strtotime($startStatsAfterDate));
+           });
+
+       }
 
 
         $this->view->yearCategories = $navYears; // navigation
