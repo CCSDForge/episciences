@@ -1945,6 +1945,11 @@ return [
     'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
     "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
+    'dont %s importés' => "including %s imported",
+    'dont %s importé'  => "including %s imported",
+    'publiés' => 'published',
+    "Vous essayez de consulter les indicateurs statistiques pour l'année" => "You are trying to consult the statistical indicators for the year",
+    "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
     // datasets
     'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',

@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## v1.0.41.7 - 2024-02-12
 ### Fixed
 - [Bug Report] Browse by authors or date: wrong links on the titles #435
 - System has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers.
@@ -24,9 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Invite a new user form: make it possible to choose between two languages, even for uni-lingual sites & label renamed to 'Default Language'.
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
-
-
-
+- Add an option to ignore statistics before a given date [434](https://github.com/CCSDForge/episciences/issues/434)
+  now, except for users, the total number of submissions is the total number of articles published, indicators only include data after the date configured in the journal's settings.
 ## v1.0.41.7 - 2024-01-23
 ### Changed
 - [COAR Notify] processing of new versions + enhancements

@@ -53,9 +53,14 @@ class StatsController extends Zend_Controller_Action
 
 
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
-        $params = ['withDetails' => '', 'year' => $yearQuery];
+        $params = ['withDetails' => ''];
+
+        if($yearQuery){
+            $params['year'] = $yearQuery;
+        }
 
         $yearCategories = [];
+        $navYears = [];
 
         if ($startStatsAfterDate) {
             $params['startAfterDate'] = $startStatsAfterDate;
@@ -82,11 +87,21 @@ class StatsController extends Zend_Controller_Action
         }
 
 
-        $this->view->yearCategories = $yearCategories; // navigation
+        $firstYear = !$startStatsAfterDate ? $details[self::NB_SUBMISSIONS]['years']['first'] : (int)date('Y', strtotime($startStatsAfterDate));
+        $lastYear = $details[self::NB_SUBMISSIONS]['years']['last'];
+
+        for ($i = $firstYear; $i <= $lastYear; ++$i) {
+            $navYears[] = $i;
+        }
+
+
+        $this->view->yearCategories = $navYears; // navigation
 
         if ($yearQuery && !in_array($yearQuery, $yearCategories, true)) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
-            $this->renderScript('index/notfound.phtml');
+            $this->view->message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année") . " <code>$yearQuery</code>";
+            $this->view->description = "Aucune information n'est disponible pour cette page pour le moment.";
+            $this->renderScript('error/error.phtml');
             return;
         }
 
@@ -197,7 +212,7 @@ class StatsController extends Zend_Controller_Action
 
         }
 
-        unset($nbPublications, $nbRefusals, $nbPublications, $nbOthers);
+        unset($nbPublications, $nbRefusals, $nbOthers);
 
         if ($yearQuery) {
             $allSubmissions = $series[self::SUBMISSIONS_BY_YEAR]['submissions'][0];
