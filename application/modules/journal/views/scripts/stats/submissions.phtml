@@ -24,9 +24,10 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                                 <?php if (isset($this->totalImportedArticles)): ?>
                                     <?php $importedMsg = $this->totalImportedArticles > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
                                     <p class="help-block" style="display: inline;">
-                                        (<?= $this->translate(sprintf($importedMsg, '<code>' . $this->totalImportedArticles . '</code>')) ?>
+                                        (<?= sprintf($this->translate($importedMsg), '<code>' . $this->totalImportedArticles . '</code>')?>
                                         )
                                     </p>
+                                <?php endif; ?>
                                     <?php if (isset($this->totalPublishedArticles)): ?>
 
                                         |
@@ -35,7 +36,7 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
 
                                     <?php endif; ?>
 
-                                <?php endif ?>
+
                             </li>
 
                         <?php endif; ?>
