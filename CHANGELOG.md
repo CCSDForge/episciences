@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## Unreleased
+## v1.0.41.7 - 2024-02-12
 ### Fixed
 - [Bug Report] Browse by authors or date: wrong links on the titles #435
 - System has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers.
