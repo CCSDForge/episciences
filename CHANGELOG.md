@@ -404,9 +404,8 @@ the date of the latest action
 ### Fixed
 - Fixed: allow to submit documents from hal.science and HAL portals with a TLD different from .FR
 - [#299](https://github.com/CCSDForge/episciences/issues/299) Fixed licences missing character and version
-
-
-
+- Add an option to ignore statistics before a given date [434](https://github.com/CCSDForge/episciences/issues/434)
+  now, except for users, the total number of submissions is the total number of articles published, indicators only include data after the date configured in the journal's settings.
 ### New
 - Updated volume import script to handle new metadata
 
