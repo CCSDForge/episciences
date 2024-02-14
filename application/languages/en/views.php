@@ -1101,7 +1101,6 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_ANSWER] => "response for clarification",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED] => "Copy editing: final version submitted",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST] => 'Copy editing: the formatting by the journal has been completed, awaiting the final version',
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => 'Copy editing: awaiting formatting by the author',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_ANSWER] => 'Copy editing: final version submitted, awaiting validation',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST] => 'Copy editing: the formatted version is accepted, waiting for the final version',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_REQUEST] => "revision request",
@@ -2384,7 +2383,6 @@ return [
     "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
-    'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
     'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
 

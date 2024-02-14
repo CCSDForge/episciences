@@ -26,12 +26,10 @@ return array(
     // Zend_Validate_Alnum
     "Invalid type given, value should be float, string, or integer" => "Neispravan tip, vrijednost bi trebala biti niz slova, brojki ili realni broj",
     "'%value%' contains characters which are non alphabetic and no digits" => "'%value%' sadrži znakove koji nisu ni slova ni brojke",
-    "'%value%' is an empty string" => "'%value%' je prazan niz",
 
     // Zend_Validate_Alpha
     "Invalid type given, value should be a string" => "Neispravan tip, vrijednost mora biti niz slova",
     "'%value%' contains non alphabetic characters" => "'%value%' sadrži znakove koji nisu slova",
-    "'%value%' is an empty string" => "'%value%' je prazan niz",
 
     // Zend_Validate_Barcode
     "'%value%' failed checksum validation" => "'%value%' nije prošao provjeru",
@@ -92,23 +90,18 @@ return array(
     // Zend_Validate_File_Crc32
     "File '%value%' does not match the given crc32 hashes" => "Datoteka '%value%' se ne podudara sa zadanim crc32 hash-em",
     "A crc32 hash could not be evaluated for the given file" => "crc32 hash se ne može izračunati za zadanu datoteku",
-    "File '%value%' could not be found" => "Datoteku '%value%' nije moguće pronaći",
 
     // Zend_Validate_File_ExcludeExtension
     "File '%value%' has a false extension" => "Datoteka '%value%' ima neispravnu ekstenziju",
-    "File '%value%' could not be found" => "Datoteku '%value%' nije moguće pronaći",
 
     // Zend_Validate_File_ExcludeMimeType
     "File '%value%' has a false mimetype of '%type%'" => "Datoteka '%value%' ima neispravan 'mime' tip '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "'Mime' tip datoteke '%value%' nije moguće detektirati",
-    "File '%value%' can not be read" => "Datoteku '%value%' nije moguće pročitati",
 
     // Zend_Validate_File_Exists
     "File '%value%' does not exist" => "Datoteka '%value%' ne postoji",
 
     // Zend_Validate_File_Extension
     "File '%value%' has a false extension" => "Datoteka '%value%' ima neispravnu ekstenziju",
-    "File '%value%' could not be found" => "Datoteku '%value%' nije moguće pronaći",
 
     // Zend_Validate_File_FilesSize
     "All files in sum should have a maximum size of '%max%' but '%size%' were detected" => "Sve datoteke zajedno mogu imati maksimalnu veličinu od '%max%', a imaju '%size%'",
@@ -118,7 +111,6 @@ return array(
     // Zend_Validate_File_Hash
     "File '%value%' does not match the given hashes" => "Datoteka '%value%' ne odgovara danom 'hashu'",
     "A hash could not be evaluated for the given file" => "'Hash' nije moguće izračunati za zadanu datoteku",
-    "File '%value%' could not be found" => "Datoteku '%value%' nije moguće pronaći",
 
     // Zend_Validate_File_ImageSize
     "Maximum allowed width for image '%value%' should be '%maxwidth%' but '%width%' detected" => "Maksimalna dozvoljena širina slike '%value%' je '%maxwidth%', slika je široka '%width%'",
@@ -126,22 +118,16 @@ return array(
     "Maximum allowed height for image '%value%' should be '%maxheight%' but '%height%' detected" => "Maksimalna dozvoljena visina slike '%value%' je '%maxheight%', slika je visoka '%height%'",
     "Minimum expected height for image '%value%' should be '%minheight%' but '%height%' detected" => "Minimalna očekivana visina slike '%value%' je '%minheight%', slika je visoka '%height%'",
     "The size of image '%value%' could not be detected" => "Dimenzije slike '%value%' nije moguće otkriti",
-    "File '%value%' can not be read" => "Datoteku '%value%' nije moguće pročitati",
 
     // Zend_Validate_File_IsCompressed
     "File '%value%' is not compressed, '%type%' detected" => "Datoteka '%value%' nije kompresirana, datoteka je tipa '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "'Mime' tip datoteke '%value%' nije moguće detektirati",
-    "File '%value%' can not be read" => "Datoteku '%value%' nije moguće pročitati",
 
     // Zend_Validate_File_IsImage
     "File '%value%' is no image, '%type%' detected" => "Datoteka '%value%' nije slika, datoteka je tipa '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "'Mime' tip datoteke '%value%' nijem moguće detektirati",
-    "File '%value%' can not be read" => "Datoteku '%value%' nije moguće pročitati",
 
     // Zend_Validate_File_Md5
     "File '%value%' does not match the given md5 hashes" => "Datoteka '%value%' ne odgovara zadanom md5 hash-u",
     "A md5 hash could not be evaluated for the given file" => "Md5 hash nije moguće izračunati za zadanu datoteku",
-    "File '%value%' could not be found" => "Datoteku '%value%' nije moguće pronaći",
 
     // Zend_Validate_File_MimeType
     "File '%value%' has a false mimetype of '%type%'" => "Datoteka '%value%' ima neispravan 'mime' tip '%type%'",
@@ -154,12 +140,10 @@ return array(
     // Zend_Validate_File_Sha1
     "File '%value%' does not match the given sha1 hashes" => "Datoteka '%value%' ne odgovara zadanom sha1 hash-u",
     "A sha1 hash could not be evaluated for the given file" => "Sha1 hash se ne može izračunati za zadanu datoteku",
-    "File '%value%' could not be found" => "Datoteku '%value%' nije moguće pronaći",
 
     // Zend_Validate_File_Size
     "Maximum allowed size for file '%value%' is '%max%' but '%size%' detected" => "Maksimalna dozvoljena veličina datoteka '%value%' je '%max%', datoteka je velika '%size%'",
     "Minimum expected size for file '%value%' is '%min%' but '%size%' detected" => "Minimalna dozvoljena veličina datoteke '%value%' je '%min%', datoteka je velika '%size%'",
-    "File '%value%' could not be found" => "Datoteku '%value%' nije moguće pronaći",
 
     // Zend_Validate_File_Upload
     "File '%value%' exceeds the defined ini size" => "Datoteka '%value%' prelazi veličinu definiranu u ini datoteci",
@@ -243,11 +227,9 @@ return array(
 
     // Zend_Validate_Sitemap_Changefreq
     "'%value%' is not a valid sitemap changefreq" => "'%value%' nije ispravna vrijednost za sitemap 'changefreq'",
-    "Invalid type given, the value should be a string" => "Neispravan tip, vrijednost mora biti niz",
 
     // Zend_Validate_Sitemap_Lastmod
     "'%value%' is not a valid sitemap lastmod" => "'%value%' nije ispravna vrijednost za sitemap 'lastmod'",
-    "Invalid type given, the value should be a string" => "Neispravan tip, vrijednost mora biti niz",
 
     // Zend_Validate_Sitemap_Loc
     "'%value%' is not a valid sitemap location" => "'%value%' nije ispravna lokacija za 'sitemap'",

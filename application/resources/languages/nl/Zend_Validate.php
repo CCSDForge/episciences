@@ -27,12 +27,10 @@ return array(
     // Zend_Validate_Alnum
     "Invalid type given, value should be float, string, or integer" => "Ongeldig type opgegeven, waarde moet een float, string of integer zijn",
     "'%value%' contains characters which are non alphabetic and no digits" => "'%value%' bevat tekens welke alfabetisch, noch numeriek zijn",
-    "'%value%' is an empty string" => "'%value%' is een lege string",
 
     // Zend_Validate_Alpha
     "Invalid type given, value should be a string" => "Ongeldig type opgegeven, waarde moet een string zijn",
     "'%value%' contains non alphabetic characters" => "'%value%' bevat tekens welke niet alfabetisch zijn",
-    "'%value%' is an empty string" => "'%value%' is een lege string",
 
     // Zend_Validate_Barcode
     "'%value%' failed checksum validation" => "'%value%' slaagde niet in de checksum validatie",
@@ -93,23 +91,18 @@ return array(
     // Zend_Validate_File_Crc32
     "File '%value%' does not match the given crc32 hashes" => "File '%value%' matcht niet met de opgegeven crc32 hashes",
     "A crc32 hash could not be evaluated for the given file" => "Fout tijdens het genereren van een crc32 hash van het opgegeven bestand",
-    "File '%value%' could not be found" => "Het bestand '%value%' kon niet worden gevonden",
 
     // Zend_Validate_File_ExcludeExtension
     "File '%value%' has a false extension" => "Het bestand '%value%' heeft een ongeldige extensie",
-    "File '%value%' could not be found" => "Het bestand '%value%' kon niet worden gevonden",
 
     // Zend_Validate_File_ExcludeMimeType
     "File '%value%' has a false mimetype of '%type%'" => "Het bestand '%value%' heeft een ongeldig mimetype: '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "Het mimetype van bestand '%value%' kon niet worden gedetecteerd",
-    "File '%value%' can not be read" => "Het bestand '%value%' kon niet worden gelezen",
 
     // Zend_Validate_File_Exists
     "File '%value%' does not exist" => "Bestand '%value%' bestaat niet",
 
     // Zend_Validate_File_Extension
     "File '%value%' has a false extension" => "Het bestand '%value%' heeft een ongeldige extensie",
-    "File '%value%' could not be found" => "Het bestand '%value%' kon niet worden gevonden",
 
     // Zend_Validate_File_FilesSize
     "All files in sum should have a maximum size of '%max%' but '%size%' were detected" => "Alle bestanden tesamen hebben een maximale grootte van '%max%' maar '%size%' was gedetecteerd",
@@ -119,7 +112,6 @@ return array(
     // Zend_Validate_File_Hash
     "File '%value%' does not match the given hashes" => "Het bestand '%value%' matcht niet met de opgegeven hashes",
     "A hash could not be evaluated for the given file" => "Een hash kon niet worden gegenereerd voor het opgegeven bestand",
-    "File '%value%' could not be found" => "Het bestand '%value%' kon niet worden gevonden",
 
     // Zend_Validate_File_ImageSize
     "Maximum allowed width for image '%value%' should be '%maxwidth%' but '%width%' detected" => "Maximum breedte voor afbeelding '%value%' is '%maxwidth%' maar '%width%' werd gedetecteerd",
@@ -127,22 +119,16 @@ return array(
     "Maximum allowed height for image '%value%' should be '%maxheight%' but '%height%' detected" => "Maximum hoogte voor afbeelding '%value%' is '%maxheight%' maar '%height%' werd gedetecteerd",
     "Minimum expected height for image '%value%' should be '%minheight%' but '%height%' detected" => "Minimum hoogte voor afbeelding '%value%' is '%minheight%' maar '%height%' werd gedetecteerd",
     "The size of image '%value%' could not be detected" => "De grootte van afbeelding '%value%' kon niet worden gedetecteerd",
-    "File '%value%' can not be read" => "Het bestand '%value%' kan niet worden gelezen",
 
     // Zend_Validate_File_IsCompressed
     "File '%value%' is not compressed, '%type%' detected" => "Het bestand '%value%' is niet gecomprimeerd, '%type%' gedetecteerd",
-    "The mimetype of file '%value%' could not be detected" => "Het mimetype van bestand '%value%' kon niet worden gedetecteerd",
-    "File '%value%' can not be read" => "Bestand '%value%' kan niet worden gelezen",
 
     // Zend_Validate_File_IsImage
     "File '%value%' is no image, '%type%' detected" => "Het bestand '%value%' is geen afbeelding, '%type%' gedetecteerd",
-    "The mimetype of file '%value%' could not be detected" => "Het mimetype van bestand '%value%' kon niet worden gedetecteerd",
-    "File '%value%' can not be read" => "Het bestand '%value%' kon niet worden gelezen",
 
     // Zend_Validate_File_Md5
     "File '%value%' does not match the given md5 hashes" => "Het bestand '%value%' matcht niet met de opgegeven md5-hashes",
     "A md5 hash could not be evaluated for the given file" => "Een md5-hash kon niet gegenereerd worden voor het opgegeven bestand",
-    "File '%value%' could not be found" => "Het bestand '%value%' kon niet worden gevonden",
 
     // Zend_Validate_File_MimeType
     "File '%value%' has a false mimetype of '%type%'" => "Het bestand '%value%' heeft een ongeldig mimetype: '%type%'",
@@ -155,12 +141,10 @@ return array(
     // Zend_Validate_File_Sha1
     "File '%value%' does not match the given sha1 hashes" => "Het bestand '%value%' matcht niet met de opgegeven sha1-hashes",
     "A sha1 hash could not be evaluated for the given file" => "Een sha1-hash kon niet worden gegenereerd voor het opgegeven bestand",
-    "File '%value%' could not be found" => "Het bestand '%value%' kon niet worden gevonden",
 
     // Zend_Validate_File_Size
     "Maximum allowed size for file '%value%' is '%max%' but '%size%' detected" => "Maximum grootte voor bestand '%value%' is '%max%' maar '%size%' werd gedetecteerd",
     "Minimum expected size for file '%value%' is '%min%' but '%size%' detected" => "Minimum grootte voor bestand '%value%' is '%min%' maar '%size%' werd gedetecteerd",
-    "File '%value%' could not be found" => "Het bestand '%value%' kon niet worden gevonden",
 
     // Zend_Validate_File_Upload
     "File '%value%' exceeds the defined ini size" => "Het bestand '%value%' overschrijdt de ini grootte",
@@ -244,11 +228,9 @@ return array(
 
     // Zend_Validate_Sitemap_Changefreq
     "'%value%' is not a valid sitemap changefreq" => "'%value%' is geen geldige sitemap changefreq",
-    "Invalid type given, the value should be a string" => "Ongeldig type opgegeven, waarde dient een string te zijn",
 
     // Zend_Validate_Sitemap_Lastmod
     "'%value%' is not a valid sitemap lastmod" => "'%value%' is geen geldige sitemap lastmod",
-    "Invalid type given, the value should be a string" => "Ongeldig type opgegeven, waarde dient een string te zijn",
 
     // Zend_Validate_Sitemap_Loc
     "'%value%' is not a valid sitemap location" => "'%value%' is geen geldige sitemap locatie",

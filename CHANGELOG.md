@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add an option to ignore statistics before a given date [434](https://github.com/CCSDForge/episciences/issues/434)
   now, except for users, the total number of submissions is the total number of articles published, indicators only include data after the date configured in the journal's settings.
 
-## v1.0.41.7 - 2024-02-12
 ## v1.0.41.8 - 2024-02-12
 ### Fixed
 - [Bug Report] Browse by authors or date: wrong links on the titles #435

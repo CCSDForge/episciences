@@ -27,12 +27,10 @@ return array(
     // Zend_Validate_Alnum
     "Invalid type given, value should be float, string, or integer" => "O tipo especificado é inválido, o valor deve ser float, string, ou inteiro",
     "'%value%' contains characters which are non alphabetic and no digits" => "'%value%' contém caracteres que não são alfabéticos e nem dígitos",
-    "'%value%' is an empty string" => "'%value%' é uma string vazia",
 
     // Zend_Validate_Alpha
     "Invalid type given, value should be a string" => "O tipo especificado é inválido, o valor deve ser uma string",
     "'%value%' contains non alphabetic characters" => "'%value%' contém caracteres não alfabéticos",
-    "'%value%' is an empty string" => "'%value%' é uma string vazia",
 
     // Zend_Validate_Barcode
     "'%value%' failed checksum validation" => "'%value%' falhou na validação do checksum",
@@ -93,23 +91,18 @@ return array(
     // Zend_Validate_File_Crc32
     "File '%value%' does not match the given crc32 hashes" => "O arquivo '%value%' não corresponde ao hash crc32 fornecido",
     "A crc32 hash could not be evaluated for the given file" => "Não foi possível avaliar um hash crc32 para o arquivo fornecido",
-    "File '%value%' could not be found" => "O arquivo '%value%' não pôde ser encontrado",
 
     // Zend_Validate_File_ExcludeExtension
     "File '%value%' has a false extension" => "O arquivo '%value%' possui a extensão incorreta",
-    "File '%value%' could not be found" => "O arquivo '%value%' não pôde ser encontrado",
 
     // Zend_Validate_File_ExcludeMimeType
     "File '%value%' has a false mimetype of '%type%'" => "O arquivo '%value%' tem o mimetype incorreto: '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "O mimetype do arquivo '%value%' não pôde ser detectado",
-    "File '%value%' can not be read" => "O arquivo '%value%' não pôde ser lido",
 
     // Zend_Validate_File_Exists
     "File '%value%' does not exist" => "O arquivo '%value%' não existe",
 
     // Zend_Validate_File_Extension
     "File '%value%' has a false extension" => "O arquivo '%value%' possui a extensão incorreta",
-    "File '%value%' could not be found" => "O arquivo '%value%' não pôde ser encontrado",
 
     // Zend_Validate_File_FilesSize
     "All files in sum should have a maximum size of '%max%' but '%size%' were detected" => "Todos os arquivos devem ter um tamanho máximo de '%max%', mas um tamanho de '%size%' foi detectado",
@@ -119,7 +112,6 @@ return array(
     // Zend_Validate_File_Hash
     "File '%value%' does not match the given hashes" => "O arquivo '%value%' não corresponde ao hash fornecido",
     "A hash could not be evaluated for the given file" => "Não foi possível avaliar um hash para o arquivo fornecido",
-    "File '%value%' could not be found" => "O arquivo '%value%' não pôde ser encontrado",
 
     // Zend_Validate_File_ImageSize
     "Maximum allowed width for image '%value%' should be '%maxwidth%' but '%width%' detected" => "A largura máxima permitida para a imagem '%value%' deve ser '%maxwidth%', mas '%width%' foi detectada",
@@ -127,22 +119,16 @@ return array(
     "Maximum allowed height for image '%value%' should be '%maxheight%' but '%height%' detected" => "A altura máxima permitida para a imagem '%value%' deve ser '%maxheight%', mas '%height%' foi detectada",
     "Minimum expected height for image '%value%' should be '%minheight%' but '%height%' detected" => "A altura mínima esperada para a imagem '%value%' deve ser '%minheight%', mas '%height%' foi detectada",
     "The size of image '%value%' could not be detected" => "O tamanho da imagem '%value%' não pôde ser detectado",
-    "File '%value%' can not be read" => "O arquivo '%value%' não pôde ser lido",
 
     // Zend_Validate_File_IsCompressed
     "File '%value%' is not compressed, '%type%' detected" => "O arquivo '%value%' não está compactado: '%type%' detectado",
-    "The mimetype of file '%value%' could not be detected" => "O mimetype do arquivo '%value%' não pôde ser detectado",
-    "File '%value%' can not be read" => "O arquivo '%value%' não pôde ser lido",
 
     // Zend_Validate_File_IsImage
     "File '%value%' is no image, '%type%' detected" => "O arquivo '%value%' não é uma imagem: '%type%' detectado",
-    "The mimetype of file '%value%' could not be detected" => "O mimetype do arquivo '%value%' não pôde ser detectado",
-    "File '%value%' can not be read" => "O arquivo '%value%' não pôde ser lido",
 
     // Zend_Validate_File_Md5
     "File '%value%' does not match the given md5 hashes" => "O arquivo '%value%' não corresponde ao hash md5 fornecido",
     "A md5 hash could not be evaluated for the given file" => "Não foi possível avaliar um hash md5 para o arquivo fornecido",
-    "File '%value%' could not be found" => "O arquivo '%value%' não pôde ser encontrado",
 
     // Zend_Validate_File_MimeType
     "File '%value%' has a false mimetype of '%type%'" => "O arquivo '%value%' tem o mimetype incorreto: '%type%'",
@@ -155,12 +141,10 @@ return array(
     // Zend_Validate_File_Sha1
     "File '%value%' does not match the given sha1 hashes" => "O arquivo '%value%' não corresponde ao hash sha1 fornecido",
     "A sha1 hash could not be evaluated for the given file" => "Não foi possível avaliar um hash sha1 para o arquivo fornecido",
-    "File '%value%' could not be found" => "O arquivo '%value%' não pôde ser encontrado",
 
     // Zend_Validate_File_Size
     "Maximum allowed size for file '%value%' is '%max%' but '%size%' detected" => "O tamanho máximo permitido para o arquivo '%value%' é '%max%', mas '%size%' foram detectados",
     "Minimum expected size for file '%value%' is '%min%' but '%size%' detected" => "O tamanho mínimo esperado para o arquivo '%value%' é '%min%', mas '%size%' foram detectados",
-    "File '%value%' could not be found" => "O arquivo '%value%' não pôde ser encontrado",
 
     // Zend_Validate_File_Upload
     "File '%value%' exceeds the defined ini size" => "O arquivo '%value%' excede o tamanho definido na configuração",
@@ -244,11 +228,9 @@ return array(
 
     // Zend_Validate_Sitemap_Changefreq
     "'%value%' is not a valid sitemap changefreq" => "'%value%' não é um changefreq de sitemap válido",
-    "Invalid type given, the value should be a string" => "O tipo especificado é inválido, o valor deve ser uma string",
 
     // Zend_Validate_Sitemap_Lastmod
     "'%value%' is not a valid sitemap lastmod" => "'%value%' não é um lastmod de sitemap válido",
-    "Invalid type given, the value should be a string" => "O tipo especificado é inválido, o valor deve ser uma string",
 
     // Zend_Validate_Sitemap_Loc
     "'%value%' is not a valid sitemap location" => "'%value%' não é uma localização de sitemap válida",

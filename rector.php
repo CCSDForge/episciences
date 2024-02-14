@@ -1,24 +1,25 @@
 <?php
 // rector.php
-use Rector\Php74\Rector\Property\TypedPropertyRector;
-use Rector\Set\ValueObject\SetList;
 use Rector\Config\RectorConfig;
-use Rector\Core\ValueObject\PhpVersion;
+use Rector\Set\ValueObject\SetList;
+use Rector\TypeDeclaration\Rector\Property\TypedPropertyFromStrictConstructorRector;
 
 return static function (RectorConfig $rectorConfig): void {
-// paths to refactor; solid alternative to CLI arguments
+    // register single rule
     $rectorConfig->paths([__DIR__ . '/application', __DIR__ . '/library']);
 
+    // here we can define, what sets of rules will be applied
+    // tip: use "SetList" class to autocomplete sets with your IDE
+    //  $rectorConfig->sets([
+    //      SetList::CODE_QUALITY
+    //  ]);
 
     $rectorConfig->sets([
-        SetList::PHP_74,
-        SetList::DEAD_CODE
+        //SetList::PHP_81,
+        SetList::DEAD_CODE,
+        //SetList::PRIVATIZATION
     ]);
 
-
-// is your PHP version different from the one you refactor to? [default: your PHP version], uses PHP_VERSION_ID format
-$rectorConfig->phpVersion(PhpVersion::PHP_74);
-
-// Path to PHPStan with extensions, that PHPStan in Rector uses to determine types
-$rectorConfig->phpstanConfig(__DIR__ . '/phpstan.neon');
+    //$rectorConfig->phpstanConfig(__DIR__ . '/phpstan.neon');
 };
+
