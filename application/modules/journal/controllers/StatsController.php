@@ -23,6 +23,7 @@ class StatsController extends Zend_Controller_Action
     public const NB_SUBMISSIONS = 'nbSubmissions';
     public const SUBMISSION_ACCEPTANCE_DELAY = 'delayBetweenSubmissionAndAcceptance';
     public const SUBMISSION_PUBLICATION_DELAY = 'delayBetweenSubmissionAndPublication';
+    public const REFERENCE_YEAR = 2013;
 
 
     /**
@@ -39,15 +40,27 @@ class StatsController extends Zend_Controller_Action
             return;
         }
 
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
+
+
 
         $journalSettings = Zend_Registry::get('reviewSettings');
         $startStatsAfterDate = isset($journalSettings['startStatsAfterDate']) && $journalSettings['startStatsAfterDate'] !== '' ?
             $journalSettings['startStatsAfterDate'] : null;
 
 
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
+        if ($startStatsAfterDate) {
+            $startStatsAfterDateYear = (int)date('Y', strtotime($startStatsAfterDate));
+            $params['startAfterDate'] = $startStatsAfterDate;
+            $this->view->startStatsAfterDate = $startStatsAfterDate;
+        }
+
+        $askApi = !$yearQuery || ( // all stats
+                $yearQuery >= (!$startStatsAfterDate ? self::REFERENCE_YEAR : $startStatsAfterDateYear) && $yearQuery <= (int)date('Y') // by year
+            );
+
 
         $uri = 'journals/stats/dashboard/' . RVCODE;
 
@@ -60,23 +73,22 @@ class StatsController extends Zend_Controller_Action
         }
 
         $yearCategories = [];
-        $navYears = [];
 
-        if ($startStatsAfterDate) {
-            $params['startAfterDate'] = $startStatsAfterDate;
-            $this->view->startStatsAfterDate = $startStatsAfterDate;
+        if ($askApi) {
+
+            try { // api request
+                $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
+            } catch (GuzzleException $e) {
+                $this->view->errorMessage = $errorMessage;
+                trigger_error($e->getMessage());
+                return;
+            }
+
         }
 
-        try { // api request
-            $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
-        } catch (GuzzleException $e) {
-            $this->view->errorMessage = $errorMessage;
-            trigger_error($e->getMessage());
-            return;
-        }
 
         if (empty($dashboard)) {
-            $this->view->errorMessage = 'Aucun résultat';
+            $this->renderError($yearQuery);
             return;
         }
 
@@ -87,12 +99,11 @@ class StatsController extends Zend_Controller_Action
         }
 
 
-
        $navYears = $details[self::NB_SUBMISSIONS]['years']['indicator'];
 
        if ($startStatsAfterDate){
-           $navYears = array_filter($navYears, static function($year) use($startStatsAfterDate){
-               return $year >= (int)date('Y', strtotime($startStatsAfterDate));
+           $navYears = array_filter($navYears, static function($year) use($startStatsAfterDateYear){
+               return $year >= $startStatsAfterDateYear;
            });
 
        }
@@ -101,10 +112,7 @@ class StatsController extends Zend_Controller_Action
         $this->view->yearCategories = $navYears; // navigation
 
         if ($yearQuery && !in_array($yearQuery, $yearCategories, true)) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
-            $this->view->message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année") . " <code>$yearQuery</code>";
-            $this->view->description = "Aucune information n'est disponible pour cette page pour le moment.";
-            $this->renderScript('error/error.phtml');
+            $this->renderError($yearQuery);
             return;
         }
 
@@ -430,6 +438,25 @@ class StatsController extends Zend_Controller_Action
         $response = $promise->wait();
         return $response->getBody();
 
+    }
+
+    /**
+     * @param int|null $yearQuery
+     * @param string $header
+     * @return void
+     */
+    private function renderError(int $yearQuery = null, string $header = 'HTTP/1.1 404 Not Found'): void
+    {
+        Episciences_Tools::header($header);
+        $message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année");
+
+        if($yearQuery) {
+            $message .= " <code>$yearQuery</code>";
+        }
+
+        $this->view->message = $message;
+        $this->view->description = "Aucune information n'est disponible pour cette page pour le moment.";
+        $this->renderScript('error/error.phtml');
     }
 
 }
