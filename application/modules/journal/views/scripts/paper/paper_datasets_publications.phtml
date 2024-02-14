@@ -41,7 +41,8 @@ $keepOnlySourceUsed = [];
                             <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) {
                                 $sourceToSup = $listSources[$getSource];
                             } ?>
-                            <?php if (!Episciences_Tools::isDoiWithUrl($publication->getLink())
+                            <?php if (($publication->getName() === 'arXiv' && $publication->getMetatext() === null) ||
+                            (!Episciences_Tools::isDoiWithUrl($publication->getLink()) && $publication->getName() !== 'arXiv')
                                 || (Episciences_Tools::isDoiWithUrl($publication->getLink())
                                     && (string)$publication->getSourceId()
                                     !== Episciences_Repositories::EPI_USER_ID
@@ -51,9 +52,18 @@ $keepOnlySourceUsed = [];
                                        id="link-ld"><?= $publication->getValue() ?></a><sup> <?= $sourceToSup ?></sup>
                                 <?php endif; ?>
                             <?php endif; ?>
+                            <?php if ($publication->getMetatext() !== null && Episciences_Tools::isHal($publication->getValue())): ?>
+                                <div style="display: inline;">
+                                    <?php
+                                    $metadataHal = json_decode($publication->getMetatext(),true);
+                                    echo $metadataHal['citationFull'];
+                                    ?>
+                                </div>
+                            <?php endif; ?>
                             <?php if (((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID)
-                                && ($publication->getName() === 'doi' || Episciences_Tools::isDoiWithUrl($publication->getValue()))
-                                && $publication->getMetatext() !== null) {
+                                && ($publication->getName() === 'doi' || Episciences_Tools::isDoiWithUrl($publication->getValue())
+                                    || (Episciences_Tools::isDoiWithUrl($publication->getValue()) || $publication->getName() === 'arXiv'))
+                                && $publication->getMetatext() !== null ) {
                                 try {
                                     //pimp author names
                                     $authorFunction = static function ($authorItem, $renderedText) {

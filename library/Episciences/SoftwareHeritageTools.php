@@ -27,6 +27,28 @@ class Episciences_SoftwareHeritageTools
         }
         return '';
     }
+    public static function getCitationsFullFromHal($halId,int $version = 0) : string {
+        $client = new Client();
+        try {
+
+            $strQuery = '((halId_s:'.$halId.' OR halIdSameAs_s:'.$halId.')';
+
+            if ($version !== 0){
+                $strQuery.=' AND version_i:'.$version;
+            }
+            $strQuery.= ')&fl=docType_s,citationFull_s,swhidId_s';
+            $res = $client->request('GET',  Episciences_Repositories::getApiUrl(
+                    Episciences_Repositories::HAL_REPO_ID).'/search?q='.$strQuery)
+                ->getBody()->getContents();
+            $resJson = json_decode($res);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $res;
+            }
+        } catch (GuzzleException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+        return '';
+    }
 
     public static function getCodeMetaFromDirSwh(string $swhidDir) {
 
@@ -54,7 +76,9 @@ class Episciences_SoftwareHeritageTools
 
     }
 
-
-
+    public static function replaceByBadgeHalCitation(string $swhid, string $citation){
+        $regex = "~&#x27E8;".$swhid."&#x27E9;~";
+        return preg_replace($regex,'<img src="https://archive.softwareheritage.org/badge/'.$swhid.'" alt="Archived | '.$swhid.' "/>',$citation);
+    }
 
 }

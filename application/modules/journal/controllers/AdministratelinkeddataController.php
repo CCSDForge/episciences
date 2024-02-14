@@ -23,18 +23,71 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage('Format de donnée non reconnu');
             exit();
         }
-
         $idMetaDataLastId = "";
-        if ($inputTypeLd === 'software' && $typeLd === 'hal'){
-            $codeMetaFromHal = Episciences_SoftwareHeritageTools::getCodeMetaFromHal($valueLd);
-            if ($codeMetaFromHal !== ''){
-                $epiDM = new Episciences_Paper_DatasetMetadata();
-                $epiDM->setMetatext($codeMetaFromHal);
-                $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+        $arraySoftware = [];
+        $versionHal = 0;
+        // isolate hal id if url is given here
+        if ($typeLd === 'url') {
+            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($valueLd);
+            if (!empty($getHalIdentifierInUrl)) {
+                $typeLd = 'hal';
+                $valueLd = $getHalIdentifierInUrl[0];
+                if (isset($getHalIdentifierInUrl[1])) {
+                    $valueLd = str_replace($getHalIdentifierInUrl[1],'',$valueLd);
+                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
+                }
+            }
+            //isolate swh in url
+            $getSwhDirIdentifierInUrl = Episciences_Tools::getSoftwareHeritageDirId($valueLd);
+            if (!empty($getSwhDirIdentifierInUrl)) {
+                $typeLd = 'software';
+                $valueLd = $getSwhDirIdentifierInUrl[0];
             }
         }
+        if ($inputTypeLd === 'software' && $typeLd === 'hal') {
+            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($valueLd,$versionHal));
+            if (!empty($citationFull) && !empty($citationFull->response->docs[0])){
+                $citationDocType = $citationFull->response->docs[0]->docType_s;
+                if ($citationDocType !== "SOFTWARE"){
+                    echo json_encode([false], JSON_THROW_ON_ERROR);
+                    $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("L'identifiant HAL n'est pas de type logiciel");
+                    exit();
+                }
+                $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+                if (!empty($citationFull->response->docs[0]->swhidId_s)){
+                    $arraySoftware['swhidId'] = $citationFull->response->docs[0]->swhidId_s[0];
+                }
+            }
+            $codeMetaFromHal = Episciences_SoftwareHeritageTools::getCodeMetaFromHal($valueLd);
+            $codeMetaFromHal = json_decode($codeMetaFromHal, true);
+            if ($codeMetaFromHal !== ''){
+                $arraySoftware['codemeta'] = $codeMetaFromHal;
+            }
+            $epiDM = new Episciences_Paper_DatasetMetadata();
+            $epiDM->setMetatext(json_encode($arraySoftware, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_FORCE_OBJECT));
+            $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+        } elseif (($inputTypeLd === 'dataset' || $inputTypeLd === 'publication') && $typeLd === 'hal') {
+            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($valueLd,$versionHal));
+            $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+            $epiDM = new Episciences_Paper_DatasetMetadata();
+            $epiDM->setMetatext(json_encode($arraySoftware));
+            $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+        }
+        $checkArxivUrl = Episciences_Tools::checkIsArxivUrl($valueLd);
+        if ($checkArxivUrl){
+            $typeLd = 'arxiv';
+            $valueLd = $checkArxivUrl[1];
+        }
+        if (($typeLd === 'arxiv' && $inputTypeLd === 'software') ||
+            ($typeLd === 'doi' && !empty(Episciences_Tools::checkIsDoiFromArxiv($valueLd)) && $inputTypeLd === 'software')) {
+            echo json_encode([false], JSON_THROW_ON_ERROR);
+            $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("L'archive ArXiv ne contient pas de logiciel");
+            exit();
+        }
 
-        if ($inputTypeLd === 'software' && $typeLd === 'software' && Episciences_Paper_DatasetsManager::CheckSwhidType($valueLd) === 'dir') {
+        if ($inputTypeLd === 'software'
+            && $typeLd === 'software'
+            && Episciences_Paper_DatasetsManager::CheckSwhidType($valueLd) === 'dir') {
             $codeMetaFromDir = Episciences_SoftwareHeritageTools::getCodeMetaFromDirSwh($valueLd);
             if ($codeMetaFromDir !== '') {
                 $epiDM = new Episciences_Paper_DatasetMetadata();
@@ -47,8 +100,13 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $epiDM->setMetatext(Episciences_DoiTools::getMetadataFromDoi($valueLd));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
         }
-
-        if ($inputTypeLd === 'software' && $typeLd !== false) {
+        if ($typeLd === 'arxiv' && $inputTypeLd !== 'software') {
+            $epiDM = new Episciences_Paper_DatasetMetadata();
+            $epiDM->setMetatext(Episciences_DoiTools::getMetadataFromDoi($valueLd));
+            $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+        }
+        
+        if ($inputTypeLd === 'software' && $typeLd !== false && $typeLd !== 'hal') {
             $typeLd = 'software';
         }
 
