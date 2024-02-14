@@ -82,7 +82,7 @@
 
                 <hr/>
 
-                <xsl:if test="episciences/id and episciences/id != 0">
+                <xsl:if test="episciences/id and episciences/id != ''">
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Id : ')"/>
                         <xsl:value-of select="episciences/id"/>

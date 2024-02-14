@@ -57,7 +57,7 @@
 		<xsl:text>}},</xsl:text>
 		
 		<!-- VOLUME -->
-		<xsl:if test="episciences/volume and episciences/volume != 0">
+		<xsl:if test="episciences/volume and episciences/volume != ''">
 			<xsl:text>&#xA;  VOLUME = {{</xsl:text> 
     		<xsl:value-of select="php:function('Ccsd_Tools::translate', $volume)" />
     		<xsl:text>}},</xsl:text>
