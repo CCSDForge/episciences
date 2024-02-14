@@ -5,8 +5,8 @@ verbose=0
 test=0
 debug=0
 
-if test -f "/usr/bin/php7.4"; then
-    PHP_BIN="/usr/bin/php7.4"
+if test -f "/usr/bin/php8.1"; then
+    PHP_BIN="/usr/bin/php8.1"
 else
   PHP_BIN="/usr/bin/php"
 fi
