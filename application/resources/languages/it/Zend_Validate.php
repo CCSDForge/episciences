@@ -27,18 +27,15 @@ return array(
     // Zend_Validate_Alnum
     "Invalid type given, value should be float, string, or integer" => "Tipo di dato non valido: il dato dev'essere di tipo float, stringa o intero.",
     "'%value%' contains characters which are non alphabetic and no digits" => "'%value%' contine caratteri che non sono alfanumerici",
-    "'%value%' is an empty string" => "'%value%' è una stringa vuota",
 
     // Zend_Validate_Alpha
     "Invalid type given, value should be a string" => "Tipo di dato non valido, il dato dev'essere una stringa",
     "'%value%' contains non alphabetic characters" => "'%value%' contiene caratteri non alfabetici",
-    "'%value%' is an empty string" => "'%value%' è una stringa vuota",
 
     // Zend_Validate_Barcode
     "'%value%' failed checksum validation" => "'%value%' non ha un checksum valido",
     "'%value%' contains invalid characters" => "'%value%' contiene caratteri non permessi",
     "'%value%' should have a length of %length% characters" => "'%value%' non ha la lunghezza corretta di %length% caratteri",
-    "Invalid type given, value should be a string" => "Tipo di dato non valido, il dato dev'essere una stringa",
 
     // Zend_Validate_Between
     "'%value%' is not between '%min%' and '%max%', inclusively" => "'%value%' non è compreso tra '%min%' e '%max%', inclusi",
@@ -93,23 +90,18 @@ return array(
     // Zend_Validate_File_Crc32
     "File '%value%' does not match the given crc32 hashes" => "Il file '%value%' non ha un hash crc32 tra quelli consentiti",
     "A crc32 hash could not be evaluated for the given file" => "L'hash crc32 non può essere calcolato per il file dato",
-    "File '%value%' could not be found" => "Il file '%value%' non può essere trovato",
 
     // Zend_Validate_File_ExcludeExtension
     "File '%value%' has a false extension" => "Il file '%value%' ha un'estensione invalida",
-    "File '%value%' could not be found" => "Il file '%value%' non può essere trovato",
 
     // Zend_Validate_File_ExcludeMimeType
     "File '%value%' has a false mimetype of '%type%'" => " Il file '%value%' ha un mimetype non consentito: '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "Il mimetype del file '%value%' non può essere individuato",
-    "File '%value%' can not be read" => "Il file '%value%' non può essere letto",
 
     // Zend_Validate_File_Exists
     "File '%value%' does not exist" => "Il file '%value%' non esiste",
 
     // Zend_Validate_File_Extension
     "File '%value%' has a false extension" => "Il file '%value%' ha un'estensione invalida",
-    "File '%value%' could not be found" => "Il file '%value%' non può essere trovato",
 
     // Zend_Validate_File_FilesSize
     "All files in sum should have a maximum size of '%max%' but '%size%' were detected" => "I file devono avere in totale una dimensione massima di '%max%' ma è stata rilevata una dimensione di '%size%'",
@@ -119,7 +111,6 @@ return array(
     // Zend_Validate_File_Hash
     "File '%value%' does not match the given hashes" => "I file '%value%' non corrisponde agli hash dati",
     "A hash could not be evaluated for the given file" => "Un hash non può essere valutato per il file dato",
-    "File '%value%' could not be found" => "Il file '%value%' non può essere trovato",
 
     // Zend_Validate_File_ImageSize
     "Maximum allowed width for image '%value%' should be '%maxwidth%' but '%width%' detected" => "La larghezza massima consentita per l'immagine '%value%' è '%maxwidth%' ma è stata rilevata una larghezza di '%width%'",
@@ -127,22 +118,16 @@ return array(
     "Maximum allowed height for image '%value%' should be '%maxheight%' but '%height%' detected" => "L'altezza massima consentita per l'immagine '%value%' è '%maxheight%' ma è stata rilevata un'altezza di '%height%'",
     "Minimum expected height for image '%value%' should be '%minheight%' but '%height%' detected" => "L'altezza minima consentita per l'immagine '%value%' è '%minheight%' ma è stata rilevata un'altezza di '%height%'",
     "The size of image '%value%' could not be detected" => "Le dimensioni dell'immagine '%value%' non possono essere rilevate",
-    "File '%value%' can not be read" => "Il file '%value%' non può essere letto",
 
     // Zend_Validate_File_IsCompressed
     "File '%value%' is not compressed, '%type%' detected" => "Il file '%value%' non è un file compresso, ma un file di tipo '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "Il mimetype del file '%value%' non può essere rilevato",
-    "File '%value%' can not be read" => "Il file '%value%' non può essere letto",
 
     // Zend_Validate_File_IsImage
     "File '%value%' is no image, '%type%' detected" => "Il file '%value%' non è un'immagine, ma un file di tipo '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "Il mimetype del file '%value%' non può essere rilevato",
-    "File '%value%' can not be read" => "Il file '%value%' non può essere letto",
 
     // Zend_Validate_File_Md5
     "File '%value%' does not match the given md5 hashes" => "Il file '%value%' non corrisponde agli hash md5 dati",
     "A md5 hash could not be evaluated for the given file" => "Un hash md5 non può essere valutato per il file dato",
-    "File '%value%' could not be found" => "Il file '%value%' non può essere trovato",
 
     // Zend_Validate_File_MimeType
     "File '%value%' has a false mimetype of '%type%'" => "Il file '%value%' ha un mimetype invalido: '%type%'",
@@ -155,12 +140,10 @@ return array(
     // Zend_Validate_File_Sha1
     "File '%value%' does not match the given sha1 hashes" => "Il file '%value%' non corrisponde agli hash sha1 dati",
     "A sha1 hash could not be evaluated for the given file" => "Un hash sha1 non può essere valutato per il file dato",
-    "File '%value%' could not be found" => "Il file '%value%' non può essere trovato",
 
     // Zend_Validate_File_Size
     "Maximum allowed size for file '%value%' is '%max%' but '%size%' detected" => "La dimensione massima consentita per il file '%value%' è '%max%' ma è stata rilevata una dimensione di '%size%'",
     "Minimum expected size for file '%value%' is '%min%' but '%size%' detected" => "La dimensione minima consentita per il file '%value%' è '%min%' ma è stata rilevata una dimensione di '%size%'",
-    "File '%value%' could not be found" => "Il file '%value%' non può essere trovato",
 
     // Zend_Validate_File_Upload
     "File '%value%' exceeds the defined ini size" => "Il file '%value%' eccede la dimensione definita nell'ini",
@@ -244,11 +227,9 @@ return array(
 
     // Zend_Validate_Sitemap_Changefreq
     "'%value%' is not a valid sitemap changefreq" => "'%value%' non è una sitemap changefreq valida",
-    "Invalid type given, the value should be a string" => "Invalid type given, the value should be a string",
 
     // Zend_Validate_Sitemap_Lastmod
     "'%value%' is not a valid sitemap lastmod" => "'%value%' non è un sitemap lastmod valido",
-    "Invalid type given, the value should be a string" => "Tipo di dato non valido, il dato dev'essere una stringa",
 
     // Zend_Validate_Sitemap_Loc
     "'%value%' is not a valid sitemap location" => "'%value%' non è una sitemap location valida",

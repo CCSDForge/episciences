@@ -27,18 +27,15 @@ return array(
     // Zend_Validate_Alnum
     "Invalid type given. String, integer or float expected" => "Chybný typ. Byl očekáván řetězec, celé nebo desetinné číslo",
     "'%value%' contains characters which are non alphabetic and no digits" => "'%value%' obsahuje i jiné znaky než písmena a číslice",
-    "'%value%' is an empty string" => "'%value%' je prázdný řetězec",
 
     // Zend_Validate_Alpha
     "Invalid type given. String expected" => "Chybný typ. Byl očekáván řetězec",
     "'%value%' contains non alphabetic characters" => "'%value%' obsahuje i jiné znaky než písmena",
-    "'%value%' is an empty string" => "'%value%' je prázdný řetězec",
 
     // Zend_Validate_Barcode
     "'%value%' failed checksum validation" => "'%value%' má chybný kontrolní součet",
     "'%value%' contains invalid characters" => "'%value%' obsahuje neplatné znaky",
     "'%value%' should have a length of %length% characters" => "'%value%' by měl mít délku %length% znaků",
-    "Invalid type given. String expected" => "Chybný typ. Byl očekáván řetězec.",
 
     // Zend_Validate_Between
     "'%value%' is not between '%min%' and '%max%', inclusively" => "'%value%' není mezi '%min%' a '%max%', včetně",
@@ -54,8 +51,6 @@ return array(
 
     // Zend_Validate_CreditCard
     "'%value%' seems to contain an invalid checksum" => "'%value%' obsahuje neplatný kontrolní součet",
-    "'%value%' must contain only digits" => "'%value%' musí obsahovat jen čísla",
-    "Invalid type given. String expected" => "Chybný typ. Byl očekáván řetězec",
     "'%value%' contains an invalid amount of digits" => "'%value%' obsahuje neplatný počet číslic",
     "'%value%' is not from an allowed institute" => "'%value%' není od povolené společnosti",
     "'%value%' seems to be an invalid creditcard number" => "'%value%' není platné číslo kreditní karty",
@@ -93,23 +88,18 @@ return array(
     // Zend_Validate_File_Crc32
     "File '%value%' does not match the given crc32 hashes" => "Soubor '%value%' neodpovídá zadanému crc32 hashi",
     "A crc32 hash could not be evaluated for the given file" => "Pro zadaný soubor nemohl být vypočítán crc32 hash",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_ExcludeExtension
     "File '%value%' has a false extension" => "Soubor '%value%' má nesprávnou příponu",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_ExcludeMimeType
     "File '%value%' has a false mimetype of '%type%'" => "Soubor '%value%' má nesprávný mimetyp '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "Mimetyp souboru '%value%' nebylo možné zjistit",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_Exists
     "File '%value%' does not exist" => "Soubor '%value%' neexistuje",
 
     // Zend_Validate_File_Extension
     "File '%value%' has a false extension" => "Soubor '%value%' má nesprávnou příponu",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_FilesSize
     "All files in sum should have a maximum size of '%max%' but '%size%' were detected" => "Součet velikostí všech souborů by měl být maximálně '%max%', ale je '%size%'",
@@ -119,7 +109,6 @@ return array(
     // Zend_Validate_File_Hash
     "File '%value%' does not match the given hashes" => "Soubor '%value%' neodpovídané danému hashi",
     "A hash could not be evaluated for the given file" => "Hash nemohl být pro daný soubor vypočítán",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_ImageSize
     "Maximum allowed width for image '%value%' should be '%maxwidth%' but '%width%' detected" => "Maximální šířka obrázku '%value%' by měla být '%maxwidth%', ale je '%width%'",
@@ -127,27 +116,20 @@ return array(
     "Maximum allowed height for image '%value%' should be '%maxheight%' but '%height%' detected" => "Maximální výška obrázku '%value%' by měla být '%maxheight%', ale je '%height%'",
     "Minimum expected height for image '%value%' should be '%minheight%' but '%height%' detected" => "Minimální výška obrázku '%value%' by měla být '%minheight%', ale je '%height%'",
     "The size of image '%value%' could not be detected" => "Rozměry obrázku '%value%' nebylo možné zjistit",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_IsCompressed
     "File '%value%' is not compressed, '%type%' detected" => "Soubor '%value%' není komprimovaný, ale '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "Mimetyp souboru '%value%' nebylo možné zjistit",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_IsImage
     "File '%value%' is no image, '%type%' detected" => "Soubor '%value%' není obrázek, ale '%type%'",
-    "The mimetype of file '%value%' could not be detected" => "Mimetyp souboru '%value%' nebylo možné zjistit",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_Md5
     "File '%value%' does not match the given md5 hashes" => "Soubor '%value%' neodpovídá danému md5 hashi",
     "A md5 hash could not be evaluated for the given file" => "md5 hash nemohl být pro daný soubor vypočítán",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_MimeType
     "File '%value%' has a false mimetype of '%type%'" => "Soubor '%value%' má neplatný mimetyp '%type%'",
     "The mimetype of file '%value%' could not be detected" => "Mimetyp souboru '%value%' nebylo možné zjistit",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_NotExists
     "File '%value%' exists" => "Soubor '%value%' již existuje",
@@ -155,12 +137,10 @@ return array(
     // Zend_Validate_File_Sha1
     "File '%value%' does not match the given sha1 hashes" => "Soubor '%value%' neodpovídá danému sha1 hashi",
     "A sha1 hash could not be evaluated for the given file" => "sha1 hash nemohl být pro daný soubor vypočítán",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_Size
     "Maximum allowed size for file '%value%' is '%max%' but '%size%' detected" => "Maximální povolená velikost souboru je '%max%', ale '%value%' má '%size%'",
     "Minimum expected size for file '%value%' is '%min%' but '%size%' detected" => "Minimální velikost souboru je '%min%', ale '%value%' má '%size%'",
-    "File '%value%' is not readable or does not exist" => "Soubor '%value%' buď není čitelný nebo neexistuje",
 
     // Zend_Validate_File_Upload
     "File '%value%' exceeds the defined ini size" => "Soubor '%value%' překročil velikost definovanou v ini souboru",
@@ -244,11 +224,9 @@ return array(
 
     // Zend_Validate_Sitemap_Changefreq
     "'%value%' is no valid sitemap changefreq" => "'%value%' není platné 'changefreq' pro sitemapu",
-    "Invalid type given. String expected" => "Chybný typ. Byl očekáván řetězec",
 
     // Zend_Validate_Sitemap_Lastmod
     "'%value%' is no valid sitemap lastmod" => "'%value%' není platné 'lastmod' pro sitemapu",
-    "Invalid type given. String expected" => "Chybný typ. Byl očekáván řetězec",
 
     // Zend_Validate_Sitemap_Loc
     "'%value%' is no valid sitemap location" => "'%value%' není platná 'location' pro sitemapu",
