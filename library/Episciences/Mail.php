@@ -472,11 +472,16 @@ class Episciences_Mail extends Zend_Mail
      */
     public function replaceTags($text)
     {
-        $myTags = $this->getTags();
-        $text = str_replace(array_keys($myTags), array_values($myTags), $text);
-        $text = nl2br($text);
-        $text = Ccsd_Tools::clear_nl($text);
-        return $this->cleanRemainingTags($text);
+
+        if ($text){
+            $myTags = $this->getTags();
+            $text = str_replace(array_keys($myTags), array_values($myTags), $text);
+            $text = nl2br($text);
+            $text = Ccsd_Tools::clear_nl($text);
+            $text = $this->cleanRemainingTags($text);
+        }
+
+        return $text;
     }
 
     public function getTags()
