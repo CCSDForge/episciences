@@ -40,11 +40,11 @@ class StatsController extends Zend_Controller_Action
             return;
         }
 
+        $params = ['withDetails' => true];
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
-
-
 
         $journalSettings = Zend_Registry::get('reviewSettings');
         $startStatsAfterDate = isset($journalSettings['startStatsAfterDate']) && $journalSettings['startStatsAfterDate'] !== '' ?
@@ -66,7 +66,6 @@ class StatsController extends Zend_Controller_Action
 
 
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
-        $params = ['withDetails' => ''];
 
         if($yearQuery){
             $params['year'] = $yearQuery;
