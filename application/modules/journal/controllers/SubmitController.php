@@ -92,6 +92,8 @@ class SubmitController extends DefaultController
 
         if ($isPost && array_key_exists('submitPaper', $post)) { // form EPI
 
+            $canReplace = (boolean)$request->getPost('can_replace');  // On force le remplacement d'une ancienne version dans certains cas
+
             if (isset($post['search_doc']['repoId'])) {
                 $repoId = (int)$post['search_doc']['repoId'];
                 $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['search_doc']['docId'], 'repoId' => $repoId]);
@@ -100,14 +102,17 @@ class SubmitController extends DefaultController
                 }
             }
 
-            if ($request->getPost('suggestEditors') && $form->getElement('suggestEditors')) {
+            if($canReplace) { // validation not required
+                $form->removeElement('suggestEditors');
+                $form->removeElement('sections');
+
+            } elseif ($request->getPost('suggestEditors') && $form->getElement('suggestEditors')) {
                 /** @var Zend_Form_Element_Multi | Zend_Form_Element_Select $suggestionsElement */
                 $suggestionsElement = $form->getElement('suggestEditors');
                 $suggestionsElement->setRegisterInArrayValidator(false);
             }
 
             if ($form->isValid($post)) {
-                $canReplace = (boolean)$request->getPost('can_replace');  // On force le remplacement d'une ancienne version dans certains cas
                 $form_values = $form->getValues();
 
                 foreach ($post as $input => $value) {
