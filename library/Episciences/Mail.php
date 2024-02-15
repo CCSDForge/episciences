@@ -423,7 +423,7 @@ class Episciences_Mail extends Zend_Mail
      * Retourne le contenu du mail (pour le débug en développement)
      * @return string
      */
-    public function getBody()
+    public function getBody(): string
     {
 
         if ($this->hasATemplate()) {
@@ -431,8 +431,8 @@ class Episciences_Mail extends Zend_Mail
         } else {
             $body = $this->replaceTags($this->getRawBody());
         }
-
-        return htmlspecialchars($body);
+        
+        return $body ? htmlspecialchars($body) : '';
     }
 
     /**
