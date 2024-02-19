@@ -695,7 +695,7 @@ class Episciences_Review
         $volumes = [];
 
         foreach ($result as $volume) {
-            Episciences_VolumesManager::dataProcess($volume, 'decode');
+            Episciences_VolumesAndSectionsManager::dataProcess($volume, 'decode');
             $oVolume = new Episciences_Volume($volume);
             $volumes[$oVolume->getVid()] = $oVolume;
         }
@@ -728,7 +728,7 @@ class Episciences_Review
 
         $volumes = [];
         foreach ($result as $volume) {
-            Episciences_VolumesManager::dataProcess($volume, 'decode');
+            Episciences_VolumesAndSectionsManager::dataProcess($volume, 'decode');
             $oVolume = new Episciences_Volume($volume);
             $volumes[$oVolume->getVid()] = $oVolume;
         }
