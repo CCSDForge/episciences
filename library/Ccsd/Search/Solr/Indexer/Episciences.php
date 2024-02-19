@@ -403,7 +403,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $docToIndex->addField('section_id_i', $sectionId);
 
-        $sectionTranslations = $section->getTitle();
+        $sectionTranslations = $section->getTitles();
         if (is_array($sectionTranslations)) {
 
             // We take the first language found because the field is not multivalued

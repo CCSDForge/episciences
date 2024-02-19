@@ -109,7 +109,9 @@ class BrowseController extends Zend_Controller_Action
 
         $pageNb = (is_numeric($this->getRequest()->getParam('page'))) ? $this->getRequest()->getParam('page') : 1;
         $limit = $page->getNbResults();
-        if (!is_numeric($limit)) $limit = 10;
+        if (!is_numeric($limit)) {
+            $limit = 10;
+        }
         $offset = ($pageNb - 1) * $limit;
         $total = count($review->getSectionsWithPapers());
 

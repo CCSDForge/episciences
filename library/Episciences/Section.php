@@ -19,7 +19,6 @@ class Episciences_Section
      * String prefix for translations
      * @const string
      */
-    const SECTION_TRANSLATION_PREFIX = 'section_';
     const UNLABELED_SECTION = 'Unlabeled section';
 
     const SETTING_STATUS = 'status';
@@ -41,8 +40,8 @@ class Episciences_Section
      * @var int
      */
     private $_position;
-    private $_title;
-    private $_description = [];
+    private ?array $titles;
+    private ?array $descriptions;
     private $_settings = [];
     /**
      * @var array of Episciences_Editor
@@ -84,28 +83,13 @@ class Episciences_Section
      * @return array
      * @throws Zend_Exception
      */
-    public function getFormDefaults()
+    public function getFormDefaults(Episciences_Section $section): array
     {
-        $defaults = [];
+        $defaults['titles'] = $section->getTitles();
+        $defaults['descriptions'] = $section->getDescriptions();
 
-        $langs = Episciences_Tools::getLanguages();
-        $path = Episciences_SectionsManager::TRANSLATION_PATH;
-        $file = Episciences_SectionsManager::TRANSLATION_FILE;
-        $translator = Zend_Registry::get('Zend_Translate');
-        Episciences_Tools::loadTranslations($path, $file);
-
-        $sid = $this->getSid();
-        $defaults[self::SETTING_STATUS] = $this->getStatus();
-
-        foreach ($langs as $code => $lang) {
-
-            if ($translator->isTranslated(self::SECTION_TRANSLATION_PREFIX . $sid . '_title', $code)) {
-                $defaults['title'][$code] = $translator->translate(self::SECTION_TRANSLATION_PREFIX . $sid . '_title', $code);
-            }
-
-            if ($translator->isTranslated(self::SECTION_TRANSLATION_PREFIX . $sid . '_description', $code)) {
-                $defaults['description'][$code] = $translator->translate(self::SECTION_TRANSLATION_PREFIX . $sid . '_description', $code);
-            }
+        foreach ($section->getSettings() as $setting => $value) {
+            $defaults[$setting] = $value;
         }
 
         return $defaults;
@@ -274,24 +258,31 @@ class Episciences_Section
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public function save()
+    public function save(): bool
     {
-        // Si le RVID n'a pas été défini, on le spécifie ici
-        if (!$this->getRvid()) {
+        if (!$this->getRvid()) { // If RVID has not been defined, it is specified here
             $this->setRvid(RVID);
         }
 
-        // Récupération des paramètres de la rubrique
-        $settingsValues['SETTING'] = self::SETTING_STATUS;
-        $settingsValues['VALUE'] = $this->getStatus();
+        $sectionData = [
+            'RVID' => $this->getRvid(),
+            'POSITION' => $this->getPosition(),
+            'titles' => $this->getTitles(),
+            'descriptions' => $this->getDescriptions()
+        ];
 
-        // Si il s'agit d'une nouvelle rubrique
-        if (!$this->getSid()) {
+        $sectionSettings = [
+            'SID' => $this->getSid(),
+            'SETTING' => self::SETTING_STATUS,
+            'VALUE' => $this->getStatus()
+        ];
+
+        if (!$this->getSid()) { // add new section
 
             $this->setPosition(0);
 
-            // Enregistrement de la rubrique
-            if ($this->_db->insert(T_SECTIONS, ['RVID' => $this->getRvid(), 'POSITION' => $this->getPosition()])) {
+            Episciences_VolumesAndSectionsManager::dataProcess($sectionData);
+            if ($this->_db->insert(T_SECTIONS, $sectionData)) {
                 $sid = $this->_db->lastInsertId();
                 $this->setSid($sid);
                 Episciences_VolumesAndSectionsManager::sort([], 'SID');
@@ -299,37 +290,11 @@ class Episciences_Section
                 return false;
             }
 
-            // Enregistrement des paramètres du volume
-            $settingsValues['SID'] = $this->getSid();
-            $this->_db->insert(T_SECTION_SETTINGS, $settingsValues);
-        } // Modification d'une rubrique
-        else {
-            // Mise à jour des paramètres du volume
-            $settingsValues['SID'] = $this->getSid();
-            $sql = $this->_db->quoteInto('INSERT INTO ' . T_SECTION_SETTINGS . ' (SETTING, VALUE, SID) VALUES (?)
-                    ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)', $settingsValues);
-            $this->_db->query($sql);
+            $this->_db->insert(T_SECTION_SETTINGS, $sectionSettings);
+        } else { // update exiting section
+            return $this->update($sectionData, $sectionSettings) >= 0;
         }
 
-        // Préparation des données de traduction
-        $path = Episciences_SectionsManager::TRANSLATION_PATH;
-        $file = Episciences_SectionsManager::TRANSLATION_FILE;
-        $translations = Episciences_Tools::getOtherTranslations($path, $file, '#section_' . $this->getSid() . '_#');
-
-        // Nom de la rubrique
-        $titles = $this->getTitle();
-        foreach ($titles as $lang => $translated) {
-            $translations[$lang][self::SECTION_TRANSLATION_PREFIX . $this->getSid() . '_title'] = $translated;
-        }
-
-        // Description de la rubrique
-        $descriptions = $this->getDescription();
-        foreach ($descriptions as $lang => $translated) {
-            $translations[$lang][self::SECTION_TRANSLATION_PREFIX . $this->getSid() . '_description'] = $translated;
-        }
-
-        // Enregistrement des traductions
-        Episciences_Tools::writeTranslations($translations, $path, $file);
         return true;
     }
 
@@ -366,56 +331,6 @@ class Episciences_Section
     public function setPosition(int $position): Episciences_Section
     {
         $this->_position = $position;
-        return $this;
-    }
-
-    /**
-     * @param null $lang
-     * @return mixed
-     */
-    public function getTitle($lang = null)
-    {
-        if ($lang) {
-            return $this->_title[$lang];
-        }
-
-        return $this->_title;
-    }
-
-    /**
-     * @param $titles
-     * @return $this
-     */
-    public function setTitle($titles)
-    {
-        foreach ($titles as $lang => $title) {
-            $this->_title[$lang] = $title;
-        }
-        return $this;
-    }
-
-    /**
-     * @param null $lang
-     * @return array|mixed
-     */
-    public function getDescription($lang = null)
-    {
-        if ($lang) {
-            return $this->_description[$lang];
-        }
-
-        return $this->_description;
-    }
-
-    /**
-     * @param $descriptions
-     * @return $this
-     */
-    public function setDescription($descriptions)
-    {
-        foreach ($descriptions as $lang => $description) {
-            $this->_description[$lang] = $description;
-        }
         return $this;
     }
 
@@ -529,15 +444,15 @@ class Episciences_Section
     /**
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         $result = [];
 
         $result['sid'] = $this->getSid();
         $result['rvid'] = $this->getRvid();
         $result['position'] = $this->getPosition();
-        $result['title'] = $this->getTitle();
-        $result['description'] = $this->getDescription();
+        $result['titles'] = $this->getTitles();
+        $result['descriptions'] = $this->getDescriptions();
 
         return $result;
     }
@@ -551,18 +466,24 @@ class Episciences_Section
         $result = [];
         $result['sid'] = $this->getSid();
         $result['title'] = $this->getName('en', true);
-        $result['description'] = $this->getDescription();
+        $result['description'] = $this->getDescriptions();
         return $result;
     }
 
 
-    /**
-     * Définit le titre de la rubrique (dans différentes langues)
-     * @return string
-     */
-    public function getDescriptionKey()
+    public function getDescriptionKey(bool $force = false): string
     {
-        return self::SECTION_TRANSLATION_PREFIX . $this->getSid() . '_description';
+        $descriptions = $this->getDescriptions();
+
+        if (!empty($descriptions)) {
+
+            $locale = Episciences_Tools::getLocale();
+            if ($locale && isset($descriptions[$locale])) {
+                return $descriptions[$locale];
+            }
+        }
+
+        return $force ? 'section_' . $this->getSid() . '_description' : '';
     }
 
     /**
@@ -626,12 +547,22 @@ class Episciences_Section
         return $result;
     }
 
-    /**
-     * @return string
-     */
-    public function getNameKey()
+    public function getNameKey(string $lang = null, bool $force = true): string
     {
-        return self::SECTION_TRANSLATION_PREFIX . $this->getSid() . '_title';
+        $titles = $this->getTitles();
+
+        if (!empty($titles)) {
+
+            $locale = !$lang ? Episciences_Tools::getLocale() : $lang;
+
+            if ($locale && isset($titles[$locale])) {
+                return $titles[$locale];
+            }
+
+        }
+
+        return $force ? 'section_' . $this->getSid() . '_title' : '';
+
     }
 
     /**
@@ -639,7 +570,58 @@ class Episciences_Section
      */
     public function getStatus(): int
     {
-        return (int) $this->getSetting(self::SETTING_STATUS);
+        return (int)$this->getSetting(self::SETTING_STATUS);
     }
 
+    /**
+     * @return array|null
+     */
+
+    public function getTitles(): ?array
+    {
+        return $this->titles;
+    }
+
+
+    public function setTitles(?array $titles): self
+    {
+        $this->titles = $titles;
+        return $this;
+    }
+
+    public function getDescriptions(): ?array
+    {
+        return $this->descriptions;
+    }
+
+    public function setDescriptions(?array $descriptions): self
+    {
+        $this->descriptions = $descriptions;
+        return $this;
+    }
+
+    private function update(array $data = [], array $settings = []): ?int
+    {
+        $where = 'SID = ' . $this->getSID();
+
+        Episciences_VolumesAndSectionsManager::dataProcess($data);
+
+        try {
+            $result = $this->_db->update(T_SECTIONS, $data, $where);
+
+            if (!empty($settings)) {
+                $sql = $this->_db->quoteInto('INSERT INTO ' . T_SECTION_SETTINGS . ' (SID, SETTING, VALUE) VALUES (?) ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)', $settings);
+                $query = $this->_db->query($sql);
+
+                $result += $query->rowCount();
+
+            }
+
+            return $result;
+
+        } catch (Zend_Db_Adapter_Exception|Zend_Db_Statement_Exception  $exception) {
+            trigger_error($exception->getMessage());
+            return 0;
+        }
+    }
 }

@@ -862,6 +862,7 @@ class Episciences_Review
 
         $sections = [];
         foreach ($result as $section) {
+            Episciences_VolumesAndSectionsManager::dataProcess($section, 'decode');
             $oSection = new Episciences_Section($section);
             $oSection->getEditors();
             $sections[$oSection->getSid()] = $oSection;

@@ -16,9 +16,13 @@ class SectionController extends Zend_Controller_Action
         }
 
         $sections = Episciences_SectionsManager::getList();
+        /** @var Episciences_Section $section */
         foreach ($sections as &$section) {
             $section->loadSettings();
         }
+
+        unset($section);
+
         $this->view->sections = $sections;
     }
 
@@ -53,6 +57,14 @@ class SectionController extends Zend_Controller_Action
         $this->view->form = $form;
     }
 
+    /**
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Validate_Exception
+     */
+
     public function editAction()
     {
         $request = $this->getRequest();
@@ -62,16 +74,16 @@ class SectionController extends Zend_Controller_Action
         if (empty($section)) {
             $this->_helper->redirector('add');
         }
-
         $section->loadSettings();
-        $defaults = $section->getFormDefaults();
+        $defaults = $section->getFormDefaults($section);
         $form = Episciences_SectionsManager::getForm($defaults);
 
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
             if ($form->isValid($request->getPost())) {
 
-                $section->setOptions($form->getValues());
+                $values = $form->getValues();
+                $section->setOptions($values);
                 $section->setSetting('status', $form->getValue('status'));
 
                 if ($section->save()) {
@@ -94,15 +106,25 @@ class SectionController extends Zend_Controller_Action
 
     }
 
-    public function deleteAction()
+    /**
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    public function deleteAction(): void
     {
+        $respond = false;
+        /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        $isAjax = $request->isPost() && $request->getPost('ajax');
 
-        $ajax = $request->getPost('ajax');
-        $params = $request->getPost('params');
-        $id = ($params['id']) ? $params['id'] : $request->getQuery('id');
+        if ($isAjax){
+            $params = $request->getPost('params');
+            $id = ($params['id']) ?: $request->getQuery('id');
+            $respond = Episciences_SectionsManager::delete($id);
+        }
 
-        $respond = Episciences_SectionsManager::delete($id);
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;

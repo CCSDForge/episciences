@@ -39,7 +39,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 			<tr id="section_<?php echo $section->getSid()	; ?>">
 				<td class="hidden"><?php echo $section->getPosition(); ?></td>
 				<td class="sortable-handle"><span class="glyphicon glyphicon-move"></span></td>
-				<td><?php echo $this->translate('section_'.$section->getSid().'_title'); ?></td>
+				<td><?= Episciences_Tools::convertMarkdownToHtml($section->getNameKey()) ?></td>
 				<td>
 					<div class="editors">
 					<?php if ($section->getEditors()) : ?>
