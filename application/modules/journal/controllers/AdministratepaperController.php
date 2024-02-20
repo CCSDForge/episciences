@@ -702,7 +702,12 @@ class AdministratepaperController extends PaperDefaultController
 
         $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED));
         $this->view->isRequiredReviewersOk = $isRequiredReviewersOk;
-        $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid));
+        $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (
+            Episciences_Auth::isSecretary() ||
+            Episciences_Auth::isEditor() ||
+            Episciences_Auth::isGuestEditor() ||
+            Episciences_Auth::isCopyEditor()
+            );
 
         // #37430 Demande d'avis des autres rédacteurs, pas uniquement les redacteurs qui sont assignés a l'article.
         $all_editors = Episciences_UsersManager::getUsersWithRoles(Episciences_Acl::ROLE_EDITOR);

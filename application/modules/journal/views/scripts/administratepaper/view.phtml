@@ -74,7 +74,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 <?php endif; ?>
 
 
-<?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()): ///********************* coauthor section ?>
+<?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()): ///********************* coauthor section ?>
 <?= $this->partial('partials/coauthors.phtml',['paper'=>$paper])?>
 <?php endif; ?>
 <?php if ($this->enabledBib): ?>
