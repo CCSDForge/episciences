@@ -131,44 +131,46 @@ class getLinkData extends JournalScript
                 if ($flagNew === 1) {
                     $this->displayInfo('Search Information in File : ' . $doiTrim, true);
                     $arrayResult = json_decode(file_get_contents($fileName), true, 512, JSON_THROW_ON_ERROR);
-                    $relationship = $arrayResult[0]['relationship']['name'];
-                    $targetString = json_encode($arrayResult[0]['target'], JSON_THROW_ON_ERROR);
                     $arrayResult = array_map(static function($valuesResult) {
-                        if($valuesResult["relationship"]['inverseRelationship'] === 'IsRelatedTo'
-                            && $valuesResult["target"]['objectType'] === "publication") {
+                        if($valuesResult["target"]['objectType'] !== "dataset" &&
+                            $valuesResult["target"]['objectType'] !== "datasets") {
                             return false;
                         }
                         return $valuesResult;
                     },$arrayResult);
                     $arrayResult = array_filter($arrayResult);
-                    if (!empty($arrayResult)){
-                        $lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext' => $targetString]);
-                        foreach ($arrayResult[0]['target']['identifiers'] as $identifier) {
-                            try {
-                                $enrichment = Episciences_Paper_DatasetsManager::insert([[
-                                    'docId' => $docId,
-                                    'code' => "null",
-                                    'name' => $identifier['schema'],
-                                    'value' => $identifier['identifier'],
-                                    'link' => $identifier['schema'],
-                                    'sourceId' => Episciences_Repositories::SCHOLEXPLORER_ID,
-                                    'relationship' => $relationship,
-                                    'idPaperDatasetsMeta' => $lastMetatextInserted
-                                ]]);
-                                if ($enrichment >= 1) {
-                                    $this->displayInfo('DB info inserted for ' . $doiTrim, true);
+                    if (!empty($arrayResult)) {
+                        foreach ($arrayResult as $ar) {
+                            foreach ($ar['target']['identifiers'] as $identifier) {
+                                try {
+                                    $csl = Episciences_DoiTools::getMetadataFromDoi($identifier['identifier']);
+                                    $lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext' => $csl]);
+                                    $enrichment = Episciences_Paper_DatasetsManager::insert([[
+                                        'docId' => $docId,
+                                        'code' => "dataset",
+                                        'name' => $identifier['schema'],
+                                        'value' => $identifier['identifier'],
+                                        'link' => $identifier['schema'],
+                                        'sourceId' => Episciences_Repositories::SCHOLEXPLORER_ID,
+                                        'relationship' => $ar['relationship']['name'],
+                                        'idPaperDatasetsMeta' => $lastMetatextInserted
+                                    ]]);
+                                    if ($enrichment >= 1) {
+                                        $this->displayInfo('DB info inserted for ' . $doiTrim, true);
+                                    }
+                                } catch (Exception $e) {
+                                    $message = 'data existing ' . $e->getMessage();
+
+                                    $this->displayInfo('[:error] ' . $message, true, static::BASH_RED);
+
+                                    continue;
                                 }
-                            } catch (Exception $e) {
-                                $message = 'data existing ' . $e->getMessage();
-
-                                $this->displayInfo('[:error] ' . $message, true, static::BASH_RED);
-
-                                continue;
                             }
                         }
+
                     }
                 } else {
-                    $this->displayInfo( 'Found and already Inserted for ' . $doiTrim, true);
+                    $this->displayInfo( 'Nothing new in cache ' . $doiTrim, true);
                 }
             } else {
                 $this->displayInfo('No match: ' . $doiTrim, true);

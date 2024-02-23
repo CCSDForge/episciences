@@ -4223,9 +4223,9 @@ class Episciences_Paper
         foreach ($notFormatedDatasets as $unorderedDatasets) {
             /** @var Episciences_Paper_Dataset $unorderedDatasets */
             $typeLd = '';
-            if (((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::SCHOLEXPLORER_ID) && $unorderedDatasets->getMetatext() !== null) {
-                $typeLd = Episciences_Paper_DatasetsMetadataManager::getTypeLdMetadata($unorderedDatasets->getMetatext());
-            } elseif ((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::EPI_USER_ID && $unorderedDatasets->getCode() !== null && $unorderedDatasets->getCode() !== "swhidId_s") {
+            if (((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::EPI_USER_ID
+                    && $unorderedDatasets->getCode() !== null && $unorderedDatasets->getCode() !== "swhidId_s")
+                || ((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::SCHOLEXPLORER_ID)) {
                 $typeLd = $unorderedDatasets->getCode();
             } else {
                 $typeLd = $unorderedDatasets->getName();
