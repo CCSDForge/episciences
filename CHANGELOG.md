@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Changed
+- delete a volume: add assigned papers error's massage.
+- Sorted paper by volume: include assigned papers to this one as a secondary volume
+### Fixed
+-  RT#206415
 
 ## v1.0.42 - 2024-02-15
 ### Added
