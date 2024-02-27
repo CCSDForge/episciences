@@ -12,14 +12,20 @@ function updateMetaData(button, docId) {
     });
 
     post.done(function (result) {
-        let obj_result = JSON.parse(result);
+
+        try {
+            let obj_result = JSON.parse(result);
+            alert(obj_result.message);
+
+            if (!('error' in obj_result) && obj_result.affectedRows !== 0) {
+                location.reload();
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
 
         $recordLoading.hide();
-        alert(obj_result.message);
-
-        if (!('error' in obj_result) && obj_result.affectedRows !== 0) {
-            location.reload();
-        }
 
     });
 }
