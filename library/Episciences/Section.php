@@ -39,7 +39,7 @@ class Episciences_Section
      * Section ordering
      * @var int
      */
-    private $_position;
+    private int $_position = 0;
     private ?array $titles;
     private ?array $descriptions;
     private $_settings = [];
@@ -266,7 +266,7 @@ class Episciences_Section
 
         $sectionData = [
             'RVID' => $this->getRvid(),
-            'POSITION' => $this->getPosition(),
+            'POSITION' => $this->getSid() ? $this->setPosition() : $this->getPosition(),
             'titles' => $this->getTitles(),
             'descriptions' => $this->getDescriptions()
         ];
@@ -278,13 +278,11 @@ class Episciences_Section
         ];
 
         if (!$this->getSid()) { // add new section
-
-            $this->setPosition(0);
-
             Episciences_VolumesAndSectionsManager::dataProcess($sectionData);
             if ($this->_db->insert(T_SECTIONS, $sectionData)) {
                 $sid = $this->_db->lastInsertId();
                 $this->setSid($sid);
+                $sectionSettings['SID'] = $this->getSid();
                 Episciences_VolumesAndSectionsManager::sort([], 'SID');
             } else {
                 return false;
@@ -328,7 +326,7 @@ class Episciences_Section
      * @param int $position
      * @return Episciences_Section
      */
-    public function setPosition(int $position): Episciences_Section
+    public function setPosition(int $position = 0): Episciences_Section
     {
         $this->_position = $position;
         return $this;
