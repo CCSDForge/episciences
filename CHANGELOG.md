@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - delete a volume: add assigned papers error's massage.
 - Sorted paper by volume: include assigned papers to this one as a secondary volume
 ### Fixed
--  RT#206415
+- RT#206415
+- getlinkdata script now get csl related to linked datasets scholexplorer
 
 ## v1.0.42 - 2024-02-15
 ### Added

@@ -35,15 +35,9 @@ $keepOnlySourceUsed = [];
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             <?php endif; ?>
-<!--                            --><?php //if (!Episciences_Tools::isDoiWithUrl($dataset->getValue())) : ?><!----><?php //= ucfirst($this->translate($dataset->getName())) ?>
-<!--                            --><?php //endif; ?>
-                            <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && (string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID) : ?>
-                                <sup><?= $listSources[$getSource] ?></sup>
-                            <?php endif; ?>
-                            <?php if ((string)$source === Episciences_Repositories::SCHOLEXPLORER_ID) {
+                            <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) {
                                 $sourceToSup = $listSources[$getSource];
                             } ?>
-
                             <?php if (($dataset->getName() === 'arXiv' && $dataset->getMetatext() === null)
                                 || (!Episciences_Tools::isDoiWithUrl($dataset->getLink()) && $dataset->getName() !== 'arXiv')
                                 || (Episciences_Tools::isDoiWithUrl($dataset->getLink())
@@ -55,8 +49,7 @@ $keepOnlySourceUsed = [];
                                        id="link-ld"><?= $dataset->getValue() ?></a><sup> <?= $sourceToSup ?></sup>
                                 <?php endif; ?>
                             <?php endif; ?>
-                            <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
-                                && ($dataset->getName() === 'doi'
+                            <?php if (($dataset->getName() === 'doi'
                                     || Episciences_Tools::isDoiWithUrl($dataset->getValue()) || $dataset->getName() === 'arXiv')
                                 && $dataset->getMetatext() !== null) {
                                 try {
@@ -67,9 +60,9 @@ $keepOnlySourceUsed = [];
                                         }
                                         return $renderedText;
                                     };
-                                    $linkDOI = static function ($citationItem, $renderedText) {
+                                    $linkDOI = static function ($citationItem, $renderedText) use ($sourceToSup) {
                                         if (isset($citationItem->DOI)) {
-                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'; //trick to undisplay prefix put in render
+                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'. ' <sup>'. $sourceToSup . '</sup>'; //trick to undisplay prefix put in render
                                         }
                                         return $renderedText;
                                     };
@@ -95,18 +88,12 @@ $keepOnlySourceUsed = [];
                                     if ($metadataHal['citationFull'] === NULL)  {
                                         echo $dataset->getValue();
                                     } else {
-                                        echo $metadataHal['citationFull']; // escape pas volontaire ,car hal renvoi html
+                                        echo $metadataHal['citationFull']; // escape volontaire ,car hal renvoi html
                                     }
 
                                     ?>
                                 </div>
                             <?php endif; ?>
-                            <?php if ((string)$source === Episciences_Repositories::SCHOLEXPLORER_ID && $dataset->getMetatext() !== null) {
-                                $decodedMetatext = json_decode($dataset->getMetatext(), true, 512, JSON_THROW_ON_ERROR);
-                                echo $this->partial('paper/paper_linked_data_metadatas.phtml',
-                                    ['metadatas' => $decodedMetatext, 'originalInfo' => ['value' => $dataset->getValue(), 'link' => $dataset->getLink(), 'sourceToSup' => $sourceToSup]
-                                    ]);
-                            } ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
