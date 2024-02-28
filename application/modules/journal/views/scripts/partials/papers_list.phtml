@@ -67,7 +67,7 @@
 
                             if ($article['sId']) {
                                 echo $this->translate('Rubrique') . ' : ';
-                                echo $this->translate('section_' . $article['sId'] . '_title');
+                                echo Episciences_SectionsManager::translateSectionKey('section_' . $article['sId'] . '_title');
                             }
 
                             ?></div>

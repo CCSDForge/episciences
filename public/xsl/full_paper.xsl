@@ -196,8 +196,7 @@
                 <xsl:if test="episciences/section and episciences/section != ''">
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Rubrique : ')"/>
-                        <xsl:value-of
-                                select="php:function('Ccsd_Tools::translate', concat('section_',episciences/section,'_title'))"/>
+                        <xsl:value-of select="episciences/sectionName"/>
                     </div>
                 </xsl:if>
 

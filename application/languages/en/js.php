@@ -30,7 +30,7 @@ return [
     "Vous devez laisser au moins une valeur." => "You have to let at least one value.",
     "Chargement en cours" => "Loading",
     "Impossible de trouver le document" => "Your document could not be found",
-    "Des articles ont déjà été publiés dans ce volume." => "Articles have already been published in this volume.",
+    "Des articles %s ont déjà été publiés dans ce volume." => "Articles %s have already been published in this volume.",
     "Déplier" => "Expand",
     "Replier" => "Collapse",
     "Ce relecteur a déjà commencé sa relecture, et ne peut pas être supprimé." =>

@@ -155,7 +155,7 @@ $logs_with_details = [
 
                 <?php case Episciences_Paper_Logger::CODE_SECTION_SELECTION: ?>
                     <?= $this->translate(' :') ?>
-                    <?= $detail['sid'] !== 0 ? $this->translate('section_' . $detail['sid'] . '_title') : $this->translate('Hors rubrique') ?>
+                    <?= $detail['sid'] !== 0 ?  Episciences_SectionsManager::translateSectionKey('section_' . $detail['sid'] . '_title') : $this->translate('Hors rubrique') ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_VOLUME_SELECTION: ?>

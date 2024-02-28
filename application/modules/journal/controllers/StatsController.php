@@ -67,7 +67,7 @@ class StatsController extends Zend_Controller_Action
 
         $errorMessage = "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue.";
 
-        if($yearQuery){
+        if ($yearQuery) {
             $params['year'] = $yearQuery;
         }
 
@@ -91,21 +91,22 @@ class StatsController extends Zend_Controller_Action
             return;
         }
 
+        $repositories = Episciences_Repositories::getRepositoriesByLabel();
+
         $details = $dashboard['details'];
 
-        if (isset($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR])){
+        if (isset($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR])) {
             $yearCategories = array_keys($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR]);
         }
 
+        $navYears = $details[self::NB_SUBMISSIONS]['years']['relevantYears'];
 
-       $navYears = $details[self::NB_SUBMISSIONS]['years']['indicator'];
+        if ($startStatsAfterDate) {
+            $navYears = array_filter($navYears, static function ($year) use ($startStatsAfterDateYear) {
+                return $year >= $startStatsAfterDateYear;
+            });
 
-       if ($startStatsAfterDate){
-           $navYears = array_filter($navYears, static function($year) use($startStatsAfterDateYear){
-               return $year >= $startStatsAfterDateYear;
-           });
-
-       }
+        }
 
 
         $this->view->yearCategories = $navYears; // navigation
@@ -199,13 +200,13 @@ class StatsController extends Zend_Controller_Action
             $subByYear = $details[self::NB_SUBMISSIONS]['submissionsByRepo'][$year] ?? [];
 
             // submission by repo
-            foreach ($subByYear as $repoId => $val) {
-                $series['submissionsByRepo'][$repoId][self::NB_SUBMISSIONS][] = $val['submissions'];
+            foreach ($subByYear as $repoLabel => $val) {
+                $series['submissionsByRepo'][$repoLabel][self::NB_SUBMISSIONS][] = $val['submissions'];
             }
 
             if (!empty($submissionsDelay)) {
                 if (array_key_exists($year, $submissionsDelay)) {
-                    $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $submissionsDelay[$year]['delay'];
+                    $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $submissionsDelay[$year]['value']['delay'];
                 } else {
                     $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = null;
                 }
@@ -214,7 +215,7 @@ class StatsController extends Zend_Controller_Action
             if (!empty($publicationsDelay)) {
 
                 if (array_key_exists($year, $publicationsDelay)) {
-                    $series[self::SUBMISSION_PUBLICATION_DELAY][] = $publicationsDelay[$year]['delay'];
+                    $series[self::SUBMISSION_PUBLICATION_DELAY][] = $publicationsDelay[$year]['value']['delay'];
                 } else {
                     $series[self::SUBMISSION_PUBLICATION_DELAY][] = null;
                 }
@@ -286,10 +287,9 @@ class StatsController extends Zend_Controller_Action
         $seriesJs[self::SUBMISSIONS_BY_YEAR]['chartType'] = self::CHART_TYPE['BAR'];
 
 
-        foreach ($series['submissionsByRepo'] as $repoId => $values) {
+        foreach ($series['submissionsByRepo'] as $repoLabel => $values) {
+            $repoId = $repositories[$repoLabel]['id'];
             $backgroundColor = ($repoId > count(self::COLORS_CODE) - 1) ? self::COLORS_CODE[array_rand(self::COLORS_CODE)] : self::COLORS_CODE[$repoId];
-            $repoLabel = Episciences_Repositories::getLabel($repoId);
-
             //figure3
             $seriesJs['submissionsByRepo']['repositories']['datasets'][] = ['label' => $repoLabel, 'data' => $values[self::NB_SUBMISSIONS], 'backgroundColor' => $backgroundColor];
 
@@ -449,7 +449,7 @@ class StatsController extends Zend_Controller_Action
         Episciences_Tools::header($header);
         $message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année");
 
-        if($yearQuery) {
+        if ($yearQuery) {
             $message .= " <code>$yearQuery</code>";
         }
 

@@ -78,7 +78,7 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
                     $sectionNames = [];
                     /** @var Episciences_Section $section */
                     foreach ($sections as $section) {
-                        $sectionNames[] = '"' . $this->translate('section_' . $section->getSid() . '_title') . '"';
+                        $sectionNames[] = '"' . $section->getNameKey() . '"';
                     }
                     $msg .= implode(', ', $sectionNames);
                 } else {

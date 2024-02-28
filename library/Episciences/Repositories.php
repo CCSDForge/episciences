@@ -57,7 +57,7 @@ class Episciences_Repositories
             try {
                 self::$_repositories = array_filter(Zend_Registry::get('metadataSources'), static function ($source) {
                     return $source[self::REPO_LABEL] !== 'Software Heritage' &&
-                           ($source[self::REPO_TYPE] === self::TYPE_DATAVERSE ||
+                        ($source[self::REPO_TYPE] === self::TYPE_DATAVERSE ||
                             $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY);
                 });
             } catch (Zend_Exception $e) {
@@ -218,11 +218,24 @@ class Episciences_Repositories
 
     }
 
-    public static function  isFromHalRepository(int $repoId): bool
+    public static function isFromHalRepository(int $repoId): bool
     {
         return (str_contains(mb_strtolower(self::getLabel($repoId)), self::HAL_LABEl));
 
     }
 
+
+    public static function getRepositoriesByLabel(): array
+    {
+
+        $repositoriesByLabel = [];
+
+        foreach (self::getRepositories() as $repoId => $repository) {
+            $repositoriesByLabel[$repository[self::REPO_LABEL]] = $repository;
+        }
+
+        return $repositoriesByLabel;
+
+    }
 }
 

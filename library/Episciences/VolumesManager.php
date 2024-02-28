@@ -178,26 +178,17 @@ class Episciences_VolumesManager
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public static function delete($id): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $docIds = array_keys(self::getAssignedPapers($id));
 
-        if (!Ccsd_Tools::isFromCli()) {
-
-            $path = REVIEW_LANG_PATH;
-
-        } else {
-            $currentVolume = Episciences_VolumesManager::find($id);
-            $path = $currentVolume->getJournalTranslationPath();
-        }
-
-
-        $file = Episciences_Volume::TRANSLATION_FILE;
-
-        // Si des articles sont rattachés à ce volume, on empêche sa suppression
-        if (self::isPapersInVolume((int)$id)) {
-            echo 'Des articles ont déjà été publiés dans ce volume.';
+        if (count($docIds)){ // Si des articles sont rattachés à ce volume, on empêche sa suppression
+            $str = '(#' . implode(';#', $docIds) . ')';
+            $str = sprintf(Zend_Registry::get('Zend_Translate')->translate('Des articles %s ont déjà été publiés dans ce volume.'), $str);
+            echo $str;
             return false;
         }
 
@@ -208,10 +199,6 @@ class Episciences_VolumesManager
         $rvid = $data['RVID'];
 
         if ($db->delete(T_VOLUMES, 'VID = ' . $id)) {
-
-            // Suppression des traductions
-            $translations = Episciences_Tools::getOtherTranslations($path, $file, '#volume_' . $id . '_#');
-            Episciences_Tools::writeTranslations($translations, $path, $file);
 
             // Mise à jour de l'id de position des autres volumes
             $db->update(
@@ -260,15 +247,24 @@ class Episciences_VolumesManager
         return (int)$db->fetchOne($select) > 0;
     }
 
+
+    private static function getAssignedPapers(int $vid): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = self::isPapersInVolumeQuery($vid, ['st.DOCID']);
+        return $db->fetchAssoc($select);
+    }
+
     /**
      * @param int $vid
+     * @param array $fields
      * @return Zend_Db_Select
      */
-    private static function isPapersInVolumeQuery(int $vid): \Zend_Db_Select
+    private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)']): \Zend_Db_Select
     {
         //Prise en compte des volumes secondaires git #169
-        $vSql = Episciences_PapersManager::getVolumesQuery(['COUNT(st.DOCID)']);
-        return $vSql->where("st.VID = ? OR vpt.VID = ?", $vid);
+        return Episciences_PapersManager::getVolumesQuery($fields)
+            ->where("st.VID = ? OR vpt.VID = ?", $vid);
     }
 
     /**

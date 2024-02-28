@@ -2073,6 +2073,15 @@ class Episciences_Paper
             }
         }
 
+        // fetch section data
+        if ($this->getSid()) {
+            $oSection = Episciences_SectionsManager::find($this->getSid());
+            if ($oSection) {
+                $node->appendChild($dom->createElement('sectionName', $oSection->getNameKey()));
+            }
+        }
+
+
         /**
          * Condition d'affichage du bouton d'abondon du processus de publication
          */
@@ -3645,32 +3654,6 @@ class Episciences_Paper
                 unset($meta[$index]);
             }
         }
-    }
-
-    /**
-     * @param string|null $locale
-     * @return string
-     * @throws Zend_Exception
-     */
-    public function buildVolumeName(string $locale = null): string
-    {
-        $translator = Zend_Registry::get('Zend_Translate');
-        $locale = !$locale ? $translator->getLocale() : $locale;
-        $volume = Episciences_VolumesManager::find($this->getVid());
-        return !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
-    }
-
-    /**
-     * @param string|null $locale
-     * @return string|null
-     * @throws Zend_Exception
-     */
-    public function buildSectionName(string $locale = null)
-    {
-        $translator = Zend_Registry::get('Zend_Translate');
-        $locale = !$locale ? $translator->getLocale() : $locale;
-        $section = Episciences_SectionsManager::find($this->getSid());
-        return !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
     }
 
     /**

@@ -266,4 +266,17 @@ class Episciences_SectionsManager
 
         return $form;
     }
+
+    public static function translateSectionKey(string $sectionKey, string $language = null): string
+    {
+
+        if (!$language) {
+            $language = Episciences_Tools::getLocale();
+        }
+
+        return self::find((int)filter_var($sectionKey, FILTER_SANITIZE_NUMBER_INT))->getNameKey($language);
+    }
+
+
+
 }

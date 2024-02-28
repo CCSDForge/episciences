@@ -39,7 +39,7 @@ class Episciences_Section
      * Section ordering
      * @var int
      */
-    private $_position;
+    private int $_position = 0;
     private ?array $titles;
     private ?array $descriptions;
     private $_settings = [];
@@ -278,13 +278,11 @@ class Episciences_Section
         ];
 
         if (!$this->getSid()) { // add new section
-
-            $this->setPosition(0);
-
             Episciences_VolumesAndSectionsManager::dataProcess($sectionData);
             if ($this->_db->insert(T_SECTIONS, $sectionData)) {
                 $sid = $this->_db->lastInsertId();
                 $this->setSid($sid);
+                $sectionSettings['SID'] = $this->getSid();
                 Episciences_VolumesAndSectionsManager::sort([], 'SID');
             } else {
                 return false;
@@ -328,7 +326,7 @@ class Episciences_Section
      * @param int $position
      * @return Episciences_Section
      */
-    public function setPosition(int $position): Episciences_Section
+    public function setPosition(int $position = 0): Episciences_Section
     {
         $this->_position = $position;
         return $this;
@@ -514,37 +512,26 @@ class Episciences_Section
         $this->_countOfPapers = $countOfPapers;
     }
 
-    /**
-     * @param null $lang
-     * @param bool $forceResult
-     * @return string|null
-     * @throws Zend_Exception
-     */
-    public function getName($langSection = null, $forceResult = false)
+    public function getName(string $lang = null, bool $forceResult = true) : string
     {
-        $result = null;
-        // try to fetch translation for specified language
-        if (Zend_Registry::get('Zend_Translate')->isTranslated($this->getNameKey(), $langSection)) {
-            $result = Zend_Registry::get('Zend_Translate')->translate($this->getNameKey(), $langSection);
-        }
-        if (!$result && $forceResult) {
-            if (Zend_Registry::get('Zend_Translate')->isTranslated($this->getNameKey(), 'en')) {
-                // if it cannot be found, try to fetch english translation
-                $result = Zend_Registry::get('Zend_Translate')->translate($this->getNameKey(), 'en');
-            } else {
-                // else, try to fetch any translation
-                foreach (Episciences_Tools::getLanguages() as $locale => $lang) {
-                    if (Zend_Registry::get('Zend_Translate')->isTranslated($this->getNameKey(), $locale)) {
-                        $result = Zend_Registry::get('Zend_Translate')->translate($this->getNameKey(), $locale);
-                        break;
-                    }
-                }
-            }
-            if (!$result) {
-                $result = self::UNLABELED_SECTION;
+
+        $titles = $this->getTitles();
+
+        if (null === $lang) {
+            try {
+                $lang = Zend_Registry::get('lang');
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
             }
         }
-        return $result;
+
+        if (!isset($titles[$lang]) && $forceResult && $lang !== Episciences_Review::DEFAULT_LANG) {
+            $lang  = array_key_first($titles);
+        }
+
+
+        return $titles[$lang] ?? 'Unlabeled section';
+
     }
 
     public function getNameKey(string $lang = null, bool $force = true): string
