@@ -1,5 +1,7 @@
 {
   "devDependencies": {
+    "@babel/core": "^7.23.9",
+    "@babel/preset-env": "^7.23.9",
     "@symfony/webpack-encore": "^4.6.1",
     "compass-mixins": "^0.12.12",
     "resolve-url-loader": "^5.0.0",
@@ -8,6 +10,8 @@
     "semver": "^7.6.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4",
     "webpack-notifier": "^1.15.0"
   },
   "packageManager": "yarn@3.2.4"
