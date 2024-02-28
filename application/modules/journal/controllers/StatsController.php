@@ -206,7 +206,7 @@ class StatsController extends Zend_Controller_Action
 
             if (!empty($submissionsDelay)) {
                 if (array_key_exists($year, $submissionsDelay)) {
-                    $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $submissionsDelay[$year]['value']['delay'];
+                    $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $submissionsDelay[$year]['delay']['value'];
                 } else {
                     $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = null;
                 }
@@ -215,7 +215,7 @@ class StatsController extends Zend_Controller_Action
             if (!empty($publicationsDelay)) {
 
                 if (array_key_exists($year, $publicationsDelay)) {
-                    $series[self::SUBMISSION_PUBLICATION_DELAY][] = $publicationsDelay[$year]['value']['delay'];
+                    $series[self::SUBMISSION_PUBLICATION_DELAY][] = $publicationsDelay[$year]['delay']['value'];
                 } else {
                     $series[self::SUBMISSION_PUBLICATION_DELAY][] = null;
                 }
