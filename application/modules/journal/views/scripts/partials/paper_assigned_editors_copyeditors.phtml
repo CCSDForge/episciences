@@ -33,7 +33,7 @@ $userRole = $this->userRole;
                     $sectionNames = array();
                     foreach ($sections as $section) {
                         /** @var  Episciences_Section $section */
-                        $sectionNames[] = '"' . $this->translate('section_' . $section->getSid() . '_title') . '"';
+                        $sectionNames[] = '"' . $section->getNameKey() . '"';
                     }
                     $msg .= implode(', ', $sectionNames);
                 } else {

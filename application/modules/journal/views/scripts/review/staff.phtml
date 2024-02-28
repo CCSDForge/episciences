@@ -57,7 +57,7 @@
                                 <span>
                                     <?php
                                     foreach ($member->getAssignedSections() as $section) {
-                                        $memberSections[] = '<a href="' . $this->url(['controller' => 'section', 'action' => 'view', 'id' => $section->getSid()]) . '">' . $this->escape($this->translate($section->getNameKey())) . '</a>';
+                                        $memberSections[] = '<a href="' . $this->url(['controller' => 'section', 'action' => 'view', 'id' => $section->getSid()]) . '">' . $this->escape($section->getNameKey()) . '</a>';
                                     }
                                     echo implode(' ; ', $memberSections);
                                     unset($memberSections);

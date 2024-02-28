@@ -2733,7 +2733,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
-            $sid = is_numeric($request->getPost('sid')) ? intval($request->getPost('sid')) : 0;
+            $sid = (int)$request->getPost('sid');
             $paper->setSid($sid);
             $paper->save();
             $paper->log(
