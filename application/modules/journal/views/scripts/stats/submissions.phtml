@@ -24,19 +24,14 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                                 <?php if (isset($this->totalImportedArticles)): ?>
                                     <?php $importedMsg = $this->totalImportedArticles > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
                                     <p class="help-block" style="display: inline;">
-                                        (<?= sprintf($this->translate($importedMsg), '<code>' . $this->totalImportedArticles . '</code>')?>
+                                        (<?= sprintf($this->translate($importedMsg), '<code>' . $this->totalImportedArticles . '</code>') ?>
                                         )
                                     </p>
                                 <?php endif; ?>
-                                    <?php if (isset($this->totalPublishedArticles)): ?>
-
-                                        |
-                                        <code><?= $this->totalPublishedArticles ?></code> <?= $this->translate($this->totalPublishedArticles > 1 ? 'publiés' : 'publié') ?>
-
-
-                                    <?php endif; ?>
-
-
+                                <?php if (isset($this->totalPublishedArticles)): ?>
+                                    |
+                                    <code><?= $this->totalPublishedArticles ?></code> <?= $this->translate($this->totalPublishedArticles > 1 ? 'publiés' : 'publié') ?>
+                                <?php endif; ?>
                             </li>
 
                         <?php endif; ?>
@@ -53,10 +48,7 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
 
                                 </li>
 
-
                             <?php endif; ?>
-
-
                         <?php endif ?>
 
                         <?php if (!$isYear): ?>
@@ -72,10 +64,11 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                                             class="fas fa-percent fa-sm" style="margin-left: 5px;"></em>
                                     <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
                                         title="<?= $this->translate($acceptanceRateTooltipInfo) ?>"></em>
-
                                 </li>
 
                             <?php endif; ?>
+
+                            <?= $this->render('stats/submission-delay.phtml') ?>
 
                         <?php else: ?>
 
@@ -101,6 +94,8 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                                     title="<?= $this->translate('(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre total d'articles acceptés") . ', S' . $this->translate(' :') . ' ' . $this->translate("le nombre de soumissions sur l'ensemble de l'année")) ?>"></em>
 
                             </li>
+
+                            <?= $this->render('stats/submission-delay.phtml') ?>
 
                             <h1 class="help-block"
                                 style="margin-top: 10px;"><?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement') ?></h1>

@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - RT#206415
 - getlinkdata script now get csl related to linked datasets scholexplorer
+### Added
+- two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
 
 ## v1.0.42 - 2024-02-15
 ### Added

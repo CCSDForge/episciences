@@ -1949,6 +1949,8 @@ return [
     'publiés' => 'published',
     "Vous essayez de consulter les indicateurs statistiques pour l'année" => "You are trying to consult the statistical indicators for the year",
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
+    'délai soumission-acceptation' => 'Submission-acceptance time',
+    'délai soumission-publication' => 'Submission-publication time',
     // datasets
     'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',

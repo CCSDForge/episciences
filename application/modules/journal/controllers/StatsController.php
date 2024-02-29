@@ -21,8 +21,10 @@ class StatsController extends Zend_Controller_Action
     public const SUBMISSIONS_BY_YEAR = 'submissionsByYear';
     public const MORE_DETAILS = 'moreDetailsFromModifDate';
     public const NB_SUBMISSIONS = 'nbSubmissions';
-    public const SUBMISSION_ACCEPTANCE_DELAY = 'delayBetweenSubmissionAndAcceptance';
-    public const SUBMISSION_PUBLICATION_DELAY = 'delayBetweenSubmissionAndPublication';
+    public const SUBMISSION_ACCEPTANCE_DELAY = 'submissionAcceptanceTime';
+    public const SUBMISSION_PUBLICATION_DELAY = 'submissionPublicationTime';
+
+
     public const REFERENCE_YEAR = 2013;
 
 
@@ -91,6 +93,7 @@ class StatsController extends Zend_Controller_Action
             return;
         }
 
+
         $repositories = Episciences_Repositories::getRepositoriesByLabel();
 
         $details = $dashboard['details'];
@@ -130,9 +133,23 @@ class StatsController extends Zend_Controller_Action
             $yearCategories = [$yearQuery];
         }
 
-        $submissionsDelay = $details['averageDaysSubmissionAcceptation'];
-        $publicationsDelay = $details['averageDaysSubmissionPublication'];
-        $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS]; // all review submissions
+
+        if (!empty($dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['value'])) {
+            $submissionAcceptanceTime = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['value'];
+            $this->view->submissionAcceptanceTime = $submissionAcceptanceTime;
+            $this->view->submissionAcceptanceTimeUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['unit'];
+
+        }
+
+        if (!empty($dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'])) {
+            $submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'];
+            $this->view->submissionPublicationTime = $submissionPublicationTime;
+            $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'];
+        }
+
+        $submissionsDelay = $details[self::SUBMISSION_ACCEPTANCE_DELAY];
+        $publicationsDelay = $details[self::SUBMISSION_PUBLICATION_DELAY];
+        $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null; // all review submissions
         $totalByYear = 0;
 
         foreach ($yearCategories as $year) {
@@ -289,7 +306,8 @@ class StatsController extends Zend_Controller_Action
 
         foreach ($series['submissionsByRepo'] as $repoLabel => $values) {
             $repoId = $repositories[$repoLabel]['id'];
-            $backgroundColor = ($repoId > count(self::COLORS_CODE) - 1) ? self::COLORS_CODE[array_rand(self::COLORS_CODE)] : self::COLORS_CODE[$repoId];
+            $colorsCodeSize = count(self::COLORS_CODE);
+            $backgroundColor = ($repoId > $colorsCodeSize - 1) ? self::COLORS_CODE[$repoId - $colorsCodeSize] : self::COLORS_CODE[$repoId];
             //figure3
             $seriesJs['submissionsByRepo']['repositories']['datasets'][] = ['label' => $repoLabel, 'data' => $values[self::NB_SUBMISSIONS], 'backgroundColor' => $backgroundColor];
 
