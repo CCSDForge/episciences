@@ -13,7 +13,6 @@ class HalController extends Zend_Controller_Action
         header('Content-Type: text/json');
 
         $repoId = Episciences_Repositories::getRepoIdByLabel(Episciences_Repositories::HAL_LABEl);
-        $translator = Zend_Registry::get('Zend_Translate');
 
         $settings = ['is' => [
             'repoid' => $repoId,
@@ -36,7 +35,6 @@ class HalController extends Zend_Controller_Action
                 if (Episciences_Review::exist($paper->getRvid())) {
                     $review = Episciences_ReviewsManager::find($paper->getRvid());
                     $reviews[$paper->getRvid()] = $review;
-                    $translator->addTranslation(APPLICATION_PATH . '/../data/' . $review->getCode() . '/languages/');
                 } else {
                     continue;
                 }
@@ -62,10 +60,10 @@ class HalController extends Zend_Controller_Action
 
 
             if ($paper->getVid() !== 0) {
-                $journalRef['docVolumeName'] = ($translator->isTranslated('volume_' . $paper->getVid() . '_title', false, $locale)) ? Episciences_VolumesManager::translateVolumeKey('volume_' . $paper->getVid() . '_title', $locale) : '';
+                $journalRef['docVolumeName'] = Episciences_VolumesManager::translateVolumeKey('volume_' . $paper->getVid() . '_title', $locale, false);
             }
             if ($paper->getSid() !== 0) {
-                $journalRef['docSectionName'] = ($translator->isTranslated('section_' . $paper->getSid() . '_title', false, $locale)) ? $translator->translate('section_' . $paper->getSid() . '_title', $locale) : '';
+                $journalRef['docSectionName'] = Episciences_SectionsManager::translateSectionKey('section_' . $paper->getSid() . '_title', $locale, false);
             }
 
             $journalRef['docPublicationDate'] = $paper->getPublication_date();

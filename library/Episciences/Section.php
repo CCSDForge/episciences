@@ -34,6 +34,7 @@ class Episciences_Section
      * @var int
      */
     private $_rvid;
+    private $_db;
 
     /**
      * Section ordering

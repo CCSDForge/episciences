@@ -577,13 +577,20 @@ class Episciences_VolumesManager
     }
 
 
-    public static function translateVolumeKey(string $volumeKey, string $language = null): string
+    public static function translateVolumeKey(string $volumeKey, string $language = null, bool $force = true): string
     {
+        $vId = (int)filter_var($volumeKey, FILTER_SANITIZE_NUMBER_INT);
+
+        if (!$vId) {
+            return '';
+        }
 
         if (!$language) {
             $language = Episciences_Tools::getLocale();
         }
 
-        return self::find((int)filter_var($volumeKey, FILTER_SANITIZE_NUMBER_INT))->getNameKey($language);
+        $volume = self::find($vId);
+
+        return $volume ? $volume->getNameKey($language, $force) : '';
     }
 }

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - delete a volume: add assigned papers error's message.
 - Sorted paper by volume: include assigned papers to this one as a secondary volume
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
+- Section translations now stored in database
 
 ### Fixed
 - [RT#206415] : The guest editor could not see the cover letter for version 2 and the reviewers' names (Revues/Reviews section) on the first version.
