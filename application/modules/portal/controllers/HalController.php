@@ -12,7 +12,7 @@ class HalController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
         header('Content-Type: text/json');
 
-        $repoId = Episciences_Repositories::getRepoIdByLabel('Hal');
+        $repoId = Episciences_Repositories::getRepoIdByLabel('HAL');
         $translator = Zend_Registry::get('Zend_Translate');
 
         $settings = ['is' => [
@@ -36,7 +36,11 @@ class HalController extends Zend_Controller_Action
                 if (Episciences_Review::exist($paper->getRvid())) {
                     $review = Episciences_ReviewsManager::find($paper->getRvid());
                     $reviews[$paper->getRvid()] = $review;
-                    $translator->addTranslation(APPLICATION_PATH . '/../data/' . $review->getCode() . '/languages/');
+                    try {
+                        $translator->addTranslation(APPLICATION_PATH . '/../data/' . $review->getCode() . '/languages/');
+                    }catch (Exception $e){
+                        trigger_error($e->getMessage());
+                    }
                 } else {
                     continue;
                 }
