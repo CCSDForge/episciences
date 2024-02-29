@@ -307,7 +307,7 @@ class StatsController extends Zend_Controller_Action
         foreach ($series['submissionsByRepo'] as $repoLabel => $values) {
             $repoId = $repositories[$repoLabel]['id'];
             $colorsCodeSize = count(self::COLORS_CODE);
-            $backgroundColor = ($repoId > $colorsCodeSize - 1) ? self::COLORS_CODE[$repoId - $colorsCodeSize] : self::COLORS_CODE[$repoId];
+            $backgroundColor = self::COLORS_CODE[$repoId % $colorsCodeSize];
             //figure3
             $seriesJs['submissionsByRepo']['repositories']['datasets'][] = ['label' => $repoLabel, 'data' => $values[self::NB_SUBMISSIONS], 'backgroundColor' => $backgroundColor];
 
