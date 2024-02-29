@@ -16,10 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Changed
-- delete a volume: add assigned papers error's massage.
+- delete a volume: add assigned papers error's message.
 - Sorted paper by volume: include assigned papers to this one as a secondary volume
 ### Fixed
--  RT#206415
+- [RT#206415] : The guest editor could not see the cover letter for version 2 and the reviewers' names (Revues/Reviews section) on the first version.
 
 ## v1.0.42 - 2024-02-15
 ### Added
