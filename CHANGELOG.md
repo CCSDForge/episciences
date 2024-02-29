@@ -16,12 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Changed
-- delete a volume: add assigned papers error's massage.
+- delete a volume: add assigned papers error's message.
 - Sorted paper by volume: include assigned papers to this one as a secondary volume
+- Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
+
 ### Fixed
-- RT#206415
+- [RT#206415] : The guest editor could not see the cover letter for version 2 and the reviewers' names (Revues/Reviews section) on the first version.
 - getlinkdata script now get csl related to linked datasets scholexplorer
 ### Added
+- CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
 - two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
 
 ## v1.0.42 - 2024-02-15
@@ -29,9 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added an option to ignore statistics before a given date [434](https://github.com/CCSDForge/episciences/issues/434)
   now, except for users, the total number of submissions is the total number of articles published, indicators only include data after the date configured in the journal's settings. The feature is also handled by the Episciences API
 ### Fixed
-- Submission form validation fails when replacing existing version.
+- Submission form validation fails when replacing existing version.  
 
-## v1.0.41.8 - 2024-02-12
+## v1.0.41.7 - 2024-02-12
 ### Fixed
 - [Bug Report] Browse by authors or date: wrong links on the titles #435
 - System has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers.
@@ -39,12 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Invite a new user form: make it possible to choose between two languages, even for uni-lingual sites & label renamed to 'Default Language'.
-- Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
-- Add an option to ignore statistics before a given date [434](https://github.com/CCSDForge/episciences/issues/434)
-  now, except for users, the total number of submissions is the total number of articles published, indicators only include data after the date configured in the journal's settings.
-
-### Added
-- CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
 
 ## v1.0.41.7 - 2024-01-23
 ### Changed
@@ -426,9 +423,8 @@ the date of the latest action
 ### Fixed
 - Fixed: allow to submit documents from hal.science and HAL portals with a TLD different from .FR
 - [#299](https://github.com/CCSDForge/episciences/issues/299) Fixed licences missing character and version
-
-
-
+- Add an option to ignore statistics before a given date [434](https://github.com/CCSDForge/episciences/issues/434)
+  now, except for users, the total number of submissions is the total number of articles published, indicators only include data after the date configured in the journal's settings.
 ### New
 - Updated volume import script to handle new metadata
 
