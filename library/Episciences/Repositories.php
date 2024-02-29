@@ -36,7 +36,7 @@ class Episciences_Repositories
     public const MED_RXIV_ID = '11';
 
     public const EPI_USER_ID = '12';
-    public const HAL_LABEl = 'hal';
+    public const HAL_LABEl = 'HAL';
 
     private static array $_repositories = [];
 
@@ -220,7 +220,7 @@ class Episciences_Repositories
 
     public static function isFromHalRepository(int $repoId): bool
     {
-        return (str_contains(mb_strtolower(self::getLabel($repoId)), self::HAL_LABEl));
+        return (str_contains(self::getLabel($repoId), self::HAL_LABEl));
 
     }
 
@@ -230,7 +230,7 @@ class Episciences_Repositories
 
         $repositoriesByLabel = [];
 
-        foreach (self::getRepositories() as $repoId => $repository) {
+        foreach (self::getRepositories() as $repository) {
             $repositoriesByLabel[$repository[self::REPO_LABEL]] = $repository;
         }
 
