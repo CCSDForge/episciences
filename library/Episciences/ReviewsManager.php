@@ -145,14 +145,14 @@ class Episciences_ReviewsManager
      * Retrieve a list of publishing journals
      * @return array
      */
-    public static function findPublishingJournals(): array
+    public static function findActiveJournals(): array
     {
 
         $jNumber = 0;
         $journalCollection[$jNumber] = ['Number', 'Code', 'Title', 'ISSN', 'EISSN', 'Address', 'Accepted-repositories'];
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_REVIEW)->where('STATUS = 1 AND RVID IN (SELECT RVID FROM PAPERS WHERE STATUS=?)', Episciences_Paper::STATUS_PUBLISHED);
+        $select = $db->select()->from(T_REVIEW)->where('STATUS = 1');
         $select->order('NAME ASC');
         $allJournals = $db->fetchAll($select);
         if (!$allJournals) {

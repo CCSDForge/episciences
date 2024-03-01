@@ -213,7 +213,7 @@ class ApiController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
-        $journalArray = Episciences_ReviewsManager::findPublishingJournals();
+        $journalArray = Episciences_ReviewsManager::findActiveJournals();
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
