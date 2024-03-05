@@ -1511,6 +1511,7 @@ class PaperController extends PaperDefaultController
             [
                 Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $tmpPaper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $tmpPaper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $tmpPaper->getTitle(),
             ], $tmpPaper, null, [], false, $coAuthors
         );
@@ -2062,6 +2063,7 @@ class PaperController extends PaperDefaultController
                 [
                     Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $newPaper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle(),
                 ], $newPaper, null, [], false, $coAuthors
             );
