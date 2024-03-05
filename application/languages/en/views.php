@@ -1974,6 +1974,7 @@ return [
     'handle' => 'Handle',
     'hal' => 'HAL',
     'Modification non autorisé' => "modification not allowed",
+    "Échec de l'ajout de la donnée liée. Veuillez réessayer." => "Failed to add linked data. Please try again.",
     //COI
     "Votre réponse à bien été enregistrée." => "Your answer has been saved.",
     "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",

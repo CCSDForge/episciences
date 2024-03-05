@@ -5,12 +5,18 @@ use GuzzleHttp\Exception\GuzzleException;
 class Episciences_DoiTools
 {
     /**
-     * @param string $doi
+     * @const string DOI prefix
      */
-    public static function getMetadataFromDoi(string $doi) {
+    public const DOI_ORG_PREFIX = 'https://doi.org/';
+
+    /**
+     * @param string $doi
+     * @return string
+     */
+    public static function getMetadataFromDoi(string $doi): string
+    {
 
         $client = new Client();
-        $arrayRes = [];
         if(Episciences_Tools::isArxiv($doi)) {
             $regexRemoveVersion = "~v[\d{1,100}]~"; // doi org doesn't accept arxiv version in call
             $doi = preg_replace($regexRemoveVersion,"",$doi);
@@ -21,8 +27,9 @@ class Episciences_DoiTools
             }
         }
         if (self::checkIfDomainExist($doi) === false){
-            $doi = Episciences_Paper_Dataset::$_datasetsLink['doi'].$doi;
+            $doi = self::DOI_ORG_PREFIX . $doi;
         }
+
         try {
             $response = $client->get($doi,[
                 'headers' => [
@@ -30,8 +37,7 @@ class Episciences_DoiTools
                     'Content-type' => "application/json"
                     ]
             ]);
-            $stream = $response->getBody();
-            return $stream->getContents();
+            return $response->getBody()->getContents();
         } catch (GuzzleException $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }

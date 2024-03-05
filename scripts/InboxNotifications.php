@@ -1214,7 +1214,7 @@ class InboxNotifications extends Script
         $enrichment = $additionalPaperData[Episciences_Repositories_Common::ENRICHMENT] ?? [];
 
         if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
-            Episciences_Submit::datasetsProcessing($paper->getDocid());
+            Episciences_Submit::datasetsProcessing($paper);
         }
 
         if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {

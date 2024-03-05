@@ -96,19 +96,19 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         try {
             $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
 
-            if(false === $response){
-                throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE );
+            if (false === $response) {
+                throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
             }
 
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage());
         }
 
-        if ($response){
+        if ($response) {
             self::enrichmentProcess($response);
         }
 
-        if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])){
+        if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
             $response['record'] = Episciences_Repositories_Common::toDublinCore($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]);
         }
 
@@ -147,7 +147,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         if (isset($hookParams['repoId'], $hookParams['record'], $hookParams['conceptIdentifier'])) {
 
             $pattern = '<dc:relation>';
-            $pattern .= Episciences_Paper::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
+            $pattern .= Episciences_DoiTools::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
             $pattern .= $hookParams['conceptIdentifier'];
             $pattern .= '</dc:relation>';
 
@@ -166,7 +166,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         if (isset($hookParams['repoId'], $hookParams['record'])) {
 
             $pattern = '<dc:relation>';
-            $pattern .= Episciences_Paper::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
+            $pattern .= Episciences_DoiTools::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
             $pattern .= '\d+';
             $pattern .= '</dc:relation>';
 
@@ -229,22 +229,12 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     {
         $response = self::checkResponse($hookParams);
 
-        $relatedIdentifiers = [];
-        $alternateIdentifiers = [];
-
         if (!empty($response)) {
-
-            if (array_key_exists('related_identifiers', $response['metadata'])) {
-                $relatedIdentifiers = $response['metadata']['related_identifiers'];
-            }
-
-            if (array_key_exists('alternate_identifiers', $response['metadata'])) {
-                $alternateIdentifiers = $response['metadata']['alternate_identifiers'];
-            }
-
+            return $response['metadata']['related_identifiers'] ?? $response['metadata']['alternate_identifiers'] ?? [];
         }
 
-        return array_merge($relatedIdentifiers, $alternateIdentifiers);
+        return [];
+
     }
 
     /**
@@ -255,37 +245,10 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     public static function hookLinkedDataProcessing(array $hookParams): array
     {
         $linkedIdentifiers = self::hookGetLinkedIdentifiers($hookParams);
-
-        $data = [];
-        $tmpData = [];
-        $affectedRows = 0;
-
-        if (empty($linkedIdentifiers)){
-            $response['affectedRows'] = $affectedRows;
-            return $response;
-        }
-
-
-        foreach ($linkedIdentifiers as $linkedIdentifier) {
-            $tmpData['doc_id'] = $hookParams['docId'];
-            $tmpData['value'] = $linkedIdentifier['identifier'];
-            $tmpData['code'] = array_key_exists('resource_type', $linkedIdentifier) ? $linkedIdentifier['resource_type'] : 'undefined';
-            $tmpData['name'] = $linkedIdentifier['scheme'];
-            $tmpData['link'] = !in_array($linkedIdentifier['scheme'], ['url', 'lsid'], true) ? Episciences_Paper_Dataset::$_datasetsLink[$linkedIdentifier['scheme']] . $linkedIdentifier['identifier'] : $linkedIdentifier['identifier'];
-            $tmpData['source_id'] = $hookParams['repoId'];
-
-            $data[] = $tmpData;
-            $tmpData = [];
-        }
-
-        unset($tmpData);
-
-        $affectedRows = Episciences_Paper_DatasetsManager::insert($data);
+        $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $linkedIdentifiers);
         $response = self::checkResponse($hookParams);
         $response['affectedRows'] = $affectedRows;
-
         return $response;
-
     }
 
     public static function hookIsRequiredVersion(): array
@@ -304,7 +267,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             return;
         }
 
-        $identifiers= [];
+        $identifiers = [];
         $datestamp = '';
         $xmlElements = [];
         $headers = [];
@@ -316,11 +279,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $identifiers[] = $urlIdentifier;
         }
 
-        if (isset($data['links']['self_html']) && $data['links']['self_html'] !== '' ){
+        if (isset($data['links']['self_html']) && $data['links']['self_html'] !== '') {
             $identifiers[] = $data['links']['self_html'];
         }
 
-        if (isset($data['links']['self_doi']) && $data['links']['self_doi'] !== '' ){
+        if (isset($data['links']['self_doi']) && $data['links']['self_doi'] !== '') {
             $identifiers[] = $data['links']['self_doi'];
         }
 
@@ -391,9 +354,9 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
 
         $description[] = [
-            'value' => trim(str_replace(['<p>', '</p>'], '', Episciences_Tools::epi_html_decode($metadata['description'], ['HTML.AllowedElements' =>'p']))), // (exp. #10027122)
+            'value' => trim(str_replace(['<p>', '</p>'], '', Episciences_Tools::epi_html_decode($metadata['description'], ['HTML.AllowedElements' => 'p']))), // (exp. #10027122)
             'language' => $language
-                ];
+        ];
 
         $body['title'] = $metadata['title'] ?? '';
         $body['creator'] = $creatorsDc;
@@ -413,12 +376,12 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $conceptId = $data['conceptrecid'] ?? null;
 
         if ($conceptId) {
-            $conceptIdentifierUrlDoi = sprintf('%s/%s.%s',Episciences_Paper::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID),mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)), $conceptId );
+            $conceptIdentifierUrlDoi = sprintf('%s/%s.%s', Episciences_DoiTools::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID), mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)), $conceptId);
             $body['relation'] = $conceptIdentifierUrlDoi;
         }
 
         if ($license !== '') {
-            
+
             if (str_contains(strtolower($license), 'cc-')) {
                 $license = 'https://creativecommons.org/licenses/' . $license;
             } else {
@@ -447,7 +410,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
 
-        if(isset($data[Episciences_Repositories_Common::FILES])) {
+        if (isset($data[Episciences_Repositories_Common::FILES])) {
             $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
         }
     }

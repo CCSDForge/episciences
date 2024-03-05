@@ -2719,7 +2719,7 @@ class Episciences_PapersManager
 
         } else {
             // add all datasets for Hal repository
-            $affectedRows += Episciences_Submit::datasetsProcessing($docId);
+            $affectedRows += Episciences_Submit::datasetsProcessing($paper);
 
         }
 

@@ -127,11 +127,6 @@ class Episciences_Paper
         self::STATUS_REFUSED
     ];
 
-    /**
-     * @const string DOI prefix
-     */
-    public const DOI_ORG_PREFIX = 'https://doi.org/';
-
     // status priorities
     public static array $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
@@ -555,7 +550,7 @@ class Episciences_Paper
     public function getDoi($withPrefix = false)
     {
         if ($withPrefix && $this->_doi !== '') {
-            return self::DOI_ORG_PREFIX . $this->_doi;
+            return Episciences_DoiTools::DOI_ORG_PREFIX . $this->_doi;
         }
         return $this->_doi;
     }
