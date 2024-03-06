@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - related with [#443]: idem no content for tags %%TAG_AUTHORS_NAMES%% and %%TAG_CONTRIBUTOR_FULL_NAME%%.
 - [RT#206415] : The guest editor could not see the cover letter for version 2 and the reviewers' names (Revues/Reviews section) on the first version.
 - The "About version numbers" link url has changed and has not been updated.
-
+- Brows by year: documents have been indexed by year of submission instead of year of publication
 ## v1.0.42 - 2024-02-15
 ### Added
 - Added an option to ignore statistics before a given date [434](https://github.com/CCSDForge/episciences/issues/434)
