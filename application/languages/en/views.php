@@ -1749,7 +1749,7 @@ return [
      * Help
      */
 
-    'help_versions_link' => 'https://doc.episciences.org/ufaqs/what-are-the-document-version-numbering-conventions/',
+    'help_versions_link' => 'https://doc.episciences.org/faq/',
     'help_versions_text' => 'About version numbering',
 
     /**
