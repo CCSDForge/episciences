@@ -72,7 +72,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $publication_date = $paperData->getPublication_date();
         if ($publication_date) {
-            $publication_date_array = explode('-', $this->getFormattedDate($paperData->getSubmission_date(), 'Y-m-d'));
+            $publication_date_array = explode('-', $this->getFormattedDate($publication_date, 'Y-m-d'));
             [$publication_year, $publication_month, $publication_day] = $publication_date_array;
             $publication_date = $this->getFormattedDate($publication_date);
         } else {
