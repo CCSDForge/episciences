@@ -84,6 +84,11 @@ class Ccsd_Oai_Client {
             $options[CURLOPT_USERAGENT] = $userAgent;
 			$url = $this->baseUrl.'?verb=GetRecord&identifier='.$identifier.'&metadataPrefix='.$format;
 			$curlResponse = (string)Ccsd_Tools::curlSourceGetContents($url, $options);
+
+            if(empty($curlResponse)) {
+                throw new Ccsd_Error("No body returned");
+            }
+
 			$dom->loadXML($curlResponse);
 			$xpath = new DOMXPath($dom);
 			foreach (Ccsd_Tools::getNamespaces($dom->documentElement) as $id => $ns) {
