@@ -1505,14 +1505,17 @@ class PaperController extends PaperDefaultController
         if (isset($post['copycoauthor']) && $post['coAuthors'] === 0) {
             $coAuthors = "";
         }
+        $submitter = $tmpPaper->getSubmitter();
         Episciences_Mail_Send::sendMailFromReview(
-            $tmpPaper->getSubmitter(),
+            $submitter,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR,
             [
                 Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $tmpPaper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $tmpPaper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $tmpPaper->getTitle(),
+                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $tmpPaper->formatAuthorsMetadata($submitter->getLangueid(true)),
+                Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $submitter->getFullName()
             ], $tmpPaper, null, [], false, $coAuthors
         );
 
@@ -2057,14 +2060,19 @@ class PaperController extends PaperDefaultController
                 self::ACTION => 'view',
                 'id' => $newPaper->getDocid()
             ]);
+
+            $submitter = $newPaper->getSubmitter();
+
             Episciences_Mail_Send::sendMailFromReview(
-                $newPaper->getSubmitter(),
+                $submitter,
                 Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR,
                 [
                     Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
                     Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $newPaper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle(),
+                    Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $newPaper->formatAuthorsMetadata($submitter->getLangueid(true)),
+                    Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $submitter->getFullName()
                 ], $newPaper, null, [], false, $coAuthors
             );
 

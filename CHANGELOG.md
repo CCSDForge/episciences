@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sorted paper by volume: include assigned papers to this one as a secondary volume
 ### Fixed
 - [#443](https://github.com/CCSDForge/episciences/issues/443): In the templates (New version - author and co-author copy, New temporary version author and co-author copy) the tag %%PERMANENT_ARTICLE_ID%% is used, but it did not appear in the subject of the message.
+- related with [#443]: idem no content for tags %%TAG_AUTHORS_NAMES%% and %%TAG_CONTRIBUTOR_FULL_NAME%%.
 - [RT#206415] : The guest editor could not see the cover letter for version 2 and the reviewers' names (Revues/Reviews section) on the first version.
 
 ## v1.0.42 - 2024-02-15
