@@ -1157,6 +1157,7 @@ return [
     "Vous n'êtes pas connecté" => "You are not logged in",
     "Les modifications sont sauvegardées." => "Modifications have been saved.",
     "Ce volume a été supprimé" => "This volume has been deleted",
+    "Cette rubrique a été supprimée" => "This section has been removed",
 
     // DEMO
     "Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes." => "On this demo environment, you cannot delete any accounts.",

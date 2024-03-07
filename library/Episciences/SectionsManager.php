@@ -275,12 +275,21 @@ class Episciences_SectionsManager
             return '';
         }
 
+        $section = self::find($sId);
+
         if (!$language) {
             $language = Episciences_Tools::getLocale();
         }
 
-        $section = self::find($sId);
+        if (!$section) {
+            try {
+                return $force ? $sectionKey . ' [ ' . Zend_Registry::get('Zend_Translate')->translate("Cette rubrique a été supprimée") . ' ]' : '';
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+                return '';
+            }
+        }
 
-        return $section ? self::find($sId)->getNameKey($language, $force) : '';
+        return $section->getNameKey($language, $force);
     }
 }
