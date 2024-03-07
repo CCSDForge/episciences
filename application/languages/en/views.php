@@ -1896,7 +1896,7 @@ return [
     "À propos d'Episciences" => "About Episciences",
     "À propos" => "About",
     'Revues hébergées' => 'Hosted journals',
-    'Courriel support technique' => 'Technical support Email',
+    'Courriel support technique' => 'Technical support',
     'Support technique' => 'Technical support',
     'Mentions légales' => 'Legal mentions',
     'Vie privée' => 'Privacy',
