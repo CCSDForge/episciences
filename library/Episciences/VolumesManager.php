@@ -609,15 +609,29 @@ class Episciences_VolumesManager
         }
 
     }
-
-
-    public static function translateVolumeKey(string $volumeKey, string $language = null): string
+    public static function translateVolumeKey(string $volumeKey, string $language = null, bool $force = true): string
     {
+        $vId = (int)filter_var($volumeKey, FILTER_SANITIZE_NUMBER_INT);
+
+        if (!$vId) {
+            return '';
+        }
+
+        $volume = self::find($vId);
 
         if (!$language) {
             $language = Episciences_Tools::getLocale();
         }
 
-        return self::find((int)filter_var($volumeKey, FILTER_SANITIZE_NUMBER_INT))->getNameKey($language);
+        if (!$volume) {
+            try {
+                return $force ? $volumeKey . ' [ ' . Zend_Registry::get('Zend_Translate')->translate("Ce volume a été supprimé") . ' ]' : '';
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+                return '';
+            }
+        }
+
+        return $volume->getNameKey($language, $force);
     }
 }
