@@ -1156,6 +1156,7 @@ return [
     "L'authentification a échoué" => "Authentication failed",
     "Vous n'êtes pas connecté" => "You are not logged in",
     "Les modifications sont sauvegardées." => "Modifications have been saved.",
+    "Ce volume a été supprimé" => "This volume has been deleted",
 
     // DEMO
     "Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes." => "On this demo environment, you cannot delete any accounts.",

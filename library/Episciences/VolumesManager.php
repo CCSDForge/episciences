@@ -585,12 +585,21 @@ class Episciences_VolumesManager
             return '';
         }
 
+        $volume = self::find($vId);
+
         if (!$language) {
             $language = Episciences_Tools::getLocale();
         }
 
-        $volume = self::find($vId);
+        if (!$volume) {
+            try {
+                return $force ? $volumeKey . ' [ ' . Zend_Registry::get('Zend_Translate')->translate("Ce volume a été supprimé") . ' ]' : '';
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
+                return '';
+            }
+        }
 
-        return $volume ? $volume->getNameKey($language, $force) : '';
+        return $volume->getNameKey($language, $force);
     }
 }
