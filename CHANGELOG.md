@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
 
 ### Fixed
+- [#423](https://github.com/CCSDForge/episciences/issues/423): fix typo Technical support Email.
 - The "About version numbers" link url has changed and has not been updated.
 - Brows by year: documents have been indexed by year of submission instead of year of publication
 - [#443](https://github.com/CCSDForge/episciences/issues/443): In the templates (New version - author and co-author copy, New temporary version author and co-author copy) the tag %%PERMANENT_ARTICLE_ID%% is used, but it did not appear in the subject of the message.
