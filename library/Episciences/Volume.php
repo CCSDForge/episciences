@@ -1179,11 +1179,12 @@ class Episciences_Volume
 
     /**
      * @param array $excludedStatus
+     * @param bool $includeSecondaryVolume
      * @return array
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public function getPaperListFromVolume($excludedStatus = [], $includeSecondaryVolume = true): array
+    public function getPaperListFromVolume(array $excludedStatus = [], bool $includeSecondaryVolume = true): array
     {
 
         $options['is']['rvid'] = RVID;
@@ -1191,7 +1192,7 @@ class Episciences_Volume
         $status = empty($excludedStatus) ? Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS : array_merge($excludedStatus, Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS);
         $options['isNot'] = ['status' => $status];
 
-        return Episciences_PapersManager::getList($options, false, true);
+        return Episciences_PapersManager::getList($options, false, $includeSecondaryVolume);
 
     }
 
