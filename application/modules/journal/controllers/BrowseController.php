@@ -306,13 +306,8 @@ class BrowseController extends Zend_Controller_Action
         $page = new Episciences_Website_Navigation_Page_AcceptedPapersList();
         $page->load();
         $review = Episciences_ReviewsManager::find(RVID);
-        $limit = $page->getNbResults();
-
-        if (!is_numeric($limit)) {
-            $limit = 10;
-        }
-
-        $acceptedPapers = Episciences_PapersManager::getAcceptedPapersByRvid($review->getRvid(), $limit);
+        $acceptedPapers = Episciences_PapersManager::getAcceptedPapersByRvid($review->getRvid());
+        $page->setNbResults(count($acceptedPapers));
         $formatPapers = [];
         foreach ($acceptedPapers as $paper){
             $formatPapers[] = new Episciences_Paper($paper);
