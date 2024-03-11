@@ -305,12 +305,17 @@ class BrowseController extends Zend_Controller_Action
         $review = Episciences_ReviewsManager::find(RVID);
         $acceptedPapers = Episciences_PapersManager::getAcceptedPapersByRvid($review->getRvid());
         $page->setNbResults(count($acceptedPapers));
-        $formatPapers = [];
+        $sortedPapers = [];
         foreach ($acceptedPapers as $paper){
-            $formatPapers[] = new Episciences_Paper($paper);
+            $oPaper = new Episciences_Paper($paper);
+            $time = strtotime($oPaper->getAcceptanceDate());
+            $sortedPapers[$time] = $oPaper;
         }
+
+        krsort($sortedPapers);
+
         $this->view->journal = $review;
-        $this->view->acceptedPapers = $formatPapers;
+        $this->view->sortedPapers = $sortedPapers;
         $this->view->isSecretary = Episciences_Auth::isSecretary();
         $this->renderScript('browse/acceptedPapersList.phtml');
     }
