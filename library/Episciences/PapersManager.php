@@ -3724,7 +3724,6 @@ class Episciences_PapersManager
      */
     public static function getAcceptedPapersByRvid(int $rvId, int $limit = 100): array
     {
-        $defaultLimit = 100;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 

@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Changed
-- [#445](https://github.com/CCSDForge/episciences/issues/445): do not limit the number of papers per page to 10: the default limit (100) is used.
+- [#445](https://github.com/CCSDForge/episciences/issues/445): do not limit the number of papers per page to 10: the default limit (100) is used + acceptance date descending order.
 - delete a volume: add assigned papers error's message.
 - Sorted paper by volume: include assigned papers to this one as a secondary volume
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly

@@ -6,7 +6,7 @@ $journal = $this->journal;
 ?>
 <div id="browse-accepted-papers">
     <ul>
-        <?php foreach ($this->acceptedPapers as $acceptedPaper) :
+        <?php foreach ($this->sortedPapers as $time => $acceptedPaper) :
             /** @var Episciences_Paper $acceptedPaper */
             $epiUrl = $this->url(
                 [
@@ -31,10 +31,10 @@ $journal = $this->journal;
                         <?php if ($lastkey !== $key + 1) : ?>;<?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
-                <?php $acceptedDateToTime = strtotime($acceptedPaper->getAcceptanceDate()); ?>
-                <?php if ($acceptedDateToTime) : ?>
+
+                <?php if ($time) : ?>
                     &nbsp;<span
-                            class="accepted-on">(<?= $this->translate('Accepté le : ') . date('Y-m-d', $acceptedDateToTime) ?>)</span>
+                            class="accepted-on">(<?= $this->translate('Accepté le : ') . date('Y-m-d', $time) ?>)</span>
                 <?php endif; ?>
                 <?php ?>
             </li>
