@@ -3694,18 +3694,17 @@ class Episciences_PapersManager
      * @param int $limit
      * @return array
      */
-    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 0)
+    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 100): array
     {
         $defaultLimit = 100;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = $db->select()->
-        from(T_PAPERS)->where('STATUS IN (?)', Episciences_Paper::ACCEPTED_SUBMISSIONS)->
-        where('RVID = ?', $rvId)->
-        order('MODIFICATION_DATE DESC');
-
-        ($limit !== 0) ? $select->limit($limit) : $select->limit($defaultLimit);
+        $select = $db->select()
+            ->from(T_PAPERS)->where('STATUS IN (?)', Episciences_Paper::ACCEPTED_SUBMISSIONS)
+            ->where('RVID = ?', $rvId)
+            ->order('MODIFICATION_DATE DESC')
+            ->limit($limit);
 
         return $db->fetchAssoc($select);
     }
