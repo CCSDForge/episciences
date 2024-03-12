@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
 
 ### Fixed
+- Exporting volumes in DOAJ format does not work for Secondary Volumes
 - [#423](https://github.com/CCSDForge/episciences/issues/423): fix typo Technical support Email.
 - The "About version numbers" link url has changed and has not been updated.
 - Brows by year: documents have been indexed by year of submission instead of year of publication

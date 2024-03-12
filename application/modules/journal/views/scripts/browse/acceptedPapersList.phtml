@@ -6,19 +6,20 @@ $journal = $this->journal;
 ?>
 <div id="browse-accepted-papers">
     <ul>
-        <?php foreach ($this->sortedPapers as $time => $acceptedPaper) :
+        <?php foreach ($this->sortedPapers['time'] as $docId => $time) :
             /** @var Episciences_Paper $acceptedPaper */
+            $acceptedPaper = $this->sortedPapers[$docId];
             $epiUrl = $this->url(
                 [
                     'controller' => 'administratepaper',
                     'action' => 'view',
-                    'id' => $acceptedPaper->getDocid()
+                    'id' => $docId
                 ]);
             ?>
             <li class="accepted-papers-list">
                 <?php if ($this->isSecretary) : ?>
                     <a class="accepted-papers-list-internal-ref"
-                       href="<?= $epiUrl ?>">[#<?= $acceptedPaper->getDocid() ?>]</a>
+                       href="<?= $epiUrl ?>">[#<?= $docId ?>]</a>
                 <?php endif; ?>
 
                 <a href="<?= $this->escape($acceptedPaper->getDocUrl()) ?>" target="_blank"
@@ -31,11 +32,7 @@ $journal = $this->journal;
                         <?php if ($lastkey !== $key + 1) : ?>;<?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
-
-                <?php if ($time) : ?>
-                    &nbsp;<span
-                            class="accepted-on">(<?= $this->translate('Accepté le : ') . date('Y-m-d', $time) ?>)</span>
-                <?php endif; ?>
+                    &nbsp;<span class="accepted-on">(<?= $this->translate('Accepté le : ') . date('Y-m-d', $time) ?>)</span>
                 <?php ?>
             </li>
         <?php endforeach; ?>
