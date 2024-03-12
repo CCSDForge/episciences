@@ -305,14 +305,24 @@ class BrowseController extends Zend_Controller_Action
         $review = Episciences_ReviewsManager::find(RVID);
         $acceptedPapers = Episciences_PapersManager::getAcceptedPapersByRvid($review->getRvid());
         $page->setNbResults(count($acceptedPapers));
-        $sortedPapers = [];
-        foreach ($acceptedPapers as $paper){
+
+        $sortedPapers = [
+            'time' => []
+        ];
+
+        foreach ($acceptedPapers as $docId => $paper){
             $oPaper = new Episciences_Paper($paper);
-            $time = strtotime($oPaper->getAcceptanceDate());
-            $sortedPapers[$time] = $oPaper;
+            $acceptanceDate = $oPaper->getAcceptanceDate();
+            $time = strtotime($acceptanceDate);
+            if($time === false){
+                trigger_error(sprintf('BrowseController::acceptedDocs: acceptance date (%s) cannot be converted into timestamp. [#%s] ignored from accepted papers', $acceptanceDate, $docId));
+                continue;
+            }
+            $sortedPapers[$docId] = $oPaper;
+            $sortedPapers['time'][$docId] = $time;
         }
 
-        krsort($sortedPapers);
+        arsort($sortedPapers['time']);
 
         $this->view->journal = $review;
         $this->view->sortedPapers = $sortedPapers;
