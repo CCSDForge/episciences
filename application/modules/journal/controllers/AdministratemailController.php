@@ -500,9 +500,7 @@ class AdministratemailController extends Zend_Controller_Action
             /** @var Episciences_Paper $paper */
             $paper = Episciences_PapersManager::get((int)$post['docid']);
         }
-
-        $paperId = $paper ? (string)$paper->getPaperid() : null;
-
+        
         if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
             $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
