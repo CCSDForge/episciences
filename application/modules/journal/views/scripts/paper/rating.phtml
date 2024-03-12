@@ -5,6 +5,8 @@ $this->headTitle("#" . $this->paper->getDocid() . ' - ' . $this->paper->getTitle
 $previousRatings = $this->previousRatings;
 ?>
 
+<?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $this->paper]) ?>
+
 <?php // obsolete paper notice ********************************************* ?>
 <?php if ($this->paper->isObsolete()) : ?>
     <?= $this->partial('partials/old_version.phtml', ['url' => $this->linkToLatestDocId]) ?>

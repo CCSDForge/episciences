@@ -2339,7 +2339,7 @@ class PaperController extends PaperDefaultController
         }
 
         // Check paper status
-        $paperStatus = $this->checkPaperStatus($paper);
+        $paperStatus = $this->checkPaperStatus($paper, ['fromAction' => 'rating']);
 
         if (!empty($paperStatus) && !array_key_exists('displayNotice', $paperStatus)) {
             $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($paperStatus['message']);
@@ -2481,16 +2481,28 @@ class PaperController extends PaperDefaultController
 
     /**
      * @param Episciences_Paper $paper
+     * @param array $option
      * @return array
      * @throws Zend_Exception
      */
 
-    private function checkPaperStatus(Episciences_Paper $paper): array
+    private function checkPaperStatus(Episciences_Paper $paper, array $option = []): array
     {
 
         $translator = Zend_Registry::get('Zend_Translate');
         $result = [];
         $url = '/' . $paper->getDocid();
+
+        $fromRating = isset($option['fromAction']) && $option['fromAction'] === 'rating';
+
+        if ($fromRating) {
+
+            $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid());
+
+            if($report->isCompleted()){
+                return $result;
+            }
+        }
 
         // paper has been deleted
         if ($paper->isDeleted() || $paper->isRemoved()) {
@@ -2506,6 +2518,7 @@ class PaperController extends PaperDefaultController
             $result['message'] = $translator->translate("Cet article a été refusé, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
         } elseif ($paper->isObsolete()) { // paper is obsolete: display a notice
+
             $latestDocId = $paper->getLatestVersionId();
             $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
             $result['displayNotice'] = true;

@@ -2,27 +2,30 @@
 
 /** @var Zend_Controller_Request_Http $request */
 $request = Zend_Controller_Front::getInstance()->getRequest();
-
 $controller = $request->getControllerName();
 $action = $request->getActionName();
+
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+
 $message = '';
 $url = '';
-$docId = $this->paper->getDocId();
+$docId = $paper->getDocId();
 
-$isOwnSubmission = ($this->paper->getUid() === Episciences_Auth::getUid());
+$isOwner = $paper->isOwner();
 
-if ($controller === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER ) {
+if ($controller === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER) {
 
     $message = "Aller à la page publique de cet article";
     $url = '/paper/view?id=' . $docId;
 
-} elseif (!$isOwnSubmission) {
+} elseif (!$isOwner && Episciences_Auth::isAllowedToManageDoi()) {
 
     $message = "Aller à la page de gestion de cet article";
     $url = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $docId;
 }
 ?>
 
-<?php if (!$isOwnSubmission) : ?>
+<?php if ($url !== '' && !$isOwner) : ?>
     <a class="btn btn-default btn-xs pull-right" href="<?= $url ?>" style="margin-left: 10px;"><i class="fas fa-link" style="margin-right: 5px;"></i><?= $this->translate($message) ?></a>
 <?php endif; ?>
