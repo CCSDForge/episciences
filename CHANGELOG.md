@@ -14,28 +14,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-### Changed
-- [#445](https://github.com/CCSDForge/episciences/issues/445): do not limit the number of papers per page to 10: the default limit (100) is used + acceptance date descending order.
-- delete a volume: add assigned papers error's message.
-- Sorted paper by volume: include assigned papers to this one as a secondary volume
+### Unreleased
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
 - Section translations now stored in database
 - DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
 
 ### Fixed
-- Exporting volumes in DOAJ format does not work for Secondary Volumes
-- [#423](https://github.com/CCSDForge/episciences/issues/423): fix typo Technical support Email.
-- The "About version numbers" link url has changed and has not been updated.
-- Brows by year: documents have been indexed by year of submission instead of year of publication
-- [#443](https://github.com/CCSDForge/episciences/issues/443): In the templates (New version - author and co-author copy, New temporary version author and co-author copy) the tag %%PERMANENT_ARTICLE_ID%% is used, but it did not appear in the subject of the message.
-- related with [#443]: idem no content for tags %%TAG_AUTHORS_NAMES%% and %%TAG_CONTRIBUTOR_FULL_NAME%%.
-- [RT#206415] : The guest editor could not see the cover letter for version 2 and the reviewers' names (Revues/Reviews section) on the first version.
 - getlinkdata script now get csl related to linked datasets scholexplorer
 ### Added
 - [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
 - CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
 - two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
+
+## v1.0.42.1 - 2024-03-12
+### Changed
+- delete a volume: add assigned papers error's message.
+- Sorted paper by volume: include assigned papers to this one as a secondary volume
+- [#445](https://github.com/CCSDForge/episciences/issues/445): do not limit the number of papers per page to 10: the default limit (100) is used + acceptance date descending order. 
+
+### Fixed
+- Exporting volumes in DOAJ format does not work for Secondary Volumes
+- [#423](https://github.com/CCSDForge/episciences/issues/423): fix typo Technical support Email. 
+- [#443](https://github.com/CCSDForge/episciences/issues/443): In the templates (New version - author and co-author copy, New temporary version author and co-author copy) the tag %%PERMANENT_ARTICLE_ID%% is used, but it did not appear in the subject of the message.
+- [#443](https://github.com/CCSDForge/episciences/issues/443): no content for tags %%TAG_AUTHORS_NAMES%% and %%TAG_CONTRIBUTOR_FULL_NAME%%.
+- The guest editor could not see the cover letter for version 2 and the reviewers' names (Revues/Reviews section) on the first version.
+- Links to documentation : the "About version numbers" link url has changed and has not been updated.
+- Browse by year: documents have been indexed by year of submission instead of year of publication
 
 ## v1.0.42 - 2024-02-15
 ### Added
