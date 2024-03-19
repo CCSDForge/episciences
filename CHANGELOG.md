@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - System has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers:
   Make sure the invitation is sent x days [delay] later.
+- Wrong  display of titles and abstracts on the latest articles page: these will now be displayed in the main language [if available].
 
 ## v1.0.42.1 - 2024-03-12
 ### Changed
