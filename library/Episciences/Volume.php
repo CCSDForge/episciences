@@ -42,9 +42,6 @@ class Episciences_Volume
     private $_bib_reference = null;
 
     private int $nbOfPapersInVolume = 0;
-
-    private $journalTranslationPath ;
-
     private ?array $titles;
     private ?array $descriptions;
 
@@ -59,10 +56,6 @@ class Episciences_Volume
         $this->_db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if (is_array($options)) {
             $this->setOptions($options);
-        }
-
-        if (!Ccsd_Tools::isFromCli()) {
-            $this->journalTranslationPath = REVIEW_LANG_PATH;
         }
     }
 
@@ -1292,25 +1285,7 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_DOI => $this->getSetting(self::VOLUME_CONFERENCE_DOI),
         ];
     }
-
-    /**
-     * @return string | null
-     */
-    public function getJournalTranslationPath(): ?string
-    {
-        return $this->journalTranslationPath;
-    }
-
-    /**
-     * @param $journalTranslationPath
-     * @return $this
-     */
-    public function setJournalTranslationPath($journalTranslationPath): self
-    {
-        $this->journalTranslationPath = $journalTranslationPath;
-        return $this;
-    }
-
+    
     /**
      * @return array|null
      */

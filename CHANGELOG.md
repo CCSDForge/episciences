@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
 - CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
 - two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
+## v1.0.42.2 - 2024-03-19
+### Fixed
+- System has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers:
+  Make sure the invitation is sent x days [delay] later.
+- Wrong  display of titles and abstracts on the latest articles page: these will now be displayed in the main language [if available].
 
 ## v1.0.42.1 - 2024-03-12
 ### Changed

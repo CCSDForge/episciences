@@ -171,7 +171,7 @@ try {
                 continue;
             }
 
-            $origin = new DateTime("now");
+            $origin = !$opts->date ? new DateTime("now") : date_create($opts->date);
 
             foreach ($recipients as $recipient) {
 

@@ -6,11 +6,15 @@
 
         <?php $locale = Episciences_Tools::getLocale(); ?>
 
-        <?php foreach ($this->articles['response']['docs'] as $doc) : ?>
-            <?php $title = $this->escape($doc['paper_title_t'][0]);
+        <?php foreach ($this->articles['response']['docs'] as $doc) :
+            $docLanguage = $doc['language_s'] ?? null;
+            $title = $docLanguage && isset($doc[sprintf("%s_paper_title_t", $docLanguage)]) ? $doc[sprintf("%s_paper_title_t", $docLanguage)] : ($doc['paper_title_t'][0] ?? '');
+            $abstract = $docLanguage && isset($doc[sprintf("%s_abstract_t", $docLanguage)]) ? $doc[sprintf("%s_abstract_t", $docLanguage)] : ($doc['abstract_t'][0] ?? '');
             $docUrl = '/' . $this->escape($doc['docid']);
-
             $localVolumeTitleIndex = $locale . '_volume_title_t';
+            ?>
+
+            <?php
 
             if (array_key_exists($localVolumeTitleIndex, $doc)) {
                 $volume = $doc[$localVolumeTitleIndex];
@@ -29,7 +33,7 @@
             ?>
             <div class="article-block">
                 <div class="article-title"><a
-                            href="<?= $docUrl ?>"><?= $title ?></a>
+                            href="<?= $docUrl ?>"><?= $this->escape($title) ?></a>
                 </div>
                 <div class="authors"><span class="authors-label"><?php echo $this->translate('Auteurs : ') ?></span>
                     <?php
@@ -79,10 +83,9 @@
                     </i></div>
                 <p style="text-align: justify" class="small">
                     <?php
-                    if (isset($doc['abstract_t'][0])) {
-                        $abstract = $this->escape($doc['abstract_t'][0]);
+                    if ($abstract !== '') {
                         echo '<br/><blockquote><small>';
-                        echo Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
+                        echo Ccsd_Tools_String::truncate($this->escape($abstract), ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
                         echo '</small></blockquote>';
                     }
                     ?>
