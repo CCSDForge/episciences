@@ -1007,18 +1007,23 @@ class Episciences_Mail_Reminder
 
         if ($this->getRepetition()) {
 
+            $repetition = $this->getRepetition();
+            $delay = $this->getDelay();
+
             $sql->where("SENDING_DATE < $date"); // RT#204568
 
             // interval between today and invitation date should be 0
-            $interval0 = new Zend_Db_Expr(
-                'TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date) = 0"
-            );
+            $cond1 = new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL $delay DAY), DATE($date)) = 0");
+
+            // Make sure the invitation is sent x days [$this->getDelay()] later RT#208269
+            $cond3 = new Zend_Db_Expr("DATEDIFF(DATE($date), DATE(SENDING_DATE)) > $delay");
+
             // interval should be divisible by "repetition"
-            $interval1 = new Zend_Db_Expr(
-                'MOD(TIMESTAMPDIFF(DAY, DATE_ADD(DATE(SENDING_DATE), INTERVAL ' . $this->getDelay() . " DAY), $date), " . $this->getRepetition() . ') = 0'
+            $cond2 = new Zend_Db_Expr(
+                "MOD(TIMESTAMPDIFF(DAY, $date, DATE_ADD(DATE(SENDING_DATE), INTERVAL $delay DAY)), $repetition) = 0"
             );
 
-            $sql->where($interval0 . ' OR ' . $interval1);
+            $sql->where("$cond1 OR ( $cond3 AND $cond2)");
 
 
         } else {
