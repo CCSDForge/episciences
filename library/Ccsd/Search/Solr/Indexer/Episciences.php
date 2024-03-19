@@ -115,7 +115,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $docToIndex = $this->addArrayOfMetaToDoc($dataToIndex, null, $docToIndex);
 
         $docToIndex = $this->indexTitles($paperData->getMetadata('title'), $docToIndex);
-        $docToIndex = $this->indexAbstracts($paperData->getAllAbstracts(), $docToIndex);
+        $docToIndex = $this->indexAbstracts($paperData->getAbstractsCleaned(), $docToIndex);
 
 
         $this->indexVolume($paperData->getVid(), $docToIndex);
