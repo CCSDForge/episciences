@@ -4080,7 +4080,7 @@ class Episciences_Paper
      * Get an array of abstracts
      * @return array
      */
-    private function getAbstractsCleaned()
+    public function getAbstractsCleaned()
     {
         $abstracts = [];
         foreach ($this->getAllAbstracts() as $locale => $abstract) {
