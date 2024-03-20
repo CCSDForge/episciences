@@ -281,7 +281,7 @@ class Ccsd_Website_Header
 				$content .= "<td align=\"" . $logo['align'] . "\">";
 				if ($logo['type'] == self::LOGO_IMG) {
 					if ($logo['img_href'] != "") {
-						$content .= "<a href=\"" . $logo['img_href'] . "\" border=\"0\" target=\"_blank\">";
+						$content .= "<a href=\"" . $logo['img_href'] . "\" border=\"0\" target=\"_self\">";
 					}
                     if (substr($logo['img'], 0, 4) != "/img") {
                         $logo['img'] = $this->_publicUrl . $logo['img'];
