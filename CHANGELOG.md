@@ -14,9 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+## v1.0.42.3 - 2024-03-20
 ### Fixed
-- [#446](https://github.com/CCSDForge/episciences/issues/446): Paper list drops some spaces in abstracts.
+- [#446](https://github.com/CCSDForge/episciences/issues/446) and [#448](https://github.com/CCSDForge/episciences/issues/448): Paper list drops some spaces in abstracts.
+- [#450](https://github.com/CCSDForge/episciences/issues/450): Fixed a server configuration issue for Theoretics
+
 ## v1.0.42.2 - 2024-03-19
 ### Fixed
 - System has immediately send automatic reminders 'Unanswered reviewer invitation' following the invitation emails to reviewers:
