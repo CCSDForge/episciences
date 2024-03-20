@@ -23,7 +23,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Format de donnée non reconnu');
             exit();
         }
-        $idMetaDataLastId = "";
+        $idMetaDataLastId = null;
         $arraySoftware = [];
         $versionHal = 0;
         // isolate hal id if url is given here
