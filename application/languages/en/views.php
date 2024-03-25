@@ -561,6 +561,7 @@ return [
     'Les commentaires et fichiers associés sont stockés, envoyés et affichés ici.' => 'Comments and files will be stored, sent and shown here.',
     "Commentaire de l'auteur / lettre d'accompagnement" => "Author's comments / Cover letter",
     "Votre commentaire a bien été envoyé." => "Your comment has been successfully sent.",
+    "Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau." => "There was an error submitting the form. Please check the form and submit again.",
     "Votre commentaire n'a pas pu être envoyé." => "Your comment could not be sent.",
     "Demande de modification :" => 'Revision request:',
     "Demandes de modifications" => 'Revision requests',
