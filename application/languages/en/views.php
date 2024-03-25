@@ -70,6 +70,7 @@ return [
     "et" => "and",
     'anonyme' => 'anonymous',
     'Archives' => 'Repositories',
+    'Année' => 'Year',
 
     // Messages d'erreur
     'Fichier introuvable' => 'File not found',
