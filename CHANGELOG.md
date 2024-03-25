@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
 
 ### Fixed
+- [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
 - getlinkdata script now get csl related to linked datasets scholexplorer
 ### Added
 - [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.

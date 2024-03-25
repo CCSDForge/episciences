@@ -603,8 +603,9 @@ class AdministratepaperController extends PaperDefaultController
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
                     $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
+
                 } else {
-                    $message = $this->view->translate("Votre commentaire n'a pas pu être envoyé.");
+                    $message = $this->view->translate("Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau.");
                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                 }
             }
