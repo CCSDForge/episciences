@@ -103,7 +103,6 @@ class getDoi extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
-        defineJournalConstants();
     }
 
     private function processReview(): void
