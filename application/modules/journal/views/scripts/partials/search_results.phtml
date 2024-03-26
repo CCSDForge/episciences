@@ -114,10 +114,10 @@ if ($this->results) {
         <?php endif; ?>
 
         <?php
-        $abstract = $this->escape($doc->abstract_t[0]);
-        if ($abstract) {
+        if (!empty($doc->abstract_t)) {
             echo '<blockquote class="abstract">';
-            echo Ccsd_Tools_String::truncate($abstract, 300, '&nbsp;[&hellip;]');
+            $abstract = Ccsd_Tools_String::truncate($doc->abstract_t[0], 300, '&nbsp;[&hellip;]');
+            echo $this->escape($abstract);
             echo '</blockquote>';
         }
         ?>
