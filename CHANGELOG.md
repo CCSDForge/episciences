@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
+- When a new version is transferred form HAL, the DOI assigned to the previous version is not restored in the new document.
 
 ## v1.0.42.3 - 2024-03-20
 ### Fixed
