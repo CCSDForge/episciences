@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
 
 ### Fixed
+- When a new version is transferred form HAL, the DOI assigned to the previous version is not restored in the new document.
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
 - getlinkdata script now get csl related to linked datasets scholexplorer
 ### Added
