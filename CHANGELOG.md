@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
 - CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
 - two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
+- If HAL, send coar notify message when updating metadata for published articles.
 
 ## v1.0.42.3 - 2024-03-20
 ### Fixed
