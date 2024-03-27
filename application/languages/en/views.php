@@ -2431,6 +2431,7 @@ return [
     "Chargement" => "Loading",
     "Masquer les références bibliographique" => "Hide bibliographical references",
     "Gérer les références bibliographiques" => "Manage the bibliographical references",
+    "Importer des références bibliographiques" => "Import bibliographical references",
 
     // relationships linked data
     "IsDerivedFrom" => "Is derived from",
