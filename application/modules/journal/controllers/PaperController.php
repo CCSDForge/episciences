@@ -3466,6 +3466,21 @@ class PaperController extends PaperDefaultController
                             trigger_error($e->getMessage(), E_USER_WARNING);
                         }
                     }
+
+                    if (
+                        (APPLICATION_ENV === ENV_PROD || APPLICATION_ENV === ENV_PREPROD) &&
+                        Episciences_Repositories::isFromHalRepository($paper->getRepoid()
+                        )) {
+                        try {
+                            $journal = Episciences_ReviewsManager::find(RVID);
+                            $journal->loadSettings();
+
+                            $notification = new Episciences_Notify_Hal($paper, $journal);
+                            $notification->announceEndorsement(); //send coar notify message
+                        } catch (Exception $exception) {
+                            trigger_error(sprintf("Publication Update Announcement to HAL failed: %s", $exception->getMessage()), E_USER_WARNING);
+                        }
+                    }
                 }
 
             } catch (Exception $e) {

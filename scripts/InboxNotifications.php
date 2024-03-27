@@ -463,7 +463,8 @@ class InboxNotifications extends Script
         $logDetails = isset($data['notifyPayloads']) ? ['notifyPayloads' => $data['notifyPayloads']] : [];
 
         $paper = new Episciences_Paper($data);
-        $paper->setWhen($paper->setSubmission_date()->getSubmission_date());
+        $paper->setSubmission_date();
+        $paper->setWhen();
 
         if ($paper->alreadyExists()) {
 
@@ -557,7 +558,7 @@ class InboxNotifications extends Script
             } elseif (!$isDebug) {
 
                 try {
-                    $isAdded = $this->saveNewVersion($context, $paper, $journal, $logDetails);
+                    $isAdded = $this->saveNewVersion($context, $data, $journal, $logDetails);
                 } catch (Exception $e) {
                     $this->displayCritical($e->getMessage());
                 }
@@ -969,7 +970,7 @@ class InboxNotifications extends Script
 
     /**
      * @param Episciences_Paper $context
-     * @param Episciences_Paper $newPaper
+     * @param array $newPaperData
      * @param Episciences_Review $journal
      * @param array $logDetails
      * @return bool
@@ -980,7 +981,7 @@ class InboxNotifications extends Script
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      */
-    private function saveNewVersion(Episciences_Paper $context, Episciences_Paper $newPaper, Episciences_Review $journal, array $logDetails = []): bool
+    private function saveNewVersion(Episciences_Paper $context, array $newPaperData, Episciences_Review $journal, array $logDetails = []): bool
     {
 
         $context->loadOtherVolumes();
@@ -1002,13 +1003,19 @@ class InboxNotifications extends Script
         $copyEditors = $context->getCopyEditors(true, true);
         $coAuthors = $context->getCoAuthors();
 
-
+        $newPaper = clone($context);
         $newPaper->setDocid(null);
         $newPaper->setPaperid($paperId);
-        $newPaper->setWhen($context->getSubmission_date());
+
+        $newPaper->setWhen();
+
+        $newPaper->setVersion($newPaperData['version']);
+        $newPaper->setRecord($newPaperData['record']);
+        $newPaper->setUid($newPaperData['uid']);
+        $newPaper->setRepoid($newPaperData['repoid']);
+        $newPaper->setIdentifier($newPaperData['identifier']);
 
         $isAssignedReviewers = $reassignReviewers && $reviewers;
-
 
         if ($isCopyEditingProcessStarted) {
             $status = ($newPaper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) ?

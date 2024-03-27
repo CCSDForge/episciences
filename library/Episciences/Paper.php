@@ -4428,7 +4428,7 @@ class Episciences_Paper
      */
     public function isReportsVisibleToAuthor(): bool
     {
-        return $this->isOwner() && ($this->canBeAssignedDOI() || $this->isRevisionRequested() || $this->isRefused());
+        return $this->isOwner() && ( in_array($this->getStatus(), self::$_noEditableStatus, true) || $this->canBeAssignedDOI() || $this->isRevisionRequested());
     }
 
     public function isAlreadyAcceptedWaitingForAuthorFinalVersion(): bool
