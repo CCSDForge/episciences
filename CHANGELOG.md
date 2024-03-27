@@ -20,14 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
 
 ### Fixed
-- When a new version is transferred form HAL, the DOI assigned to the previous version is not restored in the new document.
-- [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
 - getlinkdata script now get csl related to linked datasets scholexplorer
 ### Added
 - [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
 - CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
 - two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
 - If HAL, send coar notify message when updating metadata for published articles.
+
+## v1.0.42.4 - 2024-03-27
+### Fixed
+- [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
+- When a new version is transferred form HAL, the DOI assigned to the previous version is not restored in the new document.
+- [#449](https://github.com/CCSDForge/episciences/issues/449): related to [#169](https://github.com/CCSDForge/episciences/issues/169): the author does not see the review (visible to the administrator but not to the author) on a non-editable version.
 
 ## v1.0.42.3 - 2024-03-20
 ### Fixed
