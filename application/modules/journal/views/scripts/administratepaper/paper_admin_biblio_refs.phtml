@@ -3,12 +3,12 @@
         <div class="row">
             <div id="container-processing-biblio-refs" class="col-md-12">
                 <a id="epi-citation-app" class="btn btn-default btn-sm" target="_blank"
-                   href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?=$this->repoId?>&url=<?= $this->urlcallapibib ?>"
+                   href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?= $this->repoId ?>&url=<?= $this->urlcallapibib ?>"
                    style="margin-bottom: 8px;"><i
                             class="fas fa-edit"></i> <?= $this->translate('Gérer') ?>
-                </a>
-                <a id="epi-citation-app-enabled-public" style="margin-bottom: 8px;" class="btn btn-default btn-sm"
-                   target="_blank" href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?=$this->repoId?>&url=<?= $this->urlcallapibib ?>&exportbib=1">
+                </a> <a id="epi-citation-app-enabled-public" style="margin-bottom: 8px;" class="btn btn-default btn-sm"
+                        target="_blank"
+                        href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?= $this->repoId ?>&url=<?= $this->urlcallapibib ?>&exportbib=1">
                     <i class="fa-solid fa-file-import"></i>
                     <?= $this->translate('Import BibTeX') ?>
                 </a>
