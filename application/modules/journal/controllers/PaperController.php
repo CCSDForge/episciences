@@ -2499,7 +2499,7 @@ class PaperController extends PaperDefaultController
 
             $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid());
 
-            if($report->isCompleted()){
+            if ($report && $report->isCompleted()) {
                 return $result;
             }
         }
