@@ -16,5 +16,6 @@ echo "\$gitHash='$gitHashCommit';">>  'version.php';
 echo "\$gitBranch='$1';">>  'version.php';
 echo "\$deployDate='$deployDate';">>  'version.php';
 $PHP_BIN composer.phar install -o --no-dev
+yarn ## Running yarn with no command will run yarn install
 yarn encore production
 
