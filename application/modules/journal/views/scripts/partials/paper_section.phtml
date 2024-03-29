@@ -18,7 +18,7 @@ $sid = $this->article->getSid();
     <?php endif; ?>
 
     <?php // Bouton d'assignation à une rubrique ********************************************** ?>
-    <?php if ($this->isAllowed && !$this->article->isPublished() && !$this->article->isRefused() && !$this->article->isObsolete() && !$this->article->isDeleted()) : ?>
+    <?php if ($this->isAllowed && !$this->article->isRefused() && !$this->article->isObsolete() && !$this->article->isDeleted()) : ?>
 
         <?php if ($this->isPartial) : ?>
             <span class="pull-right" data-toggle="tooltip"

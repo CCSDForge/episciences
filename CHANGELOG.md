@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Changed
+- RT#209343: it is now possible to change the volume or section of a published article.
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
