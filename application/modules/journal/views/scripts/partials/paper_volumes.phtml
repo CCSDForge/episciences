@@ -14,7 +14,7 @@ $docId = $this->article->getDocid();
     <?php // master volume ********************************************** ?>
     <div id="master_volume_<?= $docId; ?>">
         <?php // master volume assignment button (check if paper is editable) ********************************************** ?>
-        <?php if (!$this->article->isPublished() &&
+        <?php if (
             !$this->article->isRefused() &&
             !$this->article->isRemoved() &&
             !$this->article->isObsolete() &&

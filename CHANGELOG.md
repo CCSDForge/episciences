@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ### Unreleased
+### Changed
+- RT#209343: it is now possible to change the volume or section of a published article.
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
 - Section translations now stored in database
 - DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
