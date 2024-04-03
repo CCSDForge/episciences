@@ -8,7 +8,6 @@
 
 	<xsl:template match="/record">
 
-        <xsl:variable name="volume" select="php:function('Ccsd_Tools::protectLatex', concat('volume_',episciences/volume,'_title'))"/>
         <xsl:variable name="review_code" select="php:function('Ccsd_Tools::protectLatex', string(episciences/review_code))" />
         <xsl:variable name="esURL" select="php:function('Ccsd_Tools::protectLatex', string(episciences/esURL))" />
 	
