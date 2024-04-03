@@ -8,7 +8,6 @@
 
 	<xsl:template match="/record">
 
-        <xsl:variable name="volume" select="php:function('Ccsd_Tools::protectLatex', concat('volume_',episciences/volume,'_title'))"/>
         <xsl:variable name="review_code" select="php:function('Ccsd_Tools::protectLatex', string(episciences/review_code))" />
         <xsl:variable name="esURL" select="php:function('Ccsd_Tools::protectLatex', string(episciences/esURL))" />
 	
@@ -57,9 +56,9 @@
 		<xsl:text>}},</xsl:text>
 		
 		<!-- VOLUME -->
-		<xsl:if test="episciences/volume and episciences/volume != ''">
-			<xsl:text>&#xA;  VOLUME = {{</xsl:text> 
-    		<xsl:value-of select="php:function('Ccsd_Tools::translate', $volume)" />
+		<xsl:if test="episciences/volumeName and episciences/volumeName != ''">
+			<xsl:text>&#xA;  VOLUME = {{</xsl:text>
+			<xsl:value-of select="episciences/volumeName"/>
     		<xsl:text>}},</xsl:text>
 		</xsl:if>
 		

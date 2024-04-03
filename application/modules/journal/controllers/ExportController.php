@@ -10,8 +10,7 @@ class ExportController extends Zend_Controller_Action
     const TEXT_XML_CHARSET_UTF_8 = 'text/xml; charset=utf-8';
 
     /**
-     * exporte en format BIBTEX
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|\Psr\Cache\InvalidArgumentException
      */
     public function jsonAction()
     {
