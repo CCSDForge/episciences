@@ -2430,8 +2430,8 @@ return [
     "Afficher les references bibliographiques" => "Show bibliographical references",
     "Chargement" => "Loading",
     "Masquer les références bibliographique" => "Hide bibliographical references",
-    "Gérer les références bibliographiques" => "Manage the bibliographical references",
-    "Importer des références bibliographiques" => "Import bibliographical references",
+    "Gérer" => "Manage",
+    "Import BibTeX" => "BibTeX import",
 
     // relationships linked data
     "IsDerivedFrom" => "Is derived from",
@@ -2458,6 +2458,7 @@ return [
     "HasPart" => "Has part",
     "references" => "References",
     "Références"=> "References",
+    "Références bibliographiques"=> "Bibliographic References",
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",
