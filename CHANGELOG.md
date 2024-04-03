@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
 - When a new version is transferred form HAL, the DOI assigned to the previous version is not restored in the new document.
 - [#449](https://github.com/CCSDForge/episciences/issues/449): related to [#169](https://github.com/CCSDForge/episciences/issues/169): the author does not see the review (visible to the administrator but not to the author) on a non-editable version.
+- [#458](https://github.com/CCSDForge/episciences/issues/458) [Bug Report] Bibtex export volume name is malformed
 
 ## v1.0.42.3 - 2024-03-20
 ### Fixed
