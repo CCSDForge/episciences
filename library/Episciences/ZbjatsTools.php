@@ -55,6 +55,12 @@ class Episciences_ZbjatsTools
                         $refsInfo[] = self::cslToJats($doiInfo);
                     }
                 }
+            } elseif (array_key_exists('csl',$refBib) && !isset($refBib['doi'])){
+                $csl = json_decode($refBib['csl'],true)['csl'];
+                $csl['published'] = $csl['issued'];
+                unset($csl['issued']);
+                $removeLayer = json_encode($csl);
+                $refsInfo[] = self::cslToJats($removeLayer);
             }
         }
         return $refsInfo;
@@ -87,13 +93,21 @@ class Episciences_ZbjatsTools
             $refToJatsFormat['authors'] = $refAuthors;
         }
         if ($cslJsonRefBib['type'] !== "article-journal" && $cslJsonRefBib['type'] !== "journal-article") {
-            if (!is_array($cslJsonRefBib["container-title"]) && $cslJsonRefBib["container-title"] !== "") {
+            if (isset($cslJsonRefBib["container-title"])
+                && !is_array($cslJsonRefBib["container-title"])
+                && $cslJsonRefBib["container-title"] !== "") {
                 $refToJatsFormat['source'] = $cslJsonRefBib["container-title"];
-            } else {
-                $refToJatsFormat['source'] = $cslJsonRefBib["publisher"];
             }
+            if (isset($cslJsonRefBib["title"])){
+                $refToJatsFormat['source'] = $cslJsonRefBib["title"];
+            }
+//            elseif(isset($cslJsonRefBib["publisher"])) {
+//                $refToJatsFormat['source'] = $cslJsonRefBib["publisher"];
+//            }
         } else {
-            $refToJatsFormat['source'] = $cslJsonRefBib["container-title"];
+            if (isset($cslJsonRefBib["container-title"])){
+                $refToJatsFormat['source'] = $cslJsonRefBib["container-title"];
+            }
             if (!is_array($cslJsonRefBib["title"])) {
                 $refToJatsFormat['article-title'] = $cslJsonRefBib["title"];
             }
