@@ -32,7 +32,11 @@ class Episciences_BibliographicalsReferencesTools
                         $formattedCitations[$i]['doi'] = $refInfo;
                     }
                 }
+                if (array_key_exists('csl',$citation)){
+                    $formattedCitations[$i]['csl'] = $citation['csl'];
+                }
                 $i++;
+
             }
         }
         return $formattedCitations;
