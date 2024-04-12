@@ -30,7 +30,7 @@ class DefaultController extends Zend_Controller_Action
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    protected function requestingAnUnpublishedFile(Episciences_Paper &$paper): void
+    protected function requestingAnUnpublishedFile(Episciences_Paper $paper): void
     {
 
         if ($this->isRestrictedAccess($paper)) {
@@ -48,12 +48,14 @@ class DefaultController extends Zend_Controller_Action
                     return;
                 }
 
-                if($publishedPaper instanceof Episciences_Paper){
-                    $paper = $publishedPaper;
-                    return;
-                }
+                Episciences_Tools::header('HTTP/1.1 301 Moved Permanently', 301);
+                $location = sprintf('/%s/pdf', $publishedPaper->getDocid());
+                header('Location: ' . $location);
+                exit();
 
-            } else if (!Episciences_Auth::isLogged()) {
+            }
+
+            if (!Episciences_Auth::isLogged()) {
                 $this->redirect('/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid());
             }
 
