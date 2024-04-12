@@ -30,20 +30,26 @@ class DefaultController extends Zend_Controller_Action
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    protected function requestingAnUnpublishedFile(Episciences_Paper $paper): void
+    protected function requestingAnUnpublishedFile(Episciences_Paper &$paper): void
     {
 
         if ($this->isRestrictedAccess($paper)) {
 
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $id = Episciences_PapersManager::getPublishedPaperId($paperId);
-            if ($id !== 0) {
+            $publishedId = Episciences_PapersManager::getPublishedPaperId($paperId);
 
-                $publishedPaper = Episciences_PapersManager::get($id); // published version
+            if ($publishedId !== 0) {
+
+                $publishedPaper = Episciences_PapersManager::get($publishedId, false);
 
                 if (!$publishedPaper) {
                     Episciences_Tools::header('HTTP/1.1 404 Not Found');
                     $this->renderScript('index/notfound.phtml');
+                    return;
+                }
+
+                if($publishedPaper instanceof Episciences_Paper){
+                    $paper = $publishedPaper;
                     return;
                 }
 
