@@ -104,7 +104,7 @@ class ExportController extends Zend_Controller_Action
     {
 
         if (!$paper->isPublished() && !Episciences_Auth::isLogged()) {
-            $paperId = $paper->getPaperid() ? $paper->getPaperid() : $paper->getDocid();
+            $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
 
             if ($id != 0) {

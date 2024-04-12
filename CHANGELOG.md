@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Export Crossref => the reference is added even if doi is included
 
 ### Fixed
+- [#457](https://github.com/CCSDForge/episciences/issues/453): DOAJ fullText record gives a url that can't be accessed.
 - getlinkdata script now get csl related to linked datasets scholexplorer
 ### Added
 - [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.

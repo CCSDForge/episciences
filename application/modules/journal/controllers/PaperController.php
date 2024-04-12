@@ -31,6 +31,9 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        $this->requestingAnUnpublishedFile($paper);
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
+
         $pdf_name = null;
         $url = null;
         $count = 0;
@@ -66,9 +69,7 @@ class PaperController extends PaperDefaultController
         }
 
 
-        $this->requestingAnUnpublishedFile($paper);
 
-        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
         $mainDocumentContent = $this->getMainDocumentContent($paper, $url);
 
@@ -145,7 +146,6 @@ class PaperController extends PaperDefaultController
         }
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
-
         $this->updatePaperStats($paper);
         $paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
 
