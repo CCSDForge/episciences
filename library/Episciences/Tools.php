@@ -947,12 +947,14 @@ class Episciences_Tools
 
     /**
      * Spécifie l'en-tête HTTP string lors de l'envoi des fichiers HTML
-     * @param $str
+     * @param string $str
+     * @param int $responseCode
+     * @param bool $replace
      */
 
-    public static function header($str)
+    public static function header(string $str,int $responseCode = 0, bool $replace = true): void
     {
-        header($str);
+        header($str, $replace, $responseCode);
     }
 
     /***
