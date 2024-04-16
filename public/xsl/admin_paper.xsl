@@ -100,7 +100,7 @@
                     </xsl:if>
                 </h2>
 
-                <xsl:if test="episciences/paperId and episciences/paperId != 0">
+                <xsl:if test="episciences/paperId and episciences/paperId != ''">
                     <xsl:value-of select="episciences/review_code"/>:<xsl:value-of select="episciences/paperId"/> -
                 </xsl:if>
 
@@ -109,7 +109,7 @@
                     <xsl:value-of
                             select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/>
                 </xsl:if>
-                <xsl:if test="episciences/volume and episciences/volume != 0">,
+                <xsl:if test="episciences/volume and episciences/volume != ''">,
                     <xsl:value-of select="episciences/volumeName"/>
                 </xsl:if>
 
@@ -178,18 +178,17 @@
                     </div>
                 </xsl:if>
 
-                <xsl:if test="episciences/volume and episciences/volume != 0">
+                <xsl:if test="episciences/volume and episciences/volume != ''">
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Volume : ')"/>
                         <xsl:value-of select="episciences/volumeName"/>
                     </div>
                 </xsl:if>
 
-                <xsl:if test="episciences/section and episciences/section != 0">
+                <xsl:if test="episciences/section and episciences/section != ''">
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Rubrique : ')"/>
-                        <xsl:value-of
-                                select="php:function('Ccsd_Tools::translate', concat('section_',episciences/section,'_title'))"/>
+                        <xsl:value-of select="episciences/sectionName"/>
                     </div>
                 </xsl:if>
 

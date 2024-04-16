@@ -1045,7 +1045,7 @@ class Episciences_PapersManager
             'label' => 'Langue par défaut',
             'class' => 'form-control',
             'style' => 'width:auto;',
-            'multiOptions' =>  ['en' => 'Anglais', 'fr' => 'Français'],
+            'multiOptions' => ['en' => 'Anglais', 'fr' => 'Français'],
         ]);
 
         $form->addElement('button', 'next', [
@@ -2444,7 +2444,6 @@ class Episciences_PapersManager
         }
 
         $urlHelper = new Zend_View_Helper_Url();
-        $dateHelper = new Episciences_View_Helper_Date();
 
         $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
         $url = $site . $urlHelper->url([
@@ -2464,7 +2463,7 @@ class Episciences_PapersManager
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
-            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $dateHelper::Date($paper->getSubmission_date(), $locale),
+            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
             Episciences_Mail_Tags::TAG_PAPER_URL => $url,
             Episciences_Mail_Tags::TAG_PAPER_RATINGS => $ratings_string,
             Episciences_Mail_Tags::TAG_PAPER_REPO_URL => $paper->getDocUrl(),
@@ -2477,8 +2476,37 @@ class Episciences_PapersManager
             if ($name === 'waitingAuthorFormatting') {
                 $paperSubmissionDate = date('Y-m-d', strtotime($paper->getSubmission_date())); // Current version
                 $doi = $paper->getDoi();
+
                 $volumeId = $paper->getVid();
-                $volume = Episciences_VolumesManager::find($volumeId);
+                $sectionId = $paper->getSid();
+                $volume = null;
+                $section = null;
+                $sectionName = '';
+                $volumeName = '';
+                $volBiblioRef = '';
+
+                if ($volumeId) {
+                    $volume = Episciences_VolumesManager::find($volumeId);
+                    if ($volume) {
+                        $volBiblioRef = !$volume->getBib_reference() ? $translator->translate('Aucune', $locale) : $volume->getBib_reference();
+                        $volumeName = $volume->getName($locale);
+                    }
+                } else {
+                    $volumeName = $translator->translate('Hors volume', $locale);
+                    $volBiblioRef = $translator->translate('Aucune', $locale);
+                }
+
+
+
+                if ($sectionId) {
+                    $section = Episciences_SectionsManager::find($sectionId);
+                    if ($section) {
+                        $sectionName = $section->getNameKey($locale);
+                    }
+                } else {
+                    $sectionName = $translator->translate('Hors rubrique', $locale);
+                }
+
                 $lastRevisionDateIso = date('Y-m-d', strtotime($paper->getWhen())); // latest version
                 $revisionsDate = $paper->buildRevisionDates($locale); // all versions
                 $revisionsDateIso = $paper->buildRevisionDates(); // all versions in ISO format
@@ -2486,21 +2514,21 @@ class Episciences_PapersManager
                 $acceptanceDate = $paper->getAcceptanceDate();
 
                 $addTags = array_merge($defaultTags, [
-                    Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => $dateHelper::Date($paperSubmissionDate, $locale),
+                    Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paperSubmissionDate, $locale),
                     Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE_ISO => $paperSubmissionDate,
                     Episciences_Mail_Tags::TAG_LAST_REVISION_DATE_ISO => $lastRevisionDateIso,
-                    Episciences_Mail_Tags::TAG_LAST_REVISION_DATE => $dateHelper::Date($lastRevisionDateIso, $locale),
+                    Episciences_Mail_Tags::TAG_LAST_REVISION_DATE => Episciences_View_Helper_Date::Date($lastRevisionDateIso, $locale),
                     Episciences_Mail_Tags::TAG_REVISION_DATES => !empty($revisionsDate) ? $revisionsDate : $translator->translate('Aucune', $locale),
                     Episciences_Mail_Tags::TAG_REVISION_DATES_ISO => !empty($revisionsDate) ? $revisionsDateIso : $translator->translate('Aucune', $locale),
-                    Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE => $acceptanceDate ? $dateHelper::Date($acceptanceDate, $locale) : $translator->translate('Aucune', $locale),
+                    Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE => $acceptanceDate ? Episciences_View_Helper_Date::Date($acceptanceDate, $locale) : $translator->translate('Aucune', $locale),
                     Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE_ISO => $acceptanceDate ? date('Y-m-d', strtotime($acceptanceDate)) : $translator->translate('Aucune', $locale),
                     Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_DOI => $doi ?: $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_VOLUME_ID => $volumeId,
-                    Episciences_Mail_Tags::TAG_VOLUME_NAME => $paper->buildVolumeName($locale),
-                    Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => ($volume && $volume->getBib_reference()) ?: $translator->translate('Aucune', $locale),
+                    Episciences_Mail_Tags::TAG_VOLUME_NAME => $volumeName,
+                    Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volBiblioRef,
                     Episciences_Mail_Tags::TAG_SECTION_ID => $paper->getSid(),
-                    Episciences_Mail_Tags::TAG_SECTION_NAME => $paper->buildSectionName($locale),
+                    Episciences_Mail_Tags::TAG_SECTION_NAME => $sectionName,
                     Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME => !empty($paperPosition) ? $paperPosition : $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_CURRENT_YEAR => date('Y'),
                     Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL => $site . '/public/' . RVCODE . '_episciences.zip',
@@ -2518,7 +2546,7 @@ class Episciences_PapersManager
                 $addTags = $defaultTags;
             }
 
-            $tags = array_merge($tags, $addTags);
+            $tags = [...$tags, ...$addTags];
 
             $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
             $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);
@@ -2690,7 +2718,7 @@ class Episciences_PapersManager
 
         } else {
             // add all datasets for Hal repository
-            $affectedRows += Episciences_Submit::datasetsProcessing($docId);
+            $affectedRows += Episciences_Submit::datasetsProcessing($paper);
 
         }
 

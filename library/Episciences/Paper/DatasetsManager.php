@@ -171,7 +171,7 @@ class Episciences_Paper_DatasetsManager
 
 
     /**
-     * @param array | Episciences_Paper_Dataset[] $datasets
+     * @param array $datasets
      * @return int
      */
     public static function insert(array $datasets = []): int
@@ -306,9 +306,20 @@ class Episciences_Paper_DatasetsManager
      * @param int $docId
      * @param string $name
      * @param string $value
+     * @param string $code
+     * @param int|null $metaTextId
+     * @param array $options
      * @return int
      */
-    public static function addDatasetFromSubmission(int $docId,string $name, string $value, $metaTextId = "", string $code): int {
+    public static function addDatasetFromSubmission(
+        int    $docId,
+        string $name,
+        string $value,
+        string $code,
+        int    $metaTextId = null,
+        array  $options = []
+    ): int
+    {
         $dataset = new Episciences_Paper_Dataset();
         $dataset->setDocId($docId);
         $dataset->setCode($code);
@@ -336,7 +347,7 @@ class Episciences_Paper_DatasetsManager
                 break;
             case 'url':
                 $dataset->setName("software");
-                if ($code === 'dataset' || $code === 'publication'){
+                if ($code === 'dataset' || $code === 'publication') {
                     $dataset->setName("url");
                 }
                 $dataset->setLink("url");
@@ -345,9 +356,9 @@ class Episciences_Paper_DatasetsManager
                 break;
         endswitch;
         $dataset->setValue($value);
-        $dataset->setRelationship(self::RELATION_TYPE_SOFTWARE);
-        $dataset->setSourceId((int)Episciences_Repositories::EPI_USER_ID);
-        if ($metaTextId !== '') {
+        $dataset->setRelationship($options['relationship'] ?? self::RELATION_TYPE_SOFTWARE);
+        $dataset->setSourceId($options['sourceId'] ?? (int)Episciences_Repositories::EPI_USER_ID);
+        if ($metaTextId !== null) {
             $dataset->setIdPaperDatasetsMeta($metaTextId);
         }
         return self::insert([$dataset]);

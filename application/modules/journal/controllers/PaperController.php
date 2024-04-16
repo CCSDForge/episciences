@@ -1,7 +1,5 @@
 <?php
 
-use Episciences\Notify\Headers;
-use Episciences\Signposting\Headers as spHeaders;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -12,6 +10,8 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
  */
 class PaperController extends PaperDefaultController
 {
+    use Episciences\Notify\Headers;
+    use Episciences\Signposting\Headers;
     /**
      *  display paper pdf
      * @throws GuzzleException
@@ -99,21 +99,23 @@ class PaperController extends PaperDefaultController
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
             $this->_helper->layout()->disableLayout();
             $this->_helper->viewRenderer->setNoRender();
-            echo Headers::addInboxAutodiscoveryLDN();
+            echo $this->addInboxAutodiscoveryLDN();
             exit;
         }
 
         $this->view->doctype(Zend_View_Helper_Doctype::XHTML1_RDFA);
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = $request->getParam('id');
+        $docId = (int)$request->getParam('id');
+
         $zIdentifier = $request->get('z-identifier');
 
         $papersManager = new Episciences_PapersManager();
-        $paper = $papersManager::get($docId);
+
+        $paper = $papersManager::get($docId, RVID);
 
         // check if paper exists
-        if (!$paper || $paper->getRvid() !== RVID) {
+        if (!$paper) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
             return;
@@ -149,12 +151,12 @@ class PaperController extends PaperDefaultController
 
 
         // INBOX autodiscovery @see https://www.w3.org/TR/ldn/#discovery
-        $headerLinks[] = Headers::getInboxHeaderString();
+        $headerLinks[] = $this->getInboxHeaderString();
 
         $paperHasDoi = $paper->hasDoi();
         $paperDoi = $paper->getDoi();
 
-        $allHeaderLinks = spHeaders::getPaperHeaderLinks($paperHasDoi, $paperUrl, $paperDoi, $headerLinks);
+        $allHeaderLinks = self::getPaperHeaderLinks($paperHasDoi, $paperUrl, $paperDoi, $headerLinks);
 
         $this->getResponse()->setHeader('Link', implode(', ', $allHeaderLinks));
 
@@ -2337,7 +2339,7 @@ class PaperController extends PaperDefaultController
         }
 
         // Check paper status
-        $paperStatus = $this->checkPaperStatus($paper);
+        $paperStatus = $this->checkPaperStatus($paper, ['fromAction' => 'rating']);
 
         if (!empty($paperStatus) && !array_key_exists('displayNotice', $paperStatus)) {
             $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($paperStatus['message']);
@@ -2479,16 +2481,28 @@ class PaperController extends PaperDefaultController
 
     /**
      * @param Episciences_Paper $paper
+     * @param array $option
      * @return array
      * @throws Zend_Exception
      */
 
-    private function checkPaperStatus(Episciences_Paper $paper): array
+    private function checkPaperStatus(Episciences_Paper $paper, array $option = []): array
     {
 
         $translator = Zend_Registry::get('Zend_Translate');
         $result = [];
         $url = '/' . $paper->getDocid();
+
+        $fromRating = isset($option['fromAction']) && $option['fromAction'] === 'rating';
+
+        if ($fromRating) {
+
+            $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid());
+
+            if ($report && $report->isCompleted()) {
+                return $result;
+            }
+        }
 
         // paper has been deleted
         if ($paper->isDeleted() || $paper->isRemoved()) {
@@ -2504,6 +2518,7 @@ class PaperController extends PaperDefaultController
             $result['message'] = $translator->translate("Cet article a été refusé, il n'est plus nécessaire de le relire.");
             $result['url'] = $url;
         } elseif ($paper->isObsolete()) { // paper is obsolete: display a notice
+
             $latestDocId = $paper->getLatestVersionId();
             $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
             $result['displayNotice'] = true;
@@ -3449,6 +3464,21 @@ class PaperController extends PaperDefaultController
                             Ccsd_Search_Solr_Indexer::addToIndexQueue([$docId], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                         } catch (Exception $e) {
                             trigger_error($e->getMessage(), E_USER_WARNING);
+                        }
+                    }
+
+                    if (
+                        (APPLICATION_ENV === ENV_PROD || APPLICATION_ENV === ENV_PREPROD) &&
+                        Episciences_Repositories::isFromHalRepository($paper->getRepoid()
+                        )) {
+                        try {
+                            $journal = Episciences_ReviewsManager::find(RVID);
+                            $journal->loadSettings();
+
+                            $notification = new Episciences_Notify_Hal($paper, $journal);
+                            $notification->announceEndorsement(); //send coar notify message
+                        } catch (Exception $exception) {
+                            trigger_error(sprintf("Publication Update Announcement to HAL failed: %s", $exception->getMessage()), E_USER_WARNING);
                         }
                     }
                 }

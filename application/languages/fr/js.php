@@ -9,7 +9,7 @@ return [
     'copy-editor' => "Préparateur de copie",
     'all' => "toutes",
     // Invitation deadline (review settings)
-    'day' => "jours(s)",
+    'day' => "jour(s)",
     'week' => 'semaine(s)',
     'month' => 'mois'
 ];

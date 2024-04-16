@@ -1,0 +1,20 @@
+<?php if ($this->submissionAcceptanceTime || $this->submissionPublicationTime) : ?>
+    <div>
+        <?php if ($this->submissionAcceptanceTime): ?>
+
+            <li>
+                <?= ucfirst($this->translate('délai soumission-acceptation')) ?>
+                <code><?= $this->submissionAcceptanceTime ?></code>&nbsp<?= $this->translate(strtolower($this->submissionAcceptanceTimeUnit)) ?>
+            </li>
+
+        <?php endif; ?>
+
+        <?php if ($this->submissionPublicationTime): ?>
+
+            <li>
+                <?= ucfirst($this->translate('délai soumission-publication')) ?>
+                <code><?= $this->submissionPublicationTime ?></code>&nbsp<?= $this->translate(strtolower($this->submissionPublicationTimeUnit)) ?>
+            </li>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>

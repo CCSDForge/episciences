@@ -20,7 +20,7 @@ if (Episciences_Auth::isLogged()) {
 }
 
 $socialCoAuthorList = [];
-if (substr_count($contributorSocialMedia, "@") === 1) {
+if ($contributorSocialMedia && substr_count($contributorSocialMedia, "@") === 1) {
     $url = "https://twitter.com/intent/tweet/?text=".$title;
     if (!is_null($contributorSocialMedia)) {
         foreach ($coAuthors as $coAuthorInfo) {
@@ -74,7 +74,7 @@ if (substr_count($contributorSocialMedia, "@") === 1) {
                     </div>
                 </div>
             </a>
-            <?php if (substr_count($loggedUserSocialMedia, "@") > 1) :
+            <?php if ($loggedUserSocialMedia && substr_count($loggedUserSocialMedia, "@") > 1) :
                 $loggedUserInfo = Episciences_Tools::getMastodonSeparatedInfo($loggedUserSocialMedia);
                 ?>
                 <!-- Sharingbutton Mastodon -->

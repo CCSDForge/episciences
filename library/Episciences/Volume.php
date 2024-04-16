@@ -551,7 +551,7 @@ class Episciences_Volume
                 'FILE' => $data['FILE']
             ];
 
-            Episciences_VolumesManager::dataProcess($values, 'decode', ['title', 'content']);
+            Episciences_VolumesAndSectionsManager::dataProcess($values, 'decode', ['title', 'content']);
 
             $metadata = new Episciences_Volume_Metadata($values);
             $allMetadata[$metadata->getId()] = $metadata;
@@ -793,7 +793,7 @@ class Episciences_Volume
         $values['titles'] = $this->preProcess($this->getTitles());
         $values['descriptions'] = $this->preProcess($this->getDescriptions());
 
-        Episciences_VolumesManager::dataProcess($values);
+        Episciences_VolumesAndSectionsManager::dataProcess($values);
 
         try {
             $affectedRows = $this->_db->insert(T_VOLUMES, $values);
@@ -1219,7 +1219,7 @@ class Episciences_Volume
         $data['titles'] = $this->preProcess($this->getTitles());
         $data['descriptions'] = $this->preProcess($this->getDescriptions());
 
-        Episciences_VolumesManager::dataProcess($data);
+        Episciences_VolumesAndSectionsManager::dataProcess($data);
 
         try {
             return $this->_db->update(T_VOLUMES, $data, $where);

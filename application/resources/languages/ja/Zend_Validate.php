@@ -27,18 +27,15 @@ return array(
     // Zend_Validate_Alnum
     "Invalid type given. String, integer or float expected" => "不正な形式です。文字列、整数もしくは小数が期待されています",
     "'%value%' contains characters which are non alphabetic and no digits" => "'%value%' にアルファベットと数字以外の文字が含まれています",
-    "'%value%' is an empty string" => "'%value%' は空の文字列です",
 
     // Zend_Validate_Alpha
     "Invalid type given. String expected" => "不正な形式です。文字列が期待されています",
     "'%value%' contains non alphabetic characters" => "'%value%' にアルファベット以外の文字が含まれています",
-    "'%value%' is an empty string" => "'%value%' は空の文字列です",
 
     // Zend_Validate_Barcode
     "'%value%' failed checksum validation" => "'%value%' はチェックサムが一致していません",
     "'%value%' contains invalid characters" => "'%value%' は不正な文字を含んでいます",
     "'%value%' should have a length of %length% characters" => "'%value%' は %length% 文字である必要があります",
-    "Invalid type given. String expected" => "不正な形式です。文字列が期待されています",
 
     // Zend_Validate_Between
     "'%value%' is not between '%min%' and '%max%', inclusively" => "'%value%' は '%min%' 以上 '%max%' 以下ではありません",
@@ -55,7 +52,6 @@ return array(
     // Zend_Validate_CreditCard
     "%value%' seems to contain an invalid checksum" => "'%value%' は不正なチェックサムを含んでいるようです",
     "'%value%' must contain only digits" => "'%value%' は数値だけで構成される必要があります",
-    "Invalid type given. String expected" => "不正な形式です。文字列が期待されています",
     "'%value%' contains an invalid amount of digits" => "'%value%' は不正な桁数です",
     "'%value%' is not from an allowed institute" => "'%value%' は認可機関から許可されていません",
     "%value%' seems to be an invalid creditcard number" => "'%value%' は不正なクレジットカード番号を含んでいるようです",
@@ -93,23 +89,18 @@ return array(
     // Zend_Validate_File_Crc32
     "File '%value%' does not match the given crc32 hashes" => "ファイル '%value%' は crc32 ハッシュ値と一致しませんでした",
     "A crc32 hash could not be evaluated for the given file" => "ファイルに crc32 ハッシュ値が見つかりませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_ExcludeExtension
     "File '%value%' has a false extension" => "ファイル '%value%' は誤った拡張子です",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_ExcludeMimeType
     "File '%value%' has a false mimetype of '%type%'" => "ファイル '%value%' は誤った mimetype '%type%' です",
-    "The mimetype of file '%value%' could not be detected" => "ファイル '%value%' の mimetype が見つかりませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_Exists
     "File '%value%' does not exist" => "ファイル '%value%' は存在しません",
 
     // Zend_Validate_File_Extension
     "File '%value%' has a false extension" => "ファイル '%value%' は誤った拡張子です",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_FilesSize
     "All files in sum should have a maximum size of '%max%' but '%size%' were detected" => "全てのファイルの合計は最大 '%max%' より小さい必要があります。しかしファイルサイズは '%size%' でした",
@@ -119,7 +110,6 @@ return array(
     // Zend_Validate_File_Hash
     "File '%value%' does not match the given hashes" => "ファイル '%value%' は設定されたハッシュ値と一致しませんでした",
     "A hash could not be evaluated for the given file" => "渡されたファイルのハッシュ値を評価できませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_ImageSize
     "Maximum allowed width for image '%value%' should be '%maxwidth%' but '%width%' detected" => "画像 '%value%' の横幅は '%width%' でした。横幅は最大 '%maxwidth%' まで許されています",
@@ -127,27 +117,20 @@ return array(
     "Maximum allowed height for image '%value%' should be '%maxheight%' but '%height%' detected" => "画像 '%value%' の高さは '%height%' でした。高さは最大 '%maxheight%' まで許されています",
     "Minimum expected height for image '%value%' should be '%minheight%' but '%height%' detected" => "画像 '%value%' の高さは '%height%' でした。高さは最小 '%minheight%' 以上である必要があります",
     "The size of image '%value%' could not be detected" => "画像 '%value%' の大きさを取得できませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_IsCompressed
     "File '%value%' is not compressed, '%type%' detected" => " '%type%' が見つかりました。ファイル '%value%' は圧縮されていません",
-    "The mimetype of file '%value%' could not be detected" => "ファイル '%value%' の Mimetype は見つかりませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_IsImage
     "File '%value%' is no image, '%type%' detected" => "ファイル '%value%' は画像ではありません。 '%type%' です",
-    "The mimetype of file '%value%' could not be detected" => "ファイル '%value%' の Mimetype は見つかりませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_Md5
     "File '%value%' does not match the given md5 hashes" => "ファイル '%value%' は md5 ハッシュ値と一致していません",
     "A md5 hash could not be evaluated for the given file" => "渡されたファイルの md5 ハッシュ値を評価できませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_MimeType
     "File '%value%' has a false mimetype of '%type%'" => "ファイル '%value%' は誤った MimeType '%type%' です",
     "The mimetype of file '%value%' could not be detected" => "ファイル '%value%' の Mimetype は見つかりませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_NotExists
     "File '%value%' exists" => "ファイル '%value%' は存在しています",
@@ -155,12 +138,10 @@ return array(
     // Zend_Validate_File_Sha1
     "File '%value%' does not match the given sha1 hashes" => "ファイル '%value%' は sha1 ハッシュ値と一致していません",
     "A sha1 hash could not be evaluated for the given file" => "渡されたファイルの sha1 ハッシュ値を評価できませんでした",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_Size
     "Maximum allowed size for file '%value%' is '%max%' but '%size%' detected" => "ファイルサイズは '%size%' です。ファイル '%value%' のサイズは最大 '%max%' まで許されています",
     "Minimum expected size for file '%value%' is '%min%' but '%size%' detected" => "ファイルサイズは '%size%' です。ファイル '%value%' のサイズは最小 '%min%' 以上必要です",
-    "File '%value%' is not readable or does not exist" => "ファイル '%value%' は読み込めないかもしくは存在しません",
 
     // Zend_Validate_File_Upload
     "File '%value%' exceeds the defined ini size" => "ファイル '%value%' は ini で定義されたサイズを超えています",
@@ -244,11 +225,9 @@ return array(
 
     // Zend_Validate_Sitemap_Changefreq
     "'%value%' is no valid sitemap changefreq" => " '%value%' は正しいサイトマップの更新頻度ではありません",
-    "Invalid type given. String expected" => "不正な形式です。文字列が期待されています",
 
     // Zend_Validate_Sitemap_Lastmod
     "'%value%' is no valid sitemap lastmod" => " '%value%' は正しいサイトマップの最終更新日ではありません",
-    "Invalid type given. String expected" => "不正な形式です。文字列が期待されています",
 
     // Zend_Validate_Sitemap_Loc
     "'%value%' is no valid sitemap location" => " '%value%' は正しいサイトマップの位置ではありません",

@@ -8,15 +8,15 @@ trait Headers
     /**
      * @return void
      */
-    public static function addInboxAutodiscoveryHeader(): void
+    final public function addInboxAutodiscoveryHeader(): void
     {
-        header(self::getInboxHeaderString('Link: '));
+        header($this->getInboxHeaderString('Link: '));
     }
 
     /**
      * @return string
      */
-    public static function addInboxAutodiscoveryLDN(): string
+    final public  function addInboxAutodiscoveryLDN(): string
     {
         $ldJson['@context'] = "http://www.w3.org/ns/ldp";
         $ldJson['inbox'] = INBOX_URL;
@@ -35,7 +35,7 @@ trait Headers
      * @param string $headerString
      * @return string
      */
-    public static function getInboxHeaderString(string $headerString = ''): string
+    final public function getInboxHeaderString(string $headerString = ''): string
     {
         return sprintf('%s<%s>; rel="http://www.w3.org/ns/ldp#inbox"', $headerString, INBOX_URL);
     }

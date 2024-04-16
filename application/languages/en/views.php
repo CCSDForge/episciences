@@ -1103,7 +1103,6 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_ANSWER] => "response for clarification",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED] => "Copy editing: final version submitted",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST] => 'Copy editing: the formatting by the journal has been completed, awaiting the final version',
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => 'Copy editing: awaiting formatting by the author',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_ANSWER] => 'Copy editing: final version submitted, awaiting validation',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST] => 'Copy editing: the formatted version is accepted, waiting for the final version',
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_REQUEST] => "revision request",
@@ -1160,6 +1159,7 @@ return [
     "Vous n'êtes pas connecté" => "You are not logged in",
     "Les modifications sont sauvegardées." => "Modifications have been saved.",
     "Ce volume a été supprimé" => "This volume has been deleted",
+    "Cette rubrique a été supprimée" => "This section has been removed",
 
     // DEMO
     "Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes." => "On this demo environment, you cannot delete any accounts.",
@@ -1953,6 +1953,8 @@ return [
     'publiés' => 'published',
     "Vous essayez de consulter les indicateurs statistiques pour l'année" => "You are trying to consult the statistical indicators for the year",
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
+    'délai soumission-acceptation' => 'Submission-acceptance time',
+    'délai soumission-publication' => 'Submission-publication time',
     // datasets
     'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',
@@ -1968,12 +1970,15 @@ return [
     'Suppression de la donnée liée bien prise en compte' => 'Linked data has been deleted successfully',
     'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the linked data?',
     'Format de donnée non reconnu' => 'Data format not recognised',
+    "L'archive ArXiv ne contient pas de logiciel" => "The ArXiv archive does not contain any software",
+    "L'identifiant HAL n'est pas de type logiciel" => 'The HAL identifier is not of software type',
     "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing linked data',
     'software' => 'Software',
     'doi' => 'DOI',
     'handle' => 'Handle',
     'hal' => 'HAL',
     'Modification non autorisé' => "modification not allowed",
+    "Échec de l'ajout de la donnée liée. Veuillez réessayer." => "Failed to add linked data. Please try again.",
     //COI
     "Votre réponse à bien été enregistrée." => "Your answer has been saved.",
     "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",
@@ -2387,7 +2392,6 @@ return [
     "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
-    'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
     'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
     'mais </code>%u</code> a été détecté.' => 'but <code>%u</code> detected.',
 
@@ -2426,7 +2430,8 @@ return [
     "Afficher les references bibliographiques" => "Show bibliographical references",
     "Chargement" => "Loading",
     "Masquer les références bibliographique" => "Hide bibliographical references",
-    "Gérer les références bibliographiques" => "Manage the bibliographical references",
+    "Gérer" => "Manage",
+    "Import BibTeX" => "BibTeX import",
 
     // relationships linked data
     "IsDerivedFrom" => "Is derived from",
@@ -2453,6 +2458,7 @@ return [
     "HasPart" => "Has part",
     "references" => "References",
     "Références"=> "References",
+    "Références bibliographiques"=> "Bibliographic References",
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",

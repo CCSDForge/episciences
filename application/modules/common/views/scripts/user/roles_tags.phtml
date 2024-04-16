@@ -25,7 +25,7 @@
         echo '<li>' . $this->translate(["Rédacteur de la rubrique : ", "Rédacteur des rubriques : ", count($this->editorSections)]) . '</li>';
 
         foreach ($this->editorSections as $section) {
-            echo '<li><a href="' . $this->url(['controller' => 'section', 'action' => 'view', 'id' => $section->getSid()]) . '">' . $this->translate('section_' . $section->getSid() . '_title', null, true) . '</a></li>';
+            echo '<li><a href="' . $this->url(['controller' => 'section', 'action' => 'view', 'id' => $section->getSid()]) . '">' . $this->escape($section->getNameKey()) . '</a></li>';
         }
 
         echo '</ul>';

@@ -982,6 +982,40 @@ class Episciences_Submit
     }
 
     /**
+     * @param Episciences_Paper $paper
+     * @param array $datasets
+     * @return int
+     */
+    public static function forceAddingDatasets(Episciences_Paper $paper, array $datasets = []): int
+    {
+        if (empty($datasets)) {
+            return 0;
+        }
+
+        $data = [];
+        $tmpData['doc_id'] = $paper->getDocid();
+        $tmpData['source_id'] = $paper->getRepoid();
+
+        foreach ($datasets as $code => $dataset) {
+
+            if (!array_key_exists($code, Episciences_Paper_Dataset::$_datasetsLabel)) {
+                $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
+            }
+
+            $tmpData['relationship'] = $dataset['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+            $tmpData['code'] = $code;
+            $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$code];
+            $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code];
+
+            foreach ($dataset as $value) {
+                $tmpData['value'] = $value;
+                $data[] = $tmpData;
+            }
+        }
+        return Episciences_Paper_DatasetsManager::insert($data);
+    }
+
+    /**
      * @param $data
      * @param null $paperId
      * @param null $vid
@@ -1086,11 +1120,12 @@ class Episciences_Submit
 
             $response = Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
 
-            Episciences_Repositories::callHook('hookLinkedDataProcessing', array_merge($hookParams, ['response' => $response]));
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', array_merge($hookParams));
 
 
-            if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
-                self::datasetsProcessing($paper->getDocid());
+            if (
+                Episciences_Repositories::hasHook($paper->getRepoid()) === '' && Episciences_Repositories::getApiUrl($paper->getRepoid())) {
+                self::datasetsProcessing($paper);
             }
 
             if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
@@ -1648,60 +1683,32 @@ class Episciences_Submit
 
     /**
      * Update paper datasets
-     * @param int $docId
+     * @param Episciences_Paper $paper
      * @return int
      */
-    public static function datasetsProcessing(int $docId): int
+    public static function datasetsProcessing(Episciences_Paper $paper): int
     {
         $cHeaders = [
             'headers' => ['Content-type' => 'application/json']
         ];
 
-        $affectedRows = 0;
-
         try {
-            $paper = Episciences_PapersManager::get($docId, false);
-
-            $client = new Client($cHeaders);
 
             if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
+                $client = new Client($cHeaders);
                 $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhidId_s,researchData_s&version_i:' . $paper->getversion();
                 $response = $client->get($url);
-                $result = json_decode($response->getBody()->getContents(), true);
+                $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
                 $allDatasets = $result['response']['docs'][array_key_first($result['response']['docs'])];
-
-                $data = [];
-                $tmpData = [];
-
-                /** @var array $datastes */
-                foreach ($allDatasets as $key => $datasets) {
-                    $tmpData['doc_id'] = $docId;
-                    $tmpData['code'] = $key;
-                    $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$key];
-                    $tmpData['source_id'] = $paper->getRepoid();
-
-                    foreach ($datasets as $value) {
-
-                        $tmpData['value'] = $value;
-                        $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$key] . $value;
-                        $data[] = $tmpData;
-                    }
-
-                    $tmpData = [];
-
-                }
-
-                $affectedRows = Episciences_Paper_DatasetsManager::insert($data);
-                unset($tmpData, $data);
+                return self::processDatasets($paper, $allDatasets);
             }
 
-
-        } catch (Zend_Db_Statement_Exception|GuzzleException  $e) {
+        } catch (GuzzleException|JsonException  $e) {
             trigger_error($e->getMessage(), E_USER_ERROR);
-
         }
 
-        return $affectedRows;
+        return 0;
+
     }
 
     /**
@@ -1980,6 +1987,91 @@ class Episciences_Submit
         }
 
         return $processedType;
+
+    }
+
+
+    public static function processDatasets(Episciences_Paper|int $paper, array $allDatasets = []): int
+    {
+
+
+        $current = $paper;
+
+        if (!($paper instanceof Episciences_Paper)) {
+
+            try {
+                $current = Episciences_PapersManager::get($paper, false);
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+                return 0;
+            }
+
+        }
+        $affectedRows = 0;
+        $noProcessed = [];
+        $docId = $current->getDocid();
+        $repoId = $current->getRepoid();
+
+        $options = ['sourceId' => $repoId];
+
+        foreach ($allDatasets as $datasets) {
+
+            foreach ($datasets as $key => $value) {
+
+                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID) {
+
+                    if ($key !== 'identifier') {
+                        continue;
+                    }
+
+                    $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                    $datasets = $value;
+                }
+
+                $value = trim($value);
+                $typeLd = Episciences_Tools::checkValueType($value);
+
+                if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
+                    $result = Episciences_DoiTools::getMetadataFromDoi($value);
+
+                    if (!empty($result)) {
+
+                        try {
+                            $aResult = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+                            $typeFromCsl = $aResult['type'] ?? Episciences_Paper_Dataset::UNDEFINED_CODE;
+
+                            if (!array_key_exists($typeFromCsl, Episciences_Paper_Dataset::$_datasetsLabel)) {
+                                trigger_error(sprintf('[Paper [#%s]: Add missing code "%s" to %s', $paper->getDocid(), $typeFromCsl, 'Episciences_Paper_Dataset::$_datasetsLabel'));
+                                $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
+                            } else {
+                                $code = Episciences_Paper_Dataset::$_datasetsLabel[$typeFromCsl];
+                            }
+
+                        } catch (JsonException $e) {
+                            $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
+                            trigger_error($e->getMessage());
+                        }
+
+                        $epiDM = new Episciences_Paper_DatasetMetadata();
+                        $epiDM->setMetatext($result);
+                        $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
+                        $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $code, $idMetaDataLastId, $options);
+
+                    } else {
+                        $noProcessed[$typeLd] = $datasets;
+                    }
+                } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
+                    $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
+                }
+
+                if (!empty($noProcessed)) {
+                    $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
+                }
+
+            }
+        }
+
+        return $affectedRows;
 
     }
 

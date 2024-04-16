@@ -127,11 +127,6 @@ class Episciences_Paper
         self::STATUS_REFUSED
     ];
 
-    /**
-     * @const string DOI prefix
-     */
-    public const DOI_ORG_PREFIX = 'https://doi.org/';
-
     // status priorities
     public static array $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
@@ -555,7 +550,7 @@ class Episciences_Paper
     public function getDoi($withPrefix = false)
     {
         if ($withPrefix && $this->_doi !== '') {
-            return self::DOI_ORG_PREFIX . $this->_doi;
+            return Episciences_DoiTools::DOI_ORG_PREFIX . $this->_doi;
         }
         return $this->_doi;
     }
@@ -2072,6 +2067,15 @@ class Episciences_Paper
                 $oVolume->loadSettings();
             }
         }
+
+        // fetch section data
+        if ($this->getSid()) {
+            $oSection = Episciences_SectionsManager::find($this->getSid());
+            if ($oSection) {
+                $node->appendChild($dom->createElement('sectionName', $oSection->getNameKey()));
+            }
+        }
+
 
         /**
          * Condition d'affichage du bouton d'abondon du processus de publication
@@ -3648,32 +3652,6 @@ class Episciences_Paper
     }
 
     /**
-     * @param string|null $locale
-     * @return string
-     * @throws Zend_Exception
-     */
-    public function buildVolumeName(string $locale = null): string
-    {
-        $translator = Zend_Registry::get('Zend_Translate');
-        $locale = !$locale ? $translator->getLocale() : $locale;
-        $volume = Episciences_VolumesManager::find($this->getVid());
-        return !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
-    }
-
-    /**
-     * @param string|null $locale
-     * @return string|null
-     * @throws Zend_Exception
-     */
-    public function buildSectionName(string $locale = null)
-    {
-        $translator = Zend_Registry::get('Zend_Translate');
-        $locale = !$locale ? $translator->getLocale() : $locale;
-        $section = Episciences_SectionsManager::find($this->getSid());
-        return !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
-    }
-
-    /**
      * @param string $locale = null (ISO FORMAT)
      * @return false|string
      * @throws Zend_Date_Exception
@@ -4223,9 +4201,9 @@ class Episciences_Paper
         foreach ($notFormatedDatasets as $unorderedDatasets) {
             /** @var Episciences_Paper_Dataset $unorderedDatasets */
             $typeLd = '';
-            if (((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::SCHOLEXPLORER_ID) && $unorderedDatasets->getMetatext() !== null) {
-                $typeLd = Episciences_Paper_DatasetsMetadataManager::getTypeLdMetadata($unorderedDatasets->getMetatext());
-            } elseif ((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::EPI_USER_ID && $unorderedDatasets->getCode() !== null && $unorderedDatasets->getCode() !== "swhidId_s") {
+            if (((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::EPI_USER_ID
+                    && $unorderedDatasets->getCode() !== null && $unorderedDatasets->getCode() !== "swhidId_s")
+                || ((string)$unorderedDatasets->getSourceId() === Episciences_Repositories::SCHOLEXPLORER_ID)) {
                 $typeLd = $unorderedDatasets->getCode();
             } else {
                 $typeLd = $unorderedDatasets->getName();

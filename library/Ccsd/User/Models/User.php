@@ -321,7 +321,7 @@ class Ccsd_User_Models_User
      */
     public function setUsername($_username)
     {
-        $this->_username = filter_var($_username, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $this->_username = filter_var($_username, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
     }
 
@@ -403,7 +403,7 @@ class Ccsd_User_Models_User
      */
     public function setCiv($_civ)
     {
-        $this->_civ = filter_var($_civ, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $this->_civ = filter_var($_civ, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
     }
 
@@ -422,7 +422,7 @@ class Ccsd_User_Models_User
      */
     public function setMiddlename($_middlename)
     {
-        $this->_middlename = filter_var($_middlename, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $this->_middlename = filter_var($_middlename, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
     }
 
@@ -518,7 +518,7 @@ class Ccsd_User_Models_User
      */
     public function setFirstname($_firstname)
     {
-        $this->_firstname = filter_var($_firstname, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $this->_firstname = filter_var($_firstname, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
     }
 
@@ -538,7 +538,7 @@ class Ccsd_User_Models_User
      */
     public function setLastname($_lastname)
     {
-        $this->_lastname = filter_var($_lastname, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $this->_lastname = filter_var($_lastname, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
         return $this;
     }
 

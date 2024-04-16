@@ -389,11 +389,11 @@ class Episciences_Review
 
     /**
      * fetch an array of Episciences_User, optionnaly filtered by role
-     * @param null $role
+     * @param array |string|null $role
      * @return Episciences_User[]
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getUsers($role = null): array
+    public static function getUsers(array|string $role = null): array
     {
         $result = [];
         /** @var Episciences_User[] $users */
@@ -402,12 +402,18 @@ class Episciences_Review
         if ($users) {
 
             foreach ($users as $uid => $user) {
-                if (is_array($role)) {
-                    $role = $role[0];
+
+                if (!empty($role)) {
+                    if (is_array($role)) {
+                        $role = $role[0];
+                    }
+
+                    $class_name = 'Episciences_' . ucfirst($role);
+
                 }
-                $class_name = 'Episciences_' . ucfirst($role);
+
                 $options = $user->toArray();
-                if (@class_exists($class_name)) {
+                if (isset($class_name) && @class_exists($class_name)) {
                     $result[$uid] = new $class_name($options);
                 } else {
                     $result[$uid] = new Episciences_User($options);
@@ -689,7 +695,7 @@ class Episciences_Review
         $volumes = [];
 
         foreach ($result as $volume) {
-            Episciences_VolumesManager::dataProcess($volume, 'decode');
+            Episciences_VolumesAndSectionsManager::dataProcess($volume, 'decode');
             $oVolume = new Episciences_Volume($volume);
             $volumes[$oVolume->getVid()] = $oVolume;
         }
@@ -722,7 +728,7 @@ class Episciences_Review
 
         $volumes = [];
         foreach ($result as $volume) {
-            Episciences_VolumesManager::dataProcess($volume, 'decode');
+            Episciences_VolumesAndSectionsManager::dataProcess($volume, 'decode');
             $oVolume = new Episciences_Volume($volume);
             $volumes[$oVolume->getVid()] = $oVolume;
         }
@@ -856,6 +862,7 @@ class Episciences_Review
 
         $sections = [];
         foreach ($result as $section) {
+            Episciences_VolumesAndSectionsManager::dataProcess($section, 'decode');
             $oSection = new Episciences_Section($section);
             $oSection->getEditors();
             $sections[$oSection->getSid()] = $oSection;

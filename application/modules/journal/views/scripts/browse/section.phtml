@@ -11,7 +11,7 @@
 
             <h2 class="section-title">
                 <a href="/section/view/id/<?php echo $section->getSid() ?>">
-                    <span><strong><?php echo $this->translate($section->getNameKey()) ?></strong></span>
+                    <span><strong><?= $this->escape($section->getNameKey()) ?></strong></span>
                 </a>
                 <span>(<?= $section->getCountOfPapers() . ' ' . $this->translate(['article', 'articles', $section->getCountOfPapers()]) ?>)</span>
             </h2>

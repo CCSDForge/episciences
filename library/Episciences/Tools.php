@@ -1521,7 +1521,7 @@ class Episciences_Tools
      * @return array|null
      */
 
-    public static function arrayFilterString(array $input = null, int $type = FILTER_SANITIZE_STRING, int $options = FILTER_FLAG_NO_ENCODE_QUOTES): ?array
+    public static function arrayFilterString(array $input = null, int $type = FILTER_DEFAULT, int $options = FILTER_FLAG_NO_ENCODE_QUOTES): ?array
     {
 
         if (empty($input)) {
@@ -1866,19 +1866,68 @@ class Episciences_Tools
     }
 
     /**
+     * @param string $url
+     * @return array
+     */
+    public static function getHalIdInString(string $url): array {
+
+        $matches = [];
+        preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~" , $url , $matches);
+        return $matches;
+    }
+
+    /**
      * @param string $swhid
      * @return bool
      */
     public static function isSoftwareHeritageId(string $swhid): bool {
         return (bool)preg_match("/^swh:1:(cnt|dir|rel|rev|snp):[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid);
     }
+
+    /**
+     * @param string $swhid
+     * @return array
+     */
+    public static function getSoftwareHeritageDirId(string $swhid): array {
+        $matches = [];
+        preg_match("/swh:1:dir:[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid, $matches);
+        return $matches;
+    }
+
+    /**
+     * @param string $handle
+     * @return bool
+     */
     public static function isHandle(string $handle): bool {
         return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
     }
+
+    /**
+     * @param string $arxiv
+     * @return bool
+     */
     public static function isArxiv(string $arxiv): bool {
         return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
     }
 
+    public static function checkIsArxivUrl(string $url)
+    {
+        $matches = [];
+        preg_match("/^https?:\/\/arxiv\.org\/abs\/((?:\d{4}.\d{4,5}|[a-z\-]+(?:\.[A-Z]{2})?\/\d{7})(?:v\d+)?)/"
+        , $url , $matches);
+        return $matches;
+    }
+
+
+    /**
+     * @param string $doi
+     * @return array
+     */
+    public static function checkIsDoiFromArxiv(string $doi) {
+        $matches = [];
+        preg_match("~/arxiv\.~i", $doi , $matches);
+        return $matches;
+    }
     /**
      * @param $value
      * @return false|string

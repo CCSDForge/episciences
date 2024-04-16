@@ -86,4 +86,39 @@ class Episciences_VolumesAndSectionsManager
 
         return true;
     }
+
+    public static function dataProcess(
+        array  &$data = [],
+        string $method = 'encode',
+        array  $keysToCheck = ['titles', 'descriptions']
+    ): void
+
+    {
+
+        foreach ($keysToCheck as $key) {
+
+            if (!isset($data[$key])) {
+                continue;
+            }
+
+            try {
+                $data[$key] = $method === 'decode' ?
+                    json_decode($data[$key],
+                        true,
+                        512,
+                        JSON_THROW_ON_ERROR
+                    ) :
+                    json_encode(
+                        $data[$key],
+                        JSON_THROW_ON_ERROR
+                    );
+
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
+
+        }
+
+    }
+
 }

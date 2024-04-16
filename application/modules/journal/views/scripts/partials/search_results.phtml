@@ -28,7 +28,10 @@ if ($this->results) {
 
     ?>
     <?php $locale = Episciences_Tools::getLocale(); ?>
-    <?php foreach ($this->results as $doc) : ?>
+
+    <?php
+    /** @var  $doc Solarium\QueryType\Select\Result\Document */
+    foreach ($this->results as $doc) : ?>
 
         <?php
         /*

@@ -57,7 +57,7 @@ $editors = $this->editors;
                     $sectionNames = [];
                     /** @var Episciences_Section $section */
                     foreach ($sections as $section) {
-                        $sectionNames[] = '"' . $this->translate('section_' . $section->getSid() . '_title') . '"';
+                        $sectionNames[] = '"' . $section->getNameKey() . '"';
                     }
                     $msg .= implode(', ', $sectionNames);
                 } else {

@@ -48,21 +48,30 @@ class Episciences_Paper_Dataset
     public const HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE = 'swhidId_s';
     public const DOI_CODE = 'doi';
     public const URL_CODE = 'url';
-    public const LINK_CODE = 'link';
     public const SOFTWARE_CODE = 'software';
+    public const PUBLICATION = 'publication';
+    public const DATASET = 'dataset';
+    public const UNDEFINED_CODE = 'undefined';
+    public static array $_datasetsLabel = [
 
-
-    public static $_datasetsLabel = [
-
-        self::HAL_LINKED_DATA_DOI_CODE =>  self::DOI_CODE,
+        self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
         self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => self::SOFTWARE_CODE,
-        self::URL_CODE => self::LINK_CODE
+        self::URL_CODE => self::URL_CODE,
+        self::SOFTWARE_CODE => self::SOFTWARE_CODE,
+        self::DATASET => self::DATASET,
+        self::PUBLICATION => self::PUBLICATION,
+        self::DOI_CODE => self::DOI_CODE,
+        self::UNDEFINED_CODE => self::UNDEFINED_CODE,
+        'journal-article' => self::PUBLICATION,
+        'article' => self::PUBLICATION,
+        'proceedings' => 'proceedings',
+        'report' => 'report',
     ];
 
-    public static $_datasetsLink = [
-        self::HAL_LINKED_DATA_DOI_CODE => 'https://doi.org/',
-        self::DOI_CODE => 'https://doi.org/',
-        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'https://archive.softwareheritage.org/'
+    public static array $_datasetsLink = [
+        self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
+        self::DOI_CODE => self::DOI_CODE,
+        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'SWHID'
     ];
 
     protected $_metatext;
@@ -109,18 +118,22 @@ class Episciences_Paper_Dataset
             'value' => $this->getValue(),
             'link' => $this->getLink(),
             'sourceId' => $this->getSourceId(),
-            'relationship'=> $this->getRelationship(),
-            'idPaperDatasetsMeta'=> $this->getIdPaperDatasetsMeta(),
+            'relationship' => $this->getRelationship(),
+            'idPaperDatasetsMeta' => $this->getIdPaperDatasetsMeta(),
             'time' => $this->getTime()
         ];
     }
-    public function getMetatext(): ?string {
-        return  $this->_metatext;
+
+    public function getMetatext(): ?string
+    {
+        return $this->_metatext;
     }
 
-    public function setMetatext($metatext){
+    public function setMetatext($metatext)
+    {
         return $this->_metatext = $metatext;
     }
+
     /**
      * @return int
      */
@@ -330,7 +343,7 @@ class Episciences_Paper_Dataset
         /** @var Episciences_Paper_MetaDataSource $metaDataSource */
         $metaDataSource = new Episciences_Paper_MetaDataSource($metadataSources[$sourcesId]);
 
-        return  $metaDataSource->getName();
+        return $metaDataSource->getName();
     }
 
 }

@@ -51,7 +51,7 @@ foreach ($this->sections as $section) {
                     <option <?php if ($section->getSid() == $this->sid) {
                         echo 'selected="selected"';
                     } ?> value="<?= $section->getSid(); ?>">
-                        <?= $this->translate($section->getNameKey()); ?>
+                        <?= $this->escape($section->getNameKey()); ?>
                     </option>
                 <?php endforeach; ?>
             </select>

@@ -1,15 +1,16 @@
 <?php
-use Episciences\Notify\Headers;
+
 
 class IndexController extends Zend_Controller_Action
 {
+    use Episciences\Notify\Headers;
 
     /**
      * Page d'accueil du site
      */
     public function indexAction()
     {
-        Headers::addInboxAutodiscoveryHeader();
+        $this->addInboxAutodiscoveryHeader();
 
         if ($this->getFrontController()->getRequest()->getHeader('Accept') === Episciences_Settings::MIME_LD_JSON) {
             $this->_helper->layout()->disableLayout();

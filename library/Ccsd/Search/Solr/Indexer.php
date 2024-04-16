@@ -238,7 +238,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
      */
     public function setHostname(): void
     {
-        $this->hostname = filter_var(getHostname(), FILTER_SANITIZE_STRING);
+        $this->hostname = filter_var(getHostname());
     }
 
     /**

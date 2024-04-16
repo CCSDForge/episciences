@@ -11,19 +11,26 @@ class Ccsd_Tools_String {
      * @param boolean $allCtrl
      * @return string
      */
-    static function stripCtrlChars($inputString, $replaceString = '', $allCtrl = true, $preserveNewLines = false) {
-        if ($preserveNewLines == true) {
+    static function stripCtrlChars($inputString, $replaceString = '', $allCtrl = true, $preserveNewLines = false)
+    {
+
+        if (!$inputString) {
+            return '';
+        }
+
+
+        if ($preserveNewLines) {
             $inputString = nl2br($inputString, false);
         }
 
-        if ($allCtrl == false) {
+        if (!$allCtrl) {
             // regex Cntrl sauf 10=\n et 13=\r
             $outputString = preg_replace('/[\x00-\x09\x14-\x1F\x11\x12\x7F]/u', $replaceString, $inputString);
         } else {
             $outputString = preg_replace('/[[:cntrl:]]/u', $replaceString, $inputString);
         }
 
-        if ($preserveNewLines == true) {
+        if ($preserveNewLines) {
             $outputString = str_replace('<br>', '', $outputString);
         }
 
@@ -97,7 +104,7 @@ class Ccsd_Tools_String {
      * @return string
      */
     static function xmlSafe($str) {
-        return htmlspecialchars($str, ENT_COMPAT | ENT_XML1, 'UTF-8');
+        return $str ? htmlspecialchars($str, ENT_COMPAT | ENT_XML1, 'UTF-8') : $str;
     }
 
     /** Valide une date par creation d'un object  */
