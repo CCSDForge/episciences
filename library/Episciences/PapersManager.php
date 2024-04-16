@@ -2548,11 +2548,18 @@ class Episciences_PapersManager
 
             $tags = [...$tags, ...$addTags];
 
-            $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
-            $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);
-            $template['body'] = str_replace(array_keys($tags), array_values($tags), $template['body']);
-            $template['body'] = nl2br($template['body']);
-            $template['body'] = Ccsd_Tools::clear_nl($template['body']);
+
+            if ($template['subject']){
+                $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
+                $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);
+            }
+
+            if($template['body']) {
+                $template['body'] = str_replace(array_keys($tags), array_values($tags), $template['body']);
+                $template['body'] = nl2br($template['body']);
+                $template['body'] = Ccsd_Tools::clear_nl($template['body']);
+            }
+
         }
 
         return $templates;
