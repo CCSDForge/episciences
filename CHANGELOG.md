@@ -14,11 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-### Fixed
-- [#457](https://github.com/CCSDForge/episciences/issues/457): DOAJ fullText record gives a url that can't be accessed.
+### Unreleased
 ### Changed
 - RT#209343: it is now possible to change the volume or section of a published article.
+- Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
+- Section translations now stored in database
+- DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
+- Export Crossref => the reference is added even if doi is included
+
+### Fixed
+- [#457](https://github.com/CCSDForge/episciences/issues/453): DOAJ fullText record gives a url that can't be accessed.
+- getlinkdata script now get csl related to linked datasets scholexplorer
+### Added
+- [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
+- CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
+- two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
+- button to be redirected to the episciences bibliographic extraction application to import bibtex
+- If HAL, send coar notify message when updating metadata for published articles.
+
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
