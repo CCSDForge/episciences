@@ -30,8 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
 - button to be redirected to the episciences bibliographic extraction application to import bibtex
 - If HAL, send coar notify message when updating metadata for published articles.
-- Added in zbjat export bibliographical references from bibtex import
-- Added button to redirect on epi citation without extract pdf
+- in zbjat export bibliographical references from bibtex import
+- button to redirect on epi citation without extract pdf
+
+## v1.0.42.5 - 2024-04-17
+### Fixed
+- [#457](https://github.com/CCSDForge/episciences/issues/457): DOAJ fullText record gives an url that can't be accessed.
+- SignPosting headers: fixed missing doi.org domain prefix for DOIs
+
+### Changed
+- Taking into account the new value (3) after changing the authorised values in the user CAS table.
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.

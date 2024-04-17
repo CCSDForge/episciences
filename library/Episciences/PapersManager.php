@@ -736,11 +736,11 @@ class Episciences_PapersManager
 
     /**
      * Retourne l'identifiant de l'article si ce dernier est dèjà publié
-     * @param $paperId
+     * @param int $paperId
      * @return int
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getPublishedPaperId($paperId): int
+    public static function getPublishedPaperId(int $paperId): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db
@@ -749,13 +749,12 @@ class Episciences_PapersManager
             ->where('PAPERID = ?', $paperId)
             ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
         $data = $select->query()->fetch();
-        if (!$data) { // Pas de version publiée
-            $result = 0;
-        } else {
-            // l'identifiant de l'article publiée
-            $result = (int)$data['DOCID'];
+
+        if (!$data) {
+            return 0;
         }
-        return $result;
+
+        return (int)$data['DOCID'];
     }
 
     /**
@@ -2549,11 +2548,18 @@ class Episciences_PapersManager
 
             $tags = [...$tags, ...$addTags];
 
-            $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
-            $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);
-            $template['body'] = str_replace(array_keys($tags), array_values($tags), $template['body']);
-            $template['body'] = nl2br($template['body']);
-            $template['body'] = Ccsd_Tools::clear_nl($template['body']);
+
+            if ($template['subject']){
+                $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
+                $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);
+            }
+
+            if($template['body']) {
+                $template['body'] = str_replace(array_keys($tags), array_values($tags), $template['body']);
+                $template['body'] = nl2br($template['body']);
+                $template['body'] = Ccsd_Tools::clear_nl($template['body']);
+            }
+
         }
 
         return $templates;

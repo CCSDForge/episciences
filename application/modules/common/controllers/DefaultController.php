@@ -36,10 +36,11 @@ class DefaultController extends Zend_Controller_Action
         if ($this->isRestrictedAccess($paper)) {
 
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $id = Episciences_PapersManager::getPublishedPaperId($paperId);
-            if ($id !== 0) {
+            $publishedId = Episciences_PapersManager::getPublishedPaperId($paperId);
 
-                $publishedPaper = Episciences_PapersManager::get($id); // published version
+            if ($publishedId !== 0) {
+
+                $publishedPaper = Episciences_PapersManager::get($publishedId, false);
 
                 if (!$publishedPaper) {
                     Episciences_Tools::header('HTTP/1.1 404 Not Found');
@@ -47,7 +48,14 @@ class DefaultController extends Zend_Controller_Action
                     return;
                 }
 
-            } else if (!Episciences_Auth::isLogged()) {
+                Episciences_Tools::header('HTTP/1.1 301 Moved Permanently', 301);
+                $location = sprintf('/%s/pdf', $publishedPaper->getDocid());
+                header('Location: ' . $location);
+                exit();
+
+            }
+
+            if (!Episciences_Auth::isLogged()) {
                 $this->redirect('/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid());
             }
 

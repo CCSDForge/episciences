@@ -104,6 +104,7 @@ class Ccsd_User_Models_User
 
     public const ACCOUNT_RESET_EMAIL_SUCCESS = 'Changement de courriel réussi';
     public const ACCOUNT_RESET_EMAIL_FAILURE = 'Échec du changement de courriel';
+    public const VALID_VALUES = [0,1,3];
 
     /**
      * UID unique de l'utilisateur dans la table des utilisateurs
@@ -482,17 +483,18 @@ class Ccsd_User_Models_User
     }
 
     /**
-     * Fixe la validité d'un compte utilisateur (0 ou 1)
+     * Fixe la validité d'un compte utilisateur
      *
      * @param integer $_valid
      * @return $this
      */
-    public function setValid($_valid)
+    public function setValid($_valid): self
     {
         $this->_valid = $_valid;
 
-        if (($this->_valid != 0) && ($this->_valid != 1)) {
-            throw new InvalidArgumentException('La valeur ne peut être que 0 ou 1');
+        if (!in_array($this->_valid, self::VALID_VALUES)) {
+            $separator = ', ';
+            throw new InvalidArgumentException(sprintf('La valeur ne peut être que %s', rtrim(implode($separator, self::VALID_VALUES), $separator)));
         }
 
         return $this;
