@@ -23,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Export Crossref => the reference is added even if doi is included
 
 ### Fixed
-- [#457](https://github.com/CCSDForge/episciences/issues/453): DOAJ fullText record gives a url that can't be accessed.
 - getlinkdata script now get csl related to linked datasets scholexplorer
 ### Added
 - [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
@@ -32,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - button to be redirected to the episciences bibliographic extraction application to import bibtex
 - If HAL, send coar notify message when updating metadata for published articles.
 
+## v1.0.42.5 - 2024-04-17
+### Fixed
+- [#457](https://github.com/CCSDForge/episciences/issues/457): DOAJ fullText record gives an url that can't be accessed.
+- SignPosting headers: fixed missing doi.org domain prefix for DOIs
+
+### Changed
+- Taking into account the new value (3) after changing the authorised values in the user CAS table.
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
