@@ -21,7 +21,7 @@ trait Headers
         }
 
         if ($paperHasDoi) {
-            $newHeaderLinks[] = sprintf('<%s%s>; rel="cite-as"', \Episciences_Paper::DOI_ORG_PREFIX, $paperDoi);
+            $newHeaderLinks[] = sprintf('<%s%s>; rel="cite-as"', \Episciences_DoiTools::DOI_ORG_PREFIX, $paperDoi);
         }
 
         $newHeaderLinks[] = '<https://schema.org/ScholarlyArticle>; rel="type"';
