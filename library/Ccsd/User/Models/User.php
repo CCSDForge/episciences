@@ -104,7 +104,7 @@ class Ccsd_User_Models_User
 
     public const ACCOUNT_RESET_EMAIL_SUCCESS = 'Changement de courriel réussi';
     public const ACCOUNT_RESET_EMAIL_FAILURE = 'Échec du changement de courriel';
-    public const VALID_VALUES = [0,1,3];
+    public const VALID_VALUES = [0,1,3,4];
 
     /**
      * UID unique de l'utilisateur dans la table des utilisateurs
