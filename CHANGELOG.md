@@ -14,14 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+## v1.0.42.5 - 2024-04-17
 ### Fixed
 - [#457](https://github.com/CCSDForge/episciences/issues/457): DOAJ fullText record gives an url that can't be accessed.
 - SignPosting headers: fixed missing doi.org domain prefix for DOIs
 
 ### Changed
-- RT#209343: it is now possible to change the volume or section of a published article.
 - Taking into account the new value (3) after changing the authorised values in the user CAS table.
+
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
