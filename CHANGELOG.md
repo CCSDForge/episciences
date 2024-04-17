@@ -14,24 +14,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-### Unreleased
+## v1.0.43 - 2024-04-17
 ### Changed
-- RT#209343: it is now possible to change the volume or section of a published article.
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
-- Section translations now stored in database
-- DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
-- Export Crossref => the reference is added even if doi is included
+- Section's translations are now stored in database instead of server files
+- DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + code refactoring
+- Crossref Export: the unstructured reference is added with the DOI. Previously it was either DOI or the unstructured 
 
 ### Fixed
-- getlinkdata script now get csl related to linked datasets scholexplorer
+- Scholexplorer API usage: The automated script to discover related datasets to published articles now only handle Datasets
+ 
 ### Added
-- [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
-- CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
+- [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the peer review result page to the article's administration page.
+- Using Citation Style Language and APIs we now retrieve and display the text of the references added for datasets, software, HAL Ids, SWHID, arXiv Ids)
 - two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
-- button to be redirected to the episciences bibliographic extraction application to import bibtex
-- If HAL, send coar notify message when updating metadata for published articles.
-- in zbjat export bibliographical references from bibtex import
-- button to redirect on epi citation without extract pdf
+- A new button as a shortcut access the Episciences bibliographic extraction application to import bibtex
+- If the metadata of an Episciences publication hosted on HAL is updated, we now send a COAR notification to HAL to trigger an update of the metadata on HAL.
+- ZBJATS export: bibliographical references from bibtex import are now also supported and exported
 
 ## v1.0.42.5 - 2024-04-17
 ### Fixed
@@ -40,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Taking into account the new value (3) after changing the authorised values in the user CAS table.
+
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
