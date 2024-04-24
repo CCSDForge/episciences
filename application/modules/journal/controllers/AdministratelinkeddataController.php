@@ -202,6 +202,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $ld->setId($request->getPost('ldId'));
             $ld->setRelationship($request->getPost('relationship'));
             $ld->setCode($request->getPost('typeld'));
+            $ld->setSourceId(Episciences_Repositories::EPI_USER_ID);
             if (Episciences_Paper_DatasetsManager::updateRelationAndTypeById($ld) > 0){
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Modification de la donnée liée bien prise en compte");
                 Episciences_Paper_Logger::log($request->getPost('paperId'), $request->getPost('docId'), Episciences_Paper_Logger::CODE_LD_CHANGED, Episciences_Auth::getUid(),

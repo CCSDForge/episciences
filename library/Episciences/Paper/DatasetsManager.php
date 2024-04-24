@@ -429,7 +429,8 @@ class Episciences_Paper_DatasetsManager
 
         $values = [
             'code' => $epiDataset->getCode(),
-            'relationship' => $epiDataset->getRelationship()
+            'relationship' => $epiDataset->getRelationship(),
+            'source_id' => $epiDataset->getSourceId(),
         ];
         try {
             $resUpdate = $db->update(T_PAPER_DATASETS, $values, $where);
