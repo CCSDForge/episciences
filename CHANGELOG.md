@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Fixed
+- [RT#211209]: reallocation of a previously allocated doi.
 ## v1.0.43 - 2024-04-17
 ### Changed
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
