@@ -324,7 +324,8 @@ class Episciences_Review_DoiSettings
             ->from('PAPERS', ['DOI', 'PAPERID'])
             ->where('DOI LIKE ?', $doiPattern . '%')
             ->where('RVID LIKE ?', $rvid)
-            ->order(' CHAR_LENGTH(DOI) DESC') // RT#211209: Select STRCMP('10.46298/theoretics.24.10', '10.46298/theoretics.24.1') As 'str_cmp' : Les deux chaînes sont identiques. ORDER BY n'a donc pas fonctionné correctement.
+            ->order('CHAR_LENGTH(DOI) DESC') // RT#211209: Select STRCMP('10.46298/theoretics.24.10', '10.46298/theoretics.24.1') As 'str_cmp' : Les deux chaînes sont identiques. ORDER BY n'a donc pas fonctionné correctement.
+            ->order('DOI DESC')
             ->limit(1);
 
         $res = $select->query()->fetchAll(Zend_Db::FETCH_COLUMN);
