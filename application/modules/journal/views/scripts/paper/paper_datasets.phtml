@@ -22,8 +22,13 @@ $currentSmall = "";
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Liens publications - données - logiciels') ?></h2>
         </div>
-        <div class="panel-body in">
-            <?= $this->partial('paper/paper_manage_datasets.phtml',['docId' => $paper->getDocid(),'paperId' => $paper->getPaperid()]) ?>
+        <input class="hidden" id="paper_docId" value="<?= $paper->getDocid() ?>">
+        <input class="hidden" id="paper_id" value="<?= $paper->getPaperid() ?>">
+        <div id="container-manager-linkeddatas" class="panel-body in">
+            <button id="add-linkdata" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-database" style="margin-right: 5px"></span>
+                <?= $this->translate('Ajouter un jeu de données ou lien de publication') ?>
+            </button>
+            <?php $this->jQuery()->addJavascriptFile('/js/linkeddatas/managelinkeddatas.js'); ?>
         </div>
     </div>
 <?php endif; ?>

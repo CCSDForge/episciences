@@ -2017,7 +2017,9 @@ class Episciences_Submit
         foreach ($allDatasets as $datasets) {
 
             foreach ($datasets as $key => $value) {
-
+                if(Episciences_Paper_DatasetsManager::findByValue($docId,$value) !== null) {
+                    continue;
+                }
                 if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID) {
 
                     if ($key !== 'identifier') {

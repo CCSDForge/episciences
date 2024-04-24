@@ -72,7 +72,7 @@ class Episciences_Paper_Logger
     public const CODE_NEW_REVIEWING_DEADLINE = 'new_reviewing_deadline';
     public const CODE_INBOX_COAR_NOTIFY_REVIEW = 'coar_notify_review';
     public const CODE_LD_ADDED = 'ld_added';
-
+    public const CODE_LD_CHANGED = 'ld_changed';
     public const CODE_LD_REMOVED = 'ld_remove';
     // alert-
     public const WARNING = 'warning';
@@ -140,6 +140,7 @@ class Episciences_Paper_Logger
         self::CODE_NEW_REVIEWING_DEADLINE => self::WARNING,
         self::CODE_INBOX_COAR_NOTIFY_REVIEW => self::INFO,
         self::CODE_LD_ADDED => self::INFO,
+        self::CODE_LD_CHANGED => self::INFO,
         self::CODE_LD_REMOVED => self::INFO,
         self::CODE_REVISION_DEADLINE_UPDATED => self::WARNING,
 
@@ -181,6 +182,7 @@ class Episciences_Paper_Logger
         self::CODE_NEW_REVIEWING_DEADLINE => 'Nouvelle date limite de rendu de relecture',
         self::CODE_INBOX_COAR_NOTIFY_REVIEW => "Nouvelle soumission : transférée automatiquement depuis",
         self::CODE_LD_ADDED => "Ajout d'une donnée liée",
+        self::CODE_LD_CHANGED => "Changement d'une donnée liée",
         self::CODE_LD_REMOVED => "Suppression d'une donnée liée",
     ];
 

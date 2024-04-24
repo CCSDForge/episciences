@@ -2701,7 +2701,7 @@ class Episciences_PapersManager
         }
 
         // delete all paper datasets
-        Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($docId, $repoId);
+        //Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($docId, $repoId);
 
         if (Episciences_Repositories::hasHook($repoId)) {
             // add all linked data : Zenodo only
