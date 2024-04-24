@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - If HAL, send coar notify message when updating metadata for published articles.
 - Added in zbjat export bibliographical references from bibtex import
 - Added button to redirect on epi citation without extract pdf
+- [#418](https://github.com/CCSDForge/episciences/issues/418) Enable edition of relationship and type for the linked data
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
