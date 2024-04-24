@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [RT#211209]: reallocation of a previously allocated doi.
 - Resetting the position of a paper in a volume will not work if the paper is removed from the volume.
+### Changed
+- [RT#211209]: Allow the assignment of a DOI to a temporarily accepted article
 ## v1.0.43 - 2024-04-17
 ### Changed
 - Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
