@@ -56,7 +56,7 @@ class Episciences_Paper_AuthorsManager
                 $i++;
             }
             foreach ($decodedauthor as $key => $value) {
-                $fullname = htmlspecialchars($value['fullname']);
+                $fullname = html_entity_decode(htmlspecialchars($value['fullname']));
                 $authorsList .= $fullname;
                 //search orcid to display logo and url in paper page
                 if (array_key_exists('orcid', $value)) {
