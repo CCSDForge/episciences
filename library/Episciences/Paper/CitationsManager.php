@@ -158,7 +158,7 @@ class Episciences_Paper_CitationsManager
 
         $orcidLink = '<small style="margin-left: 4px;">';
         $orcidLink .= '<a rel="noopener" href="https://orcid.org/' . $orcid . '" data-toggle="tooltip" data-placement="bottom" data-original-title="' . $orcid . '" target="_blank">';
-        $orcidLink .= '<img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/>';
+        $orcidLink .= '<img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="12px" alt="ORCID"/>';
         $orcidLink .= '</a></small>';
 
         return $orcidLink;
