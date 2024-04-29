@@ -31,13 +31,13 @@ function visualizeBiblioRefs() {
                             let found = parsedRawRef.doi.match(regexDoi);
                             let addUrl;
                             if (found !== null) {
-                                addUrl = 'https://doi.org/'+found[0];
+                                addUrl = 'https://doi.org/' + found[0];
                             } else {
                                 addUrl = parsedRawRef.doi;
                             }
                             strBiblioRef += " " + "<a href='" + addUrl + "' rel='noopener' target='_blank'>" + parsedRawRef.doi + "</a>"
                         }
-                        $("<div>" + strBiblioRef + "</div><br>").appendTo("#biblio-refs-container");
+                        $("<li>" + strBiblioRef + "</li>").appendTo("#biblio-refs-container");
 
                     }
                 });
@@ -50,7 +50,7 @@ function visualizeBiblioRefs() {
             }).error(function (xhr) {
                 try {
                     let apiResponse = JSON.parse(xhr.responseText);
-                    $("<div>" + apiResponse.message + "</div>").appendTo("#biblio-refs-container");
+                    $("<li>" + apiResponse.message + "</li>").appendTo("#biblio-refs-container");
 
                 } catch (e) {
                     console.log(e.name + " : " + e.message);
