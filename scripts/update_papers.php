@@ -72,11 +72,9 @@ class UpdatePapers extends JournalScript
         $this->initTranslator();
         $this->checkImportMethod();
         $this->checkRvid();
-        $this->checkRepoId();
-
-        defineJournalConstants();
-
         $this->_review = Episciences_ReviewsManager::find($this->getParam('rvid'));
+        $this->checkRepoId();
+        defineJournalConstants($this->_review->getCode());
 
         // load review translation files
         if (is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
