@@ -507,9 +507,9 @@ class UpdatePapers extends JournalScript
         $defaultPublicationDate = date("Y-m-d H:i:s");
         $publication_date = $defaultPublicationDate;
 
-        if ($this->isDebug()) {
-            $this->displayInfo("Trying to retrieve publication date. Default will be: " . $defaultPublicationDate);
-        }
+
+        $this->displayInfo("Trying to retrieve publication date. Default will be: " . $defaultPublicationDate);
+
 
         $dateFromArgs = $this->getPublicationDateFromArgs($params);
         $dateFromPaper = $this->getPublicationDateFromPaper($paper);
@@ -550,11 +550,9 @@ class UpdatePapers extends JournalScript
         // try to set if from script parameter (csv or arg)
         if (array_key_exists('publication_date', $params)) {
             $publication_date_tested = Episciences_Tools::getValidSQLDateTime($params['publication_date']);
-            if (Episciences_Tools::isValidSQLDateTime($publication_date)) {
+            if (Episciences_Tools::isValidSQLDateTime($publication_date_tested)) {
                 $publication_date = $publication_date_tested;
-                if ($this->isDebug()) {
-                    $this->displayInfo("Publication date retrieved from script parameter");
-                }
+                $this->displayInfo(sprintf("Publication date %s retrieved from script parameter", $publication_date_tested));
             }
         }
 
