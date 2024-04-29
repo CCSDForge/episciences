@@ -14,7 +14,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             exit();
         }
         $inputTypeLd = $this->getRequest()->getPost('typeld');
-        $valueLd = $this->getRequest()->getPost('valueld');
+        $valueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
         $docId = $this->getRequest()->getPost('docId');
         $paperId = $this->getRequest()->getPost('paperId');
         $typeLd = Episciences_Tools::checkValueType($valueLd);

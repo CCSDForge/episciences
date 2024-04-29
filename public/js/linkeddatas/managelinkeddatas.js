@@ -24,7 +24,7 @@ $(function () {
     $('form#addld').submit(function (e){
        e.preventDefault();
         let typeLd = $('#input-ld').data('typeld');
-        let valueLd = $('#input-ld').val();
+        let valueLd = $('#input-ld').val().trim();
         let docId = $('#paper_docId').val();
         let paperId = $('#paper_id').val();
         if (!valueLd){
