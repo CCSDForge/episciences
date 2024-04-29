@@ -15,7 +15,7 @@
                         <i class="fa-solid fa-file-import"></i> <?= $this->translate('Import BibTeX') ?>
                     </a>
                 <?php endif; ?>
-                <div id="biblio-refs-container"></div>
+                <ol id="biblio-refs-container"></ol>
                 <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>"
                      data-api="<?= $this->apiEpiBibCitation ?>"
                      <?php if ($this->enabledManageFromPublicPage === true) : ?>data-all="1" <?php endif; ?>
