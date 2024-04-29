@@ -97,45 +97,23 @@ class UpdatePapers extends JournalScript
                 }
             }
 
-            // check version
-            if (!$this->hasParam('version')) {
-                $version = $this->ask('Paper version ? (blank for default)');
-                if ($version != '') {
-                    $this->setParam('version', $version);
+            $parameters = [
+                'version' => 'Paper version',
+                'vid' => 'Paper volume',
+                'section' => 'Paper section',
+                'doi' => 'DOI',
+                'publication_date' => 'Publication date'
+            ];
+
+            foreach ($parameters as $paramKey => $paramPrompt) {
+                if (!$this->hasParam($paramKey)) {
+                    $input = $this->ask("$paramPrompt ? (leave blank for default)");
+                    if ($input !== '') {
+                        $this->setParam($paramKey, $input);
+                    }
                 }
             }
 
-            // check volume
-            if (!$this->hasParam('vid')) {
-                $vid = $this->ask('Paper volume ? (blank for default)');
-                if ($vid != '') {
-                    $this->setParam('vid', $vid);
-                }
-            }
-
-            // check section
-            if (!$this->hasParam('section')) {
-                $sid = $this->ask('Paper section ? (blank for default)');
-                if ($sid != '') {
-                    $this->setParam('sid', $sid);
-                }
-            }
-
-            // check DOI
-            if (!$this->hasParam('doi')) {
-                $doi = $this->ask('DOI ? (leave blank for default)');
-                if ($doi != '') {
-                    $this->setParam('doi', $doi);
-                }
-            }
-
-            // check publication date
-            if (!$this->hasParam('publication_date')) {
-                $publication_date = $this->ask('Publication date ? (leave blank for default)');
-                if ($publication_date != '') {
-                    $this->setParam('publication_date', $publication_date);
-                }
-            }
 
             $values = [
                 'rvid' => $this->getParam('rvid'),
@@ -233,7 +211,7 @@ class UpdatePapers extends JournalScript
         }
         $this->displayInfo("*** Processing CSV file");
 
-        if (!($file = fopen($path, 'r'))) {
+        if (!($file = fopen($path, 'rb'))) {
             throw new Zend_Exception("File could not be opened");
         }
 
@@ -245,7 +223,7 @@ class UpdatePapers extends JournalScript
 
         $line = 0;
 
-        $csv = fopen($path, 'r');
+        $csv = fopen($path, 'rb');
         while ($data = fgetcsv($csv, $max, ';')) {
 
             $line++;
@@ -301,17 +279,17 @@ class UpdatePapers extends JournalScript
     {
         // try to find matching papers, so we know if this is an update or a new import
         $matching_papers = $this->getMatchingPapers($params['identifier'], $params['docid'], $params['rvid']);
-        $identifier_string = ($params['identifier']) ? $params['identifier'] : $params['docid'];
+        $identifier_string = ($params['identifier']) ?: $params['docid'];
 
         // check if update or new import, and init paper object
         // no matching papers, this is a new import
-        if (count($matching_papers) == 0) {
-            $update = false;
+        if (count($matching_papers) === 0) {
+            $isAnUpdate = false;
             $this->displayInfo("** importing paper " . $identifier_string, false);
             $paper = new Episciences_Paper();
         } // one matching paper, this is an update
-        elseif (count($matching_papers) == 1) {
-            $update = true;
+        elseif (count($matching_papers) === 1) {
+            $isAnUpdate = true;
             $this->displayInfo("** updating paper " . $identifier_string, false);
             $docid = array_shift($matching_papers)['DOCID'];
             $paper = Episciences_PapersManager::get($docid);
@@ -327,7 +305,7 @@ class UpdatePapers extends JournalScript
         $editors_uids = $params['editors'];
 
         // process input params
-        $params = $this->processInputParams($params, $paper, $update);
+        $params = $this->processInputParams($params, $paper, $isAnUpdate);
 
         // set paper options
         $paper->setOptions($params);
@@ -355,31 +333,39 @@ class UpdatePapers extends JournalScript
                 $paper->setPublication_date($new_publication_date);
                 $this->displayInfo("publication date has been set to: " . $new_publication_date);
             }
+            $publishedPaperType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE;
+            $paper->setType($publishedPaperType);
         }
 
         if (!$this->isDebug()) {
-
-            // save paper
-            if ($paper->save()) {
-                $this->displaySuccess("paper was successfully saved");
-            } else {
-                throw new Zend_Exception("paper could not be saved");
-            }
-
-            // save editors
-            if ($editors_uids) {
-                $editors_uidsArray = explode('-', $editors_uids);
-                $this->processEditors($editors_uidsArray, $paper);
-            }
-
-            if ($paper->isPublished()) {
-                // reindex paper
-                $this->reindex($paper);
-            }
-
+            $this->savePaper($paper, $isAnUpdate, $editors_uids);
         }
 
         return true;
+    }
+
+    /**
+     * return papers from database, matching a given identifier and rvid
+     * @param $identifier
+     * @param $docid
+     * @param $rvid
+     * @return array
+     */
+    private function getMatchingPapers($identifier, $docid, $rvid)
+    {
+        $sql = $this->getDb()->select()
+            ->from(T_PAPERS, ['DOCID'])
+            ->where('RVID = ?', $rvid);
+
+        if ($docid) {
+            $sql->where('DOCID = ?', $docid);
+        } elseif ($identifier) {
+            $sql->where('IDENTIFIER LIKE ?', $identifier);
+        } else {
+            return [];
+        }
+
+        return $this->getDb()->fetchAssoc($sql);
     }
 
     /**
@@ -393,164 +379,68 @@ class UpdatePapers extends JournalScript
      * @return array $params
      * @throws Zend_Exception
      */
-    private function processInputParams(array $params, $paper, $update)
+    private function processInputParams(array $params, $paper, $update): array
     {
         foreach ($params as $param => $value) {
-            // display params
-            $message = $param . ': ';
-            $message .= ($value) ?: 'null';
+            // Display params
+            $message = $param . ': ' . ($value ?: 'null');
             $this->displayTrace($message, false);
 
-            // if update, merge input params and existing paper params
-            if ($update) {
-                // if input param is not null, do not overwrite with paper param
-                if ($value !== '' && !is_null($value)) {
-                    continue;
-                }
-
-                // else, get paper param and merge it with input params
+            // If update, merge input params and existing paper params
+            if ($update && ($value === '' || is_null($value))) {
                 $method = 'get' . ucfirst(strtolower($param));
                 if (method_exists($paper, $method)) {
-                    $params[$param] = $paper->$method();
-                    if (is_array($params[$param])) {
-                        foreach ($params[$param] as $paramValueKey => $paramValue) {
-                            $this->displayTrace($paramValueKey . ' param has been set with: ' . $paramValue);
+                    $paperParam = $paper->$method();
+                    if (is_array($paperParam)) {
+                        foreach ($paperParam as $paramValueKey => $paramValue) {
+                            $this->displayTrace("$paramValueKey param has been set with: $paramValue");
+                            $params[$param][$paramValueKey] = $paramValue;
                         }
                     } else {
-                        $this->displayTrace($params[$param] . ' param has been set with: ' . $method);
+                        $this->displayTrace("$param param has been set with: $paperParam");
+                        $params[$param] = $paperParam;
                     }
                 }
             }
         }
 
-        // check required parameters
-        if (!$this->hasRequiredParams($params)) {
-            throw new Zend_Exception("Missing required parameters");
+        // Check and set default values for missing parameters
+        $defaultParams = [
+            'status' => Episciences_Paper::STATUS_PUBLISHED,
+            'vid' => 0,
+            'sid' => 0
+        ];
+
+        foreach ($defaultParams as $paramKey => $defaultValue) {
+            if (!array_key_exists($paramKey, $params) || is_null($params[$paramKey])) {
+                $this->displayWarning("Missing $paramKey. Setting it to default: $defaultValue.");
+                $params[$paramKey] = $defaultValue;
+            }
         }
 
-        // set default for missing parameters
-        // status
-        if (!array_key_exists('status', $params) || is_null($params['status'])) {
-            $this->displayWarning("Missing status id. Setting it to default: published (" . Episciences_Paper::STATUS_PUBLISHED . ')');
-            $params['status'] = Episciences_Paper::STATUS_PUBLISHED;
-        }
-        // volume id
-        if (!array_key_exists('vid', $params) || is_null($params['vid'])) {
-            $this->displayWarning("Missing volume id. Setting it to default: 0.");
-            $params['vid'] = 0;
-        }
-        // section id
-        if (!array_key_exists('sid', $params) || is_null($params['sid'])) {
-            $this->displayWarning("Missing section id. Setting it to default: 0.");
-            $params['sid'] = 0;
+        // Check required parameters
+        if (!$this->hasRequiredParams($params)) {
+            throw new Zend_Exception("Missing required parameters");
         }
 
         return $params;
     }
 
-    private function processEditors(array $editors_uids, Episciences_Paper $paper)
+
+    private function hasRequiredParams($params): bool
     {
-        if (!empty($editors_uids)) {
-            foreach ($editors_uids as $uid) {
-                $editor = new Episciences_Editor();
-                if (!$editor->findWithCAS($uid)) {
-                    $this->displayError("editor " . $uid . " does not exist");
-                    continue;
-                }
+        $requiredParams = [
+            'repoid' => 'repository id',
+            'identifier' => 'identifier',
+            'rvid' => 'review id'
+        ];
 
-                // save editor assignment
-                $aid = $paper->assign($uid, Episciences_User_Assignment::ROLE_EDITOR);
-                // log editor assignment
-                $paper->log(
-                    Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
-                    EPISCIENCES_UID,
-                    ["aid" => $aid, "user" => $editor->toArray()]);
-
-                if ($paper->isPublished()) {
-                    // save editor unassignment
-                    $aid = $paper->unassign($uid, Episciences_User_Assignment::ROLE_EDITOR);
-                    // log editor unassignment
-                    $paper->log(
-                        Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT,
-                        EPISCIENCES_UID,
-                        ["aid" => $aid, "user" => $editor->toArray()]);
-                }
-            }
-        }
-    }
-
-    private function reindex(Episciences_Paper $paper)
-    {
-        try {
-            $this->displayInfo("adding paper to index queue");
-            Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], 'episciences', 'UPDATE', 'episciences');
-            $this->displayInfo("paper added to index queue");
-        } catch (Exception $e) {
-            throw new Zend_Exception("paper indexation failed for " . $paper->getDocid() . ": " . $e->getMessage());
-        }
-    }
-
-    /**
-     * return a valid publication date datetime
-     * try to find it using various inputs, in this order:
-     * script parameters,
-     * current paper publication date (if defined, check it is valid),
-     * paper xml record (dc:date)
-     * current date
-     * @param $params : script parameters
-     * @param Episciences_Paper $paper
-     * @return false|null|string
-     * @throws Exception
-     */
-    private function getPublicationDate($params, Episciences_Paper $paper)
-    {
-        // Default is now()
-        $defaultPublicationDate = date("Y-m-d H:i:s");
-        $publication_date = $defaultPublicationDate;
-
-        if ($this->isDebug()) {
-            $this->displayInfo("Trying to retrieve publication date. Default will be: " . $defaultPublicationDate);
-        }
-
-        $dateFromArgs = $this->getPublicationDateFromArgs($params);
-        if ($dateFromArgs !== '') {
-            $publication_date = $dateFromArgs;
-        }
-
-        $dateFromPaper = $this->getPublicationDateFromPaper($paper);
-        if ($dateFromPaper !== '') {
-            $publication_date = $dateFromPaper;
-        }
-
-        $record = $paper->getMetadata('record');
-        if ($record) {
-            $dateFromOai = $this->getPublicationDateFromOAI($record);
-            if ($dateFromOai !== '') {
-                $publication_date = $dateFromOai;
-            }
-        }
-
-        $dateFromApi = $this->getPublicationDateFromApi($params);
-
-        if ($dateFromApi !== '') {
-            $publication_date = $dateFromApi;
-        }
-
-        return $publication_date;
-    }
-
-    private function hasRequiredParams($params)
-    {
         $errors = [];
 
-        if (!array_key_exists('repoid', $params) || empty($params['repoid'])) {
-            $errors[] = "Missing repository id.";
-        }
-        if (!array_key_exists('identifier', $params) || empty($params['identifier'])) {
-            $errors[] = "Missing identifier.";
-        }
-        if (!array_key_exists('rvid', $params) || empty($params['rvid'])) {
-            $errors[] = "Missing review id.";
+        foreach ($requiredParams as $paramKey => $paramDesc) {
+            if (!array_key_exists($paramKey, $params) || empty($params[$paramKey])) {
+                $errors[] = "Missing $paramDesc.";
+            }
         }
 
         if (!empty($errors)) {
@@ -562,6 +452,7 @@ class UpdatePapers extends JournalScript
 
         return true;
     }
+
 
     /**
      * try to return a chief editor uid
@@ -593,42 +484,126 @@ class UpdatePapers extends JournalScript
         }
 
         // get older chief editor uid
-        switch ($method) {
-            case 'random':
-                $uid = array_rand($uids);
-                break;
-            case 'oldest':
-                $uid = array_search(min($uids), $uids);
-                break;
-            default:
-                $uid = null;
-        }
+        $uid = match ($method) {
+            'random' => array_rand($uids),
+            'oldest' => array_search(min($uids), $uids, true),
+            default => null,
+        };
 
         return $uid;
     }
 
     /**
-     * return papers from database, matching a given identifier and rvid
-     * @param $identifier
-     * @param $docid
-     * @param $rvid
-     * @return array
+     * return a valid publication date datetime
+     * try to find it using various inputs, in this order:
+     * script parameters,
+     * current paper publication date (if defined, check it is valid),
+     * paper xml record (dc:date)
+     * current date
      */
-    private function getMatchingPapers($identifier, $docid, $rvid)
+    private function getPublicationDate($params, Episciences_Paper $paper): string
     {
-        $sql = $this->getDb()->select()
-            ->from(T_PAPERS, ['DOCID'])
-            ->where('RVID = ?', $rvid);
+        // Default publication date is now()
+        $defaultPublicationDate = date("Y-m-d H:i:s");
+        $publication_date = $defaultPublicationDate;
 
-        if ($docid) {
-            $sql->where('DOCID = ?', $docid);
-        } elseif ($identifier) {
-            $sql->where('IDENTIFIER LIKE ?', $identifier);
-        } else {
-            return [];
+        if ($this->isDebug()) {
+            $this->displayInfo("Trying to retrieve publication date. Default will be: " . $defaultPublicationDate);
         }
 
-        return $this->getDb()->fetchAssoc($sql);
+        $dateFromArgs = $this->getPublicationDateFromArgs($params);
+        $dateFromPaper = $this->getPublicationDateFromPaper($paper);
+        $dateFromOai = '';
+        $dateFromApi = '';
+
+        if ($dateFromArgs !== '') {
+            $publication_date = $dateFromArgs;
+        } elseif ($dateFromPaper !== '') {
+            $publication_date = $dateFromPaper;
+        } else {
+            $record = $paper->getMetadata('record');
+            if ($record) {
+                $dateFromOai = $this->getPublicationDateFromOAI($record);
+                if ($dateFromOai !== '') {
+                    $publication_date = $dateFromOai;
+                }
+            }
+
+            $dateFromApi = $this->getPublicationDateFromApi($params);
+            if ($dateFromApi !== '') {
+                $publication_date = $dateFromApi;
+            }
+        }
+
+        return $publication_date;
+    }
+
+
+    /**
+     * try to set if from script parameter (csv or arg)
+     * @param array $params
+     * @return string
+     */
+    private function getPublicationDateFromArgs(array $params): string
+    {
+        $publication_date = '';
+        // try to set if from script parameter (csv or arg)
+        if (array_key_exists('publication_date', $params)) {
+            $publication_date_tested = Episciences_Tools::getValidSQLDateTime($params['publication_date']);
+            if (Episciences_Tools::isValidSQLDateTime($publication_date)) {
+                $publication_date = $publication_date_tested;
+                if ($this->isDebug()) {
+                    $this->displayInfo("Publication date retrieved from script parameter");
+                }
+            }
+        }
+
+        return $publication_date;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return string
+     */
+    private function getPublicationDateFromPaper(Episciences_Paper $paper): string
+    {
+        $publication_date = '';
+        if ($paper->getPublication_date()) {
+            $publication_date_tested = Episciences_Tools::getValidSQLDateTime($paper->getPublication_date());
+            if (Episciences_Tools::isValidSQLDateTime($publication_date)) {
+                $publication_date = $publication_date_tested;
+                if ($this->isDebug()) {
+                    $this->displayInfo("Publication date retrieved from Paper");
+                }
+            }
+
+        }
+        return $publication_date;
+    }
+
+    /**
+     * @param string $record
+     * @return string
+     */
+    private function getPublicationDateFromOAI(string $record): string
+    {
+        // try to set it from xml record
+        $dc_date = Ccsd_Tools::xpath($record, '//dc:date');
+        $publication_date = '';
+        if ($dc_date) {
+            if (is_array($dc_date)) {
+                $dc_date = array_shift($dc_date);
+            }
+            $publication_date_tested = Episciences_Tools::getValidSQLDateTime($dc_date);
+            if (Episciences_Tools::isValidSQLDateTime($publication_date)) {
+                $publication_date = $publication_date_tested;
+                if ($this->isDebug()) {
+                    $this->displayInfo("Publication date retrieved from OAI-PMH");
+                }
+
+            }
+        }
+        return $publication_date;
     }
 
     /**
@@ -672,71 +647,79 @@ class UpdatePapers extends JournalScript
     }
 
     /**
-     * @param string $record
-     * @return string
+     * @param Episciences_Paper|bool $paper
+     * @param bool $update
+     * @param $editors_uids
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
      */
-    private function getPublicationDateFromOAI(string $record): string
+    private function savePaper(Episciences_Paper|bool $paper, bool $update, $editors_uids): void
     {
-        // try to set it from xml record
-        $dc_date = Ccsd_Tools::xpath($record, '//dc:date');
-        $publication_date = '';
-        if ($dc_date) {
-            if (is_array($dc_date)) {
-                $dc_date = array_shift($dc_date);
+// save paper
+        if ($paper->save()) {
+            $this->displaySuccess("paper was successfully saved");
+            if ($update === false) {
+                $paper->log(Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED, $paper->getUid(), ['status' => $paper->getStatus()]);
+                $paper->log(Episciences_Paper_Logger::CODE_STATUS, $paper->getUid(), ['status' => $paper->getStatus()]);
             }
-            $publication_date_tested = Episciences_Tools::getValidSQLDateTime($dc_date);
-            if (Episciences_Tools::isValidSQLDateTime($publication_date)) {
-                $publication_date = $publication_date_tested;
-                if ($this->isDebug()) {
-                    $this->displayInfo("Publication date retrieved from OAI-PMH");
-                }
 
-            }
+        } else {
+            throw new Zend_Exception("paper could not be saved");
         }
-        return $publication_date;
+
+        // save editors
+        if ($editors_uids) {
+            $editors_uidsArray = explode('-', $editors_uids);
+            $this->processEditors($editors_uidsArray, $paper);
+        }
+
+        if ($paper->isPublished()) {
+            // reindex paper
+            $this->reindex($paper);
+        }
     }
 
-    /**
-     * try to set if from script parameter (csv or arg)
-     * @param array $params
-     * @return string
-     */
-    private function getPublicationDateFromArgs(array $params): string
+    private function processEditors(array $editors_uids, Episciences_Paper $paper)
     {
-        $publication_date = '';
-        // try to set if from script parameter (csv or arg)
-        if (array_key_exists('publication_date', $params)) {
-            $publication_date_tested = Episciences_Tools::getValidSQLDateTime($params['publication_date']);
-            if (Episciences_Tools::isValidSQLDateTime($publication_date)) {
-                $publication_date = $publication_date_tested;
-                if ($this->isDebug()) {
-                    $this->displayInfo("Publication date retrieved from script parameter");
+        if (!empty($editors_uids)) {
+            foreach ($editors_uids as $uid) {
+                $editor = new Episciences_Editor();
+                if (!$editor->findWithCAS($uid)) {
+                    $this->displayError("editor " . $uid . " does not exist");
+                    continue;
+                }
+
+                // save editor assignment
+                $aid = $paper->assign($uid, Episciences_User_Assignment::ROLE_EDITOR);
+                // log editor assignment
+                $paper->log(
+                    Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
+                    EPISCIENCES_UID,
+                    ["aid" => $aid, "user" => $editor->toArray()]);
+
+                if ($paper->isPublished()) {
+                    // save editor unassignment
+                    $aid = $paper->unassign($uid, Episciences_User_Assignment::ROLE_EDITOR);
+                    // log editor unassignment
+                    $paper->log(
+                        Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT,
+                        EPISCIENCES_UID,
+                        ["aid" => $aid, "user" => $editor->toArray()]);
                 }
             }
         }
-
-        return $publication_date;
     }
 
-
-    /**
-     * @param Episciences_Paper $paper
-     * @return string
-     */
-    private function getPublicationDateFromPaper(Episciences_Paper $paper): string
+    private function reindex(Episciences_Paper $paper)
     {
-        $publication_date = '';
-        if ($paper->getPublication_date()) {
-            $publication_date_tested = Episciences_Tools::getValidSQLDateTime($paper->getPublication_date());
-            if (Episciences_Tools::isValidSQLDateTime($publication_date)) {
-                $publication_date = $publication_date_tested;
-                if ($this->isDebug()) {
-                    $this->displayInfo("Publication date retrieved from Paper");
-                }
-            }
-
+        try {
+            $this->displayInfo("adding paper to index queue");
+            Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], 'episciences', 'UPDATE', 'episciences');
+            $this->displayInfo("paper added to index queue");
+        } catch (Exception $e) {
+            throw new Zend_Exception("paper indexation failed for " . $paper->getDocid() . ": " . $e->getMessage());
         }
-        return $publication_date;
     }
 
 }

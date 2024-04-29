@@ -100,9 +100,9 @@ return [
     Episciences_Paper_Logger::CODE_AUTHOR_COMMENT_COVER_LETTER => "Commentaire de l'auteur / lettre d'accompagnement",
     Episciences_Paper_Logger::CODE_EDITOR_COMMENT => "Commentaire de rédacteur",
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR =>
-        Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR],
+    Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR],
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER =>
-        Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER],
+    Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER],
     Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Mise à jour',
     Episciences_Reviewer::STATUS_UNINVITED => 'non invité',
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assigné',
@@ -118,6 +118,7 @@ return [
     Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW],
     Episciences_Paper_Logger::CODE_LD_ADDED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_ADDED],
     Episciences_Paper_Logger::CODE_LD_REMOVED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_REMOVED],
+    Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED],
     // Erreurs OAI
     "The operation ended with an error. Please try again." => "L'opération s'est terminée avec une erreur. Merci de réessayer.",
     Ccsd_Error::DEFAULT_PREFIX_CODE . ' ' . 'Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).'  => "L'opération s'est terminée avec cette erreur : <strong><small>[%s]</small></strong>. Merci de réessayer. En cas de difficulté, contactez le support Episciences, à l'adresse %s, en indiquant l'identifiant du document (exemple d'identifiant pour un document déposé dans %s : %s).",
