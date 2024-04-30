@@ -315,7 +315,6 @@ return [
 
     // DOCUMENT TYPES
     "Preprint" => "Pré-publication",
-    'Text' => "Pré-publication",
     'ConferenceObject' => 'Communication Dans Un Congrès',
     'Dataset' => 'Jeux de données',
 ];

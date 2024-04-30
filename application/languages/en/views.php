@@ -43,7 +43,6 @@ return [
     'Article'=> 'Article',
     'Preprint'=>'Preprint',
     'ConferenceObject' => 'Conference paper',
-    'Text' => "Preprint",
     'Dataset' => 'Jeux de données',
 
 

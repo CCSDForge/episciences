@@ -130,8 +130,12 @@ class Episciences_Review_DoiSettings
      * @return string
      * @throws Zend_Exception
      */
-    public function createDoiWithTemplate(Episciences_Paper $paper): string
+    public function createDoiWithTemplate(Episciences_Paper $paper, string $rvCode = null): string
     {
+
+        if (!$rvCode && !Ccsd_Tools::isFromCli()){
+            $rvCode = RVCODE;
+        }
 
         // return an empty DOI if there's no prefix
         if ($this->getDoiPrefix() == '') {
@@ -197,7 +201,7 @@ class Episciences_Review_DoiSettings
         }
 
 
-        $template[self::DOI_FORMAT_REVIEW_CODE] = RVCODE;
+        $template[self::DOI_FORMAT_REVIEW_CODE] = $rvCode;
         $template[self::DOI_FORMAT_PAPER_VOLUME] = $volume;
         $template[self::DOI_FORMAT_PAPER_VOLUME_INT] = $volumeInt;
         $template[self::DOI_FORMAT_PAPER_VOLUME_BIB_REF] = $refBibVolume;

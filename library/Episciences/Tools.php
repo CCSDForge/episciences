@@ -1252,7 +1252,7 @@ class Episciences_Tools
             trigger_error('Expression "%s" was not translated', $fileExp . ': ' . $e->getMessage());
         }
 
-        $paperId = $paper->getPaperid();
+        $paperId = (string)$paper->getPaperid();
 
         $identifier = $paper->getIdentifier();
         // Extract file(s) name
@@ -1590,6 +1590,15 @@ class Episciences_Tools
 
     public static function translateToIso6392b(string $string): string {
         return Lingua::create($string)->toISO_639_2b();
+    }
+
+    public static function translateToTwoLetterCode(string $string): ?string {
+        try {
+            return Lingua::create($string)->toISO_639_1();
+        } catch (Exception $e) {
+            trigger_error($e->getMessage());
+            return null;
+        }
     }
 
     public static function translateToICU(string $string): string {

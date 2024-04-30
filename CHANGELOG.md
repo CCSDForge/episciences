@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+###Added
+- Public representation of a document in JSON format (@see /json?v=2) 
+### Changed
+- crossref export:
+  - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
+  - ROR added to the schema (did not work on the previous version)
+- classification of keywords by language
+
 ### Fixed
 - [#472](https://github.com/CCSDForge/episciences/issues/472)[Bug Report] English translation missing: Proposer dans le volume #472
 - Duplicated submission when automatically transferring a new version.
