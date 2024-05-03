@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## Unreleased
+### Fixed
+- [#472](https://github.com/CCSDForge/episciences/issues/472)[Bug Report] English translation missing: Proposer dans le volume #472
+
 ## v1.0.43.1 - 2024-05-02
 ### Fixed
 - Reallocation of a previously allocated doi.

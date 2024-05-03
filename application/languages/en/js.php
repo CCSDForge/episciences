@@ -199,6 +199,7 @@ return [
     "Veuillez indiquer le mot de passe arXiv du document." => "Please enter the arXiv document's password.",
     "Proposer un article" => "Submit an article",
     "Proposer un jeu de données" => "Submit a Dataset",
+    "Proposer dans le volume :" => "Submit in the volume: ",
 
     // revision request
     "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd."
