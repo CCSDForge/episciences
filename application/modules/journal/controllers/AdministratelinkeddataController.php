@@ -46,6 +46,15 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             }
         }
         if ($inputTypeLd === 'software' && $typeLd === 'hal') {
+            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($valueLd);
+            $valueWithVers = $valueLd;
+            if (!empty($getHalIdentifierInUrl)) {
+                $valueLd = $getHalIdentifierInUrl[0];
+                if (isset($getHalIdentifierInUrl[1])) {
+                    $valueLd = str_replace($getHalIdentifierInUrl[1],'',$valueLd);
+                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
+                }
+            }
             $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($valueLd,$versionHal));
             if (!empty($citationFull) && !empty($citationFull->response->docs[0])){
                 $citationDocType = $citationFull->response->docs[0]->docType_s;
@@ -59,7 +68,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                     $arraySoftware['swhidId'] = $citationFull->response->docs[0]->swhidId_s[0];
                 }
             }
-            $codeMetaFromHal = Episciences_SoftwareHeritageTools::getCodeMetaFromHal($valueLd);
+            $codeMetaFromHal = Episciences_SoftwareHeritageTools::getCodeMetaFromHal($valueWithVers);
             $codeMetaFromHal = json_decode($codeMetaFromHal, true);
             if ($codeMetaFromHal !== ''){
                 $arraySoftware['codemeta'] = $codeMetaFromHal;
@@ -68,6 +77,15 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $epiDM->setMetatext(json_encode($arraySoftware, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_FORCE_OBJECT));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
         } elseif (($inputTypeLd === 'dataset' || $inputTypeLd === 'publication') && $typeLd === 'hal') {
+            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($valueLd);
+            if (!empty($getHalIdentifierInUrl)) {
+                $typeLd = 'hal';
+                $valueLd = $getHalIdentifierInUrl[0];
+                if (isset($getHalIdentifierInUrl[1])) {
+                    $valueLd = str_replace($getHalIdentifierInUrl[1],'',$valueLd);
+                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
+                }
+            }
             $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($valueLd,$versionHal));
             $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
             $epiDM = new Episciences_Paper_DatasetMetadata();
