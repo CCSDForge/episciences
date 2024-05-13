@@ -872,20 +872,40 @@ class Episciences_Paper
             ]
         ];
 
-        $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY] = array_merge($xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY], $extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]);
-        $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY] = array_merge($xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY], $extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY]);
+// Define the keys for better readability
+        $keyBody = Episciences_Paper_XmlExportManager::BODY_KEY;
+        $keyJournal = Episciences_Paper_XmlExportManager::JOURNAL_KEY;
+        $keyJournalArticle = Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY;
+        $keyDatabase = Episciences_Paper_XmlExportManager::DATABASE_KEY;
+        $keyPublic = Episciences_Paper_XmlExportManager::PUBLIC_KEY;
+        $keyPrivate = Episciences_Paper_XmlExportManager::PRIVATE_KEY;
+        $keyAll = Episciences_Paper_XmlExportManager::ALL_KEY;
 
-        $document[Episciences_Paper_XmlExportManager::PUBLIC_KEY] = $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY];
-        $document[Episciences_Paper_XmlExportManager::PRIVATE_KEY] = $extraData[Episciences_Paper_XmlExportManager::PRIVATE_KEY];
+// Merge journal article data
+        $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle] = array_merge(
+            $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
+            $extraData[$keyPublic][$keyJournalArticle]
+        );
 
-        if ($key !== Episciences_Paper_XmlExportManager::ALL_KEY) {
-            if ($key === Episciences_Paper_XmlExportManager::PRIVATE_KEY || $key === Episciences_Paper_XmlExportManager::PUBLIC_KEY) {
+// Merge database data
+        $xmlToArray[$keyBody][$keyDatabase] = array_merge(
+            $xmlToArray[$keyBody][$keyDatabase],
+            $extraData[$keyPublic][$keyDatabase]
+        );
+
+// Update document keys
+        $document[$keyPublic] = $xmlToArray[$keyBody];
+        $document[$keyPrivate] = $extraData[$keyPrivate];
+
+// Check and update document based on key
+        if ($key !== $keyAll) {
+            if ($key === $keyPrivate || $key === $keyPublic) {
                 $document = $document[$key];
             } else {
-                $document = $document[Episciences_Paper_XmlExportManager::PUBLIC_KEY];
-
+                $document = $document[$keyPublic];
             }
         }
+
 
         $result = $serializer->serialize($document, 'json');
 
