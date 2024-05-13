@@ -4296,7 +4296,7 @@ class Episciences_Paper
         }
 
         if (!is_array($this->_metadata['description'])) {
-            throw new InvalidArgumentException('Paper docid:' . $this->getDocid() . 'getAllAbstracts() expects an array');
+            throw new InvalidArgumentException(sprintf("Paper docid: %d getAllAbstracts() expects an array", $this->getDocid()));
         }
 
         return $this->_metadata['description'];
@@ -4727,6 +4727,10 @@ class Episciences_Paper
     public function getAuthors(): array
     {
         $this->_authors = Episciences_Paper_AuthorsManager::getArrayAuthorsAffi($this->getPaperid());
+
+        if (!is_array($this->_authors)) {
+            throw new InvalidArgumentException(sprintf("Paper docid: %d getAuthors() expects an array", $this->getDocid()));
+        }
 
         return $this->_authors;
     }
