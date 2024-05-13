@@ -4294,6 +4294,11 @@ class Episciences_Paper
         if ((!$this->_metadata) || (!array_key_exists('description', $this->_metadata))) {
             return [];
         }
+
+        if (!is_array($this->_metadata['description'])) {
+            throw new InvalidArgumentException('Paper docid:' . $this->getDocid() . 'getAllAbstracts() expects an array');
+        }
+
         return $this->_metadata['description'];
     }
 
