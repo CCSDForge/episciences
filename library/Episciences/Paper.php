@@ -882,6 +882,9 @@ class Episciences_Paper
         $keyAll = Episciences_Paper_XmlExportManager::ALL_KEY;
 
 // Merge journal article data
+        if (!is_array($xmlToArray[$keyBody][$keyJournal][$keyJournalArticle])) {
+            throw new InvalidArgumentException(sprintf("docid %s : %s-%s-%s is not an array", $this->getDocid(), $keyBody, $keyJournal, $keyJournalArticle));
+        }
         $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle] = array_merge(
             $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
             $extraData[$keyPublic][$keyJournalArticle]
