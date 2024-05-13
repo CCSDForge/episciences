@@ -5117,6 +5117,9 @@ class Episciences_Paper
 
         try {
             $tmpFiles = !Episciences_Tools::isJson($subStr) ? (array)$subStr : json_decode($subStr, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($tmpFiles)) {
+                throw new InvalidArgumentException(sprintf('processTmpVersion() : $tmpFiles is not typed as an array for paperid %s', $tmpPaperId));
+            }
             $tmpFiles = Episciences_Tools::arrayFilterEmptyValues($tmpFiles);
             $paper->tmpFiles = $tmpFiles;
             $paper->setIdentifier(sprintf('%s/%s', $paper->getPaperid(), $tmpFiles[array_key_first($tmpFiles)] ?? $withoutFileStr));
