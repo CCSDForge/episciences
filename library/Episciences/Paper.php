@@ -872,20 +872,62 @@ class Episciences_Paper
             ]
         ];
 
-        $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY] = array_merge($xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY], $extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]);
-        $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY] = array_merge($xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY], $extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY]);
+// Define the keys for better readability
+        $keyBody = Episciences_Paper_XmlExportManager::BODY_KEY;
+        $keyJournal = Episciences_Paper_XmlExportManager::JOURNAL_KEY;
+        $keyJournalArticle = Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY;
+        $keyDatabase = Episciences_Paper_XmlExportManager::DATABASE_KEY;
+        $keyPublic = Episciences_Paper_XmlExportManager::PUBLIC_KEY;
+        $keyPrivate = Episciences_Paper_XmlExportManager::PRIVATE_KEY;
+        $keyAll = Episciences_Paper_XmlExportManager::ALL_KEY;
 
-        $document[Episciences_Paper_XmlExportManager::PUBLIC_KEY] = $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY];
-        $document[Episciences_Paper_XmlExportManager::PRIVATE_KEY] = $extraData[Episciences_Paper_XmlExportManager::PRIVATE_KEY];
+        $keyConf = Episciences_Paper_XmlExportManager::CONFERENCE_KEY;
+        $isConf = isset($xmlToArray[$keyBody][$keyConf]);
+        $keyConfPaper = Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY;
 
-        if ($key !== Episciences_Paper_XmlExportManager::ALL_KEY) {
-            if ($key === Episciences_Paper_XmlExportManager::PRIVATE_KEY || $key === Episciences_Paper_XmlExportManager::PUBLIC_KEY) {
+// Merge journal article or conference  data
+
+        if (!$isConf) {
+
+            if (!is_array($xmlToArray[$keyBody][$keyJournal][$keyJournalArticle])) {
+                throw new InvalidArgumentException(sprintf("docid %s : %s-%s-%s is not an array", $this->getDocid(), $keyBody, $keyJournal, $keyJournalArticle));
+            }
+
+
+            $xmlToArray[$keyBody][$keyConf][$keyJournalArticle] = array_merge(
+                $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
+                $extraData[$keyPublic][$keyJournalArticle]
+            );
+
+        } else {
+
+            $xmlToArray[$keyBody][$keyConf][$keyConfPaper] = array_merge(
+                $xmlToArray[$keyBody][$keyConf][$keyConfPaper],
+                $extraData[$keyPublic][$keyJournalArticle]
+            );
+
+        }
+
+
+// Merge database data
+        $xmlToArray[$keyBody][$keyDatabase] = array_merge(
+            $xmlToArray[$keyBody][$keyDatabase],
+            $extraData[$keyPublic][$keyDatabase]
+        );
+
+// Update document keys
+        $document[$keyPublic] = $xmlToArray[$keyBody];
+        $document[$keyPrivate] = $extraData[$keyPrivate];
+
+// Check and update document based on key
+        if ($key !== $keyAll) {
+            if ($key === $keyPrivate || $key === $keyPublic) {
                 $document = $document[$key];
             } else {
-                $document = $document[Episciences_Paper_XmlExportManager::PUBLIC_KEY];
-
+                $document = $document[$keyPublic];
             }
         }
+
 
         $result = $serializer->serialize($document, 'json');
 
@@ -4294,6 +4336,11 @@ class Episciences_Paper
         if ((!$this->_metadata) || (!array_key_exists('description', $this->_metadata))) {
             return [];
         }
+
+        if (!is_array($this->_metadata['description'])) {
+            throw new InvalidArgumentException(sprintf("Paper docid: %d getAllAbstracts() expects an array", $this->getDocid()));
+        }
+
         return $this->_metadata['description'];
     }
 
@@ -4723,6 +4770,10 @@ class Episciences_Paper
     {
         $this->_authors = Episciences_Paper_AuthorsManager::getArrayAuthorsAffi($this->getPaperid());
 
+        if (!is_array($this->_authors)) {
+            throw new InvalidArgumentException(sprintf("Paper docid: %d getAuthors() expects an array", $this->getDocid()));
+        }
+
         return $this->_authors;
     }
 
@@ -5108,6 +5159,9 @@ class Episciences_Paper
 
         try {
             $tmpFiles = !Episciences_Tools::isJson($subStr) ? (array)$subStr : json_decode($subStr, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($tmpFiles)) {
+                throw new InvalidArgumentException(sprintf('processTmpVersion() : $tmpFiles is not typed as an array for paperid %s', $tmpPaperId));
+            }
             $tmpFiles = Episciences_Tools::arrayFilterEmptyValues($tmpFiles);
             $paper->tmpFiles = $tmpFiles;
             $paper->setIdentifier(sprintf('%s/%s', $paper->getPaperid(), $tmpFiles[array_key_first($tmpFiles)] ?? $withoutFileStr));

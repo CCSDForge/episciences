@@ -8,6 +8,7 @@ class Episciences_Paper_XmlExportManager
     public const ALL_KEY = 'all';
     public const DATABASE_KEY = 'database';
     public const JOURNAL_ARTICLE_KEY = 'journal_article';
+    public const CONFERENCE_PAPER_KEY = 'conference_paper';
     public const JOURNAL_METADATA_KEY = 'journal_metadata';
     public const JOURNAL_KEY = 'journal';
     public const CONFERENCE_KEY = 'conference';
