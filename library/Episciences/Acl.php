@@ -15,6 +15,10 @@ class Episciences_Acl extends Ccsd_Acl
     public const ROLE_WEBMASTER = 'webmaster';
     public const ROLE_REVIEWER = 'reviewer';
     public const ROLE_AUTHOR = 'author';
+    public const ROLE_EDITORIAL_BOARD = 'editorial_board';
+    public const ROLE_TECHNICAL_BOARD = 'technical_board';
+    public const ROLE_SCIENTIFIC_ADVISORY_BOARD = 'scientific_advisory_board';
+    public const ROLE_FORMER_MEMBER = 'former_member';
     public const ROLE_MEMBER = 'member';
     public const ROLE_GUEST = 'guest';
     //git 181
@@ -29,6 +33,10 @@ class Episciences_Acl extends Ccsd_Acl
     public const ROLE_SECRETARY_PLURAL = 'secretaries';
     public const ROLE_WEBMASTER_PLURAL = 'webmasters';
     public const ROLE_REVIEWER_PLURAL = 'reviewers';
+    public const ROLE_EDITORIAL_BOARD_PLURAL = 'editorial_boards';
+    public const ROLE_TECHNICAL_BOARD_PLURAL = 'technical_boards';
+    public const ROLE_SCIENTIFIC_ADVISORY_BOARD_PLURAL = 'scientific_advisory_boards';
+    public const ROLE_FORMER_MEMBER_PLURAL = 'former_members';
     public const ROLE_MEMBER_PLURAL = 'members';
     public const ROLE_AUTHOR_PLURAL = 'authors';
     public const ROLE_GUEST_PLURAL = 'guests';
@@ -141,6 +149,22 @@ class Episciences_Acl extends Ccsd_Acl
             'paper-abandon' => self::CONFIGURABLE_RESOURCE
         ],
 
+        self::ROLE_EDITORIAL_BOARD => [
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'paper-abandon' => self::CONFIGURABLE_RESOURCE
+        ],
+        self::ROLE_TECHNICAL_BOARD => [
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'paper-abandon' => self::CONFIGURABLE_RESOURCE
+        ],
+        self::ROLE_SCIENTIFIC_ADVISORY_BOARD => [
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'paper-abandon' => self::CONFIGURABLE_RESOURCE
+        ],
+        self::ROLE_FORMER_MEMBER => [
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'paper-abandon' => self::CONFIGURABLE_RESOURCE
+        ],
         self::ROLE_REVIEWER => [
             'paper-abandon' => self::NOT_CONFIGURABLE_RESOURCE,
             'comments-editcomment' => self::NOT_CONFIGURABLE_RESOURCE,
@@ -180,6 +204,10 @@ class Episciences_Acl extends Ccsd_Acl
         $this->_roles = [
             self::ROLE_GUEST => null,
             self::ROLE_MEMBER => self::ROLE_GUEST,
+            self::ROLE_EDITORIAL_BOARD => self::ROLE_MEMBER,
+            self::ROLE_TECHNICAL_BOARD => self::ROLE_MEMBER,
+            self::ROLE_SCIENTIFIC_ADVISORY_BOARD => self::ROLE_MEMBER,
+            self::ROLE_FORMER_MEMBER => self::ROLE_MEMBER,
             self::ROLE_AUTHOR => self::ROLE_MEMBER,
             self::ROLE_REVIEWER => self::ROLE_MEMBER,
             self::ROLE_COPY_EDITOR => self::ROLE_MEMBER,
