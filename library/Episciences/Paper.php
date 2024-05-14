@@ -881,14 +881,33 @@ class Episciences_Paper
         $keyPrivate = Episciences_Paper_XmlExportManager::PRIVATE_KEY;
         $keyAll = Episciences_Paper_XmlExportManager::ALL_KEY;
 
-// Merge journal article data
-        if (!is_array($xmlToArray[$keyBody][$keyJournal][$keyJournalArticle])) {
-            throw new InvalidArgumentException(sprintf("docid %s : %s-%s-%s is not an array", $this->getDocid(), $keyBody, $keyJournal, $keyJournalArticle));
+        $keyConf = Episciences_Paper_XmlExportManager::CONFERENCE_KEY;
+        $isConf = isset($xmlToArray[$keyBody][$keyConf]);
+        $keyConfPaper = Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY;
+
+// Merge journal article or conference  data
+
+        if (!$isConf) {
+
+            if (!is_array($xmlToArray[$keyBody][$keyJournal][$keyJournalArticle])) {
+                throw new InvalidArgumentException(sprintf("docid %s : %s-%s-%s is not an array", $this->getDocid(), $keyBody, $keyJournal, $keyJournalArticle));
+            }
+
+
+            $xmlToArray[$keyBody][$keyConf][$keyJournalArticle] = array_merge(
+                $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
+                $extraData[$keyPublic][$keyJournalArticle]
+            );
+
+        } else {
+
+            $xmlToArray[$keyBody][$keyConf][$keyConfPaper] = array_merge(
+                $xmlToArray[$keyBody][$keyConf][$keyConfPaper],
+                $extraData[$keyPublic][$keyJournalArticle]
+            );
+
         }
-        $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle] = array_merge(
-            $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
-            $extraData[$keyPublic][$keyJournalArticle]
-        );
+
 
 // Merge database data
         $xmlToArray[$keyBody][$keyDatabase] = array_merge(
