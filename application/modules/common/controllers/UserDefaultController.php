@@ -735,6 +735,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $user = new Episciences_User($updatedUserValues);
 
 
+
                 $subform = $form->getSubForm('ccsd');
 
                 if ($subform->PHOTO->isUploaded()) {

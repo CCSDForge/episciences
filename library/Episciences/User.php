@@ -446,29 +446,31 @@ class Episciences_User extends Ccsd_User_Models_User
             'ORCID' => $this->getOrcid()
         ];
 
-        if (
-            !empty($this->getWebSites()) ||
-            !empty($this->getSocialMedias()) ||
-            !empty($this->getAffiliations())
-        ) {
+        $addProfileInformations = [];
 
-            $addProfileInformations = [
-                'webSites' => $this->getWebSites(),
-                'socialMedias' => $this->getSocialMedias(),
-                'affiliations' => Episciences_Tools::implodeOrExplode($this->getAffiliations())
-            ];
-
-            try {
-                $data['ADDITIONAL_PROFILE_INFORMATION'] = json_encode($addProfileInformations, JSON_THROW_ON_ERROR);
-            } catch (JsonException $e) {
-                $data['ADDITIONAL_PROFILE_INFORMATION'] = null;
-                trigger_error($e->getMessage());
-            }
-
-        } else {
-            $data['ADDITIONAL_PROFILE_INFORMATION'] = null;
-
+        if (!empty($this->getWebSites())) {
+            $addProfileInformations['webSites'] = $this->getWebSites();
         }
+
+        if (!empty($this->getSocialMedias())) {
+            $addProfileInformations['socialMedias'] = $this->getSocialMedias();
+        }
+
+        if (!empty($this->getAffiliations())) {
+            $addProfileInformations['affiliations'] = Episciences_Tools::implodeOrExplode($this->getAffiliations());
+        }
+
+        if (!empty($this->getBiography())) {
+            $addProfileInformations['biography'] = $this->getBiography();
+        }
+
+        try {
+            $data['ADDITIONAL_PROFILE_INFORMATION'] = !empty($addProfileInformations) ? json_encode($addProfileInformations, JSON_THROW_ON_ERROR) : null;
+        } catch (JsonException $e) {
+            $data['ADDITIONAL_PROFILE_INFORMATION'] = null;
+            trigger_error($e->getMessage());
+        }
+
 
 
         // Création des données locales (compte ES + rôle)
