@@ -36,6 +36,8 @@ class Episciences_User extends Ccsd_User_Models_User
     protected ?string $_orcid = null;
     protected ?array $_affiliations = null;
 
+    protected ?string $_biography = null;
+
     protected ?string $_socialMedias = null;
     protected ?array $_webSites = null;
 
@@ -342,6 +344,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $res['affiliations'] = $this->getAffiliations();
         $res['orcid'] = $this->getOrcid();
         $res['web_sites'] = $this->getWebSites();
+        $res['biography'] = $this->getBiography();
         $res['social_medias'] = $this->getSocialMedias();
         return $res;
     }
@@ -683,6 +686,7 @@ class Episciences_User extends Ccsd_User_Models_User
            $result['WEB_SITES'] = $this->getWebSites();
            $result['SOCIAL_MEDIAS'] = $this->getSocialMedias();
            $result['AFFILIATIONS'] = $this->getAffiliations();
+           $result['BIOGRAPHY'] = $this->getBiography();
         }
 
 
@@ -755,6 +759,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setRegistrationDate($result['REGISTRATION_DATE']);  // Episciences registration date
         $this->setModificationDate($result['MODIFICATION_DATE']);  // Episciences modification date
         $this->setAffiliations($result['AFFILIATIONS']);
+        $this->setBiography($result['BIOGRAPHY']);
         $this->setOrcid($result['ORCID']);
 
         return $result;
@@ -1234,6 +1239,26 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
     /**
+     * @return string|null
+     */
+    public function getBiography(): ?string
+    {
+        return $this->_biography;
+    }
+
+    /**
+     * @param string|null $bioghaphy
+     * @return $this
+     */
+    public function setBiography(string $biography = null): self
+    {
+
+        $this->_biography = $biography;
+
+        return $this;
+    }
+
+    /**
      * @param string|null $additionalProfileInformation
      *
      */
@@ -1256,6 +1281,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
             $webSites = $addProfileInfo ['webSites'] ?? null;
 
+            $biography = $addProfileInfo ['biography'] ?? null;
+
             if (!empty($addProfileInfo ['socialMedias'])) {
 
                 if (is_array($addProfileInfo ['socialMedias'])) {
@@ -1269,6 +1296,7 @@ class Episciences_User extends Ccsd_User_Models_User
             }
 
             $this->setAffiliations($affiliations);
+            $this->setBiography($biography);
             $this->setWebSites($webSites);
             $this->setSocialMedias($socialMedias);
         }

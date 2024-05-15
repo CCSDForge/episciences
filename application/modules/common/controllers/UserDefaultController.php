@@ -722,7 +722,8 @@ class UserDefaultController extends Zend_Controller_Action
                     $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
                         $values['episciences']['AFFILIATIONS'],
                         $values['episciences']['SOCIAL_MEDIAS'],
-                        $values['episciences']['WEB_SITES']
+                        $values['episciences']['WEB_SITES'],
+                        $values['episciences']['BIOGRAPHY']
                     ], JSON_THROW_ON_ERROR);
 
                 } catch (JsonException $e) {
@@ -1755,7 +1756,7 @@ class UserDefaultController extends Zend_Controller_Action
     private function synchroniseLocalUserFromCasIfNecessary(Episciences_User $user): void
     {
         $localUserData = $user->toArray();
-        unset($localUserData['ROLES'], $localUserData['affiliations'], $localUserData['web_sites'], $localUserData['social_medias']); // to fix PHP Notice: Array to string conversion
+        unset($localUserData['ROLES'], $localUserData['affiliations'], $localUserData['web_sites'], $localUserData['biography'], $localUserData['social_medias']); // to fix PHP Notice: Array to string conversion
         $res = $user->findWithCAS($user->getUid());
 
         if($res === null){
@@ -1763,7 +1764,7 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $casUserData = $user->toArray();
-        unset($casUserData['ROLES'], $casUserData['affiliations'], $casUserData['web_sites'], $casUserData['social_medias']);
+        unset($casUserData['ROLES'], $casUserData['affiliations'], $localUserData['biography'] , $casUserData['web_sites'], $casUserData['social_medias']);
 
         if(!empty(array_diff($localUserData, $casUserData))){
             $data = array_merge($localUserData, $casUserData);
