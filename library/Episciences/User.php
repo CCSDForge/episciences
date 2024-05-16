@@ -746,6 +746,9 @@ class Episciences_User extends Ccsd_User_Models_User
         if (!isset($result['API_PASSWORD'])) {
             $result['API_PASSWORD'] = $this->getApiPassword();
         }
+        if (!isset($result['BIOGRAPHY'])) {
+            $result['BIOGRAPHY'] = $this->getBiography();
+        }
 
         $this->setUid($result['UID']);
         $this->setUsername($result['USERNAME']);
