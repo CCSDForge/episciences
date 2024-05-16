@@ -6,6 +6,10 @@ return [
     // TO FIX
     'guest' => 'Invité',
     'member' => 'Membre',
+    'editorial_board' => 'Comité éditorial',
+    'technical_board' => 'Comité technique',
+    'scientific_advisory_board' => 'Comité scientifique',
+    'former_member' => 'Ancien membre',
     'coauthor' => 'Coauteur',
     'webmaster' => 'Webmaster',
     'secretary' => 'Secrétaire de rédaction',
