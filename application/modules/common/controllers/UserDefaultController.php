@@ -717,7 +717,9 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $values = $form->getValues();
                 $values['ccsd']['USERNAME'] = $userDefaults['USERNAME'];  //otherwise the username is removed from the identity: in modification it is not used in save() method.
-
+                if ($values['episciences']['BIOGRAPHY'] !== '') {
+                    $values['episciences']['BIOGRAPHY'] = strip_tags($values['episciences']['BIOGRAPHY']);
+                }
                 try {
                     $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
                         $values['episciences']['AFFILIATIONS'],

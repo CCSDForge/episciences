@@ -951,7 +951,8 @@ return [
     'Site(s) Web' => 'Web Site(s)',
     'Saisissez votre compte X (anciennement Twitter) (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your X (ex. Twitter) account (e.g @anonymous) or Mastodon account (e.g @username@server)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
-
+    'Une courte biographie (700 caractères autorisés)' => 'A short biography (700 characters allowed.)',
+    'Biographie' => 'Biography',
     // User activation
     "Activation de votre compte" => 'Account activation',
     "Vous pouvez dès maintenant vous" => 'You can now',
