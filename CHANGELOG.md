@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ###Added
 - Public representation of a document in JSON format (@see /json?v=2) 
+- [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
 ### Changed
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
