@@ -150,7 +150,7 @@ class Ccsd_News
 			if ($key === 'newsid') {
 				$id = $value;
 			} else if ($key !== 'title' && $key !== 'content' && $key !== 'date') {
-				$bind[mb_strtoupper($key)] = $value;
+				$bind[mb_strtoupper($key)] = strip_tags($value);
 			}
 		}
 
