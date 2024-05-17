@@ -147,11 +147,10 @@ class Ccsd_News
         $isInsert = true;
 
 		foreach ($news as $key => $value) {
-            $value = strip_tags($value);
 			if ($key === 'newsid') {
 				$id = $value;
 			} else if ($key !== 'title' && $key !== 'content' && $key !== 'date') {
-				$bind[mb_strtoupper($key)] = $value;
+				$bind[mb_strtoupper($key)] = strip_tags($value);
 			}
 		}
 
