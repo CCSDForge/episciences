@@ -350,7 +350,14 @@ class Episciences_VolumesManager
                 [new Zend_Validate_StringLength(['max' => self::MAX_STRING_LENGTH])]
             ],
         ]);
-
+        $form->addElement('text', 'year', [
+            'label' => 'Année du volume',
+            'required' => true,
+            'style' => 'width:300px;position: static;',
+            'validators' => [
+                [new Zend_Validate_Int()],
+            ],
+        ]);
         // Statut du volume
         $form->addElement('select', 'status', [
             'label' => 'Statut',
