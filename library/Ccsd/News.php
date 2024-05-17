@@ -137,8 +137,8 @@ class Ccsd_News
 	 * Enregistrement d"une actu
 	 * @param array $news
 	 */
-	public function save($news)
-	{
+	public function save($news): void
+    {
 		$bind = array(
 			$this->_sidField	=>	$this->_sid,		
 		);
