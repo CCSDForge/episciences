@@ -6,6 +6,7 @@
  */
 class PageDefaultController extends Zend_Controller_Action
 {
+    const WIDGET_BROWSE_LATEST_DIV = '<div id="widget-browse-latest"></div>';
 
     /**
      * Récupération du nom de la page à afficher
@@ -41,7 +42,17 @@ class PageDefaultController extends Zend_Controller_Action
                 }
             }
         }
-        $this->view->content = $page->getContent(Zend_Registry::get('lang'));
+        $pageContent = $page->getContent(Zend_Registry::get('lang'));
+        if (str_contains($pageContent, self::WIDGET_BROWSE_LATEST_DIV)) {
+            $view = new Zend_View();
+            $view->articles = Episciences_Website_Navigation_Page_BrowseLatest::getLatestPublications();
+            $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/browse/');
+            $view->addHelperPath('Episciences/View/Helper', 'Episciences_View_Helper');
+            $latest = $view->render('latest.phtml');
+            unset($view);
+            $pageContent = str_replace(self::WIDGET_BROWSE_LATEST_DIV, sprintf('<div id="browse-latest">%s</div>', $latest), $pageContent);
+        }
+        $this->view->content = $pageContent;
         $this->view->page = $this->_page;
     }
 
