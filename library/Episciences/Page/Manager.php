@@ -2,7 +2,7 @@
 
 class Episciences_Page_Manager
 {
-    public static function findByCodeAndPageCode(string $page_code, string $code): Episciences_Page
+    public static function findByCodeAndPageCode(string $code, string $page_code): Episciences_Page
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = $db->select()
@@ -11,6 +11,9 @@ class Episciences_Page_Manager
             ->where('page_code = ?', $page_code);
 
         $res = $db->fetchRow($query);
+        if (!$res) {
+            $res = [];
+        }
         return new Episciences_Page($res ?? null);
     }
 
@@ -24,9 +27,9 @@ class Episciences_Page_Manager
             'uid' => $page->getUid(),
             'date_creation' => $nowDb,
             'date_updated' => $nowDb,
-            'title' => $page->getTitle(true),
-            'content' => $page->getContent(true),
-            'visibility' => $page->getVisibility(true),
+            'title' => $page->getTitle(),
+            'content' => $page->getContent(),
+            'visibility' => $page->getVisibility(),
             'page_code' => $page->getPageCode()
         ];
 
@@ -50,9 +53,9 @@ class Episciences_Page_Manager
             'code' => $page->getCode(),
             'uid' => $page->getUid(),
             'date_updated' => new Zend_DB_Expr('NOW()'),
-            'title' => $page->getTitle(true),
-            'content' => $page->getContent(true),
-            'visibility' => $page->getVisibility(true),
+            'title' => $page->getTitle(),
+            'content' => $page->getContent(),
+            'visibility' => $page->getVisibility(),
             'page_code' => $page->getPageCode()
         ];
 

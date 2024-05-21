@@ -33,7 +33,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
     const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
     const PAGE_ACCEPTED_PAPERS_LIST = 'acceptedPapersList';
-
+    const PAGE_ABOUT = 'about';
+    const PAGE_BOARDS = 'boards';
     /**
      * Table de stockage de la navigztion d'un site
      * @var string
@@ -54,7 +55,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      * Initialisation des options de la navigation
      * @see Ccsd_Website_Navigation::setOptions($options)
      */
-    public function setOptions($options = [])
+    public function setOptions($options = []): void
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
