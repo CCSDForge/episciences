@@ -14,13 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+
+## v1.0.44 - 2024-05-21
 ### Fixed
-- RT#212956: this bug affects temporary versions: 
+- Fixed a bug related to temporary versions with Zenodo: 
   - Unable to enter the identifier when submitting a new version
   - submitting a new version results in an error message "the version of the article to be updated must be greater than the previous version".
 - [#472](https://github.com/CCSDForge/episciences/issues/472)[Bug Report] English translation missing: Proposer dans le volume #472
-- Duplicated submission when automatically transferring a new version.
+- Duplicated submission when automatically transferring a new version from HAL.
+
+### Added
+- Add the latest publications to any page by inserting '<div id="widget-browse-latest"></div>' to the HTML source code of a page (same content as /browse/latest page)
 
 ## v1.0.43.1 - 2024-05-02
 ### Fixed
