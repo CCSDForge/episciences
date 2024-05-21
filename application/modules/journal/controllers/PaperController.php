@@ -606,7 +606,7 @@ class PaperController extends PaperDefaultController
             }
 
         } else {
-            trigger_error('Someone tryed to do request for orcid modifications');
+            trigger_error('Someone tried to do request for orcid modifications');
         }
     }
 
