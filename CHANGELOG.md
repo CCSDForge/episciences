@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
 ## Unreleased
 ###Added
 - Public representation of a document in JSON format (@see /json?v=2) 
@@ -26,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - classification of keywords by language
 
 ### Fixed
+- RT#212956: this bug affects temporary versions: 
+  - Unable to enter the identifier when submitting a new version
+  - submitting a new version results in an error message "the version of the article to be updated must be greater than the previous version".
 - [#472](https://github.com/CCSDForge/episciences/issues/472)[Bug Report] English translation missing: Proposer dans le volume #472
 - Duplicated submission when automatically transferring a new version.
 

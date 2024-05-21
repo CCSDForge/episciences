@@ -527,7 +527,6 @@ class Episciences_Submit
 
             $isRequiredIdentifier = $defaults['isRequiredIdentifier'] ?? true; // The identifier field will be empty
 
-
             $docIdOptions = [
                 'label' => 'Identifiant du document',
                 'disabled' => true,
@@ -537,7 +536,7 @@ class Episciences_Submit
             ];
 
             if (!$isRequiredIdentifier) {
-                unset($docIdOptions['disabled']);
+                unset($docIdOptions['disabled']); // make it editable for entering the identifier
             }
 
             // Champ texte : identifiant du document
@@ -576,15 +575,11 @@ class Episciences_Submit
 
                 // Submission of a new version following a request for changes to the temporary version
 
-                $isTmp = $paper->getRepoid() === 0 &&
-                    (
-                        $paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION ||
-                        $paper->getStatus() === Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION
-                    ) && (int)explode('/', $paper->getIdentifier())[0] === $paper->getPaperid();
-
-                if ($isTmp) {
-
+                if (isset($defaults['hasHook']) && $defaults['hasHook']) {
                     $subform->addElement('hidden', 'h_hasHook', ['value' => $defaults['hasHook']]);
+                }
+
+                if($paper->isTmp()){
 
                     //#git 259 : Leave the version field empty when submitting a new one (request: ask for the final version)
 
@@ -596,7 +591,6 @@ class Episciences_Submit
 
                 }
             }
-
 
             if ($paper->isContributorCanShareArXivPaperPwd()) {
                 $subform = self::addPaperArxivPwdElement($subform, $paper->isRequiredPaperPwd());
@@ -1749,35 +1743,34 @@ class Episciences_Submit
      */
     private static function fetchNewVersionFormDefaultValues(Episciences_Paper $paper): array
     {
+
+        $isTmp = $paper->isTmp();
+
+        $hasHook = $paper->hasHook;  // @see Episciences_Paper::setRepoid()
         $repository = $paper->getRepoid();
-        $hasHook = $paper->hasHook;
+        $identifier = $paper->getIdentifier();
+        $version = $paper->getVersion();
+
+        if ($isTmp) {
+
+            $firstSubmission = Episciences_PapersManager::get($paper->getPaperid());
+
+            if ($firstSubmission) {
+                $repository = $firstSubmission->getRepoid();
+                $hasHook = $firstSubmission->hasHook;
+                $identifier = $firstSubmission->getIdentifier();
+                $version = $firstSubmission->getVersion();
+            }
+
+        }
 
         $isRequiredIdentifier = !$hasHook || $repository !== (int)Episciences_Repositories::ZENODO_REPO_ID; //  The identifier field will be empty
 
-        if ($repository) {
-            $defaults = [
-                'hasHook' => $hasHook,
-                'isRequiredIdentifier' => $isRequiredIdentifier,
-                'docId' => $isRequiredIdentifier ? $paper->getIdentifier() : '', //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
-                'version' => $paper->getVersion(),
-                'repoId' => $repository
-            ];
-
-        } else { // tmp version
-
-            $latestSubmission = Episciences_PapersManager::getLastPaper($paper->getPaperid());
-
-            if ($latestSubmission) {
-                $hasHook = $latestSubmission->hasHook;
-            }
-
-            $defaults = [
-                'hasHook' => $hasHook,
-                'docId' => !$hasHook ? $latestSubmission->getIdentifier() : '',
-                'version' => $latestSubmission->getVersion(),
-                'repoId' => $latestSubmission->getRepoid()
-            ];
-        }
+        $defaults['hasHook'] = $hasHook;
+        $defaults['isRequiredIdentifier'] = $isRequiredIdentifier;
+        $defaults['repoId'] = $repository;
+        $defaults['docId'] = $isRequiredIdentifier ? $identifier : ''; //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
+        $defaults['version'] = $version;
 
         return $defaults;
 
@@ -2041,7 +2034,7 @@ class Episciences_Submit
                             $typeFromCsl = $aResult['type'] ?? Episciences_Paper_Dataset::UNDEFINED_CODE;
 
                             if (!array_key_exists($typeFromCsl, Episciences_Paper_Dataset::$_datasetsLabel)) {
-                                trigger_error(sprintf('[Paper [#%s]: Add missing code "%s" to %s', $paper->getDocid(), $typeFromCsl, 'Episciences_Paper_Dataset::$_datasetsLabel'));
+                                trigger_error(sprintf('[Paper [#%s]: Add missing code "%s" to %s', $docId, $typeFromCsl, 'Episciences_Paper_Dataset::$_datasetsLabel'));
                                 $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
                             } else {
                                 $code = Episciences_Paper_Dataset::$_datasetsLabel[$typeFromCsl];

@@ -1756,7 +1756,7 @@ class PaperController extends PaperDefaultController
         $paper->loadOtherVolumes(); // github #48
 
         //tmp version
-        $hasHook = $paper->isTmp() && isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
+        $hasHook = isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
         $currentVersion = 1;
 
         if (
