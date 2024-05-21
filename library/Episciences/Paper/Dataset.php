@@ -66,6 +66,7 @@ class Episciences_Paper_Dataset
         'article' => self::PUBLICATION,
         'proceedings' => 'proceedings',
         'report' => 'report',
+        'article-journal' => self::PUBLICATION,
     ];
 
     public static array $_datasetsLink = [

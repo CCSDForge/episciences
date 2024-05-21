@@ -2034,7 +2034,7 @@ class Episciences_Submit
                             $typeFromCsl = $aResult['type'] ?? Episciences_Paper_Dataset::UNDEFINED_CODE;
 
                             if (!array_key_exists($typeFromCsl, Episciences_Paper_Dataset::$_datasetsLabel)) {
-                                trigger_error(sprintf('[Paper [#%s]: Add missing code "%s" to %s', $paper->getDocid(), $typeFromCsl, 'Episciences_Paper_Dataset::$_datasetsLabel'));
+                                trigger_error(sprintf('[Paper [#%s]: Add missing code "%s" to %s', $docId, $typeFromCsl, 'Episciences_Paper_Dataset::$_datasetsLabel'));
                                 $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
                             } else {
                                 $code = Episciences_Paper_Dataset::$_datasetsLabel[$typeFromCsl];
