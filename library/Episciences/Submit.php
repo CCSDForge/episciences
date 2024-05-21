@@ -437,7 +437,7 @@ class Episciences_Submit
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_File_Transfer_Exception
      */
-    public static function ssaveTmpVersion(Episciences_Paper $paper)
+    public static function saveTmpVersion(Episciences_Paper $paper)
     {
         $result['code'] = 0;
         $result['docId'] = null;
