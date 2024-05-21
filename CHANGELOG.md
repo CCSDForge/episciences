@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## v1.0.44.1 - 2024-05-21
+### Fixed "Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given."
+
 ## v1.0.44 - 2024-05-21
 ### Fixed
 - Fixed a bug related to temporary versions with Zenodo: 
