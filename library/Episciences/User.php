@@ -1320,7 +1320,7 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function addRole(string $role, int $rvId = RVID): \Episciences_User
     {
-        $selfRoles = $this->getRoles($rvId);
+        $selfRoles = $this->getRoles($rvId) ?? [];
         $currentRoles = [];
 
         if (!in_array($role, $selfRoles, true)) { // 'reviewer'
