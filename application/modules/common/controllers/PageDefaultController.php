@@ -29,6 +29,9 @@ class PageDefaultController extends Zend_Controller_Action
             'languages' => Zend_Registry::get('languages'),
             'page' => $this->_page
         ]);
+
+
+
         if (Episciences_Auth::isSecretary()|| Episciences_Auth::isWebmaster()) {
             $this->view->canEdit = true;
             if ($this->getRequest()->isPost()) {
