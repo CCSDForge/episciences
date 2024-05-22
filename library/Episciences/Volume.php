@@ -28,6 +28,8 @@ class Episciences_Volume
 
     const VOLUME_IS_PROCEEDING = 'is_proceeding';
 
+    const VOLUME_YEAR = 'year';
+
     protected $_db = null;
     private $_vid;
     private $_rvid;
@@ -672,6 +674,7 @@ class Episciences_Volume
             self::SETTING_SPECIAL_ISSUE => $data['special_issue'],
             self::SETTING_ACCESS_CODE => $this->getSetting('access_code'),
             self::VOLUME_IS_PROCEEDING => $data['is_proceeding'],
+            self::VOLUME_YEAR => $data['year'],
             self::VOLUME_CONFERENCE_NAME => $data['conference_name'],
             self::VOLUME_CONFERENCE_THEME => $data['conference_theme'],
             self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'],
