@@ -149,6 +149,7 @@ function defineSQLTableConstants()
     define('T_MAIL_REMINDERS', 'REMINDERS');
     define('T_MAIL_TEMPLATES', 'MAIL_TEMPLATE');
     define('T_NEWS', 'NEWS');
+    define('T_JOURNAL_NEWS', 'news');
     define('T_PAPERS', 'PAPERS');
     define('T_PAPER_COMMENTS', 'PAPER_COMMENTS');
     define('T_PAPER_SETTINGS', 'PAPER_SETTINGS');

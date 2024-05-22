@@ -116,13 +116,12 @@ class Ccsd_News
                     break;
             }
         }
-
-
+        $visibility = ($bind['ONLINE']) ? "public" : "private";
         if ($id === 0) {
             //Insertion
             $this->_db->insert($this->_table, $bind);
             $id = (int)$this->_db->lastInsertId($this->_table);
-
+            $journalNewsInfo = $this->insertNewJournalNews($id, $bind, $news, $visibility);
 
         } else {
 
@@ -132,11 +131,23 @@ class Ccsd_News
                 //Maj de la date
                 $bind['DATE_POST'] = new Zend_Db_Expr('NOW()');
             }
+            $journalNewsExisting = Episciences_JournalNews::findByLegacyId($id);
+            if ($journalNewsExisting !== null){
+                $journalNewsExisting->setUid($bind['UID']);
+                $journalNewsExisting->setTitle(json_encode($news['title'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                empty($news['content']) ? $journalNewsExisting->setContent(null) :
+                    $journalNewsExisting->setContent(json_encode($news['content'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                empty($news['content']) ? $journalNewsExisting->setLink(null) :
+                    $journalNewsExisting->setLink(json_encode(['und' => $bind['LINK']],JSON_THROW_ON_ERROR));
+                $journalNewsExisting->setVisibility(json_encode([$visibility], JSON_THROW_ON_ERROR));
+                Episciences_JournalNews::update($journalNewsExisting);
 
+            } else {
+                $this->insertNewJournalNews($id, $bind, $news, $visibility);
+            }
             $this->_db->update($this->_table, $bind, $this->_primary . ' = ' . $id);
 
         }
-
         //Editing translation files
         $lang = [
             'title_' . $id => $news['title']
@@ -153,7 +164,6 @@ class Ccsd_News
             $writer->add($this->_dirLangFiles, self::PREFIX_FILENAME);
 
         }
-
     }
 
     private function updateTranslation(int $newsId, array $data = []): bool
@@ -280,5 +290,29 @@ class Ccsd_News
         } else {
             return $this->_db->fetchAll($sql);
         }
+    }
+
+    /**
+     * @param mixed $id
+     * @param array $bind
+     * @param $news
+     * @param string $visibility
+     * @return array
+     * @throws JsonException
+     */
+    public function insertNewJournalNews(mixed $id, array $bind, $news, string $visibility): void
+    {
+        $journalNewsInfo = [
+            'legacy_id' => $id,
+            'code' => Episciences_ReviewsManager::find($bind['RVID'])->getCode(),
+            'uid' => $bind['UID'],
+            'date_creation' => date("Y-m-d H:i:s"),
+            'date_updated' => date("Y-m-d H:i:s"),
+            'title' => json_encode($news['title'], JSON_THROW_ON_ERROR),
+            'content' => empty($news['content']) ? new Zend_Db_Expr('NULL') : json_encode($news['content'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            'link' => empty($news['link']) ? new Zend_Db_Expr('NULL') : json_encode(['und' => $bind['LINK']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            'visibility' => json_encode([$visibility], JSON_THROW_ON_ERROR)
+        ];
+        Episciences_JournalNews::insert($journalNewsInfo);
     }
 }

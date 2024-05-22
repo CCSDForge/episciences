@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Public representation of a document in JSON format (@see /json?v=2) 
 - [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
 - [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
+- Functionality for migrating news to the new sql news table
 ### Changed
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
