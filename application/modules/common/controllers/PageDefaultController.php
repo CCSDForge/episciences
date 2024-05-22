@@ -1,12 +1,14 @@
 <?php
 
-/**
- * Controller permettant le rendu d'une page personnalisable
- *
- */
+
 class PageDefaultController extends Zend_Controller_Action
 {
     const WIDGET_BROWSE_LATEST_DIV = '<div id="widget-browse-latest"></div>';
+    private const MENU_ITEM_LABEL = 'label';
+    private const MENU_ITEM_PRIVILEGE = 'privilege';
+    private const MENU_ITEM_PERMALIEN = 'permalien';
+    private const MENU_ITEM_PAGES = 'pages';
+    public string $_page;
 
     /**
      * Récupération du nom de la page à afficher
@@ -46,26 +48,23 @@ class PageDefaultController extends Zend_Controller_Action
                 } elseif (isset($pageContent)) {
                     $pageCode = $this->_page;
                     $titles = [];
+                    $pageVisibility = ['public'];
                     if ($pageCode !== 'index') {
 
                         $menu = new Episciences_Website_Navigation(["sid" => RVID]);
                         $menu->load();
                         $pagesFromMenu = $menu->toArray();
+                        $labelAndPrivilege = self::findLabelAndPrivilegeByPageCode($pagesFromMenu, $pageCode);
 
-                        foreach ($pagesFromMenu as $menuItem) {
+                        if ($labelAndPrivilege[self::MENU_ITEM_LABEL] !== null) {
                             foreach (Episciences_Tools::getLanguages() as $languageCode => $languageLabel) {
-                                if (isset($menuItem['label'])) {
-                                    $titles[$languageCode] = $this->view->translate($menuItem['label'], $languageCode);
-                                }
-                            }
-
-                            if (!empty($menuItem['privilege'])) {
-                                $pageVisibility = [$menuItem['privilege']];
-                            } else {
-                                $pageVisibility = ['public'];
+                                $titles[$languageCode] = $this->view->translate($labelAndPrivilege[self::MENU_ITEM_LABEL], $languageCode);
                             }
                         }
 
+                        if ($labelAndPrivilege[self::MENU_ITEM_PRIVILEGE] !== null) {
+                            $pageVisibility = [$labelAndPrivilege[self::MENU_ITEM_PRIVILEGE]];
+                        }
 
                         $pageToSave = new Episciences_Page();
                         $pageToSave->setContent($pageContent);
@@ -104,5 +103,30 @@ class PageDefaultController extends Zend_Controller_Action
         $this->view->content = $pageContentForOutput;
         $this->view->page = $this->_page;
     }
+
+    private static function findLabelAndPrivilegeByPageCode(array $menuItemArray, string $pageCode): array
+    {
+        $label = null;
+        $privilege = null;
+
+        // Define a recursive helper function
+        $findLabelAndPrivilege = function ($arr) use (&$findLabelAndPrivilege, $pageCode, &$label, &$privilege) {
+            foreach ($arr as $item) {
+                if (isset($item[self::MENU_ITEM_PERMALIEN]) && $item[self::MENU_ITEM_PERMALIEN] == $pageCode) {
+                    $label = $item[self::MENU_ITEM_LABEL];
+                    $privilege = $item[self::MENU_ITEM_PRIVILEGE] ?? null;
+                    return;
+                } elseif (is_array($item) && array_key_exists(self::MENU_ITEM_PAGES, $item)) {
+                    $findLabelAndPrivilege($item[self::MENU_ITEM_PAGES]);
+                }
+            }
+        };
+
+        // Call the recursive helper function
+        $findLabelAndPrivilege($menuItemArray);
+
+        return array(self::MENU_ITEM_LABEL => $label, self::MENU_ITEM_PRIVILEGE => $privilege);
+    }
+
 
 }
