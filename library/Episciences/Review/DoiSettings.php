@@ -130,8 +130,12 @@ class Episciences_Review_DoiSettings
      * @return string
      * @throws Zend_Exception
      */
-    public function createDoiWithTemplate(Episciences_Paper $paper): string
+    public function createDoiWithTemplate(Episciences_Paper $paper, string $rvCode = null): string
     {
+
+        if (!$rvCode && !Ccsd_Tools::isFromCli()){
+            $rvCode = RVCODE;
+        }
 
         // return an empty DOI if there's no prefix
         if ($this->getDoiPrefix() == '') {
@@ -197,7 +201,7 @@ class Episciences_Review_DoiSettings
         }
 
 
-        $template[self::DOI_FORMAT_REVIEW_CODE] = RVCODE;
+        $template[self::DOI_FORMAT_REVIEW_CODE] = $rvCode;
         $template[self::DOI_FORMAT_PAPER_VOLUME] = $volume;
         $template[self::DOI_FORMAT_PAPER_VOLUME_INT] = $volumeInt;
         $template[self::DOI_FORMAT_PAPER_VOLUME_BIB_REF] = $refBibVolume;
@@ -324,6 +328,7 @@ class Episciences_Review_DoiSettings
             ->from('PAPERS', ['DOI', 'PAPERID'])
             ->where('DOI LIKE ?', $doiPattern . '%')
             ->where('RVID LIKE ?', $rvid)
+            ->order('CHAR_LENGTH(DOI) DESC') // RT#211209: Select STRCMP('10.46298/theoretics.24.10', '10.46298/theoretics.24.1') As 'str_cmp' : Les deux chaînes sont identiques. ORDER BY n'a donc pas fonctionné correctement.
             ->order('DOI DESC')
             ->limit(1);
 

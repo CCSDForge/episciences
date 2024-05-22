@@ -333,6 +333,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
         if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['newsid'])) {
             $news = new Episciences_News();
             $news->delete($params['newsid']);
+            Episciences_JournalNews::deleteByLegacyId($params['newsid']);
         }
     }
 }

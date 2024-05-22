@@ -261,26 +261,7 @@ class BrowseController extends Zend_Controller_Action
 
     public function latestAction()
     {
-        $page = new Episciences_Website_Navigation_Page_BrowseLatest();
-        $page->load();
-
-        $limit = $page->getNbResults();
-        if (!is_numeric($limit)) {
-            $limit = 10;
-        }
-
-        $query = 'q=*%3A*';
-        $query .= '&sort=publication_date_tdate+desc&rows=' . $limit . '&wt=phps&omitHeader=true';
-
-        // filtre les résultats en fonction du RVID
-        if (RVID && RVID != 0) {
-            $query .= '&fq=revue_id_i:' . RVID;
-        }
-
-        $res = Episciences_Tools::solrCurl($query);
-        if ($res) {
-            $this->view->articles = unserialize($res, ['allowed_classes' => false]);
-        }
+        $this->view->articles = Episciences_Website_Navigation_Page_BrowseLatest::getLatestPublications();
     }
 
     public function currentissuesAction()

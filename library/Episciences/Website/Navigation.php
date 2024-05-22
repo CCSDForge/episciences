@@ -1,22 +1,13 @@
 <?php
 
-/**
- * Navigation spécifique à l'application Episciences
- * @author yannick
- *
- */
 class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 {
-    /**
-     * Liste des pages
-     */
     const PAGE_INDEX = 'index';
     const PAGE_CUSTOM = 'custom';
     const PAGE_LINK = 'link';
     const PAGE_FILE = 'file';
     const PAGE_NEWS = 'news';
     const PAGE_RSS = 'rss';
-
     const PAGE_BROWSE_BY_AUTHOR = 'browseByAuthor';
     const PAGE_BROWSE_BY_DATE = 'browseByDate';
     const PAGE_BROWSE_BY_SECTION = 'browseBySection';
@@ -26,35 +17,23 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_BROWSE_CURRENT_ISSUES = 'browseCurrentIssues';
     const PAGE_BROWSE_SPECIAL_ISSUES = 'browseSpecialIssues';
     const PAGE_BROWSE_REGULAR_ISSUES = 'browseRegularIssues';
-
+    const PAGE_ACCEPTED_PAPERS_LIST = 'acceptedPapersList';
     const PAGE_SEARCH = 'search';
     const PAGE_EDITORIAL_STAFF = 'editorialStaff';
     const PAGE_CREDITS = 'credits';
     const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
     const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
-    const PAGE_ACCEPTED_PAPERS_LIST = 'acceptedPapersList';
+    const PAGE_ABOUT = 'about';
+    const PAGE_EDITORIAL_BOARD = 'editorialBoard';
+    const PAGE_TECHNICAL_BOARD = 'technicalBoard';
+    const PAGE_SCIENTIFIC_ADVISORY_BOARD = 'scientificAdvisoryBoard';
+    const PAGE_FORMER_MEMBERS = 'formerMembers';
 
-    /**
-     * Table de stockage de la navigztion d'un site
-     * @var string
-     */
     protected $_table = 'WEBSITE_NAVIGATION';
-    /**
-     * Clé primaire
-     * @var string
-     */
     protected $_primary = 'NAVIGATIONID';
-    /**
-     * Identifiant de la revue dans Episciences
-     * @var int
-     */
     protected $_sid = 0;
 
-    /**
-     * Initialisation des options de la navigation
-     * @see Ccsd_Website_Navigation::setOptions($options)
-     */
-    public function setOptions($options = [])
+    public function setOptions($options = []): void
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
@@ -70,10 +49,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
     }
 
-    /**
-     * Chargement de la navigation du site
-     * @see Ccsd_Website_Navigation::load()
-     */
     public function load()
     {
         $sql = $this->_db->select()
@@ -122,67 +97,52 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         $this->_idx++;
     }
 
-    /**
-     * Enregistrement de la nouvelle navigation
-     * @see Ccsd_Website_Navigation::save()
-     */
+
     public function save()
     {
-        //Suppression de l'ancien menu
+        // Suppression de l'ancien menu
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
 
         $lang = [];
-        //Enregistrement des nouvelles données
-        $i = 1;
+        $pageIdCounter = 1;
 
-        foreach ($this->_order as $pageid => $spageids) {
+        // Enregistrement des nouvelles données
+        foreach ($this->_order as $pageId => $subPageIds) {
+            $this->processPage($pageId, null, $lang, $pageIdCounter);
 
-            if (isset($this->_pages[$pageid])) {
-                //Initialisation de la pageid
-                $this->_pages[$pageid]->setPageId($i);
-                $this->savePage($this->_pages[$pageid]);
-                $key = $this->_pages[$pageid]->getLabelKey();
-                $lang[$key] = $this->_pages[$pageid]->getLabels();
-                $i++;
+            if (is_array($subPageIds) && count($subPageIds) > 0) {
+                foreach ($subPageIds as $subPageId => $subSubPageIds) {
+                    $this->processPage($subPageId, $pageId, $lang, $pageIdCounter);
 
-                if (is_array($spageids) && count($spageids) > 0) {
-                    foreach ($spageids as $spageid => $sspageids) {
-                        if (isset($this->_pages[$spageid])) {
-                            $this->_pages[$spageid]->setPageId($i);
-                            $this->_pages[$spageid]->setPageParentId($this->_pages[$pageid]->getPageId());
-                            $this->savePage($this->_pages[$spageid]);
-                            $key = $this->_pages[$spageid]->getLabelKey();
-                            $lang[$key] = $this->_pages[$spageid]->getLabels();
-                            $i++;
-
-                            if (is_array($sspageids) && count($sspageids) > 0) {
-                                foreach (array_keys($sspageids) as $sspageid) {
-                                    if (isset($this->_pages[$sspageid])) {
-                                        $this->_pages[$sspageid]->setPageId($i);
-                                        $this->_pages[$sspageid]->setPageParentId($this->_pages[$spageid]->getPageId());
-                                        $this->savePage($this->_pages[$sspageid]);
-                                        $key = $this->_pages[$sspageid]->getLabelKey();
-                                        $lang[$key] = $this->_pages[$sspageid]->getLabels();
-                                        $i++;
-                                    }
-                                }
-                            }
+                    if (is_array($subSubPageIds) && count($subSubPageIds) > 0) {
+                        foreach (array_keys($subSubPageIds) as $subSubPageId) {
+                            $this->processPage($subSubPageId, $subPageId, $lang, $pageIdCounter);
                         }
-
                     }
                 }
             }
         }
 
-        //Enregistrement des traductions dans des fichiers
+        // Enregistrement des traductions dans des fichiers
         $writer = new Ccsd_Lang_Writer($lang);
         $writer->write(REVIEW_LANG_PATH, 'menu');
     }
 
-    /**
-     * Enregistrement de la page en base
-     * @param Ccsd_Website_Navigation_Page $page page à enregistrer
-     */
+    private function processPage($pageId, $parentId, &$lang, &$pageIdCounter)
+    {
+        if (isset($this->_pages[$pageId])) {
+            $this->_pages[$pageId]->setPageId($pageIdCounter);
+            if ($parentId !== null) {
+                $this->_pages[$pageId]->setPageParentId($this->_pages[$parentId]->getPageId());
+            }
+            $this->savePage($this->_pages[$pageId]);
+
+            $key = $this->_pages[$pageId]->getLabelKey();
+            $lang[$key] = $this->_pages[$pageId]->getLabels();
+            $pageIdCounter++;
+        }
+    }
+
     public function savePage($page)
     {
         //Cas particulier des pages personnalisable
@@ -208,11 +168,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         $this->_db->insert($this->_table, $bind);
     }
 
-    /**
-     * Vérification de l'unicité du lien permanent
-     * @param $page
-     * @return string|string[]|null
-     */
     protected function getUniqPermalien($page)
     {
         $permalien = $page->getPermalien();
@@ -252,38 +207,47 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
     /**
      * Transformation de la navigation en tableau PHP (compatible avec la navigation Zend_Navigation)
-     * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
-        $res = [];
+        $result = [];
         $id = 0;
-        foreach ($this->_order as $pageid => $spageids) {
-            if (isset($this->_pages[$pageid])) {
-                $res[$id] = $this->_pages[$pageid]->toArray();
-                if (is_array($spageids) && count($spageids) > 0) {
-                    $id2 = 0;
-                    foreach ($spageids as $spageid => $sspageids) {
-                        if (isset($this->_pages[$spageid])) {
-                            $res[$id]['pages'][$id2] = $this->_pages[$spageid]->toArray();
 
-                            if (is_array($sspageids) && count($sspageids) > 0) {
-                                foreach (array_keys($sspageids) as $sspageid) {
-                                    if (isset($this->_pages[$sspageid])) {
-                                        $res[$id]['pages'][$id2]['pages'][] = $this->_pages[$sspageid]->toArray();
-                                    }
-
-                                }
-                            }
-                        }
-                        $id2++;
-                    }
-                }
+        foreach ($this->_order as $pageId => $subPageIds) {
+            if (isset($this->_pages[$pageId])) {
+                $result[$id] = $this->pageToArray($pageId, $subPageIds);
             }
             $id++;
         }
 
-        return $res;
+        return $result;
     }
+
+    private function pageToArray(int $pageId, $subPageIds): array
+    {
+        $pageArray = $this->_pages[$pageId]->toArray();
+
+        if (is_array($subPageIds) && count($subPageIds) > 0) {
+            $pageArray['pages'] = $this->subPagesToArray($subPageIds);
+        }
+
+        return $pageArray;
+    }
+
+    private function subPagesToArray(array $subPageIds): array
+    {
+        $subPagesArray = [];
+        $subId = 0;
+
+        foreach ($subPageIds as $subPageId => $subSubPageIds) {
+            if (isset($this->_pages[$subPageId])) {
+                $subPagesArray[$subId] = $this->pageToArray($subPageId, $subSubPageIds);
+            }
+            $subId++;
+        }
+
+        return $subPagesArray;
+    }
+
 
 }

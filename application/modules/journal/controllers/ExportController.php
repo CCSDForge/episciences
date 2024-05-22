@@ -22,6 +22,8 @@ class ExportController extends Zend_Controller_Action
 
         $docId = $request->getParam('id');
 
+        $version = (int)$request->getParam('v');
+
         if (!is_numeric($docId)) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
             $this->renderScript('index/notfound.phtml');
@@ -41,7 +43,7 @@ class ExportController extends Zend_Controller_Action
 
         $this->redirectIfNotPublished($request, $paper);
 
-        $export = $this->exportTo($paper, 'json');
+        $export = $this->exportTo($paper, 'json', $version);
 
         if ($export) {
             echo $export;
@@ -104,7 +106,7 @@ class ExportController extends Zend_Controller_Action
     {
 
         if (!$paper->isPublished() && !Episciences_Auth::isLogged()) {
-            $paperId = $paper->getPaperid() ? $paper->getPaperid() : $paper->getDocid();
+            $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
 
             if ($id != 0) {
@@ -127,12 +129,12 @@ class ExportController extends Zend_Controller_Action
      * @return bool|false|string
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function exportTo(Episciences_Paper $paper, string $format)
+    private function exportTo(Episciences_Paper $paper, string $format, int $version = null)
     {
 
         $contentTypes = [
             'bibtex' => 'text/plain; charset=utf-8',
-            'json' => 'text/json; charset=utf-8',
+            'json' => 'application/json; charset=UTF-8',
             'xml' => self::TEXT_XML_CHARSET_UTF_8,
             'dc' => self::TEXT_XML_CHARSET_UTF_8,
             'tei' => self::TEXT_XML_CHARSET_UTF_8,
@@ -141,7 +143,7 @@ class ExportController extends Zend_Controller_Action
         header('Content-Type: '. $contentTypes[$format]?? $contentTypes['xml']);
 
 
-        return $paper->get($format);
+        return $paper->get($format, $version);
     }
 
     /**

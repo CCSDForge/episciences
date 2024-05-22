@@ -40,10 +40,9 @@ return [
     "Relecteur" => ["Reviewer", "Reviewers"],
     // DOCUMENT TYPES
     'article' => ['article', 'articles'],
-    'Article'=> 'Article',
-    'Preprint'=>'Preprint',
+    'Article' => 'Article',
+    'Preprint' => 'Preprint',
     'ConferenceObject' => 'Conference paper',
-    'Text' => "Preprint",
     'Dataset' => 'Jeux de données',
 
 
@@ -95,6 +94,10 @@ return [
     // TO FIX
     'guest' => 'Guest',
     'member' => 'Member',
+    'editorial_board' => 'Editorial board',
+    'technical_board' => 'Technical board',
+    'scientific_advisory_board' => 'Scientific advisory board',
+    'former_member' => 'Former member',
     'coauthor' => 'Coauthor',
     'webmaster' => 'Webmaster',
     'secretary' => 'Editorial secretary',
@@ -125,6 +128,7 @@ return [
     "Les modifications ont bien été enregistrées." => "Changes have been saved.",
     "Modifications des affiliations bien prise en compte" => "Affiliations are updated",
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
+    "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
     "Fichier" => 'File',
     "Parcourir" => 'Browse',
     "Ajouter" => 'Add',
@@ -286,6 +290,7 @@ return [
     'Motif de DOI incorrect' => 'Wrong DOI pattern',
     'Document non trouvé' => 'Document non found',
     'Échec de la mise à jour' => 'Update failed',
+    'Année du volume'=> 'Year of the volume',
     "Volume de l'article" => "Volume of the paper",
     "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
     "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the paper (numbers only) [Replacement char for spaces]',
@@ -367,7 +372,7 @@ return [
     "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "This paper has already been accepted, it is useless to review it now.",
     "Cet article a été refusé, il n'est plus nécessaire de le relire." => "This paper has been refused, it is useless to review it now.",
     "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "This paper has been deleted, it is useless to review it now.",
-    "Cet article est obsolète, il n'est plus nécessaire de le relire." =>"This paper is obsolete, it is useless to review it now.",
+    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "This paper is obsolete, it is useless to review it now.",
     "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "This paper is under revision, it is useless to review it now.",
 
     "Articles de l'auteur" => "Articles of this author",
@@ -952,7 +957,8 @@ return [
     'Site(s) Web' => 'Web Site(s)',
     'Saisissez votre compte X (anciennement Twitter) (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your X (ex. Twitter) account (e.g @anonymous) or Mastodon account (e.g @username@server)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
-
+    'Une courte biographie (700 caractères autorisés)' => 'A short biography (700 characters allowed.)',
+    'Biographie' => 'Biography',
     // User activation
     "Activation de votre compte" => 'Account activation',
     "Vous pouvez dès maintenant vous" => 'You can now',
@@ -1122,7 +1128,8 @@ return [
     Episciences_Paper_Logger::CODE_LD_ADDED => 'Linked data added',
     Episciences_Paper_Logger::CODE_LD_CHANGED => 'Linked data changed',
     Episciences_Paper_Logger::CODE_LD_REMOVED => 'Linked data removed',
-    Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'New révision deadline',
+    Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'New revision deadline',
+    Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED => 'The document has been imported',
     "Date d'assignation" => "Assignation date",
     "Date de désassignation" => "De-assignment date",
     "Assigné par" => "Assigned by",
@@ -1300,7 +1307,7 @@ return [
     'Optionnelle' => 'Optional',
     'Cliquer ici pour ouvrir le calendrier' => 'Click here to open the calendar',
     'Version révisée attendue avant le :' => 'Revised version expected before:',
-    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj."  =>"Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
+    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
 
     /**
      * Tips
@@ -1736,6 +1743,13 @@ return [
     "Episciences_Website_Navigation_Page_Search" => "Search an article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
+    "Episciences_Website_Navigation_Page_About" => "About",
+
+    "Episciences_Website_Navigation_Page_EditorialBoard" => "Editorial board",
+    'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
+    'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Scientific advisory board',
+    'Episciences_Website_Navigation_Page_FormerMembers' => 'Former members',
+
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
@@ -1950,7 +1964,7 @@ return [
     'En cours de publication' => 'Being published',
     "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
     'dont %s importés' => "including %s imported",
-    'dont %s importé'  => "including %s imported",
+    'dont %s importé' => "including %s imported",
     'publiés' => 'published',
     "Vous essayez de consulter les indicateurs statistiques pour l'année" => "You are trying to consult the statistical indicators for the year",
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
@@ -2461,8 +2475,8 @@ return [
     "IsPartOf" => "Is part of",
     "HasPart" => "Has part",
     "references" => "References",
-    "Références"=> "References",
-    "Références bibliographiques"=> "Bibliographic References",
+    "Références" => "References",
+    "Références bibliographiques" => "Bibliographic References",
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",
@@ -2471,7 +2485,7 @@ return [
     "Finances" => "Finances",
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
-    'IsRelatedTo'=>'Is related to',
+    'IsRelatedTo' => 'Is related to',
 
     // Journal's settings
     "Exiger que la demande de révision soit assortie d'un délai" => "To require that a deadline is given with revision request",

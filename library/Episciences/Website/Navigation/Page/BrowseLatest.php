@@ -6,7 +6,30 @@ class Episciences_Website_Navigation_Page_BrowseLatest extends Episciences_Websi
     protected $_action = 'latest';
     
     protected $_nbResults;
-    
+
+    /**
+     * @return mixed|string
+     * @throws Exception
+     */
+    public static function getLatestPublications(): mixed
+    {
+        $page = new self();
+        $page->load();
+
+        $limit = is_numeric($page->getNbResults()) ? $page->getNbResults() : 10;
+
+        $query = 'q=*%3A*';
+        $query .= '&sort=publication_date_tdate+desc&rows=' . $limit . '&wt=phps&omitHeader=true';
+
+        if (RVID && RVID != 0) {
+            $query .= '&fq=revue_id_i:' . RVID;
+        }
+
+        $res = Episciences_Tools::solrCurl($query);
+        $latestPublications = $res ? unserialize($res, ['allowed_classes' => false]) : '';
+        return $latestPublications;
+    }
+
     public function setOptions($options = array()) {
     	$methods = get_class_methods ( $this );
     	foreach ( $options as $key => $value ) {

@@ -1,0 +1,37 @@
+version: '3'
+services:
+  solr:
+    image: solr:8
+    container_name: solr
+    ports:
+      - "8983:8983"
+    networks:
+      - search
+    environment:
+      ZK_HOST: "zoo:2181"
+    depends_on:
+      - zoo
+    volumes:
+      - type: bind
+        source: ./src/solr
+        target: /opt/configsets
+        read_only: true
+      - type: bind
+        source: ./solr/data
+        target: /var/solr
+        read_only: true
+    command: >
+      bash -c "
+          solr start -f -p 8983 -z zoo:2181
+      "
+
+  zoo:
+    image: zookeeper:3.9
+    networks:
+      - search
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
+
+networks:
+  search:
+    driver: bridge

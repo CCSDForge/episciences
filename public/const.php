@@ -149,6 +149,7 @@ function defineSQLTableConstants()
     define('T_MAIL_REMINDERS', 'REMINDERS');
     define('T_MAIL_TEMPLATES', 'MAIL_TEMPLATE');
     define('T_NEWS', 'NEWS');
+    define('T_JOURNAL_NEWS', 'news');
     define('T_PAPERS', 'PAPERS');
     define('T_PAPER_COMMENTS', 'PAPER_COMMENTS');
     define('T_PAPER_SETTINGS', 'PAPER_SETTINGS');
@@ -182,6 +183,7 @@ function defineSQLTableConstants()
     define('T_PAPER_METADATA_SOURCES', 'metadata_sources');
     define('T_PAPER_PROJECTS', 'paper_projects');
     define('T_PAPER_CITATIONS', 'paper_citations');
+    define('T_PAGES', 'pages');
     //define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
 }
 
@@ -290,5 +292,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('ENDPOINTS_SEARCH_PROTOCOL', '');
         define('ENDPOINTS_INDEXING_HOST', '');
         define('ENDPOINTS_INDEXING_TIMEOUT', 0);
+        define('DOI_EMAIL_CONTACT', '');
     }
 }

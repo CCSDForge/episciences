@@ -14,6 +14,7 @@ function visualizeBiblioRefs() {
                 url: url,
                 dataType: "json",
             }).success(function (response) {
+                let lastIndex = Object.entries(response).slice(-1);
                 $.each(response, function (i, obj) {
                     if (obj.ref !== undefined) {
                         let strBiblioRef = '';
@@ -31,14 +32,16 @@ function visualizeBiblioRefs() {
                             let found = parsedRawRef.doi.match(regexDoi);
                             let addUrl;
                             if (found !== null) {
-                                addUrl = 'https://doi.org/'+found[0];
+                                addUrl = 'https://doi.org/' + found[0];
                             } else {
                                 addUrl = parsedRawRef.doi;
                             }
                             strBiblioRef += " " + "<a href='" + addUrl + "' rel='noopener' target='_blank'>" + parsedRawRef.doi + "</a>"
                         }
-                        $("<div>" + strBiblioRef + "</div><br>").appendTo("#biblio-refs-container");
-
+                        $("<li>" + strBiblioRef + "</li>").appendTo("#biblio-refs-container");
+                        if (lastIndex[0][0] === i){
+                            $("<small class=\"label label-default\">Sources : Semantic Scholar</small>").appendTo("#biblio-refs-container");
+                        }
                     }
                 });
                 if (response.message !== undefined) {
@@ -50,7 +53,7 @@ function visualizeBiblioRefs() {
             }).error(function (xhr) {
                 try {
                     let apiResponse = JSON.parse(xhr.responseText);
-                    $("<div>" + apiResponse.message + "</div>").appendTo("#biblio-refs-container");
+                    $("<li>" + apiResponse.message + "</li>").appendTo("#biblio-refs-container");
 
                 } catch (e) {
                     console.log(e.name + " : " + e.message);

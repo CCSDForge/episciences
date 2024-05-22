@@ -31,6 +31,9 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        $this->requestingAnUnpublishedFile($paper);
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
+
         $pdf_name = null;
         $url = null;
         $count = 0;
@@ -66,9 +69,7 @@ class PaperController extends PaperDefaultController
         }
 
 
-        $this->requestingAnUnpublishedFile($paper);
 
-        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
         $mainDocumentContent = $this->getMainDocumentContent($paper, $url);
 
@@ -145,7 +146,6 @@ class PaperController extends PaperDefaultController
         }
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
-
         $this->updatePaperStats($paper);
         $paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
 
@@ -606,7 +606,7 @@ class PaperController extends PaperDefaultController
             }
 
         } else {
-            trigger_error('Someone tryed to do request for orcid modifications');
+            trigger_error('Someone tried to do request for orcid modifications');
         }
     }
 
@@ -1756,7 +1756,7 @@ class PaperController extends PaperDefaultController
         $paper->loadOtherVolumes(); // github #48
 
         //tmp version
-        $hasHook = $paper->isTmp() && isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
+        $hasHook = isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
         $currentVersion = 1;
 
         if (

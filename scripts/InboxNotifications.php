@@ -563,7 +563,6 @@ class InboxNotifications extends Script
                     $this->displayCritical($e->getMessage());
                 }
 
-                $this->enrichment($paper, $data);
             }
 
             $message = 'The article (identifier = ' . $paper->getIdentifier() . ') has been submitted';
@@ -1107,6 +1106,7 @@ class InboxNotifications extends Script
         }
 
         $this->notifyAuthorAndEditorialCommittee($journal, $newPaper, ['originalRequest' => $comment]);
+        $this->enrichment($newPaper, $newPaperData);
         return true;
 
     }

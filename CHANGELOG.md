@@ -14,25 +14,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-### Unreleased
-### Changed
-- RT#209343: it is now possible to change the volume or section of a published article.
-- Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
-- Section translations now stored in database
-- DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + refactoring
-- Export Crossref => the reference is added even if doi is included
-
-### Fixed
-- getlinkdata script now get csl related to linked datasets scholexplorer
-### Added
-- [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the rating page to the article's administration page.
-- CSL support for data and linked software, addition of management of several formats for the data and linked software form (HAL url, SWH url, arxiv url), extraction of citation from the hal api  if hal is submitted in the form of data and linked software.
-- two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
+###Conflicts
 - button to be redirected to the episciences bibliographic extraction application to import bibtex
 - If HAL, send coar notify message when updating metadata for published articles.
 - Added in zbjat export bibliographical references from bibtex import
 - Added button to redirect on epi citation without extract pdf
 - [#418](https://github.com/CCSDForge/episciences/issues/418) Enable edition of relationship and type for the linked data
+
+## Unreleased
+###Added
+- Public representation of a document in JSON format (@see /json?v=2) 
+- [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
+- [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
+- Functionality for migrating news to the new sql news table
+### Changed
+- crossref export:
+  - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
+  - ROR added to the schema (did not work on the previous version)
+- classification of keywords by language
+
+### Fixed
+- RT#212956: this bug affects temporary versions: 
+  - Unable to enter the identifier when submitting a new version
+  - submitting a new version results in an error message "the version of the article to be updated must be greater than the previous version".
+- [#472](https://github.com/CCSDForge/episciences/issues/472)[Bug Report] English translation missing: Proposer dans le volume #472
+- Duplicated submission when automatically transferring a new version.
+
+## v1.0.43.1 - 2024-05-02
+### Fixed
+- Reallocation of a previously allocated doi.
+- Resetting the position of a paper in a volume will not work if the paper is removed from the volume.
+- [#469](https://github.com/CCSDForge/episciences/issues/469) [Bug Report] Add ORCID for an author with apostrophe in the name is broken into two
+### Changed
+- Allow the assignment of a DOI to a temporarily accepted article
+- Automatic numbering of bibliographical references, increased padding between references 
+
+## v1.0.43 - 2024-04-17
+### Changed
+- Updated application's requirements to PHP 8.1.* . All application dependencies were updated accordingly
+- Section's translations are now stored in database instead of server files
+- DOI Content Negotiation support for linked data automatically obtained when submitting or updating metadata + code refactoring
+- Crossref Export: the unstructured reference is added with the DOI. Previously it was either DOI or the unstructured 
+
+### Fixed
+- Scholexplorer API usage: The automated script to discover related datasets to published articles now only handle Datasets
+ 
+### Added
+- [#431](https://github.com/CCSDForge/episciences/issues/431): A link from the peer review result page to the article's administration page.
+- Using Citation Style Language and APIs we now retrieve and display the text of the references added for datasets, software, HAL Ids, SWHID, arXiv Ids)
+- two new statistical indicators ( Submission-acceptance time, Submission-publication time) to the "At a glance" section.
+- A new button as a shortcut access the Episciences bibliographic extraction application to import bibtex
+- If the metadata of an Episciences publication hosted on HAL is updated, we now send a COAR notification to HAL to trigger an update of the metadata on HAL.
+- ZBJATS export: bibliographical references from bibtex import are now also supported and exported
+
+## v1.0.42.5 - 2024-04-17
+### Fixed
+- [#457](https://github.com/CCSDForge/episciences/issues/457): DOAJ fullText record gives an url that can't be accessed.
+- SignPosting headers: fixed missing doi.org domain prefix for DOIs
+
+### Changed
+- Taking into account the new value (3) after changing the authorised values in the user CAS table.
+
 ## v1.0.42.4 - 2024-03-27
 ### Fixed
 - [#453](https://github.com/CCSDForge/episciences/issues/453): Show a more prominent error when there is a CSRF token error after the editor's comment has been sent.
