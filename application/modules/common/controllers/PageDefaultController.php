@@ -53,8 +53,8 @@ class PageDefaultController extends Zend_Controller_Action
                         $pagesFromMenu = $menu->toArray();
 
                         foreach ($pagesFromMenu as $menuItem) {
-                            if (isset($menuItem['permalien']) && $menuItem['permalien'] === $pageCode) {
-                                foreach (Episciences_Tools::getLanguages() as $languageCode => $languageLabel) {
+                            foreach (Episciences_Tools::getLanguages() as $languageCode => $languageLabel) {
+                                if (isset($menuItem['label'])) {
                                     $titles[$languageCode] = $this->view->translate($menuItem['label'], $languageCode);
                                 }
                             }
@@ -100,6 +100,7 @@ class PageDefaultController extends Zend_Controller_Action
             unset($view);
             $pageContentForOutput = str_replace(self::WIDGET_BROWSE_LATEST_DIV, sprintf('<div id="browse-latest">%s</div>', $latest), $pageContentForOutput);
         }
+
         $this->view->content = $pageContentForOutput;
         $this->view->page = $this->_page;
     }
