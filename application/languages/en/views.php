@@ -128,7 +128,7 @@ return [
     "Les modifications ont bien été enregistrées." => "Changes have been saved.",
     "Modifications des affiliations bien prise en compte" => "Affiliations are updated",
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
-    "L'année du volume est incorrect veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
+    "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
     "Fichier" => 'File',
     "Parcourir" => 'Browse',
     "Ajouter" => 'Add',

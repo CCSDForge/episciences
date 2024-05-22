@@ -438,7 +438,7 @@ class VolumeController extends Zend_Controller_Action
         if ($year !== '' && is_string($year)) {
             $maxDate = date('Y', strtotime('+ 5 years'));
             if (!($year >= self::MIN_VOLUME_DATE && $year <= $maxDate)) {
-                $message = '<strong>' . $this->view->translate("L'année du volume est incorrect veuillez saisir entre: ") . self::MIN_VOLUME_DATE . ' ' . $this->view->translate('et') . ' ' . $maxDate . '</strong>';
+                $message = '<strong>' . $this->view->translate("L'année du volume est incorrecte veuillez saisir entre: ") . self::MIN_VOLUME_DATE . ' ' . $this->view->translate('et') . ' ' . $maxDate . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->_helper->redirector->gotoUrl($request->getRequestUri());
             }
