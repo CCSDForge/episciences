@@ -417,4 +417,28 @@ class Episciences_Paper_DatasetsManager
         krsort($arrayLd, SORT_FLAG_CASE | SORT_STRING);
         return $arrayLd;
     }
+
+    public static function updateRelationAndTypeById(Episciences_Paper_Dataset $epiDataset): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $linkkedData = $epiDataset->getId();
+        $where = [];
+        if ($linkkedData !== null) {
+            $where['id = ?'] = $linkkedData;
+        }
+
+        $values = [
+            'code' => $epiDataset->getCode(),
+            'relationship' => $epiDataset->getRelationship(),
+            'source_id' => $epiDataset->getSourceId(),
+        ];
+        try {
+            $resUpdate = $db->update(T_PAPER_DATASETS, $values, $where);
+        } catch (Zend_Db_Adapter_Exception $exception) {
+            $resUpdate = 0;
+            trigger_error($exception->getMessage(), E_USER_ERROR);
+        }
+
+        return $resUpdate;
+    }
 }

@@ -203,6 +203,10 @@ return [
     "Je souhaite que mon article soit supervisé par : " => "I'd like my article to be handled by: ",
 
     // revision request
-    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd."
+    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
 
+    //linked data
+
+    "Veuillez selectionner une relation pour la donnée" => "Please choose a relationship for the data",
+    "Veuillez saisir tous les champs du formulaire" => "Please fill in all the fields on the form",
 ];

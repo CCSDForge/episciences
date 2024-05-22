@@ -128,6 +128,7 @@ return [
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE],
     Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW],
     Episciences_Paper_Logger::CODE_LD_ADDED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_ADDED],
+    Episciences_Paper_Logger::CODE_LD_CHANGED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_CHANGED],
     Episciences_Paper_Logger::CODE_LD_REMOVED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_LD_REMOVED],
     Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED],
     // Erreurs OAI
