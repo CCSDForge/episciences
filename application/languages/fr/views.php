@@ -55,7 +55,12 @@ return [
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Membres du comité éditorial",
     "Episciences_Website_Navigation_Page_Credits" => "Crédits",
     "Episciences_Website_Navigation_Page_About" => "À propos",
-    "Episciences_Website_Navigation_Page_Boards" => "Comités",
+
+    "Episciences_Website_Navigation_Page_EditorialBoard" => "Comité éditorial",
+    'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Comité technique',
+    'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Comité scientifique',
+    'Episciences_Website_Navigation_Page_FormerMembers' => 'Anciens membres',
+
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
@@ -106,9 +111,9 @@ return [
     Episciences_Paper_Logger::CODE_AUTHOR_COMMENT_COVER_LETTER => "Commentaire de l'auteur / lettre d'accompagnement",
     Episciences_Paper_Logger::CODE_EDITOR_COMMENT => "Commentaire de rédacteur",
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR =>
-    Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR],
+        Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR],
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER =>
-    Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER],
+        Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER],
     Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Mise à jour',
     Episciences_Reviewer::STATUS_UNINVITED => 'non invité',
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assigné',
@@ -117,7 +122,7 @@ return [
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'Nouvelle date de publication',
     Episciences_Paper_Logger::CODE_COI_REPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REPORTED],
     Episciences_Paper_Logger::CODE_COI_REVERTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REVERTED],
-    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION ],
+    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION],
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED],
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION],
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE],
@@ -127,7 +132,7 @@ return [
     Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED],
     // Erreurs OAI
     "The operation ended with an error. Please try again." => "L'opération s'est terminée avec une erreur. Merci de réessayer.",
-    Ccsd_Error::DEFAULT_PREFIX_CODE . ' ' . 'Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).'  => "L'opération s'est terminée avec cette erreur : <strong><small>[%s]</small></strong>. Merci de réessayer. En cas de difficulté, contactez le support Episciences, à l'adresse %s, en indiquant l'identifiant du document (exemple d'identifiant pour un document déposé dans %s : %s).",
+    Ccsd_Error::DEFAULT_PREFIX_CODE . ' ' . 'Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).' => "L'opération s'est terminée avec cette erreur : <strong><small>[%s]</small></strong>. Merci de réessayer. En cas de difficulté, contactez le support Episciences, à l'adresse %s, en indiquant l'identifiant du document (exemple d'identifiant pour un document déposé dans %s : %s).",
     "The argument included in the request is not valid." => "L'argument inclus dans la demande n'est pas valide.",
     "The resumptionToken does not exist or has already expired." => "Le jeton de reprise n'existe pas ou a déjà expiré.",
     "The verb provided in the request is illegal." => "Le verbe fourni dans la demande est illégal.",
@@ -278,12 +283,12 @@ return [
 
     //Funding
     "Funder" => "Financeur",
-    "Fundings :"=> "Financeurs :",
+    "Fundings :" => "Financeurs :",
     "callId" => "Call ID",
     "projectFinancing" => "Projet Financeur",
-    
+
     // bioRxiv & medRxiv
-     "[CC_NO] The copyright holder for this pre-print is the author. All rights reserved. The material may not be redistributed, re-used or adapted without the author’s permission." => "[CC_NO] Le détenteur des droits d'auteur de cette prépublication est l'auteur. Tous droits réservés. Le matériel ne peut être redistribué, réutilisé ou adapté sans l'autorisation de l'auteur.",
+    "[CC_NO] The copyright holder for this pre-print is the author. All rights reserved. The material may not be redistributed, re-used or adapted without the author’s permission." => "[CC_NO] Le détenteur des droits d'auteur de cette prépublication est l'auteur. Tous droits réservés. Le matériel ne peut être redistribué, réutilisé ou adapté sans l'autorisation de l'auteur.",
 
     //relationships datasets
     "IsDerivedFrom" => "Est dérivé de",
@@ -313,11 +318,11 @@ return [
     "IsBasedOn" => "Est basé sur ",
     "IsBasisFor" => "Est basé pour",
     "Requires" => "Nécessite",
-    "IsRequiredBy"=> "Est requis pour",
+    "IsRequiredBy" => "Est requis pour",
     "Finances" => "Finance",
     "IsFinancedBy" => "Est financé par",
     "IsVersionOf" => "Est une version de",
-    'IsRelatedTo'=>'Est lié à',
+    'IsRelatedTo' => 'Est lié à',
 
     // DOCUMENT TYPES
     "Preprint" => "Pré-publication",

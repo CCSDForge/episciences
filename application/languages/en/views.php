@@ -1743,7 +1743,12 @@ return [
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
     "Episciences_Website_Navigation_Page_About" => "About",
-    "Episciences_Website_Navigation_Page_Boards" => "Boards",
+
+    "Episciences_Website_Navigation_Page_EditorialBoard" => "Editorial board",
+    'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
+    'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Scientific advisory board',
+    'Episciences_Website_Navigation_Page_FormerMembers' => 'Former members',
+
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
