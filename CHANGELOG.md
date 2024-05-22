@@ -14,10 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+###Conflicts
+- button to be redirected to the episciences bibliographic extraction application to import bibtex
+- If HAL, send coar notify message when updating metadata for published articles.
+- Added in zbjat export bibliographical references from bibtex import
+- Added button to redirect on epi citation without extract pdf
+- [#418](https://github.com/CCSDForge/episciences/issues/418) Enable edition of relationship and type for the linked data
+
 ## Unreleased
 ###Added
 - Public representation of a document in JSON format (@see /json?v=2) 
 - [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
+- [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
+- Functionality for migrating news to the new sql news table
 ### Changed
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here

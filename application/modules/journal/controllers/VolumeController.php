@@ -3,7 +3,7 @@
 class VolumeController extends Zend_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
-
+    public const MIN_VOLUME_DATE = '1950';
     public function indexAction()
     {
         $this->_helper->redirector('list');
@@ -45,6 +45,7 @@ class VolumeController extends Zend_Controller_Action
 
                 $oVolume = new Episciences_Volume();
 
+                $this->checkValidateDate($request->getPost()['year'],$request);
                 $resVol = $oVolume->save($form->getValues(), null, $request->getPost());
                 $oVolume->saveVolumeMetadata($request->getPost());
                 $post = $request->getPost();
@@ -166,10 +167,10 @@ class VolumeController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
+                $this->checkValidateDate($post['year'], $request);
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
 
                 $volume->saveVolumeMetadata($request->getPost());
-
 
                 if ($post['conference_proceedings_doi'] !== '' &&
                     (
@@ -425,6 +426,23 @@ class VolumeController extends Zend_Controller_Action
 
         $this->editAction();
 
+    }
+
+    /**
+     * @param $year
+     * @param Zend_Controller_Request_Http $request
+     * @return void
+     */
+    private function checkValidateDate($year, Zend_Controller_Request_Http $request): void
+    {
+        if ($year !== '' && is_string($year)) {
+            $maxDate = date('Y', strtotime('+ 5 years'));
+            if (!($year >= self::MIN_VOLUME_DATE && $year <= $maxDate)) {
+                $message = '<strong>' . $this->view->translate("L'année du volume est incorrecte veuillez saisir entre: ") . self::MIN_VOLUME_DATE . ' ' . $this->view->translate('et') . ' ' . $maxDate . '</strong>';
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                $this->_helper->redirector->gotoUrl($request->getRequestUri());
+            }
+        }
     }
 
 
