@@ -33,7 +33,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
     const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
     const PAGE_ACCEPTED_PAPERS_LIST = 'acceptedPapersList';
-
+    const PAGE_ABOUT = 'about';
+    const PAGE_BOARDS = 'boards';
     /**
      * Table de stockage de la navigztion d'un site
      * @var string
@@ -54,7 +55,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      * Initialisation des options de la navigation
      * @see Ccsd_Website_Navigation::setOptions($options)
      */
-    public function setOptions($options = [])
+    public function setOptions($options = []): void
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
@@ -128,55 +129,47 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      */
     public function save()
     {
-        //Suppression de l'ancien menu
+        // Suppression de l'ancien menu
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
 
         $lang = [];
-        //Enregistrement des nouvelles données
-        $i = 1;
+        $pageIdCounter = 1;
 
-        foreach ($this->_order as $pageid => $spageids) {
+        // Enregistrement des nouvelles données
+        foreach ($this->_order as $pageId => $subPageIds) {
+            $this->processPage($pageId, null, $lang, $pageIdCounter);
 
-            if (isset($this->_pages[$pageid])) {
-                //Initialisation de la pageid
-                $this->_pages[$pageid]->setPageId($i);
-                $this->savePage($this->_pages[$pageid]);
-                $key = $this->_pages[$pageid]->getLabelKey();
-                $lang[$key] = $this->_pages[$pageid]->getLabels();
-                $i++;
+            if (is_array($subPageIds) && count($subPageIds) > 0) {
+                foreach ($subPageIds as $subPageId => $subSubPageIds) {
+                    $this->processPage($subPageId, $pageId, $lang, $pageIdCounter);
 
-                if (is_array($spageids) && count($spageids) > 0) {
-                    foreach ($spageids as $spageid => $sspageids) {
-                        if (isset($this->_pages[$spageid])) {
-                            $this->_pages[$spageid]->setPageId($i);
-                            $this->_pages[$spageid]->setPageParentId($this->_pages[$pageid]->getPageId());
-                            $this->savePage($this->_pages[$spageid]);
-                            $key = $this->_pages[$spageid]->getLabelKey();
-                            $lang[$key] = $this->_pages[$spageid]->getLabels();
-                            $i++;
-
-                            if (is_array($sspageids) && count($sspageids) > 0) {
-                                foreach (array_keys($sspageids) as $sspageid) {
-                                    if (isset($this->_pages[$sspageid])) {
-                                        $this->_pages[$sspageid]->setPageId($i);
-                                        $this->_pages[$sspageid]->setPageParentId($this->_pages[$spageid]->getPageId());
-                                        $this->savePage($this->_pages[$sspageid]);
-                                        $key = $this->_pages[$sspageid]->getLabelKey();
-                                        $lang[$key] = $this->_pages[$sspageid]->getLabels();
-                                        $i++;
-                                    }
-                                }
-                            }
+                    if (is_array($subSubPageIds) && count($subSubPageIds) > 0) {
+                        foreach (array_keys($subSubPageIds) as $subSubPageId) {
+                            $this->processPage($subSubPageId, $subPageId, $lang, $pageIdCounter);
                         }
-
                     }
                 }
             }
         }
 
-        //Enregistrement des traductions dans des fichiers
+        // Enregistrement des traductions dans des fichiers
         $writer = new Ccsd_Lang_Writer($lang);
         $writer->write(REVIEW_LANG_PATH, 'menu');
+    }
+
+    private function processPage($pageId, $parentId, &$lang, &$pageIdCounter)
+    {
+        if (isset($this->_pages[$pageId])) {
+            $this->_pages[$pageId]->setPageId($pageIdCounter);
+            if ($parentId !== null) {
+                $this->_pages[$pageId]->setPageParentId($this->_pages[$parentId]->getPageId());
+            }
+            $this->savePage($this->_pages[$pageId]);
+
+            $key = $this->_pages[$pageId]->getLabelKey();
+            $lang[$key] = $this->_pages[$pageId]->getLabels();
+            $pageIdCounter++;
+        }
     }
 
     /**

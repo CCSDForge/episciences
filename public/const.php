@@ -182,6 +182,7 @@ function defineSQLTableConstants()
     define('T_PAPER_METADATA_SOURCES', 'metadata_sources');
     define('T_PAPER_PROJECTS', 'paper_projects');
     define('T_PAPER_CITATIONS', 'paper_citations');
+    define('T_PAGES', 'pages');
     //define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
 }
 

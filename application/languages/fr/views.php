@@ -54,6 +54,8 @@ return [
     "Episciences_Website_Navigation_Page_Search" => "Rechercher un article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Membres du comité éditorial",
     "Episciences_Website_Navigation_Page_Credits" => "Crédits",
+    "Episciences_Website_Navigation_Page_About" => "À propos",
+    "Episciences_Website_Navigation_Page_Boards" => "Comités",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",

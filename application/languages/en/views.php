@@ -1740,6 +1740,8 @@ return [
     "Episciences_Website_Navigation_Page_Search" => "Search an article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
+    "Episciences_Website_Navigation_Page_About" => "About",
+    "Episciences_Website_Navigation_Page_Boards" => "Boards",
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
