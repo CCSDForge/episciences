@@ -33,4 +33,10 @@ ALTER TABLE `news`
     ADD PRIMARY KEY (`id`),
   ADD KEY `uid` (`uid`),
   ADD KEY `code` (`code`);
+
+--
+-- AUTO_INCREMENT for table `pages`
+--
+
+ALTER TABLE `news` CHANGE `id` `id` INT UNSIGNED NOT NULL AUTO_INCREMENT;
 COMMIT;
