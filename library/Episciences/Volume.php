@@ -43,6 +43,7 @@ class Episciences_Volume
     private $_copyEditors = [];
     private $_bib_reference = null;
 
+    private ?int $_vol_year = null;
     private int $nbOfPapersInVolume = 0;
     private ?array $titles;
     private ?array $descriptions;
@@ -713,7 +714,7 @@ class Episciences_Volume
             $settings[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
         }
 
-
+        $this->setVol_year($data['year']);
         $this->setBib_reference($post['bib_reference']);
         $this->setTitles($post['title']);
         $this->setDescriptions($post['description']);
@@ -795,6 +796,7 @@ class Episciences_Volume
         $values['BIB_REFERENCE'] = $this->getBib_reference();
         $values['titles'] = $this->preProcess($this->getTitles());
         $values['descriptions'] = $this->preProcess($this->getDescriptions());
+        $values['vol_year'] = $this->getVol_year();
 
         Episciences_VolumesAndSectionsManager::dataProcess($values);
 
@@ -1210,6 +1212,20 @@ class Episciences_Volume
         return $this;
     }
 
+    public function getVol_year()
+    {
+        return $this->_vol_year;
+    }
+
+    public function setVol_year($volYear): \Episciences_Volume
+    {
+        $this->_vol_year = $volYear;
+        return $this;
+    }
+
+
+
+
     /**
      * update a volume
      * @return int
@@ -1221,6 +1237,7 @@ class Episciences_Volume
         $data['BIB_REFERENCE'] = $this->getBib_reference();
         $data['titles'] = $this->preProcess($this->getTitles());
         $data['descriptions'] = $this->preProcess($this->getDescriptions());
+        $data['vol_year'] = $this->getVol_year();
 
         Episciences_VolumesAndSectionsManager::dataProcess($data);
 
