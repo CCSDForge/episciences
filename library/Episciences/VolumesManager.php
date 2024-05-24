@@ -229,7 +229,7 @@ class Episciences_VolumesManager
             //suppression de la file pour le volume
 
             $db->delete(T_DOI_QUEUE_VOLUMES, 'VID = '. $id);
-
+            Episciences_VolumeProceeding::deleteByVid($id);
             return true;
         }
 

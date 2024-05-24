@@ -111,4 +111,9 @@ class Episciences_VolumeProceeding
         }
     }
 
+    public static function deleteByVid($vid){
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db->delete(T_VOLUME_PROCEEDING, 'VID = ' . $vid);
+    }
+
 }
