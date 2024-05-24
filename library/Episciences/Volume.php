@@ -43,6 +43,8 @@ class Episciences_Volume
     private $_copyEditors = [];
     private $_bib_reference = null;
 
+    private ?string $_vol_type = null;
+    private ?int $_vol_year = null;
     private int $nbOfPapersInVolume = 0;
     private ?array $titles;
     private ?array $descriptions;
@@ -684,6 +686,18 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'],
         ];
 
+        $settingsProceeding = [
+            self::VOLUME_IS_PROCEEDING => $data['is_proceeding'],
+            self::VOLUME_CONFERENCE_NAME => $data['conference_name'],
+            self::VOLUME_CONFERENCE_THEME => $data['conference_theme'],
+            self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'],
+            self::VOLUME_CONFERENCE_NUMBER => $data['conference_number'],
+            self::VOLUME_CONFERENCE_LOCATION => $data['conference_location'],
+            self::VOLUME_CONFERENCE_START_DATE => $data['conference_start'],
+            self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'],
+            self::VOLUME_CONFERENCE_DOI => ''
+        ];
+
         if ((int)$settings[self::SETTING_SPECIAL_ISSUE] === 1 && !$settings['access_code']) {
             $settings[self::SETTING_ACCESS_CODE] = $this->createAccessCode();
         }
@@ -711,10 +725,14 @@ class Episciences_Volume
             $doiPrefixSetting .= '.proceedings.';
             $doiPrefixSetting .= $post['conference_proceedings_doi'];
             $settings[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
+            $settingsProceeding[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
         }
 
-
+        $this->setVol_year($data['year']);
         $this->setBib_reference($post['bib_reference']);
+        if ($data['special_issue'] === "1"){
+            $this->setVol_type('special_issue');
+        }
         $this->setTitles($post['title']);
         $this->setDescriptions($post['description']);
 
@@ -734,6 +752,11 @@ class Episciences_Volume
 
             // Enregistrement des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid);
+            if ($data['is_proceeding'] === '1'){
+                $volumeProceeding = new Episciences_VolumeProceeding();
+                $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding,$vid);
+            }
+
 
         } else {
             // Modification d'un volume
@@ -741,6 +764,12 @@ class Episciences_Volume
 
             // Mise à jour des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid, true);
+
+            if ($data['is_proceeding'] === '1'){
+                $volumeProceeding = new Episciences_VolumeProceeding();
+                $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding,$vid,true);
+            }
+
 
         }
 
@@ -795,6 +824,8 @@ class Episciences_Volume
         $values['BIB_REFERENCE'] = $this->getBib_reference();
         $values['titles'] = $this->preProcess($this->getTitles());
         $values['descriptions'] = $this->preProcess($this->getDescriptions());
+        $values['vol_type'] = $this->getVol_type();
+        $values['vol_year'] = $this->getVol_year();
 
         Episciences_VolumesAndSectionsManager::dataProcess($values);
 
@@ -1210,6 +1241,30 @@ class Episciences_Volume
         return $this;
     }
 
+    public function getVol_year()
+    {
+        return $this->_vol_year;
+    }
+
+    public function setVol_year($volYear): \Episciences_Volume
+    {
+        $this->_vol_year = $volYear;
+        return $this;
+    }
+
+
+
+
+    public function getVol_type()
+    {
+        return $this->_vol_type;
+    }
+
+    public function setVol_type($volType): \Episciences_Volume
+    {
+        $this->_vol_type = $volType;
+        return $this;
+    }
     /**
      * update a volume
      * @return int
@@ -1221,6 +1276,8 @@ class Episciences_Volume
         $data['BIB_REFERENCE'] = $this->getBib_reference();
         $data['titles'] = $this->preProcess($this->getTitles());
         $data['descriptions'] = $this->preProcess($this->getDescriptions());
+        $data['vol_type'] = $this->getVol_type();
+        $data['vol_year'] = $this->getVol_year();
 
         Episciences_VolumesAndSectionsManager::dataProcess($data);
 

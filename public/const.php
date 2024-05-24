@@ -173,6 +173,7 @@ function defineSQLTableConstants()
     define('T_VOLUME_PAPER', 'VOLUME_PAPER');
     define('T_VOLUME_PAPER_POSITION', 'VOLUME_PAPER_POSITION');
     define('T_VOLUME_SETTINGS', 'VOLUME_SETTING');
+    define('T_VOLUME_PROCEEDING', 'volume_proceeding');
     define('VISITS_TEMP', 'STAT_TEMP');
     define('T_PAPER_FILES', 'paper_files');
     define('T_PAPER_DATASETS', 'paper_datasets');
