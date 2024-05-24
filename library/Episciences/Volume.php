@@ -732,6 +732,8 @@ class Episciences_Volume
         $this->setBib_reference($post['bib_reference']);
         if ($data['special_issue'] === "1"){
             $this->setVol_type('special_issue');
+        } else {
+            $this->setVol_type(null);
         }
         $this->setTitles($post['title']);
         $this->setDescriptions($post['description']);
