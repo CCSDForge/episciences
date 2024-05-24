@@ -685,6 +685,18 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'],
         ];
 
+        $settingsProceeding = [
+            self::VOLUME_IS_PROCEEDING => $data['is_proceeding'],
+            self::VOLUME_CONFERENCE_NAME => $data['conference_name'],
+            self::VOLUME_CONFERENCE_THEME => $data['conference_theme'],
+            self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'],
+            self::VOLUME_CONFERENCE_NUMBER => $data['conference_number'],
+            self::VOLUME_CONFERENCE_LOCATION => $data['conference_location'],
+            self::VOLUME_CONFERENCE_START_DATE => $data['conference_start'],
+            self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'],
+            self::VOLUME_CONFERENCE_DOI => ''
+        ];
+
         if ((int)$settings[self::SETTING_SPECIAL_ISSUE] === 1 && !$settings['access_code']) {
             $settings[self::SETTING_ACCESS_CODE] = $this->createAccessCode();
         }
@@ -712,6 +724,7 @@ class Episciences_Volume
             $doiPrefixSetting .= '.proceedings.';
             $doiPrefixSetting .= $post['conference_proceedings_doi'];
             $settings[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
+            $settingsProceeding[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
         }
 
         $this->setVol_year($data['year']);
@@ -735,6 +748,11 @@ class Episciences_Volume
 
             // Enregistrement des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid);
+            if ($data['is_proceeding'] === '1'){
+                $volumeProceeding = new Episciences_VolumeProceeding();
+                $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding,$vid);
+            }
+
 
         } else {
             // Modification d'un volume
@@ -742,6 +760,12 @@ class Episciences_Volume
 
             // Mise à jour des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid, true);
+
+            if ($data['is_proceeding'] === '1'){
+                $volumeProceeding = new Episciences_VolumeProceeding();
+                $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding,$vid,true);
+            }
+
 
         }
 
