@@ -43,6 +43,7 @@ class Episciences_Volume
     private $_copyEditors = [];
     private $_bib_reference = null;
 
+    private ?string $_vol_type = null;
     private int $nbOfPapersInVolume = 0;
     private ?array $titles;
     private ?array $descriptions;
@@ -715,6 +716,9 @@ class Episciences_Volume
 
 
         $this->setBib_reference($post['bib_reference']);
+        if ($data['special_issue'] === "1"){
+            $this->setVol_type('special_issue');
+        }
         $this->setTitles($post['title']);
         $this->setDescriptions($post['description']);
 
@@ -795,7 +799,7 @@ class Episciences_Volume
         $values['BIB_REFERENCE'] = $this->getBib_reference();
         $values['titles'] = $this->preProcess($this->getTitles());
         $values['descriptions'] = $this->preProcess($this->getDescriptions());
-
+        $values['vol_type'] = $this->getVol_type();
         Episciences_VolumesAndSectionsManager::dataProcess($values);
 
         try {
@@ -1210,6 +1214,16 @@ class Episciences_Volume
         return $this;
     }
 
+    public function getVol_type()
+    {
+        return $this->_vol_type;
+    }
+
+    public function setVol_type($volType): \Episciences_Volume
+    {
+        $this->_vol_type = $volType;
+        return $this;
+    }
     /**
      * update a volume
      * @return int
@@ -1221,7 +1235,7 @@ class Episciences_Volume
         $data['BIB_REFERENCE'] = $this->getBib_reference();
         $data['titles'] = $this->preProcess($this->getTitles());
         $data['descriptions'] = $this->preProcess($this->getDescriptions());
-
+        $data['vol_type'] = $this->getVol_type();
         Episciences_VolumesAndSectionsManager::dataProcess($data);
 
         try {
