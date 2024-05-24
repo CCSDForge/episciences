@@ -1,1 +1,1 @@
-ALTER TABLE `episciences_dev`.`paper_datasets` DROP INDEX `unique`, ADD UNIQUE `unique` (`doc_id`, `value`(47)) USING BTREE;
+ALTER TABLE `paper_datasets` DROP INDEX `unique`, ADD UNIQUE `unique` (`doc_id`, `value`(47)) USING BTREE;
