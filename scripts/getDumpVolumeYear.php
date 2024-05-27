@@ -14,6 +14,7 @@ require_once "JournalScript.php";
 
 class getDumpVolumeYear extends JournalScript
 {
+    const REGEX_YEAR = '~\d{4}~';
 
     /**
      * @var bool
@@ -57,7 +58,7 @@ class getDumpVolumeYear extends JournalScript
                 $titles = json_decode($value['titles'], true, 512, JSON_THROW_ON_ERROR);
                 foreach ($titles as $title) {
                     $match = [];
-                    if (preg_match('~19|20\d{2}~', $title, $match) && !empty($match)) {
+                    if (preg_match(self::REGEX_YEAR, $title, $match) && !empty($match)) {
                         $founded = 1;
                         $strSQL .= "UPDATE VOLUME SET vol_year = " . $match[0] . " WHERE `VOLUME`.`VID` = " . $value['VID'] . ';' . " #TITLE " . json_encode($titles) . "\n";
                         break;
@@ -68,7 +69,7 @@ class getDumpVolumeYear extends JournalScript
                 $descriptions = json_decode($value['descriptions'], true, 512, JSON_THROW_ON_ERROR);
                 foreach ($descriptions as $description) {
                     $match = [];
-                    if (preg_match('~19|20\d{2}~', $description, $match) && !empty($match)) {
+                    if (preg_match(self::REGEX_YEAR, $description, $match) && !empty($match)) {
                         $strSQL .= "UPDATE VOLUME SET vol_year = " . $match[0] . " WHERE `VOLUME`.`VID` = " . $value['VID'] . ';' . " #DESCRIPTION " . json_encode($description) . "\n";
                         break;
                     }
