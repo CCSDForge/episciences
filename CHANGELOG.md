@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ###Added
+- Profile photo storage management via uuid.
 - Script to generate user's uuids.
 - Include UUIDs when saving accounts
 - button to be redirected to the episciences bibliographic extraction application to import bibtex

@@ -710,7 +710,7 @@ class Ccsd_File
      * @return string
      * @example
      */
-    public static function slicedPathFromString($string, $rootDir = '', $lengthOfString = 8, $lenghtOfSlices = 2, $stringToPadWith = '0')
+    public static function slicedPathFromString(string $string, string $rootDir = '', int $lengthOfString = 8, int $lenghtOfSlices = 2, string $stringToPadWith = '0'): string
     {
         $docPath = str_pad($string, $lengthOfString, $stringToPadWith, STR_PAD_LEFT);
         $docPath = wordwrap($docPath, $lenghtOfSlices, "/", true);

@@ -17,7 +17,8 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
         $this->setArgs(
             array_merge($this->getArgs(), [
                 'uid|id=i' => "User identifier [Optional: all Users will be processed if the script is run without this parameter.]",
-                'buffer|b=i' => "Number of Users to update at the same time [default: buffer = 500]"
+                'buffer|b=i' => "Number of Users to update at the same time [default: buffer = 500]",
+                'delUidPath|dop' => "Delete old photo path name create already based on UID | In all cases, a new path is created, this time based on the uuid"
             ]));
 
         parent::__construct();
@@ -63,14 +64,14 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
             ->from(self::TABLE)->order('UID DESC');
 
 
-        if (
-            $this->hasParam('uid')) {
+        if ($this->hasParam('uid')) {
             $dataQuery->where('UID = ?', $params['uid']);
             $uidParamMsg = sprintf(' for User #%s', $params['uid']);
         }
 
 
-        $data = $this->getDb()->fetchCol($dataQuery);
+        $data = $this->getDb()->fetchAssoc($dataQuery);
+        $uidData = array_keys($data);
 
 
         if (empty($data)) {
@@ -102,8 +103,9 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
             }
 
             $toUpdate = '';
+            $users = [];
             $offset = ($page - 1) * $buffer;
-            $cData = array_slice($data, $offset, $buffer);
+            $cData = array_slice($uidData, $offset, $buffer);
             $this->getProgressBar()->start();
 
             foreach ($cData as $uid) {
@@ -120,6 +122,17 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
 
                     $uuid = Uuid::uuid4()->toString();
 
+                    $values = $data[$uid];
+
+                    $user = new Episciences_User($values);
+                    $user->setUuid($uuid);
+
+                    $users[$user->getUid()]['current'] = $user;
+
+                    if (isset($values['uuid'])) {
+                        $users[$user->getUid()]['oldUuid'] = $values['uuid'];
+                    }
+
                     $this->displaySuccess(sprintf('** Current UUID [#%s] ...', $uuid), true);
                     $toUpdate .= sprintf('%sUPDATE %s set `uuid` = %s  WHERE UID = %s;', PHP_EOL, self::TABLE, $this->getDb()->quote($uuid), $uid);
                 }
@@ -133,13 +146,17 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
                 $this->displayDebug(sprintf('Applying Update... %s %s', PHP_EOL, $toUpdate), true);
             }
 
+            $result = 0;
+
             if (!$this->isDebug()) {
                 $statement = $this->getDb()->query($toUpdate);
+
+                $this->checkAndSavePhoto($users, $this->hasParam('delUidPath'));
+
                 try {
                     $result = $statement->rowCount();
                     $statement->closeCursor();
                 } catch (Zend_Db_Statement_Exception $e) {
-                    $result = 0;
                     $this->displayCritical($e->getMessage());
                 }
 
@@ -148,14 +165,7 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
             if ($this->isVerbose()) {
 
                 if (!$this->isDebug()) {
-
-                    if ($result) {
-                        $message = 'successfully updated';
-                    } else {
-                        $this->displayCritical(sprintf('/!\ UUIDs are supposed to be unique [#page = %s]', $page));
-                        exit(0);
-                    }
-
+                    $message = sprintf("Affected rows: %s", $result);
                     $this->displaySuccess(sprintf('Page #%s processed: %s', $page, $message), true);
 
                 } else {
@@ -179,6 +189,71 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
         $alter .= "ALTER TABLE `USER` ADD UNIQUE (`uuid`);";
         $this->displayInfo(sprintf("TODO => %s%s", PHP_EOL, $alter), true);
 
+
+    }
+
+
+    public function checkAndSavePhoto(array $users = [], bool $deleteOldPath = false): void
+    {
+        /** @var Episciences_User $user */
+
+        foreach ($users as $uid => $values) {
+
+            $user = $values['current'];
+
+            if (isset($values['oldUuid'])) {
+
+                $oldPhotoPathName = $user->getPhotoPathName($values['oldUuid']);
+
+                if ($oldPhotoPathName) {
+                    $oldPhotoPath = $user->getPhotoPath($values['oldUuid']);
+                    $user->deletePhoto($values['oldUuid']);
+
+                    if ($this->isVerbose()) {
+                        $this->displayTrace(sprintf("Profile photo [%s] deleted successfully form path [%s)", $oldPhotoPathName, $oldPhotoPath), true);
+                    }
+
+                    try {
+                        $user->savePhotoWithUuid($user->getPhotoPathName($user->getUuid()));
+                        if ($this->isVerbose()) {
+                            $this->displayTrace(sprintf("Profile photo [%s] saved successfully in path [%s)", $oldPhotoPathName, $user->getPhotoPathWithUuid($user->getUuid())), true);
+                        }
+                    } catch (Exception $e) {
+                        $this->displayCritical($e->getMessage());
+                    }
+
+                }
+
+            }
+
+            if ($user::hasPhoto($user->getUid())) { // Ancienne photo
+
+                try {
+                    $uidPhotoPathName = $user->getPhotoPathName();
+                    $uidPhotoPath = $user->getPhotoPath();
+                    $user->savePhotoWithUuid($uidPhotoPathName);
+
+                    if ($this->isVerbose()) {
+                        $this->displayTrace(sprintf("Profile photo [%s] saved successfully in path [%s)", $uidPhotoPathName, $user->getPhotoPathWithUuid()), true);
+                    }
+
+                    if ($deleteOldPath) {
+
+                        $user->deletePhoto();
+
+                        if ($this->isVerbose()) {
+                            $this->displayTrace(sprintf("Profile photo [%s] deleted successfully form path [%s)", $uidPhotoPathName, $uidPhotoPath), true);
+                        }
+                    }
+
+                } catch (Exception $e) {
+                    $this->displayCritical($e->getMessage());
+                }
+
+            }
+
+
+        }
 
     }
 

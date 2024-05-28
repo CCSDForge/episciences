@@ -5,7 +5,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /** @var int */
     protected $_uid;
 
-    protected string $_uuid;
+    protected  ?string $_uuid;
 
     protected $_langueid;
 
@@ -348,6 +348,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $res['web_sites'] = $this->getWebSites();
         $res['biography'] = $this->getBiography();
         $res['social_medias'] = $this->getSocialMedias();
+        $res['uuid'] = $this->getUuid();
         return $res;
     }
 
@@ -776,6 +777,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setAffiliations($result['AFFILIATIONS']);
         $this->setBiography($result['BIOGRAPHY']);
         $this->setOrcid($result['ORCID']);
+        $this->setUuid($result['uuid']);
 
         return $result;
     }
@@ -1391,15 +1393,59 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this;
     }
 
-    public function getUuid(): string
+    /**
+     * Retourne le chemin vers le répertoire des images d'un utilisateur en se basant sur L'UUID utilisateur
+     *
+     * @param string|null $uuid
+     * @return string
+     */
+    public function getPhotoPathWithUuid(string $uuid = null): string
     {
-        return $this->_uuid;
+        $cleanedUuid = Episciences_Tools::getCleanedUuid($uuid);
+        return Ccsd_File::slicedPathFromString($cleanedUuid, EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT);
     }
 
-    public function setUuid(string $uuid): self
+    /**
+     * @param string $photoFileName
+     * @param string|null $uuid
+     * @return void
+     * @throws Exception
+     */
+    public function savePhotoWithUuid(string $photoFileName, string $uuid = null): void
     {
-        $this->_uuid = $uuid;
-        return $this;
+        $userPhotoPath = $this->getPhotoPathWithUuid($uuid);
+        $identifier = Episciences_Tools::getCleanedUuid(!$uuid ? \Ramsey\Uuid\Uuid::uuid1()->toString() : $uuid);
+
+        if (!is_dir($userPhotoPath)) {
+
+            $mkdirResult = mkdir($userPhotoPath, 0777, true);
+            if (!$mkdirResult) {
+                throw new Exception("Le répertoire de stockage n'a pas pu être créé.");
+            }
+        }
+
+        if (Ccsd_File::canConvertImg($photoFileName) !== true) {
+            throw new Exception(htmlspecialchars($photoFileName) . " : Création de miniature : ce type de fichier n'est pas accepté.");
+        }
+
+        $userPhotoPath .= '/';
+
+        $resThumb = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_THUMB, self::IMG_SIZE_THUMB, self::IMG_PREFIX_THUMB . $identifier);
+
+        if (!$resThumb) {
+            throw new Exception("Échec de création de la taille IMG_SIZE_THUMB.");
+        }
+
+        $resUser = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_NORMAL, self::IMG_SIZE_NORMAL, self::IMG_PREFIX_NORMAL . $identifier);
+        if (!$resUser) {
+            throw new Exception("Échec de création de la taille IMG_SIZE_NORMAL.");
+        }
+
+        $resLarge = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_LARGE, self::IMG_SIZE_LARGE, self::IMG_PREFIX_LARGE . $identifier);
+        if (!$resLarge) {
+            throw new Exception("Échec de création de la taille IMG_SIZE_LARGE.");
+        }
     }
+
 
 }

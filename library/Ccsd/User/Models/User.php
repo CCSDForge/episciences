@@ -113,6 +113,8 @@ class Ccsd_User_Models_User
      */
     protected $_uid;
 
+    protected ?string $_uuid;
+
     /**
      * Nom d'utilisateur / login
      *
@@ -216,16 +218,23 @@ class Ccsd_User_Models_User
     /**
      * Pour savoir si l'utilisateur a une photo
      *
-     * @param int $uid
+     * @param int|string $identifier
      * @return boolean
      */
-    public static function hasPhoto($uid = null)
+    public static function hasPhoto(int | string $identifier = ''): bool
     {
-        $u = new Ccsd_User_Models_User(array(
-            'uid' => $uid
-        ));
+        $isUuid = \Ramsey\Uuid\Uuid::isValid($identifier);
 
-        $hasPhoto = $u->getPhotoPathName();
+        if($isUuid){
+            $data = ['uuid' => $identifier];
+        } else {
+            $data = ['uid' => (int)$identifier];
+        }
+
+        $u = new Ccsd_User_Models_User($data);
+
+
+        $hasPhoto = $u->getPhotoPathName($isUuid ? $identifier : null);
 
         if (!$hasPhoto) {
             return false;
@@ -238,26 +247,30 @@ class Ccsd_User_Models_User
      * Retourne le chemin complet vers l'image de l'utilisateur avec le format
      * en paramètre
      *
+     * @param string|null $uuid
      * @param string $size
-     * @return boolean string
+     * @return string|bool string
      */
-    public function getPhotoPathName($size = self::IMG_NAME_THUMB)
+    public function getPhotoPathName(string $uuid = null, string $size = self::IMG_NAME_THUMB) : string | bool
     {
-        $photoPath = $this->getPhotoPath();
+        $cleanedUuid = Episciences_Tools::getCleanedUuid($uuid);
+        $photoPath = $this->getPhotoPath($uuid);
         $photoPath .= '/';
+
+        $identifier = ($cleanedUuid !== '') ? $cleanedUuid : $this->getUid();
 
         switch ($size) {
             case self::IMG_NAME_THUMB:
-                $photoPath .= self::IMG_PREFIX_THUMB . $this->getUid() . '.jpg';
+                $photoPath .= self::IMG_PREFIX_THUMB . $identifier. '.jpg';
                 break;
             case self::IMG_NAME_LARGE:
-                $photoPath .= self::IMG_PREFIX_LARGE . $this->getUid() . '.jpg';
+                $photoPath .= self::IMG_PREFIX_LARGE . $identifier. '.jpg';
                 break;
             case self::IMG_NAME_INITIALS:
-                $photoPath .= self::IMG_PREFIX_INITIALS . $this->getUid() . '.svg';
+                $photoPath .= self::IMG_PREFIX_INITIALS . $identifier. '.svg';
                 break;
             default:
-                $photoPath .= self::IMG_PREFIX_NORMAL . $this->getUid() . '.jpg';
+                $photoPath .= self::IMG_PREFIX_NORMAL . $identifier. '.jpg';
                 break;
         }
 
@@ -271,11 +284,16 @@ class Ccsd_User_Models_User
     /**
      * Retourne le chemin vers le répertoire des images d'un utilisateur
      *
+     * @param string|null $uuid
      * @return string
      */
-    public function getPhotoPath()
+    public function getPhotoPath(string $uuid = null): string
     {
-        return Ccsd_File::slicedPathFromString($this->getUid(), EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT, 2, '0');
+        $cleanedUuid = Episciences_Tools::getCleanedUuid($uuid);
+
+        $input = ($cleanedUuid !== '') ? $cleanedUuid : $this->getUid();
+
+        return Ccsd_File::slicedPathFromString($input, EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT);
     }
 
     /**
@@ -576,6 +594,7 @@ class Ccsd_User_Models_User
     }
 
     /**
+     *
      * Enregistre la photo et la converti en jpg
      *
      * @param string $photoFileName
@@ -619,9 +638,10 @@ class Ccsd_User_Models_User
     /**
      * Supprime les différentes tailles de photo d'un utilisateur
      *
+     * @param string|int|null $identifier
      * @return array tableau du résultat pour chaque type
      */
-    public function deletePhoto()
+    public function deletePhoto(string|int $identifier = null): array
     {
         $res = array();
         $typesToRm = array(
@@ -632,8 +652,12 @@ class Ccsd_User_Models_User
         );
 
         foreach ($typesToRm as $type) {
+            $photoPathName = $this->getPhotoPathName($identifier, $type);
 
-            $res[$type] = unlink($this->getPhotoPathName($type));
+            if($photoPathName){
+                $res[$type] = unlink($this->getPhotoPathName($identifier, $type));
+            }
+
         }
         return $res;
     }
@@ -659,6 +683,21 @@ class Ccsd_User_Models_User
         }
 
         $this->_ftp_home = $_ftp_home;
+        return $this;
+    }
+
+    public function getUuid() : ?string
+    {
+        return $this->_uuid;
+    }
+
+    /**
+     * @param string $uuid
+     * @return $this
+     */
+    public function setUuid(?string $uuid = null): self
+    {
+        $this->_uuid = $uuid;
         return $this;
     }
 
