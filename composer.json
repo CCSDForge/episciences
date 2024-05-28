@@ -53,7 +53,8 @@
     "league/commonmark": "^2.4",
     "seboettg/citeproc-php": "^2.6",
     "symfony/serializer": "^6.4",
-    "symfony/property-access": "^6.4"
+    "symfony/property-access": "^6.4",
+    "ramsey/uuid": "^4.7"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
