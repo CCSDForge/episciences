@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ###Added
 - Script to generate user's uuids.
+- Include UUIDs when saving accounts
 - button to be redirected to the episciences bibliographic extraction application to import bibtex
 - If HAL, send coar notify message when updating metadata for published articles.
 - Added in zbjat export bibliographical references from bibtex import

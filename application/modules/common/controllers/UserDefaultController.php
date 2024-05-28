@@ -1,6 +1,7 @@
 <?php
 
 use neverbehave\Hcaptcha;
+use Ramsey\Uuid\Uuid;
 use ReCaptcha\ReCaptcha;
 
 
@@ -501,8 +502,6 @@ class UserDefaultController extends Zend_Controller_Action
                 $user->setModificationDate();
                 $screenName = $user->getScreenName();
 
-                $user->setApiPassword(password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT));
-
                 if ($user->save()) {
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences");
                     $success = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $success);
@@ -565,9 +564,9 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $user->setValid(0);
                 $user->setIs_valid(); // Episciences validation
-                $user->setApiPassword(password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT));
 
                 $lastInsertId = $user->save();
+
                 try {
                     $user->setUid($lastInsertId);
                 } catch (Exception $e) {
@@ -735,7 +734,6 @@ class UserDefaultController extends Zend_Controller_Action
                 $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
 
                 $user = new Episciences_User($updatedUserValues);
-
 
 
                 $subform = $form->getSubForm('ccsd');
@@ -1762,14 +1760,14 @@ class UserDefaultController extends Zend_Controller_Action
         unset($localUserData['ROLES'], $localUserData['affiliations'], $localUserData['web_sites'], $localUserData['biography'], $localUserData['social_medias']); // to fix PHP Notice: Array to string conversion
         $res = $user->findWithCAS($user->getUid());
 
-        if($res === null){
+        if ($res === null) {
             trigger_error("This account could not be found.", E_USER_ERROR);
         }
 
         $casUserData = $user->toArray();
-        unset($casUserData['ROLES'], $casUserData['affiliations'], $localUserData['biography'] , $casUserData['web_sites'], $casUserData['social_medias']);
+        unset($casUserData['ROLES'], $casUserData['affiliations'], $localUserData['biography'], $casUserData['web_sites'], $casUserData['social_medias']);
 
-        if(!empty(array_diff($localUserData, $casUserData))){
+        if (!empty(array_diff($localUserData, $casUserData))) {
             $data = array_merge($localUserData, $casUserData);
             $user = new Episciences_User($data);
             $user->save(false, false);

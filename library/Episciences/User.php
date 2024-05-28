@@ -5,6 +5,8 @@ class Episciences_User extends Ccsd_User_Models_User
     /** @var int */
     protected $_uid;
 
+    protected string $_uuid;
+
     protected $_langueid;
 
     /** @var boolean */
@@ -403,7 +405,8 @@ class Episciences_User extends Ccsd_User_Models_User
      *
      * @param bool $forceInsert
      * @param bool $isCasRecording
-     * @return bool|string
+     * @param int $rvId
+     * @return bool|int
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -413,7 +416,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public function save(bool $forceInsert = false, bool $isCasRecording = true, int $rvId = RVID)
     {
         // Enregistrement des données CAS
-        // et renvoi de l'id si il s'agit d'un nouveau compte
+        // et renvoi de l'id s'il s'agit d'un nouveau compte
 
         $casId = null;
 
@@ -486,6 +489,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
                 // new account new registration date
                 $data['REGISTRATION_DATE'] = date("Y-m-d H:i:s");
+                $data['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT);
+                $data['uuid'] = \Ramsey\Uuid\Uuid::uuid4()->toString();
                 try {
                     $resInsert = $this->_db->insert(T_USERS, $data);
                 } catch (Exception $e) {
@@ -494,7 +499,7 @@ class Episciences_User extends Ccsd_User_Models_User
                 }
 
                 if ($resInsert) {
-                    $uid = $this->_db->lastInsertId();
+                    $uid = (int)$this->_db->lastInsertId();
                 } else {
                     return false;
                 }
@@ -511,15 +516,8 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         // Mise à jour des données locales
-        try {
-            $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+        $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
 
-        } catch (EXception $e) {
-
-            error_log($e->getMessage());
-            throw $e;
-
-        }
         return $this->getUid();
 
     }
@@ -1192,17 +1190,19 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return string
      */
-    public function getApiPassword()
+    public function getApiPassword(): ?string
     {
         return $this->_api_password;
     }
 
     /**
-     * @param mixed $apiPassword
+     * @param string|null $apiPassword
+     * @return $this
      */
-    public function setApiPassword($apiPassword): void
+    public function setApiPassword(string $apiPassword = null): self
     {
         $this->_api_password = $apiPassword;
+        return $this;
     }
 
     /**
@@ -1376,6 +1376,17 @@ class Episciences_User extends Ccsd_User_Models_User
         }
         $this->setRoles($userRoles);
 
+        return $this;
+    }
+
+    public function getUuid(): string
+    {
+        return $this->_uuid;
+    }
+
+    public function setUuid(string $uuid): self
+    {
+        $this->_uuid = $uuid;
         return $this;
     }
 
