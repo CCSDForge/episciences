@@ -489,7 +489,11 @@ class Episciences_User extends Ccsd_User_Models_User
 
                 // new account new registration date
                 $data['REGISTRATION_DATE'] = date("Y-m-d H:i:s");
-                $data['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT);
+                try {
+                    $data['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT);
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
                 $data['uuid'] = \Ramsey\Uuid\Uuid::uuid4()->toString();
                 try {
                     $resInsert = $this->_db->insert(T_USERS, $data);
@@ -604,17 +608,25 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         $select = $this->_db->select()
-            ->from(T_USERS, ['nombre' => 'COUNT(UID)'])
+            ->from(T_USERS, ['uuid','nombre' => 'COUNT(UID)'])
             ->where('UID = ?', $uid);
 
         $result = $select->query()->fetch();
 
-        if ($result['nombre'] == 0) {
+        if ((int)$result['nombre'] === 0) {
             $this->setHasAccountData(false);
             return false;
         }
 
         $this->setHasAccountData(true);
+
+
+        if (!isset($result['uuid'])){
+            throw new InvalidArgumentException("UUID must not be null");
+        }
+
+        $this->setUuid($result['uuid']);
+
         return true;
     }
 
