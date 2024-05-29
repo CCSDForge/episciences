@@ -2,6 +2,9 @@
 
 class ReviewController extends Zend_Controller_Action
 {
+    public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
+    public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
+
     public function indexAction()
     {
         $this->renderScript('index/submenu.phtml');
@@ -49,6 +52,10 @@ class ReviewController extends Zend_Controller_Action
                     $url = $this->_helper->url($this->getRequest()->getActionName(), $this->getRequest()->getControllerName());
                     $this->_helper->redirector->gotoUrl($url);
                 } else {
+                    if ($reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER] === '' && $reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){
+                        $message = '<strong>' . $this->view->translate("Le lieu de publication est renseigné, veuillez saisir l'éditeur également") . '</strong>';
+                        $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+                    }
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }

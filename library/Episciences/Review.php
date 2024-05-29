@@ -113,6 +113,8 @@ class Episciences_Review
     public const SETTING_ISSN_PRINT = 'ISSN_PRINT';
     public const SETTING_JOURNAL_DOI = 'journalAssignedDoi';
 
+    public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
+    public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
     #git 303
     public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
 
@@ -213,7 +215,9 @@ class Episciences_Review
             self::SETTING_DISPLAY_STATISTICS,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE,
-            self::SETTING_START_STATS_AFTER_DATE
+            self::SETTING_START_STATS_AFTER_DATE,
+            self::SETTING_JOURNAL_PUBLISHER,
+            self::SETTING_JOURNAL_PUBLISHER_LOC,
         ];
 
 
@@ -307,7 +311,7 @@ class Episciences_Review
      * @param $rvId
      * @return array
      */
-    public static function getData($rvId): array
+    public static function getData($rvId, $status = 1): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if (is_numeric($rvId)) {
@@ -903,6 +907,17 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('text', self::SETTING_JOURNAL_PUBLISHER, [
+                'label' => 'Éditeur',
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
+                ]
+        );
+
+        $form->addElement('text', self::SETTING_JOURNAL_PUBLISHER_LOC, [
+                'label' => 'Lieu de publication',
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
+            ]
+        );
         $form->addElement('text', self::SETTING_CONTACT_JOURNAL, [
                 'label' => 'Page de contact de la revue',
                 'description' => 'URL',
@@ -932,13 +947,15 @@ class Episciences_Review
         $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_DOI)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_PUBLISHER)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_PUBLISHER_LOC)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_CONTACT_TECH_SUPPORT, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL,self::SETTING_JOURNAL_PUBLISHER,self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_TECH_SUPPORT, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1784,6 +1801,15 @@ class Episciences_Review
 
         // Encapsulation des préparateurs de copie
         $settingsValues[self::SETTING_ENCAPSULATE_COPY_EDITORS] = $this->getSetting(self::SETTING_ENCAPSULATE_COPY_EDITORS);
+
+        // publisher
+        $settingsValues[self::SETTING_JOURNAL_PUBLISHER] = trim(strip_tags($this->getSetting(self::SETTING_JOURNAL_PUBLISHER)));
+
+        $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] = trim(strip_tags($this->getSetting(self::SETTING_JOURNAL_PUBLISHER_LOC)));
+
+        if ($settingsValues[self::SETTING_JOURNAL_PUBLISHER] === '' && $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){
+            return false;
+        }
 
         // DOIs
 
