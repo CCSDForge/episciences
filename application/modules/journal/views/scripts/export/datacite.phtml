@@ -199,7 +199,7 @@ $publisher = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER)
 
     <dc:language><?= $this->paperLanguage ?></dc:language>
     <?php if ($publisher !== '') : ?>
-        <dc:publisher><?= $publisher ?></dc:publisher>
+        <dc:publisher><?= $this->escape($publisher) ?></dc:publisher>
     <?php endif;?>
     <oaire:resourceType resourceTypeGeneral="literature" uri="http://purl.org/coar/resource_type/c_6501">journal article</oaire:resourceType>
 

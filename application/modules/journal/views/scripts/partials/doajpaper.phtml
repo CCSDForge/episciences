@@ -50,7 +50,7 @@ $timestamp = time();
             } ?></language>
     <?php endif; ?>
     <?php if ($publisher !== '') : ?>
-        <publisher><?= $publisher ?></publisher>
+        <publisher><?= $this->escape($publisher) ?></publisher>
     <?php endif;?>
     <journalTitle><?= $this->escape($journal->getName()) ?></journalTitle>
 
