@@ -1803,9 +1803,9 @@ class Episciences_Review
         $settingsValues[self::SETTING_ENCAPSULATE_COPY_EDITORS] = $this->getSetting(self::SETTING_ENCAPSULATE_COPY_EDITORS);
 
         // publisher
-        $settingsValues[self::SETTING_JOURNAL_PUBLISHER] = strip_tags(trim($this->getSetting(self::SETTING_JOURNAL_PUBLISHER)));
+        $settingsValues[self::SETTING_JOURNAL_PUBLISHER] = trim(strip_tags($this->getSetting(self::SETTING_JOURNAL_PUBLISHER)));
 
-        $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] = strip_tags(trim($this->getSetting(self::SETTING_JOURNAL_PUBLISHER_LOC)));
+        $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] = trim(strip_tags($this->getSetting(self::SETTING_JOURNAL_PUBLISHER_LOC)));
 
         if ($settingsValues[self::SETTING_JOURNAL_PUBLISHER] === '' && $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){
             return false;
