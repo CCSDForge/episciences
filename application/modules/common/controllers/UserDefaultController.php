@@ -1,6 +1,7 @@
 <?php
 
 use neverbehave\Hcaptcha;
+use Ramsey\Uuid\Uuid;
 use ReCaptcha\ReCaptcha;
 
 
@@ -501,8 +502,6 @@ class UserDefaultController extends Zend_Controller_Action
                 $user->setModificationDate();
                 $screenName = $user->getScreenName();
 
-                $user->setApiPassword(password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT));
-
                 if ($user->save()) {
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté à Episciences");
                     $success = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $success);
@@ -565,9 +564,9 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $user->setValid(0);
                 $user->setIs_valid(); // Episciences validation
-                $user->setApiPassword(password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT));
 
                 $lastInsertId = $user->save();
+
                 try {
                     $user->setUid($lastInsertId);
                 } catch (Exception $e) {
@@ -737,7 +736,6 @@ class UserDefaultController extends Zend_Controller_Action
                 $user = new Episciences_User($updatedUserValues);
 
 
-
                 $subform = $form->getSubForm('ccsd');
 
                 if ($subform->PHOTO->isUploaded()) {
@@ -745,6 +743,7 @@ class UserDefaultController extends Zend_Controller_Action
                     $photoFileName = $subform->PHOTO->getFileName();
 
                     try {
+                        $user->savePhotoWithUuid($photoFileName, $user->getUuid());
                         $user->savePhoto($photoFileName);
                         Episciences_Auth::incrementPhotoVersion();
                     } catch (Exception $e) {
@@ -1441,11 +1440,15 @@ class UserDefaultController extends Zend_Controller_Action
 
         $res = false;
         if ($this->getRequest()->isXmlHttpRequest() && isset($params['uid'])) {
-            if (Episciences_Auth::getUid() == $params['uid'] || Episciences_Auth::isSecretary()) {
-                $user = new Ccsd_User_Models_User(['uid' => $params['uid']]);
-                $user->deletePhoto();
+            $uid = (int)$params['uid'];
+            if (Episciences_Auth::getUid() === $uid || Episciences_Auth::isSecretary()) {
+                $user = new Ccsd_User_Models_User(['uid' => $uid]);
+                $user->setUuid(Episciences_Auth::getUuid());
+                $user->deletePhoto($user->getUuid());
                 Episciences_Auth::incrementPhotoVersion();
-                if (Episciences_Auth::getUid() == $params['uid']) {
+                $user->deletePhoto($user->getUid());
+                Episciences_Auth::incrementPhotoVersion();
+                if (Episciences_Auth::getUid() === $uid) {
                     $res = '1';
                 } else {
                     $res = '2';
@@ -1463,7 +1466,23 @@ class UserDefaultController extends Zend_Controller_Action
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
-        $uid = $this->getParam('uid', 0);
+
+
+        $cleanedUuid = '';
+        $user = null;
+        $uuid = null;
+
+        if ($this->hasParam('uuid')){
+            $photoPathNameFromUuid = true;
+            $uuid = (string)$this->getParam('uuid');
+            $uid = Episciences_UserManager::getCorrespondingUidFromUuid($uuid);
+            $cleanedUuid = Episciences_Tools::getCleanedUuid($uuid);
+
+        } else {
+            $photoPathNameFromUuid = false;
+            $uid = $this->getParam('uid', 0);
+        }
+
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
 
         $photoPathName = false;
@@ -1489,27 +1508,32 @@ class UserDefaultController extends Zend_Controller_Action
 
 
         // photo of a specific user
-        if ($uid != 0) {
+        if ($uid !== 0) {
             $user = new Ccsd_User_Models_User(['uid' => $uid]);
-            $photoPathName = $user->getPhotoPathName($size);
+
+            if($cleanedUuid !== ''){
+                $user->setUuid($uuid);
+            }
+            $photoPathName = $user->getPhotoPathName($photoPathNameFromUuid ? $cleanedUuid  : $user->getUid(), $size);
         } else {
             // nobody or logged user
             $uid = Episciences_Auth::getUid();
-            if ($uid != 0) {
+            if ($uid !== 0) {
                 $user = new Ccsd_User_Models_User(['uid' => $uid]);
-                $photoPathName = $user->getPhotoPathName($size);
+                $user->setUuid(Episciences_Auth::getUuid());
+                $photoPathName = $user->getPhotoPathName($photoPathNameFromUuid ? $cleanedUuid : $user->getUid(), $size);
             }
         }
 
         if (!$photoPathName) {
-            if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+            if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS && $user) {
 
-                $userPhotoPath = $user->getPhotoPath();
+                $userPhotoPath = $user->getPhotoPath($photoPathNameFromUuid ? $cleanedUuid : $user->getUid());
 
                 if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
-                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
+                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $photoPathNameFromUuid ? $cleanedUuid: $user->getUid() . '.svg';
                 $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
                 file_put_contents($photoPathName, $data);
 
@@ -1762,14 +1786,14 @@ class UserDefaultController extends Zend_Controller_Action
         unset($localUserData['ROLES'], $localUserData['affiliations'], $localUserData['web_sites'], $localUserData['biography'], $localUserData['social_medias']); // to fix PHP Notice: Array to string conversion
         $res = $user->findWithCAS($user->getUid());
 
-        if($res === null){
+        if ($res === null) {
             trigger_error("This account could not be found.", E_USER_ERROR);
         }
 
         $casUserData = $user->toArray();
-        unset($casUserData['ROLES'], $casUserData['affiliations'], $localUserData['biography'] , $casUserData['web_sites'], $casUserData['social_medias']);
+        unset($casUserData['ROLES'], $casUserData['affiliations'], $localUserData['biography'], $casUserData['web_sites'], $casUserData['social_medias']);
 
-        if(!empty(array_diff($localUserData, $casUserData))){
+        if (!empty(array_diff($localUserData, $casUserData))) {
             $data = array_merge($localUserData, $casUserData);
             $user = new Episciences_User($data);
             $user->save(false, false);

@@ -1969,4 +1969,13 @@ class Episciences_Tools
         return false;
     }
 
+    public static function getCleanedUuid(string $uuid = null): string
+    {
+        if (!\Ramsey\Uuid\Uuid::isValid((string)$uuid)){
+            return '';
+        }
+
+        return str_replace('-','', $uuid);
+    }
+
 }

@@ -3,6 +3,7 @@
 class Ccsd_Form_Decorator_Picture extends Zend_Form_Decorator_Abstract
 {
     protected $_uid;
+    protected $_uuid;
 
     public function setUID ($uid)
     {
@@ -17,12 +18,8 @@ class Ccsd_Form_Decorator_Picture extends Zend_Form_Decorator_Abstract
         if (isset($uid)) {
             $this->setUID($uid);
         }
-            
-        if (!isset ($this->_uid)) { 
-            return Ccsd_Auth::getUid();
-        } else {
-            return $this->_uid;
-        }
+
+        return $this->_uid ?? Ccsd_Auth::getUid();
     }
     
     /**
@@ -60,5 +57,29 @@ class Ccsd_Form_Decorator_Picture extends Zend_Form_Decorator_Abstract
             default:
                 return $content . $image;
         }
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getUuid()
+    {
+        $uuid = $this->getOption('uuid');
+
+        if (isset($uuid)) {
+            $this->setUuid($uuid);
+        }
+
+        return $this->_uid ?? Ccsd_Auth::getUid();
+    }
+
+    /**
+     * @param string $uuid
+     * @return Ccsd_Form_Decorator_Picture
+     */
+    public function setUuid(string $uuid = ''): self
+    {
+        $this->_uuid = $uuid;
+        return $this;
     }
 }
