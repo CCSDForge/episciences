@@ -2490,4 +2490,8 @@ return [
     // Journal's settings
     "Exiger que la demande de révision soit assortie d'un délai" => "To require that a deadline is given with revision request",
 
+    "Éditeur" => "Publisher",
+    "Lieu de publication" => "Location of the publisher",
+    "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher."
+
 ];

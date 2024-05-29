@@ -19,7 +19,7 @@ $publicationDate = new DateTime($paper->getPublication_date());
 $journal = $this->journal;
 $journalUrl = $journal->getUrl();
 $journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
-
+$publisher = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER);
 $enrichmentAuthors = $paper->getAuthorsWithAffiNumeric();
 $enrichmentAuthorsWithAffiNum = $enrichmentAuthors['authors'];
 $arrayAffiliation = $enrichmentAuthors['affiliationNumeric'];
@@ -49,7 +49,9 @@ $timestamp = time();
                 echo Episciences_Tools::translateToIso6392b($this->paperLanguage);
             } ?></language>
     <?php endif; ?>
-    <publisher><?= DOMAIN; ?></publisher>
+    <?php if ($publisher !== '') : ?>
+        <publisher><?= $publisher ?></publisher>
+    <?php endif;?>
     <journalTitle><?= $this->escape($journal->getName()) ?></journalTitle>
 
     <?php if ($issn !== '') : ?>
