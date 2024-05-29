@@ -49,7 +49,7 @@ $timestamp = time();
                 echo Episciences_Tools::translateToIso6392b($this->paperLanguage);
             } ?></language>
     <?php endif; ?>
-    <?php if ($publisher !== '') : ?>
+    <?php if ($this->escape($publisher) !== '') : ?>
         <publisher><?= $this->escape($publisher) ?></publisher>
     <?php endif;?>
     <journalTitle><?= $this->escape($journal->getName()) ?></journalTitle>
