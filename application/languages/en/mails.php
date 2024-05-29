@@ -292,7 +292,7 @@ return [
     "paper_refused_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - An article has just been refused",
 
     // ask other editors
-    "paper_ask_other_editors_tpl_name" => "Ask other editors opinion",
+    "paper_ask_other_editors_tpl_name" => "Ask other editors for their opinion",
     "paper_ask_other_editors_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Your opinion?",
 
     // published paper - author copy

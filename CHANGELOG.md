@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ###Added
+- New settings for the journals 'Publisher' + 'Publisher location' The values are export to OpenAIRE and the DOAJ (not available for Crossref)
 - button to be redirected to the episciences bibliographic extraction application to import bibtex
 - If HAL, send coar notify message when updating metadata for published articles.
 - Added in zbjat export bibliographical references from bibtex import

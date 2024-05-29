@@ -53,6 +53,7 @@ if (defined('RVISSN')) {
 } else {
     $issn = '';
 }
+$publisher = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER);
 ?>
 
     <?php if($this->doi !== ''): ?>
@@ -159,7 +160,6 @@ if (defined('RVISSN')) {
     <?php endif; ?>
 
 
-    <dc:publisher><?= DOMAIN; ?></dc:publisher>
 
     <?php if (is_array($subjects)): ?>
         <datacite:subjects>
@@ -197,7 +197,9 @@ if (defined('RVISSN')) {
 
 
     <dc:language><?= $this->paperLanguage ?></dc:language>
-
+    <?php if ($this->escape($publisher) !== '') : ?>
+        <dc:publisher><?= $this->escape($publisher) ?></dc:publisher>
+    <?php endif;?>
     <oaire:resourceType resourceTypeGeneral="literature" uri="http://purl.org/coar/resource_type/c_6501">journal article</oaire:resourceType>
 
     <datacite:relatedIdentifiers>
