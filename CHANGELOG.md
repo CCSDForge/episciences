@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased 
+### Fixed
+- Fixed missing spaces with volumes and section on references for arXiv
+
 ## v1.0.44.1 - 2024-05-21
 ### Fixed "Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given."
 
