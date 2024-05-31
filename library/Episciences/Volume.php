@@ -730,8 +730,13 @@ class Episciences_Volume
 
         $this->setVol_year($data['year']);
         $this->setBib_reference($post['bib_reference']);
-        if ($data['special_issue'] === "1"){
+
+        if ($data['special_issue'] === "1" && $data['is_proceeding'] === "1") {
+            $this->setVol_type('special_issue,proceedings');
+        } elseif ($data['special_issue'] === "1") {
             $this->setVol_type('special_issue');
+        } elseif ($data['is_proceeding'] === "1") {
+            $this->setVol_type('proceedings');
         } else {
             $this->setVol_type(null);
         }
