@@ -181,11 +181,13 @@ $paperLanguage = $this->paperLanguage;
                     <publisher>
                         <publisher_name><?php echo $this->escape($journal->getName()); ?></publisher_name>
                     </publisher>
-                    <publication_date media_type="<?= $onlineType ?>">
-                        <month><?php echo $publicationDate->format('m'); ?></month>
-                        <day><?php echo $publicationDate->format('d'); ?></day>
-                        <year><?php echo $publicationDate->format('Y'); ?></year>
-                    </publication_date>
+                    <?php if ($publicationDate): ?>
+                        <publication_date media_type="<?= $onlineType ?>">
+                            <month><?php echo $publicationDate->format('m'); ?></month>
+                            <day><?php echo $publicationDate->format('d'); ?></day>
+                            <year><?php echo $publicationDate->format('Y'); ?></year>
+                        </publication_date>
+                    <?php endif; ?>
                     <noisbn reason="simple_series"/>
                     <doi_data>
                         <?php if ($journalDoiPrefix !== '' && substr(strrchr($proceedingInfo['conference_proceedings_doi'], "."), 1) !== '' ): ?>
