@@ -63,7 +63,12 @@ return [
 
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
+    "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Flux de travail éditorial",
+    "Episciences_Website_Navigation_Page_PrepareSubmission" => "Preparer votre soumission",
+
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
+
+
 
 
     //Recherche : facettes

@@ -23,6 +23,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_CREDITS = 'credits';
     const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
     const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
+    const PAGE_EDITORIAL_WORKFLOW = 'EditorialWorkflow';
+    const PAGE_PREPARE_SUBMISSION= 'PrepareSubmission';
     const PAGE_ABOUT = 'about';
     const PAGE_EDITORIAL_BOARD = 'editorialBoard';
     const PAGE_TECHNICAL_BOARD = 'technicalBoard';

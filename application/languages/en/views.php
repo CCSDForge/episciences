@@ -1753,6 +1753,10 @@ return [
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
+    "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
+    "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
+
+
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
     "Nombre de résultats par page" => "Number of results per page",
     "Photos des membres" => "Members' photos",
