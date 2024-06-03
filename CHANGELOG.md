@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased 
+### Fixed
+- Fixed missing spaces with volumes and section on references for arXiv
+
 ## Unreleased
 ###Added
 - Profile photo storage management via uuid.
@@ -31,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
 - Functionality for migrating news to the new sql news table
 - Toolbar tinymce have heading edition
+
 ### Changed
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
