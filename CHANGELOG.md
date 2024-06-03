@@ -16,7 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed. 
 ###Added
+- Script to generate user's uuids.
+- Include UUIDs when saving accounts
 - button to be redirected to the episciences bibliographic extraction application to import bibtex
 - If HAL, send coar notify message when updating metadata for published articles.
 - Added in zbjat export bibliographical references from bibtex import

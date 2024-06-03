@@ -59,6 +59,10 @@ class Ccsd_Auth extends Zend_Auth
     public static function getRoles ()
     {}
 
+    public static function getUuid ()
+    {
+        return self::isLogged() ? self::getInstance()->getIdentity()->getUuid() : '';
+    }
 
 
 }

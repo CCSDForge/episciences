@@ -113,6 +113,8 @@ class Ccsd_User_Models_User
      */
     protected $_uid;
 
+    protected ?string $_uuid;
+
     /**
      * Nom d'utilisateur / login
      *
@@ -239,25 +241,27 @@ class Ccsd_User_Models_User
      * en paramètre
      *
      * @param string $size
-     * @return boolean string
+     * @param bool $withUuid
+     * @return bool|string string
      */
-    public function getPhotoPathName($size = self::IMG_NAME_THUMB)
+    public function getPhotoPathName(string $size = self::IMG_NAME_THUMB, bool $withUuid = false): bool|string
     {
-        $photoPath = $this->getPhotoPath();
+        $photoPath = $this->getPhotoPath($withUuid);
         $photoPath .= '/';
+        $identifier = $withUuid ? Episciences_Tools::getCleanedUuid($this->getUuid()) : $this->getUid();
 
         switch ($size) {
             case self::IMG_NAME_THUMB:
-                $photoPath .= self::IMG_PREFIX_THUMB . $this->getUid() . '.jpg';
+                $photoPath .= self::IMG_PREFIX_THUMB . $identifier . '.jpg';
                 break;
             case self::IMG_NAME_LARGE:
-                $photoPath .= self::IMG_PREFIX_LARGE . $this->getUid() . '.jpg';
+                $photoPath .= self::IMG_PREFIX_LARGE . $identifier . '.jpg';
                 break;
             case self::IMG_NAME_INITIALS:
-                $photoPath .= self::IMG_PREFIX_INITIALS . $this->getUid() . '.svg';
+                $photoPath .= self::IMG_PREFIX_INITIALS . $identifier . '.svg';
                 break;
             default:
-                $photoPath .= self::IMG_PREFIX_NORMAL . $this->getUid() . '.jpg';
+                $photoPath .= self::IMG_PREFIX_NORMAL . $identifier . '.jpg';
                 break;
         }
 
@@ -271,11 +275,27 @@ class Ccsd_User_Models_User
     /**
      * Retourne le chemin vers le répertoire des images d'un utilisateur
      *
+     * @param bool $withUuid
      * @return string
      */
-    public function getPhotoPath()
+    public function getPhotoPath(bool$withUuid = false): string
     {
-        return Ccsd_File::slicedPathFromString($this->getUid(), EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT, 2, '0');
+        if($withUuid) {
+            return $this->getPhotoPathWithUuid();
+        }
+
+        return Ccsd_File::slicedPathFromString($this->getUid(), EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT);
+    }
+
+
+    /**
+     * Retourne le chemin vers le répertoire des images d'un utilisateur (construit depuis les UUID)
+     *
+     * @return string
+     */
+    public function getPhotoPathWithUuid(): string
+    {
+        return Ccsd_File::slicedPathFromString(Episciences_Tools::getCleanedUuid($this->getUuid()), EPISCIENCES_USER_PHOTO_PATH);
     }
 
     /**
@@ -614,6 +634,7 @@ class Ccsd_User_Models_User
         if (!$resLarge) {
             throw new Exception("Échec de création de la taille IMG_SIZE_LARGE.");
         }
+
     }
 
     /**
@@ -621,9 +642,10 @@ class Ccsd_User_Models_User
      *
      * @return array tableau du résultat pour chaque type
      */
-    public function deletePhoto()
+    public function deletePhoto(): array
     {
         $res = array();
+
         $typesToRm = array(
             self::IMG_NAME_THUMB,
             self::IMG_NAME_NORMAL,
@@ -633,7 +655,18 @@ class Ccsd_User_Models_User
 
         foreach ($typesToRm as $type) {
 
-            $res[$type] = unlink($this->getPhotoPathName($type));
+            $photoPathNameUid = $this->getPhotoPathName($type);
+
+            if($photoPathNameUid){
+                $res[$type][$photoPathNameUid] = unlink($photoPathNameUid);
+            }
+
+            $photoPathNameUuid = $this->getPhotoPathName($type, true);
+
+            if($photoPathNameUuid){
+                $res[$type][$photoPathNameUuid] = unlink($photoPathNameUuid);
+            }
+
         }
         return $res;
     }
@@ -659,6 +692,21 @@ class Ccsd_User_Models_User
         }
 
         $this->_ftp_home = $_ftp_home;
+        return $this;
+    }
+
+    public function getUuid() : ?string
+    {
+        return $this->_uuid;
+    }
+
+    /**
+     * @param string $uuid
+     * @return $this
+     */
+    public function setUuid(?string $uuid = null): self
+    {
+        $this->_uuid = $uuid;
         return $this;
     }
 

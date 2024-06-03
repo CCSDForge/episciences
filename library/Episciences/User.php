@@ -5,6 +5,8 @@ class Episciences_User extends Ccsd_User_Models_User
     /** @var int */
     protected $_uid;
 
+    protected  ?string $_uuid;
+
     protected $_langueid;
 
     /** @var boolean */
@@ -346,6 +348,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $res['web_sites'] = $this->getWebSites();
         $res['biography'] = $this->getBiography();
         $res['social_medias'] = $this->getSocialMedias();
+        $res['uuid'] = $this->getUuid();
         return $res;
     }
 
@@ -403,7 +406,8 @@ class Episciences_User extends Ccsd_User_Models_User
      *
      * @param bool $forceInsert
      * @param bool $isCasRecording
-     * @return bool|string
+     * @param int $rvId
+     * @return bool|int
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -413,7 +417,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public function save(bool $forceInsert = false, bool $isCasRecording = true, int $rvId = RVID)
     {
         // Enregistrement des données CAS
-        // et renvoi de l'id si il s'agit d'un nouveau compte
+        // et renvoi de l'id s'il s'agit d'un nouveau compte
 
         $casId = null;
 
@@ -487,6 +491,12 @@ class Episciences_User extends Ccsd_User_Models_User
                 // new account new registration date
                 $data['REGISTRATION_DATE'] = date("Y-m-d H:i:s");
                 try {
+                    $data['API_PASSWORD'] = password_hash(Ccsd_Tools::generatePw(), PASSWORD_DEFAULT);
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+                $data['uuid'] = \Ramsey\Uuid\Uuid::uuid4()->toString();
+                try {
                     $resInsert = $this->_db->insert(T_USERS, $data);
                 } catch (Exception $e) {
                     $resInsert = false;
@@ -494,7 +504,7 @@ class Episciences_User extends Ccsd_User_Models_User
                 }
 
                 if ($resInsert) {
-                    $uid = $this->_db->lastInsertId();
+                    $uid = (int)$this->_db->lastInsertId();
                 } else {
                     return false;
                 }
@@ -511,15 +521,8 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         // Mise à jour des données locales
-        try {
-            $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+        $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
 
-        } catch (EXception $e) {
-
-            error_log($e->getMessage());
-            throw $e;
-
-        }
         return $this->getUid();
 
     }
@@ -606,17 +609,25 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         $select = $this->_db->select()
-            ->from(T_USERS, ['nombre' => 'COUNT(UID)'])
+            ->from(T_USERS, ['uuid','nombre' => 'COUNT(UID)'])
             ->where('UID = ?', $uid);
 
         $result = $select->query()->fetch();
 
-        if ($result['nombre'] == 0) {
+        if ((int)$result['nombre'] === 0) {
             $this->setHasAccountData(false);
             return false;
         }
 
         $this->setHasAccountData(true);
+
+
+        if (!isset($result['uuid'])){
+            throw new InvalidArgumentException("UUID must not be null");
+        }
+
+        $this->setUuid($result['uuid']);
+
         return true;
     }
 
@@ -766,6 +777,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setAffiliations($result['AFFILIATIONS']);
         $this->setBiography($result['BIOGRAPHY']);
         $this->setOrcid($result['ORCID']);
+        $this->setUuid($result['uuid']);
 
         return $result;
     }
@@ -1192,17 +1204,19 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * @return string
      */
-    public function getApiPassword()
+    public function getApiPassword(): ?string
     {
         return $this->_api_password;
     }
 
     /**
-     * @param mixed $apiPassword
+     * @param string|null $apiPassword
+     * @return $this
      */
-    public function setApiPassword($apiPassword): void
+    public function setApiPassword(string $apiPassword = null): self
     {
         $this->_api_password = $apiPassword;
+        return $this;
     }
 
     /**
@@ -1377,6 +1391,50 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setRoles($userRoles);
 
         return $this;
+    }
+
+
+
+    /**
+     * @param string $photoFileName
+     * @return void
+     * @throws Exception
+     */
+    public function savePhotoWithUuid(string $photoFileName): void
+    {
+        $userPhotoPath = $this->getPhotoPathWithUuid();
+        $identifier = Episciences_Tools::getCleanedUuid($this->getUuid());
+
+        if (!is_dir($userPhotoPath)) {
+
+            $mkdirResult = mkdir($userPhotoPath, 0777, true);
+            if (!$mkdirResult) {
+                throw new Exception("Le répertoire de stockage n'a pas pu être créé.");
+            }
+        }
+
+        if (Ccsd_File::canConvertImg($photoFileName) !== true) {
+            throw new Exception(htmlspecialchars($photoFileName) . " : Création de miniature : ce type de fichier n'est pas accepté.");
+        }
+
+        $userPhotoPath .= '/';
+
+        $resThumb = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_THUMB, self::IMG_SIZE_THUMB, self::IMG_PREFIX_THUMB . $identifier);
+
+        if (!$resThumb) {
+            throw new Exception("Échec de création de la taille IMG_SIZE_THUMB.");
+        }
+
+        $resUser = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_NORMAL, self::IMG_SIZE_NORMAL, self::IMG_PREFIX_NORMAL . $identifier);
+        if (!$resUser) {
+            throw new Exception("Échec de création de la taille IMG_SIZE_NORMAL.");
+        }
+
+        $resLarge = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_LARGE, self::IMG_SIZE_LARGE, self::IMG_PREFIX_LARGE . $identifier);
+        if (!$resLarge) {
+            throw new Exception("Échec de création de la taille IMG_SIZE_LARGE.");
+        }
+
     }
 
 }
