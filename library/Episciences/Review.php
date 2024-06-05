@@ -72,7 +72,7 @@ class Episciences_Review
     public const SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS = 'systemCanAssignOnlySpecialVolumeEditors';
     public const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
     const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
-    public const SETTING_DISPLAY_STATISTICS= 'displayStatistics';
+    public const SETTING_DISPLAY_STATISTICS = 'displayStatistics';
 
     /**
      * Do not allow the selection of an editor in chief when the author has the option to
@@ -525,23 +525,34 @@ class Episciences_Review
     public static function checkReviewNotifications(array &$recipients, bool $strict = true, $rvId = RVID): void
     {
         $review = Episciences_ReviewsManager::find($rvId);
+
+        $isChiefEditorsChecked = false;
+        $isSecretariesChecked = false;
+        $isAdministratorsChecked = false;
+
         $notificationSettings = $review->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);
 
-        if (!$strict) {
+        if ($notificationSettings) {
+            $isChiefEditorsChecked = in_array(self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS, $notificationSettings, true);
+            $isSecretariesChecked = in_array(self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES, $notificationSettings, true);
+            $isAdministratorsChecked = in_array(self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS, $notificationSettings, true);
+        }
+
+        if (!$strict && !$isChiefEditorsChecked && !$isSecretariesChecked && !$isAdministratorsChecked) { //github#508
             Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
             Episciences_Submit::addIfNotExists(self::getSecretaries(), $recipients);
             Episciences_Submit::addIfNotExists(self::getAdministrators(), $recipients);
 
         } else {
-            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS, $notificationSettings, true)) {
+            if ($isChiefEditorsChecked) {
                 Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
             }
 
-            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES, $notificationSettings, true)) {
+            if ($isSecretariesChecked) {
                 Episciences_Submit::addIfNotExists(self::getSecretaries(), $recipients);
             }
 
-            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS, $notificationSettings, true)) {
+            if ($isAdministratorsChecked) {
                 Episciences_Submit::addIfNotExists(self::getAdministrators(), $recipients);
             }
 
@@ -910,7 +921,7 @@ class Episciences_Review
         $form->addElement('text', self::SETTING_JOURNAL_PUBLISHER, [
                 'label' => 'Éditeur',
                 'validators' => [new Zend_Validate_StringLength(['max' => 255])]
-                ]
+            ]
         );
 
         $form->addElement('text', self::SETTING_JOURNAL_PUBLISHER_LOC, [
@@ -955,7 +966,7 @@ class Episciences_Review
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL,self::SETTING_JOURNAL_PUBLISHER,self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_TECH_SUPPORT, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_TECH_SUPPORT, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1807,7 +1818,7 @@ class Episciences_Review
 
         $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] = trim(strip_tags($this->getSetting(self::SETTING_JOURNAL_PUBLISHER_LOC)));
 
-        if ($settingsValues[self::SETTING_JOURNAL_PUBLISHER] === '' && $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){
+        if ($settingsValues[self::SETTING_JOURNAL_PUBLISHER] === '' && $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] !== '') {
             return false;
         }
 
@@ -1848,7 +1859,6 @@ class Episciences_Review
         $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
         $settingsValues[self::SETTING_TO_REQUIRE_REVISION_DEADLINE] = $this->getSetting(self::SETTING_TO_REQUIRE_REVISION_DEADLINE);
         $settingsValues[self::SETTING_START_STATS_AFTER_DATE] = $this->getSetting(self::SETTING_START_STATS_AFTER_DATE);
-
 
 
         $values = [];
