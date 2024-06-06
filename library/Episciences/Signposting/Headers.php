@@ -32,7 +32,7 @@ trait Headers
         $tplDescribedBy = '<%s/%s>; rel="describedby"; type="%s"';
         $newHeaderLinks[] = sprintf($tplDescribedBy, $paperUrl, 'bibtex', 'application/x-bibtex');
         $newHeaderLinks[] = sprintf($tplDescribedBy, $paperUrl, 'pdf', 'application/pdf');
-        $tplDescribedByWithFormat = '<%s/%s>; rel="describedby"; type="%s"; formats="%s"';
+        $tplDescribedByWithFormat = '<%s/%s>; rel="describedby"; type="%s"; profile="%s"';
         $newHeaderLinks[] = sprintf($tplDescribedByWithFormat, $paperUrl, 'tei', $xmlMimeType, 'http://www.tei-c.org/ns/1.0');
         $newHeaderLinks[] = sprintf($tplDescribedByWithFormat, $paperUrl, 'dc', $xmlMimeType, 'http://purl.org/dc/elements/1.1/');
         $newHeaderLinks[] = sprintf($tplDescribedByWithFormat, $paperUrl, 'datacite', $xmlMimeType, 'http://datacite.org/schema/kernel-4');
