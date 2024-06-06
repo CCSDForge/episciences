@@ -16,7 +16,7 @@
         {
           "href": "https://www.openarchives.org/OAI/openarchivesprotocol.html",
           "type": "text/html",
-          "title": "Episciences OAI-PMH endpoint - v.2.0"
+          "title": "Open Archives Initiative - Protocol for Metadata Harvesting - v.2.0"
         }
       ],
       "service-meta": [
