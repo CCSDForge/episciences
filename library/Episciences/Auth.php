@@ -244,7 +244,7 @@ class Episciences_Auth extends Ccsd_Auth
     /**
      * Increment user profile photo version
      */
-    public static function incrementPhotoVersion()
+    public static function incrementPhotoVersion(): void
     {
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         if (!is_int($session->photoVersion)) {

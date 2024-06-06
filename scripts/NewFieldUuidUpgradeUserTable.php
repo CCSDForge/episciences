@@ -117,25 +117,22 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
                 }
 
                 $progress = round(($cpt * 100) / $count);
+                $uuid = Uuid::uuid4()->toString();
 
                 if ($this->isVerbose()) {
-
-                    $uuid = Uuid::uuid4()->toString();
-
-                    $values = $data[$uid];
-
-                    $user = new Episciences_User($values);
-                    $user->setUuid($uuid);
-
-                    $users[$user->getUid()]['current'] = $user;
-
-                    if (isset($values['uuid'])) {
-                        $users[$user->getUid()]['oldUuid'] = $values['uuid'];
-                    }
-
                     $this->displaySuccess(sprintf('** Current UUID [#%s] ...', $uuid), true);
-                    $toUpdate .= sprintf('%sUPDATE %s set `uuid` = %s  WHERE UID = %s;', PHP_EOL, self::TABLE, $this->getDb()->quote($uuid), $uid);
                 }
+
+                $values = $data[$uid];
+                $user = new Episciences_User($values);
+                $user->setUuid($uuid);
+                $users[$user->getUid()]['current'] = $user;
+
+                if (isset($values['uuid'])) {
+                    $users[$user->getUid()]['oldUuid'] = $values['uuid'];
+                }
+
+                $toUpdate .= sprintf('%sUPDATE %s set `uuid` = %s  WHERE UID = %s;', PHP_EOL, self::TABLE, $this->getDb()->quote($uuid), $uid);
 
                 $this->getProgressBar()->setProgress($progress);
 
@@ -150,6 +147,11 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
 
             if (!$this->isDebug()) {
                 $statement = $this->getDb()->query($toUpdate);
+
+                if ($this->isVerbose()) {
+                    $this->displayDebug('Check and save photos ...', true);
+                }
+
 
                 $this->checkAndSavePhoto($users, $this->hasParam('delUidPath'));
 
@@ -195,18 +197,22 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
 
     public function checkAndSavePhoto(array $users = [], bool $deleteOldPath = false): void
     {
-        /** @var Episciences_User $user */
-
-        foreach ($users as $uid => $values) {
-
+        foreach ($users as $values) {
+            /** @var Episciences_User $user */
             $user = $values['current'];
 
-            if (isset($values['oldUuid'])) {
+            if ($this->isVerbose()) {
+                $this->displayDebug(sprintf('Current user #%s%s', $user->getUid(), PHP_EOL), true);
+            }
 
-                $oldPhotoPathName = $user->getPhotoPathName($values['oldUuid']);
+
+            /*if (isset($values['oldUuid'])) { // todo: to be reviewed : commented for verification : planned in case of script relaunch and uuid (s) regeneration
+
+                $oldPhotoPathName = $user->getPhotoPathName();
 
                 if ($oldPhotoPathName) {
-                    $oldPhotoPath = $user->getPhotoPath($values['oldUuid']);
+                    $user->setUuid($values['oldUuid']);
+                    $oldPhotoPath = $user->getPhotoPathWithUuid();
                     $user->deletePhoto($values['oldUuid']);
 
                     if ($this->isVerbose()) {
@@ -224,9 +230,17 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
 
                 }
 
+            }*/
+
+            $hasPhoto = $user::hasPhoto($user->getUid());
+
+
+            if ($this->isVerbose()) {
+                $this->displayDebug(sprintf('Has photo > [%s]%s', $hasPhoto ? 'YES' : 'NO', PHP_EOL), true);
             }
 
-            if ($user::hasPhoto($user->getUid())) { // Ancienne photo
+
+            if ($hasPhoto) { // Ancienne photo
 
                 try {
                     $uidPhotoPathName = $user->getPhotoPathName();

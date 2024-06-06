@@ -885,7 +885,8 @@ class Episciences_Paper
         $isConf = isset($xmlToArray[$keyBody][$keyConf]);
         $keyConfPaper = Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY;
 
-// Merge journal article or conference  data
+
+        // Merge journal article or conference  data
 
         if (!$isConf) {
 
@@ -894,7 +895,7 @@ class Episciences_Paper
             }
 
 
-            $xmlToArray[$keyBody][$keyConf][$keyJournalArticle] = array_merge(
+            $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle] = array_merge(
                 $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
                 $extraData[$keyPublic][$keyJournalArticle]
             );

@@ -1393,28 +1393,17 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this;
     }
 
-    /**
-     * Retourne le chemin vers le répertoire des images d'un utilisateur en se basant sur L'UUID utilisateur
-     *
-     * @param string|null $uuid
-     * @return string
-     */
-    public function getPhotoPathWithUuid(string $uuid = null): string
-    {
-        $cleanedUuid = Episciences_Tools::getCleanedUuid($uuid);
-        return Ccsd_File::slicedPathFromString($cleanedUuid, EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT);
-    }
+
 
     /**
      * @param string $photoFileName
-     * @param string|null $uuid
      * @return void
      * @throws Exception
      */
-    public function savePhotoWithUuid(string $photoFileName, string $uuid = null): void
+    public function savePhotoWithUuid(string $photoFileName): void
     {
-        $userPhotoPath = $this->getPhotoPathWithUuid($uuid);
-        $identifier = Episciences_Tools::getCleanedUuid(!$uuid ? \Ramsey\Uuid\Uuid::uuid1()->toString() : $uuid);
+        $userPhotoPath = $this->getPhotoPathWithUuid();
+        $identifier = Episciences_Tools::getCleanedUuid($this->getUuid());
 
         if (!is_dir($userPhotoPath)) {
 
@@ -1445,7 +1434,7 @@ class Episciences_User extends Ccsd_User_Models_User
         if (!$resLarge) {
             throw new Exception("Échec de création de la taille IMG_SIZE_LARGE.");
         }
-    }
 
+    }
 
 }

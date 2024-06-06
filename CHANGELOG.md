@@ -17,7 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased 
 ### Fixed
+- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
 - Fixed missing spaces with volumes and section on references for arXiv
+- [#508](https://github.com/CCSDForge/episciences/issues/508): Submission notification parameter: Only the selected roles will receive the notification, If no option is checked, the notification is sent to everyone.
+- [#509](https://github.com/CCSDForge/episciences/issues/509): Pixelated photos (Editorial Staff members page)
 
 ## Unreleased
 ###Added

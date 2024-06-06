@@ -1971,11 +1971,22 @@ class Episciences_Tools
 
     public static function getCleanedUuid(string $uuid = null): string
     {
-        if (!\Ramsey\Uuid\Uuid::isValid((string)$uuid)){
+        if (!self::isUuid($uuid)){
             return '';
         }
 
         return str_replace('-','', $uuid);
+    }
+
+
+    public static function isUuid(string $uuid = null) : bool{
+
+        if(empty(trim((string)$uuid))){
+            return false;
+        }
+
+        return \Ramsey\Uuid\Uuid::isValid($uuid);
+
     }
 
 }

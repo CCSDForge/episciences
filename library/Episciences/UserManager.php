@@ -83,5 +83,33 @@ class Episciences_UserManager
         return (int)$db->fetchone($query);
 
     }
+
+
+
+    public static function getUuidFromUid(int $uid , int $rvId = null): ?string
+    {
+
+        if (empty($uid)){
+            return null;
+        }
+
+        if (!$rvId && !Ccsd_Tools::isFromCli()) {
+            $rvId = RVID;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $query = $db->select()
+            ->from(['u' => T_USERS], 'u.uuid')
+            ->join(['ur' => T_USER_ROLES], 'u.UID = ur.UID', 'ur.UID')
+            ->where('u.UID = ?', $uid);
+
+        if ($rvId) {
+            $query->where('ur.RVID = ?', $rvId);
+        }
+
+        return $db->fetchone($query);
+
+    }
 }
 
