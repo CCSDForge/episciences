@@ -1234,7 +1234,7 @@ return [
     "comments-editcomment" => "Edit cover letter",
     "comments-removefilecomment" => "Delete their file(s)",
     "export-bibtex" => "Export BibTex",
-    "export-datacite" => "Export DataCite",
+    "export-datacite" => "Export OpenAIRE",
     "export-dc" => "Export DC",
     "export-tei" => "Export TEI",
     "file-paper" => "Access the files attached to a document",

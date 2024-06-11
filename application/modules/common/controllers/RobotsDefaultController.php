@@ -20,6 +20,7 @@ class RobotsDefaultController extends Zend_Controller_Action
                 '*/bibtex',
                 '*/dc',
                 '*/datacite',
+                '*/openaire',
                 '*/crossref',
                 '*/doaj',
                 '*/zbjats',

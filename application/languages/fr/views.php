@@ -191,7 +191,7 @@ return [
     "comments-editcomment" => "Editer la lettre d'acompagement",
     "comments-removefilecomment" => "Supprimer son (ses) fichiers",
     "export-bibtex" => "Export BibTex",
-    "export-datacite" => "Export DataCite",
+    "export-datacite" => "Export OpenAIRE",
     "export-dc" => "Export DC",
     "export-tei" => "Export TEI",
     "file-paper" => "Accéder aux fichiers joints d'un document",
