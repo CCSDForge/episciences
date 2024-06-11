@@ -186,7 +186,7 @@ class NewFieldUuidUpgradeUserTable extends JournalScript
         $this->displaySuccess(sprintf("([DUMP] %s", $dump), true);
 
         $this->displayWarning(sprintf("If you haven't already done so, %s Please modify the %s table structure to make the %s unique", PHP_EOL, self::TABLE, self::NEW_COLUMN), true);
-        $alter = "ALTER TABLE `USER` CHANGE `uuid` `uuid` CHAR(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT 'Storing As a String';";
+        $alter = "ALTER TABLE `USER` CHANGE `uuid` `uuid` CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Storing As a String';";
         $alter .= PHP_EOL;
         $alter .= "ALTER TABLE `USER` ADD UNIQUE (`uuid`);";
         $this->displayInfo(sprintf("TODO => %s%s", PHP_EOL, $alter), true);
