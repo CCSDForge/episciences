@@ -16,17 +16,14 @@ services:
         source: ./src/solr
         target: /opt/configsets
         read_only: true
-      - type: bind
-        source: ./solr/data
-        target: /var/solr
-        read_only: true
-    command: >
-      bash -c "
-          solr start -f -p 8983 -z zoo:2181
-      "
+#      - type: bind
+#        source: ./solr/data
+#        target: /var/solr
+#        read_only: true
 
   zoo:
     image: zookeeper:3.9
+    container_name: zoo
     networks:
       - search
     environment:
