@@ -173,15 +173,17 @@ class Episciences_CommentsManager
         }
 
         $result = array_filter($result, static function ($value) {
-            return
-                (
-                    (
-                        isset($value['MESSAGE']) &&
-                        $value['MESSAGE'] !== ''
-                    ) ||
-                    isset($value['FILE'])
-                );
 
+            $isEmptyCommentsAccepted = in_array((int)$value['TYPE'], [
+                self::TYPE_SUGGESTION_ACCEPTATION,
+                self::TYPE_SUGGESTION_REFUS,
+                self::TYPE_SUGGESTION_NEW_VERSION
+            ]);
+
+            return
+                $isEmptyCommentsAccepted ||
+                ($value['MESSAGE'] ?? '') !== '' ||
+                ($value['FILE'] ?? '') !== '';
         });
 
         // sort comment array
