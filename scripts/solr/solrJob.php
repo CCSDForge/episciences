@@ -15,6 +15,7 @@ $localopts = [
     'buffer|b=i' => " Nombre de doc à envoyer en même temps à l'indexeur",
 ];
 
+const APPLICATION_MODULE = 'journal';
 require_once __DIR__ . '/../../public/bdd_const.php';
 require_once __DIR__ . '/../loadHeader.php';
 
@@ -24,6 +25,7 @@ $autoloader = Zend_Loader_Autoloader::getInstance();
 $autoloader->setFallbackAutoloader(true);
 # accepted core: episciences
 
+initTranslator();
 $options = [];
 
 if (!($opts->docid || $opts->sqlwhere || $opts->delete || $opts->cron || $opts->file)) {
@@ -106,6 +108,28 @@ $time = $timeend - $timestart;
 
 Ccsd_Log::message('Début du script: ' . date("H:i:s", $timestart) . '/ fin du script: ' . date("H:i:s", $timeend), $debug, '', $indexer->getLogFilename());
 Ccsd_Log::message('Script executé en ' . number_format($time, 3) . ' sec.', $debug, '', $indexer->getLogFilename());
+
+function initTranslator(string $locale = null)
+{
+
+    $locale = $locale ?: null;
+
+    $translator = new Zend_Translate(
+        Zend_Translate::AN_ARRAY,
+        APPLICATION_PATH . '/languages',
+        $locale
+        ,
+        array('scan' => Zend_Translate::LOCALE_DIRECTORY));
+
+    Zend_Registry::set('Zend_Translate', $translator);
+    Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
+    Zend_Registry::set('lang', $translator->getLocale());
+
+    if (defined('REVIEW_PATH') && is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
+        $translator->addTranslation(REVIEW_PATH . 'languages');
+    }
+}
+
 exit(0);
 
 
