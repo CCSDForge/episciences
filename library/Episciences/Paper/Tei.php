@@ -74,45 +74,32 @@ class Episciences_Paper_Tei
         $this->_paper = $paper;
     }
 
-    /**
-     * @return array
-     */
-    private function getVolumeName()
-    {
-        $languages = $this->getLanguages();
 
-        $volumeName = array();
-        if ($this->getPaper()->getVid()) {
-            $volume = Episciences_VolumesManager::find($this->getPaper()->getVid());
+    private function getVolumeName($locale = null): string
+    {
+        $volumeName = '';
+
+        $vid = $this->getPaper()->getVid();
+        if ($vid) {
+            $volume = Episciences_VolumesManager::find($vid);
             if ($volume instanceof Episciences_Volume) {
-                foreach ($languages as $locale => $language) {
-                    if ($volume->getNameKey()) {
-                        $volumeName[$locale] = $volume->getNameKey();
-                    }
-                }
+                $volumeName = $volume->getName($locale);
             }
         }
 
         return $volumeName;
     }
 
-    /**
-     * @return array
-     */
-    private function getSectionName()
-    {
-        $languages = $this->getLanguages();
-        $translator = $this->getTranslator();
 
-        $sectionName = array();
-        if ($this->getPaper()->getSid()) {
-            $section = Episciences_SectionsManager::find($this->getPaper()->getSid());
+    private function getSectionName($locale = null): string
+    {
+        $sectionName = '';
+
+        $sid = $this->getPaper()->getSid();
+        if ($sid) {
+            $section = Episciences_SectionsManager::find($sid);
             if ($section instanceof Episciences_Section) {
-                foreach ($languages as $locale => $language) {
-                    if ($translator->isTranslated($section->getNameKey(), false, $locale)) {
-                        $sectionName[$locale] = $translator->translate($section->getNameKey(), $locale);
-                    }
-                }
+                $sectionName = $section->getName($locale);
             }
         }
 
@@ -139,7 +126,7 @@ class Episciences_Paper_Tei
         // load journal translations in context of OAI (eg volumes ; sections)
         if ((APPLICATION_MODULE === 'oai') && is_dir($review->getTranslationsPath()) && count(scandir($review->getTranslationsPath())) > 2) {
             $translator->addTranslation($review->getTranslationsPath());
-        }
+       }
 
         $this->setTranslator($translator);
     }
@@ -312,41 +299,7 @@ class Episciences_Paper_Tei
 
 
         }
-        $enrichmentAuthors = $this->getPaper()->getAuthorsWithAffiNumeric();
-
-        foreach ($this->getPaper()->getMetadata('authors') as $order => $author) {
-            $firstname = '';
-            $lastname = '';
-            if (str_contains($author, ',')) {
-                [$lastname, $firstname] = explode(', ', $author);
-            } else {
-                $lastname = $author;
-            }
-            $aut = $xml->createElement('author');
-            $aut->setAttribute('role', 'aut');
-            $persName = $xml->createElement('persName');
-            $first = $xml->createElement('forename', $firstname);
-            $first->setAttribute('type', 'first');
-            $persName->appendChild($first);
-            $persName->appendChild($xml->createElement('surname', $lastname));
-
-            $aut->appendChild($persName);
-            $aut->appendChild($xml->createElement('email'));
-
-            if (array_key_exists('orcid',$enrichmentAuthors['authors'][$order])) {
-                $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
-                $orcid->setAttribute('type', 'ORCID');
-                $aut->appendChild($orcid);
-            }
-            if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
-                foreach ($enrichmentAuthors['authors'][$order]['idAffi'] as $index => $affiNum) {
-                    $affiAuthorList = $xml->createElement('affiliation');
-                    $affiAuthorList->setAttribute("ref", "#struct-".array_search($index, array_keys($enrichmentAuthors['affiliationNumeric']), true));
-                    $aut->appendChild($affiAuthorList);
-                }
-            }
-            $ts->appendChild($aut);
-        }
+        $this->processAuthors($xml, $ts);
 
         return $ts;
     }
@@ -443,41 +396,7 @@ class Episciences_Paper_Tei
             $analytic->appendChild($title);
         }
 
-        $enrichmentAuthors = $this->getPaper()->getAuthorsWithAffiNumeric();
-
-        foreach ($this->getPaper()->getMetadata('authors') as $order => $author) {
-            $firstname= '';
-            $lastname= '';
-            if (str_contains($author, ',')) {
-                [$lastname, $firstname] = explode(', ', $author);
-            } else {
-                $lastname = $author;
-            }
-            $aut = $xml->createElement('author');
-            $aut->setAttribute('role', 'aut');
-            $persName = $xml->createElement('persName');
-            $first = $xml->createElement('forename', $firstname);
-            $first->setAttribute('type', 'first');
-            $persName->appendChild($first);
-            $persName->appendChild($xml->createElement('surname', $lastname));
-            $aut->appendChild($persName);
-            $aut->appendChild($xml->createElement('email'));
-            if (array_key_exists('orcid',$enrichmentAuthors['authors'][$order])) {
-                $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
-                $orcid->setAttribute('type', 'ORCID');
-                $aut->appendChild($orcid);
-            }
-            if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
-                foreach ($enrichmentAuthors['authors'][$order]['idAffi'] as $index => $affiNum) {
-                    $affiAuthorList = $xml->createElement('affiliation');
-                    $affiAuthorList->setAttribute("ref", "#struct-".array_search($index, array_keys($enrichmentAuthors['affiliationNumeric']), true));
-                    $aut->appendChild($affiAuthorList);
-                }
-            }
-
-
-            $analytic->appendChild($aut);
-        }
+        $this->processAuthors($xml, $analytic);
         $biblStruct->appendChild($analytic);
 
         $monogr = $xml->createElement('monogr');
@@ -499,16 +418,16 @@ class Episciences_Paper_Tei
         $imprint = $xml->createElement('imprint');
         $imprint->appendChild($xml->createElement('publisher', ucfirst(DOMAIN)));
 
-        $volumeName = $this->getVolumeName();
-        if (array_key_exists($this->getDefaultLocale(), $volumeName)) {
-            $vn = $xml->createElement('biblScope', $volumeName[$this->getDefaultLocale()]);
+        $volumeName = $this->getVolumeName($this->getDefaultLocale());
+        if ($volumeName !== '') {
+            $vn = $xml->createElement('biblScope', $volumeName);
             $vn->setAttribute('unit', 'volume');
             $imprint->appendChild($vn);
         }
 
-        $sectionName = $this->getSectionName();
-        if (array_key_exists($this->getDefaultLocale(), $sectionName)) {
-            $sn = $xml->createElement('biblScope', $sectionName[$this->getDefaultLocale()]);
+        $sectionName = $this->getSectionName($this->getDefaultLocale());
+        if ($sectionName !== '') {
+            $sn = $xml->createElement('biblScope', $sectionName);
             $sn->setAttribute('unit', 'issue');
             $imprint->appendChild($sn);
         }
@@ -752,5 +671,75 @@ class Episciences_Paper_Tei
     private function cleanAbstract(string $abstract): string
     {
         return trim(preg_replace("/\r|\n/", " ", $abstract));
+    }
+
+    private function processAuthors(DOMDocument $xml, bool|DOMElement $ts): void
+    {
+        $enrichmentAuthors = $this->getPaper()->getAuthorsWithAffiNumeric();
+
+        foreach ($this->getPaper()->getMetadata('authors') as $order => $author) {
+            $nameParts = explode(', ', $author);
+            $lastname = $nameParts[0];
+            $firstname = count($nameParts) > 1 ? $nameParts[1] : '';
+
+            $aut = $this->createAuthorElement($xml, $lastname, $firstname);
+
+            if (($enrichmentAuthors['authors']) && (array_key_exists('orcid', $enrichmentAuthors['authors'][$order]))) {
+                $this->addOrcid($xml, $aut, $enrichmentAuthors);
+            }
+
+            if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
+                $this->addAffiliationElements($xml, $aut, $enrichmentAuthors);
+            }
+
+            $ts->appendChild($aut);
+        }
+    }
+
+    private function createAuthorElement(DOMDocument $xml, string $lastname, string $firstname): DOMElement
+    {
+        $aut = $xml->createElement('author');
+        $aut->setAttribute('role', 'aut');
+        $persName = $xml->createElement('persName');
+
+        if ($firstname) {
+            $first = $xml->createElement('forename', $firstname);
+            $first->setAttribute('type', 'first');
+            $persName->appendChild($first);
+        }
+
+        $persName->appendChild($xml->createElement('surname', $lastname));
+
+        $aut->appendChild($persName);
+        $aut->appendChild($xml->createElement('email'));
+
+        return $aut;
+    }
+
+    private function addOrcid(DOMDocument $xml, DOMElement $aut, array $enrichmentAuthors): void
+    {
+        $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$this->getOrder()]['orcid']);
+        $orcid->setAttribute('type', 'ORCID');
+        $aut->appendChild($orcid);
+    }
+
+    private function addAffiliationElements(DOMDocument $xml, DOMElement $aut, array $enrichmentAuthors): void
+    {
+        $idAffi = $enrichmentAuthors['authors'][$this->getOrder()]['idAffi'];
+        foreach ($idAffi as $index => $affiNum) {
+            $affiAuthorList = $xml->createElement('affiliation');
+            $affiAuthorList->setAttribute("ref", "#struct-" . $this->getIndexOfIdAffi($index));
+            $aut->appendChild($affiAuthorList);
+        }
+    }
+
+    private function getOrder(): int
+    {
+        return $this->getPaper()->getMetadata('authors')->key();
+    }
+
+    private function getIndexOfIdAffi(int $index): string
+    {
+        return array_search($index, array_keys($this->getPaper()->getMetadata('authors')[$this->getOrder()]['idAffi']));
     }
 }
