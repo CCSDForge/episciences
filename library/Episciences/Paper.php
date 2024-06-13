@@ -134,74 +134,6 @@ class Episciences_Paper
     ];
 
     // status priorities
-    public static array $_statusPriority = [
-        self::STATUS_SUBMITTED => 0,
-        self::STATUS_BEING_REVIEWED => 1,
-        self::STATUS_REVIEWED => 2,
-        self::STATUS_ACCEPTED => 3,
-        self::STATUS_REFUSED => 3,
-        self::STATUS_OBSOLETE => 3,
-        self::STATUS_DELETED => 3,
-        self::STATUS_PUBLISHED => 3,
-        self::STATUS_WAITING_FOR_MINOR_REVISION => 2,
-        self::STATUS_WAITING_FOR_MAJOR_REVISION => 2,
-        self::STATUS_WAITING_FOR_COMMENTS => 2,
-        self::STATUS_TMP_VERSION => 2
-    ];
-
-    // status order (for sorting)
-    public static array $_statusOrder = [
-        self::STATUS_SUBMITTED => 0,
-        self::STATUS_OK_FOR_REVIEWING => 1,
-        self::STATUS_BEING_REVIEWED => 2,
-        self::STATUS_REVIEWED => 3,
-        self::STATUS_WAITING_FOR_MINOR_REVISION => 4,
-        self::STATUS_WAITING_FOR_MAJOR_REVISION => 4,
-        self::STATUS_WAITING_FOR_COMMENTS => 5,
-        self::STATUS_TMP_VERSION => 6,
-        self::STATUS_OBSOLETE => 7,
-        self::STATUS_ACCEPTED => 8,
-        self::STATUS_REFUSED => 9,
-        self::STATUS_DELETED => 10,
-        self::STATUS_PUBLISHED => 11,
-    ];
-
-    public static array $_statusLabel = [
-        self::STATUS_SUBMITTED => 'soumis',
-        self::STATUS_OK_FOR_REVIEWING => 'en attente de relecture',
-        self::STATUS_BEING_REVIEWED => 'en cours de relecture',
-        self::STATUS_REVIEWED => 'relu',
-        self::STATUS_ACCEPTED => 'accepté',
-        self::STATUS_PUBLISHED => 'publié',
-        self::STATUS_REFUSED => 'refusé',
-        self::STATUS_OBSOLETE => 'obsolète',
-        self::STATUS_WAITING_FOR_MINOR_REVISION => 'en attente de modifications mineures',
-        self::STATUS_WAITING_FOR_MAJOR_REVISION => 'en attente de modifications majeures',
-        self::STATUS_WAITING_FOR_COMMENTS => 'en attente d\'éclaircissements',
-        self::STATUS_TMP_VERSION => 'version temporaire',
-        self::STATUS_NO_REVISION => 'réponse à une demande de modifications : pas de modifications',
-        self::STATUS_NEW_VERSION => 'réponse à une demande de modifications: nouvelle version',
-        self::STATUS_DELETED => 'supprimé',
-        self::STATUS_ABANDONED => 'abandonné',
-        self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES => 'copy ed : en attente des sources auteurs',
-        self::STATUS_CE_AUTHOR_SOURCES_DEPOSED => 'copy ed. : en attente de la mise en forme par la revue',
-        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION => 'copy ed : en attente de la version finale auteur',
-        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED => 'copy ed : version finale déposée en attente de validation',
-        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED => 'copy ed : mise en forme par la revue terminée, en attente de la version finale',
-        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "copy ed : mise en forme par l'auteur terminée, en attente de la version finale",
-        self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
-        self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée, en attente de la version finale',
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION => "accepté - en attente de la version finale de l'auteur",
-        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'accepté, en attente de modifications majeures',
-        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING => 'Accepté - version finale soumise, en attente de la mise en forme par la revue',
-        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "version temporaire acceptée après modification de l'auteur",
-        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION => 'version temporaire acceptée, en attente des modifications mineures',
-        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'version temporaire acceptée, en attente des modifications majeures',
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "accepté - en attente de validation par l'auteur",
-        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "approuvé - en attente de publication",
-        self::STATUS_REMOVED => 'supprimé par la revue',
-    ];
-
     public const STATUS_DICTIONARY = [
         self::STATUS_SUBMITTED => 'submitted',
         self::STATUS_OK_FOR_REVIEWING => 'waitingFor reviewing',
@@ -242,34 +174,7 @@ class Episciences_Paper
         self::STATUS_REMOVED => 'deletedByTheJournal',
     ];
 
-
-    public static array $_noEditableStatus = [
-        self::STATUS_PUBLISHED,
-        self::STATUS_REFUSED,
-        self::STATUS_REMOVED,
-        self::STATUS_DELETED,
-        self::STATUS_OBSOLETE,
-        self::STATUS_ABANDONED
-    ];
-
-    public static array $_canBeAssignedDOI = [
-        self::STATUS_ACCEPTED,
-        self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
-        self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
-        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
-        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
-        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
-        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
-        self::STATUS_CE_READY_TO_PUBLISH,
-        self::STATUS_PUBLISHED,
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION,
-        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
-        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
-        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
-        self::STATUS_TMP_VERSION_ACCEPTED
-    ];
-
-
+    // status order (for sorting)
     public const EDITABLE_VERSION_STATUS = [
         self::STATUS_SUBMITTED,
         self::STATUS_OK_FOR_REVIEWING,
@@ -280,7 +185,6 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
     ];
-
     public const ACCEPTED_SUBMISSIONS = [
         self::STATUS_ACCEPTED,
         self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
@@ -298,13 +202,11 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
     ];
-
     public const NOT_LISTED_STATUS = [
         Episciences_Paper::STATUS_OBSOLETE,
         Episciences_Paper::STATUS_DELETED,
         Episciences_Paper::STATUS_REMOVED
     ];
-
     public const STATUS_WITH_EXPECTED_REVISION = [
         self::STATUS_WAITING_FOR_MINOR_REVISION,
         self::STATUS_WAITING_FOR_MAJOR_REVISION,
@@ -314,7 +216,6 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
     ];
-
     public const All_STATUS_WAITING_FOR_FINAL_VERSION = [
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
@@ -326,11 +227,9 @@ class Episciences_Paper
     public const TITLE_TYPE = 'title';
     public const TYPE_TYPE = 'type';
     public const TYPE_SUBTYPE = 'subtype';
-
     public const TITLE_TYPE_INDEX = 0;
     public const TYPE_TYPE_INDEX = 1;
     public const TYPE_SUBTYPE_INDEX = 2;
-
     public const DEFAULT_TYPE = 'preprint';
     public const TEXT_TYPE = 'text';
     public const ARTICLE_TYPE = 'article';
@@ -339,7 +238,6 @@ class Episciences_Paper
     public const OTHER_TYPE = 'other';
     public const TMP_TYPE = 'temporary version';
     public const CONFERENCE_TYPE = 'ConferenceObject';
-
     public const ENUM_TYPES = [
         self::DEFAULT_TYPE,
         self::TEXT_TYPE,
@@ -350,13 +248,101 @@ class Episciences_Paper
         self::TMP_TYPE,
         self::CONFERENCE_TYPE,
     ];
-
     public const PREPRINT_TYPES = [
         self::DEFAULT_TYPE,
         self::TEXT_TYPE,
     ];
-
-
+    public static array $_statusPriority = [
+        self::STATUS_SUBMITTED => 0,
+        self::STATUS_BEING_REVIEWED => 1,
+        self::STATUS_REVIEWED => 2,
+        self::STATUS_ACCEPTED => 3,
+        self::STATUS_REFUSED => 3,
+        self::STATUS_OBSOLETE => 3,
+        self::STATUS_DELETED => 3,
+        self::STATUS_PUBLISHED => 3,
+        self::STATUS_WAITING_FOR_MINOR_REVISION => 2,
+        self::STATUS_WAITING_FOR_MAJOR_REVISION => 2,
+        self::STATUS_WAITING_FOR_COMMENTS => 2,
+        self::STATUS_TMP_VERSION => 2
+    ];
+    public static array $_statusOrder = [
+        self::STATUS_SUBMITTED => 0,
+        self::STATUS_OK_FOR_REVIEWING => 1,
+        self::STATUS_BEING_REVIEWED => 2,
+        self::STATUS_REVIEWED => 3,
+        self::STATUS_WAITING_FOR_MINOR_REVISION => 4,
+        self::STATUS_WAITING_FOR_MAJOR_REVISION => 4,
+        self::STATUS_WAITING_FOR_COMMENTS => 5,
+        self::STATUS_TMP_VERSION => 6,
+        self::STATUS_OBSOLETE => 7,
+        self::STATUS_ACCEPTED => 8,
+        self::STATUS_REFUSED => 9,
+        self::STATUS_DELETED => 10,
+        self::STATUS_PUBLISHED => 11,
+    ];
+    public static array $_statusLabel = [
+        self::STATUS_SUBMITTED => 'soumis',
+        self::STATUS_OK_FOR_REVIEWING => 'en attente de relecture',
+        self::STATUS_BEING_REVIEWED => 'en cours de relecture',
+        self::STATUS_REVIEWED => 'relu',
+        self::STATUS_ACCEPTED => 'accepté',
+        self::STATUS_PUBLISHED => 'publié',
+        self::STATUS_REFUSED => 'refusé',
+        self::STATUS_OBSOLETE => 'obsolète',
+        self::STATUS_WAITING_FOR_MINOR_REVISION => 'en attente de modifications mineures',
+        self::STATUS_WAITING_FOR_MAJOR_REVISION => 'en attente de modifications majeures',
+        self::STATUS_WAITING_FOR_COMMENTS => 'en attente d\'éclaircissements',
+        self::STATUS_TMP_VERSION => 'version temporaire',
+        self::STATUS_NO_REVISION => 'réponse à une demande de modifications : pas de modifications',
+        self::STATUS_NEW_VERSION => 'réponse à une demande de modifications: nouvelle version',
+        self::STATUS_DELETED => 'supprimé',
+        self::STATUS_ABANDONED => 'abandonné',
+        self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES => 'copy ed : en attente des sources auteurs',
+        self::STATUS_CE_AUTHOR_SOURCES_DEPOSED => 'copy ed. : en attente de la mise en forme par la revue',
+        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION => 'copy ed : en attente de la version finale auteur',
+        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED => 'copy ed : version finale déposée en attente de validation',
+        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED => 'copy ed : mise en forme par la revue terminée, en attente de la version finale',
+        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED => "copy ed : mise en forme par l'auteur terminée, en attente de la version finale",
+        self::STATUS_CE_READY_TO_PUBLISH => 'copy ed : prêt à publier',
+        self::STATUS_TMP_VERSION_ACCEPTED => 'version temporaire acceptée, en attente de la version finale',
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION => "accepté - en attente de la version finale de l'auteur",
+        self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'accepté, en attente de modifications majeures',
+        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING => 'Accepté - version finale soumise, en attente de la mise en forme par la revue',
+        self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION => "version temporaire acceptée après modification de l'auteur",
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION => 'version temporaire acceptée, en attente des modifications mineures',
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION => 'version temporaire acceptée, en attente des modifications majeures',
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "accepté - en attente de validation par l'auteur",
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "approuvé - en attente de publication",
+        self::STATUS_REMOVED => 'supprimé par la revue',
+    ];
+    public static array $_noEditableStatus = [
+        self::STATUS_PUBLISHED,
+        self::STATUS_REFUSED,
+        self::STATUS_REMOVED,
+        self::STATUS_DELETED,
+        self::STATUS_OBSOLETE,
+        self::STATUS_ABANDONED
+    ];
+    public static array $_canBeAssignedDOI = [
+        self::STATUS_ACCEPTED,
+        self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
+        self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
+        self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
+        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
+        self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
+        self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
+        self::STATUS_CE_READY_TO_PUBLISH,
+        self::STATUS_PUBLISHED,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION,
+        self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+        self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
+        self::STATUS_TMP_VERSION_ACCEPTED
+    ];
+    public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
+    public $hasHook;
+    protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE];
     /**
      * @var int
      */
@@ -391,16 +377,13 @@ class Episciences_Paper
      * @var string
      */
     private $_publication_date;
-
     private $_settings;
     private $_otherVolumes;
     private $_withxsl = true;
-
     /**
      * @var array
      */
     private $_versionsIds;
-
     private $_previousVersions;
     private $_metadata;
     /** @var Episciences_User */
@@ -412,7 +395,6 @@ class Episciences_Paper
     private $_solrData = [];
     private $_history;
     private $_latestVersionId;
-
     private $_suggestedEditors;
     /** @var Episciences_Editor[] $_editors */
     private $_editors = [];
@@ -421,38 +403,26 @@ class Episciences_Paper
     private $_reviewers;
     private $_invitations;
     private $_comments;
-
     private $_ratingGrid;
     private $_ratings;
-
     private $_reports;
-
     /** @var Episciences_CopyEditor[] $_copyEditors */
     private $_copyEditors;
-
     /** @var Episciences_User[] $_coAuthors */
     private $_coAuthors;
-
     /** @var Array [Episciences_Paper_Conflict] */
     private $_conflicts = [];
-
     /**
      * Position in volume
      * @var null | int
      */
-    private $_position;
-    private $_files;
+    private $_position; // defines whether the paper has been submitted or imported
+    private $_files; // @see self::setRepoid()
     private $_datasets;
     /** @var string */
-    private $_flag = 'submitted'; // defines whether the paper has been submitted or imported
-    public $hasHook; // @see self::setRepoid()
-    protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE];
-
-    public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'crossref', 'doaj', 'zbjats', 'json'];
+    private $_flag = 'submitted';
 
     // variable for the export Enrichment
-
-    /** @var Episciences_Paper_Authors[] $_authors */
     private $_authors;
 
     /** @var Episciences_Paper_Licence $_licence */
@@ -707,6 +677,590 @@ class Episciences_Paper
     }
 
     /**
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function toArray(): array
+    {
+        $result = [];
+        $result['uid'] = $this->getUid();
+        $result['docId'] = $this->getDocid();
+        $result['doi'] = $this->getDoi();
+        $result['paperId'] = $this->getPaperid();
+        $result['rvId'] = $this->getRvid();
+        $result['date'] = $this->getWhen();
+        $result['vId'] = $this->getVid();
+        $result['sId'] = $this->getSid();
+        $result['status'] = $this->getStatus();
+        $result['identifier'] = $this->getIdentifier();
+        $result['repoId'] = $this->getRepoid();
+        $result['record'] = $this->getRecord();
+        $result['xml'] = $this->getXml();
+        $result['xslt'] = $this->getXslt();
+        $result['metadata'] = $this->getAllMetadata();
+        $result['submitter'] = $this->getSubmitter();
+        $result['oaLink'] = $this->getOALink();
+        $result['publication_date'] = $this->getPublication_date();
+
+        if ($this->_ratings) {
+            $result['averageRating'] = $this->getAverageRating();
+            $ratings = $this->_ratings;
+            /** @var Episciences_Rating_Report $rating */
+            foreach ($ratings as &$rating) {
+                $rating = $rating->toArray();
+            }
+            unset($rating);
+            $result['ratings'] = $ratings;
+        }
+
+        if ($this->_reviewers) {
+            $reviewers = $this->_reviewers;
+            foreach ($reviewers as &$reviewer) {
+                $reviewer = $reviewer->toArray();
+            }
+            unset($reviewer);
+            $result['reviewers'] = $reviewers;
+        }
+
+        if ($this->_editors) {
+            $editors = $this->_editors;
+            foreach ($editors as &$editor) {
+                $editor = $editor->toArray();
+            }
+            unset($editor);
+            $result['editors'] = $editors;
+        }
+
+        if (isset($this->_latestVersionId) && $this->_latestVersionId) {
+            $result['latestVersionId'] = $this->_latestVersionId;
+        }
+
+        if ($this->hasHook && isset($this->_concept_identifier)) {
+            $result['concept_identifier'] = $this->getConcept_identifier();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getUid()
+    {
+        return $this->_uId;
+    }
+
+    /*
+     * A paper object, as an array, with only public information
+     */
+
+    /**
+     * @param $id
+     * @return $this
+     */
+    public function setUid($id): self
+    {
+        $this->_uId = (int)$id;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getWhen()
+    {
+        return $this->_when;
+    }
+
+    /**
+     * @param $when
+     * @return $this
+     */
+    public function setWhen($when = null): self
+    {
+        $this->_when = $when ?: new Zend_Db_Expr('NOW()');
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getVid(): int
+    {
+        return $this->_vId;
+    }
+
+    /**
+     * @param $id
+     * @return $this
+     */
+    public function setVid($id = 0): self
+    {
+        $this->_vId = (int)$id;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getSid(): int
+    {
+        return $this->_sId;
+    }
+
+    /**
+     * @param $id
+     * @return $this
+     */
+    public function setSid($id): self
+    {
+        $this->_sId = (int)$id;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getIdentifier(): string
+    {
+        /*
+         *  Quant un article est refusé par la revue , l'auteur pourra soumettre une nouvelle version, dans ce cas précis,
+         *  l'identfiiant de cet article est renommé en "IDENTIFIER-REFUSED"
+        */
+
+        if ($this->getStatus() === self::STATUS_REFUSED && false !== strpos($this->_identifier, "-REFUSED")) {
+            $this->setIdentifier(explode('-REFUSED', $this->_identifier)[0]);
+        }
+
+        return $this->_identifier;
+    }
+
+    /**
+     * @param $identifier
+     * @return $this
+     */
+    public function setIdentifier($identifier): self
+    {
+        $this->_identifier = trim($identifier);
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getRepoid(): int
+    {
+        return $this->_repoId;
+    }
+
+    /**
+     * @param $repoId
+     * @return $this
+     */
+    public function setRepoid($repoId): self
+    {
+        $this->_repoId = (int)$repoId;
+
+        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
+            (
+                $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ||
+                Episciences_Repositories::isDataverse($repoId)
+            );
+
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRecord()
+    {
+        return $this->_record;
+    }
+
+    /**
+     * @param $record
+     * @return $this
+     * @throws Zend_Db_Statement_Exception
+     * @throws DOMException
+     */
+    public function setRecord($record): self
+    {
+        $this->_record = $record;
+
+        // if script is run from shell, do not updateXML
+        if (PHP_SAPI !== 'cli' && $this->getWithxsl()) {
+            $this->updateXml();
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getXml()
+    {
+        return $this->_xml;
+    }
+
+    /**
+     * @param mixed $xml
+     */
+    public function setXml($xml): void
+    {
+        $this->_xml = $xml;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getXslt()
+    {
+        return $this->_xslt;
+    }
+
+    /**
+     * @param $xml
+     * @param string $theme
+     * @return $this
+     */
+    public function setXslt($xml, $theme = 'full_paper'): self
+    {
+        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl');
+        return $this;
+    }
+
+    /**
+     * fetch all metadata
+     * @return mixed
+     */
+    public function getAllMetadata()
+    {
+        if (!$this->_metadata && $this->getRecord()) {
+            $this->setMetadata($this->getRecord());
+        }
+
+        return $this->_metadata;
+    }
+
+    /**
+     * @return Episciences_User
+     */
+    public function getSubmitter(): \Episciences_User
+    {
+        if (empty($this->_submitter) && $this->getUid()) {
+            $this->loadSubmitter();
+        }
+        if (!$this->_submitter) {
+            // this is to handle development and test databases inconsistencies
+            $this->_submitter = new Episciences_User();
+        }
+        return $this->_submitter;
+    }
+
+    /**
+     * @param bool $withCAS
+     * @return bool
+     */
+
+    public function loadSubmitter($withCAS = true): bool
+    {
+        if (!$this->getUid()) {
+            return false;
+        }
+
+        $submitter = new Episciences_User;
+        $findMethod = ($withCAS) ? 'findWithCas' : 'find';
+        if ($submitter->$findMethod($this->getUid())) {
+            $this->_submitter = $submitter;
+        }
+        return true;
+    }
+
+    /**
+     * @return bool|mixed
+     */
+    public function getOALink()
+    {
+        if ($this->_repoId && $this->_identifier) {
+            return Episciences_Repositories::getDocUrl($this->_repoId, $this->_identifier);
+        }
+
+        return false;
+    }
+
+    /**
+     * @return mixed
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function getDocUrl()
+    {
+        if (!$this->_docUrl) {
+
+            if (!$this->isTmp()) {
+                $this->setDocUrl(Episciences_Repositories::getDocUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion()));
+            } else {
+
+                $paper = Episciences_PapersManager::get($this->getPaperid(), false);
+
+                if ($paper) {
+                    $this->setDocUrl(Episciences_Repositories::getDocUrl(
+                        $paper->getRepoid(),
+                        $paper->getIdentifier(),
+                        (int)$this->getVersion()
+                    ));
+
+                } else {
+                    trigger_error('The original version no longer exists!?');
+                }
+
+            }
+
+        }
+
+        return $this->_docUrl;
+    }
+
+    /**
+     * @param $url
+     * @return $this
+     */
+    public function setDocUrl($url): self
+    {
+        $this->_docUrl = $url;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isTmp(): bool
+    {
+        return ($this->getRepoid() === 0);
+    }
+
+    /**
+     *  return oa version number
+     * @return mixed
+     */
+    public function getVersion()
+    {
+        return $this->_version;
+    }
+
+    /**
+     * @param $version
+     * @return $this
+     */
+    public function setVersion($version): self
+    {
+        $this->_version = (float)$version;
+        return $this;
+    }
+
+    /**
+     * fetch article in given format
+     * @param string $format
+     * @return string|false
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public function get(string $format = 'tei', int $version = null)
+    {
+        $format = strtolower(trim($format));
+        $method = 'get' . ucfirst($format);
+
+        if ($format === 'json' && $version === 2) {
+            $method .= 'V2';
+        }
+
+        if ((!self::isValidMetadataFormat($format)) || (!method_exists($this, $method))) {
+            return false;
+        }
+
+        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+        $cacheName = $this->getPaperid() . '-' . $method;
+        $metadataCache = $cache->getItem($cacheName);
+
+        if ($this->isPublished()) {
+            $expireAfterSec = self::CACHE_EXPIRE_METADATA_PUBLISHED;
+        } else {
+            $expireAfterSec = self::CACHE_EXPIRE_METADATA_UNPUBLISHED;
+        }
+
+        $metadataCache->expiresAfter($expireAfterSec);
+
+        if (!$metadataCache->isHit()) {
+            $getOutput = $this->$method();
+            $metadataCache->set($getOutput);
+            $cache->save($metadataCache);
+        } else {
+            $getOutput = $metadataCache->get();
+        }
+
+        return $getOutput;
+
+
+    }
+
+    /**
+     * @param string $format
+     * @return bool
+     */
+    public static function isValidMetadataFormat(string $format): bool
+    {
+        return in_array($format, self::$validMetadataFormats);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPublished(): bool
+    {
+        return ($this->getStatus() === self::STATUS_PUBLISHED);
+    }
+
+    /**
+     * save paper to database
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     */
+    public function save(): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $docId = $this->getDocid();
+
+        $type = $this->getType();
+
+        if ($type) {
+            try {
+                $type = $this->getType() ? json_encode($this->getType(), JSON_THROW_ON_ERROR) : $this->getType();
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+
+        $document = $this->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
+
+        if (!$docId) {
+            // INSERT
+
+            $data = [
+                'PAPERID' => $this->getPaperid(),
+                'DOI' => $this->getDoi(),
+                'VERSION' => $this->getVersion(),
+                'RVID' => $this->getRvid(),
+                'VID' => $this->getVid(),
+                'SID' => $this->getSid(),
+                'UID' => $this->getUid(),
+                'STATUS' => $this->getStatus(),
+                'IDENTIFIER' => $this->getIdentifier(),
+                'REPOID' => $this->getRepoid(),
+                'RECORD' => $this->getRecord(),
+                'WHEN' => new Zend_Db_Expr('NOW()'),
+                'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
+                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
+                'FLAG' => $this->getFlag(),
+                'PASSWORD' => $this->getPassword(),
+                'TYPE' => $type,
+                'DOCUMENT' => $document
+            ];
+
+            if ($this->getPublication_date()) {
+                $data['PUBLICATION_DATE'] = $this->getPublication_date();
+            } elseif ($this->getStatus() === self::STATUS_PUBLISHED) {
+                $data['PUBLICATION_DATE'] = new Zend_Db_Expr('NOW()');
+            }
+
+            if ($this->getConcept_identifier()) {
+                $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
+            }
+
+            if ($db->insert(T_PAPERS, $data)) {
+                $this->setDocid($db->lastInsertId());
+                if (!$this->getPaperid()) {
+                    $this->setPaperid($this->getDocid());
+                    $this->save();
+
+                    //insert licence when save paper
+                    try {
+                        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
+                        Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
+
+                    } catch (\GuzzleHttp\Exception\GuzzleException|JsonException $e) {
+                        trigger_error($e->getMessage());
+                    }
+                } else {
+                    // keep datalinked and insert line with the new doc id
+                    Episciences_Paper_DatasetsManager::updateAllByDocId($this);
+                    $this->setPosition($this->applyPositioningStrategy());
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+// UPDATE
+        $data = [
+            'PAPERID' => $this->getPaperid(),
+            'DOI' => $this->getDoi(),
+            'VERSION' => $this->getVersion(),
+            'VID' => $this->getVid(),
+            'SID' => $this->getSid(),
+            'STATUS' => $this->getStatus(),
+            'REPOID' => $this->getRepoid(),
+            'RECORD' => $this->getRecord(),
+            'SUBMISSION_DATE' => $this->getSubmission_date(),
+            'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
+            'FLAG' => $this->getFlag(),
+            'PASSWORD' => $this->getPassword(),
+            'TYPE' => $type,
+            'DOCUMENT' => $document
+        ];
+        if ($this->getIdentifier()) {
+            $data['IDENTIFIER'] = $this->getIdentifier();
+        }
+        if ($this->getPublication_date()) {
+            $data['PUBLICATION_DATE'] = $this->getPublication_date();
+        }
+
+        if ($this->getConcept_identifier()) {
+            $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
+        }
+
+        if (!$db->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
+            return false;
+        }
+
+        $this->setPosition($this->applyPositioningStrategy());
+        return true;
+    }
+
+    public function getType(): array
+    {
+        return $this->_type;
+    }
+
+    /**
+     * @param array|null $type
+     * @return $this
+     */
+
+    public function setType(array $type = null): \Episciences_Paper
+    {
+        if ($this->isTmp()) {
+            $this->_type = [self::TITLE_TYPE => self::TMP_TYPE];
+        } elseif (in_array($type, self::PREPRINT_TYPES, true)) {
+            $this->type = [self::TITLE_TYPE => self::DEFAULT_TYPE];
+        } else {
+            $this->_type = $type ?? [self::TITLE_TYPE => self::DEFAULT_TYPE];
+        }
+        return $this;
+    }
+
+    /**
      * @param string $key
      * @return string|null
      */
@@ -939,368 +1493,448 @@ class Episciences_Paper
         return str_replace(array('#', '%%ID', '%%VERSION'), array('value', $this->getIdentifier(), $this->getVersion()), $result);
     }
 
-
-    /**
-     * @return array
-     * @throws Zend_Db_Statement_Exception
-     */
-    public function toArray(): array
+    private function processTmpVersion(Episciences_Paper $paper): void
     {
-        $result = [];
-        $result['uid'] = $this->getUid();
-        $result['docId'] = $this->getDocid();
-        $result['doi'] = $this->getDoi();
-        $result['paperId'] = $this->getPaperid();
-        $result['rvId'] = $this->getRvid();
-        $result['date'] = $this->getWhen();
-        $result['vId'] = $this->getVid();
-        $result['sId'] = $this->getSid();
-        $result['status'] = $this->getStatus();
-        $result['identifier'] = $this->getIdentifier();
-        $result['repoId'] = $this->getRepoid();
-        $result['record'] = $this->getRecord();
-        $result['xml'] = $this->getXml();
-        $result['xslt'] = $this->getXslt();
-        $result['metadata'] = $this->getAllMetadata();
-        $result['submitter'] = $this->getSubmitter();
-        $result['oaLink'] = $this->getOALink();
-        $result['publication_date'] = $this->getPublication_date();
+        $withoutFileStr = 'tmp_version_without_file';
 
-        if ($this->_ratings) {
-            $result['averageRating'] = $this->getAverageRating();
-            $ratings = $this->_ratings;
-            /** @var Episciences_Rating_Report $rating */
-            foreach ($ratings as &$rating) {
-                $rating = $rating->toArray();
+        if (!$paper->isTmp()) {
+            return;
+        }
+
+        $tmpIdentifier = $paper->getIdentifier();
+        $tmpPaperId = (string)$paper->getPaperid();
+        $subStr = substr($tmpIdentifier, (strlen($tmpPaperId) + 1));
+
+        try {
+            $tmpFiles = !Episciences_Tools::isJson($subStr) ? (array)$subStr : json_decode($subStr, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($tmpFiles)) {
+                throw new InvalidArgumentException(sprintf('processTmpVersion() : $tmpFiles is not typed as an array for paperid %s', $tmpPaperId));
             }
-            unset($rating);
-            $result['ratings'] = $ratings;
+            $tmpFiles = Episciences_Tools::arrayFilterEmptyValues($tmpFiles);
+            $paper->tmpFiles = $tmpFiles;
+            $paper->setIdentifier(sprintf('%s/%s', $paper->getPaperid(), $tmpFiles[array_key_first($tmpFiles)] ?? $withoutFileStr));
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
         }
 
-        if ($this->_reviewers) {
-            $reviewers = $this->_reviewers;
-            foreach ($reviewers as &$reviewer) {
-                $reviewer = $reviewer->toArray();
-            }
-            unset($reviewer);
-            $result['reviewers'] = $reviewers;
-        }
-
-        if ($this->_editors) {
-            $editors = $this->_editors;
-            foreach ($editors as &$editor) {
-                $editor = $editor->toArray();
-            }
-            unset($editor);
-            $result['editors'] = $editors;
-        }
-
-        if (isset($this->_latestVersionId) && $this->_latestVersionId) {
-            $result['latestVersionId'] = $this->_latestVersionId;
-        }
-
-        if ($this->hasHook && isset($this->_concept_identifier)) {
-            $result['concept_identifier'] = $this->getConcept_identifier();
-        }
-
-        return $result;
     }
 
-    /*
-     * A paper object, as an array, with only public information
+    /**
+     * return an array of papers (previous versions of this paper)
+     * @param bool $isCurrentVersionIncluded
+     * @param bool $includeTempVersions
+     * @return array|null
      */
-    public function toPublicArray(): array
+    public function getPreviousVersions(bool $isCurrentVersionIncluded = false, bool $includeTempVersions = true): ?array
     {
+        if (($isCurrentVersionIncluded || !isset($this->_previousVersions)) && $this->getPaperid() !== $this->getDocid()) {
 
+            $this->_previousVersions = null;
+            $parentId = $this->getPaperid();
 
-        $volumeMeta = [];
-        $sectionMeta = [];
+            if ($parentId) {
 
-        if ($this->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
-            if ($oVolume) {
-                $volumeMeta[] = $oVolume->toPublicArray();
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                $sql = $db->select()
+                    ->from(T_PAPERS)
+                    ->where('PAPERID = ?', $parentId);
+
+                if (!$includeTempVersions) {
+                    $sql->where('REPOID != 0');
+                }
+
+                !$isCurrentVersionIncluded ? $sql->where('`WHEN` < ?', $this->getWhen()) : $sql->where('`WHEN` <= ?', $this->getWhen());
+
+                $sql->order('WHEN DESC');
+
+                $results = $db->fetchAssoc($sql);
+                $papers = [];
+
+                if ($results) {
+                    foreach ($results as $paperId => $result) {
+                        $papers[$paperId] = new Episciences_Paper($result);
+                    }
+                    $this->_previousVersions = $papers;
+                }
             }
         }
 
+        return $this->_previousVersions;
+    }
 
-        if ($this->getSid()) {
-            /* @var $oSection Episciences_Section */
-            $oSection = Episciences_SectionsManager::find($this->getSid());
-            if ($oSection) {
-                $sectionMeta[] = $oSection->toPublicArray();
+    /**
+     * @return string | null
+     */
+    public function getConcept_identifier(): ?string
+    {
+        return $this->_concept_identifier;
+    }
+
+    /**
+     * @param string|null $conceptIdentifier
+     * @return $this
+     */
+    public function setConcept_identifier(string $conceptIdentifier = null): self
+    {
+        $this->_concept_identifier = $conceptIdentifier;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getModification_date()
+    {
+        return $this->_modification_date;
+    }
+
+    /**
+     * @param $modification_date
+     * @return $this
+     */
+    public function setModification_date($modification_date): self
+    {
+        $this->_modification_date = $modification_date;
+        return $this;
+    }
+
+    public function getStatusLabel(string $lang = null): string
+    {
+
+        $label = Episciences_PapersManager::getStatusLabel($this->getStatus());
+
+        if ($lang) {
+
+            try {
+                $translator = Zend_Registry::get('Zend_Translate');
+                $label = $translator->translate($label, $lang);
+            } catch (Zend_Exception $e) {
+                trigger_error($e->getMessage());
             }
         }
 
+        return $label;
+    }
 
-        $journal = Episciences_ReviewsManager::find($this->getRvid());
+    /**
+     * get paper position in volume
+     * @return int | null
+     */
+    public function getPosition()
+    {
+        /** @var $volumePaperPosition [PAPERID => POSITION] */
 
-        $result = [];
-        $result['docId'] = $this->getDocid();
-        $result['paperId'] = $this->getPaperid();
-        $result['url'] = sprintf('%s/%s', $journal->getUrl(), $this->getPaperid());
-        $result['doi'] = $this->getDoi();
-        $result['journalName'] = $journal->getName();
-        $result['issn'] = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT);
-        $result['eissn'] = $journal->getSetting(Episciences_Review::SETTING_ISSN);
-
-        $result['volume'] = $volumeMeta;
-        $result['section'] = $sectionMeta;
-        $result['repositoryName'] = Episciences_Repositories::getLabel($this->getRepoid());
-        $result['repositoryIdentifier'] = $this->getIdentifier();
-        $result['repositoryVersion'] = $this->getVersion();
-        $result['repositoryLink'] = Episciences_Repositories::getDocUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
-        $result['dateSubmitted'] = $this->getSubmission_date();
-        $result['dateAccepted'] = $this->getAcceptanceDate();
-        $result['datePublished'] = $this->getPublication_date();
-
-        $result['titles'] = $this->getMetadata('title');
-        $result['authors'] = $this->getMetadata('authors');
-        $result['abstracts'] = $this->getAbstractsCleaned();
-        $result['keywords'] = $this->getMetadata('subjects');
-
-        if ($this->hasHook && isset($this->_concept_identifier)) {
-            $result['concept_identifier'] = $this->getConcept_identifier();
+        if (null === $this->_position && !empty($this->_vId)) {
+            $volumePaperPosition = Episciences_VolumesManager::loadPositionsInVolume($this->_vId);
+            return array_key_exists($this->_paperId, $volumePaperPosition) ? (int)$volumePaperPosition[$this->getPaperid()] : null;
         }
 
-        return $result;
+        return $this->_position;
     }
 
     /**
-     * @return mixed
-     */
-    public function getUid()
-    {
-        return $this->_uId;
-    }
-
-    /**
-     * @param $id
+     * set paper position in volume
+     * @param int $position
      * @return $this
      */
-    public function setUid($id): self
+    public function setPosition(int $position = null): self
     {
-        $this->_uId = (int)$id;
+
+        $this->_position = $position;
+
         return $this;
+
     }
 
     /**
-     * @return mixed
+     * @param $key
+     * @return mixed|null
      */
-    public function getWhen()
+    public function getSetting($key)
     {
-        return $this->_when;
-    }
-
-    /**
-     * @param $when
-     * @return $this
-     */
-    public function setWhen($when = null): self
-    {
-        $this->_when = $when ?: new Zend_Db_Expr('NOW()');
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getVid(): int
-    {
-        return $this->_vId;
-    }
-
-    /**
-     * @param $id
-     * @return $this
-     */
-    public function setVid($id = 0): self
-    {
-        $this->_vId = (int)$id;
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getSid(): int
-    {
-        return $this->_sId;
-    }
-
-    /**
-     * @param $id
-     * @return $this
-     */
-    public function setSid($id): self
-    {
-        $this->_sId = (int)$id;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getIdentifier(): string
-    {
-        /*
-         *  Quant un article est refusé par la revue , l'auteur pourra soumettre une nouvelle version, dans ce cas précis,
-         *  l'identfiiant de cet article est renommé en "IDENTIFIER-REFUSED"
-        */
-
-        if ($this->getStatus() === self::STATUS_REFUSED && false !== strpos($this->_identifier, "-REFUSED")) {
-            $this->setIdentifier(explode('-REFUSED', $this->_identifier)[0]);
+        $settings = $this->getSettings();
+        if (is_array($settings) && array_key_exists($key, $settings)) {
+            return $settings[$key];
         }
 
-        return $this->_identifier;
-    }
-
-    /**
-     * @param $identifier
-     * @return $this
-     */
-    public function setIdentifier($identifier): self
-    {
-        $this->_identifier = trim($identifier);
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getRepoid(): int
-    {
-        return $this->_repoId;
-    }
-
-    /**
-     * @param $repoId
-     * @return $this
-     */
-    public function setRepoid($repoId): self
-    {
-        $this->_repoId = (int)$repoId;
-
-        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
-            (
-                $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ||
-                Episciences_Repositories::isDataverse($repoId)
-            );
-
-        return $this;
+        return null;
     }
 
     /**
      * @return mixed
      */
-    public function getRecord()
+    public function getSettings()
     {
-        return $this->_record;
+        if (!$this->_settings) {
+            $this->loadSettings();
+        }
+        return $this->_settings;
     }
 
     /**
-     * @param $record
+     * @param $settings
      * @return $this
-     * @throws Zend_Db_Statement_Exception
-     * @throws DOMException
      */
-    public function setRecord($record): self
+    public function setSettings($settings): self
     {
-        $this->_record = $record;
+        $this->_settings = $settings;
+        return $this;
+    }
 
-        // if script is run from shell, do not updateXML
-        if (PHP_SAPI !== 'cli' && $this->getWithxsl()) {
-            $this->updateXml();
+    /**
+     * @return bool
+     */
+    public function loadSettings(): bool
+    {
+        if (!$this->getDocid() || !is_numeric($this->getDocid())) {
+            return false;
         }
 
-        return $this;
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()->from(T_PAPER_SETTINGS, ['SETTING', 'VALUE'])->where('DOCID = ?', $this->getDocid());
+        $this->setSettings($db->fetchPairs($sql));
+        return true;
     }
 
     /**
-     * @return mixed
+     * fetch a metadata
+     * @param $name string metadata name
+     * @param null $key array index (if metadata is an array)
+     * @return mixed|null
      */
-    public function getXml()
-    {
-        return $this->_xml;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getXslt()
-    {
-        return $this->_xslt;
-    }
-
-    /**
-     * @param $xml
-     * @param string $theme
-     * @return $this
-     */
-    public function setXslt($xml, $theme = 'full_paper'): self
-    {
-        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl');
-        return $this;
-    }
-
-    /**
-     * fetch all metadata
-     * @return mixed
-     */
-    public function getAllMetadata()
+    public function getMetadata($name, $key = null)
     {
         if (!$this->_metadata && $this->getRecord()) {
             $this->setMetadata($this->getRecord());
         }
 
-        return $this->_metadata;
+        $result = null;
+        $metadata = $this->_metadata;
+
+        // if metadata exists
+        if (is_array($metadata) && array_key_exists($name, $metadata)) {
+
+            $currentMeta = $metadata[$name];
+
+            if ($name === 'subjects') {
+                $processedResult = [];
+                foreach ($currentMeta as $index => $value) {
+                    if (is_array($value)) {
+                        $this->processArraySubject($value, $processedResult);
+                    } else {
+                        $this->processSingleSubject($index, $value, $processedResult);
+                    }
+                }
+
+                $currentMeta = $processedResult;
+
+            }
+
+            if ($key) {
+                if (array_key_exists($key, $currentMeta)) {
+                    $result = $currentMeta[$key];
+                }
+            } else {
+                $result = $currentMeta;
+            }
+        }
+        if (is_array($result)) {
+            $result = array_map('Ccsd_Tools::space_clean', $result);
+        } else {
+            $result = Ccsd_Tools::space_clean($result);
+        }
+        return $result;
+
     }
 
     /**
-     * @return Episciences_User
+     * @param $xml
+     * @return $this
      */
-    public function getSubmitter(): \Episciences_User
+    public function setMetadata(string $xml): self
     {
-        if (empty($this->_submitter) && $this->getUid()) {
-            $this->loadSubmitter();
+        $metadata = [];
+
+        $metadata['id'] = $this->getDocid();
+
+        try {
+            $metadata['submitter'] = Episciences_Tools::xpath($xml, '/episciences/submitter');
+            $metadata['submission_date'] = Episciences_Tools::xpath($xml, '/episciences/submission_date');
+            $metadata['publication_date'] = Episciences_Tools::xpath($xml, '/episciences/publication_date');
+            $metadata['version'] = Episciences_Tools::xpath($xml, '/episciences/version');
+            $metadata['title'] = Episciences_Tools::xpath($xml, '//dc:title', true);
+            $metadata['description'] = Episciences_Tools::xpath($xml, '//dc:description', true);
+            $metadata['authors'] = Episciences_Tools::xpath($xml, '//dc:creator', true);
+            $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
+            $metadata['language'] = Episciences_Tools::xpath($xml, '//dc:language');
+            $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:type');
+            $metadata['licenses'] = $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:rights');
+        } catch (Exception $e) {
+            $metadata['title'] = 'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.';
+            $metadata['description'] = 'Merci de contacter le support pour vérifier le document et ses métadonnées';
         }
-        if (!$this->_submitter) {
-            // this is to handle development and test databases inconsistencies
-            $this->_submitter = new Episciences_User();
+
+
+        $this->_metadata = $metadata;
+        return $this;
+    }
+
+    private function processArraySubject($subject, &$result = []): void
+    {
+        foreach ($subject as $key => $value) {
+            $isStringKey = is_string($key);
+            $key = ($isStringKey && $translatedKey = Episciences_Tools::translateToTwoLetterCode($key)) ? $translatedKey : $key;
+            if ($isStringKey) {
+                $result[$key][] = $value;
+            } else {
+                $result[] = $value;
+            }
         }
-        return $this->_submitter;
+    }
+
+    private function processSingleSubject($index, $subject, &$result = [])
+    {
+        $isStringIndex = is_string($index);
+        $index = ($isStringIndex && $translatedIndex = Episciences_Tools::translateToTwoLetterCode($index)) ? $translatedIndex : $index;
+        if ($isStringIndex) {
+            $result[$index][] = trim($subject);
+        } else {
+            $result[] = $subject;
+        }
     }
 
     /**
-     * @param bool $withCAS
-     * @return bool
+     * @return string
      */
-
-    public function loadSubmitter($withCAS = true): bool
+    public function getFlag(): string
     {
-        if (!$this->getUid()) {
-            return false;
-        }
-
-        $submitter = new Episciences_User;
-        $findMethod = ($withCAS) ? 'findWithCas' : 'find';
-        if ($submitter->$findMethod($this->getUid())) {
-            $this->_submitter = $submitter;
-        }
-        return true;
+        return $this->_flag;
     }
 
     /**
-     * @return bool|mixed
+     * @param string $flag
+     * @return $this
      */
-    public function getOALink()
+    public function setFlag(string $flag): \Episciences_Paper
     {
-        if ($this->_repoId && $this->_identifier) {
-            return Episciences_Repositories::getDocUrl($this->_repoId, $this->_identifier);
+        $this->_flag = $flag;
+        return $this;
+    }
+
+    private function processFiles(string $journalUrl): array
+    {
+
+        $processedFile = [];
+
+        if ($this->hasHook) {
+            $oCurrentFiles = $this->getFiles();
+            /** @var Episciences_Paper_File $oCFile */
+            foreach ($oCurrentFiles as $oCFile) {
+
+                $fTmp = [
+                    'name' => $oCFile->getName(),
+                    'size' => $oCFile->getFileSize(),
+                    'link' => !$this->isPublished() ? $oCFile->getSelfLink() : sprintf('%s/%s/oafiles/%s', $journalUrl, $this->getDocid(), $oCFile->getName())
+                ];
+
+                $processedFile[] = $fTmp;
+
+            }
+
+        } elseif ($this->isTmp()) {
+
+            if (isset($this->tmpFiles)) {
+
+                foreach ($this->tmpFiles as $fileName) {
+
+                    $fTmp = [
+                        'link' => sprintf('%s/tmp_files/%s/%s', $journalUrl, $this->getDocid(), $fileName)
+                    ];
+
+                    $processedFile[] = $fTmp;
+                }
+            }
+
+        } else {
+
+            $processedFile = [
+                'link' => !$this->isPublished() ? $this->getPaperUrl() : sprintf('%s/%s/pdf', $journalUrl, $this->getDocid())
+            ];
+
         }
 
-        return false;
+        return $processedFile;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFiles()
+    {
+        if (!$this->_files) {
+            $this->loadFiles();
+        }
+
+        return $this->_files;
+    }
+
+    /**
+     * @param mixed $files
+     */
+    public function setFiles($files): void
+    {
+        $this->_files = $files;
+    }
+
+    private function loadFiles(): void
+    {
+        if (!$this->_docId || !is_numeric($this->_docId)) {
+            $this->_files = [];
+            return;
+        }
+
+        $this->_files = Episciences_Paper_FilesManager::findByDocId($this->_docId);
+    }
+
+    /**
+     * Return Repository URL of a paper
+     * @return mixed
+     */
+    public function getPaperUrl()
+    {
+        if (!$this->_paperUrl) {
+            $this->setPaperUrl(Episciences_Repositories::getPaperUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion()));
+        }
+
+        return $this->_paperUrl;
+    }
+
+    /**
+     * @param $url
+     * @return $this
+     */
+    public function setPaperUrl($url): self
+    {
+        $this->_paperUrl = $url;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSubmission_date()
+    {
+        return $this->_submission_date;
+    }
+
+    /**
+     * @param $submission_date
+     * @return $this
+     */
+    public function setSubmission_date($submission_date = null): self
+    {
+        $this->_submission_date = $submission_date ?: new Zend_Db_Expr('NOW()');
+        return $this;
     }
 
     /**
@@ -1319,6 +1953,132 @@ class Episciences_Paper
     {
         $this->_publication_date = $publication_date;
         return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLatestVersionId(): string
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()
+            ->from(T_PAPERS, 'DOCID')
+            ->where('PAPERID = ?', $this->getPaperid())
+            ->order('WHEN DESC');
+        $latestId = $db->fetchOne($sql);
+        $this->_latestVersionId = $latestId;
+        return $latestId;
+    }
+
+    /**
+     * @return string | null
+     */
+    public function getPassword(): ?string
+    {
+        return $this->_password;
+    }
+
+    /**
+     * @param string|null $paperPassword
+     * @param bool $encrypt
+     * @return $this
+     */
+    public function setPassword(string $paperPassword = null, bool $encrypt = false): self
+    {
+
+        if (!empty($paperPassword) && $encrypt) {
+
+            try {
+
+                $paperPassword = Episciences_Tools::encrypt($paperPassword);
+
+            } catch (Exception $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+
+            }
+        }
+
+        $this->_password = $paperPassword;
+
+        return $this;
+    }
+
+    /**
+     * Create or delete an position in volume
+     * @return int|null
+     */
+    public function applyPositioningStrategy(): ?int
+    {
+
+        if (empty($this->getVid())) {
+            return null;
+        }
+
+        if (in_array($this->getStatus(), self::DO_NOT_SORT_THIS_KIND_OF_PAPERS, true)) {
+            $this->deletePosition();
+            $this->setPosition();
+            return null;
+        }
+
+        return $this->createPositionProcessing();
+
+    }
+
+    /**
+     *delete paper volume position
+     * @return int
+     */
+    public function deletePosition()
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $where['VID = ?'] = $this->getVid();
+        $where['PAPERID = ?'] = $this->getPaperid();
+
+        return ($db->delete(T_VOLUME_PAPER_POSITION, $where) > 0);
+    }
+
+    /**
+     * @return int|null
+     */
+    private function createPositionProcessing()
+    {
+        return $this->getPosition() ?? $this->insertPosition();
+    }
+
+    /**
+     * assign position
+     * @return int|null
+     */
+    private function insertPosition(): ?int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $this->nextPositionQuery();
+        $position = $db->fetchOne($select);
+
+        if (!is_numeric($position)) {
+            return null;
+        }
+
+        $paperPosition[$position] = $this->getPaperid();
+
+        Episciences_VolumesManager::savePaperPositionsInVolume($this->getVid(), $paperPosition);
+
+        return $this->setPosition((int)$position)->getPosition();
+    }
+
+    /**
+     * retourne la prochaine position
+     * @return Zend_Db_Select
+     */
+    private function nextPositionQuery(): \Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        return $db->select()
+            ->from(T_VOLUME_PAPER_POSITION, new Zend_Db_Expr('MAX(POSITION) + 1 AS POSITION'))
+            ->where('VID = ?', $this->getVid());
     }
 
     /**
@@ -1468,6 +2228,46 @@ class Episciences_Paper
     }
 
     /**
+     * fetch editors
+     * @param bool $active
+     * @param bool $getCASdata
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function getEditors($active = true, $getCASdata = false): array
+    {
+        if (empty($this->_editors) || $getCASdata) {
+            $editors = Episciences_PapersManager::getEditors($this->getDocid(), $active, $getCASdata);
+            $this->_editors = $editors;
+        }
+
+        return $this->_editors;
+    }
+
+    /**
+     * @param int|null $uid
+     * @return bool
+     */
+    public function isEditor(int $uid = null): bool
+    {
+
+        if (!$uid) {
+            return false;
+        }
+
+        try {
+
+            $editor = $this->getEditor($uid);
+
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        return !empty($editor);
+
+    }
+
+    /**
      * filter rating reports
      * @param array $reports
      * @param array $visibility
@@ -1497,6 +2297,7 @@ class Episciences_Paper
         }
         return $reports;
     }
+
 
     /**
      * assign user to paper (reviewer or editor)
@@ -1593,25 +2394,6 @@ class Episciences_Paper
     }
 
     /**
-     *  return oa version number
-     * @return mixed
-     */
-    public function getVersion()
-    {
-        return $this->_version;
-    }
-
-    /**
-     * @param $version
-     * @return $this
-     */
-    public function setVersion($version): self
-    {
-        $this->_version = (float)$version;
-        return $this;
-    }
-
-    /**
      * check if paper can be reviewed
      * paper can be reviewed if status is not one of these:
      * accepted, published, refused, removed, deleted, obsolete
@@ -1649,6 +2431,36 @@ class Episciences_Paper
         return ($this->getStatus() === self::STATUS_ACCEPTED);
     }
 
+    public function isRevisionRequested(): bool
+    {
+        return in_array($this->getStatus(), self::STATUS_WITH_EXPECTED_REVISION, true);
+    }
+
+    /**
+     * @return bool
+     */
+
+    public function isCopyEditingProcessStarted(): bool
+    {
+        return in_array($this->getStatus(), [
+            self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
+            self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
+            self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
+            self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
+            self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
+            self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
+            self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+            self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION
+        ], true);
+    }
+
+    public function isReadyToPublish(): bool
+    {
+        return in_array($this->getStatus(),
+            [self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION],
+            true);
+    }
+
     /**
      * @return bool
      */
@@ -1656,7 +2468,6 @@ class Episciences_Paper
     {
         return ($this->getStatus() === self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION);
     }
-
 
     /**
      * @return bool
@@ -1691,60 +2502,12 @@ class Episciences_Paper
     }
 
     /**
-     * @return bool
-     */
-    public function isTmp(): bool
-    {
-        return ($this->getRepoid() === 0);
-    }
-
-    /**
      * Verifie si le processus de publication d'un article a été abandonné
      * @return bool
      */
     public function isAbandoned(): bool
     {
         return ($this->getStatus() === self::STATUS_ABANDONED);
-    }
-
-    public function isRevisionRequested(): bool
-    {
-        return in_array($this->getStatus(), self::STATUS_WITH_EXPECTED_REVISION, true);
-    }
-
-    /**
-     * @return string
-     */
-    public function getLatestVersionId(): string
-    {
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()
-            ->from(T_PAPERS, 'DOCID')
-            ->where('PAPERID = ?', $this->getPaperid())
-            ->order('WHEN DESC');
-        $latestId = $db->fetchOne($sql);
-        $this->_latestVersionId = $latestId;
-        return $latestId;
-    }
-
-
-    public function getStatusLabel(string $lang = null): string
-    {
-
-        $label = Episciences_PapersManager::getStatusLabel($this->getStatus());
-
-        if ($lang) {
-
-            try {
-                $translator = Zend_Registry::get('Zend_Translate');
-                $label = $translator->translate($label, $lang);
-            } catch (Zend_Exception $e) {
-                trigger_error($e->getMessage());
-            }
-        }
-
-        return $label;
     }
 
     /**
@@ -1910,39 +2673,6 @@ class Episciences_Paper
         }
 
         return $version;
-    }
-
-    /**
-     * fetch editors
-     * @param bool $active
-     * @param bool $getCASdata
-     * @return array
-     * @throws Zend_Db_Statement_Exception
-     */
-    public function getEditors($active = true, $getCASdata = false): array
-    {
-        if (empty($this->_editors) || $getCASdata) {
-            $editors = Episciences_PapersManager::getEditors($this->getDocid(), $active, $getCASdata);
-            $this->_editors = $editors;
-        }
-
-        return $this->_editors;
-    }
-
-    /**
-     * @param bool $active
-     * @param bool $getCASdata
-     * @return Episciences_CopyEditor[]
-     * @throws Zend_Db_Statement_Exception
-     */
-    public function getCopyEditors(bool $active = true, bool $getCASdata = false): array
-    {
-        if (empty($this->_copyEditors) || $getCASdata) {
-            $copyEditors = Episciences_PapersManager::getCopyEditors($this->getDocid(), $active, $getCASdata);
-            $this->_copyEditors = $copyEditors;
-        }
-
-        return $this->_copyEditors;
     }
 
     /**
@@ -2400,7 +3130,7 @@ class Episciences_Paper
         }
 
         // Conserve l'indentation
-        $dom->formatOutput = true;
+        $dom->formatOutput = false;
         $dom->normalizeDocument();
 
         // Récupère la chaîne XML
@@ -2435,7 +3165,7 @@ class Episciences_Paper
             $root->appendChild($xml->createElement('setSpec', 'journal'));
             $root->appendChild($xml->createElement('setSpec', 'journal:' . Episciences_Review::getData($this->getRvid())['CODE']));
             $xml->appendChild($root);
-            $xml->formatOutput = true;
+            $xml->formatOutput = false;
             $xml->substituteEntities = true;
             $xml->preserveWhiteSpace = false;
             $oaiHeaderXml = $xml->saveXML($xml->documentElement);
@@ -2457,115 +3187,6 @@ class Episciences_Paper
     public function getOaiIdentifier(): string
     {
         return 'oai:' . DOMAIN . ':' . Episciences_Review::getData($this->getRvid())['CODE'] . ':' . $this->getDocid();
-    }
-
-    /**
-     * fetch article in given format
-     * @param string $format
-     * @return string|false
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
-    public function get(string $format = 'tei', int $version = null)
-    {
-        $format = strtolower(trim($format));
-        $method = 'get' . ucfirst($format);
-
-        if ($format === 'json' && $version === 2) {
-            $method .= 'V2';
-        }
-
-        if ((!self::isValidMetadataFormat($format)) || (!method_exists($this, $method))) {
-            return false;
-        }
-
-        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = $this->getPaperid() . '-' . $method;
-        $metadataCache = $cache->getItem($cacheName);
-
-        if ($this->isPublished()) {
-            $expireAfterSec = self::CACHE_EXPIRE_METADATA_PUBLISHED;
-        } else {
-            $expireAfterSec = self::CACHE_EXPIRE_METADATA_UNPUBLISHED;
-        }
-
-        $metadataCache->expiresAfter($expireAfterSec);
-
-        if (!$metadataCache->isHit()) {
-            $getOutput = $this->$method();
-            $metadataCache->set($getOutput);
-            $cache->save($metadataCache);
-        } else {
-            $getOutput = $metadataCache->get();
-        }
-
-        return $getOutput;
-
-
-    }
-
-    /**
-     * @return mixed
-     * @throws Zend_Db_Statement_Exception
-     */
-    public function getDocUrl()
-    {
-        if (!$this->_docUrl) {
-
-            if (!$this->isTmp()) {
-                $this->setDocUrl(Episciences_Repositories::getDocUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion()));
-            } else {
-
-                $paper = Episciences_PapersManager::get($this->getPaperid(), false);
-
-                if ($paper) {
-                    $this->setDocUrl(Episciences_Repositories::getDocUrl(
-                        $paper->getRepoid(),
-                        $paper->getIdentifier(),
-                        (int)$this->getVersion()
-                    ));
-
-                } else {
-                    trigger_error('The original version no longer exists!?');
-                }
-
-            }
-
-        }
-
-        return $this->_docUrl;
-    }
-
-    /**
-     * @param $url
-     * @return $this
-     */
-    public function setDocUrl($url): self
-    {
-        $this->_docUrl = $url;
-        return $this;
-    }
-
-    /**
-     * Return Repository URL of a paper
-     * @return mixed
-     */
-    public function getPaperUrl()
-    {
-        if (!$this->_paperUrl) {
-            $this->setPaperUrl(Episciences_Repositories::getPaperUrl($this->getRepoid(), $this->getIdentifier(), $this->getVersion()));
-        }
-
-        return $this->_paperUrl;
-    }
-
-    /**
-     * @param $url
-     * @return $this
-     */
-    public function setPaperUrl($url): self
-    {
-        $this->_paperUrl = $url;
-        return $this;
     }
 
     /**
@@ -2601,56 +3222,6 @@ class Episciences_Paper
         $settings[$name] = $value;
         $this->setSettings($settings);
         return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getSettings()
-    {
-        if (!$this->_settings) {
-            $this->loadSettings();
-        }
-        return $this->_settings;
-    }
-
-    /**
-     * @param $settings
-     * @return $this
-     */
-    public function setSettings($settings): self
-    {
-        $this->_settings = $settings;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function loadSettings(): bool
-    {
-        if (!$this->getDocid() || !is_numeric($this->getDocid())) {
-            return false;
-        }
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()->from(T_PAPER_SETTINGS, ['SETTING', 'VALUE'])->where('DOCID = ?', $this->getDocid());
-        $this->setSettings($db->fetchPairs($sql));
-        return true;
-    }
-
-    /**
-     * @param $key
-     * @return mixed|null
-     */
-    public function getSetting($key)
-    {
-        $settings = $this->getSettings();
-        if (is_array($settings) && array_key_exists($key, $settings)) {
-            return $settings[$key];
-        }
-
-        return null;
     }
 
     /**
@@ -2725,89 +3296,6 @@ class Episciences_Paper
     }
 
     /**
-     * fetch a metadata
-     * @param $name string metadata name
-     * @param null $key array index (if metadata is an array)
-     * @return mixed|null
-     */
-    public function getMetadata($name, $key = null)
-    {
-        if (!$this->_metadata && $this->getRecord()) {
-            $this->setMetadata($this->getRecord());
-        }
-
-        $result = null;
-        $metadata = $this->_metadata;
-
-        // if metadata exists
-        if (is_array($metadata) && array_key_exists($name, $metadata)) {
-
-            $currentMeta = $metadata[$name];
-
-            if ($name === 'subjects') {
-                $processedResult = [];
-                foreach ($currentMeta as $index => $value) {
-                    if (is_array($value)) {
-                        $this->processArraySubject($value, $processedResult);
-                    } else {
-                        $this->processSingleSubject($index, $value, $processedResult);
-                    }
-                }
-
-                $currentMeta = $processedResult;
-
-            }
-
-            if ($key) {
-                if (array_key_exists($key, $currentMeta)) {
-                    $result = $currentMeta[$key];
-                }
-            } else {
-                $result = $currentMeta;
-            }
-        }
-        if (is_array($result)) {
-            $result = array_map('Ccsd_Tools::space_clean', $result);
-        } else {
-            $result = Ccsd_Tools::space_clean($result);
-        }
-        return $result;
-
-    }
-
-    /**
-     * @param $xml
-     * @return $this
-     */
-    public function setMetadata(string $xml): self
-    {
-        $metadata = [];
-
-        $metadata['id'] = $this->getDocid();
-
-        try {
-            $metadata['submitter'] = Episciences_Tools::xpath($xml, '/episciences/submitter');
-            $metadata['submission_date'] = Episciences_Tools::xpath($xml, '/episciences/submission_date');
-            $metadata['publication_date'] = Episciences_Tools::xpath($xml, '/episciences/publication_date');
-            $metadata['version'] = Episciences_Tools::xpath($xml, '/episciences/version');
-            $metadata['title'] = Episciences_Tools::xpath($xml, '//dc:title', true);
-            $metadata['description'] = Episciences_Tools::xpath($xml, '//dc:description', true);
-            $metadata['authors'] = Episciences_Tools::xpath($xml, '//dc:creator', true);
-            $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
-            $metadata['language'] = Episciences_Tools::xpath($xml, '//dc:language');
-            $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:type');
-            $metadata['licenses'] = $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:rights');
-        } catch (Exception $e) {
-            $metadata['title'] = 'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.';
-            $metadata['description'] = 'Merci de contacter le support pour vérifier le document et ses métadonnées';
-        }
-
-
-        $this->_metadata = $metadata;
-        return $this;
-    }
-
-    /**
      * @param null $lang
      * @param bool $forceResult
      * @return mixed|string|null
@@ -2838,42 +3326,6 @@ class Episciences_Paper
         }
 
         return trim($result);
-    }
-
-    /**
-     * @return string | null
-     */
-    public function getConcept_identifier(): ?string
-    {
-        return $this->_concept_identifier;
-    }
-
-    /**
-     * @param string|null $conceptIdentifier
-     * @return $this
-     */
-    public function setConcept_identifier(string $conceptIdentifier = null): self
-    {
-        $this->_concept_identifier = $conceptIdentifier;
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getModification_date()
-    {
-        return $this->_modification_date;
-    }
-
-    /**
-     * @param $modification_date
-     * @return $this
-     */
-    public function setModification_date($modification_date): self
-    {
-        $this->_modification_date = $modification_date;
-        return $this;
     }
 
     /**
@@ -3273,21 +3725,19 @@ class Episciences_Paper
     }
 
     /**
-     * @return mixed
+     * @param bool $active
+     * @param bool $getCASdata
+     * @return Episciences_CopyEditor[]
+     * @throws Zend_Db_Statement_Exception
      */
-    public function getSubmission_date()
+    public function getCopyEditors(bool $active = true, bool $getCASdata = false): array
     {
-        return $this->_submission_date;
-    }
+        if (empty($this->_copyEditors) || $getCASdata) {
+            $copyEditors = Episciences_PapersManager::getCopyEditors($this->getDocid(), $active, $getCASdata);
+            $this->_copyEditors = $copyEditors;
+        }
 
-    /**
-     * @param $submission_date
-     * @return $this
-     */
-    public function setSubmission_date($submission_date = null): self
-    {
-        $this->_submission_date = $submission_date ?: new Zend_Db_Expr('NOW()');
-        return $this;
+        return $this->_copyEditors;
     }
 
     /**
@@ -3452,259 +3902,9 @@ class Episciences_Paper
         }
     }
 
-    /**
-     * save paper to database
-     * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     */
-    public function save(): bool
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $docId = $this->getDocid();
-
-        $type = $this->getType();
-
-        if ($type) {
-            try {
-                $type = $this->getType() ? json_encode($this->getType(), JSON_THROW_ON_ERROR) : $this->getType();
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage());
-            }
-        }
-
-        $document = $this->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
-
-        if (!$docId) {
-            // INSERT
-
-            $data = [
-                'PAPERID' => $this->getPaperid(),
-                'DOI' => $this->getDoi(),
-                'VERSION' => $this->getVersion(),
-                'RVID' => $this->getRvid(),
-                'VID' => $this->getVid(),
-                'SID' => $this->getSid(),
-                'UID' => $this->getUid(),
-                'STATUS' => $this->getStatus(),
-                'IDENTIFIER' => $this->getIdentifier(),
-                'REPOID' => $this->getRepoid(),
-                'RECORD' => $this->getRecord(),
-                'WHEN' => new Zend_Db_Expr('NOW()'),
-                'SUBMISSION_DATE' => ($this->getSubmission_date()) ?: new Zend_Db_Expr('NOW()'),
-                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
-                'FLAG' => $this->getFlag(),
-                'PASSWORD' => $this->getPassword(),
-                'TYPE' => $type,
-                'DOCUMENT' => $document
-            ];
-
-            if ($this->getPublication_date()) {
-                $data['PUBLICATION_DATE'] = $this->getPublication_date();
-            } elseif ($this->getStatus() === self::STATUS_PUBLISHED) {
-                $data['PUBLICATION_DATE'] = new Zend_Db_Expr('NOW()');
-            }
-
-            if ($this->getConcept_identifier()) {
-                $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
-            }
-
-            if ($db->insert(T_PAPERS, $data)) {
-                $this->setDocid($db->lastInsertId());
-                if (!$this->getPaperid()) {
-                    $this->setPaperid($this->getDocid());
-                    $this->save();
-
-                    //insert licence when save paper
-                    try {
-                        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
-                        Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
-
-                    } catch (\GuzzleHttp\Exception\GuzzleException|JsonException $e) {
-                        trigger_error($e->getMessage());
-                    }
-                } else {
-                    // keep datalinked and insert line with the new doc id
-                    Episciences_Paper_DatasetsManager::updateAllByDocId($this);
-                    $this->setPosition($this->applyPositioningStrategy());
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-// UPDATE
-        $data = [
-            'PAPERID' => $this->getPaperid(),
-            'DOI' => $this->getDoi(),
-            'VERSION' => $this->getVersion(),
-            'VID' => $this->getVid(),
-            'SID' => $this->getSid(),
-            'STATUS' => $this->getStatus(),
-            'REPOID' => $this->getRepoid(),
-            'RECORD' => $this->getRecord(),
-            'SUBMISSION_DATE' => $this->getSubmission_date(),
-            'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
-            'FLAG' => $this->getFlag(),
-            'PASSWORD' => $this->getPassword(),
-            'TYPE' => $type,
-            'DOCUMENT' => $document
-        ];
-        if ($this->getIdentifier()) {
-            $data['IDENTIFIER'] = $this->getIdentifier();
-        }
-        if ($this->getPublication_date()) {
-            $data['PUBLICATION_DATE'] = $this->getPublication_date();
-        }
-
-        if ($this->getConcept_identifier()) {
-            $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
-        }
-
-        if (!$db->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
-            return false;
-        }
-
-        $this->setPosition($this->applyPositioningStrategy());
-        return true;
-    }
-
-    /**
-     * Create or delete an position in volume
-     * @return int|null
-     */
-    public function applyPositioningStrategy(): ?int
-    {
-
-        if (empty($this->getVid())) {
-            return null;
-        }
-
-        if (in_array($this->getStatus(), self::DO_NOT_SORT_THIS_KIND_OF_PAPERS, true)) {
-            $this->deletePosition();
-            $this->setPosition();
-            return null;
-        }
-
-        return $this->createPositionProcessing();
-
-    }
-
-    /**
-     *delete paper volume position
-     * @return int
-     */
-    public function deletePosition()
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $where['VID = ?'] = $this->getVid();
-        $where['PAPERID = ?'] = $this->getPaperid();
-
-        return ($db->delete(T_VOLUME_PAPER_POSITION, $where) > 0);
-    }
-
-    /**
-     * @return bool
-     */
-
-    public function isCopyEditingProcessStarted(): bool
-    {
-        return in_array($this->getStatus(), [
-            self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES,
-            self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
-            self::STATUS_CE_AUTHOR_SOURCES_DEPOSED,
-            self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
-            self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
-            self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
-            self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
-            self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION
-        ], true);
-    }
-
-    public function isReadyToPublish(): bool
-    {
-        return in_array($this->getStatus(),
-            [self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION],
-            true);
-    }
-
     public function isAcceptedSubmission(): bool
     {
         return in_array($this->getStatus(), self::ACCEPTED_SUBMISSIONS, true);
-    }
-
-    /**
-     * @return int|null
-     */
-    private function createPositionProcessing()
-    {
-        return $this->getPosition() ?? $this->insertPosition();
-    }
-
-    /**
-     * get paper position in volume
-     * @return int | null
-     */
-    public function getPosition()
-    {
-        /** @var $volumePaperPosition [PAPERID => POSITION] */
-
-        if (null === $this->_position && !empty($this->_vId)) {
-            $volumePaperPosition = Episciences_VolumesManager::loadPositionsInVolume($this->_vId);
-            return array_key_exists($this->_paperId, $volumePaperPosition) ? (int)$volumePaperPosition[$this->getPaperid()] : null;
-        }
-
-        return $this->_position;
-    }
-
-    /**
-     * set paper position in volume
-     * @param int $position
-     * @return $this
-     */
-    public function setPosition(int $position = null): self
-    {
-
-        $this->_position = $position;
-
-        return $this;
-
-    }
-
-    /**
-     * assign position
-     * @return int|null
-     */
-    private function insertPosition(): ?int
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $select = $this->nextPositionQuery();
-        $position = $db->fetchOne($select);
-
-        if (!is_numeric($position)) {
-            return null;
-        }
-
-        $paperPosition[$position] = $this->getPaperid();
-
-        Episciences_VolumesManager::savePaperPositionsInVolume($this->getVid(), $paperPosition);
-
-        return $this->setPosition((int)$position)->getPosition();
-    }
-
-    /**
-     * retourne la prochaine position
-     * @return Zend_Db_Select
-     */
-    private function nextPositionQuery(): \Zend_Db_Select
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return $db->select()
-            ->from(T_VOLUME_PAPER_POSITION, new Zend_Db_Expr('MAX(POSITION) + 1 AS POSITION'))
-            ->where('VID = ?', $this->getVid());
     }
 
     /**
@@ -3959,49 +4159,6 @@ class Episciences_Paper
     }
 
     /**
-     * return an array of papers (previous versions of this paper)
-     * @param bool $isCurrentVersionIncluded
-     * @param bool $includeTempVersions
-     * @return array|null
-     */
-    public function getPreviousVersions(bool $isCurrentVersionIncluded = false, bool $includeTempVersions = true): ?array
-    {
-        if (($isCurrentVersionIncluded || !isset($this->_previousVersions)) && $this->getPaperid() !== $this->getDocid()) {
-
-            $this->_previousVersions = null;
-            $parentId = $this->getPaperid();
-
-            if ($parentId) {
-
-                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-                $sql = $db->select()
-                    ->from(T_PAPERS)
-                    ->where('PAPERID = ?', $parentId);
-
-                if (!$includeTempVersions) {
-                    $sql->where('REPOID != 0');
-                }
-
-                !$isCurrentVersionIncluded ? $sql->where('`WHEN` < ?', $this->getWhen()) : $sql->where('`WHEN` <= ?', $this->getWhen());
-
-                $sql->order('WHEN DESC');
-
-                $results = $db->fetchAssoc($sql);
-                $papers = [];
-
-                if ($results) {
-                    foreach ($results as $paperId => $result) {
-                        $papers[$paperId] = new Episciences_Paper($result);
-                    }
-                    $this->_previousVersions = $papers;
-                }
-            }
-        }
-
-        return $this->_previousVersions;
-    }
-
-    /**
      * get real paper position in volume. (position in VOLUME_PAPER_POSITION table  + 1)
      * @return int
      */
@@ -4015,52 +4172,6 @@ class Episciences_Paper
 
         $positions = $volume->getPaperPositions();
         return (array_search($this->getPaperid(), $positions, false) + 1);
-    }
-
-    /**
-     *
-     * get acceptance date form paper log
-     * @return string|null
-     */
-    public function getAcceptanceDate(): ?string
-    {
-        $date = null;
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $this->loadHistoryQuery($db, [Episciences_Paper_Logger::CODE_STATUS]);
-        //in some situations, an article may be accepted several times:
-        // the objective is to know when the article was first accepted
-        $sql->order('DOCID ASC')
-            ->order('DATE ASC')
-            ->order('LOGID ASC');
-
-        $logs = $db->fetchAll($sql);
-
-        foreach ($logs as $value) {
-            try {
-                $detail = json_decode($value['DETAIL'], true, 512, JSON_THROW_ON_ERROR);
-
-                $isAccepted = isset($detail['status']) &&
-                    (
-                        (int)$detail['status'] === self::STATUS_ACCEPTED ||
-                        (int)$detail['status'] === self::STATUS_TMP_VERSION_ACCEPTED
-
-                    );
-
-
-                if ($isAccepted) {
-                    $date = $value['DATE'];
-                    break;
-                }
-
-
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage(), E_USER_NOTICE);
-
-            }
-
-        }
-
-        return $date;
     }
 
     /**
@@ -4104,14 +4215,6 @@ class Episciences_Paper
     }
 
     /**
-     * @return bool
-     */
-    public function isPublished(): bool
-    {
-        return ($this->getStatus() === self::STATUS_PUBLISHED);
-    }
-
-    /**
      * @return string
      */
     public function getPublicationMonth(): string
@@ -4122,314 +4225,6 @@ class Episciences_Paper
             $month = $date->format('m');
         }
         return $month;
-    }
-
-
-    /**
-     * return Bibtex formatted paper
-     * @return string
-     */
-    private function getBibtex(): string
-    {
-        $this->setXslt($this->getXml(), 'bibtex');
-        return $this->getXslt();
-    }
-
-    /**
-     * return dc formatted paper
-     * @return string
-     * @throws Zend_Exception
-     */
-    private function getDc(): string
-    {
-        $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
-
-        $xml->formatOutput = true;
-        $xml->substituteEntities = true;
-        $xml->preserveWhiteSpace = false;
-
-        $root = $xml->createElement('oai_dc:dc');
-        $root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:oai_dc', 'http://www.openarchives.org/OAI/2.0/oai_dc/');
-        $root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:dc', 'http://purl.org/dc/elements/1.1/');
-        $xml->appendChild($root);
-
-        // titles
-        foreach ($this->getMetadata('title') as $lang => $title) {
-            $node = $xml->createElement('dc:title', $title);
-            if (Zend_Locale::isLocale($lang)) {
-                $node->setAttribute('xml:lang', $lang);
-            }
-            $root->appendChild($node);
-        }
-
-        // authors
-        $authors = $this->getMetadata('authors');
-        if (is_array($authors)) {
-            foreach ($authors as $author) {
-                $creator = $xml->createElement('dc:creator', $author);
-                $root->appendChild($creator);
-            }
-        }
-
-        // Contributor
-        $contributor = $this->getSubmitter();
-        if ($contributor instanceof Episciences_User) {
-            $contributorFullName = $contributor->getFullName();
-            $contributorNode = $xml->createElement('dc:contributor', $contributorFullName);
-            $root->appendChild($contributorNode);
-        }
-
-
-        // ISSN (if exists)
-        $oReview = Episciences_ReviewsManager::find($this->getRvid());
-        $oReview->loadSettings();
-        if ($oReview->getSetting('ISSN')) {
-            $source = $xml->createElement('dc:source', 'ISSN: ' . Ccsd_View_Helper_FormatIssn::FormatIssn($oReview->getSetting('ISSN')));
-            $root->appendChild($source);
-        }
-
-        // journal name
-        $source = $xml->createElement('dc:source', $oReview->getName());
-        $root->appendChild($source);
-
-        // platform name
-        $source = $xml->createElement('dc:source', ucfirst(DOMAIN));
-        $root->appendChild($source);
-
-        // identifier
-        $identifier = $xml->createElement('dc:identifier', $oReview->getUrl() . '/' . $this->getDocid());
-        $root->appendChild($identifier);
-
-        if (!empty($this->getDoi())) {
-            $identifierDoi = $xml->createElement('dc:identifier', 'info:doi:' . $this->getDoi());
-            $root->appendChild($identifierDoi);
-        }
-
-        // quotation
-        //  'Journal of Data Mining and Digital Humanities, Episciences.org, 2015, pp.43'
-        $source = $xml->createElement('dc:source', $this->getCitation());
-        $root->appendChild($source);
-
-        // paper language
-        if ($this->getMetadata('language')) {
-            $language = $xml->createElement('dc:language', $this->getMetadata('language'));
-            $root->appendChild($language);
-        }
-
-        // paper subjects
-        $subjects = $this->getMetadata('subjects');
-        if (is_array($subjects)) {
-            foreach ($subjects as $lang => $keyword) {
-
-                if (is_array($keyword)) {
-                    foreach ($keyword as $kwdLang => $kwd) {
-                        $termNode = $xml->createElement('dc:subject', $kwd);
-                        if (Zend_Locale::isLocale($kwdLang)) {
-                            $termNode->setAttribute('xml:lang', $kwdLang);
-                        }
-                        $root->appendChild($termNode);
-                    }
-                } else {
-                    $termNode = $xml->createElement('dc:subject', $keyword);
-                    if (Zend_Locale::isLocale($lang)) {
-                        $termNode->setAttribute('xml:lang', $lang);
-                    }
-                    $root->appendChild($termNode);
-                }
-            }
-        }
-
-        $openaireRight = $xml->createElement('dc:rights', 'info:eu-repo/semantics/openAccess');
-        $root->appendChild($openaireRight);
-
-        $openaireRight = $xml->createElement('dc:rights', 'info:eu-repo/semantics/openAccess');
-        $root->appendChild($openaireRight);
-
-        $openaireType = $xml->createElement('dc:type', 'info:eu-repo/semantics/article');
-        $root->appendChild($openaireType);
-
-        $type = $xml->createElement('dc:type', 'Journal articles');
-        $root->appendChild($type);
-
-        $openaireTypeVersion = $xml->createElement('dc:type', 'info:eu-repo/semantics/publishedVersion');
-        $root->appendChild($openaireTypeVersion);
-
-        $openAireAudience = $xml->createElement('dc:audience', 'Researchers');
-        $root->appendChild($openAireAudience);
-
-
-        // description
-        foreach ($this->getAllAbstracts() as $lang => $abstract) {
-            $abstract = trim($abstract);
-            if ($abstract === 'International audience') {
-                continue;
-            }
-            $description = $xml->createElement('dc:description', $abstract);
-            if ($lang && Zend_Locale::isLocale($lang)) {
-                $description->setAttribute('xml:lang', $lang);
-            }
-            $root->appendChild($description);
-        }
-
-        // publication date
-        if ($this->getPublication_date()) {
-            $date = new DateTime($this->getPublication_date());
-            $publicationDate = $date->format('Y-m-d');
-            $date = $xml->createElement('dc:date', $publicationDate);
-            $root->appendChild($date);
-        }
-
-        return $xml->saveXML($xml->documentElement);
-    }
-
-    /**
-     * Get a paper citation
-     * @return string|null
-     * @throws Zend_Exception
-     */
-    public function getCitation()
-    {
-        $citation = null;
-
-        // locale selection: english if possible, first available language otherwise
-        $languages = Episciences_Tools::getLanguages();
-        if (array_key_exists('en', $languages)) {
-            $locale = 'en';
-        } else {
-            reset($languages);
-            $locale = key($languages);
-        }
-
-        // revue-dev:5 - Epitest, 5 février 2015, Premier Volume
-
-        $review = Episciences_ReviewsManager::find($this->getRvid());
-
-        // load journal translations in context of OAI (eg volumes ; sections)
-        if (APPLICATION_MODULE === 'oai') {
-            if (is_dir($review->getTranslationsPath()) && count(scandir($review->getTranslationsPath())) > 2) {
-                try {
-                    Zend_Registry::get('Zend_Translate')->addTranslation($review->getTranslationsPath());
-                } catch (Zend_Exception $exception) {
-                    error_log($exception->getMessage());
-                }
-            }
-        }
-
-        $citation = $review->getCode() . ':' . $this->getPaperid() . ' - ' . $review->getName() . ', ';
-        $citation .= date('Y-m-d', strtotime($this->getPublication_date()));
-        if ($this->getVid()) {
-            $volume = Episciences_VolumesManager::find($this->getVid());
-            if ($volume instanceof Episciences_Volume) {
-                $citation .= ', ' . $volume->getName($locale);
-            }
-        }
-
-
-        return $citation;
-    }
-
-    /**
-     * Get array of abstracts
-     * @return array
-     */
-    public function getAllAbstracts(): array
-    {
-        if ((!$this->_metadata) || (!array_key_exists('description', $this->_metadata))) {
-            return [];
-        }
-
-        if (!is_array($this->_metadata['description'])) {
-            throw new InvalidArgumentException(sprintf("Paper docid: %d getAllAbstracts() expects an array", $this->getDocid()));
-        }
-
-        return $this->_metadata['description'];
-    }
-
-    /**
-     * Get an array of abstracts
-     * @return array
-     */
-    public function getAbstractsCleaned()
-    {
-        $abstracts = [];
-        foreach ($this->getAllAbstracts() as $locale => $abstract) {
-            if (is_array($abstract)) {
-                $abstractLang = array_key_first($abstract);
-                $abstractText = array_shift($abstract);
-                $abstractText = $this->cleanAbstract($abstractText);
-                if ($abstractText !== 'International audience') {
-                    $abstracts[][$abstractLang] = $abstractText;
-                }
-            } else {
-                $abstract = $this->cleanAbstract($abstract);
-                if ($abstract !== 'International audience') {
-                    $abstracts[$locale] = $abstract;
-                }
-            }
-        }
-        return $abstracts;
-    }
-
-    /**
-     * @param string $abstract
-     * @return string
-     */
-    private function cleanAbstract(string $abstract): string
-    {
-        return trim(preg_replace("/\r|\n/", " ", $abstract));
-    }
-
-    /**
-     * Return TEI formatted paper
-     * @return string
-     * @throws Zend_Exception
-     */
-    private function getTei(): string
-    {
-        $tei = new Episciences_Paper_Tei($this);
-        return $tei->generateXml();
-    }
-
-    private function getJson(): string
-    {
-        return json_encode($this->toPublicArray());
-    }
-
-    private function getJsonV2(): ?string
-    {
-        return $this->toJson();
-    }
-
-
-    /**
-     * @return mixed
-     */
-    public function getFiles()
-    {
-        if (!$this->_files) {
-            $this->loadFiles();
-        }
-
-        return $this->_files;
-    }
-
-    /**
-     * @param mixed $files
-     */
-    public function setFiles($files): void
-    {
-        $this->_files = $files;
-    }
-
-
-    private function loadFiles(): void
-    {
-        if (!$this->_docId || !is_numeric($this->_docId)) {
-            $this->_files = [];
-            return;
-        }
-
-        $this->_files = Episciences_Paper_FilesManager::findByDocId($this->_docId);
     }
 
     /**
@@ -4444,44 +4239,6 @@ class Episciences_Paper
 
         return Episciences_Paper_FilesManager::findByName($this->_docId, $fileName);
 
-    }
-
-    /**
-     * @param string $format
-     * @return bool
-     */
-    public static function isValidMetadataFormat(string $format): bool
-    {
-        return in_array($format, self::$validMetadataFormats);
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getDatasets()
-    {
-        if (!$this->_datasets) {
-            $this->loadDatasets();
-        }
-        return $this->_datasets;
-    }
-
-    /**
-     * @param $datasets
-     */
-    public function setDatasets($datasets): void
-    {
-        $this->_datasets = $datasets;
-    }
-
-
-    private function loadDatasets(): void
-    {
-        if (!$this->_docId || !is_numeric($this->_docId)) {
-            $this->_datasets = [];
-            return;
-        }
-        $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
     }
 
     public function getDatasetsFromEnrichment()
@@ -4540,6 +4297,34 @@ class Episciences_Paper
         return $formatedDatasets;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getDatasets()
+    {
+        if (!$this->_datasets) {
+            $this->loadDatasets();
+        }
+        return $this->_datasets;
+    }
+
+    /**
+     * @param $datasets
+     */
+    public function setDatasets($datasets): void
+    {
+        $this->_datasets = $datasets;
+    }
+
+    private function loadDatasets(): void
+    {
+        if (!$this->_docId || !is_numeric($this->_docId)) {
+            $this->_datasets = [];
+            return;
+        }
+        $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
+    }
+
     public function getDatasetByValue(string $value): ?Episciences_Paper_Dataset
     {
 
@@ -4548,87 +4333,30 @@ class Episciences_Paper
     }
 
     /**
-     * Datacite export format
-     * @return string
-     * @throws Zend_Exception
-     */
-    public function getDatacite(): string
-    {
-        $volume = '';
-        $section = '';
-
-        if ($this->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
-            if ($oVolume) {
-                $volume = $oVolume->getName('en');
-            }
-        }
-
-        if ($this->getSid()) {
-            /* @var $oSection Episciences_Section */
-            $oSection = Episciences_SectionsManager::find($this->getSid());
-            if ($oSection) {
-                $section = $oSection->getName('en', true);
-            }
-        }
-
-        // Récupération des infos de la revue
-        $journal = Episciences_ReviewsManager::find($this->getRvid());
-        $journal->loadSettings();
-
-        // Create new DOI if none exist
-        if ($this->getDoi() !== '') {
-            $doi = $this->getDoi();
-        }
-
-        $paperLanguage = $this->getMetadata('language');
-
-        if (empty($paperLanguage)) {
-            $paperLanguage = 'eng';
-            // TODO temporary fix see https://gitlab.ccsd.cnrs.fr/ccsd/episciences/issues/215
-            // this attribute is required by the datacite schema
-            //arxiv doesnt have it, we need to fix this by asking the author additional information
-        }
-
-        $view = new Zend_View();
-        $view->addScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/export/');
-
-        return $view->partial('datacite.phtml', [
-            'volume' => $volume,
-            'section' => $section,
-            'journal' => $journal,
-            'paper' => $this,
-            'doi' => $doi,
-            'paperLanguage' => $paperLanguage
-        ]);
-
-    }
-
-    /**
-     * @return string
-     */
-    public function getFlag(): string
-    {
-        return $this->_flag;
-    }
-
-    /**
-     * @param string $flag
-     * @return $this
-     */
-    public function setFlag(string $flag): \Episciences_Paper
-    {
-        $this->_flag = $flag;
-        return $this;
-    }
-
-    /**
      * @return bool
      */
     public function isImported(): bool
     {
         return ($this->getFlag() === 'imported');
+    }
+
+    /**
+     * @param int $uid
+     * @return string
+     */
+    public function checkConflictResponse(int $uid): string
+    {
+
+        /** @var Episciences_Paper_Conflict $oConflict */
+        foreach ($this->getConflicts() as $oConflict) {
+
+            if ($oConflict->getBY() === $uid && $oConflict->getPaperId() === $this->getPaperid()) { // unique in T_PAPER_CONFLICTS table
+                return $oConflict->getAnswer();
+            }
+
+        }
+
+        return Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'];
     }
 
     /**
@@ -4682,26 +4410,6 @@ class Episciences_Paper
         return $this;
     }
 
-    /**
-     * @param int $uid
-     * @return string
-     */
-    public function checkConflictResponse(int $uid): string
-    {
-
-        /** @var Episciences_Paper_Conflict $oConflict */
-        foreach ($this->getConflicts() as $oConflict) {
-
-            if ($oConflict->getBY() === $uid && $oConflict->getPaperId() === $this->getPaperid()) { // unique in T_PAPER_CONFLICTS table
-                return $oConflict->getAnswer();
-            }
-
-        }
-
-        return Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'];
-    }
-
-
     public function isExcluded(): bool
     {
         if (in_array($this->getStatus(), self::DO_NOT_SORT_THIS_KIND_OF_PAPERS, true)) {
@@ -4711,17 +4419,17 @@ class Episciences_Paper
         return false;
     }
 
-    public function isOwner(): bool
-    {
-        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity() === $this->getUid();
-    }
-
     /**
      * @return bool
      */
     public function isReportsVisibleToAuthor(): bool
     {
         return $this->isOwner() && (in_array($this->getStatus(), self::$_noEditableStatus, true) || $this->canBeAssignedDOI() || $this->isRevisionRequested());
+    }
+
+    public function isOwner(): bool
+    {
+        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity() === $this->getUid();
     }
 
     public function isAlreadyAcceptedWaitingForAuthorFinalVersion(): bool
@@ -4778,9 +4486,6 @@ class Episciences_Paper
         return $this->_authors;
     }
 
-    /**
-     * @return array [Episciences_Paper_Authors]
-     */
     public function getAuthorsWithAffiNumeric(): array
     {
         $this->_authors = Episciences_Paper_AuthorsManager::filterAuthorsAndAffiNumeric($this->getPaperid());
@@ -4826,41 +4531,6 @@ class Episciences_Paper
         return $this->_linkedData;
     }
 
-
-    /**
-     * @return string | null
-     */
-    public function getPassword(): ?string
-    {
-        return $this->_password;
-    }
-
-    /**
-     * @param string|null $paperPassword
-     * @param bool $encrypt
-     * @return $this
-     */
-    public function setPassword(string $paperPassword = null, bool $encrypt = false): self
-    {
-
-        if (!empty($paperPassword) && $encrypt) {
-
-            try {
-
-                $paperPassword = Episciences_Tools::encrypt($paperPassword);
-
-            } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-
-            }
-        }
-
-        $this->_password = $paperPassword;
-
-        return $this;
-    }
-
-
     /**
      * @throws Zend_Exception
      */
@@ -4869,6 +4539,24 @@ class Episciences_Paper
 
         return $this->isOwner() && ($this->isOptionalPaperPwd() || $this->isRequiredPaperPwd());
 
+    }
+
+    /**
+     * @return bool
+     * @throws Zend_Exception
+     */
+    public function isOptionalPaperPwd(): bool
+    {
+
+        $journalSettings = Zend_Registry::get('reviewSettings');
+
+        return
+            (
+                isset($journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD]) &&
+                (int)$journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD] === 1
+            ) &&
+            empty($this->getPassword()) &&
+            $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
     }
 
     /**
@@ -4890,25 +4578,6 @@ class Episciences_Paper
             $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
     }
 
-
-    /**
-     * @return bool
-     * @throws Zend_Exception
-     */
-    public function isOptionalPaperPwd(): bool
-    {
-
-        $journalSettings = Zend_Registry::get('reviewSettings');
-
-        return
-            (
-                isset($journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD]) &&
-                (int)$journalSettings[Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD] === 1
-            ) &&
-            empty($this->getPassword()) &&
-            $this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
-    }
-
     /**
      * @return array
      * @throws Zend_Db_Statement_Exception
@@ -4923,30 +4592,6 @@ class Episciences_Paper
         return in_array($this->getStatus(), self::EDITABLE_VERSION_STATUS, true);
 
     }
-
-    /**
-     * @param int|null $uid
-     * @return bool
-     */
-    public function isEditor(int $uid = null): bool
-    {
-
-        if (!$uid) {
-            return false;
-        }
-
-        try {
-
-            $editor = $this->getEditor($uid);
-
-        } catch (Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        return !empty($editor);
-
-    }
-
 
     public function getBibRef(string $rvCode = null): array
     {
@@ -4968,28 +4613,6 @@ class Episciences_Paper
             return $citations;
         }
         return [];
-    }
-
-    public function getType(): array
-    {
-        return $this->_type;
-    }
-
-    /**
-     * @param array|null $type
-     * @return $this
-     */
-
-    public function setType(array $type = null): \Episciences_Paper
-    {
-        if ($this->isTmp()) {
-            $this->_type = [self::TITLE_TYPE => self::TMP_TYPE];
-        } elseif (in_array($type, self::PREPRINT_TYPES, true)) {
-            $this->type = [self::TITLE_TYPE => self::DEFAULT_TYPE];
-        } else {
-            $this->_type = $type ?? [self::TITLE_TYPE => self::DEFAULT_TYPE];
-        }
-        return $this;
     }
 
     public function getTypeWithKey(string $key = null): string
@@ -5075,101 +4698,176 @@ class Episciences_Paper
         return $this;
     }
 
-
-    private function processArraySubject($subject, &$result = []): void
+    public function displayXml(string $output): bool
     {
-        foreach ($subject as $key => $value) {
-            $isStringKey = is_string($key);
-            $key = ($isStringKey && $translatedKey = Episciences_Tools::translateToTwoLetterCode($key)) ? $translatedKey : $key;
-            if ($isStringKey) {
-                $result[$key][] = $value;
-            } else {
-                $result[] = $value;
-            }
+        $dom = new DOMDocument();
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = false;
+
+        $loadResult = $dom->loadXML($output);
+
+        $dom->encoding = 'utf-8';
+        $dom->xmlVersion = '1.0';
+
+        if ($loadResult) {
+            $output = $dom->saveXML();
+            echo $output;
+            return true;
         }
+
+        echo '<error>Error loading XML source. Please report to Journal Support.</error>';
+        trigger_error('XML Fail in export: ' . $output, E_USER_WARNING);
+        return false;
     }
 
-    private function processSingleSubject($index, $subject, &$result = [])
+    /**
+     * Get a paper citation
+     * @return string|null
+     * @throws Zend_Exception
+     */
+    public function getCitation()
     {
-        $isStringIndex = is_string($index);
-        $index = ($isStringIndex && $translatedIndex = Episciences_Tools::translateToTwoLetterCode($index)) ? $translatedIndex : $index;
-        if ($isStringIndex) {
-            $result[$index][] = trim($subject);
+        $citation = null;
+
+        // locale selection: english if possible, first available language otherwise
+        $languages = Episciences_Tools::getLanguages();
+        if (array_key_exists('en', $languages)) {
+            $locale = 'en';
         } else {
-            $result[] = $subject;
+            reset($languages);
+            $locale = key($languages);
         }
-    }
 
-    private function processFiles(string $journalUrl): array
-    {
+        // revue-dev:5 - Epitest, 5 février 2015, Premier Volume
 
-        $processedFile = [];
+        $review = Episciences_ReviewsManager::find($this->getRvid());
 
-        if ($this->hasHook) {
-            $oCurrentFiles = $this->getFiles();
-            /** @var Episciences_Paper_File $oCFile */
-            foreach ($oCurrentFiles as $oCFile) {
-
-                $fTmp = [
-                    'name' => $oCFile->getName(),
-                    'size' => $oCFile->getFileSize(),
-                    'link' => !$this->isPublished() ? $oCFile->getSelfLink() : sprintf('%s/%s/oafiles/%s', $journalUrl, $this->getDocid(), $oCFile->getName())
-                ];
-
-                $processedFile[] = $fTmp;
-
-            }
-
-        } elseif ($this->isTmp()) {
-
-            if (isset($this->tmpFiles)) {
-
-                foreach ($this->tmpFiles as $fileName) {
-
-                    $fTmp = [
-                        'link' => sprintf('%s/tmp_files/%s/%s', $journalUrl, $this->getDocid(), $fileName)
-                    ];
-
-                    $processedFile[] = $fTmp;
+        // load journal translations in context of OAI (eg volumes ; sections)
+        if (APPLICATION_MODULE === 'oai') {
+            if (is_dir($review->getTranslationsPath()) && count(scandir($review->getTranslationsPath())) > 2) {
+                try {
+                    Zend_Registry::get('Zend_Translate')->addTranslation($review->getTranslationsPath());
+                } catch (Zend_Exception $exception) {
+                    error_log($exception->getMessage());
                 }
             }
-
-        } else {
-
-            $processedFile = [
-                'link' => !$this->isPublished() ? $this->getPaperUrl() : sprintf('%s/%s/pdf', $journalUrl, $this->getDocid())
-            ];
-
         }
 
-        return $processedFile;
-    }
-
-
-    private function processTmpVersion(Episciences_Paper $paper): void
-    {
-        $withoutFileStr = 'tmp_version_without_file';
-
-        if (!$paper->isTmp()) {
-            return;
-        }
-
-        $tmpIdentifier = $paper->getIdentifier();
-        $tmpPaperId = (string)$paper->getPaperid();
-        $subStr = substr($tmpIdentifier, (strlen($tmpPaperId) + 1));
-
-        try {
-            $tmpFiles = !Episciences_Tools::isJson($subStr) ? (array)$subStr : json_decode($subStr, true, 512, JSON_THROW_ON_ERROR);
-            if (!is_array($tmpFiles)) {
-                throw new InvalidArgumentException(sprintf('processTmpVersion() : $tmpFiles is not typed as an array for paperid %s', $tmpPaperId));
+        $citation = $review->getCode() . ':' . $this->getPaperid() . ' - ' . $review->getName() . ', ';
+        $citation .= date('Y-m-d', strtotime($this->getPublication_date()));
+        if ($this->getVid()) {
+            $volume = Episciences_VolumesManager::find($this->getVid());
+            if ($volume instanceof Episciences_Volume) {
+                $citation .= ', ' . $volume->getName($locale);
             }
-            $tmpFiles = Episciences_Tools::arrayFilterEmptyValues($tmpFiles);
-            $paper->tmpFiles = $tmpFiles;
-            $paper->setIdentifier(sprintf('%s/%s', $paper->getPaperid(), $tmpFiles[array_key_first($tmpFiles)] ?? $withoutFileStr));
-        } catch (JsonException $e) {
-            trigger_error($e->getMessage());
         }
 
+
+        return $citation;
     }
+
+    /**
+     * Get array of abstracts
+     * @return array
+     */
+    public function getAllAbstracts(): array
+    {
+        if ((!$this->_metadata) || (!array_key_exists('description', $this->_metadata))) {
+            return [];
+        }
+
+        if (!is_array($this->_metadata['description'])) {
+            throw new InvalidArgumentException(sprintf("Paper docid: %d getAllAbstracts() expects an array", $this->getDocid()));
+        }
+
+        return $this->_metadata['description'];
+    }
+
+    /**
+     *
+     * get acceptance date form paper log
+     * @return string|null
+     */
+    public function getAcceptanceDate(): ?string
+    {
+        $date = null;
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $this->loadHistoryQuery($db, [Episciences_Paper_Logger::CODE_STATUS]);
+        //in some situations, an article may be accepted several times:
+        // the objective is to know when the article was first accepted
+        $sql->order('DOCID ASC')
+            ->order('DATE ASC')
+            ->order('LOGID ASC');
+
+        $logs = $db->fetchAll($sql);
+
+        foreach ($logs as $value) {
+            try {
+                $detail = json_decode($value['DETAIL'], true, 512, JSON_THROW_ON_ERROR);
+
+                $isAccepted = isset($detail['status']) &&
+                    (
+                        (int)$detail['status'] === self::STATUS_ACCEPTED ||
+                        (int)$detail['status'] === self::STATUS_TMP_VERSION_ACCEPTED
+
+                    );
+
+
+                if ($isAccepted) {
+                    $date = $value['DATE'];
+                    break;
+                }
+
+
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage(), E_USER_NOTICE);
+
+            }
+
+        }
+
+        return $date;
+    }
+
+    /**
+     * Get an array of abstracts
+     * @return array
+     */
+    public function getAbstractsCleaned()
+    {
+        $abstracts = [];
+        foreach ($this->getAllAbstracts() as $locale => $abstract) {
+            if (is_array($abstract)) {
+                $abstractLang = array_key_first($abstract);
+                $abstractText = array_shift($abstract);
+                $abstractText = $this->cleanAbstract($abstractText);
+                if ($abstractText !== 'International audience') {
+                    $abstracts[][$abstractLang] = $abstractText;
+                }
+            } else {
+                $abstract = $this->cleanAbstract($abstract);
+                if ($abstract !== 'International audience') {
+                    $abstracts[$locale] = $abstract;
+                }
+            }
+        }
+        return $abstracts;
+    }
+
+    /**
+     * @param string $abstract
+     * @return string
+     */
+    private function cleanAbstract(string $abstract): string
+    {
+        return trim(preg_replace("/\r|\n/", " ", $abstract));
+    }
+
+    private function getJsonV2(): ?string
+    {
+        return $this->toJson();
+    }
+
+
 
 }

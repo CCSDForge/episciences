@@ -527,7 +527,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
             }
 
             Ccsd_Log::message($message, $this->isDebugMode(), $logLevel, $this->getLogFilename());
-
+            unset($update);
             $this->resetBuffer();
         }
     }

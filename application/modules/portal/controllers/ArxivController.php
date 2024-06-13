@@ -128,7 +128,7 @@ class ArxivController extends Zend_Controller_Action
 
     private function outputXml($dom): void
     {
-        $dom->formatOutput = true;
+        $dom->formatOutput = false;
         $dom->normalizeDocument();
         echo $dom->saveXML();
     }

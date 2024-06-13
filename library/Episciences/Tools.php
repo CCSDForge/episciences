@@ -1989,4 +1989,13 @@ class Episciences_Tools
 
     }
 
+    public static function reduceXmlSize(string $xml): string {
+        $dom = new DOMDocument();
+
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = false;
+        $dom->loadXML($xml);
+        return $dom->saveXML();
+    }
+
 }

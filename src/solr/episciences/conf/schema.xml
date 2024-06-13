@@ -21,6 +21,15 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
 
         <field name="doi_s" type="string" indexed="true" stored="true" multiValued="false"/>
 
+        <field name="doc_doaj" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_dc" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_json" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_crossref" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_bibtex" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_openaire" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_tei" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_zbjats" type="string" indexed="false" stored="true" multiValued="false"/>
+
         <!-- Permanent id across all document versions ; links to multiple docids -->
         <field name="paperid" type="int" indexed="true" stored="true" multiValued="false"/>
 

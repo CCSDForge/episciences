@@ -42,7 +42,7 @@ abstract class Ccsd_Oai_Server
         /** @var Zend_Controller_Request_Http $request */
         header('Content-Type: text/xml; charset=utf-8');
         $this->_xml = new Ccsd_DOMDocument('1.0', 'utf-8');
-        $this->_xml->formatOutput = true;
+        $this->_xml->formatOutput = false;
         $this->_xml->substituteEntities = true;
         $this->_xml->preserveWhiteSpace = false;
         $this->_xml->appendChild($this->_xml->createProcessingInstruction('xml-stylesheet', 'type="text/xsl" href="/oai/xsl"'));

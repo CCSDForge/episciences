@@ -106,7 +106,7 @@ class Episciences_Paper_XmlExportManager
         $dom = new DOMDocument();
 
         $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = true;
+        $dom->formatOutput = false;
 
         $loadResult = $dom->loadXML($output);
 

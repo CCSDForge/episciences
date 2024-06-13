@@ -72,11 +72,7 @@ $interWorkRelationship = [
 ];
 
 
-if (defined('RVISSN')) {
-    $issn = $this->FormatIssn(RVISSN);
-} else {
-    $issn = '';
-}
+$issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));
 
 $dateTime = new DateTime('now');
 $timestamp = $dateTime->format('YmdHisv');

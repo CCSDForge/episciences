@@ -1,4 +1,5 @@
 <?php
+use Episciences\Paper\Export;
 use Solarium\QueryType\Update\Query\Document;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
@@ -6,7 +7,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     public static string $coreName = 'episciences';
 
-    public static int $maxDocsInBuffer = 50;
+    public static int $maxDocsInBuffer = 25;
 
     private ArrayAdapter $cache;
 
@@ -25,7 +26,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     private function initCache(): void
     {
-        $this->setCache(new ArrayAdapter(60, true, 60 * 5, 1000));
+        $this->setCache(new ArrayAdapter(60, true, 60 * 5, 10));
     }
 
     /**
@@ -53,6 +54,26 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         // _s : string (correspondance exacte)
 
         $paperData = $this->getDocidData($docId);
+
+        $paper = Episciences_PapersManager::get($docId, false);
+        $paper->setXml($paper->getXml());
+
+
+        $tei = Export::getTei($paper);
+        $openaire = Export::getOpenaire($paper);
+        $dc = Export::getDc($paper);
+        $crossref = Export::getCrossref($paper);
+        $zbjats = Export::getZbjats($paper);
+        $doaj = Export::getDoaj($paper);
+        $bibtex = Export::getBibtex($paper);
+
+        $docToIndex->setField('doc_tei', $tei);
+        $docToIndex->setField('doc_dc', $dc);
+        $docToIndex->setField('doc_openaire', $openaire);
+        $docToIndex->setField('doc_crossref', $crossref);
+        $docToIndex->setField('doc_zbjats', $zbjats);
+        $docToIndex->setField('doc_doaj', $doaj);
+        $docToIndex->setField('doc_bibtex', $bibtex);
 
         if ($paperData === null) {
             Ccsd_Log::message('Update doc ' . $docId . ' : cet article n\'existe pas/plus.', true, 'WARN');

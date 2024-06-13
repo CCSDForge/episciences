@@ -70,7 +70,7 @@ class Episciences_Repositories_Common
 
         $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
 
-        $xml->formatOutput = true;
+        $xml->formatOutput = false;
         $xml->substituteEntities = true;
         $xml->preserveWhiteSpace = false;
 

@@ -3,7 +3,8 @@ use GuzzleHttp\Client;
 
 class Episciences_BibliographicalsReferencesTools
 {
-    public static function getBibRefFromApi($pdf) {
+    public static function getBibRefFromApi($pdf): array
+    {
         $client = new Client();
         $apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
         try {

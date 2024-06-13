@@ -1,5 +1,8 @@
  <records>
-    <?php echo $this->partial('partials/doajpaper.phtml',[
+    <?php
+
+
+    echo $this->partial('doajpaper.phtml',[
             'paper'=> $this->paper,
             'journal'=>$this->journal,
             'section'=>$this->section,
@@ -7,5 +10,6 @@
             'previousVersionsUrl' => $this->previousVersionsUrl,
             'doi' => $this->doi,
             'paperLanguage' => $this->paperLanguage,
-    ]); ?>
+    ]);
+?>
  </records>

@@ -28,12 +28,12 @@ $enrichmentLicence = $paper->getLicence();
 $enrichmentLinkedData = $paper->getLinkedData();
 
 if ($eissn = $journal->getSetting(Episciences_Review::SETTING_ISSN)) {
-    $eissn = $this->FormatIssn($eissn);
+    $eissn = Ccsd_View_Helper_FormatIssn::FormatIssn($eissn);
 } else {
     $eissn = '';
 }
 if ($issn = $journal->getSetting(Episciences_Review::SETTING_ISSN_PRINT)) {
-    $issn = $this->FormatIssn($issn);
+    $issn = Ccsd_View_Helper_FormatIssn::FormatIssn($issn);
 } else {
     $issn = '';
 }
