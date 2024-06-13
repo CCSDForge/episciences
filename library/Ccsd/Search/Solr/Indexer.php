@@ -394,7 +394,9 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
         $document = $updateQuery->createDocument();
         $document = $this->addMetadataToDoc($docId, $document);
         if ((!$document) || ($document === null)) {
-            Ccsd_Log::message('Document non traité : ' . $docId, true, 'ERR', $this->getLogFilename());
+            $errorMessage = 'Document not indexed: ' . $docId;
+            $this->setErrorMessage($errorMessage);
+            Ccsd_Log::message($errorMessage, true, 'ERR', $this->getLogFilename());
             $this->putProcessedRowInError($docId);
         } else {
             $updateQuery->addDocument($document, true);
@@ -454,6 +456,12 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
     public function getErrorMessage(): string
     {
         return $this->errorMessage;
+    }
+
+
+    public function setErrorMessage(string $errorMessage = 'Unknown Error'): void
+    {
+        $this->errorMessage = $errorMessage;
     }
 
     /**
