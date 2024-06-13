@@ -393,7 +393,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
         Ccsd_Log::message('In Core : ' . $this->getCore() . ' => ' . $this->getOrigin() . ' document UPDATED : ' . $docId, $this->isDebugMode(), '', $this->getLogFilename());
         $document = $updateQuery->createDocument();
         $document = $this->addMetadataToDoc($docId, $document);
-        if (!$document) {
+        if ((!$document) || ($document === null)) {
             Ccsd_Log::message('Document non traité : ' . $docId, true, 'ERR', $this->getLogFilename());
             $this->putProcessedRowInError($docId);
         } else {
