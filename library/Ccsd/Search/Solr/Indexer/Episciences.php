@@ -53,22 +53,20 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         // _t : text (correspondance approximative : insensible à la casse, aux accents)
         // _s : string (correspondance exacte)
 
-        $paperData = $this->getDocidData($docId);
+        $paperData = Episciences_PapersManager::get($docId, false);
 
-        $paper = Episciences_PapersManager::get($docId, false);
-
-        if (!$paper) {
+        if (!$paperData) {
             Ccsd_Log::message('Update doc ' . $docId . ' No content found for this article.', true, 'WARN');
             return false;
         }
 
-        $tei = Export::getTei($paper);
-        $openaire = Export::getOpenaire($paper);
-        $dc = Export::getDc($paper);
-        $crossref = Export::getCrossref($paper);
-        $zbjats = Export::getZbjats($paper);
-        $doaj = Export::getDoaj($paper);
-        $bibtex = Export::getBibtex($paper);
+        $tei = Export::getTei($paperData);
+        $openaire = Export::getOpenaire($paperData);
+        $dc = Export::getDc($paperData);
+        $crossref = Export::getCrossref($paperData);
+        $zbjats = Export::getZbjats($paperData);
+        $doaj = Export::getDoaj($paperData);
+        $bibtex = Export::getBibtex($paperData);
 
         $docToIndex->setField('doc_tei', $tei);
         $docToIndex->setField('doc_dc', $dc);
