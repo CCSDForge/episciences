@@ -57,6 +57,11 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $paper = Episciences_PapersManager::get($docId, false);
 
+        if (!$paper) {
+            Ccsd_Log::message('Update doc ' . $docId . ' No content found for this article.', true, 'WARN');
+            return false;
+        }
+
         $tei = Export::getTei($paper);
         $openaire = Export::getOpenaire($paper);
         $dc = Export::getDc($paper);
