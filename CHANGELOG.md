@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ###Added
+- export to Json: include article's citations.
 - Profile photo storage management via uuid.
 - Script to generate user's uuids.
 - Include UUIDs when saving accounts
