@@ -1323,6 +1323,9 @@ class Episciences_Paper
         $sVolume = null;
         $sSection = null;
 
+        $citations = Episciences_Paper_CitationsManager::getCitationByDocId($this->getDocid());
+        $citedBy = !empty($citations) ? $citations : null;
+
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
             if ($oVolume) {
@@ -1405,6 +1408,8 @@ class Episciences_Paper
                             'name' => $journal->getName(),
                             'url' => $journal->getUrl(),
                         ],
+
+                        'cited_by' => $citedBy,
                         'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
 
                         'metrics' => [
