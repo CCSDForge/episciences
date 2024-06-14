@@ -9,6 +9,8 @@ build:
 
 up:
 	$(DOCKER_COMPOSE) up -d
+	@echo "PhpMyAdmin: http://localhost:8001/"
+	@echo "Apache Solr: http://localhost:8983/solr"
 
 down:
 	$(DOCKER_COMPOSE) down --remove-orphans
