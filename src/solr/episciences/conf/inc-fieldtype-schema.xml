@@ -3,7 +3,7 @@
 CCSD
 Managed with zookeeper
 # bin/solr zk upconfig -n episciences -d /path/to/configset
-reload colection
+reload collection
 FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upload-a-configuration-set
 /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
 -->
