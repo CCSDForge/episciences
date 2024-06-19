@@ -30,6 +30,8 @@ class Episciences_Volume
 
     const VOLUME_YEAR = 'year';
 
+    const VOLUME_NUM = 'num';
+
     protected $_db = null;
     private $_vid;
     private $_rvid;
@@ -45,6 +47,7 @@ class Episciences_Volume
 
     private ?string $_vol_type = null;
     private ?int $_vol_year = null;
+    private ?string $_vol_num = null;
     private int $nbOfPapersInVolume = 0;
     private ?array $titles;
     private ?array $descriptions;
@@ -676,7 +679,6 @@ class Episciences_Volume
             self::SETTING_SPECIAL_ISSUE => $data['special_issue'],
             self::SETTING_ACCESS_CODE => $this->getSetting('access_code'),
             self::VOLUME_IS_PROCEEDING => $data['is_proceeding'],
-            self::VOLUME_YEAR => $data['year'],
             self::VOLUME_CONFERENCE_NAME => $data['conference_name'],
             self::VOLUME_CONFERENCE_THEME => $data['conference_theme'],
             self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'],
@@ -729,6 +731,7 @@ class Episciences_Volume
         }
 
         $this->setVol_year($data['year']);
+        $this->setVol_num($data['num']);
         $this->setBib_reference($post['bib_reference']);
 
         if ($data['special_issue'] === "1" && $data['is_proceeding'] === "1") {
@@ -772,7 +775,7 @@ class Episciences_Volume
             // Mise à jour des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid, true);
 
-            if ($data['is_proceeding'] === '1'){
+            if ($data['is_proceeding'] === '1') {
                 $volumeProceeding = new Episciences_VolumeProceeding();
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding,$vid,true);
             }
@@ -833,7 +836,7 @@ class Episciences_Volume
         $values['descriptions'] = $this->preProcess($this->getDescriptions());
         $values['vol_type'] = $this->getVol_type();
         $values['vol_year'] = $this->getVol_year();
-
+        $values['vol_num'] = $this->getVol_num();
         Episciences_VolumesAndSectionsManager::dataProcess($values);
 
         try {
@@ -1259,9 +1262,6 @@ class Episciences_Volume
         return $this;
     }
 
-
-
-
     public function getVol_type()
     {
         return $this->_vol_type;
@@ -1269,9 +1269,21 @@ class Episciences_Volume
 
     public function setVol_type($volType): \Episciences_Volume
     {
-        $this->_vol_type = $volType;
+        $this->_vol_type = trim(strip_tags($volType));
         return $this;
     }
+
+    public function getVol_num()
+    {
+        return $this->_vol_num;
+    }
+
+    public function setVol_num($volNum): \Episciences_Volume
+    {
+        $this->_vol_num = trim(strip_tags($volNum));
+        return $this;
+    }
+
     /**
      * update a volume
      * @return int
@@ -1285,7 +1297,7 @@ class Episciences_Volume
         $data['descriptions'] = $this->preProcess($this->getDescriptions());
         $data['vol_type'] = $this->getVol_type();
         $data['vol_year'] = $this->getVol_year();
-
+        $data['vol_num'] = $this->getVol_num();
         Episciences_VolumesAndSectionsManager::dataProcess($data);
 
         try {
