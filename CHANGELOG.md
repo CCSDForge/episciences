@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Fixed
-- Do not filter out comments with no message when getting the suggestions form the comment manager.
+- #511 Do not filter out comments with no message when getting the suggestions form the comment manager.
 
 ## Unreleased 
 ### Fixed
