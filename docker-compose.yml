@@ -1,4 +1,32 @@
 services:
+
+
+  httpd:
+    image: httpd:2.4-bookworm
+    container_name: httpd
+    build:
+      context: .
+      dockerfile: src/apache/Dockerfile
+    restart: always
+    volumes:
+      - .:/var/www
+      - ./data:/var/www/data
+      - ./cache:/var/www/cache
+      - ./logs:/var/www/logs
+    ports:
+      - 8888:80
+
+  php-fpm:
+    container_name: php-fpm
+    build:
+      context: .
+      dockerfile: src/php-fpm/Dockerfile
+    restart: always
+    volumes:
+      - .:/var/www
+    ports:
+      - 9001:9000
+
   solr:
     image: solr:8
     container_name: solr
@@ -125,3 +153,4 @@ volumes:
   mysql-db-episciences:
   mysql-db-indexing:
   mysql-db-auth:
+
