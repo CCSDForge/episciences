@@ -291,6 +291,7 @@ return [
     'Document non trouvé' => 'Document non found',
     'Échec de la mise à jour' => 'Update failed',
     'Année du volume'=> 'Year of the volume',
+    'Numéro du volume' => "Volume Number",
     "Volume de l'article" => "Volume of the paper",
     "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
     "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the paper (numbers only) [Replacement char for spaces]',

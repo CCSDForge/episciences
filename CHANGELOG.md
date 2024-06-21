@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#509](https://github.com/CCSDForge/episciences/issues/509): Pixelated photos (Editorial Staff members page)
 
 ## Unreleased
-###Added
+### Added
 - export to Json: include article's citations.
 - Profile photo storage management via uuid.
 - Script to generate user's uuids.
@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
 - Functionality for migrating news to the new sql news table
 - Toolbar tinymce have heading edition
+- New field in volume form (volume number)
 
 ### Changed
 - crossref export:
