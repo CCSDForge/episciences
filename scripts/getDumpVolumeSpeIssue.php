@@ -58,7 +58,7 @@ class getDumpVolumeSpeIssue extends JournalScript
         $myfile = fopen("/tmp/sqldumpSpecialIssue.sql", "wb+") or die("Unable to open file!");
         foreach($db->fetchAll($select) as $value){
             $selectVol =  $db->select()->from(["volume" => T_VOLUMES])->where('VID = ?',$value['VID']);
-            $strSQL .= "UPDATE VOLUME SET vol_type = 'special_issue' WHERE `VOLUME`.`VID` = " . $value['VID'].','."\n";
+            $strSQL .= "UPDATE VOLUME SET vol_type = 'special_issue' WHERE `VOLUME`.`VID` = " . $value['VID'].';'."\n";
         }
         fwrite($myfile,$strSQL);
         fclose($myfile);

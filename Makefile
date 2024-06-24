@@ -1,7 +1,7 @@
 DOCKER_COMPOSE = docker-compose
 SOLR_CONTAINER_NAME := solr
 COLLECTION_CONFIG := /opt/configsets/episciences
-
+PHP_VERSION := 8.1
 .PHONY: build up down collection index clean
 
 build:
@@ -9,6 +9,7 @@ build:
 
 up:
 	$(DOCKER_COMPOSE) up -d
+	@echo "Apache: http://localhost:8888/"
 	@echo "PhpMyAdmin: http://localhost:8001/"
 	@echo "Apache Solr: http://localhost:8983/solr"
 
@@ -23,7 +24,7 @@ collection: up
 
 index: collection
 	@echo "Indexing all content"
-	php8.1 scripts/solr/solrJob.php -D % -v -d
+	php$(PHP_VERSION) scripts/solr/solrJob.php -D % -v -d
 
 clean: down
 	#docker stop $(docker ps -a -q)
