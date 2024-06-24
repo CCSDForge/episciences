@@ -1,14 +1,10 @@
 <?php
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
-if (
-    $paper->isRevisionRequested() &&
-    $paper->_revisionDeadline
-) :
+if ($paper->isRevisionRequested()) :
     ?>
     <p>
-        <small><?= $this->translate("Version révisée attendue avant le :") ?>
-            <strong id="revision-deadline"><?= $this->Date($paper->_revisionDeadline) ?></strong></small>
+        <small><?= $this->translate("Version révisée attendue avant le :") ?><strong><span style="margin-left: 5px;" id="revision-deadline"><?= $paper->_revisionDeadline ? $this->Date($paper->_revisionDeadline) . '</span>' : '<span class="fa-solid fa-question fa-fade" style="margin-left: 5px;"></span>' ?></strong></small>
         <?php
         if (
             Zend_Controller_Front::getInstance()->getRequest()->getControllerName() === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER &&
@@ -18,8 +14,7 @@ if (
                 $paper->isEditor(Episciences_Auth::getUid())
             )
         ) : ?>
-            <button class="btn btn-xs btn-default"
-                    onclick="getRevisionDeadlineForm(this, <?= $paper->getDocid() ?>, <?= $this->currentDemand['PCID'] ?>)">
+            <button class="btn btn-xs btn-default" onclick="getRevisionDeadlineForm(this, <?= $paper->getDocid() ?>, <?= $this->currentDemand['PCID'] ?>)">
                 <span class="fa-solid fa-calendar-days fa-xs" style="margin-right: 5px"></span>
                 <?= $this->translate('Modifier') ?>
             </button>
