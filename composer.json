@@ -43,7 +43,7 @@
     "ezyang/htmlpurifier": "^4.14",
     "cottagelabs/coar-notifications": "^0.9.70",
     "smalot/pdfparser": "^2.2",
-    "geoip2/geoip2": "~2.0",
+    "geoip2/geoip2": "~3.0",
     "laminas/laminas-feed": "^2.18",
     "whitecube/lingua": "^1.1",
     "defuse/php-encryption": "^2.3",
