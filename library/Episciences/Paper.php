@@ -164,7 +164,7 @@ class Episciences_Paper
         self::STATUS_SUBMITTED => 'soumis',
         self::STATUS_OK_FOR_REVIEWING => 'en attente de relecture',
         self::STATUS_BEING_REVIEWED => 'en cours de relecture',
-        self::STATUS_REVIEWED => 'relu',
+        self::STATUS_REVIEWED => 'relu en attente de décision éditoriale',
         self::STATUS_ACCEPTED => 'accepté',
         self::STATUS_PUBLISHED => 'publié',
         self::STATUS_REFUSED => 'refusé',
