@@ -14,16 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-### Fixed
 
-## Unreleased 
+## Unreleased
+### Changed
 ### Fixed
-- [#511](https://github.com/CCSDForge/episciences/issues/511):Do not filter out comments with no message when getting the suggestions form the comment manager.
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
-- Fixed missing spaces with volumes and section on references for arXiv
-- [#508](https://github.com/CCSDForge/episciences/issues/508): Submission notification parameter: Only the selected roles will receive the notification, If no option is checked, the notification is sent to everyone.
-- [#509](https://github.com/CCSDForge/episciences/issues/509): Pixelated photos (Editorial Staff members page)
 
 ## Unreleased
 ### Added
@@ -37,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added in zbjat export bibliographical references from bibtex import
 - Added button to redirect on epi citation without extract pdf
 - [#418](https://github.com/CCSDForge/episciences/issues/418) Enable edition of relationship and type for the linked data
-- Public representation of a document in JSON format (@see /json?v=2) 
+- Public representation of a document in JSON format (@see /json?v=2)
 - [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
 - [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
 - Functionality for migrating news to the new sql news table
@@ -45,11 +40,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New field in volume form (volume number)
 
 ### Changed
+- bump tinymce to latest version (7.2.0)
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
   - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
-
+- 
+## v1.0.44.2 - 2024-06-24
+### Changed
+- [#510](https://github.com/CCSDForge/episciences/issues/510): update the label 'Reviewed' to 'Reviewed pending editorial decision';
+## v1.0.44.2 - 2024-06-24
+### Changed
+- [512](https://github.com/CCSDForge/episciences/issues/512): is now possible to introduce a revision deadline at a later date if the publisher has not indicated a revision deadline (optional) when sending the request for revision.
+### Fixed
+- [#511](https://github.com/CCSDForge/episciences/issues/511) Do not filter out comments with no message when getting the suggestions form the comment manager.
+- Do not filter out comments with no message when getting the suggestions form the comment manager.
+- [#507](https://github.com/CCSDForge/episciences/issues/507): Can't change URLs / HTML in email templates
+- [#511](https://github.com/CCSDForge/episciences/issues/511):Do not filter out comments with no message when getting the suggestions form the comment manager.
+- [#508](https://github.com/CCSDForge/episciences/issues/508): Submission notification parameter: Only the selected roles will receive the notification, If no option is checked, the notification is sent to everyone.
+- [#509](https://github.com/CCSDForge/episciences/issues/509): Pixelated photos (Editorial Staff members page)
+- Fixed missing spaces with volumes and section on references for arXiv
 
 ## v1.0.44.1 - 2024-05-21
 ### Fixed "Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given."
