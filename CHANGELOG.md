@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Changed
+- [512](https://github.com/CCSDForge/episciences/issues/512): is now possible to introduce a revision deadline at a later date if the publisher has not indicated a revision deadline (optional) when sending the request for revision.
 ### Fixed
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
 
