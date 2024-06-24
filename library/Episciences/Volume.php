@@ -1269,7 +1269,10 @@ class Episciences_Volume
 
     public function setVol_type($volType): \Episciences_Volume
     {
-        $this->_vol_type = trim(strip_tags($volType));
+        if($volType){
+            $this->_vol_type = trim(strip_tags($volType));
+        }
+
         return $this;
     }
 
