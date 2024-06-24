@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New field in volume form (volume number)
 
 ### Changed
+- bump tinymce to latest version (7.2.0)
 - crossref export:
     - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
     - ROR added to the schema (did not work on the previous version)
