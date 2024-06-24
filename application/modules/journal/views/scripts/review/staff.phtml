@@ -15,7 +15,7 @@
                     <div class="col-sm-2">
                         <?php if ($this->isDisplayPhotos !== 0) : ?>
                             <img style="width: 128px"
-                                 src="/user/photo/uid/<?= $this->escape($member->getUid()) ?>/size/normal<?php
+                                 src="/user/photo/uid/<?= $this->escape($member->getUid()) ?>/size/large<?php
                                  if (Episciences_Auth::getUid() === $member->getUid()) {
                                      echo '?v=' . Episciences_Auth::getPhotoVersion();
                                  } ?>"

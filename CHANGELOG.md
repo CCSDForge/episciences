@@ -14,12 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## v1.0.44.2 - 2024-05-21
+### Changed
+- [512](https://github.com/CCSDForge/episciences/issues/512): is now possible to introduce a revision deadline at a later date if the publisher has not indicated a revision deadline (optional) when sending the request for revision.
 ### Fixed
-- #511 Do not filter out comments with no message when getting the suggestions form the comment manager.
-
-## Unreleased 
-### Fixed
+- [#511](https://github.com/CCSDForge/episciences/issues/511) Do not filter out comments with no message when getting the suggestions form the comment manager.
+- Do not filter out comments with no message when getting the suggestions form the comment manager.
+- [#507](https://github.com/CCSDForge/episciences/issues/507): Can't change URLs / HTML in email templates
+- [#511](https://github.com/CCSDForge/episciences/issues/511):Do not filter out comments with no message when getting the suggestions form the comment manager.
+- [#508](https://github.com/CCSDForge/episciences/issues/508): Submission notification parameter: Only the selected roles will receive the notification, If no option is checked, the notification is sent to everyone.
+- [#509](https://github.com/CCSDForge/episciences/issues/509): Pixelated photos (Editorial Staff members page)
 - Fixed missing spaces with volumes and section on references for arXiv
 
 ## v1.0.44.1 - 2024-05-21

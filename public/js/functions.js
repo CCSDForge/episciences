@@ -26,7 +26,7 @@ $(document).ready(function () {
 
     // fix for making TinyMCE dialog boxes work with bootstrap modals
     $(document).on('focusin', function (e) {
-        if ($(e.target).closest(".mce-window").length) {
+        if ($(e.target).closest(".tox-dialog").length) { //https://stackoverflow.com/questions/18111582/tinymce-4-links-plugin-modal-in-not-editable
             e.stopImmediatePropagation();
         }
     });
