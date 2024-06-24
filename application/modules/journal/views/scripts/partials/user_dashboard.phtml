@@ -39,7 +39,7 @@ if (isset($this->ce)) {
 <?php if ($count) : ?>
     <?php $params['status'] = [Episciences_Paper::STATUS_REVIEWED]; ?>
     <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
-        <?= $this->translate(($count === 1) ? 'article relu' : 'articles relus') ?>
+        <?= $this->translate(($count === 1) ? 'article relu en attente de décision éditoriale' : 'articles relus en attente de décision éditoriale') ?>
     </a><br/>
 <?php endif; ?>
 

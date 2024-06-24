@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
-- [512](https://github.com/CCSDForge/episciences/issues/512): is now possible to introduce a revision deadline at a later date if the publisher has not indicated a revision deadline (optional) when sending the request for revision.
 ### Fixed
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
 
@@ -43,11 +42,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - bump tinymce to latest version (7.2.0)
 - crossref export:
-    - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
-    - ROR added to the schema (did not work on the previous version)
+  - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
+  - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
-## Unreleased - Prod
+- 
+## v1.0.44.2 - 2024-06-24
+### Changed
+- [#510](https://github.com/CCSDForge/episciences/issues/510): update the label 'Reviewed' to 'Reviewed pending editorial decision';
+## v1.0.44.2 - 2024-06-24
+### Changed
+- [512](https://github.com/CCSDForge/episciences/issues/512): is now possible to introduce a revision deadline at a later date if the publisher has not indicated a revision deadline (optional) when sending the request for revision.
 ### Fixed
+- [#511](https://github.com/CCSDForge/episciences/issues/511) Do not filter out comments with no message when getting the suggestions form the comment manager.
 - Do not filter out comments with no message when getting the suggestions form the comment manager.
 - [#507](https://github.com/CCSDForge/episciences/issues/507): Can't change URLs / HTML in email templates
 - [#511](https://github.com/CCSDForge/episciences/issues/511):Do not filter out comments with no message when getting the suggestions form the comment manager.
