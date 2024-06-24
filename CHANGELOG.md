@@ -14,16 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
 ### Fixed
-
-## Unreleased 
-### Fixed
-- [#511](https://github.com/CCSDForge/episciences/issues/511):Do not filter out comments with no message when getting the suggestions form the comment manager.
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
-- Fixed missing spaces with volumes and section on references for arXiv
-- [#508](https://github.com/CCSDForge/episciences/issues/508): Submission notification parameter: Only the selected roles will receive the notification, If no option is checked, the notification is sent to everyone.
-- [#509](https://github.com/CCSDForge/episciences/issues/509): Pixelated photos (Editorial Staff members page)
 
 ## Unreleased
 ### Added
@@ -37,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added in zbjat export bibliographical references from bibtex import
 - Added button to redirect on epi citation without extract pdf
 - [#418](https://github.com/CCSDForge/episciences/issues/418) Enable edition of relationship and type for the linked data
-- Public representation of a document in JSON format (@see /json?v=2) 
+- Public representation of a document in JSON format (@see /json?v=2)
 - [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
 - [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
 - Functionality for migrating news to the new sql news table
@@ -46,11 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - crossref export:
-  - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
-  - ROR added to the schema (did not work on the previous version)
+    - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
+    - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
-
-
 ## v1.0.44.1 - 2024-05-21
 ### Fixed "Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given."
 
