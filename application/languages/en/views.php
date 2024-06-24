@@ -159,7 +159,7 @@ return [
     // Paramètres de la revue
     'Un préfixe DOI commence toujours par "10." et se poursuit par un nombre.' => 'A DOI prefix always starts with "10." and continues with a number.',
     'Enregistrer les paramètres' => 'Save settings',
-    'Le DOI de votre revue' => "Your journal's DOI",
+    'Le DOI de votre revue' => "Journal's DOI",
     'À renseigner si la revue possède un DOI' => 'To be filled if the journal has a DOI',
     "Paramètres généraux" => 'Global parameters',
     "Langues de la revue" => 'Journal languages',
@@ -182,9 +182,11 @@ return [
     "L'auteur peut choisir la rubrique" => "Contributors can choose a section",
     "L'auteur doit choisir la rubrique" => "Contributors have to choose a section",
     'Page de contact de la revue' => 'Journal contact URL',
+    'Page de la notice dans le catalogue' => 'Catalogue notice URL',
     'Courriel de contact de la revue' => 'Journal contact email',
     'Page de contact du support technique' => 'Journal technical contact URL',
     'Courriel de contact du support technique' => 'Journal technical contact email',
+    "Nom de l'éditeur de la revue" => "Journal's publisher name",
 
 
     //Assignation automatique des rédacteurs,
