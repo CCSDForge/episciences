@@ -15,6 +15,9 @@ services:
       - ./logs:/var/www/logs
     ports:
       - 8888:80
+#    command:
+      #bash -c "service apache2 reload && tail -F anything"
+
 
   php-fpm:
     container_name: php-fpm
