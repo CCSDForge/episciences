@@ -43,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
     - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
+## Unreleased - Prod
+### Fixed
+- Do not filter out comments with no message when getting the suggestions form the comment manager.
+- [#507](https://github.com/CCSDForge/episciences/issues/507): Can't change URLs / HTML in email templates
+- [#511](https://github.com/CCSDForge/episciences/issues/511):Do not filter out comments with no message when getting the suggestions form the comment manager.
+- [#508](https://github.com/CCSDForge/episciences/issues/508): Submission notification parameter: Only the selected roles will receive the notification, If no option is checked, the notification is sent to everyone.
+- [#509](https://github.com/CCSDForge/episciences/issues/509): Pixelated photos (Editorial Staff members page)
+- Fixed missing spaces with volumes and section on references for arXiv
+
 ## v1.0.44.1 - 2024-05-21
 ### Fixed "Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given."
 

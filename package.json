@@ -1,16 +1,16 @@
 {
   "devDependencies": {
-    "@babel/core": "^7.24.6",
-    "@babel/preset-env": "^7.24.6",
+    "@babel/core": "^7.24.7",
+    "@babel/preset-env": "^7.24.7",
     "@symfony/webpack-encore": "^4.6.1",
     "compass-mixins": "^0.12.12",
     "resolve-url-loader": "^5.0.0",
-    "sass": "^1.77.4",
+    "sass": "^1.77.6",
     "sass-loader": "^14.2.1",
     "semver": "^7.6.2",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.4.5",
-    "webpack": "^5.91.0",
+    "typescript": "^5.5.2",
+    "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4",
     "webpack-notifier": "^1.15.0",
     "yarn-upgrade-all": "^0.7.2"
