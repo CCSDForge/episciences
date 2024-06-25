@@ -1323,8 +1323,14 @@ class Episciences_Paper
         $sVolume = null;
         $sSection = null;
 
-        $citations = Episciences_Paper_CitationsManager::getCitationByDocId($this->getDocid());
-        $citedBy = !empty($citations) ? $citations : null;
+        $citedBy = null;
+
+        if ($this->getDocid()) {
+            $citations = Episciences_Paper_CitationsManager::getCitationByDocId($this->getDocid());
+            if (!empty($citations)) {
+                $citedBy = $citations;
+            }
+        }
 
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
