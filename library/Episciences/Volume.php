@@ -616,7 +616,7 @@ class Episciences_Volume
     public function toPublicArray(): array
     {
         $res['vid'] = $this->getVid();
-        $res['name'] = $this->getName('en');
+        $res['name'] = $this->getName();
         return $res;
     }
 
@@ -979,7 +979,7 @@ class Episciences_Volume
     }
 
     /**
-     * @param null $lang
+     * @param string|null $lang
      * @param bool $forceResult
      * @return string
      */
