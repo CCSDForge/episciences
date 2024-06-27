@@ -99,7 +99,7 @@ class Episciences_Paper_DocumentBackup
     public function setPath(string $rvcode, string $path = null): \Episciences_Paper_DocumentBackup
     {
         if (!$path) {
-            $this->path = realpath(APPLICATION_PATH . '/../data/' . $rvcode . '/' . 'files/' . $this->getDocid() . '/' . self::REVIEW_DOCUMENT_DIR_NAME . '/');
+            $this->path = APPLICATION_PATH . '/../data/' . $rvcode . '/' . 'files/' . $this->getDocid() . '/' . self::REVIEW_DOCUMENT_DIR_NAME . '/';
         } else {
             $this->path = $path;
         }

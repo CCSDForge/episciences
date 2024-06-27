@@ -1,5 +1,6 @@
 <?php
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 
 
 class DefaultController extends Zend_Controller_Action
@@ -281,12 +282,12 @@ class DefaultController extends Zend_Controller_Action
      * @param Episciences_Paper $paper
      * @param string $url
      * @return string|null
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws GuzzleException
      */
     protected function getMainDocumentContent(Episciences_Paper $paper, string $url): ?string
     {
         $mainDocumentContent = '';
-        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid());
+        $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid(), \Episciences_ReviewsManager::findByRvid($paper->getRvid())->getCode());
         $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
 
         $clientHeaders = [
@@ -307,6 +308,8 @@ class DefaultController extends Zend_Controller_Action
             $res = $client->get($url);
             $headers = $res->getHeaders();
             $mainDocumentContent = $res->getBody()->getContents();
+
+            $headers = array_change_key_case($headers, CASE_LOWER);
 
             if (isset($headers['content-length'])){
                 $contentLength = is_array($headers['content-length']) ? $headers['content-length'][0] : $headers['content-length'];
@@ -335,13 +338,13 @@ class DefaultController extends Zend_Controller_Action
         }
 
         Episciences_Tools::resetMbstringEncoding();
-
         if (
             $saveCopy &&
             !$hasDocumentBackupFile &&
             !empty($mainDocumentContent)
         ) {
             $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
+
         }
 
 
