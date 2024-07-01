@@ -51,9 +51,6 @@ class Episciences_Volume
     private int $nbOfPapersInVolume = 0;
     private ?array $titles;
     private ?array $descriptions;
-
-
-
     /**
      * Episciences_Volume constructor.
      * @param array|null $options
@@ -555,7 +552,9 @@ class Episciences_Volume
                 'title' => $data['titles'],
                 'content' => $data['CONTENT'],
                 'VID' => $data['VID'],
-                'FILE' => $data['FILE']
+                'FILE' => $data['FILE'],
+                'date_creation' => $data['date_creation'],
+                'date_updated' => $data['date_updated']
             ];
 
             Episciences_VolumesAndSectionsManager::dataProcess($values, 'decode', ['title', 'content']);
@@ -932,6 +931,7 @@ class Episciences_Volume
                 }
 
                 $metadata = new Episciences_Volume_Metadata($values);
+                $metadata->getDateCreation();
 
                 $saveResult = $metadata->save();
 
