@@ -68,6 +68,8 @@ return [
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexation de la revue",
+
 
 
 

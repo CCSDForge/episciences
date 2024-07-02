@@ -26,6 +26,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_EDITORIAL_WORKFLOW = 'EditorialWorkflow';
     const PAGE_PREPARE_SUBMISSION= 'PrepareSubmission';
     const PAGE_ABOUT = 'about';
+    const PAGE_JOURNAL_INDEXING= 'journalIndexing';
     const PAGE_EDITORIAL_BOARD = 'editorialBoard';
     const PAGE_TECHNICAL_BOARD = 'technicalBoard';
     const PAGE_SCIENTIFIC_ADVISORY_BOARD = 'scientificAdvisoryBoard';
