@@ -931,7 +931,6 @@ class Episciences_Volume
                 }
 
                 $metadata = new Episciences_Volume_Metadata($values);
-                $metadata->getDateCreation();
 
                 $saveResult = $metadata->save();
 
