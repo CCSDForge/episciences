@@ -209,4 +209,24 @@ return [
 
     "Veuillez selectionner une relation pour la donnée" => "Please choose a relationship for the data",
     "Veuillez saisir tous les champs du formulaire" => "Please fill in all the fields on the form",
+
+    // Roles
+
+    'guest' => 'Guest',
+    'member' => 'Member',
+    'editorial_board' => 'Editorial board',
+    'technical_board' => 'Technical board',
+    'scientific_advisory_board' => 'Scientific advisory board',
+    'former_member' => 'Former member',
+    'coauthor' => 'Coauthor',
+    'webmaster' => 'Webmaster',
+    'secretary' => 'Editorial secretary',
+    'reviewer' => 'Reviewer',
+    'editor' => 'Editor',
+    'administrator' => 'Administrator',
+    'chief_editor' => 'Editor in Chief',
+    'guest_editor' => 'Guest editor',
+    'guest_editors' => 'Guest editors',
+    'epiadmin' => 'Root',
+    'copyeditor' => 'Copy editor',
 ];
