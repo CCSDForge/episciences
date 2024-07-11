@@ -1305,6 +1305,16 @@ return [
     'administratepaper-acceptedaskauhorfinalversion' => "Accepted article - ask author's final version",
     'administratepaper-acceptedaskauthorvalidation' => "Accepted article - ask author's validation",
     "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission." => "You have been redirected because you declared a conflict of interest with this submission.",
+    'browse-accepted-docs' => 'Browse accepted articles to be published',
+    'coi-report' => "Report a conflict Of Interest",
+    'export-crossref' => 'Export Crossref',
+    'export-doaj' => 'Export DOAJ',
+    'export-jsonv2' => 'Export JSON',
+    'stats-index' => 'See statistics',
+    'export-zbjats' => 'Export ZbMATH Open',
+    'export-openaire' => 'Export OpenAIRE',
+    'export-volumesdoaj' => 'Export the volume to DOAJ format',
+    'paper-addaffiliationsauthor' => 'Add an affiliation to an author',
 
     // demande de revision
     'Optionnelle' => 'Optional',
@@ -1982,6 +1992,9 @@ return [
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
     // datasets
+    'administratelinkeddata-addld' => 'Add a dataset, publication or software link',
+    'administratelinkeddata-removeld' => 'Remove a dataset, publication or software link',
+    'administratelinkeddata-setnewinfoldAction' => 'Edit a dataset, publication or software link',
     'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',
     'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Software',

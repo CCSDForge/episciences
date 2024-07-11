@@ -46,6 +46,20 @@ class Episciences_Acl extends Ccsd_Acl
 
     /** @var array : see Episciences_User::Permissions */
     public const TYPE_OF_RESOURCES_NOT_TO_BE_DISPLAYED = [
+        'feed-rss',
+        'user-dashboard',
+        'user-change_account_email',
+        'feed-atom',
+        'feed-index',
+        'file-oafiles',
+        'user-reset_api_password',
+        'hal-bibfeed',
+        'export-json',
+        'comments-addcomment',
+        'api-openaire-metrics',
+        'api-journals',
+        'api-ccsd-metrics',
+        'administratelinkeddata-ajaxgetldform',
         'import-index', // start root actions
         'administratepaper-updatehal', // end of root actions
         'api-merge', // ----- start portal actions

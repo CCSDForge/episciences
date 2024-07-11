@@ -260,6 +260,19 @@ return [
     'coi-delete' => "Supprimer un conflit d'intérêt",
     'administratepaper-acceptedaskauhorfinalversion' => "Article accepté - demander à l'auteur la version finale",
     'administratepaper-acceptedaskauthorvalidation' => "Article accepté - demander à l'auteur la validation de la mise en forme",
+    'administratelinkeddata-addld' => 'Ajouter un jeu de données ou lien de publication',
+    'administratelinkeddata-removeld' => 'Supprimer un jeu de données ou lien de publication',
+    'administratelinkeddata-setnewinfoldAction' => 'Editer un jeu de données ou lien de publication',
+    'browse-accepted-docs' => 'Consulter les articles acceptés en attente de publication',
+    'coi-report' => "Signaler un conflit d'intérêt",
+    'export-crossref' => 'Export Crossref',
+    'export-doaj' => 'Export DOAJ',
+    'export-jsonv2' => 'Export JSON',
+    'stats-index' => 'Voir les statistiques',
+    'export-zbjats' => 'Export ZbMATH Open',
+    'export-openaire' => 'Export OpenAIRE',
+    'export-volumesdoaj' => 'Exporter le volume au format DOAJ',
+    'paper-addaffiliationsauthor' => 'Ajouter une affiliation à un auteur',
 
     /**
      * DOI
