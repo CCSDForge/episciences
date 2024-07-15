@@ -96,6 +96,14 @@ function showList($li) {
         html += '<tr id="contact_' + user['uid'] + '">';
         html += '   <td>' + user['fullname'] + '</td>';
         html += '   <td class="grey">' + user['username'] + '</td>';
+        let roleArr = user['role'];
+        html += '<td>';
+        if (roleArr.length > 0){
+            roleArr.forEach((el) => {
+                if(el !== "member") html += '   <span class="label label-default role-'+el+'">' + translate(el) + '</span>'
+            });
+        }
+        html += '</td>'
         html += '   <td>' + user['mail'] + '</td>';
         html += '</tr>';
     }

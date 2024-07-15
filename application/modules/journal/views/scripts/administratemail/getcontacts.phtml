@@ -84,6 +84,21 @@
                 <tr id="contact_<?= $contact['uid'] ?>">
                     <td><?= $contact['screen_name'] ?></td>
                     <td class="grey"><?= $contact['username'] ?></td>
+                    <?php
+                    $rolesTranslated = [];
+
+                    foreach ($contact['role'] as $role) {
+                        if ($role !==  Episciences_Acl::ROLE_MEMBER){
+                            $rolesTranslated[$role] = $this->translate($role);
+                        }
+
+                    }
+                    asort($rolesTranslated);
+                    echo "<td>";
+                    foreach ($rolesTranslated as $untranslatedRole => $translatedRole): ?>
+                        <span class="label label-default role-<?= $untranslatedRole ?>" ><?= $translatedRole ?></span>
+                    <?php endforeach; ?>
+                    <?php echo "</td>"; ?>
                     <td><?= $contact['mail'] ?></td>
                 </tr>
             <?php endforeach; ?>

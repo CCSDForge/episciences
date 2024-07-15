@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
   - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
-- 
+- [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
 ## v1.0.44.2 - 2024-06-24
 ### Changed
 - [#510](https://github.com/CCSDForge/episciences/issues/510): update the label 'Reviewed' to 'Reviewed pending editorial decision';
