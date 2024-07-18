@@ -1266,10 +1266,12 @@ class Episciences_Volume
         return $this->_vol_type;
     }
 
-    public function setVol_type($volType): \Episciences_Volume
+    public function setVol_type(?string $volType): \Episciences_Volume
     {
-        if($volType){
+        if (!is_null($volType)) {
             $this->_vol_type = trim(strip_tags($volType));
+        } else {
+            $this->_vol_type = null;
         }
 
         return $this;
