@@ -2668,12 +2668,14 @@ class Episciences_PapersManager
             }
 
         } else {
-            $record = $response['record'];
+            $record = $response['record'] ?? '';
             $enrichment = $response['enrichment'] ?? [];
 
         }
 
-        $record = preg_replace('#xmlns="(.*)"#', '', $record);
+        if($record !== ''){
+            $record = preg_replace('#xmlns="(.*)"#', '', $record);
+        }
 
         if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
             $record = Episciences_Repositories_Common::checkAndCleanRecord($record);
@@ -3023,13 +3025,6 @@ class Episciences_PapersManager
         ]));
 
         return self::addHiddenDocIdElement($form, $prefix, $default['id']);
-
-
-        if (!empty($default['coAuthor'])) {
-            self::getCoAuthorsForm($default['coAuthor'], $form);
-        }
-        return $form;
-
     }
 
     /**
