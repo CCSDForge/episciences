@@ -1961,7 +1961,7 @@ class Episciences_Submit
             $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
         }
 
-        $currentType = str_replace(' ', '', $currentType);
+        $currentType = str_replace(array(' ', 'journalarticle'), array('', 'article'), $currentType);
 
         if ($currentType === Episciences_Paper::TEXT_TYPE_TITLE) {
             $currentType = Episciences_Paper::DEFAULT_TYPE_TITLE;
