@@ -29,6 +29,7 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
         <field name="doc_openaire" type="string" indexed="false" stored="true" multiValued="false"/>
         <field name="doc_tei" type="string" indexed="false" stored="true" multiValued="false"/>
         <field name="doc_zbjats" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="doc_csl" type="string" indexed="false" stored="true" multiValued="false"/>
 
         <!-- Permanent id across all document versions ; links to multiple docids -->
         <field name="paperid" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -198,10 +199,16 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
         <field name="author_fullname_s" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
         <field name="author_fullname_fs" type="string" indexed="true" stored="true" multiValued="true"
                required="false"/>
+
+        <field name="authorLastNameFirstNamePrefixed_fs" type="string" indexed="true" stored="true" multiValued="true"
+               required="false"/>
+
         <field name="author_fullname_t" type="text" indexed="true" stored="false" multiValued="true" required="false"/>
         <field name="author_fullname_autocomplete" type="text_autocomplete" indexed="true" stored="true"
                multiValued="true" required="false"/>
         <copyField source="author_fullname_s" dest="author_fullname_t"/>
+
+        <field name="authorFirstLetters_s" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
 
         <!-- Liste des auteurs par ordre d'apparition, en une seule chaine pour le tri par auteur -->
         <field name="author_fullname_sort" type="alphaOnlySort" indexed="true" stored="false" omitNorms="true"

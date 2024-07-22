@@ -1,16 +1,18 @@
 <?php
+
 use Episciences\Paper\Export;
 use Solarium\QueryType\Update\Query\Document;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+
 class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 {
 
+    const OTHERS_STRING_PREFIX = 'Others';
     public static string $coreName = 'episciences';
 
     public static int $maxDocsInBuffer = 25;
 
     private ArrayAdapter $cache;
-
 
 
     public function __construct(array $options)
@@ -149,23 +151,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return $docToIndex;
     }
 
-    /**
-     * @throws Zend_Db_Statement_Exception
-     */
-    protected function getDocidData($docId)
-    {
-
-        $papersManager = new Episciences_PapersManager();
-        $paper = $papersManager::get($docId);
-
-        if (!$paper) {
-            return null;
-        }
-
-        return $paper;
-
-    }
-
     private function getJournalMetadata(int $rvid): Episciences_Review
     {
         $cache = $this->getCache();
@@ -192,8 +177,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     {
         $this->cache = $cache;
     }
-
-    // Renvoie les données d'une revue ainsi que ses fichiers de traduction
 
     /**
      * @param $paperData
@@ -222,16 +205,32 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         }
     }
 
+    // Renvoie les données d'une revue ainsi que ses fichiers de traduction
+
     /**
-     * @param string $authors
+     * @param string $author
      * @param Document $ndx
      */
-    protected function indexOneAuthor(string $authors, Document $ndx): void
+    protected function indexOneAuthor(string $author, Document $ndx): void
     {
-        $authorsCleaned = self::cleanAuthorName($authors);
-        $ndx->addField('author_fullname_fs', $authorsCleaned);
+        $authorCleaned = self::cleanAuthorName($author);
+        $ndx->addField('author_fullname_fs', $authorCleaned);
 
-        $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($authors);
+        $authorFirstLetters = mb_strtoupper(mb_substr($authorCleaned, 0, 1));
+        $firstLetterRange = range('A', 'Z');
+        $authorFirstLetters = in_array($authorFirstLetters, $firstLetterRange)
+            ? $authorFirstLetters
+            : self::OTHERS_STRING_PREFIX;
+
+        $ndx->addField('authorFirstLetters_s', $authorFirstLetters);
+
+        $authorLastNameFirstNamePrefixed_fs = $authorFirstLetters == self::OTHERS_STRING_PREFIX
+            ? self::OTHERS_STRING_PREFIX . self::SOLR_FACET_SEPARATOR . $authorCleaned
+            : $authorCleaned;
+
+        $ndx->addField('authorLastNameFirstNamePrefixed_fs', $authorLastNameFirstNamePrefixed_fs);
+
+        $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
         $authorsFormattedCleaned = self::cleanAuthorName($authorsFormatted);
         $ndx->addField('author_fullname_s', $authorsFormattedCleaned);
     }
@@ -289,7 +288,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return trim($outputString);
     }
 
-
     private function indexTitles($titles, $docToIndex)
     {
 
@@ -303,7 +301,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         }
         return $this->addArrayOfMetaToDoc($titlesToIndex, null, $docToIndex);
     }
-
 
     private function indexAbstracts($abstracts, Document $docToIndex): Document
     {
@@ -437,6 +434,23 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
             }
         }
 
+
+    }
+
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function getDocidData($docId)
+    {
+
+        $papersManager = new Episciences_PapersManager();
+        $paper = $papersManager::get($docId);
+
+        if (!$paper) {
+            return null;
+        }
+
+        return $paper;
 
     }
 
