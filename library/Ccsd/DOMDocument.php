@@ -11,7 +11,7 @@ class Ccsd_DOMDocument extends DOMDocument
 	public function setDOMDocument(DOMDocument $domDocument)
 	{
 		$sourceReflection = new ReflectionObject($domDocument);
-		$destinationReflection = new ReflectionObject(self);
+		$destinationReflection = new ReflectionObject($this);
 		foreach ($sourceReflection->getProperties() as $sourceProperty) {
 			$sourceProperty->setAccessible(true);
 			$name = $sourceProperty->getName();

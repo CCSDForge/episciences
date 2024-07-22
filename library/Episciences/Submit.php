@@ -579,7 +579,7 @@ class Episciences_Submit
                     $subform->addElement('hidden', 'h_hasHook', ['value' => $defaults['hasHook']]);
                 }
 
-                if($paper->isTmp()){
+                if ($paper->isTmp()) {
 
                     //#git 259 : Leave the version field empty when submitting a new one (request: ask for the final version)
 
@@ -1035,6 +1035,9 @@ class Episciences_Submit
             try {
 
                 $enrichment = json_decode($data['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
+                if(isset($enrichment['type']) && $enrichment['type'] === Episciences_Paper::TEXT_TYPE_TITLE){
+                    $enrichment['type'] = Episciences_Paper::DEFAULT_TYPE_TITLE;
+                }
 
             } catch (Exception $e) {
                 trigger_error($e->getMessage());
@@ -1693,7 +1696,7 @@ class Episciences_Submit
                 $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhidId_s,researchData_s&version_i:' . $paper->getversion();
                 $response = $client->get($url);
                 $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
-                $allDatasets = $result['response']['docs'][array_key_first($result['response']['docs'])];
+                $allDatasets = $result['response']['docs'][array_key_first($result['response']['docs'])] ?? [];
                 return self::processDatasets($paper, $allDatasets);
             }
 
@@ -1955,20 +1958,25 @@ class Episciences_Submit
             $type = [$type];
         }
 
-        foreach ($type as $currentType) {
+        foreach ($type as $index =>$currentType) {
+
+            if ($currentType === Episciences_Paper::TEXT_TYPE_TITLE) {
+                $currentType = Episciences_Paper::DEFAULT_TYPE_TITLE;
+                $type[$index] = $currentType;
+            }
 
             if (str_contains($currentType, 'info:eu-repo/semantics/')) {
-                $processedType[Episciences_Paper::TITLE_TYPE] = str_replace('info:eu-repo/semantics/', '', $currentType);
+                $processedType[Episciences_Paper::TYPE_TYPE] = str_replace('info:eu-repo/semantics/', '', $currentType);
                 continue;
             }
 
             if (empty($processedType) && isset($type[Episciences_Paper::TITLE_TYPE_INDEX])) {
-                $processedType[Episciences_Paper::TITLE_TYPE] = $type[Episciences_Paper::TITLE_TYPE_INDEX];
+                $processedType[Episciences_Paper::TYPE_TYPE] = $type[Episciences_Paper::TITLE_TYPE_INDEX];
 
             }
 
             if (isset($type[Episciences_Paper::TYPE_TYPE_INDEX])) {
-                $processedType[Episciences_Paper::TYPE_TYPE] = $type[Episciences_Paper::TYPE_TYPE_INDEX];
+                $processedType[Episciences_Paper::TITLE_TYPE] = $type[Episciences_Paper::TYPE_TYPE_INDEX];
             }
 
             if (isset($type[Episciences_Paper::TYPE_SUBTYPE_INDEX])) {
@@ -1984,9 +1992,12 @@ class Episciences_Submit
     }
 
 
-    public static function processDatasets(Episciences_Paper|int $paper, array $allDatasets = []): int
+    public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
 
+        if (!$allDatasets){
+            $allDatasets = [];
+        }
 
         $current = $paper;
 
@@ -2010,7 +2021,7 @@ class Episciences_Submit
         foreach ($allDatasets as $datasets) {
 
             foreach ($datasets as $key => $value) {
-                if(Episciences_Paper_DatasetsManager::findByValue($docId,$value) !== null) {
+                if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
                     continue;
                 }
                 if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID) {

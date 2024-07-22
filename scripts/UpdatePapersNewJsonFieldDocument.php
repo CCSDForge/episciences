@@ -13,17 +13,28 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
         $this->setArgs(
             array_merge($this->getArgs(), [
                 'documentId|D=i' => "paper docid [Optional: all documents will be processed if the script is run without this parameter.]",
-                'buffer|b=i' => "Number of documents to update at the same time [default: buffer = 500]"
+                'buffer|b=i' => "Number of documents to update at the same time [default: buffer = 500]",
+                'updateRecord|u' => 'Update record',
             ]));
 
         parent::__construct();
     }
 
-    public function run()
+    /**
+     * @return void
+     * @throws Zend_Locale_Exception
+     * @throws Zend_Translate_Exception
+     */
+    public function run(): void
     {
         defineProtocol();
         defineSimpleConstants();
         defineSQLTableConstants();
+
+        if (!defined('CACHE_PATH_METADATA')) {
+            define('CACHE_PATH_METADATA', dirname(__DIR__) . '/cache/');
+        }
+
         // Initialize the application and database
         $this->initApp(false);
         $this->initDb();
@@ -99,6 +110,16 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 } catch (Zend_Db_Statement_Exception $e) {
                     $this->displayCritical($e->getMessage());
                     continue;
+                }
+
+
+                if ($this->hasParam('updateRecord') && !$currentPaper->isTmp()) {
+                    try {
+                        Episciences_PapersManager::updateRecordData($currentPaper);
+                    } catch (Exception $e) {
+                        $this->displayCritical($e->getMessage());
+                    }
+
                 }
 
                 $toJson = $currentPaper->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
