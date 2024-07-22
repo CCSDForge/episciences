@@ -1476,7 +1476,11 @@ class PaperController extends PaperDefaultController
         $tmpPaper->setRepoid(0);
         // update xml
         $xml = $paper->getRecord();
-        $tmpPaper->setRecord($xml);
+        try {
+            $tmpPaper->setRecord($xml);
+        } catch (DOMException|Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
         $tmpPaper->setConcept_identifier($paper->getConcept_identifier());
 
         // save tmp version
@@ -1933,7 +1937,11 @@ class PaperController extends PaperDefaultController
         $newPaper->setIdentifier($post[self::SEARCH_DOC_STR]['h_docId']);
         $newPaper->setVersion($currentVersion);
         $newPaper->setRepoid($post[self::SEARCH_DOC_STR]['h_repoId']);
-        $newPaper->setRecord($post['xml']);
+        try {
+            $newPaper->setRecord($post['xml']);
+        } catch (DOMException|Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
 
         // get sure this article is a new version (paper does not already exists)
         if ($newPaper->alreadyExists()) {
@@ -1964,7 +1972,7 @@ class PaperController extends PaperDefaultController
                     Episciences_Submit::enrichmentProcess($newPaper, $enrichment);
 
                 } catch (Exception $e) {
-                    error_log($e->getMessage());
+                    trigger_error($e->getMessage());
                 }
             }
 
@@ -1985,7 +1993,7 @@ class PaperController extends PaperDefaultController
             $author_comment->save(false, $commentUid);
 
             // save answer (new version)
-            $answerCommentType = !in_array($requestComment->getType(), Episciences_CommentsManager::$_copyEditingFinalVersionRequest) ?
+            $answerCommentType = !in_array($requestComment->getType(), Episciences_CommentsManager::$_copyEditingFinalVersionRequest, true) ?
                 Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION :
                 Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED;
 
@@ -2021,7 +2029,11 @@ class PaperController extends PaperDefaultController
                     }
                     $aid = $paper->unassign($reviewer->getUid(), Episciences_User_Assignment::ROLE_REVIEWER);
                     // log reviewer unassignment
-                    $paper->log(Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT, null, ['aid' => $aid, 'user' => $reviewer->toArray()]);
+                    try {
+                        $paper->log(Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT, null, ['aid' => $aid, 'user' => $reviewer->toArray()]);
+                    } catch (Zend_Db_Adapter_Exception $e) {
+                        trigger_error($e->getMessage());
+                    }
                 }
             }
 
