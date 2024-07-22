@@ -834,7 +834,7 @@ class Episciences_Paper
          *  l'identfiiant de cet article est renommé en "IDENTIFIER-REFUSED"
         */
 
-        if ($this->getStatus() === self::STATUS_REFUSED && false !== strpos($this->_identifier, "-REFUSED")) {
+        if ($this->getStatus() === self::STATUS_REFUSED && str_contains($this->_identifier, "-REFUSED")) {
             $this->setIdentifier(explode('-REFUSED', $this->_identifier)[0]);
         }
 
