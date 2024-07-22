@@ -746,9 +746,9 @@ class Episciences_Submit
      * @param $repoId
      * @param $id
      * @param int|null $version
-     * @param null | array $latestObsoleteDocId
+     * @param null $latestObsoleteDocId
      * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
-     * @param int|null $rvId
+     * @param int $rvId
      * @param bool $isEpiNotify
      * @return array
      * @throws Zend_Exception
@@ -1010,20 +1010,21 @@ class Episciences_Submit
     }
 
     /**
-     * @param $data
-     * @param null $paperId
-     * @param null $vid
-     * @param null $sid
+     * @param array $data
+     * @param int|null $paperId
+     * @param int|null $vid
+     * @param int|null $sid
      * @return array
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception|JsonException
+     * @throws Zend_Session_Exception
      */
 
-    public function saveDoc($data, $paperId = null, $vid = null, $sid = null): array
+    public function saveDoc(array $data, ?int $paperId = null, ?int $vid = null, ?int $sid = null): array
     {
 
         $isCoiEnabled = false;
@@ -1035,7 +1036,7 @@ class Episciences_Submit
             try {
 
                 $enrichment = json_decode($data['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
-                if(isset($enrichment['type']) && $enrichment['type'] === Episciences_Paper::TEXT_TYPE_TITLE){
+                if (isset($enrichment['type']) && $enrichment['type'] === Episciences_Paper::TEXT_TYPE_TITLE) {
                     $enrichment['type'] = Episciences_Paper::DEFAULT_TYPE_TITLE;
                 }
 
@@ -1071,9 +1072,8 @@ class Episciences_Submit
             'message' => ''
         ];
 
-        // Préparation du populate de l'article
-        $values = $this->buildValuesToPopulatePaper($data, $paperId, $vid, $sid);
 
+        $values = $this->buildValuesToPopulatePaper($data, $paperId, $vid, $sid);
 
         $paper = !Episciences_Repositories::isDataverse($values['REPOID']) ?
             new Episciences_Paper($values) :
@@ -1701,7 +1701,7 @@ class Episciences_Submit
             }
 
         } catch (GuzzleException|JsonException  $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
+            trigger_error($e->getMessage());
         }
 
         return 0;
@@ -1924,8 +1924,11 @@ class Episciences_Submit
                 ];
 
                 $insertedRows += Episciences_Paper_ProjectsManager::insert($data);
-            } elseif ($key === Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT && !empty($values) && !$paper->isPublished()) {
+            } elseif ($key === Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT) {
+
                 $paper->setType(self::processAndPrepareType($values));
+                $paper->forceType();
+
                 try {
                     if ($paper->save()) {
                         ++$insertedRows;
@@ -1933,59 +1936,39 @@ class Episciences_Submit
                 } catch (Zend_Db_Adapter_Exception $e) {
                     trigger_error($e->getMessage());
                 }
-
-
             }
         }
         return $insertedRows;
     }
 
     /**
-     * @param array | string | false $type
+     * @param string|array|null $type
      * @return array
      */
 
-    public static function processAndPrepareType($type): array
+    public static function processAndPrepareType(string|array|null $type = null): array
     {
 
-        if (!$type) {
+        if (empty($type)) {
             return [];
         }
 
         $processedType = [];
+        $type = !is_array($type) ? [$type] : $type;
+        $currentType = strtolower($type[array_key_first($type)]);
 
-        if (!is_array($type)) {
-            $type = [$type];
+        if (str_contains($currentType, 'info:eu-repo/semantics/')) {
+            $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
         }
 
-        foreach ($type as $index =>$currentType) {
+        $currentType = str_replace(' ', '', $currentType);
 
-            if ($currentType === Episciences_Paper::TEXT_TYPE_TITLE) {
-                $currentType = Episciences_Paper::DEFAULT_TYPE_TITLE;
-                $type[$index] = $currentType;
-            }
-
-            if (str_contains($currentType, 'info:eu-repo/semantics/')) {
-                $processedType[Episciences_Paper::TYPE_TYPE] = str_replace('info:eu-repo/semantics/', '', $currentType);
-                continue;
-            }
-
-            if (empty($processedType) && isset($type[Episciences_Paper::TITLE_TYPE_INDEX])) {
-                $processedType[Episciences_Paper::TYPE_TYPE] = $type[Episciences_Paper::TITLE_TYPE_INDEX];
-
-            }
-
-            if (isset($type[Episciences_Paper::TYPE_TYPE_INDEX])) {
-                $processedType[Episciences_Paper::TITLE_TYPE] = $type[Episciences_Paper::TYPE_TYPE_INDEX];
-            }
-
-            if (isset($type[Episciences_Paper::TYPE_SUBTYPE_INDEX])) {
-                $processedType[Episciences_Paper::TYPE_SUBTYPE] = $type[Episciences_Paper::TYPE_SUBTYPE_INDEX];
-            }
-
-            return $processedType;
-
+        if ($currentType === Episciences_Paper::TEXT_TYPE_TITLE) {
+            $currentType = Episciences_Paper::DEFAULT_TYPE_TITLE;
         }
+
+        $processedType[Episciences_Paper::TITLE_TYPE] = $currentType;
+
 
         return $processedType;
 
@@ -1995,7 +1978,7 @@ class Episciences_Submit
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
 
-        if (!$allDatasets){
+        if (!$allDatasets) {
             $allDatasets = [];
         }
 

@@ -238,6 +238,7 @@ class Episciences_Paper
     public const DATA_PAPER_TYPE = 'dataPaper';
     public const OTHER_TYPE = 'other';
     public const TMP_TYPE_TITLE = 'temporary version';
+
     public const TMP_TYPE = 'temporaryVersion';
 
     public const CONFERENCE_TYPE_TITLE = 'Conference papers';
@@ -835,7 +836,7 @@ class Episciences_Paper
         */
 
         if ($this->getStatus() === self::STATUS_REFUSED && str_contains($this->_identifier, "-REFUSED")) {
-            $this->setIdentifier(explode('-REFUSED', $this->_identifier)[0]);
+            $this->setIdentifier(str_replace('-REFUSED', '', $this->_identifier));
         }
 
         return $this->_identifier;
@@ -1068,6 +1069,7 @@ class Episciences_Paper
     /**
      * fetch article in given format
      * @param string $format
+     * @param int|null $version
      * @return string|false
      * @throws \Psr\Cache\InvalidArgumentException
      */
@@ -1256,12 +1258,10 @@ class Episciences_Paper
 
     public function setType(array $type = null): \Episciences_Paper
     {
-        if ($this->isTmp()) {
-            $this->_type = [self::TITLE_TYPE => self::TMP_TYPE_TITLE, self::TYPE_TYPE => self::TMP_TYPE];
-        } elseif (!empty($type)) {
+        if (!empty($type)) {
             $this->_type = $type;
         } else {
-            $this->_type = [self::TITLE_TYPE => self::DEFAULT_TYPE_TITLE, self::TYPE_TYPE => self::DEFAULT_TYPE_TITLE];
+            $this->_type = [self::TITLE_TYPE => self::DEFAULT_TYPE_TITLE];
         }
         return $this;
     }
@@ -1269,6 +1269,7 @@ class Episciences_Paper
     /**
      * @param string $key
      * @return string|null
+     * @throws Zend_Db_Statement_Exception
      */
 
     public function toJson(string $key = Episciences_Paper_XmlExportManager::PUBLIC_KEY): ?string
@@ -1341,11 +1342,6 @@ class Episciences_Paper
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
             if ($oVolume) {
-
-                if ($oVolume->isProceeding()) {
-                    $this->setType([self::TITLE_TYPE => self::CONFERENCE_TYPE_TITLE]);
-                }
-
                 $sVolume = [
                     'id' => $oVolume->getVid() ?: null,
                     'position' => $oVolume->getPosition(),
@@ -1503,10 +1499,6 @@ class Episciences_Paper
 
         $result = $serializer->serialize($document, 'json');
 
-//        if (!Episciences_Tools::isJson($result)) {
-//            throw new Exception(sprintf('Not valid JSON for document #%s', $this->getDocid()));
-//        }
-
         return str_replace(array('#', '%%ID', '%%VERSION'), array('value', $this->getIdentifier(), $this->getVersion()), $result);
     }
 
@@ -1541,6 +1533,7 @@ class Episciences_Paper
      * @param bool $isCurrentVersionIncluded
      * @param bool $includeTempVersions
      * @return array|null
+     * @throws Zend_Db_Statement_Exception
      */
     public function getPreviousVersions(bool $isCurrentVersionIncluded = false, bool $includeTempVersions = true): ?array
     {
@@ -4882,8 +4875,31 @@ class Episciences_Paper
 
     private function getJsonV2(): ?string
     {
-        return $this->toJson();
+        try {
+            return $this->toJson();
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+        return null;
     }
 
+    public function forceType(): self
+    {
+        if ($this->isPublished()) {
+            $type = $this->getType();
+            if (
+                empty($type) || (
+                    isset($type[self::TITLE_TYPE]) &&
+                    (in_array($type[self::TITLE_TYPE], self::PREPRINT_TYPES, true))
+                )) {
+                $this->setType([self::TITLE_TYPE => self::ARTICLE_TYPE_TITLE]);
+
+            }
+
+        }
+
+        return $this;
+
+    }
 
 }

@@ -2631,7 +2631,7 @@ class Episciences_PapersManager
 
         $result = self::getPaperParams($docId);
 
-        $identifier = $result['IDENTIFIER'];
+        $identifier = str_replace('-REFUSED', '',$result['IDENTIFIER']);
         $repoId = (int)$result['REPOID'];
         $version = (float)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];

@@ -113,10 +113,35 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 }
 
 
-                if ($this->hasParam('updateRecord') && !$currentPaper->isTmp()) {
+                if ($this->hasParam('updateRecord')) {
+
+                    if ($currentPaper->isTmp()) {
+
+                        try { // update only type
+                            $previousVersion = $currentPaper->getPreviousVersions(false, false);
+
+                            if (!empty($previousVersion)) {
+                                /** @var Episciences_Paper $latestRepoVersion */
+                                $latestRepoVersion = $previousVersion[array_key_first($previousVersion)];
+                                $latestType = $latestRepoVersion->getType();
+                                $currentPaper->setType($latestRepoVersion->isPublished() && $latestType[Episciences_Paper::TITLE_TYPE] === Episciences_Paper::ARTICLE_TYPE_TITLE ? Episciences_Paper::DEFAULT_TYPE_TITLE : $latestType);
+                                $currentPaper->save();
+                                continue;
+                            }
+
+                            $this->displayCritical('/!\ No Previous version');
+
+
+                        } catch (Zend_Db_Statement_Exception|Zend_Db_Adapter_Exception $e) {
+                            $this->displayCritical($e->getMessage());
+                        }
+
+                    }
+
                     try {
-                        Episciences_PapersManager::updateRecordData($currentPaper);
-                    } catch (Exception $e) {
+                        $affectedRows = Episciences_PapersManager::updateRecordData($currentPaper);
+                        $this->displayTrace(sprintf('Update metadata... > Affected rows: %s', $affectedRows), true);
+                    } catch (Exception|\GuzzleHttp\Exception\GuzzleException|\Psr\Cache\InvalidArgumentException $e) {
                         $this->displayCritical($e->getMessage());
                     }
 
