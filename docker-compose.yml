@@ -1,20 +1,20 @@
 services:
 
 
-  httpd:
-    image: httpd:2.4-bookworm
-    container_name: httpd
-    build:
-      context: .
-      dockerfile: src/apache/Dockerfile
-    restart: always
-    volumes:
-      - .:/var/www
-      - ./data:/var/www/data
-      - ./cache:/var/www/cache
-      - ./logs:/var/www/logs
-    ports:
-      - 8888:80
+  #httpd:
+#    image: httpd:2.4-bookworm
+#    container_name: httpd
+#    build:
+#      context: .
+#      dockerfile: src/apache/Dockerfile
+#    restart: always
+#    volumes:
+#      - .:/var/www
+#      - ./data:/var/www/data
+#      - ./cache:/var/www/cache
+#      - ./logs:/var/www/logs
+#    ports:
+#      - 8888:80
 #    command:
       #bash -c "service apache2 reload && tail -F anything"
 
