@@ -333,7 +333,7 @@ class UpdatePapers extends JournalScript
                 $paper->setPublication_date($new_publication_date);
                 $this->displayInfo("publication date has been set to: " . $new_publication_date);
             }
-            $publishedPaperType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE;
+            $publishedPaperType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE_TITLE;
             $paper->setType($publishedPaperType);
         }
 

@@ -230,27 +230,33 @@ class Episciences_Paper
     public const TITLE_TYPE_INDEX = 0;
     public const TYPE_TYPE_INDEX = 1;
     public const TYPE_SUBTYPE_INDEX = 2;
-    public const DEFAULT_TYPE = 'preprint';
-    public const TEXT_TYPE = 'text';
-    public const ARTICLE_TYPE = 'article';
-    public const DATASET_TYPE = 'dataset';
+    public const DEFAULT_TYPE_TITLE = 'preprint';
+
+    public const TEXT_TYPE_TITLE = 'text';
+    public const ARTICLE_TYPE_TITLE = 'article';
+    public const DATASET_TYPE_TITLE = 'dataset';
     public const DATA_PAPER_TYPE = 'dataPaper';
     public const OTHER_TYPE = 'other';
-    public const TMP_TYPE = 'temporary version';
+    public const TMP_TYPE_TITLE = 'temporary version';
+    public const TMP_TYPE = 'temporaryVersion';
+
+    public const CONFERENCE_TYPE_TITLE = 'Conference papers';
     public const CONFERENCE_TYPE = 'ConferenceObject';
+
+
     public const ENUM_TYPES = [
-        self::DEFAULT_TYPE,
-        self::TEXT_TYPE,
-        self::ARTICLE_TYPE,
-        self::DATASET_TYPE,
+        self::DEFAULT_TYPE_TITLE,
+        self::TEXT_TYPE_TITLE,
+        self::ARTICLE_TYPE_TITLE,
+        self::DATASET_TYPE_TITLE,
         self::DATA_PAPER_TYPE,
         self::OTHER_TYPE,
-        self::TMP_TYPE,
-        self::CONFERENCE_TYPE,
+        self::TMP_TYPE_TITLE,
+        self::CONFERENCE_TYPE_TITLE,
     ];
     public const PREPRINT_TYPES = [
-        self::DEFAULT_TYPE,
-        self::TEXT_TYPE,
+        self::DEFAULT_TYPE_TITLE,
+        self::TEXT_TYPE_TITLE,
     ];
     public static array $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
@@ -342,7 +348,7 @@ class Episciences_Paper
     ];
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
     public $hasHook;
-    protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE];
+    protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE_TITLE, self::TYPE_TYPE => self::DEFAULT_TYPE_TITLE];
     /**
      * @var int
      */
@@ -1251,11 +1257,11 @@ class Episciences_Paper
     public function setType(array $type = null): \Episciences_Paper
     {
         if ($this->isTmp()) {
-            $this->_type = [self::TITLE_TYPE => self::TMP_TYPE];
-        } elseif (in_array($type, self::PREPRINT_TYPES, true)) {
-            $this->type = [self::TITLE_TYPE => self::DEFAULT_TYPE];
+            $this->_type = [self::TITLE_TYPE => self::TMP_TYPE_TITLE, self::TYPE_TYPE => self::TMP_TYPE];
+        } elseif (!empty($type)) {
+            $this->_type = $type;
         } else {
-            $this->_type = $type ?? [self::TITLE_TYPE => self::DEFAULT_TYPE];
+            $this->_type = [self::TITLE_TYPE => self::DEFAULT_TYPE_TITLE, self::TYPE_TYPE => self::DEFAULT_TYPE_TITLE];
         }
         return $this;
     }
@@ -1337,7 +1343,7 @@ class Episciences_Paper
             if ($oVolume) {
 
                 if ($oVolume->isProceeding()) {
-                    $this->setType([self::TITLE_TYPE => self::CONFERENCE_TYPE]);
+                    $this->setType([self::TITLE_TYPE => self::CONFERENCE_TYPE_TITLE]);
                 }
 
                 $sVolume = [
@@ -4878,7 +4884,6 @@ class Episciences_Paper
     {
         return $this->toJson();
     }
-
 
 
 }
