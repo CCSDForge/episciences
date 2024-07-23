@@ -444,6 +444,8 @@ class Episciences_Paper
 
     private ?string $_password = null;
 
+    private ?string $_graphical_abstract = null;
+    public const JSON_PATH_ABS_FILE = "$.public_properties.database.current.graphical_abstract_file";
 
     /**
      * Episciences_Paper constructor.
@@ -4672,6 +4674,27 @@ class Episciences_Paper
     public function isLatestVersion(): bool
     {
         return $this->getDocid() === (int)$this->getLatestVersionId();
+    }
+
+
+
+    /**
+     * @return string | null
+     */
+    public function getGraphical_abstract($docId): ?string
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(DOCUMENT, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
+        try {
+            foreach ($query->fetch() as $val) {
+                if (!is_null($val)) {
+                    return trim($val);
+                }
+            }
+        } catch (Zend_Db_Statement_Exception $e) {
+            return null;
+        }
+        return null;
     }
 
     public function updateDocument(): Episciences_Paper

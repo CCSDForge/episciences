@@ -1,0 +1,37 @@
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Graphical Abstract') ?></h2>
+    </div>
+    <div class="panel-body in">
+        <form id="f-graph-abs">
+            <div style="max-height:480px;overflow: auto;">
+                <?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
+                <?php if ($graphAbs !== null) : ?>
+                    <img alt="graphical abstract" style="width: 100%;height: 100%; object-fit: contain; overflow: scroll"
+                         src="/public/documents/<?= $this->paper->getDocId() ?>/<?= $graphAbs ?>">
+                <?php endif; ?>
+            </div>
+            <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>
+                <div>
+                    <input name="paper_docId" class="hidden" id="paper_docId" value="<?= $this->paper->getDocid() ?>">
+                    <input name="paper_id" class="hidden" id="paper_id" value="<?= $this->paper->getPaperid() ?>">
+                    <input type="file" name="upload-gabs" id="upload-gabs" class="hidden" accept="image/*"/>
+                    <label style="margin-top: 10px;" class="btn btn-default btn-sm" for="upload-gabs">
+                        <i class="fa-solid fa-chart-area" style="margin-right: 5px"></i><?php echo (!is_null($graphAbs)) ? $this->translate("Modifier l'abstract graphique") : $this->translate("Ajouter un abstract graphique")  ?>
+                    </label>
+                    <span id="file-chosen"></span>
+                    <button id="btn-cancel-graph" type="button"
+                            class="btn btn-default"><?= $this->translate('Annuler') ?></button>
+                    <input type="submit" class="btn btn-primary" id="i-graph-abs">
+                    <div class="help-block" style="margin:4px;">
+                        <span>
+                                <?= $this->translate('Taille maximum du fichier : 100 ko, Hauteur maximal : 880px') ?>
+                        </span>
+                    </div>
+                </div>
+
+            <?php endif; ?>
+        </form>
+    </div>
+</div>
+<?php $this->jQuery()->addJavascriptFile('/js/paper/graphicalAbstract.js'); ?>

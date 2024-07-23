@@ -1207,6 +1207,10 @@ return [
     "Paramétrable par la revue" => "Configurable by the journal",
 
     // users permissions
+    "administrategraphabstract-addgraphabs" => "Graphical Abstract: Add/Modify",
+    "administratelinkeddata-setnewinfoldAction" => "Dataset/publication link: Modify a dataset",
+    "administratelinkeddata-addld" => "Dataset/publication link: Add a dataset",
+    "administratelinkeddata-removeld" => "Dataset/publication link: Remove a dataset",
     "administratemail-deletetemplate" => "Email: Delete customized template and revert back to default one",
     "administratemail-edittemplate" => "Email: Edit the template",
     "administratemail-history" => "Email: List email history",
@@ -2516,6 +2520,10 @@ return [
 
     "Éditeur" => "Publisher",
     "Lieu de publication" => "Location of the publisher",
-    "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher."
-
+    "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher.",
+    // graphical abstract
+    "Fichier non accepté" => "File not accepted",
+    'Fichier trop volumineux' => "File size too large",
+    "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
+    "Taille maximum du fichier : 100 ko, Hauteur maximal : 880px" => "Max size file: 100 ko, Max height: 880px"
 ];
