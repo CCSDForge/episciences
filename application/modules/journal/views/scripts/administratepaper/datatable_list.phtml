@@ -83,7 +83,7 @@ foreach ($this->list as $paper) : ?>
         <?php // article status icon ******************************************* ?>
         <td class="text-center">
             <?php if (!$isConflictDetected) : ?>
-                <?php $paperStatusLabel =  Episciences_Tools::mb_ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>
+                <?php $paperStatusLabel =  mb_ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>
                 <?= $isTmp ? ('<div>' . '<span data-toggle="tooltip" class="label label-status-' . $paper->getStatus() . '" title="' . ucfirst($this->translate('version temporaire')) . '">TMP</span>') : '' ?>
                 <span data-toggle="tooltip" title="<?= $paperStatusLabel ?>">
                     <img src="<?= Episciences_View_Helper_GetAvatar::asPaperStatusSvg($paperStatusLabel, $paper->getStatus()) ?>" alt="statusSvg"/>

@@ -54,7 +54,8 @@
     "seboettg/citeproc-php": "^2.6",
     "symfony/serializer": "^6.4",
     "symfony/property-access": "^6.4",
-    "ramsey/uuid": "^4.7"
+    "ramsey/uuid": "^4.7",
+    "symfony/polyfill-php84": "^1.30"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
