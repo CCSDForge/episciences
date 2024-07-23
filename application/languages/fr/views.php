@@ -163,6 +163,10 @@ return [
     Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'Nouvelle date limite de révision',
 
     // users permissions
+    "administrategraphabstract-addgraphabs" => "Ajouter/Modifier un abstract graphique",
+    "administratelinkeddata-setnewinfoldAction" => "Jeu de donnée/lien de publication : Modifier un jeu de donnée",
+    "administratelinkeddata-addld" => "Jeu de données/lien de publication : Ajouter un nouveau de donnée",
+    "administratelinkeddata-removeld" => "Jeu de données/lien de publication : Supprimer un jeu de donnée",
     "administratemail-deletetemplate" => "Supprimer le template personnalisé et rétablir celui par défaut",
     "administratemail-edittemplate" => "Modifier un template",
     "administratemail-history" => "Lister l'historique de e-mails",

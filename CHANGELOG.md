@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Functionality for migrating news to the new sql news table
 - Toolbar tinymce have heading edition
 - New field in volume form (volume number)
+- [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
 
 ### Changed
 - bump tinymce to latest version (7.2.0)
