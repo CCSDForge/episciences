@@ -51,7 +51,8 @@
     "vlucas/phpdotenv": "^5.5",
     "league/html-to-markdown": "^5.1",
     "league/commonmark": "^2.4",
-    "seboettg/citeproc-php": "^2.6"
+    "seboettg/citeproc-php": "^2.6",
+    "symfony/polyfill-php84": "^1.30"
   },
   "require-dev": {
     "phpmd/phpmd": "@stable",
