@@ -43,7 +43,7 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
         /** @var string $code */
         foreach (Episciences_PapersManager::getAllStatus(RVID, 'ASC') as $code) {
             $code = (int)$code;
-            $status[$code] =  Episciences_Tools::mb_ucfirst($this->view->translate(Episciences_PapersManager::getStatusLabel($code)));
+            $status[$code] =  mb_ucfirst($this->view->translate(Episciences_PapersManager::getStatusLabel($code)));
         }
 
         asort($status);

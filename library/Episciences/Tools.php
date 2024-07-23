@@ -1973,27 +1973,4 @@ class Episciences_Tools
         }
         return false;
     }
-
-
-    /**
-     * multi-bytes ucfirst
-     * @param string $string
-     * @return string
-     */
-    public static function mb_ucfirst(string $string): string
-    {
-        if ($string === '') {
-            return '';
-        }
-
-        $firstChar = mb_substr($string, 0, 1);
-
-        if (mb_check_encoding($firstChar, 'UTF-8') === false) {
-            return ucfirst($string);
-
-        }
-
-        return mb_strtoupper($firstChar) . mb_substr($string, 1);
-    }
-
 }
