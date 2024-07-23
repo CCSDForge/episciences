@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## v1.0.44.3 - 2024-07-23
+### Changed
+- [#510](https://github.com/CCSDForge/episciences/issues/510): Completing label updates, fixed label starting with a character outside the [a-z] range;
+
 ## v1.0.44.2 - 2024-06-24
 ### Changed
 - [#510](https://github.com/CCSDForge/episciences/issues/510): update the label 'Reviewed' to 'Reviewed pending editorial decision';
