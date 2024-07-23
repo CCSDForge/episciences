@@ -41,7 +41,7 @@
 				'status'	=>	array(Episciences_Paper::STATUS_REVIEWED)));
 			?>"><strong><?php echo $count; ?></strong> 
 			<?php echo $this->translate(array('article', 'articles', $count)); ?> 
-			<?php echo $this->translate(array('relu', 'relus', $count)); ?></a><br/>
+			<?php echo $this->translate(array(Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_BEING_REVIEWED], sprintf('%ss', Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_BEING_REVIEWED]), $count)); ?></a><br/>
 		<?php endif; ?>
 		
 		<?php // Articles acceptés *************************************************** ?>

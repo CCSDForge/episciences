@@ -284,7 +284,7 @@ class Episciences_Tools
     }
 
 
-    public static function getLocale() :?string
+    public static function getLocale(): ?string
     {
         try {
             return Zend_Registry::get("Zend_Translate")->getLocale();
@@ -952,7 +952,7 @@ class Episciences_Tools
      * @param bool $replace
      */
 
-    public static function header(string $str,int $responseCode = 0, bool $replace = true): void
+    public static function header(string $str, int $responseCode = 0, bool $replace = true): void
     {
         header($str, $replace, $responseCode);
     }
@@ -1095,10 +1095,10 @@ class Episciences_Tools
      * @return bool
      */
     public static function cpFiles(
-        array $filesList,
+        array  $filesList,
         string $source,
         string $dest,
-        bool $storeDestinationPathInSession = false
+        bool   $storeDestinationPathInSession = false
     ): bool
     {
 
@@ -1588,14 +1588,16 @@ class Episciences_Tools
 
     }
 
-    public static function translateToIso6392b(string $string): string {
+    public static function translateToIso6392b(string $string): string
+    {
         return Lingua::create($string)->toISO_639_2b();
     }
 
-    public static function translateToICU(string $string): string {
-        if ($string === 'en'|| $string ==='eng') {
+    public static function translateToICU(string $string): string
+    {
+        if ($string === 'en' || $string === 'eng') {
             return 'en_GB';
-        } elseif ($string ==='fr' || $string === 'fra') {
+        } elseif ($string === 'fr' || $string === 'fra') {
             return 'fr_FR';
         } elseif ($string === 'de') {
             return 'de_DE';
@@ -1671,8 +1673,9 @@ class Episciences_Tools
     public static function getMastodonUrl(string $string): string
     {
         $explode = self::getMastodonSeparatedInfo($string);
-        return "https://".$explode[2]."/@".$explode[1];
+        return "https://" . $explode[2] . "/@" . $explode[1];
     }
+
     /**
      * @param string $string
      * @return array
@@ -1750,7 +1753,7 @@ class Episciences_Tools
      * @param int $permissions
      * @return string
      */
-    public static function recursiveMkdir(string $path, int $permissions = self::DEFAULT_MKDIR_PERMISSIONS) : string
+    public static function recursiveMkdir(string $path, int $permissions = self::DEFAULT_MKDIR_PERMISSIONS): string
     {
 
         if (!is_dir($path) && !mkdir($path, $permissions, true) && !is_dir($path)) {
@@ -1770,7 +1773,7 @@ class Episciences_Tools
      */
     public static function convertMarkdownToHtml(
         string $markdown,
-        array $options = [],
+        array  $options = [],
         string $converterType = 'commonMark'
     )
     {
@@ -1833,7 +1836,7 @@ class Episciences_Tools
     }
 
 
-    public static function isDoi(string $doi = '') : bool
+    public static function isDoi(string $doi = ''): bool
     {
         return !($doi === '' || !preg_match("/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i", $doi));
     }
@@ -1842,15 +1845,18 @@ class Episciences_Tools
      * @param string $strDoi
      * @return bool
      */
-    public static function isDoiWithUrl(string $strDoi){
+    public static function isDoiWithUrl(string $strDoi)
+    {
         $pattern = '~^((https?://)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
         return (bool)preg_match($pattern, $strDoi);
     }
+
     /**
      * @param string $halId
      * @return bool
      */
-    public static function isHal(string $halId): bool {
+    public static function isHal(string $halId): bool
+    {
         return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?/", $halId);
     }
 
@@ -1861,7 +1867,7 @@ class Episciences_Tools
     public static function getHalIdAndVer(string $halId): array
     {
         $matches = [];
-        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId,$matches);
+        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId, $matches);
         return $matches;
     }
 
@@ -1869,10 +1875,11 @@ class Episciences_Tools
      * @param string $url
      * @return array
      */
-    public static function getHalIdInString(string $url): array {
+    public static function getHalIdInString(string $url): array
+    {
 
         $matches = [];
-        preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~" , $url , $matches);
+        preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~", $url, $matches);
         return $matches;
     }
 
@@ -1880,7 +1887,8 @@ class Episciences_Tools
      * @param string $swhid
      * @return bool
      */
-    public static function isSoftwareHeritageId(string $swhid): bool {
+    public static function isSoftwareHeritageId(string $swhid): bool
+    {
         return (bool)preg_match("/^swh:1:(cnt|dir|rel|rev|snp):[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid);
     }
 
@@ -1888,7 +1896,8 @@ class Episciences_Tools
      * @param string $swhid
      * @return array
      */
-    public static function getSoftwareHeritageDirId(string $swhid): array {
+    public static function getSoftwareHeritageDirId(string $swhid): array
+    {
         $matches = [];
         preg_match("/swh:1:dir:[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid, $matches);
         return $matches;
@@ -1898,7 +1907,8 @@ class Episciences_Tools
      * @param string $handle
      * @return bool
      */
-    public static function isHandle(string $handle): bool {
+    public static function isHandle(string $handle): bool
+    {
         return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
     }
 
@@ -1906,7 +1916,8 @@ class Episciences_Tools
      * @param string $arxiv
      * @return bool
      */
-    public static function isArxiv(string $arxiv): bool {
+    public static function isArxiv(string $arxiv): bool
+    {
         return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
     }
 
@@ -1914,7 +1925,7 @@ class Episciences_Tools
     {
         $matches = [];
         preg_match("/^https?:\/\/arxiv\.org\/abs\/((?:\d{4}.\d{4,5}|[a-z\-]+(?:\.[A-Z]{2})?\/\d{7})(?:v\d+)?)/"
-        , $url , $matches);
+            , $url, $matches);
         return $matches;
     }
 
@@ -1923,16 +1934,19 @@ class Episciences_Tools
      * @param string $doi
      * @return array
      */
-    public static function checkIsDoiFromArxiv(string $doi) {
+    public static function checkIsDoiFromArxiv(string $doi)
+    {
         $matches = [];
-        preg_match("~/arxiv\.~i", $doi , $matches);
+        preg_match("~/arxiv\.~i", $doi, $matches);
         return $matches;
     }
+
     /**
      * @param $value
      * @return false|string
      */
-    public static function checkValueType($value) {
+    public static function checkValueType($value)
+    {
         $isHal = self::isHal($value);
         if ($isHal) {
             return 'hal';
@@ -1958,6 +1972,28 @@ class Episciences_Tools
             return 'arxiv';
         }
         return false;
+    }
+
+
+    /**
+     * multi-bytes ucfirst
+     * @param string $string
+     * @return string
+     */
+    public static function mb_ucfirst(string $string): string
+    {
+        if ($string === '') {
+            return '';
+        }
+
+        $firstChar = mb_substr($string, 0, 1);
+
+        if (mb_check_encoding($firstChar, 'UTF-8') === false) {
+            return ucfirst($string);
+
+        }
+
+        return mb_strtoupper($firstChar) . mb_substr($string, 1);
     }
 
 }
