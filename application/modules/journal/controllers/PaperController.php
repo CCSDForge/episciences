@@ -3785,5 +3785,51 @@ class PaperController extends PaperDefaultController
         $this->view->comment = $oComment->toArray();
         $this->render('answerrequest');
     }
+
+    public function cslAction()
+    {
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        $request = $this->getRequest();
+        $params = $request->getParams();
+        if (isset($params['id'])) {
+            $jsonCsl = [];
+            $jsonDb = json_decode(Episciences_PapersManager::getDocumentBypPaperId($params['id']), true, 512, JSON_THROW_ON_ERROR);
+            $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
+            $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
+            $jsonCsl['author'] = [];
+            $i = 0;
+            $counterPersonName = count($jsonDb['public_properties']['journal']['journal_article']['contributors']);
+            $arrayContrib = $jsonDb['public_properties']['journal']['journal_article']['contributors'];
+            if ($counterPersonName === 1) {
+                $arrayContrib = ["person_name" => $jsonDb['public_properties']['journal']['journal_article']['contributors']['person_name']];
+            }
+            foreach ($arrayContrib as $value) {
+                if (isset($value['surname'])) {
+                    $jsonCsl['author'][$i]['family'] = $value['surname'];
+                }
+                if (isset($value['given_name'])) {
+                    $jsonCsl['author'][$i]['given'] = $value['given_name'];
+                }
+                $i++;
+            }
+            $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['journal']['journal_article']['publication_date']['year'];
+            $jsonCsl['abstract'] = is_array($jsonDb['public_properties']['journal']['journal_article']['abstract']['value']) ?
+                $jsonDb['public_properties']['journal']['journal_article']['abstract']['value']['value']
+                : $jsonDb['public_properties']['journal']['journal_article']['abstract']['value'];
+            $jsonCsl['DOI'] = $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
+            $jsonCsl['publisher'] = $jsonDb['public_properties']['journal']['journal_metadata']['full_title'];
+            $jsonCsl['title'] = $jsonDb['public_properties']['journal']['journal_article']['titles']['title'];
+            $jsonCsl['version'] = $jsonDb['public_properties']['database']['current']['version'];
+            echo json_encode($jsonCsl, JSON_THROW_ON_ERROR);
+        }
+
+
+        header('Content-Type: application/json; charset=UTF-8');
+        die;
+
+
+    }
 }
 
