@@ -69,7 +69,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $zbjats = Export::getZbjats($paperData);
         $doaj = Export::getDoaj($paperData);
         $bibtex = Export::getBibtex($paperData);
-        $csl = Export::getCsl($paperData->getPaperid());
+        $csl = Export::getCsl($paperData->getDocid());
 
         $docToIndex->setField('doc_tei', $tei);
         $docToIndex->setField('doc_dc', $dc);

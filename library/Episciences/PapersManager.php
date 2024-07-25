@@ -3945,21 +3945,11 @@ class Episciences_PapersManager
         return REVIEW_FILES_PATH . $docId;
     }
 
-    /**
-     * @param int $paperId
-     * @return array|null
-     */
-    public static function getAllDocIdByPaperId(int $paperId)
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?', $paperId);
-        return $db->fetchAll($select);
-    }
 
-    public static function getJsonDocumentByPaperId(int $paperId)
+    public static function getJsonDocumentByDocId(int $docid)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['DOCUMENT'])->where('PAPERID = ?', $paperId);
+        $select = $db->select()->from(T_PAPERS, ['DOCUMENT'])->where('DOCID = ?', $docid);
         return $db->fetchOne($select);
     }
 

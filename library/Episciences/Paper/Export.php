@@ -617,15 +617,15 @@ class Export
 
 
     /**
-     * @param $paperId
+     * @param $docid
      * @return string
      */
-    public static function getCsl($paperId): string
+    public static function getCsl($docid): string
     {
         $jsonCsl = [];
 
         try {
-            $jsonDb = json_decode(\Episciences_PapersManager::getJsonDocumentByPaperId($paperId), true, 512, JSON_THROW_ON_ERROR);
+            $jsonDb = json_decode(\Episciences_PapersManager::getJsonDocumentByDocId($docid), true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
             return '{}';
@@ -655,23 +655,10 @@ class Export
             }
             $i++;
         }
-        $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['journal']['journal_article']['publication_date']['year'];
 
-        if (is_array($jsonDb['public_properties']['journal']['journal_article']['abstract']['value'])) {
-            $abstract = $jsonDb['public_properties']['journal']['journal_article']['abstract']['value'];
-            if (count($jsonDb['public_properties']['journal']['journal_article']['abstract']) < 1) {
-                $abstract = [$jsonDb['public_properties']['journal']['journal_article']['abstract']];
-                if (!isset($abstract['value'])) {
-                    $jsonCsl['abstract'] = $abstract[0]['value'];
-                }
-            } elseif (array_key_exists(0, $abstract)) {
-//                $jsonCsl['abstract'] = $abstract[0]['value']; // TODO fatal error
-            } else {
-                $jsonCsl['abstract'] = $abstract['value'];
-            }
-        } else {
-            //$jsonCsl['abstract'] = $jsonDb['public_properties']['journal']['journal_article']['abstract']['value']['value']; // TODO fatal error
-        }
+        $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['database']['database_metadata']['database_date']["publication_date"]['year'];
+
+
         $jsonCsl['DOI'] = $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
         $jsonCsl['publisher'] = $jsonDb['public_properties']['journal']['journal_metadata']['full_title'];
         $jsonCsl['title'] = $jsonDb['public_properties']['journal']['journal_article']['titles']['title'];
