@@ -3785,5 +3785,21 @@ class PaperController extends PaperDefaultController
         $this->view->comment = $oComment->toArray();
         $this->render('answerrequest');
     }
+
+    public function cslAction()
+    {
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        $request = $this->getRequest();
+        $params = $request->getParams();
+        if (isset($params['id'])) {
+            echo \Episciences\Paper\Export::getCsl($params['id']);
+
+        }
+
+        header('Content-Type: application/json; charset=UTF-8');
+        exit();
+    }
 }
 
