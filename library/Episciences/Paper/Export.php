@@ -615,4 +615,63 @@ class Export
         ]));
     }
 
+
+    /**
+     * @param $paperId
+     * @return string
+     * @throws JsonException
+     */
+    public static function getCsl($paperId): string
+    {
+        $jsonCsl = [];
+        $jsonDb = json_decode(\Episciences_PapersManager::getDocumentBypPaperId($paperId), true, 512, JSON_THROW_ON_ERROR);
+        if (!array_key_exists('journal', $jsonDb['public_properties'])) {
+            exit();
+        }
+        $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
+        $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
+        $jsonCsl['author'] = [];
+        $i = 0;
+        $arrayContrib = $jsonDb['public_properties']['journal']['journal_article']['contributors'];
+        foreach ($arrayContrib['person_name'] as $value) {
+            if (!is_array($value)) {
+                $arrayContrib['person_name'] = [$arrayContrib['person_name']];
+                break;
+            }
+        }
+        foreach ($arrayContrib['person_name'] as $value) {
+            if (isset($value['surname'])) {
+                $jsonCsl['author'][$i]['family'] = $value['surname'];
+            }
+            if (isset($value['given_name'])) {
+                $jsonCsl['author'][$i]['given'] = $value['given_name'];
+            }
+            $i++;
+        }
+        $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['journal']['journal_article']['publication_date']['year'];
+
+        if (is_array($jsonDb['public_properties']['journal']['journal_article']['abstract']['value'])) {
+            $abstract = $jsonDb['public_properties']['journal']['journal_article']['abstract']['value'];
+            if (count($jsonDb['public_properties']['journal']['journal_article']['abstract']) < 1) {
+                $abstract = [$jsonDb['public_properties']['journal']['journal_article']['abstract']];
+                if (!isset($abstract['value'])) {
+                    $jsonCsl['abstract'] = $abstract[0]['value'];
+                }
+            } elseif (array_key_exists(0, $abstract)) {
+                $jsonCsl['abstract'] = $abstract[0]['value'];
+            } else {
+                $jsonCsl['abstract'] = $abstract['value'];
+            }
+        } else {
+            $jsonCsl['abstract'] = $jsonDb['public_properties']['journal']['journal_article']['abstract']['value']['value'];
+        }
+        $jsonCsl['DOI'] = $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
+        $jsonCsl['publisher'] = $jsonDb['public_properties']['journal']['journal_metadata']['full_title'];
+        $jsonCsl['title'] = $jsonDb['public_properties']['journal']['journal_article']['titles']['title'];
+        $jsonCsl['volume'] = !is_null($vol = $jsonDb['public_properties']['database']['current']['volume']) ? $vol['id'] : null;
+        $jsonCsl['issue'] = !is_null($section = $jsonDb['public_properties']['database']['current']['section']) ? $section['id'] : null;
+        $jsonCsl['version'] = $jsonDb['public_properties']['database']['current']['version'];
+        return json_encode($jsonCsl, JSON_THROW_ON_ERROR);
+    }
+
 }
