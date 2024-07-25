@@ -618,10 +618,10 @@ class Export
 
     /**
      * @param $paperId
-     * @return void
+     * @return string
      * @throws JsonException
      */
-    public static function getCsl($paperId): void
+    public static function getCsl($paperId): string
     {
         $jsonCsl = [];
         $jsonDb = json_decode(\Episciences_PapersManager::getDocumentBypPaperId($paperId), true, 512, JSON_THROW_ON_ERROR);
@@ -671,7 +671,7 @@ class Export
         $jsonCsl['volume'] = !is_null($vol = $jsonDb['public_properties']['database']['current']['volume']) ? $vol['id'] : null;
         $jsonCsl['issue'] = !is_null($section = $jsonDb['public_properties']['database']['current']['section']) ? $section['id'] : null;
         $jsonCsl['version'] = $jsonDb['public_properties']['database']['current']['version'];
-        echo json_encode($jsonCsl, JSON_THROW_ON_ERROR);
+        return json_encode($jsonCsl, JSON_THROW_ON_ERROR);
     }
 
 }

@@ -3794,7 +3794,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $params = $request->getParams();
         if (isset($params['id'])) {
-            \Episciences\Paper\Export::getCsl($params['id']);
+            echo \Episciences\Paper\Export::getCsl($params['id']);
 
         }
 
