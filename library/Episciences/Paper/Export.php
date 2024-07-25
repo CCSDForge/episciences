@@ -619,14 +619,21 @@ class Export
     /**
      * @param $paperId
      * @return string
-     * @throws JsonException
      */
     public static function getCsl($paperId): string
     {
         $jsonCsl = [];
-        $jsonDb = json_decode(\Episciences_PapersManager::getDocumentBypPaperId($paperId), true, 512, JSON_THROW_ON_ERROR);
+
+        try {
+            $jsonDb = json_decode(\Episciences_PapersManager::getJsonDocumentByPaperId($paperId), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return '{}';
+        }
+
+
         if (!array_key_exists('journal', $jsonDb['public_properties'])) {
-            exit();
+            return '{}';
         }
         $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
         $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
@@ -658,12 +665,12 @@ class Export
                     $jsonCsl['abstract'] = $abstract[0]['value'];
                 }
             } elseif (array_key_exists(0, $abstract)) {
-                $jsonCsl['abstract'] = $abstract[0]['value'];
+//                $jsonCsl['abstract'] = $abstract[0]['value']; // TODO fatal error
             } else {
                 $jsonCsl['abstract'] = $abstract['value'];
             }
         } else {
-            $jsonCsl['abstract'] = $jsonDb['public_properties']['journal']['journal_article']['abstract']['value']['value'];
+            //$jsonCsl['abstract'] = $jsonDb['public_properties']['journal']['journal_article']['abstract']['value']['value']; // TODO fatal error
         }
         $jsonCsl['DOI'] = $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
         $jsonCsl['publisher'] = $jsonDb['public_properties']['journal']['journal_metadata']['full_title'];
@@ -671,7 +678,14 @@ class Export
         $jsonCsl['volume'] = !is_null($vol = $jsonDb['public_properties']['database']['current']['volume']) ? $vol['id'] : null;
         $jsonCsl['issue'] = !is_null($section = $jsonDb['public_properties']['database']['current']['section']) ? $section['id'] : null;
         $jsonCsl['version'] = $jsonDb['public_properties']['database']['current']['version'];
-        return json_encode($jsonCsl, JSON_THROW_ON_ERROR);
+
+        try {
+            $jsonString = json_encode($jsonCsl, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            $jsonString = '{}';
+        }
+        return $jsonString;
     }
 
 }

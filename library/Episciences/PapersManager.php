@@ -3956,7 +3956,7 @@ class Episciences_PapersManager
         return $db->fetchAll($select);
     }
 
-    public static function getDocumentBypPaperId(int $paperId)
+    public static function getJsonDocumentByPaperId(int $paperId)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_PAPERS, ['DOCUMENT'])->where('PAPERID = ?', $paperId);
