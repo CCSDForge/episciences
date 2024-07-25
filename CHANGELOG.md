@@ -19,6 +19,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
+- Unlabeled volume when updating metadata from an Episciences journal to HAL.
+## Unreleased
+### Added
+- export to Json: include article's citations.
+- Profile photo storage management via uuid.
+- Script to generate user's uuids.
+- Include UUIDs when saving accounts
+- New settings for the journals 'Publisher' + 'Publisher location' The values are export to OpenAIRE and the DOAJ (not available for Crossref)
+- button to be redirected to the episciences bibliographic extraction application to import bibtex
+- If HAL, send coar notify message when updating metadata for published articles.
+- Added in zbjat export bibliographical references from bibtex import
+- Added button to redirect on epi citation without extract pdf
+- [#418](https://github.com/CCSDForge/episciences/issues/418) Enable edition of relationship and type for the linked data
+- Public representation of a document in JSON format (@see /json?v=2)
+- [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
+- [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
+- Functionality for migrating news to the new sql news table
+- Toolbar tinymce have heading edition
+- New field in volume form (volume number)
+- [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
+
+### Changed
+- bump tinymce to latest version (7.2.0)
+- crossref export:
+    - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
+    - ROR added to the schema (did not work on the previous version)
+- classification of keywords by language
+- [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
+### Changed
+- Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
+- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
 - Unlabeled volume when updating metadata from an Episciences journal to HAL. 
 ## Unreleased
 ### Added
@@ -47,6 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
 - [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
+
+## v1.0.44.3 - 2024-07-23
+### Changed
+- [#510](https://github.com/CCSDForge/episciences/issues/510): Completing label updates, fixed label starting with a character outside the [a-z] range;
+
 ## v1.0.44.2 - 2024-06-24
 ### Changed
 - [#510](https://github.com/CCSDForge/episciences/issues/510): update the label 'Reviewed' to 'Reviewed pending editorial decision';
