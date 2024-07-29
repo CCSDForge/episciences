@@ -16,7 +16,6 @@ $localopts = [
 require_once __DIR__ . '/loadHeader.php';
 
 
-
 session_start();
 require_once "JournalScript.php";
 
@@ -25,14 +24,15 @@ class UpdateVolumes extends JournalScript
 {
 
     // csv file column positions
-    public const COL_STATUS = 0;
-    public const COL_CURRENT_ISSUE = 1;
-    public const COL_SPECIAL_ISSUE = 2;
-    public const COL_BIB_REFERENCE = 3;
-    public const COL_TITLE_EN = 4;
-    public const COL_TITLE_FR = 5;
-    public const COL_DESC_EN = 6;
-    public const COL_DESC_FR = 7;
+    public const COL_POSITION = 0;
+    public const COL_STATUS = 1;
+    public const COL_CURRENT_ISSUE = 2;
+    public const COL_SPECIAL_ISSUE = 3;
+    public const COL_BIB_REFERENCE = 4;
+    public const COL_TITLE_EN = 5;
+    public const COL_TITLE_FR = 6;
+    public const COL_DESC_EN = 7;
+    public const COL_DESC_FR = 8;
 
     /** @var $_review Episciences_Review */
     protected $_review = null;
@@ -62,13 +62,12 @@ class UpdateVolumes extends JournalScript
         $this->checkRvid();
 
 
-
-
-
         $this->_review = Episciences_ReviewsManager::find($this->getParam('rvid'));
 
         if (!$this->_review) {
             $this->displayError("Invalid journal ID / RVID");
+        }else {
+            Zend_Registry::set('reviewSettingsDoi', $this->_review->getDoiSettings());
         }
 
         defineJournalConstants($this->_review->getCode());
@@ -77,6 +76,7 @@ class UpdateVolumes extends JournalScript
         if (is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
             Zend_Registry::get("Zend_Translate")->addTranslation(REVIEW_PATH . 'languages');
         }
+
 
         if ($this->hasParam('file')) {
             $this->process_csv_file($this->getParam('file'));
@@ -150,7 +150,7 @@ class UpdateVolumes extends JournalScript
             $line++;
 
             // pass first line
-            if (strtolower($data[0]) === 'status') {
+            if (strtolower($data[0]) === 'position') {
                 continue;
             }
 
