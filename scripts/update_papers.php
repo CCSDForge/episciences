@@ -233,6 +233,8 @@ class UpdatePapers extends JournalScript
                 continue;
             }
 
+            $uid = $this->get_col($data, static::COL_UID);
+
             // prepare import
             $params = [
                 'identifier' => $this->get_col($data, static::COL_IDENTIFIER),
@@ -241,14 +243,16 @@ class UpdatePapers extends JournalScript
                 'status' => $this->get_col($data, static::COL_STATUS),
                 'vid' => $this->get_col($data, static::COL_VOLUME),
                 'sid' => $this->get_col($data, static::COL_SECTION),
-                'uid' => $this->get_col($data, static::COL_UID),
+                'uid' => $uid,
                 'publication_date' => $this->get_col($data, static::COL_PUBLICATION_DATE),
                 'editors' => $this->get_col($data, static::COL_EDITORS),
                 'doi' => $this->get_col($data, static::COL_DOI),
                 'docid' => $this->get_col($data, static::COL_DOCID),
                 'rvid' => ($this->get_col($data, static::COL_RVID)) ?: $this->getParam('rvid'),
                 'submission_date' => $this->get_col($data, static::COL_SUBMISSION_DATE) ?: date('Y-m-d H:i:s'),
+                'uuid' => Episciences_UserManager::getUuidFromUid($uid)
             ];
+
 
             $this->displayInfo("** processing line $line/$total_lines");
 
@@ -687,6 +691,8 @@ class UpdatePapers extends JournalScript
                     $this->displayError("editor " . $uid . " does not exist");
                     continue;
                 }
+
+                $editor->setUuid(Episciences_UserManager::getUuidFromUid($editor->getUid()));
 
                 // save editor assignment
                 $aid = $paper->assign($uid, Episciences_User_Assignment::ROLE_EDITOR);
