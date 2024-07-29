@@ -233,7 +233,7 @@ class UpdatePapers extends JournalScript
                 continue;
             }
 
-            $uid = $this->get_col($data, static::COL_UID);
+            $uid =(int)$this->get_col($data, static::COL_UID);
 
             // prepare import
             $params = [
