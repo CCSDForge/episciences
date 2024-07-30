@@ -13,6 +13,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
         $this->setArgs(
             array_merge($this->getArgs(), [
                 'documentId|D=i' => "paper docid [Optional: all documents will be processed if the script is run without this parameter.]",
+                'sqlwhere-s' => "to specify the SQL condition to be used to find DOCIDs (exp. --sqlwhere 'DOCID > xxxx')",
                 'buffer|b=i' => "Number of documents to update at the same time [default: buffer = 500]",
                 'updateRecord|u' => 'Update record',
             ]));
@@ -63,8 +64,9 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             $this->hasParam('documentId')) {
             $dataQuery->where('DOCID = ?', $params['documentId']);
             $docParamMsg = sprintf(' for document #%s', $params['documentId']);
+        } elseif ($this->hasParam('sqlwhere')) {
+            $dataQuery->where($params['sqlwhere']);
         }
-
 
         $data = $db->fetchAssoc($dataQuery);
 
