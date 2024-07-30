@@ -232,7 +232,7 @@ class Episciences_Paper
     public const TYPE_SUBTYPE_INDEX = 2;
     public const DEFAULT_TYPE_TITLE = 'preprint';
 
-    public const TEXT_TYPE_TITLE = 'text';
+    public const TEXT_TYPE_TITLE = 'text';//arXiv
     public const ARTICLE_TYPE_TITLE = 'article';
     public const DATASET_TYPE_TITLE = 'dataset';
     public const DATA_PAPER_TYPE = 'dataPaper';
@@ -241,8 +241,15 @@ class Episciences_Paper
 
     public const TMP_TYPE = 'temporaryVersion';
 
-    public const CONFERENCE_TYPE_TITLE = 'Conference papers';
+    public const CONFERENCE_PAPER_TYPE_TITLE = 'Conferencepapers';
     public const CONFERENCE_TYPE = 'ConferenceObject';
+    public const WORKING_PAPER_TYPE_TITLE = 'workingpaper'; //Zenodo
+    public const JOURNAL_TYPE_TITLE = 'journal'; //Zenodo
+    public const REGULAR_ARTICLE_TYPE_TITLE = 'regulararticle';
+    public const JOURNAL_ARTICLE_TYPE_TITLE = 'journalarticle';
+    public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
+
+
 
 
     public const ENUM_TYPES = [
@@ -253,11 +260,12 @@ class Episciences_Paper
         self::DATA_PAPER_TYPE,
         self::OTHER_TYPE,
         self::TMP_TYPE_TITLE,
-        self::CONFERENCE_TYPE_TITLE,
+        self::CONFERENCE_PAPER_TYPE_TITLE,
     ];
     public const PREPRINT_TYPES = [
         self::DEFAULT_TYPE_TITLE,
         self::TEXT_TYPE_TITLE,
+        self::WORKING_PAPER_TYPE_TITLE,
     ];
     public static array $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
@@ -4675,7 +4683,6 @@ class Episciences_Paper
     {
         return $this->getDocid() === (int)$this->getLatestVersionId();
     }
-
 
 
     /**

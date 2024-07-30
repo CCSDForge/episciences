@@ -1961,10 +1961,33 @@ class Episciences_Submit
             $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
         }
 
-        $currentType = str_replace(array(' ', 'journalarticle', ' ', 'regulararticle'), array('', 'article', '', 'article'), $currentType);
+        $currentType = str_replace(
+            search: [
+                ' ',
+                Episciences_Paper::JOURNAL_ARTICLE_TYPE_TITLE,
+                ' ',
+                Episciences_Paper::REGULAR_ARTICLE_TYPE_TITLE,
+                Episciences_Paper::WORKING_PAPER_TYPE_TITLE,
+                Episciences_paper::PUBLICATION_TYPE_TITLE,
+                Episciences_paper::JOURNAL_TYPE_TITLE,
+                Episciences_Paper::CONFERENCE_PAPER_TYPE_TITLE
+
+            ],
+            replace: [
+                '',
+                Episciences_Paper::ARTICLE_TYPE_TITLE,
+                '',
+                Episciences_Paper::ARTICLE_TYPE_TITLE,
+                Episciences_Paper::ARTICLE_TYPE_TITLE,
+                Episciences_Paper::ARTICLE_TYPE_TITLE,
+                Episciences_Paper::ARTICLE_TYPE_TITLE,
+                Episciences_Paper::CONFERENCE_TYPE
+            ],
+            subject: $currentType
+        );
 
 
-        if ($currentType === Episciences_Paper::TEXT_TYPE_TITLE) {
+        if (in_array($currentType, Episciences_Paper::PREPRINT_TYPES, true)) {
             $currentType = Episciences_Paper::DEFAULT_TYPE_TITLE;
         }
 
