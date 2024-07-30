@@ -305,7 +305,7 @@ class Episciences_Paper_Tei
             $aut->appendChild($persName);
             $aut->appendChild($xml->createElement('email'));
 
-            if (is_array($enrichmentAuthors['authors'][$order]) && array_key_exists('orcid', $enrichmentAuthors['authors'][$order])) {
+            if (isset($enrichmentAuthors['authors'][$order]) && is_array($enrichmentAuthors['authors'][$order]) && array_key_exists('orcid', $enrichmentAuthors['authors'][$order])) {
                 $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
                 $orcid->setAttribute('type', 'ORCID');
                 $aut->appendChild($orcid);
@@ -447,7 +447,9 @@ class Episciences_Paper_Tei
             $aut->appendChild($persName);
             $aut->appendChild($xml->createElement('email'));
 
-            if ((is_array($enrichmentAuthors['authors'][$order])) && (array_key_exists('orcid', $enrichmentAuthors['authors'][$order]))) {
+            if (
+                isset($enrichmentAuthors['authors'][$order]) &&
+                (is_array($enrichmentAuthors['authors'][$order])) && (array_key_exists('orcid', $enrichmentAuthors['authors'][$order]))) {
                 $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
                 $orcid->setAttribute('type', 'ORCID');
                 $aut->appendChild($orcid);
