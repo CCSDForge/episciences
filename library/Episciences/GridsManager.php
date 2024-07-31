@@ -285,8 +285,9 @@ class Episciences_GridsManager
         $form->addElement('select', 'coef', [
             'label' => 'Coefficient',
             'value' => 1,
-            'multioptions' => $array]);
+            ]);
 
+        $form->getElement('coef')->setDisableTranslator(true)->setOptions(['multioptions' => $array]);
 
         // rating type (quantitative)
         $form->addElement('select', 'quantitative_rating_type', [
