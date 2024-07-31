@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ### Fixed
 - Volume names are not translated in the volume drop-down list on the reviewing grids list page.
+- [#543](https://github.com/CCSDForge/episciences/issues/543): Not translate select options
 
 ## v1.0.44.3 - 2024-07-23
 ### Changed
