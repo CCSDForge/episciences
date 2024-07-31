@@ -68,7 +68,9 @@ class Episciences_GridsManager
 
             $options = [];
             foreach ($vids as $vid) {
-                $options[$vid] = 'volume_' . $vid . '_title';
+                $options[$vid] =   Episciences_VolumesManager::translateVolumeKey('volume_' . $vid . '_title');
+                asort($options);
+
             }
 
             if (!empty($options)) {

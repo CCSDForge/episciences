@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- Volume names are not translated in the volume drop-down list on the reviewing grids list page.
 
 ## v1.0.44.3 - 2024-07-23
 ### Changed
