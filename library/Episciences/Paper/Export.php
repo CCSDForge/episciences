@@ -653,7 +653,22 @@ class Export
                 }
                 $i++;
             }
-            return json_encode($jsonCsl, JSON_THROW_ON_ERROR);
+            if (array_key_exists('conference', $jsonDb['public_properties'])) {
+                $jsonCsl['event-title'] = $jsonDb['public_properties']['conference']['event_metadata']['conference_name'];
+                $jsonCsl['event-place'] = !is_null($jsonDb['public_properties']['conference']['event_metadata']['conference_location']) ? $jsonDb['public_properties']['conference']['event_metadata']['conference_location'] : null;
+                $jsonCsl['event-date'] = $jsonDb['public_properties']['conference']['event_metadata']['conference_date']['@start_year'];
+            }
+            $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['database']['database_metadata']['database_date']["publication_date"]['year'];
+            $jsonCsl['volume'] = !is_null($vol = $jsonDb['public_properties']['database']['current']['volume']) ? $vol['id'] : null;
+            $jsonCsl['issue'] = !is_null($section = $jsonDb['public_properties']['database']['current']['section']) ? $section['id'] : null;
+            $jsonCsl['version'] = $jsonDb['public_properties']['database']['current']['version'];
+            try {
+                $jsonString = json_encode($jsonCsl, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+                $jsonString = '{}';
+            }
+            return $jsonString;
         }
         $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
         $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
