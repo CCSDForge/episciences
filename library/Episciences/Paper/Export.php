@@ -633,7 +633,27 @@ class Export
 
 
         if (!array_key_exists('journal', $jsonDb['public_properties'])) {
-            return '{}';
+            $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
+            $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['conference']['conference_paper']['doi_data']['doi'];
+            $jsonCsl['author'] = [];
+            $i = 0;
+            $arrayContrib = $jsonDb['public_properties']['conference']['conference_paper']['contributors'];
+            foreach ($arrayContrib['person_name'] as $value) {
+                if (!is_array($value)) {
+                    $arrayContrib['person_name'] = [$arrayContrib['person_name']];
+                    break;
+                }
+            }
+            foreach ($arrayContrib['person_name'] as $value) {
+                if (isset($value['surname'])) {
+                    $jsonCsl['author'][$i]['family'] = $value['surname'];
+                }
+                if (isset($value['given_name'])) {
+                    $jsonCsl['author'][$i]['given'] = $value['given_name'];
+                }
+                $i++;
+            }
+            return json_encode($jsonCsl, JSON_THROW_ON_ERROR);
         }
         $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
         $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
