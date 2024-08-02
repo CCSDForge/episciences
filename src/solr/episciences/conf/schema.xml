@@ -30,6 +30,8 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
         <field name="doc_tei" type="string" indexed="false" stored="true" multiValued="false"/>
         <field name="doc_zbjats" type="string" indexed="false" stored="true" multiValued="false"/>
         <field name="doc_csl" type="string" indexed="false" stored="true" multiValued="false"/>
+        <!-- document type: this field is required for the new interface -->
+        <field name="doc_type_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
         <!-- Permanent id across all document versions ; links to multiple docids -->
         <field name="paperid" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -142,6 +144,9 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
         <copyField source="*_volume_title_t" dest="volume_title_t"/>
 
         <field name="volume_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+
+        <!-- this field is required for the new interface : so as not to introduce any bugs by changing the type of the existing field -->
+        <field name="volume_title_fs" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
         <!-- Volume =================================================================================================== -->
 
         <!-- Volumes secondaires ====================================================================================== -->
@@ -168,6 +173,8 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
         <copyField source="*_section_title_t" dest="section_title_t"/>
 
         <field name="section_fs" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+        <!-- this field is required for the new interface : so as not to introduce any bugs by changing the type of the existing field -->
+        <field name="section_title_fs" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
         <!-- Rubrique =================================================================================================== -->
 
 

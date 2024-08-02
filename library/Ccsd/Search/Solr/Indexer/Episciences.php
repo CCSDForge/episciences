@@ -79,6 +79,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $docToIndex->setField('doc_doaj', $doaj);
         $docToIndex->setField('doc_bibtex', $bibtex);
         $docToIndex->setField('doc_csl', $csl);
+        $docToIndex->setField('doc_type_fs', $paperData->getTypeWithKey());
 
         if ($paperData === null) {
             Ccsd_Log::message('Update doc ' . $docId . ' : cet article n\'existe pas/plus.', true, 'WARN');
@@ -339,6 +340,8 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
                 foreach ($volumeTranslationsTitles as $lang => $translations) {
                     $docToIndex->addField($lang . '_volume_title_t', $translations);
+                    $docToIndex->addField('volume_title_fs', $vid . parent::SOLR_FACET_SEPARATOR . $lang . '_' . $translations);
+
                 }
             }
         } else {
@@ -433,6 +436,8 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
             foreach ($sectionTranslations as $lang => $translations) {
                 $docToIndex->addField($lang . '_section_title_t', $translations);
+                $docToIndex->addField('section_title_fs', $sectionId . parent::SOLR_FACET_SEPARATOR . $lang . '_' . $translations);
+
             }
         }
 
