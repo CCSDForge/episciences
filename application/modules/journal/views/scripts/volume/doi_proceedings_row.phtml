@@ -18,11 +18,11 @@
 
 </style>
 <div id="conference_doi_group" class="row" style="margin-bottom: 8px;">
-    <label class="col-md-3 control-label" style="margin-right: 24px;"><?= $this->translate("DOI de l'acte de conférence") ?></label>
+    <label class="col-md-3 control-label" style="margin-right: 24px;"><?= $this->translate("DOI des actes") ?></label>
     <?php if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()) : ?>
         <input id="doi_proceedings_prefix_input" name="doi_proceedings_prefix_input" class="col-offset-1 col-sm-2 d-inline-block form-control-nowidth" style="margin-right: 4px;" value="<?= Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix().'/'.RVCODE.".proceedings." ?>" disabled>
         <input id="conference_proceedings_doi" name="conference_proceedings_doi" class="col-sm-2 d-inline-block form-control-nowidth" style="margin-right: 4px;" maxlength="20" value="<?= $this->value ?>" autocomplete="off">
-        <input type="button" class="col-sm-1 d-inline-block btn btn-primary" id="btn-request-proceedings" value="<?= $this->translate("Demande DOI") ?>">
-        <input type="button" class="col-sm-1 d-inline-block btn btn-warning" id="btn-cancel-request-proceedings" value="<?= $this->translate("Annulation DOI") ?>" style="display:none;">
+        <input type="button" class="col-sm-2 d-inline-block btn btn-primary" id="btn-request-proceedings" value="<?= $this->translate("Demande DOI") ?>">
+        <input type="button" style="min-width: 128px" class="col-sm-1 d-inline-block btn btn-warning" id="btn-cancel-request-proceedings" value="<?= $this->translate("Annulation DOI") ?>" style="display:none;">
     <?php endif;?>
 </div>
