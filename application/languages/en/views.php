@@ -407,18 +407,18 @@ return [
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
     // proceedings
     "Nom de la conférence" => 'Conference title',
-    "Theme de la conférence" => "Conference theme",
+    "Thème de la conférence" => "Conference theme",
     "Acronyme de la conférence" => "Conference acronym",
     "Titre de l'acte de conférence" => "Proceedings title",
     "Numéro de la conférence" => "Conference number",
     "Lieu de la conférence" => "Conference location",
     "Date de début de la conférence" => "Conference start date",
     "Date de fin de la conférence" => "Conference end date",
-    "DOI de l'acte de conférence" => "Proceeding DOI",
-    "Acte de conférence" => 'Proceedings act',
+    "DOI des actes" => "Proceedings DOI",
+    "Actes de conférences" => 'Conferences proceedings',
     "Le DOI qui va être demandé" => "Doi will be requested",
     "Demande DOI" => "Request DOI",
-    "Annulation DOI" => "Cancel Request",
+    "Annulation DOI" => "Cancel DOI",
     'Du' => 'From',
     'Au' => 'To',
 
@@ -1208,6 +1208,7 @@ return [
 
     // users permissions
     "administrategraphabstract-addgraphabs" => "Graphical Abstract: Add/Modify",
+    "administrategraphabstract-deletegraphabs" => "Graphical Abstract: delete",
     "administratelinkeddata-setnewinfoldAction" => "Dataset/publication link: Modify a dataset",
     "administratelinkeddata-addld" => "Dataset/publication link: Add a dataset",
     "administratelinkeddata-removeld" => "Dataset/publication link: Remove a dataset",
@@ -2523,7 +2524,9 @@ return [
     "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher.",
     // graphical abstract
     "Fichier non accepté" => "File not accepted",
-    'Fichier trop volumineux' => "File size too large",
+    'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max autorized",
     "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
+    "Ajouter un abstract graphique" => "Add a graphical abstract",
+    "Modifier l'abstract graphique" => "Change the graphical abstract",
     "Taille maximum du fichier : 100 ko, Hauteur maximal : 880px" => "Max size file: 100 ko, Max height: 880px"
 ];
