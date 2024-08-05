@@ -412,7 +412,7 @@ class Episciences_VolumesManager
             ['Errors', ['placement' => 'APPEND']]
         ];
         $form->addElement('checkbox', "is_proceeding", [
-            'label' => 'Acte de conférence',
+            'label' => 'Actes de conférences',
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'value' => 0,
             'decorators' => $checkboxDecorators]);
@@ -420,7 +420,7 @@ class Episciences_VolumesManager
             'label' => 'Nom de la conférence',
         ]);
         $form->addElement('text', "conference_theme", [
-            'label' => 'Theme de la conférence',
+            'label' => 'Thème de la conférence',
         ]);
         $form->addElement('text', "conference_acronym", [
             'label' => 'Acronyme de la conférence',
