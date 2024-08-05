@@ -1208,6 +1208,7 @@ return [
 
     // users permissions
     "administrategraphabstract-addgraphabs" => "Graphical Abstract: Add/Modify",
+    "administrategraphabstract-deletegraphabs" => "Graphical Abstract: delete",
     "administratelinkeddata-setnewinfoldAction" => "Dataset/publication link: Modify a dataset",
     "administratelinkeddata-addld" => "Dataset/publication link: Add a dataset",
     "administratelinkeddata-removeld" => "Dataset/publication link: Remove a dataset",
@@ -2523,7 +2524,9 @@ return [
     "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher.",
     // graphical abstract
     "Fichier non accepté" => "File not accepted",
-    'Fichier trop volumineux' => "File size too large",
+    'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max autorized",
     "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
+    "Ajouter un abstract graphique" => "Add a graphical abstract",
+    "Modifier l'abstract graphique" => "Change the graphical abstract",
     "Taille maximum du fichier : 100 ko, Hauteur maximal : 880px" => "Max size file: 100 ko, Max height: 880px"
 ];

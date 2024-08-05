@@ -42,7 +42,7 @@ class AdministrategraphabstractController extends Zend_Controller_Action
         $file = $upload->getFileInfo();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if ($file['file']['size'] >= self::FILE_SIZE) {
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Fichier trop volumineux');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Fichier trop volumineux 100 ko max autorisé');
             exit();
         }
         if (!in_array(pathinfo($file['file']['name'])['extension'],self::ACCEPTED_MIME,true)){
@@ -80,6 +80,41 @@ class AdministrategraphabstractController extends Zend_Controller_Action
             move_uploaded_file($file['file']['tmp_name'], self::PATH_FILE . "/documents/" . $docId . "/graphical_abstract." . $ext);
         }
         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Ajout de l'abstract graphique réussi");
+        exit();
+    }
+
+    public function deletegraphabsAction()
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
+            echo json_encode([false], JSON_THROW_ON_ERROR);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Modification non autorisé');
+            exit();
+        }
+        $docId = $request->getPost('docId');
+        $file = $request->getPost('file');
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(".self::DOCUMENT_COL.", ".$db->quote(self::JSON_PATH_ABS_FILE).")) FROM ".T_PAPERS." WHERE DOCID = ?",[$docId]);
+        if (!empty($fetch = $query->fetch())){
+            $fileFetched = '';
+            foreach ($fetch as $value) {
+                $fileFetched = $value;
+            }
+            if ($fileFetched === $file){
+                $db->query("UPDATE ".T_PAPERS." SET DOCUMENT =
+                JSON_REMOVE(".self::DOCUMENT_COL.", ".$db->quote(self::JSON_PATH_ABS_FILE).") WHERE DOCID = ?",[$docId]);
+                unlink(self::PATH_FILE . "/documents" . "/" . $docId . '/' . $file);
+            } else {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Fichier a supprimer inconnu");
+                exit();
+            }
+
+        }
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Suppression de l'abstract graphique réussi");
         exit();
     }
 }

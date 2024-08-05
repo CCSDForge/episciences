@@ -1382,8 +1382,11 @@ class Episciences_Paper
                 ];
             }
         }
-
-
+        $graphical_abstract_file = '';
+        $current = $this->getDocument()['public_properties']['database']['current'];
+        if (isset($current['graphical_abstract_file'])) {
+            $graphical_abstract_file = $current['graphical_abstract_file'];
+        }
         $extraData = [
             Episciences_Paper_XmlExportManager::PUBLIC_KEY => [
                 Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY => [
@@ -1433,7 +1436,8 @@ class Episciences_Paper
                         'metrics' => [
                             'page_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid()),
                             'file_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid(), 'file')
-                        ]
+                        ],
+                        'graphical_abstract_file' => $graphical_abstract_file,
                     ],
                     'latest_version_item_number' => (int)$this->getLatestVersionId(),
                     'first_version_item_number' => $this->getPaperid(),
@@ -1448,7 +1452,9 @@ class Episciences_Paper
 
             ]
         ];
-
+        if ($graphical_abstract_file === '') {
+            unset($extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY]['current']['graphical_abstract_file']);
+        }
 // Define the keys for better readability
         $keyBody = Episciences_Paper_XmlExportManager::BODY_KEY;
         $keyJournal = Episciences_Paper_XmlExportManager::JOURNAL_KEY;

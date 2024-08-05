@@ -216,7 +216,8 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php // paper ************************************************************************* ?>
 <div>
     <?= $paper->getXslt() ?>
-    <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>
+    <?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
+    <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor() || $graphAbs ) : ?>
         <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
     <?php endif; ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
