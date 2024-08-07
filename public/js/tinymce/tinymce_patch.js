@@ -10,6 +10,7 @@ function __initMCE(selectorName, context, options) {
 function __initEditor(selectorName, context, options) {
 
     let languageOptions = {}
+    let licenceKey = {license_key: 'gpl'}; //https://www.tiny.cloud/license-key/
 
     if (navigator.language === 'fr'){
         languageOptions = {
@@ -39,7 +40,7 @@ function __initEditor(selectorName, context, options) {
         options = $.extend(options, domainAbsoluteURLsOptions);
     }
 
-    options = $.extend(options, languageOptions);
+    options = $.extend(options, languageOptions, licenceKey);
 
     if (context) {
         $(selectorName, $(context)).tinymce(options);
