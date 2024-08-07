@@ -24,6 +24,7 @@ require_once 'Zend/Loader/Autoloader.php';
 $autoloader = Zend_Loader_Autoloader::getInstance();
 $autoloader->setFallbackAutoloader(true);
 # accepted core: episciences
+ini_set("memory_limit", '4096M');
 
 initTranslator();
 $options = [];
@@ -63,11 +64,12 @@ Ccsd_Log::message('Indexation dans Apache Solr  | Solarium library version: ' . 
 
 
 // indexation via CRON
-if ( ($cronValue === 'update') || ($cronValue === 'delete') ){
+if (($cronValue === 'update') || ($cronValue === 'delete')) {
     Ccsd_Log::message(" Données récupérées dans la table d'indexation", $debug, '', $indexer->getLogFilename());
     $indexer->setOrigin(mb_strtoupper($opts->cron));
     $arrayOfDocId = $indexer->getListOfDocidFromIndexQueue();
     $indexer->processArrayOfDocid($arrayOfDocId);
+    unset($arrayOfDocId);
     exit();
 }
 
@@ -102,6 +104,8 @@ if (($opts->docid) && ($opts->docid !== '%')) {
     $indexer->setOrigin('UPDATE');
     $indexer->processArrayOfDocid($arrayOfDocId);
 }
+
+unset($arrayOfDocId);
 
 $timeend = microtime(true);
 $time = $timeend - $timestart;
