@@ -241,8 +241,8 @@ class Episciences_Paper
 
     public const TMP_TYPE = 'temporaryVersion';
 
-    public const CONFERENCE_PAPER_TYPE_TITLE = 'Conferencepapers';
-    public const CONFERENCE_TYPE = 'ConferenceObject';
+    public const CONFERENCE_PAPER_TYPE_TITLE = 'conferencepaper';
+    public const CONFERENCE_TYPE = 'conferenceobject';
     public const WORKING_PAPER_TYPE_TITLE = 'workingpaper'; //Zenodo
     public const JOURNAL_TYPE_TITLE = 'journal'; //Zenodo
     public const REGULAR_ARTICLE_TYPE_TITLE = 'regulararticle';
