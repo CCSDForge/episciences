@@ -31,7 +31,7 @@ services:
       - 9001:9000
 
   solr:
-    image: solr:8
+    image: solr:9
     container_name: solr
     ports:
       - "8983:8983"
