@@ -1,5 +1,7 @@
 <?php
-
+use Seboettg\CiteProc\Exception\CiteProcException;
+use Seboettg\CiteProc\StyleSheet;
+use Seboettg\CiteProc\CiteProc;
 class Episciences_Paper_Dataset
 {
 
@@ -40,6 +42,86 @@ class Episciences_Paper_Dataset
      */
     protected ?int $_idPaperDatasetsMeta = null;
 
+    protected string $metatextCitation = '';
+
+
+    public function getMetatextCitation($format = 'rawText'): string
+    {
+        if ($this->metatextCitation === '') {
+            $this->buildMetatextCitation();
+        }
+        if ($format === 'rawText') {
+            $this->metatextCitation = strip_tags($this->metatextCitation);
+        } elseif ($format === 'markdown') {
+            $this->metatextCitation = Episciences_Tools::convertHtmlToMarkdown($this->metatextCitation);
+        }
+        return $this->metatextCitation;
+    }
+
+    /**
+     * @param string $metatextCitation
+     */
+    public function setMetatextCitation(string $metatextCitation): void
+    {
+        $this->metatextCitation = $metatextCitation;
+    }
+
+    private function buildMetatextCitation(): void
+    {
+        $metatextCitation = '';
+        if ($this->getMetatext() !== null && Episciences_Tools::isHal($this->getValue())) {
+            $metadataHal = json_decode($this->getMetatext(), true);
+            $metatextCitation = $metadataHal['citationFull'];
+        } elseif ($this->getMetatext() !== null) {
+            $metatextRaw = sprintf("[%s]", $this->getMetatext());
+            try {
+                $style = StyleSheet::loadStyleSheet("apa");
+                $citeProc = new CiteProc($style, "en-US", self::getMetatextCitationAdditionalMarkup());
+                $metatextCitation = $citeProc->render(json_decode($metatextRaw));
+            } catch (CiteProcException $e) {
+                // failed
+            }
+        }
+
+        $this->setMetatextCitation($metatextCitation);
+    }
+
+
+    private static function getMetatextCitationAdditionalMarkup()
+    {
+        //pimp author names
+        $authorFunction = static function ($authorItem, $renderedText) {
+            if (isset($authorItem->ORCID)) {
+                return $renderedText
+                    . " "
+                    . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID)
+                    . ' data-toggle="tooltip" data-placement="bottom" data-original-title="'
+                    . str_replace("http://orcid.org/", "", $authorItem->ORCID)
+                    . '" target="_blank"><img src="/icons/orcid.svg" alt="ORCID"/></a>';
+
+            }
+            return $renderedText;
+        };
+
+        $linkDOI = static function ($citationItem, $renderedText) {
+            if (isset($citationItem->DOI)) {
+                return '<a rel="noopener" href="http://doi.org/'
+                    . $citationItem->DOI
+                    . '"target="_blank">'
+                    . $renderedText
+                    . '</a>'; //trick to undisplay prefix put in render
+            }
+            return $renderedText;
+        };
+
+        return [
+            "author" => $authorFunction,
+            "DOI" => $linkDOI,
+            "csl-entry" => static function ($cslItem, $renderedText) {
+                return str_replace(array("https://doi.org/", "http://doi.org/"), array('', 'https://doi.org/'), $renderedText); //trick to undisplay prefix put in render
+            }
+        ];
+    }
 
     /** @var DateTime */
     protected $_time = 'CURRENT_TIMESTAMP';
