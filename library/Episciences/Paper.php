@@ -250,8 +250,6 @@ class Episciences_Paper
     public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
 
 
-
-
     public const ENUM_TYPES = [
         self::DEFAULT_TYPE_TITLE,
         self::TEXT_TYPE_TITLE,
@@ -1467,8 +1465,6 @@ class Episciences_Paper
         $keyConf = Episciences_Paper_XmlExportManager::CONFERENCE_KEY;
         $isConf = isset($xmlToArray[$keyBody][$keyConf]);
         $keyConfPaper = Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY;
-
-
         // Merge journal article or conference  data
 
         if (!$isConf) {
@@ -1477,6 +1473,7 @@ class Episciences_Paper
                 throw new InvalidArgumentException(sprintf("docid %s : %s-%s-%s is not an array", $this->getDocid(), $keyBody, $keyJournal, $keyJournalArticle));
             }
 
+            $this->addUnstructuredCitationToRelatedItems($xmlToArray[$keyBody][$keyJournal][$keyJournalArticle]);
 
             $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle] = array_merge(
                 $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
@@ -1484,6 +1481,8 @@ class Episciences_Paper
             );
 
         } else {
+
+            $this->addUnstructuredCitationToRelatedItems($xmlToArray[$keyBody][$keyConf][$keyConfPaper]);
 
             $xmlToArray[$keyBody][$keyConf][$keyConfPaper] = array_merge(
                 $xmlToArray[$keyBody][$keyConf][$keyConfPaper],
@@ -4935,6 +4934,38 @@ class Episciences_Paper
         }
 
         return $this;
+
+    }
+
+
+    private function addUnstructuredCitationToRelatedItems(array &$rootKey = []): void
+    {
+        $program = $rootKey['program'] ?? [];
+
+        if(
+            empty($program) || (is_string($program) && trim($program) === '')) {
+            return;
+        }
+
+        $relatedItems = $program[array_key_last($program)]['related_item'] ?? []; // @see /scripts/export/crossref.phtml
+
+        $datasets = $this->getDatasets();
+
+        if(empty($datasets)){
+            return;
+        }
+
+        foreach ($relatedItems as &$item) {
+            /** @var Episciences_Paper_Dataset $v */
+
+            foreach ($datasets as $v) {
+                if (isset($item['inter_work_relation']['#']) && $item['inter_work_relation']['#'] === $v->getValue()) {
+                    $item['inter_work_relation']['unstructured_citation'] = $v->getMetatextCitation('markdown');
+                    $rootKey['program'][array_key_last($rootKey['program'])]['related_item'] = $relatedItems;
+
+                }
+            }
+        }
 
     }
 
