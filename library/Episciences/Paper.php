@@ -250,8 +250,6 @@ class Episciences_Paper
     public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
 
 
-
-
     public const ENUM_TYPES = [
         self::DEFAULT_TYPE_TITLE,
         self::TEXT_TYPE_TITLE,
@@ -267,6 +265,7 @@ class Episciences_Paper
         self::TEXT_TYPE_TITLE,
         self::WORKING_PAPER_TYPE_TITLE,
     ];
+    public const JSON_PATH_ABS_FILE = "$.public_properties.database.current.graphical_abstract_file";
     public static array $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
         self::STATUS_BEING_REVIEWED => 1,
@@ -426,34 +425,28 @@ class Episciences_Paper
     /** @var Episciences_User[] $_coAuthors */
     private $_coAuthors;
     /** @var Array [Episciences_Paper_Conflict] */
-    private $_conflicts = [];
+    private $_conflicts = []; // defines whether the paper has been submitted or imported
     /**
      * Position in volume
      * @var null | int
      */
-    private $_position; // defines whether the paper has been submitted or imported
-    private $_files; // @see self::setRepoid()
+    private $_position; // @see self::setRepoid()
+    private $_files;
     private $_datasets;
-    /** @var string */
-    private $_flag = 'submitted';
 
     // variable for the export Enrichment
+    /** @var string */
+    private $_flag = 'submitted';
     private $_authors;
-
     /** @var Episciences_Paper_Licence $_licence */
     private $_licence;
-
     /** @var Episciences_Paper_Projects $_fundings */
     private $_fundings;
-
     /** @var Episciences_Paper_Dataset $_linkedData */
 
     private array $_linkedData;
-
     private ?string $_password = null;
-
     private ?string $_graphical_abstract = null;
-    public const JSON_PATH_ABS_FILE = "$.public_properties.database.current.graphical_abstract_file";
 
     /**
      * Episciences_Paper constructor.
@@ -1277,12 +1270,12 @@ class Episciences_Paper
     }
 
     /**
-     * @param string $key
+     * @param string $related_itemKeyNumber
      * @return string|null
      * @throws Zend_Db_Statement_Exception
      */
 
-    public function toJson(string $key = Episciences_Paper_XmlExportManager::PUBLIC_KEY): ?string
+    public function toJson(string $related_itemKeyNumber = Episciences_Paper_XmlExportManager::PUBLIC_KEY): ?string
     {
         $journal = Episciences_ReviewsManager::find($this->getRvid());
 
@@ -1296,48 +1289,12 @@ class Episciences_Paper
             $this->processTmpVersion($this);
         }
 
-        $tmp = null;
-        $sPreviousVersions = null;
 
-        $aOPreviousVersions = $this->getPreviousVersions() ?? [];
+        $xmlToArray = $this->processDatasetsToJson($xmlToArray);
 
-        /** @var Episciences_Paper $oPaper */
-        foreach ($aOPreviousVersions as $oPaper) {
+        $sPreviousVersions = $this->getPreviousVersionsToJson($journal);
 
-            if ($oPaper->isTmp()) {
-                $this->processTmpVersion($oPaper);
-            }
 
-            $tmp = [
-                'identifiers' => [
-                    'permanent_item_number' => $oPaper->getPaperid(),
-                    'document_item_number' => $oPaper->getDocid(),
-                    'repository_identifier' => $oPaper->getIdentifier(),
-                    'concept_identifier' => $oPaper->getConcept_identifier()
-                ],
-                'version' => $oPaper->getVersion(),
-                'dates' => [
-                    'posted_date' => $oPaper->getWhen(),
-                    'modification_date' => $oPaper->getModification_date(),
-                ],
-                'status' => [
-                    'id' => $oPaper->getStatus(),
-                    'label' => [
-                        'en' => $oPaper->getStatusLabel('en'),
-                        'fr' => $oPaper->getStatusLabel(),
-                    ]
-                ],
-
-                'url' => sprintf('%s/%s', $journal->getUrl(), $oPaper->getDocid()),
-            ];
-
-            $sPreviousVersions[] = $tmp;
-
-        }
-
-        unset($tmp);
-
-        $sVolume = null;
         $sSection = null;
 
         $citedBy = null;
@@ -1348,7 +1305,7 @@ class Episciences_Paper
                 $citedBy = $citations;
             }
         }
-
+        $sVolume = null;
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
             if ($oVolume) {
@@ -1504,9 +1461,9 @@ class Episciences_Paper
         $document[$keyPrivate] = $extraData[$keyPrivate];
 
 // Check and update document based on key
-        if ($key !== $keyAll) {
-            if ($key === $keyPrivate || $key === $keyPublic) {
-                $document = $document[$key];
+        if ($related_itemKeyNumber !== $keyAll) {
+            if ($related_itemKeyNumber === $keyPrivate || $related_itemKeyNumber === $keyPublic) {
+                $document = $document[$related_itemKeyNumber];
             } else {
                 $document = $document[$keyPublic];
             }
@@ -1542,6 +1499,119 @@ class Episciences_Paper
             trigger_error($e->getMessage());
         }
 
+    }
+
+    private static function addUnstructuredCitationToDatasetsToJson(array $datasets, array $relations, string $format = 'markdown'): array
+    {
+        // Create a map of _value => metatextCitation
+        $citationMap = [];
+
+        foreach ($datasets as $dataset) {
+            $itemValue = ltrim($dataset->getValue(), 'https://doi.org/');
+            $metatextCitation = $dataset->getMetatextCitation($format);
+
+            if ($itemValue !== '' && $metatextCitation !== null) {
+                $citationMap[$itemValue] = $metatextCitation;
+            }
+        }
+
+        // Iterate over the second array to add 'unstructured_citation'
+        foreach ($relations[0] as &$relation) {
+            foreach ($relation as &$data) {
+                if (isset($data['#'])) {
+                    $citationKey = $data['#'];
+                    $data['unstructured_citation'] = $citationMap[$citationKey] ?? null;
+                }
+            }
+        }
+
+        // Rename the key 0 to 'related_item'
+        if (isset($relations[0])) {
+            $relations['related_item'] = $relations[0];
+            unset($relations[0]);
+        }
+
+        return $relations;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getDatasets()
+    {
+        if (!$this->_datasets) {
+            $this->loadDatasets();
+        }
+        return $this->_datasets;
+    }
+
+    /**
+     * @param $datasets
+     */
+    public function setDatasets($datasets): void
+    {
+        $this->_datasets = $datasets;
+    }
+
+    private function loadDatasets(): void
+    {
+        if (!$this->_docId || !is_numeric($this->_docId)) {
+            $this->_datasets = [];
+            return;
+        }
+        $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
+    }
+
+    /**
+     * @param Episciences_Review|bool $journal
+     * @return array|null
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getPreviousVersionsToJson(Episciences_Review|bool $journal): ?array
+    {
+        $tmp = null;
+        $sPreviousVersions = null;
+
+        $aOPreviousVersions = $this->getPreviousVersions() ?? [];
+        if ($aOPreviousVersions === null) {
+            return null;
+        }
+        /** @var Episciences_Paper $oPaper */
+        foreach ($aOPreviousVersions as $oPaper) {
+
+            if ($oPaper->isTmp()) {
+                $this->processTmpVersion($oPaper);
+            }
+
+            $tmp = [
+                'identifiers' => [
+                    'permanent_item_number' => $oPaper->getPaperid(),
+                    'document_item_number' => $oPaper->getDocid(),
+                    'repository_identifier' => $oPaper->getIdentifier(),
+                    'concept_identifier' => $oPaper->getConcept_identifier()
+                ],
+                'version' => $oPaper->getVersion(),
+                'dates' => [
+                    'posted_date' => $oPaper->getWhen(),
+                    'modification_date' => $oPaper->getModification_date(),
+                ],
+                'status' => [
+                    'id' => $oPaper->getStatus(),
+                    'label' => [
+                        'en' => $oPaper->getStatusLabel('en'),
+                        'fr' => $oPaper->getStatusLabel(),
+                    ]
+                ],
+
+                'url' => sprintf('%s/%s', $journal->getUrl(), $oPaper->getDocid()),
+            ];
+
+            $sPreviousVersions[] = $tmp;
+
+        }
+
+        unset($tmp);
+        return $sPreviousVersions;
     }
 
     /**
@@ -1660,7 +1730,7 @@ class Episciences_Paper
 
     /**
      * set paper position in volume
-     * @param int $position
+     * @param int|null $position
      * @return $this
      */
     public function setPosition(int $position = null): self
@@ -1720,6 +1790,34 @@ class Episciences_Paper
         $sql = $db->select()->from(T_PAPER_SETTINGS, ['SETTING', 'VALUE'])->where('DOCID = ?', $this->getDocid());
         $this->setSettings($db->fetchPairs($sql));
         return true;
+    }
+
+    /**
+     * @return null
+     */
+    public function getDocument(): ?array
+    {
+        return $this->_document;
+    }
+
+    /**
+     * @param array|null $document
+     * @return Episciences_Paper
+     */
+    public function setDocument(string $document = null): self
+    {
+
+        if ($document) {
+
+            try {
+                $document = json_decode($document, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+
+        $this->_document = $document;
+        return $this;
     }
 
     /**
@@ -2323,7 +2421,6 @@ class Episciences_Paper
         }
         return $reports;
     }
-
 
     /**
      * assign user to paper (reviewer or editor)
@@ -4323,34 +4420,6 @@ class Episciences_Paper
         return $formatedDatasets;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getDatasets()
-    {
-        if (!$this->_datasets) {
-            $this->loadDatasets();
-        }
-        return $this->_datasets;
-    }
-
-    /**
-     * @param $datasets
-     */
-    public function setDatasets($datasets): void
-    {
-        $this->_datasets = $datasets;
-    }
-
-    private function loadDatasets(): void
-    {
-        if (!$this->_docId || !is_numeric($this->_docId)) {
-            $this->_datasets = [];
-            return;
-        }
-        $this->_datasets = Episciences_Paper_DatasetsManager::findByDocId($this->_docId);
-    }
-
     public function getDatasetByValue(string $value): ?Episciences_Paper_Dataset
     {
 
@@ -4464,7 +4533,6 @@ class Episciences_Paper
 
     }
 
-
     /**
      * @return void
      */
@@ -4518,7 +4586,6 @@ class Episciences_Paper
 
         return $this->_authors;
     }
-
 
     /**
      * @return string Episciences_Paper_Licence
@@ -4690,7 +4757,6 @@ class Episciences_Paper
         return $this->getDocid() === (int)$this->getLatestVersionId();
     }
 
-
     /**
      * @return string | null
      */
@@ -4714,34 +4780,6 @@ class Episciences_Paper
     {
         return $this;
 
-    }
-
-    /**
-     * @return null
-     */
-    public function getDocument(): ?array
-    {
-        return $this->_document;
-    }
-
-    /**
-     * @param array|null $document
-     * @return Episciences_Paper
-     */
-    public function setDocument(string $document = null): self
-    {
-
-        if ($document) {
-
-            try {
-                $document = json_decode($document, true, 512, JSON_THROW_ON_ERROR);
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage());
-            }
-        }
-
-        $this->_document = $document;
-        return $this;
     }
 
     public function displayXml(string $output): bool
@@ -4810,23 +4848,6 @@ class Episciences_Paper
 
 
         return $citation;
-    }
-
-    /**
-     * Get array of abstracts
-     * @return array
-     */
-    public function getAllAbstracts(): array
-    {
-        if ((!$this->_metadata) || (!array_key_exists('description', $this->_metadata))) {
-            return [];
-        }
-
-        if (!is_array($this->_metadata['description'])) {
-            throw new InvalidArgumentException(sprintf("Paper docid: %d getAllAbstracts() expects an array", $this->getDocid()));
-        }
-
-        return $this->_metadata['description'];
     }
 
     /**
@@ -4901,22 +4922,29 @@ class Episciences_Paper
     }
 
     /**
+     * Get array of abstracts
+     * @return array
+     */
+    public function getAllAbstracts(): array
+    {
+        if ((!$this->_metadata) || (!array_key_exists('description', $this->_metadata))) {
+            return [];
+        }
+
+        if (!is_array($this->_metadata['description'])) {
+            throw new InvalidArgumentException(sprintf("Paper docid: %d getAllAbstracts() expects an array", $this->getDocid()));
+        }
+
+        return $this->_metadata['description'];
+    }
+
+    /**
      * @param string $abstract
      * @return string
      */
     private function cleanAbstract(string $abstract): string
     {
         return trim(preg_replace("/\r|\n/", " ", $abstract));
-    }
-
-    private function getJsonV2(): ?string
-    {
-        try {
-            return $this->toJson();
-        } catch (Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-        return null;
     }
 
     public function forceType(): self
@@ -4938,4 +4966,67 @@ class Episciences_Paper
 
     }
 
+    private function getJsonV2(): ?string
+    {
+        try {
+            return $this->toJson();
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * @param array $xmlToArray
+     * @return array
+     */
+    private function processDatasetsToJson(array $xmlToArray): array
+    {
+        $docType = null;
+        $programPath = null;
+
+        // Determine the document type and set the program path
+        if (isset($xmlToArray['body']['journal']['journal_article']['program'])) {
+            $docType = 'journal';
+            $programPath = &$xmlToArray['body']['journal']['journal_article']['program'];
+        } elseif (isset($xmlToArray['body']['conference']['conference_paper']['program'])) {
+            $docType = 'conference';
+            $programPath = &$xmlToArray['body']['conference']['conference_paper']['program'];
+        }
+
+        // If a valid document type was found, process the program
+        if ($docType !== null && !empty($programPath)) {
+            $items = [];
+            $relatedItemKeys = [];
+
+            // Collect all 'related_item' elements and their keys from the program array
+            foreach ($programPath as $programKey => $value) {
+                if (isset($value['related_item']) && !empty($value['related_item'])) {
+                    $items[] = $value['related_item'];
+                   // $relatedItemKeys[] = $programKey;
+                }
+            }
+
+            // If there are related items, process them
+            if (!empty($items)) {
+                $result = self::addUnstructuredCitationToDatasetsToJson($this->getDatasets(), $items);
+
+                // Update the corresponding keys in $programPath with the processed result
+                //foreach ($relatedItemKeys as $programKey) {
+                    $programPath[$programKey] = $result;
+                //}
+            }
+        }
+
+        return $xmlToArray;
+    }
+
+
+
+
 }
+
+
+
+
+

@@ -1,10 +1,41 @@
 <?php
+
+use Seboettg\CiteProc\CiteProc;
 use Seboettg\CiteProc\Exception\CiteProcException;
 use Seboettg\CiteProc\StyleSheet;
-use Seboettg\CiteProc\CiteProc;
+
 class Episciences_Paper_Dataset
 {
 
+    public const HAL_LINKED_DATA_DOI_CODE = 'researchData_s';
+    public const HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE = 'swhidId_s';
+    public const DOI_CODE = 'doi';
+    public const URL_CODE = 'url';
+    public const SOFTWARE_CODE = 'software';
+    public const PUBLICATION = 'publication';
+    public const DATASET = 'dataset';
+    public const UNDEFINED_CODE = 'undefined';
+    public static array $_datasetsLabel = [
+
+        self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
+        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => self::SOFTWARE_CODE,
+        self::URL_CODE => self::URL_CODE,
+        self::SOFTWARE_CODE => self::SOFTWARE_CODE,
+        self::DATASET => self::DATASET,
+        self::PUBLICATION => self::PUBLICATION,
+        self::DOI_CODE => self::DOI_CODE,
+        self::UNDEFINED_CODE => self::UNDEFINED_CODE,
+        'journal-article' => self::PUBLICATION,
+        'article' => self::PUBLICATION,
+        'proceedings' => 'proceedings',
+        'report' => 'report',
+        'article-journal' => self::PUBLICATION,
+    ];
+    public static array $_datasetsLink = [
+        self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
+        self::DOI_CODE => self::DOI_CODE,
+        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'SWHID'
+    ];
     /**
      * @var int
      */
@@ -17,33 +48,55 @@ class Episciences_Paper_Dataset
      * @var string
      */
     protected $_code;
-
     /**
      * @var string
      */
     protected $_name;
-
     /** @var string */
     protected $_value;
-
     /** @var string */
     protected $_link;
-
     /**
      * @var int
      */
     protected $_sourceId;
-
     /** @var string|null */
     protected ?string $_relationship = null;
-
     /**
      * @var int|null
      */
     protected ?int $_idPaperDatasetsMeta = null;
-
     protected string $metatextCitation = '';
+    /** @var DateTime */
+    protected $_time = 'CURRENT_TIMESTAMP';
+    protected $_metatext;
 
+    /**
+     * Episciences_Paper_Dataset constructor.
+     * @param array|null $options
+     */
+    public function __construct(array $options = null)
+    {
+        if (is_array($options)) {
+            $this->setOptions($options);
+        }
+    }
+
+    /**
+     * set paper options
+     * @param array $options
+     */
+    public function setOptions(array $options): void
+    {
+        $classMethods = get_class_methods($this);
+        foreach ($options as $key => $value) {
+            $key = Episciences_Tools::convertToCamelCase($key, '_', true);
+            $method = 'set' . $key;
+            if (in_array($method, $classMethods, true)) {
+                $this->$method($value);
+            }
+        }
+    }
 
     public function getMetatextCitation($format = 'rawText'): string
     {
@@ -86,8 +139,35 @@ class Episciences_Paper_Dataset
         $this->setMetatextCitation($metatextCitation);
     }
 
+    public function getMetatext(): ?string
+    {
+        return $this->_metatext;
+    }
 
-    private static function getMetatextCitationAdditionalMarkup()
+    public function setMetatext($metatext)
+    {
+        return $this->_metatext = $metatext;
+    }
+
+    /**
+     * @return string
+     */
+    public function getValue(): string
+    {
+        return $this->_value;
+    }
+
+    /**
+     * @param string $value
+     * @return Episciences_Paper_Dataset
+     */
+    public function setValue(string $value): self
+    {
+        $this->_value = $value;
+        return $this;
+    }
+
+    private static function getMetatextCitationAdditionalMarkup(): array
     {
         //pimp author names
         $authorFunction = static function ($authorItem, $renderedText) {
@@ -96,7 +176,7 @@ class Episciences_Paper_Dataset
                     . " "
                     . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID)
                     . ' data-toggle="tooltip" data-placement="bottom" data-original-title="'
-                    . str_replace("http://orcid.org/", "", $authorItem->ORCID)
+                    . ltrim($authorItem->ORCID, 'http://orcid.org/')
                     . '" target="_blank"><img src="/icons/orcid.svg" alt="ORCID"/></a>';
 
             }
@@ -123,71 +203,6 @@ class Episciences_Paper_Dataset
         ];
     }
 
-    /** @var DateTime */
-    protected $_time = 'CURRENT_TIMESTAMP';
-
-    public const HAL_LINKED_DATA_DOI_CODE = 'researchData_s';
-    public const HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE = 'swhidId_s';
-    public const DOI_CODE = 'doi';
-    public const URL_CODE = 'url';
-    public const SOFTWARE_CODE = 'software';
-    public const PUBLICATION = 'publication';
-    public const DATASET = 'dataset';
-    public const UNDEFINED_CODE = 'undefined';
-    public static array $_datasetsLabel = [
-
-        self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
-        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => self::SOFTWARE_CODE,
-        self::URL_CODE => self::URL_CODE,
-        self::SOFTWARE_CODE => self::SOFTWARE_CODE,
-        self::DATASET => self::DATASET,
-        self::PUBLICATION => self::PUBLICATION,
-        self::DOI_CODE => self::DOI_CODE,
-        self::UNDEFINED_CODE => self::UNDEFINED_CODE,
-        'journal-article' => self::PUBLICATION,
-        'article' => self::PUBLICATION,
-        'proceedings' => 'proceedings',
-        'report' => 'report',
-        'article-journal' => self::PUBLICATION,
-    ];
-
-    public static array $_datasetsLink = [
-        self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
-        self::DOI_CODE => self::DOI_CODE,
-        self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'SWHID'
-    ];
-
-    protected $_metatext;
-
-
-    /**
-     * Episciences_Paper_Dataset constructor.
-     * @param array|null $options
-     */
-    public function __construct(array $options = null)
-    {
-        if (is_array($options)) {
-            $this->setOptions($options);
-        }
-    }
-
-    /**
-     * set paper options
-     * @param array $options
-     */
-    public function setOptions(array $options): void
-    {
-        $classMethods = get_class_methods($this);
-        foreach ($options as $key => $value) {
-            $key = Episciences_Tools::convertToCamelCase($key, '_', true);
-            $method = 'set' . $key;
-            if (in_array($method, $classMethods, true)) {
-                $this->$method($value);
-            }
-        }
-    }
-
-
     /**
      * @return array
      */
@@ -205,16 +220,6 @@ class Episciences_Paper_Dataset
             'idPaperDatasetsMeta' => $this->getIdPaperDatasetsMeta(),
             'time' => $this->getTime()
         ];
-    }
-
-    public function getMetatext(): ?string
-    {
-        return $this->_metatext;
-    }
-
-    public function setMetatext($metatext)
-    {
-        return $this->_metatext = $metatext;
     }
 
     /**
@@ -292,24 +297,6 @@ class Episciences_Paper_Dataset
     /**
      * @return string
      */
-    public function getValue(): string
-    {
-        return $this->_value;
-    }
-
-    /**
-     * @param string $value
-     * @return Episciences_Paper_Dataset
-     */
-    public function setValue(string $value): self
-    {
-        $this->_value = $value;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
     public function getLink(): string
     {
         return $this->_link;
@@ -348,7 +335,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getRelationship(): ?string
     {
@@ -356,7 +343,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
-     * @param null $relationship
+     * @param string|null $relationship
      * @return Episciences_Paper_Dataset
      */
     public function setRelationship(string $relationship = null): self
@@ -416,16 +403,11 @@ class Episciences_Paper_Dataset
      */
     public function getSourceLabel(int $sourcesId): string
     {
-
         $metadataSources = Zend_Registry::get('metadataSources');
-
         if (!$metadataSources || !array_key_exists($sourcesId, $metadataSources)) {
             return 'Undefined';
         }
-
-        /** @var Episciences_Paper_MetaDataSource $metaDataSource */
         $metaDataSource = new Episciences_Paper_MetaDataSource($metadataSources[$sourcesId]);
-
         return $metaDataSource->getName();
     }
 
