@@ -1501,6 +1501,47 @@ class Episciences_Paper
 
     }
 
+    /**
+     * @param array $xmlToArray
+     * @return array
+     */
+    private function processDatasetsToJson(array $xmlToArray): array
+    {
+        $docType = null;
+        $programPath = null;
+        $programKey = null;
+
+        // Determine the document type and set the program path
+        if (isset($xmlToArray['body']['journal']['journal_article']['program'])) {
+            $docType = 'journal';
+            $programPath = &$xmlToArray['body']['journal']['journal_article']['program'];
+        } elseif (isset($xmlToArray['body']['conference']['conference_paper']['program'])) {
+            $docType = 'conference';
+            $programPath = &$xmlToArray['body']['conference']['conference_paper']['program'];
+        }
+
+        // If a valid document type was found, process the program
+        if ($docType !== null && !empty($programPath)) {
+            $items = [];
+
+            // Collect all 'related_item' elements and $programKey from the program array
+            foreach ($programPath as $programKey => $value) {
+                if (isset($value['related_item']) && !empty($value['related_item'])) {
+                    $items[] = $value['related_item'];
+                }
+            }
+
+            // If there are related items, process them
+            if (!empty($items) && $programKey !== null) {
+                $result = self::addUnstructuredCitationToDatasetsToJson($this->getDatasets(), $items);
+                // Update the corresponding keys in $programPath with the processed result
+                $programPath[$programKey] = $result;
+            }
+        }
+
+        return $xmlToArray;
+    }
+
     private static function addUnstructuredCitationToDatasetsToJson(array $datasets, array $relations, string $format = 'markdown'): array
     {
         // Create a map of _value => metatextCitation
@@ -4975,53 +5016,6 @@ class Episciences_Paper
         }
         return null;
     }
-
-    /**
-     * @param array $xmlToArray
-     * @return array
-     */
-    private function processDatasetsToJson(array $xmlToArray): array
-    {
-        $docType = null;
-        $programPath = null;
-
-        // Determine the document type and set the program path
-        if (isset($xmlToArray['body']['journal']['journal_article']['program'])) {
-            $docType = 'journal';
-            $programPath = &$xmlToArray['body']['journal']['journal_article']['program'];
-        } elseif (isset($xmlToArray['body']['conference']['conference_paper']['program'])) {
-            $docType = 'conference';
-            $programPath = &$xmlToArray['body']['conference']['conference_paper']['program'];
-        }
-
-        // If a valid document type was found, process the program
-        if ($docType !== null && !empty($programPath)) {
-            $items = [];
-            $relatedItemKeys = [];
-
-            // Collect all 'related_item' elements and their keys from the program array
-            foreach ($programPath as $programKey => $value) {
-                if (isset($value['related_item']) && !empty($value['related_item'])) {
-                    $items[] = $value['related_item'];
-                   // $relatedItemKeys[] = $programKey;
-                }
-            }
-
-            // If there are related items, process them
-            if (!empty($items)) {
-                $result = self::addUnstructuredCitationToDatasetsToJson($this->getDatasets(), $items);
-
-                // Update the corresponding keys in $programPath with the processed result
-                //foreach ($relatedItemKeys as $programKey) {
-                    $programPath[$programKey] = $result;
-                //}
-            }
-        }
-
-        return $xmlToArray;
-    }
-
-
 
 
 }
