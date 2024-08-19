@@ -1270,12 +1270,12 @@ class Episciences_Paper
     }
 
     /**
-     * @param string $related_itemKeyNumber
+     * @param string $key
      * @return string|null
      * @throws Zend_Db_Statement_Exception
      */
 
-    public function toJson(string $related_itemKeyNumber = Episciences_Paper_XmlExportManager::PUBLIC_KEY): ?string
+    public function toJson(string $key = Episciences_Paper_XmlExportManager::PUBLIC_KEY): ?string
     {
         $journal = Episciences_ReviewsManager::find($this->getRvid());
 
@@ -1461,9 +1461,9 @@ class Episciences_Paper
         $document[$keyPrivate] = $extraData[$keyPrivate];
 
 // Check and update document based on key
-        if ($related_itemKeyNumber !== $keyAll) {
-            if ($related_itemKeyNumber === $keyPrivate || $related_itemKeyNumber === $keyPublic) {
-                $document = $document[$related_itemKeyNumber];
+        if ($key !== $keyAll) {
+            if ($key === $keyPrivate || $key === $keyPublic) {
+                $document = $document[$key];
             } else {
                 $document = $document[$keyPublic];
             }
