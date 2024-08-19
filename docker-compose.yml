@@ -19,16 +19,16 @@ services:
       #bash -c "service apache2 reload && tail -F anything"
 
 
-  php-fpm:
-    container_name: php-fpm
-    build:
-      context: .
-      dockerfile: src/php-fpm/Dockerfile
-    restart: always
-    volumes:
-      - .:/var/www
-    ports:
-      - 9001:9000
+  #php-fpm:
+  #    container_name: php-fpm
+  #    build:
+  #      context: .
+  #      dockerfile: src/php-fpm/Dockerfile
+  #    restart: always
+  #    volumes:
+  #      - .:/var/www
+  #    ports:
+  #      - 9001:9000
 
   solr:
     image: solr:9
