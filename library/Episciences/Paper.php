@@ -1521,7 +1521,7 @@ class Episciences_Paper
         }
 
         // If a valid document type was found, process the program
-        if ($docType !== null && !empty($programPath)) {
+        if ($docType !== null && is_array($programPath) && !empty($programPath)) {
             $items = [];
 
             // Collect all 'related_item' elements and $programKey from the program array
