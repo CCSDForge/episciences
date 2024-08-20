@@ -5,6 +5,10 @@
     {
       "type": "vcs",
       "url": "https://github.com/CCSDForge/php-hcaptcha"
+    },
+    {
+      "type": "vcs",
+      "url": "https://github.com/rtournoy/citeproc-php.git"
     }
   ],
   "require": {
@@ -51,7 +55,7 @@
     "vlucas/phpdotenv": "^5.5",
     "league/html-to-markdown": "^5.1",
     "league/commonmark": "^2.4",
-    "seboettg/citeproc-php": "^2.6",
+    "seboettg/citeproc-php": "dev-master",
     "symfony/serializer": "^6.4",
     "symfony/property-access": "^6.4",
     "ramsey/uuid": "^4.7",

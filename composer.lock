@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a94f3df42d46043693f1f4e25d51bfec",
+    "content-hash": "0381930550331cd193d74f98153865de",
     "packages": [
         {
             "name": "apereo/phpcas",
@@ -4728,16 +4728,16 @@
         },
         {
             "name": "seboettg/citeproc-php",
-            "version": "v2.6.2",
+            "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/seboettg/citeproc-php.git",
-                "reference": "4070bdc3ad1c5fa1cfe3887f2db70f281a50e4a7"
+                "url": "https://github.com/rtournoy/citeproc-php.git",
+                "reference": "9e5803cb8a86dd424c989977fd134dc0669e89b0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/seboettg/citeproc-php/zipball/4070bdc3ad1c5fa1cfe3887f2db70f281a50e4a7",
-                "reference": "4070bdc3ad1c5fa1cfe3887f2db70f281a50e4a7",
+                "url": "https://api.github.com/repos/rtournoy/citeproc-php/zipball/9e5803cb8a86dd424c989977fd134dc0669e89b0",
+                "reference": "9e5803cb8a86dd424c989977fd134dc0669e89b0",
                 "shasum": ""
             },
             "require": {
@@ -4762,14 +4762,44 @@
             },
             "type": "library",
             "autoload": {
-                "files": [
-                    "src/functions.php"
-                ],
                 "psr-4": {
                     "Seboettg\\CiteProc\\": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Seboettg\\CiteProc\\Test\\": "tests/src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "post-install-cmd": [
+                    "@compile-test-cases",
+                    "chmod +x vendor/bin/phpunit"
+                ],
+                "post-update-cmd": [
+                    "@compile-test-cases",
+                    "chmod +x vendor/bin/phpunit"
+                ],
+                "test": [
+                    "vendor/bin/phpunit -c phpunit.xml"
+                ],
+                "check": [
+                    "@cs-check",
+                    "@test"
+                ],
+                "cs-check": [
+                    "phpcs"
+                ],
+                "cs-fix": [
+                    "phpcbf"
+                ],
+                "compile-test-cases": [
+                    "cd ./tests/fixtures/basic-tests/; ./processor.py -g"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -4784,9 +4814,9 @@
             "description": "Full-featured CSL processor (https://citationstyles.org)",
             "support": {
                 "issues": "https://github.com/seboettg/citeproc-php/issues",
-                "source": "https://github.com/seboettg/citeproc-php/tree/v2.6.2"
+                "source": "https://github.com/rtournoy/citeproc-php/tree/master"
             },
-            "time": "2023-12-10T16:56:31+00:00"
+            "time": "2024-08-20T14:59:31+00:00"
         },
         {
             "name": "seboettg/collection",
@@ -11012,6 +11042,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "seboettg/citeproc-php": 20,
         "phpmd/phpmd": 0,
         "roave/security-advisories": 20
     },
