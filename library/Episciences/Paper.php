@@ -1834,7 +1834,7 @@ class Episciences_Paper
     }
 
     /**
-     * @return null
+     * @return array|null
      */
     public function getDocument(): ?array
     {
@@ -1842,7 +1842,7 @@ class Episciences_Paper
     }
 
     /**
-     * @param array|null $document
+     * @param string|null $document
      * @return Episciences_Paper
      */
     public function setDocument(string $document = null): self
@@ -1913,7 +1913,7 @@ class Episciences_Paper
     }
 
     /**
-     * @param $xml
+     * @param string $xml
      * @return $this
      */
     public function setMetadata(string $xml): self
@@ -1957,7 +1957,7 @@ class Episciences_Paper
         }
     }
 
-    private function processSingleSubject($index, $subject, &$result = [])
+    private function processSingleSubject($index, $subject, &$result = []): void
     {
         $isStringIndex = is_string($index);
         $index = ($isStringIndex && $translatedIndex = Episciences_Tools::translateToTwoLetterCode($index)) ? $translatedIndex : $index;
@@ -2170,7 +2170,7 @@ class Episciences_Paper
     }
 
     /**
-     * Create or delete an position in volume
+     * Create or delete a position in volume
      * @return int|null
      */
     public function applyPositioningStrategy(): ?int
