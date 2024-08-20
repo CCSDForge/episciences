@@ -135,7 +135,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
 
                         } catch (Zend_Db_Statement_Exception|Zend_Db_Adapter_Exception $e) {
-                            $this->displayCritical($e->getMessage());
+                            $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
                         }
 
                     }
@@ -144,7 +144,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                         $affectedRows = Episciences_PapersManager::updateRecordData($currentPaper);
                         $this->displayTrace(sprintf('Update metadata... > Affected rows: %s', $affectedRows), true);
                     } catch (Exception|\GuzzleHttp\Exception\GuzzleException|\Psr\Cache\InvalidArgumentException $e) {
-                        $this->displayCritical($e->getMessage());
+                        $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
                     }
 
                 }
@@ -152,7 +152,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 try {
                     $toJson = $currentPaper->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
                 } catch (Zend_Db_Statement_Exception $e) {
-                    $this->displayCritical($e->getMessage());
+                    $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
                 }
 
                 if ($this->isVerbose()) {
@@ -170,13 +170,17 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             }
 
             if (!$this->isDebug()) {
-                $statement = $db->query($toUpdate);
+                if (empty(trim($toUpdate))) {
+                    $this->displayCritical('#' . $docId . " Nothing to update! SQL Request is empty");
+                    continue;
+                }
                 try {
+                    $statement = $db->query($toUpdate);
                     $result = $statement->rowCount();
                     $statement->closeCursor();
-                } catch (Zend_Db_Statement_Exception $e) {
+                } catch (Zend_Db_Statement_Exception|Exception $e) {
                     $result = 0;
-                    $this->displayCritical($e->getMessage());
+                    $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
                 }
 
             }
