@@ -15,6 +15,7 @@
     "ext-xml": "*",
     "ext-gd": "*",
     "ext-libxml": "*",
+    "ext-mbstring": "*",
     "ext-dom": "*",
     "ext-xsl": "*",
     "ext-simplexml": "*",
