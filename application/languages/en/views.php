@@ -2504,8 +2504,6 @@ return [
     "IsPartOf" => "Is part of",
     "HasPart" => "Has part",
     "references" => "References",
-    "Références" => "References",
-    "Références bibliographiques" => "Bibliographic References",
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",
@@ -2515,6 +2513,9 @@ return [
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
     'IsRelatedTo' => 'Is related to',
+
+    "Références" => "References",
+    "Références bibliographiques" => "Bibliographic References",
 
     // Journal's settings
     "Exiger que la demande de révision soit assortie d'un délai" => "To require that a deadline is given with revision request",
