@@ -586,13 +586,17 @@ class Episciences_Tools
      */
     public static function getMimeType($filename): string
     {
+        if (!is_readable($filename)) {
+            trigger_error(sprintf("Unable to read file: %s", $filename), E_USER_WARNING);
+            return '';
+        }
         $finfo = new finfo(FILEINFO_MIME);
         $mime = $finfo->file($filename);
-        if (strpos($mime, 'zip') !== false) {
+        if (str_contains($mime, 'zip')) {
             return static::getMimeFileZip($filename);
         }
 
-        if (strpos($mime, 'htm') !== false) {
+        if (str_contains($mime, 'htm')) {
             $mime = 'application/octet-stream';
         }
         return $mime;
@@ -605,11 +609,11 @@ class Episciences_Tools
 
         if (in_array($ext, ['odt', 'ott', 'odp', 'otp', 'ods', 'ots', 'sxw'])) {
             $mime = "application/opendocument";
-        } else if (in_array($ext, ['pptx', 'ppsx'])) {
+        } elseif (in_array($ext, ['pptx', 'ppsx'])) {
             $mime = "application/vnd.ms-powerpoint";
-        } else if (in_array($ext, ['docx', 'dotx'])) {
+        } elseif (in_array($ext, ['docx', 'dotx'])) {
             $mime = "application/msword";
-        } else if ($ext === 'xlsx') {
+        } elseif ($ext === 'xlsx') {
             $mime = "application/vnd.ms-excel";
         } else {
             $mime = "application/zip";

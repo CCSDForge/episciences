@@ -208,7 +208,7 @@ class Episciences_Volume_Metadata
     public function isPDF(): bool
     {
         $type = $this->getFileType();
-        return (is_array($type) && $type[1] === 'pdf');
+        return is_array($type) && isset($type[1]) && $type[1] === 'pdf';
     }
 
     /**
