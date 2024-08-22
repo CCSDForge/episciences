@@ -63,4 +63,3 @@ assets/node_modules/
 /tmp/
 /docker-compose.override.yml
 /.user.ini
-/solr/data/
