@@ -60,12 +60,6 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
       -->
     <!-- <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" /> -->
 
-    <!-- COMPAT SOLR 8  a supprimer apres passage solr9 -->
-    <lib dir="${solr.install.dir:../../../..}/contrib/analysis-extras/lib" regex="icu4j-\d.*\.jar"/>
-    <lib dir="${solr.install.dir:../../../..}/contrib/analysis-extras/lucene-libs"
-         regex="lucene-analyzers-icu-\d.*\.jar"/>
-    <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-analysis-extras-\d.*\.jar"/>
-    <!-- COMPAT SOLR 9  a garder apres passage solr9 -->
     <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="icu4j-\d.*\.jar"/>
     <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="lucene-analysis-icu-\d.*\.jar"/>
     <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="solr-analysis-extras-\d.*\.jar"/>
