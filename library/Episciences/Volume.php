@@ -328,7 +328,7 @@ class Episciences_Volume
     /**
      *
      */
-    public function loadReviewers()
+    public function loadReviewers(): void
     {
         $sql = $this->_db->select()
             ->from(T_REVIEWER_POOL, ['UID'])
@@ -363,7 +363,7 @@ class Episciences_Volume
      * @param array $params
      * @return array|bool
      */
-    public function assign($ids, $params = [])
+    public function assign($ids, array $params = [])
     {
         $params = [
             'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
@@ -382,7 +382,7 @@ class Episciences_Volume
      * @param array $params
      * @return array|bool
      */
-    public function unassign($ids, $params = [])
+    public function unassign($ids, array $params = [])
     {
         $params = [
             'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
@@ -394,7 +394,7 @@ class Episciences_Volume
         return Episciences_UsersManager::unassign($ids, $params);
     }
 
-    public function getSolrCountOfVolumePapers()
+    public function getSolrCountOfVolumePapers(): int
     {
 
         $numFound = 0;
@@ -420,7 +420,7 @@ class Episciences_Volume
     /**
      * @throws Exception
      */
-    public function loadIndexedPapers()
+    public function loadIndexedPapers(): void
     {
         $query = 'q=*%3A*';
         $query .= '&sort=publication_date_tdate+asc&wt=phps&omitHeader=true';
