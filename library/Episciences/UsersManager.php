@@ -69,7 +69,7 @@ class Episciences_UsersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->distinct()
-            ->from(array('u' => T_USERS), 'UID');
+            ->from(array('u' => T_USERS), ['UID', 'SCREEN_NAME', 'LASTNAME']);
 
         if ($strict) {
             $select->where('IS_VALID = ?', self::VALID_USER);
