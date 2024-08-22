@@ -682,22 +682,25 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
          queries across multiple shards
       -->
 
-    <!-- Standard Search Handler  -->
+    <!-- Standard Search Handler
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="inc-select-search-handler.xml">
       <xi:fallback>
-        <requestHandler name="/select" class="solr.SearchHandler">
-          <lst name="defaults">
+       -->
+    <requestHandler name="/select" class="solr.SearchHandler">
+        <lst name="defaults">
             <str name="echoParams">explicit</str>
             <int name="rows">30</int>
             <str name="df">text</str>
             <str name="wt">json</str>
             <str name="q.op">AND</str>
-            <str name="fl">*</str>
-          </lst>
-        </requestHandler>
+            <str name="fl">docid,doi_s,*_paper_title_t,paper_title_t,abstract_t,author_fullname_s,publication_date_tdate,volume_id_i,*_volume_title_t,section_id_i,*_section_title_t</str>
+        </lst>
+    </requestHandler>
+    <!--
       </xi:fallback>
     </xi:include>
-    
+    -->
+
 
     <!-- A request handler that returns indented JSON by default -->
     <requestHandler name="/query" class="solr.SearchHandler">
