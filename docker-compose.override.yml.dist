@@ -1,37 +1,6 @@
 services:
-
-
-  #httpd:
-#    image: httpd:2.4-bookworm
-#    container_name: httpd
-#    build:
-#      context: .
-#      dockerfile: src/apache/Dockerfile
-#    restart: always
-#    volumes:
-#      - .:/var/www
-#      - ./data:/var/www/data
-#      - ./cache:/var/www/cache
-#      - ./logs:/var/www/logs
-#    ports:
-#      - 8888:80
-#    command:
-      #bash -c "service apache2 reload && tail -F anything"
-
-
-  #php-fpm:
-  #    container_name: php-fpm
-  #    build:
-  #      context: .
-  #      dockerfile: src/php-fpm/Dockerfile
-  #    restart: always
-  #    volumes:
-  #      - .:/var/www
-  #    ports:
-  #      - 9001:9000
-
   solr:
-    image: solr:9
+    image: solr:9.6
     container_name: solr
     ports:
       - "8983:8983"
@@ -42,14 +11,11 @@ services:
     depends_on:
       - zoo
     volumes:
+      - solr_data:/var/solr
       - type: bind
         source: ./src/solr
         target: /opt/configsets
         read_only: true
-#      - type: bind
-#        source: ./solr/data
-#        target: /var/solr
-#        read_only: true
 
   zoo:
     image: zookeeper:3.9
@@ -156,4 +122,5 @@ volumes:
   mysql-db-episciences:
   mysql-db-indexing:
   mysql-db-auth:
+  solr_data:
 
