@@ -1,46 +1,45 @@
 services:
-  httpd:
-    image: httpd:2.4-bookworm
-    container_name: httpd
-    build:
-      context: .
-      dockerfile: src/apache/Dockerfile
-    restart: always
-    volumes:
-      - ./src/apache/vhost.conf:/usr/local/apache2/conf/extra/episciences.conf
-      - .:/var/www/htdocs
-      - ./data:/var/www/data
-      - ./cache:/var/www/cache
-      - ./logs:/var/www/logs
-    ports:
-      - "8888:80"  # Apache listens on port 80 internally, mapped to 8888 on the host
-    depends_on:
-      - php-fpm
-    networks:
-      - search
-    command: >
-      /bin/sh -c "chown -R www-data:www-data /var/www/data /var/www/cache /var/www/logs && httpd-foreground"
+  #httpd:
+#    image: httpd:2.4-bookworm
+#    container_name: httpd
+  #    build:
+  #      context: .
+  #      dockerfile: src/apache/Dockerfile
+  #    restart: always
+  #    volumes:
+  #      - ./src/apache/vhost.conf:/usr/local/apache2/conf/extra/episciences.conf
+  #      - .:/var/www/htdocs
+  #      - ./data:/var/www/data
+  #      - ./cache:/var/www/cache
+  #      - ./logs:/var/www/logs
+  #    ports:
+  #      - "8888:80"  # Apache listens on port 80 internally, mapped to 8888 on the host
+  #    depends_on:
+  #      - php-fpm
+  #    networks:
+  #      - search
+  #    command: >
+  #      /bin/sh -c "chown -R www-data:www-data /var/www/data /var/www/cache /var/www/logs && httpd-foreground"
 
 
-  php-fpm:
-    container_name: php-fpm
-    build:
-      context: .
-      dockerfile: src/php-fpm/Dockerfile
-    restart: always
-    volumes:
-      - .:/var/www/htdocs
-      - ./data:/var/www/data
-      - ./cache:/var/www/cache
-      - ./logs:/var/www/logs
-      - ./src/php-fpm/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-custom.conf
-    environment:
-      - PHP_FPM_LISTEN_PORT=9000
-    expose:
-      - "9000"  # Expose internal port 9000
-    networks:
-      - search
-
+  #php-fpm:
+  #  container_name: php-fpm
+  #    build:
+  #      context: .
+  #      dockerfile: src/php-fpm/Dockerfile
+  #    restart: always
+  #    volumes:
+  #      - .:/var/www/htdocs
+  #      - ./data:/var/www/data
+  #      - ./cache:/var/www/cache
+  #      - ./logs:/var/www/logs
+  #      - ./src/php-fpm/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-custom.conf
+  #    environment:
+  #      - PHP_FPM_LISTEN_PORT=9000
+  #    expose:
+  #      - "9000"  # Expose internal port 9000
+  #    networks:
+  #      - search
 
   solr:
     image: solr:9.6
