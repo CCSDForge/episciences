@@ -208,16 +208,16 @@
         },
         {
             "name": "citation-style-language/locales",
-            "version": "v0.0.20",
+            "version": "v0.0.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/citation-style-language/locales.git",
-                "reference": "1159f592d095d890ba5b338a330be0f2c774c537"
+                "reference": "195bef843f87fc917be45ab3eca60536e4ef4626"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/citation-style-language/locales/zipball/1159f592d095d890ba5b338a330be0f2c774c537",
-                "reference": "1159f592d095d890ba5b338a330be0f2c774c537",
+                "url": "https://api.github.com/repos/citation-style-language/locales/zipball/195bef843f87fc917be45ab3eca60536e4ef4626",
+                "reference": "195bef843f87fc917be45ab3eca60536e4ef4626",
                 "shasum": ""
             },
             "type": "library",
@@ -240,7 +240,7 @@
             "homepage": "http://citationstyles.org/",
             "support": {
                 "issues": "https://github.com/citation-style-language/locales/issues",
-                "source": "https://github.com/citation-style-language/locales/tree/v0.0.20"
+                "source": "https://github.com/citation-style-language/locales/tree/v0.0.21"
             },
             "funding": [
                 {
@@ -248,7 +248,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-04-14T13:09:26+00:00"
+            "time": "2024-08-12T20:22:23+00:00"
         },
         {
             "name": "citation-style-language/styles",
@@ -1408,16 +1408,16 @@
         },
         {
             "name": "doctrine/orm",
-            "version": "2.19.6",
+            "version": "2.19.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/orm.git",
-                "reference": "c1bb2ccf4b19c845f91ff7c4c01dc7cbba7f4073"
+                "reference": "168ac31084226f94d42e7461a40ff5607a56bd35"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/orm/zipball/c1bb2ccf4b19c845f91ff7c4c01dc7cbba7f4073",
-                "reference": "c1bb2ccf4b19c845f91ff7c4c01dc7cbba7f4073",
+                "url": "https://api.github.com/repos/doctrine/orm/zipball/168ac31084226f94d42e7461a40ff5607a56bd35",
+                "reference": "168ac31084226f94d42e7461a40ff5607a56bd35",
                 "shasum": ""
             },
             "require": {
@@ -1503,9 +1503,9 @@
             ],
             "support": {
                 "issues": "https://github.com/doctrine/orm/issues",
-                "source": "https://github.com/doctrine/orm/tree/2.19.6"
+                "source": "https://github.com/doctrine/orm/tree/2.19.7"
             },
-            "time": "2024-06-26T17:24:40+00:00"
+            "time": "2024-08-23T06:54:57+00:00"
         },
         {
             "name": "doctrine/persistence",
@@ -8128,35 +8128,35 @@
         },
         {
             "name": "phpunit/php-code-coverage",
-            "version": "9.2.31",
+            "version": "9.2.32",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "48c34b5d8d983006bd2adc2d0de92963b9155965"
+                "reference": "85402a822d1ecf1db1096959413d35e1c37cf1a5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/48c34b5d8d983006bd2adc2d0de92963b9155965",
-                "reference": "48c34b5d8d983006bd2adc2d0de92963b9155965",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/85402a822d1ecf1db1096959413d35e1c37cf1a5",
+                "reference": "85402a822d1ecf1db1096959413d35e1c37cf1a5",
                 "shasum": ""
             },
             "require": {
                 "ext-dom": "*",
                 "ext-libxml": "*",
                 "ext-xmlwriter": "*",
-                "nikic/php-parser": "^4.18 || ^5.0",
+                "nikic/php-parser": "^4.19.1 || ^5.1.0",
                 "php": ">=7.3",
-                "phpunit/php-file-iterator": "^3.0.3",
-                "phpunit/php-text-template": "^2.0.2",
-                "sebastian/code-unit-reverse-lookup": "^2.0.2",
-                "sebastian/complexity": "^2.0",
-                "sebastian/environment": "^5.1.2",
-                "sebastian/lines-of-code": "^1.0.3",
-                "sebastian/version": "^3.0.1",
-                "theseer/tokenizer": "^1.2.0"
+                "phpunit/php-file-iterator": "^3.0.6",
+                "phpunit/php-text-template": "^2.0.4",
+                "sebastian/code-unit-reverse-lookup": "^2.0.3",
+                "sebastian/complexity": "^2.0.3",
+                "sebastian/environment": "^5.1.5",
+                "sebastian/lines-of-code": "^1.0.4",
+                "sebastian/version": "^3.0.2",
+                "theseer/tokenizer": "^1.2.3"
             },
             "require-dev": {
-                "phpunit/phpunit": "^9.3"
+                "phpunit/phpunit": "^9.6"
             },
             "suggest": {
                 "ext-pcov": "PHP extension that provides line coverage",
@@ -8165,7 +8165,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "9.2-dev"
+                    "dev-main": "9.2.x-dev"
                 }
             },
             "autoload": {
@@ -8194,7 +8194,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-code-coverage/issues",
                 "security": "https://github.com/sebastianbergmann/php-code-coverage/security/policy",
-                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/9.2.31"
+                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/9.2.32"
             },
             "funding": [
                 {
@@ -8202,7 +8202,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-03-02T06:37:42+00:00"
+            "time": "2024-08-22T04:23:01+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
@@ -8614,12 +8614,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Roave/SecurityAdvisories.git",
-                "reference": "8938260885863ec2dd9f2aaf9a79ba14e58a92f6"
+                "reference": "f8de2a81061775002d96aea80b12f2ab3c5eeb8d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/8938260885863ec2dd9f2aaf9a79ba14e58a92f6",
-                "reference": "8938260885863ec2dd9f2aaf9a79ba14e58a92f6",
+                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/f8de2a81061775002d96aea80b12f2ab3c5eeb8d",
+                "reference": "f8de2a81061775002d96aea80b12f2ab3c5eeb8d",
                 "shasum": ""
             },
             "conflict": {
@@ -8830,7 +8830,7 @@
                 "friendsoftypo3/mediace": ">=7.6.2,<7.6.5",
                 "friendsoftypo3/openid": ">=4.5,<4.5.31|>=4.7,<4.7.16|>=6,<6.0.11|>=6.1,<6.1.6",
                 "froala/wysiwyg-editor": "<3.2.7|>=4.0.1,<=4.1.3",
-                "froxlor/froxlor": "<2.1.9",
+                "froxlor/froxlor": "<=2.2.0.0-RC3",
                 "frozennode/administrator": "<=5.0.12",
                 "fuel/core": "<1.8.1",
                 "funadmin/funadmin": "<=3.2|>=3.3.2,<=3.3.3",
@@ -9423,7 +9423,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-08-19T21:04:39+00:00"
+            "time": "2024-08-23T19:04:38+00:00"
         },
         {
             "name": "sebastian/cli-parser",
