@@ -48,7 +48,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         return Zend_Db_Table_Abstract::getDefaultAdapter();
     }
 
-    protected function _initModule()
+    protected function _initModule(): void
     {
 
         $dotEnv = Dotenv::createImmutable(dirname(__DIR__));
