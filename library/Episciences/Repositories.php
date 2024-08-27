@@ -220,7 +220,7 @@ class Episciences_Repositories
 
     public static function isFromHalRepository(int $repoId): bool
     {
-        return (str_contains(self::getLabel($repoId), self::HAL_LABEl));
+        return str_contains(self::getLabel($repoId), self::HAL_LABEl);
 
     }
 
