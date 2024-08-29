@@ -610,7 +610,9 @@ class Episciences_User extends Ccsd_User_Models_User
 
         $select = $this->_db->select()
             ->from(T_USERS, ['uuid','nombre' => 'COUNT(UID)'])
-            ->where('UID = ?', $uid);
+            ->where('UID = ?', $uid)
+            ->group('uuid');
+
 
         $result = $select->query()->fetch();
 
