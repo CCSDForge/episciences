@@ -212,7 +212,7 @@ function defineSimpleConstants()
  */
 function defineVendorJsLibraries()
 {
-    define('VENDOR_BOOTBOX', 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.2/bootbox.min.js');
+    define('VENDOR_BOOTBOX', 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.3/bootbox.min.js');
     define('VENDOR_BOOTSTRAP_COLORPICKER', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/js/bootstrap-colorpicker.min.js');
     define('VENDOR_BOOTSTRAP_JS', "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js");
     define('VENDOR_DATATABLES_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap.min.js');
