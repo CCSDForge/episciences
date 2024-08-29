@@ -1312,6 +1312,8 @@ class Episciences_Paper
                 $sVolume = [
                     'id' => $oVolume->getVid() ?: null,
                     'position' => $oVolume->getPosition(),
+                    'number' => $oVolume->getVol_num(),
+                    'year' => $oVolume->getVol_year(),
                     'has_proceedings' => isset($xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::CONFERENCE_KEY]),
                     'titles' => $oVolume->getTitles(),
                     'descriptions' => $oVolume->getDescriptions(),
