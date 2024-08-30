@@ -16,16 +16,25 @@ RUN apt-get update  \
     libonig-dev \
     unzip \
     git \
-    && pecl install imagick \
+    vim
+
 RUN pecl install imagick && \
     docker-php-ext-enable imagick
+
+RUN pecl install xdebug && \
+    docker-php-ext-enable xdebug
+
 RUN docker-php-ext-install curl gd dom fileinfo iconv intl pdo pdo_mysql posix simplexml xml xsl zip
 RUN docker-php-ext-enable  curl gd dom fileinfo iconv intl pdo pdo_mysql posix simplexml xml xsl zip
 
 # Install Composer globally
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-COPY ./src/apache/entrypoint.sh /usr/local/bin/entrypoint.sh
+# Add Xdebug configuration
+COPY ./src/php-fpm/xdebug.ini /usr/local/etc/php/conf.d/
+
+
+COPY ./src/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 # Run the default php-fpm command
