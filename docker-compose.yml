@@ -13,14 +13,14 @@ services:
         - ./cache:/var/www/cache
         - ./logs:/var/www/logs
       ports:
-        - "8888:80"  # Apache listens on port 80 internally, mapped to 8888 on the host
+        - "80:80"  # Apache listens on port 80 internally, mapped to 8888 on the host
       depends_on:
         - php-fpm
         - db-episciences
         - db-indexing
         - db-auth
       networks:
-        - search
+        - epi-network
       command: >
         /bin/sh -c "chown -R www-data:www-data /var/www/data /var/www/cache /var/www/logs && httpd-foreground"
 
@@ -47,7 +47,7 @@ services:
     expose:
         - "9000"  # Expose internal port 9000
     networks:
-        - search
+        - epi-network
 
   solr:
     image: solr:9.6
@@ -55,7 +55,7 @@ services:
     ports:
       - "8983:8983"
     networks:
-      - search
+      - epi-network
     environment:
       ZK_HOST: "zoo:2181"
     depends_on:
@@ -71,7 +71,7 @@ services:
     image: zookeeper:3.9
     container_name: zoo
     networks:
-      - search
+      - epi-network
     environment:
       ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
 
@@ -86,14 +86,14 @@ services:
     ports:
       - "33060:3306"
     volumes:
-      - /var/lib/mysql
+      - mysql-db-episciences:/var/lib/mysql
       - type: bind
         source: ./src/mysql/docker/episciences/episciences.sql
         target: /docker-entrypoint-initdb.d/init.sql
     env_file:
       - src/mysql/docker/episciences/mysql.env
     networks:
-      - search
+      - epi-network
 
   db-indexing:
     image: "mysql:8.4"
@@ -113,7 +113,7 @@ services:
     env_file:
       - src/mysql/docker/solr/mysql.env
     networks:
-      - search
+      - epi-network
 
   db-auth:
     image: "mysql:8.4"
@@ -133,7 +133,7 @@ services:
     env_file:
       - src/mysql/docker/auth/mysql.env
     networks:
-      - search
+      - epi-network
 
   pma:
     container_name: 'db-phpmyadmin'
@@ -161,21 +161,15 @@ services:
       - db-indexing
       - db-auth
     networks:
-      - search
-
+      - epi-network
 
 networks:
-  search:
+  epi-network:
     driver: bridge
-  app-network:
-    driver: bridge
-
 
 volumes:
   mysql-db-episciences:
   mysql-db-indexing:
   mysql-db-auth:
   solr_data:
-  epi-cache:
-  epi-logs:
 

@@ -1,6 +1,7 @@
 DOCKER_COMPOSE:=docker compose
 SOLR_CONTAINER_NAME := solr
 COLLECTION_CONFIG := /opt/configsets/episciences
+MYSQL_CONNECT:= mysql -u root -proot -h 127.0.0.1
 PHP_VERSION := 8.1
 
 .PHONY: build up down collection index clean help
@@ -14,7 +15,7 @@ build: ## Build the docker containers
 
 up: ## Start the docker containers
 	$(DOCKER_COMPOSE) up -d
-	@echo "Apache: http://localhost:8888/"
+	@echo "Local Journal: http://dev.episciences.org/ make sure you have [127.0.0.1 dev.episciences.org] in /etc/hosts"
 	@echo "PhpMyAdmin: http://localhost:8001/"
 	@echo "Apache Solr: http://localhost:8983/solr"
 
@@ -25,7 +26,7 @@ collection: up ## Create the Solr collection after starting the containers
 	@echo "Waiting for Solr container to be ready..."
 	@docker exec $(SOLR_CONTAINER_NAME) bash -c "until curl -s http://localhost:8983/solr; do sleep 1; done"
 	@echo "Solr container is ready. Creating collection..."
-	@docker exec $(SOLR_CONTAINER_NAME) solr create_collection -c dev-episciences -d $(COLLECTION_CONFIG)
+	@docker exec $(SOLR_CONTAINER_NAME) solr create_collection -c episciences -d $(COLLECTION_CONFIG)
 
 index: ## Index the content into Solr
 	@echo "Indexing all content"
@@ -34,3 +35,10 @@ index: ## Index the content into Solr
 clean: down ## Clean up unused docker resources
 	#docker stop $(docker ps -a -q)
 	docker system prune -f
+
+load-db-episciences: ## Load an SQL dump from ./tmp/episciences.sql
+	$(MYSQL_CONNECT) -P 33060 episciences < ./tmp/episciences.sql
+
+load-db-auth: ## Load an SQL dump from ./tmp/cas_users.sql
+	$(MYSQL_CONNECT) -P 33062 cas_users < ./tmp/cas_users.sql
+
