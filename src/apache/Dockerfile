@@ -1,7 +1,8 @@
 FROM httpd:2.4-bookworm
 
 # Install Vim and update packages
-RUN apt-get update -y && apt-get dist-upgrade -y && apt-get -y install vim
+RUN apt-get update && apt-get dist-upgrade -y
+RUN apt-get -y install vim && apt-get clean
 
 # Enable rewrite and headers modules
 RUN sed -i '/LoadModule rewrite_module/s/^#//g' /usr/local/apache2/conf/httpd.conf && \
@@ -9,9 +10,6 @@ RUN sed -i '/LoadModule rewrite_module/s/^#//g' /usr/local/apache2/conf/httpd.co
     sed -i '/LoadModule proxy_module/s/^#//g' /usr/local/apache2/conf/httpd.conf && \
     sed -i '/LoadModule proxy_fcgi_module/s/^#//g' /usr/local/apache2/conf/httpd.conf && \
     sed -i '/LoadModule setenvif_module/s/^#//g' /usr/local/apache2/conf/httpd.conf
-
-# Optionally, include the vhost in the main configuration
-RUN echo "Include conf/extra/episciences.conf" >> /usr/local/apache2/conf/httpd.conf
 
 
 COPY ./src/apache/entrypoint.sh /usr/local/bin/entrypoint.sh
