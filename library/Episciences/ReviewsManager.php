@@ -169,12 +169,14 @@ class Episciences_ReviewsManager
 
             $acceptedRepositories = [];
 
-            foreach ($oReview->getSetting(Episciences_Review::SETTING_REPOSITORIES) as $repoId) {
+            $settingRepositories = $oReview->getSetting(Episciences_Review::SETTING_REPOSITORIES);
 
-                $label = Episciences_Repositories::getLabel($repoId);
-
-                if ('' !== $label) {
-                    $acceptedRepositories[$repoId] = $label;
+            if (is_array($settingRepositories)) {
+                foreach ($settingRepositories as $repoId) {
+                    $label = Episciences_Repositories::getLabel($repoId);
+                    if ('' !== $label) {
+                        $acceptedRepositories[$repoId] = $label;
+                    }
                 }
             }
 
