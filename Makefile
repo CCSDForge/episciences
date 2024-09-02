@@ -18,8 +18,8 @@ build: ## Build the docker containers
 up: ## Start the docker containers
 	$(DOCKER_COMPOSE) up -d
 	@echo "Local Journal: http://dev.episciences.org/ make sure you have [127.0.0.1 dev.episciences.org] in /etc/hosts"
-	@echo "Local Journal: http://oai-dev.episciences.org/ make sure you have [127.0.0.1 oai-dev.episciences.org] in /etc/hosts"
-	@echo "Local Journal: http://data-dev.episciences.org/ make sure you have [127.0.0.1 data-dev.episciences.org] in /etc/hosts"
+	@echo "Local AOI    : http://oai-dev.episciences.org/ make sure you have [127.0.0.1 oai-dev.episciences.org] in /etc/hosts"
+	@echo "Local Data   : http://data-dev.episciences.org/ make sure you have [127.0.0.1 data-dev.episciences.org] in /etc/hosts"
 	@echo "PhpMyAdmin: http://localhost:8001/"
 	@echo "Apache Solr: http://localhost:8983/solr"
 
