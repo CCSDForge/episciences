@@ -1,5 +1,7 @@
 DOCKER_COMPOSE:=docker compose
+APACHE_USER := www-data
 SOLR_CONTAINER_NAME := solr
+PHP_CONTAINER_NAME := php-fpm
 COLLECTION_CONFIG := /opt/configsets/episciences
 MYSQL_CONNECT:= mysql -u root -proot -h 127.0.0.1
 PHP_VERSION := 8.1
@@ -30,7 +32,7 @@ collection: up ## Create the Solr collection after starting the containers
 
 index: ## Index the content into Solr
 	@echo "Indexing all content"
-	php$(PHP_VERSION) scripts/solr/solrJob.php -D % -v -d
+	docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/solr/solrJob.php -D % -v
 
 clean: down ## Clean up unused docker resources
 	#docker stop $(docker ps -a -q)
@@ -42,3 +44,20 @@ load-db-episciences: ## Load an SQL dump from ./tmp/episciences.sql
 load-db-auth: ## Load an SQL dump from ./tmp/cas_users.sql
 	$(MYSQL_CONNECT) -P 33062 cas_users < ./tmp/cas_users.sql
 
+send-mails:
+	docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/send_mails.php
+
+composer-install: ## Install composer dependencies
+	docker compose exec -w /var/www/htdocs php-fpm composer install --no-interaction --prefer-dist --optimize-autoloader
+
+composer-update: ## Update composer dependencies
+	docker compose exec -w /var/www/htdocs php-fpm composer update --no-interaction --prefer-dist --optimize-autoloader
+
+yarn-encore-production: ## yarn encore production
+	docker compose exec -w /var/www/htdocs php-fpm yarn encore production
+
+restart httpd: ## Restart Apache httpd
+	docker compose restart httpd
+
+restart php: ## Restart PHP-FPM Container
+	docker compose restart php-fpm
