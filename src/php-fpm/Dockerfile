@@ -51,6 +51,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Add Xdebug configuration
 COPY ./src/php-fpm/xdebug.ini /usr/local/etc/php/conf.d/
 
+# disable opcache configuration
+#COPY ./src/php-fpm/opcache.ini /usr/local/etc/php/conf.d/
+
 # Copy entrypoint script and set permissions
 COPY ./src/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
