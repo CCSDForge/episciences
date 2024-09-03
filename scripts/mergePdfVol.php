@@ -7,6 +7,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 $localopts = [
     'rvcode=s' => "journal code",
+    'ignorecache=b' => 'cache ignore for test'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -54,52 +55,34 @@ class mergePdfVol extends JournalScript
         if ($rvCode === null) {
             die('ERROR: MISSING RVCODE' . PHP_EOL);
         }
-
         $client = new Client();
         $response = $client->get(EPISCIENCES_API_URL.self::APICALLVOL.$rvCode)->getBody()->getContents();
-        $strPdf = '';
         foreach (json_decode($response, true, 512, JSON_THROW_ON_ERROR)['hydra:member'] as $res){
+            $strPdf = '';
             $getDocIdBypaperApi = $client->get(EPISCIENCES_API_URL.self::APICALLFORDOCID.$res['vid'])->getBody()->getContents();
-            $docIds = [];
-            foreach (json_decode($getDocIdBypaperApi, true, 512, JSON_THROW_ON_ERROR)["hydra:member"] as $papers) {
-                $docIds[$papers['paperid']] = $papers['docid'];
-            }
-            $this->displayInfo('Volumes '. $res['vid']."\n", true);
+            $docIds = $this->getDocIds($getDocIdBypaperApi, $res['vid']);
             $docIdList = [];
             foreach ($res['papers'] as $paper) {
                 $docIdList[] =  $docIds[$paper['paperid']];
             }
-            if (json_decode(self::getCacheDocIdsList($res['vid']), true, 512, JSON_THROW_ON_ERROR) !== $docIdList) {
+            if ($this->getParam('ignorecache') === '1' || (json_decode(self::getCacheDocIdsList($res['vid']), true, 512, JSON_THROW_ON_ERROR) !== $docIdList)) {
                 foreach ($res['papers'] as $paper) {
                     $docId = $docIds[$paper['paperid']];
                     $this->displayInfo('docId '. $docId."\n", true);
-                    $pdf = "https://".$rvCode.".episciences.org"."/".$docId.'/pdf';
-                    $pathDocId = APPLICATION_PATH.'/../data/'.$rvCode.'/files/'.$docId.'/';
-                    $path = APPLICATION_PATH.'/../data/'.$rvCode.'/files/'.$docId.'/documents/';
+                    list($pdf, $pathDocId, $path) = $this->getPdfAndPath($rvCode, $docId);
                     if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
                         throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
                     }
                     $pathPdf = $path.$docId.".pdf";
                     if (!file_exists($pathPdf)) {
                         try {
-                            // Attempt to download the PDF file and save it directly using the 'sink' option
-                            $response = $client->get($pdf, ['sink' => $pathPdf]);
-                            // Ensure the file is only considered valid if the status code is 200
-                            if ($response->getStatusCode() !== 200 || !file_exists($pathPdf)) {
-                                unlink($pathPdf);
-                                rmdir($path);
-                            }
-                            if (!self::isValidPdf($pathPdf)) {
-                                unlink($pathPdf);
-                                rmdir($path);
-                                rmdir($pathDocId);
-                            }
+                            $this->downloadPdf($client, $pdf, $pathPdf, $path, $pathDocId);
                         } catch (GuzzleException $e) {
                             unlink($pathPdf);
                         }
-                        if (file_exists($pathPdf)) {
-                            $strPdf .= $pathPdf . ' ';
-                        }
+                    }
+                    if (file_exists($pathPdf)) {
+                        $strPdf .= $pathPdf . ' ';
                     }
                 }
                 $pathPdfMerged = APPLICATION_PATH.'/../data/'.$rvCode.'/public/volume-pdf/'.$res['vid'].'/';
@@ -109,8 +92,7 @@ class mergePdfVol extends JournalScript
                 self::setCacheDocIdsList($res['vid'],$docIdList);
                 $exportPdfPath = $pathPdfMerged.$res['vid'].'.pdf';
                 $this->displayInfo('merge volume : '. $res['vid']."\n", true);
-                $output = `pdfunite {$strPdf} {$exportPdfPath}`;
-                echo $output;
+                system("pdfunite ".escapeshellcmd($strPdf)." ".escapeshellcmd($exportPdfPath));
             } else {
                 $this->displayInfo('docids are the same from the API', true);
             }
@@ -138,13 +120,7 @@ class mergePdfVol extends JournalScript
     }
     public static function isValidPdf(string $filePath): bool
     {
-        $file = fopen($filePath, 'rb');
-        if (!$file) {
-            return false;
-        }
-        $header = fread($file, 4);
-        fclose($file);
-        return $header === '%PDF';
+        return mime_content_type($filePath) === 'application/pdf';
     }
     public static function getCacheDocIdsList($vid) : string
     {
@@ -160,6 +136,81 @@ class mergePdfVol extends JournalScript
         $setVidList = $cache->getItem($vid);
         $setVidList->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($setVidList);
+    }
+
+    /**
+     * @param string $getDocIdBypaperApi
+     * @param $vid
+     * @return array
+     * @throws JsonException
+     */
+    public function getDocIds(string $getDocIdBypaperApi, $vid): array
+    {
+        $docIds = [];
+        foreach (json_decode($getDocIdBypaperApi, true, 512, JSON_THROW_ON_ERROR)["hydra:member"] as $papers) {
+            $docIds[$papers['paperid']] = $papers['docid'];
+        }
+        $this->displayInfo('Volumes ' . $vid . "\n", true);
+        return $docIds;
+    }
+
+    /**
+     * @param string $pathPdf
+     * @param string $path
+     * @param string $pathDocId
+     * @return void
+     */
+    public function removePdfNotValid(string $pathPdf, string $path, string $pathDocId): void
+    {
+        if (!self::isValidPdf($pathPdf)) {
+            unlink($pathPdf);
+            rmdir($path);
+            rmdir($pathDocId);
+        }
+    }
+
+    /**
+     * @param string $pathPdf
+     * @param string $path
+     * @return void
+     */
+    public function removeDirectory(string $pathPdf, string $path): void
+    {
+        unlink($pathPdf);
+        rmdir($path);
+    }
+
+    /**
+     * @param string $rvCode
+     * @param mixed $docId
+     * @return string[]
+     */
+    public function getPdfAndPath(string $rvCode, mixed $docId): array
+    {
+        $pdf = "https://" . $rvCode . ".episciences.org" . "/" . $docId . '/pdf';
+        $pathDocId = APPLICATION_PATH . '/../data/' . $rvCode . '/files/' . $docId . '/';
+        $path = APPLICATION_PATH . '/../data/' . $rvCode . '/files/' . $docId . '/documents/';
+        return array($pdf, $pathDocId, $path);
+    }
+
+    /**
+     * @param Client $client
+     * @param string $pdf
+     * @param string $pathPdf
+     * @param string $path
+     * @param string $pathDocId
+     * @return void
+     * @throws GuzzleException
+     */
+    public function downloadPdf(Client $client, string $pdf, string $pathPdf, string $path, string $pathDocId): void
+    {
+        // Attempt to download the PDF file and save it directly using the 'sink' option
+        $response = $client->get($pdf, ['sink' => $pathPdf]);
+        // Ensure the file is only considered valid if the status code is 200
+        if ($response->getStatusCode() !== 200 || !file_exists($pathPdf)) {
+            $this->removeDirectory($pathPdf, $path);
+        }
+        $this->removePdfNotValid($pathPdf, $path, $pathDocId);
     }
 }
 $script = new mergePdfVol($localopts);
