@@ -63,3 +63,6 @@ restart-httpd: ## Restart Apache httpd
 
 restart-php: ## Restart PHP-FPM Container
 	docker compose restart php-fpm
+
+merge-pdf-volume: ## merge all pdf from a vid into one pdf
+	docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/mergePdfVol.php --rvcode=$(rvcode) --ignorecache=$(or $(ignorecache),0) --removecache=$(or $(removecache),0)
