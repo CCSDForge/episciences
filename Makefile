@@ -58,8 +58,8 @@ composer-update: ## Update composer dependencies
 yarn-encore-production: ## yarn encore production
 	docker compose exec -w /var/www/htdocs php-fpm yarn encore production
 
-restart httpd: ## Restart Apache httpd
+restart-httpd: ## Restart Apache httpd
 	docker compose restart httpd
 
-restart php: ## Restart PHP-FPM Container
+restart-php: ## Restart PHP-FPM Container
 	docker compose restart php-fpm
