@@ -29,6 +29,7 @@ class mergePdfVol extends JournalScript
      * @param $localopts
      */
     public CONST APICALLVOL = "volumes?page=1&itemsPerPage=1000&rvcode=";
+    public CONST APICALLFORDOCID = "papers?page=1&itemsPerPage=1000&vid=";
     public function __construct($localopts)
     {
         $this->setRequiredParams([]);
@@ -58,26 +59,27 @@ class mergePdfVol extends JournalScript
         $response = $client->get(EPISCIENCES_API_URL.self::APICALLVOL.$rvCode)->getBody()->getContents();
         $strPdf = '';
         foreach (json_decode($response, true, 512, JSON_THROW_ON_ERROR)['hydra:member'] as $res){
+            $getDocIdBypaperApi = $client->get(EPISCIENCES_API_URL.self::APICALLFORDOCID.$res['vid'])->getBody()->getContents();
+            $docIds = [];
+            foreach (json_decode($getDocIdBypaperApi, true, 512, JSON_THROW_ON_ERROR)["hydra:member"] as $papers) {
+                $docIds[$papers['paperid']] = $papers['docid'];
+            }
             $this->displayInfo('Volumes '. $res['vid']."\n", true);
-            $paperIdList = [];
+            $docIdList = [];
             foreach ($res['papers'] as $paper) {
-                $paperIdList[] =  $paper['paperid'];
+                $docIdList[] =  $docIds[$paper['paperid']];
             }
-            if (self::getCacheDocIdsList($res['vid']) === ''){
-                self::setCacheDocIdsList($res['vid'],$paperIdList);
-            }
-
-            if (json_decode(self::getCacheDocIdsList($res['vid'])) !== $paperIdList) {
+            if (json_decode(self::getCacheDocIdsList($res['vid']), true, 512, JSON_THROW_ON_ERROR) !== $docIdList) {
                 foreach ($res['papers'] as $paper) {
-                    $paperId = $paper['paperid'];
-                    $this->displayInfo('paperid '. $paperId."\n", true);
-                    $pdf = "https://".$rvCode.".episciences.org"."/".$paperId.'/pdf';
-                    $pathDocId = APPLICATION_PATH.'/../data/'.$rvCode.'/files/'.$paperId.'/';
-                    $path = APPLICATION_PATH.'/../data/'.$rvCode.'/files/'.$paperId.'/documents/';
+                    $docId = $docIds[$paper['paperid']];
+                    $this->displayInfo('docId '. $docId."\n", true);
+                    $pdf = "https://".$rvCode.".episciences.org"."/".$docId.'/pdf';
+                    $pathDocId = APPLICATION_PATH.'/../data/'.$rvCode.'/files/'.$docId.'/';
+                    $path = APPLICATION_PATH.'/../data/'.$rvCode.'/files/'.$docId.'/documents/';
                     if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
                         throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
                     }
-                    $pathPdf = $path.$paperId.".pdf";
+                    $pathPdf = $path.$docId.".pdf";
                     if (!file_exists($pathPdf)) {
                         try {
                             // Attempt to download the PDF file and save it directly using the 'sink' option
@@ -104,12 +106,13 @@ class mergePdfVol extends JournalScript
                 if (!is_dir($pathPdfMerged) && !mkdir($pathPdfMerged, 0777, true) && !is_dir($pathPdfMerged)) {
                     throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathPdfMerged));
                 }
+                self::setCacheDocIdsList($res['vid'],$docIdList);
                 $exportPdfPath = $pathPdfMerged.$res['vid'].'.pdf';
                 $this->displayInfo('merge volume : '. $res['vid']."\n", true);
                 $output = `pdfunite {$strPdf} {$exportPdfPath}`;
                 echo $output;
             } else {
-                $this->displayInfo('PaperId are the same from the API', true);
+                $this->displayInfo('docids are the same from the API', true);
             }
         }
         $this->displayInfo('Volumes pdf fusion completed. Good Bye ! =)', true);
@@ -148,7 +151,7 @@ class mergePdfVol extends JournalScript
         $cache = new FilesystemAdapter("volume-pdf", 0 ,dirname(APPLICATION_PATH) . '/cache/');
         $getVidsList = $cache->getItem($vid);
         if (!$getVidsList->isHit()) {
-            return '';
+            return json_encode([''], JSON_THROW_ON_ERROR);
         }
         return $getVidsList->get();
     }
