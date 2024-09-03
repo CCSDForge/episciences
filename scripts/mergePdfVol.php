@@ -7,7 +7,8 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 $localopts = [
     'rvcode=s' => "journal code",
-    'ignorecache=b' => 'cache ignore for test'
+    'ignorecache=b' => 'cache ignore for test',
+    'removecache=b' => 'remove all cache'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -55,6 +56,11 @@ class mergePdfVol extends JournalScript
         if ($rvCode === null) {
             die('ERROR: MISSING RVCODE' . PHP_EOL);
         }
+
+        if ($this->getParam('removecache') === '1'){
+            $cache = new FilesystemAdapter("volume-pdf-".$rvCode, 0 ,dirname(APPLICATION_PATH) . '/cache/');
+            $cache->clear();
+        }
         $client = new Client();
         $response = $client->get(EPISCIENCES_API_URL.self::APICALLVOL.$rvCode)->getBody()->getContents();
         foreach (json_decode($response, true, 512, JSON_THROW_ON_ERROR)['hydra:member'] as $res){
@@ -65,7 +71,7 @@ class mergePdfVol extends JournalScript
             foreach ($res['papers'] as $paper) {
                 $docIdList[] =  $docIds[$paper['paperid']];
             }
-            if ($this->getParam('ignorecache') === '1' || (json_decode(self::getCacheDocIdsList($res['vid']), true, 512, JSON_THROW_ON_ERROR) !== $docIdList)) {
+            if ($this->getParam('ignorecache') === '1' || (string)(json_decode(self::getCacheDocIdsList($res['vid'],$rvCode), true, 512, JSON_THROW_ON_ERROR) !== $docIdList)) {
                 foreach ($res['papers'] as $paper) {
                     $docId = $docIds[$paper['paperid']];
                     $this->displayInfo('docId '. $docId."\n", true);
@@ -89,7 +95,7 @@ class mergePdfVol extends JournalScript
                 if (!is_dir($pathPdfMerged) && !mkdir($pathPdfMerged, 0777, true) && !is_dir($pathPdfMerged)) {
                     throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathPdfMerged));
                 }
-                self::setCacheDocIdsList($res['vid'],$docIdList);
+                self::setCacheDocIdsList((string)$res['vid'],$docIdList,$rvCode);
                 $exportPdfPath = $pathPdfMerged.$res['vid'].'.pdf';
                 $this->displayInfo('merge volume : '. $res['vid']."\n", true);
                 system("pdfunite ".escapeshellcmd($strPdf)." ".escapeshellcmd($exportPdfPath));
@@ -122,17 +128,17 @@ class mergePdfVol extends JournalScript
     {
         return mime_content_type($filePath) === 'application/pdf';
     }
-    public static function getCacheDocIdsList($vid) : string
+    public static function getCacheDocIdsList(string $vid,string $rvCode) : string
     {
-        $cache = new FilesystemAdapter("volume-pdf", 0 ,dirname(APPLICATION_PATH) . '/cache/');
+        $cache = new FilesystemAdapter("volume-pdf-".$rvCode, 0 ,dirname(APPLICATION_PATH) . '/cache/');
         $getVidsList = $cache->getItem($vid);
         if (!$getVidsList->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
         }
         return $getVidsList->get();
     }
-    public static function setCacheDocIdsList($vid, array $jsonVidList) : void {
-        $cache = new FilesystemAdapter("volume-pdf", 0 ,dirname(APPLICATION_PATH) . '/cache/');
+    public static function setCacheDocIdsList($vid, array $jsonVidList, string $rvCode) : void {
+        $cache = new FilesystemAdapter("volume-pdf-".$rvCode, 0 ,dirname(APPLICATION_PATH) . '/cache/');
         $setVidList = $cache->getItem($vid);
         $setVidList->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($setVidList);

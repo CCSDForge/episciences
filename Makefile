@@ -58,8 +58,11 @@ composer-update: ## Update composer dependencies
 yarn-encore-production: ## yarn encore production
 	docker compose exec -w /var/www/htdocs php-fpm yarn encore production
 
-restart httpd: ## Restart Apache httpd
+restart-httpd: ## Restart Apache httpd
 	docker compose restart httpd
 
-restart php: ## Restart PHP-FPM Container
+restart-php: ## Restart PHP-FPM Container
 	docker compose restart php-fpm
+
+merge-pdf-volume: ## merge all pdf from a vid into one pdf
+	docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/mergePdfVol.php --rvcode=$(rvcode) --ignorecache=$(or $(ignorecache),0) --removecache=$(or $(removecache),0)
