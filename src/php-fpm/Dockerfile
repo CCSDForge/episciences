@@ -25,6 +25,7 @@ RUN apt-get install -y --no-install-recommends --no-install-suggests \
      unzip \
      git \
      vim \
+     poppler-utils \
     && apt-get clean
 
 RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/
