@@ -579,6 +579,47 @@ class Export
     }
 
     /**
+     * @param mixed $arrayContrib
+     * @param array $jsonCsl
+     * @param int $i
+     * @return array
+     */
+    public static function getAuthorsCsl(mixed $arrayContrib, array $jsonCsl, int $i): array
+    {
+        foreach ($arrayContrib['person_name'] as $value) {
+            if (!is_array($value)) {
+                $arrayContrib['person_name'] = [$arrayContrib['person_name']];
+                break;
+            }
+        }
+        foreach ($arrayContrib['person_name'] as $value) {
+            if (isset($value['surname'])) {
+                $jsonCsl['author'][$i]['family'] = $value['surname'];
+            }
+            if (isset($value['given_name'])) {
+                $jsonCsl['author'][$i]['given'] = $value['given_name'];
+            }
+            $i++;
+        }
+        return $jsonCsl;
+    }
+
+    /**
+     * @param $public_properties
+     * @param array $jsonCsl
+     * @return array
+     */
+    public static function getConferenceInfo($public_properties, array $jsonCsl): array
+    {
+        if (array_key_exists('conference', $public_properties)) {
+            $jsonCsl['event-title'] = $public_properties['conference']['event_metadata']['conference_name'];
+            $jsonCsl['event-place'] = !is_null($public_properties['conference']['event_metadata']['conference_location']) ? $public_properties['conference']['event_metadata']['conference_location'] : null;
+            $jsonCsl['event-date'] = $public_properties['conference']['event_metadata']['conference_date']['@start_year'];
+        }
+        return $jsonCsl;
+    }
+
+    /**
      * OpenAIRE export format
      * @param Episciences_Paper $paper
      * @return string
@@ -628,85 +669,46 @@ class Export
             $jsonDb = json_decode(\Episciences_PapersManager::getJsonDocumentByDocId($docid), true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
-            return '{}';
+            return json_encode([], JSON_THROW_ON_ERROR);
         }
 
+        $jsonCsl = [];
+        $isJournal = array_key_exists('journal', $jsonDb['public_properties']);
 
-        if (!array_key_exists('journal', $jsonDb['public_properties'])) {
-            $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
-            $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['conference']['conference_paper']['doi_data']['doi'];
-            $jsonCsl['author'] = [];
-            $i = 0;
-            $arrayContrib = $jsonDb['public_properties']['conference']['conference_paper']['contributors'];
-            foreach ($arrayContrib['person_name'] as $value) {
-                if (!is_array($value)) {
-                    $arrayContrib['person_name'] = [$arrayContrib['person_name']];
-                    break;
-                }
-            }
-            foreach ($arrayContrib['person_name'] as $value) {
-                if (isset($value['surname'])) {
-                    $jsonCsl['author'][$i]['family'] = $value['surname'];
-                }
-                if (isset($value['given_name'])) {
-                    $jsonCsl['author'][$i]['given'] = $value['given_name'];
-                }
-                $i++;
-            }
-            if (array_key_exists('conference', $jsonDb['public_properties'])) {
-                $jsonCsl['event-title'] = $jsonDb['public_properties']['conference']['event_metadata']['conference_name'];
-                $jsonCsl['event-place'] = !is_null($jsonDb['public_properties']['conference']['event_metadata']['conference_location']) ? $jsonDb['public_properties']['conference']['event_metadata']['conference_location'] : null;
-                $jsonCsl['event-date'] = $jsonDb['public_properties']['conference']['event_metadata']['conference_date']['@start_year'];
-            }
-            $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['database']['database_metadata']['database_date']["publication_date"]['year'];
-            $jsonCsl['volume'] = !is_null($vol = $jsonDb['public_properties']['database']['current']['volume']) ? $vol['id'] : null;
-            $jsonCsl['issue'] = !is_null($section = $jsonDb['public_properties']['database']['current']['section']) ? $section['id'] : null;
-            $jsonCsl['version'] = $jsonDb['public_properties']['database']['current']['version'];
-            try {
-                $jsonString = json_encode($jsonCsl, JSON_THROW_ON_ERROR);
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-                $jsonString = '{}';
-            }
-            return $jsonString;
-        }
+
         $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
-        $jsonCsl['id'] = "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
+        $jsonCsl['id'] = $isJournal
+            ? "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi']
+            : "https://doi.org/" . $jsonDb['public_properties']['conference']['conference_paper']['doi_data']['doi'];
+
+
         $jsonCsl['author'] = [];
-        $i = 0;
-        $arrayContrib = $jsonDb['public_properties']['journal']['journal_article']['contributors'];
-        foreach ($arrayContrib['person_name'] as $value) {
-            if (!is_array($value)) {
-                $arrayContrib['person_name'] = [$arrayContrib['person_name']];
-                break;
-            }
-        }
-        foreach ($arrayContrib['person_name'] as $value) {
-            if (isset($value['surname'])) {
-                $jsonCsl['author'][$i]['family'] = $value['surname'];
-            }
-            if (isset($value['given_name'])) {
-                $jsonCsl['author'][$i]['given'] = $value['given_name'];
-            }
-            $i++;
-        }
+        $arrayContrib = $isJournal
+            ? $jsonDb['public_properties']['journal']['journal_article']['contributors']
+            : $jsonDb['public_properties']['conference']['conference_paper']['contributors'];
+        $jsonCsl = self::getAuthorsCsl($arrayContrib, $jsonCsl, 0);
+
 
         $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['database']['database_metadata']['database_date']["publication_date"]['year'];
 
+        if ($isJournal) {
+            $jsonCsl['DOI'] = $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
+            $jsonCsl['publisher'] = $jsonDb['public_properties']['journal']['journal_metadata']['full_title'];
+            $jsonCsl['title'] = $jsonDb['public_properties']['journal']['journal_article']['titles']['title'];
+        } else {
+            $jsonCsl = self::getConferenceInfo($jsonDb['public_properties'], $jsonCsl);
+        }
 
-        $jsonCsl['DOI'] = $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
-        $jsonCsl['publisher'] = $jsonDb['public_properties']['journal']['journal_metadata']['full_title'];
-        $jsonCsl['title'] = $jsonDb['public_properties']['journal']['journal_article']['titles']['title'];
         $jsonCsl['volume'] = !is_null($vol = $jsonDb['public_properties']['database']['current']['volume']) ? $vol['id'] : null;
         $jsonCsl['issue'] = !is_null($section = $jsonDb['public_properties']['database']['current']['section']) ? $section['id'] : null;
         $jsonCsl['version'] = $jsonDb['public_properties']['database']['current']['version'];
-
         try {
             $jsonString = json_encode($jsonCsl, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
-            $jsonString = '{}';
+            return json_encode([], JSON_THROW_ON_ERROR);
         }
+
         return $jsonString;
     }
 
