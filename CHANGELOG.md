@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
 - Unlabeled volume when updating metadata from an Episciences journal to HAL.
+- [#555](https://github.com/CCSDForge/episciences/issues/555): CI translation
+
 ## Unreleased
 ### Added
 - export to Json: include article's citations.
