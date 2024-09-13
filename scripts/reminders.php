@@ -172,6 +172,7 @@ try {
             }
 
             $origin = !$opts->date ? new DateTime("now") : date_create($opts->date);
+            $origin->setTime(0,0); // otherwise, the number of days before the review deadline was calculated incorrectly (one day difference).
 
             foreach ($recipients as $recipient) {
 
@@ -240,13 +241,4 @@ try {
     error_log('APPLICATION EXCEPTION : ' . $e->getCode() . ' ' . $e->getMessage());
     displayMessage('APPLICATION EXCEPTION : ' . $e->getCode() . ' ' . $e->getMessage(), 'red', true);
 }
-
-
-
-
-
-
-
-
-
 

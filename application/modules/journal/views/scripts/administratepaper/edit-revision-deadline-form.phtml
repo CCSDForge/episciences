@@ -19,9 +19,20 @@ $id = 'revision-deadline-value-' . $paper->getDocid();
             <label for="<?= $id ?>" class="input-group-addon">
                 <?= ucfirst($this->translate('date limite de révision')) ?>
             </label>
-            <input type="date" id="<?= $id ?>" class="form-control btn-xs" name="<?= $id ?>" min="<?= $minDate ?>"
-                   max="<?= $maxDate ?>" value="<?= $paper->_revisionDeadline ?>"/>
+            <input id="<?= $id ?>" class="form-control btn-xs datepicker-revision-deadline" name="<?= $id ?>" value="<?= $paper->_revisionDeadline ?>"/>
         </div>
 
     </form>
 </div>
+
+<script>
+
+    $(".datepicker-revision-deadline").datepicker({
+        dateFormat: "yy-mm-dd",
+        minDate: '<?= $minDate?>',
+        maxDate: '<?= $maxDate?>',
+    });
+
+</script>
+
+
