@@ -39,10 +39,9 @@ class Episciences_DoiTools
             ]);
             return $response->getBody()->getContents();
         } catch (GuzzleException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+            error_log($e->getMessage(), E_USER_WARNING);
+            return "";
         }
-
-        return "";
     }
 
     /**
