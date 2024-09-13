@@ -222,7 +222,11 @@ $timestamp = time();
             <ref-list>
                 <?php foreach ($bibRefList as $ref): ?>
                 <ref>
-                    <element-citation>
+                        <?php if(!isset($ref['mixed-citation'])) {
+                            echo "<element-citation>";
+                        } else {
+                            echo "<mixed-citation>".$this->escape($ref['mixed-citation'])."</mixed-citation>";
+                        } ?>
                         <?php if(isset($ref['authors'])) {
                             foreach ($ref['authors'] as $author){
                                 echo "<name>";
@@ -275,7 +279,9 @@ $timestamp = time();
                         <?php if(isset($ref['lpage'])) {
                             echo "<lpage>".$this->escape($ref['lpage'])."</lpage>";
                         } ?>
-                    </element-citation>
+                        <?php if(!isset($ref['mixed-citation'])) {
+                            echo "</element-citation>";
+                        } ?>
                 </ref>
                 <?php endforeach; ?>
             </ref-list>
