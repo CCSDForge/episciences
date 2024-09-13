@@ -1,8 +1,7 @@
 FROM httpd:2.4-bookworm
 
 # Install Vim and update packages
-RUN apt-get update && apt-get dist-upgrade -y
-RUN apt-get -y install vim && apt-get clean
+RUN apt-get update && apt-get dist-upgrade -y && apt-get -y install vim && apt-get clean
 
 # Enable rewrite and headers modules
 RUN sed -i '/LoadModule rewrite_module/s/^#//g' /usr/local/apache2/conf/httpd.conf && \
