@@ -76,7 +76,7 @@ services:
       ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
 
   db-episciences:
-    image: "mysql:8.4"
+    image: "mysql:9.0"
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -96,7 +96,7 @@ services:
       - epi-network
 
   db-indexing:
-    image: "mysql:8.4"
+    image: "mysql:9.0"
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -116,7 +116,7 @@ services:
       - epi-network
 
   db-auth:
-    image: "mysql:8.4"
+    image: "mysql:9.0"
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
