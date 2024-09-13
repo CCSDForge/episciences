@@ -174,6 +174,13 @@ class Episciences_ReviewsManager
                 $label = Episciences_Repositories::getLabel($repoId);
 
                 if ('' !== $label) {
+
+                    $automaticTransferParam = filter_var($oReview->getSetting(Episciences_Review::SETTING_DISABLE_AUTOMATIC_TRANSFER), FILTER_VALIDATE_BOOLEAN);
+
+                    if ($automaticTransferParam && (int)$repoId === (int)Episciences_Repositories::HAL_REPO_ID) {
+                        continue;
+                    }
+
                     $acceptedRepositories[$repoId] = $label;
                 }
             }

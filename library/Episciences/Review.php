@@ -72,7 +72,8 @@ class Episciences_Review
     public const SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS = 'systemCanAssignOnlySpecialVolumeEditors';
     public const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
     const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
-    public const SETTING_DISPLAY_STATISTICS= 'displayStatistics';
+    public const SETTING_DISPLAY_STATISTICS = 'displayStatistics';
+    public const SETTING_DISABLE_AUTOMATIC_TRANSFER = 'disableAutomaticTransfer';
 
     /**
      * Do not allow the selection of an editor in chief when the author has the option to
@@ -222,7 +223,8 @@ class Episciences_Review
             self::SETTING_DOMAINS,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
             self::SETTING_SYSTEM_NOTIFICATIONS,
-            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT
+            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
+            self::SETTING_DISABLE_AUTOMATIC_TRANSFER
         ];
 
         if (is_array($options)) {
@@ -1822,7 +1824,6 @@ class Episciences_Review
         $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
         $settingsValues[self::SETTING_TO_REQUIRE_REVISION_DEADLINE] = $this->getSetting(self::SETTING_TO_REQUIRE_REVISION_DEADLINE);
         $settingsValues[self::SETTING_START_STATS_AFTER_DATE] = $this->getSetting(self::SETTING_START_STATS_AFTER_DATE);
-
 
 
         $values = [];

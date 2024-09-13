@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#543](https://github.com/CCSDForge/episciences/issues/543): Not translate select options
 - [#546](https://github.com/CCSDForge/episciences/issues/546): Editors with different local default date formats cannot update the revision deadline.
 - The number of days before the review deadline was calculated incorrectly (one day difference).
+### Changed
+- Ability to block the automatic transfer of a submission from HAL
 
 
 ## v1.0.44.3 - 2024-07-23
