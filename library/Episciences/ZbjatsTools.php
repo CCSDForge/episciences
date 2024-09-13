@@ -22,7 +22,7 @@ class Episciences_ZbjatsTools
             }
             if (isset($refBib['doi']) && $refBib['doi'] !== '') {
                 $cacheZbjatJsonRefBib = new FilesystemAdapter('zbjatRefBib', 0, CACHE_PATH_METADATA);
-                $file = $cacheZbjatJsonRefBib->getItem($refBib['doi'] . '.json');
+                $file = $cacheZbjatJsonRefBib->getItem(md5($refBib['doi']) . '.json');
                 if (!$file->isHit()) {
                     if (PHP_SAPI === "cli") {
                         echo 'CALL API TO GET BIBLIOGRAPHICAL REFERENCES ' . $refBib['doi'] . PHP_EOL;
@@ -61,6 +61,10 @@ class Episciences_ZbjatsTools
                 unset($csl['issued']);
                 $removeLayer = json_encode($csl);
                 $refsInfo[] = self::cslToJats($removeLayer);
+            } elseif (!array_key_exists('doi',$refBib) &&
+                !array_key_exists('csl',$refBib) &&
+                array_key_exists('unstructured_citation',$refBib)){
+                $refsInfo[]['mixed-citation'] = $refBib['unstructured_citation'];
             }
         }
         return $refsInfo;
