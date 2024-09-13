@@ -4995,7 +4995,14 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
 
 
-        if (!$paper || !$paper->isRevisionRequested()) {
+        if (
+            !$paper ||
+            !$paper->isRevisionRequested() ||
+            !(
+                Episciences_Auth::isSecretary() ||
+                $paper->isEditor(Episciences_Auth::getUid())
+            )
+        ) {
             echo false;
             return;
         }
@@ -5012,8 +5019,6 @@ class AdministratepaperController extends PaperDefaultController
             if (
                 $next >= $current &&
                 $next <= $maxDate &&
-
-                Episciences_Auth::isSecretary() &&
                 (DateTime::createFromFormat('Y-m-d', $next) !== false) // it's a date ?
 
             ) {
