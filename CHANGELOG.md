@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New field in volume form (volume number)
 - [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
 - Add in export the publisher name and location when possible
+- [#580](https://github.com/CCSDForge/episciences/issues/580) add affiliations and orcid authors in zbjat export
 ### Changed
 - bump tinymce to latest version (7.2.0)
 - crossref export:
