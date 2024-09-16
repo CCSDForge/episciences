@@ -1342,7 +1342,7 @@ class Episciences_Paper
             }
         }
         $graphical_abstract_file = '';
-        $current = $this->getDocument()['public_properties']['database']['current'];
+        $current = $this->getDocument()['public_properties']['database']['current'] ?? null;
         if (isset($current['graphical_abstract_file'])) {
             $graphical_abstract_file = $current['graphical_abstract_file'];
         }
