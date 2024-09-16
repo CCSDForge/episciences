@@ -18,7 +18,7 @@ $publicationYear = new DateTime($paper->getPublication_date());
 $journal = $this->journal;
 
 $journalSettings = $journal->getSettings();
-
+$enrichmentAuthors = $paper->getAuthors();
 
 // bibliographical ref
 $bibRefList = $this->bibRef;
@@ -123,12 +123,21 @@ $timestamp = time();
                         }
                         ?>
                         <contrib contrib-type="author">
+                        <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?><contrib-id contrib-id-type="orcid"><?= "https://orcid.org/" . strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></contrib-id><?php endif; ?>
                             <name>
                                 <surname><?php echo $this->escape($familyName) ?></surname>
                                 <?php if($givenName !=='') : ?>
                                     <given-names><?php echo $this->escape($givenName) ?></given-names>
                                 <?php endif; ?>
                             </name>
+                            <?php if (!empty($enrichmentAuthors)): ?><institution-wrap><?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
+                                        <?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor): ?>
+                                            <institution>
+                                                <?php if(isset($affiliationAuthor['id'])):?>
+                                                    <?php foreach ($affiliationAuthor['id'] as $values):?><?php if(isset($values['id'])):?><institution_id type="ROR"><?=$values['id']?></institution_id><?php endif;?><?php endforeach;?><?php endif;?><?php if(isset($affiliationAuthor['name'])):?><institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name><?php endif;?>
+                                            </institution>
+                                        <?php endforeach;?>
+                                    <?php endif; ?></institution-wrap><?php endif; ?>
                         </contrib>
                         <?php
                     }
