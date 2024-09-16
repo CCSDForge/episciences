@@ -73,6 +73,7 @@ class Episciences_Review
     public const SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS = 'systemCanAssignAllVolumeEditors';
     const SETTING_ENCAPSULATE_COPY_EDITORS = 'encapsulateCopyEditors';
     public const SETTING_DISPLAY_STATISTICS = 'displayStatistics';
+    public const SETTING_DISABLE_AUTOMATIC_TRANSFER = 'disableAutomaticTransfer';
 
     /**
      * Do not allow the selection of an editor in chief when the author has the option to
@@ -228,7 +229,8 @@ class Episciences_Review
             self::SETTING_DOMAINS,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
             self::SETTING_SYSTEM_NOTIFICATIONS,
-            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT
+            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
+            self::SETTING_DISABLE_AUTOMATIC_TRANSFER
         ];
 
         if (is_array($options)) {
@@ -520,7 +522,7 @@ class Episciences_Review
     /**
      * get the list of users to be notified
      * @param array $recipients
-     * @param bool $strict = false [ne pas en tenir compte du module de notifications]
+     * @param bool $strict = false [ignore the notification's module]
      * @param int | string $rvId : (rvid or rvcode)
      * @throws Zend_Db_Statement_Exception
      */
@@ -540,12 +542,17 @@ class Episciences_Review
             $isAdministratorsChecked = in_array(self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS, $notificationSettings, true);
         }
 
-        if (!$strict && !$isChiefEditorsChecked && !$isSecretariesChecked && !$isAdministratorsChecked) { //github#508
+        if (
+            !$strict &&
+            !$isChiefEditorsChecked &&
+            !$isSecretariesChecked &&
+            !$isAdministratorsChecked
+        ) { //github#508: If no option is checked and no restriction, the notification is sent to everyone
             Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
             Episciences_Submit::addIfNotExists(self::getSecretaries(), $recipients);
             Episciences_Submit::addIfNotExists(self::getAdministrators(), $recipients);
 
-        } else {
+        } else { // only checked roles receive the notification
             if ($isChiefEditorsChecked) {
                 Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
             }
@@ -560,6 +567,7 @@ class Episciences_Review
 
         }
     }
+
 
     /**
      * get the specified setting

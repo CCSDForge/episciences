@@ -169,14 +169,19 @@ class Episciences_ReviewsManager
 
             $acceptedRepositories = [];
 
-            $settingRepositories = $oReview->getSetting(Episciences_Review::SETTING_REPOSITORIES);
+            foreach ($oReview->getSetting(Episciences_Review::SETTING_REPOSITORIES) as $repoId) {
 
-            if (is_array($settingRepositories)) {
-                foreach ($settingRepositories as $repoId) {
-                    $label = Episciences_Repositories::getLabel($repoId);
-                    if ('' !== $label) {
-                        $acceptedRepositories[$repoId] = $label;
+                $label = Episciences_Repositories::getLabel($repoId);
+
+                if ('' !== $label) {
+
+                    $automaticTransferParam = filter_var($oReview->getSetting(Episciences_Review::SETTING_DISABLE_AUTOMATIC_TRANSFER), FILTER_VALIDATE_BOOLEAN);
+
+                    if ($automaticTransferParam && (int)$repoId === (int)Episciences_Repositories::HAL_REPO_ID) {
+                        continue;
                     }
+
+                    $acceptedRepositories[$repoId] = $label;
                 }
             }
 

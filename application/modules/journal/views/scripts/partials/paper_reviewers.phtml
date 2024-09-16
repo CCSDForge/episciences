@@ -188,9 +188,8 @@ try {
                                                     <a class="go_to_rating" data-uid="<?php echo $invitation['UID'] ?>"
                                                        href="#ratings">
                                                     <?php endif; ?>
-
-                                                    <?= ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($invitation['reviewer']['rating']['status']))); ?>
-
+                                                    <?php $statusLabel = $this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($invitation['reviewer']['rating']['status']));
+                                                    echo ucfirst($statusLabel); ?>
                                                     <?php if ($invitation['reviewer']['rating']['status'] === Episciences_Reviewer_Reviewing::STATUS_COMPLETE) : ?></a><?php endif; ?>
 
                                                     <?php if ($invitation['reviewer']['rating']['last_update']) {
