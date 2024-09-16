@@ -516,35 +516,52 @@ class Episciences_Review
     /**
      * get the list of users to be notified
      * @param array $recipients
-     * @param bool $strict = false [ne pas en tenir compte du module de notifications]
+     * @param bool $strict = false [ignore the notification's module]
      * @param int | string $rvId : (rvid or rvcode)
      * @throws Zend_Db_Statement_Exception
      */
     public static function checkReviewNotifications(array &$recipients, bool $strict = true, $rvId = RVID): void
     {
         $review = Episciences_ReviewsManager::find($rvId);
+
+        $isChiefEditorsChecked = false;
+        $isSecretariesChecked = false;
+        $isAdministratorsChecked = false;
+
         $notificationSettings = $review->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);
 
-        if (!$strict) {
+        if ($notificationSettings) {
+            $isChiefEditorsChecked = in_array(self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS, $notificationSettings, true);
+            $isSecretariesChecked = in_array(self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES, $notificationSettings, true);
+            $isAdministratorsChecked = in_array(self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS, $notificationSettings, true);
+        }
+
+        if (
+            !$strict &&
+            !$isChiefEditorsChecked &&
+            !$isSecretariesChecked &&
+            !$isAdministratorsChecked
+        ) { //github#508: If no option is checked and no restriction, the notification is sent to everyone
             Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
             Episciences_Submit::addIfNotExists(self::getSecretaries(), $recipients);
             Episciences_Submit::addIfNotExists(self::getAdministrators(), $recipients);
 
-        } else {
-            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS, $notificationSettings, true)) {
+        } else { // only checked roles receive the notification
+            if ($isChiefEditorsChecked) {
                 Episciences_Submit::addIfNotExists(self::getChiefEditors(), $recipients);
             }
 
-            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES, $notificationSettings, true)) {
+            if ($isSecretariesChecked) {
                 Episciences_Submit::addIfNotExists(self::getSecretaries(), $recipients);
             }
 
-            if (!empty($notificationSettings) && in_array(self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS, $notificationSettings, true)) {
+            if ($isAdministratorsChecked) {
                 Episciences_Submit::addIfNotExists(self::getAdministrators(), $recipients);
             }
 
         }
     }
+
 
     /**
      * get the specified setting
