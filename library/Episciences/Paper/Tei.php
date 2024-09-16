@@ -475,8 +475,12 @@ class Episciences_Paper_Tei
         $monogr->appendChild($journal);
 
         $imprint = $xml->createElement('imprint');
-        $imprint->appendChild($xml->createElement('publisher', ucfirst(DOMAIN)));
-
+        $publisher = $this->getReview()->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER) ?? DOMAIN;
+        $imprint->appendChild($xml->createElement('publisher', ucfirst(trim($publisher))));
+        $publisherLoc = $this->getReview()->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC);
+        if ($publisherLoc){
+            $imprint->appendChild($xml->createElement('pubPlace', ucfirst(trim($publisherLoc))));
+        }
         $volumeName = $this->getVolumeName($this->getDefaultLocale());
         if ($volumeName) {
             $vn = $xml->createElement('biblScope', $volumeName);
