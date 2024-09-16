@@ -130,14 +130,14 @@ $timestamp = time();
                                     <given-names><?php echo $this->escape($givenName) ?></given-names>
                                 <?php endif; ?>
                             </name>
-                            <?php if (!empty($enrichmentAuthors)): ?><institution-wrap><?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
-                                        <?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor): ?>
-                                            <institution>
-                                                <?php if(isset($affiliationAuthor['id'])):?>
-                                                    <?php foreach ($affiliationAuthor['id'] as $values):?><?php if(isset($values['id'])):?><institution_id type="ROR"><?=$values['id']?></institution_id><?php endif;?><?php endforeach;?><?php endif;?><?php if(isset($affiliationAuthor['name'])):?><institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name><?php endif;?>
-                                            </institution>
-                                        <?php endforeach;?>
-                                    <?php endif; ?></institution-wrap><?php endif; ?>
+                            <?php if (!empty($enrichmentAuthors)): ?><?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
+                                <institution-wrap><?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor): ?>
+                                        <institution>
+                                        <?php if(isset($affiliationAuthor['id'])):?>
+                                            <?php foreach ($affiliationAuthor['id'] as $values):?><?php if(isset($values['id'])):?><institution_id type="ROR"><?=$values['id']?></institution_id><?php endif;?><?php endforeach;?><?php endif;?><?php if(isset($affiliationAuthor['name'])):?><institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name><?php endif;?>
+                                        </institution><?php endforeach;?></institution-wrap>
+                            <?php endif; ?>
+                            <?php endif; ?>
                         </contrib>
                         <?php
                     }
