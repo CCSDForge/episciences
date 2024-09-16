@@ -442,6 +442,9 @@ class Export
             }
             $root->appendChild($description);
         }
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        $publisher = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER) ?? DOMAIN;
+        $root->appendChild($xml->createElement('publisher', ucfirst(trim($publisher))));
 
         // publication date
         if ($paper->getPublication_date()) {
