@@ -119,7 +119,7 @@ $timestamp = time();
                         }
                         ?>
                         <contrib contrib-type="author">
-                            <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?><contrib-id contrib-id-type="orcid"><?= "https://orcid.org/" . strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></contrib-id><?php endif; ?>
+                            <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?><contrib-id contrib-id-type="orcid"><?= strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></contrib-id><?php endif; ?>
                             <name>
                                 <surname><?php echo $this->escape($familyName) ?></surname>
                                 <?php if($givenName !=='') : ?>
