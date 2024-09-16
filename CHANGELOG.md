@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Toolbar tinymce have heading edition
 - New field in volume form (volume number)
 - [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
-
+- Add in export the publisher name and location when possible
 ### Changed
 - bump tinymce to latest version (7.2.0)
 - crossref export:
