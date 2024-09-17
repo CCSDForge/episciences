@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
+## v1.0.45 - 2024-09-16
+
+### Added
+- [#580](https://github.com/CCSDForge/episciences/issues/580) zbMATH Open export: Authors: add affiliations and ORCIDs 
+
 ### Fixed
 - Volume names are not translated in the volume drop-down list on the reviewing grids list page.
 - [#543](https://github.com/CCSDForge/episciences/issues/543): Not translate select options
