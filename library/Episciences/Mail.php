@@ -45,8 +45,7 @@ class Episciences_Mail extends Zend_Mail
     private $_sendDate;
     private $_rawBody;
     protected bool $_isAutomatic = false;
-
-
+    private ?int $uid = null ;
 
     /**
      * Episciences_Mail constructor.
@@ -580,6 +579,7 @@ class Episciences_Mail extends Zend_Mail
         }
 
         $data = [
+            'UID' => $this->getUid(),
             'RVID' => $rvId ?: $this->getRvid(),
             'DOCID' => $this->getDocid(),
             'FROM' => iconv_mime_decode($from, 0, 'UTF-8'),
@@ -767,7 +767,7 @@ class Episciences_Mail extends Zend_Mail
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $isCoiEnabled = isset($options['isCoiEnabled']) && $options['isCoiEnabled'];
+        $isStrict = isset($options['strict']) && $options['strict'];
 
         $sql = (!$isCount) ?
             $db->select()->from(T_MAIL_LOG) :
@@ -777,7 +777,7 @@ class Episciences_Mail extends Zend_Mail
 
         if (is_array($docId) && !empty($docId)) {
 
-            if (!$isCoiEnabled) {
+            if (!$isStrict) {
 
                 $sql->where('DOCID IS NULL OR DOCID IN (?)', $docId);
 
@@ -787,7 +787,7 @@ class Episciences_Mail extends Zend_Mail
 
         } elseif ($docId) {
 
-            if ($isCoiEnabled) {
+            if ($isStrict) {
                 $sql->where('DOCID IS NULL OR DOCID = ?', $docId);
 
             } else {
@@ -795,8 +795,10 @@ class Episciences_Mail extends Zend_Mail
             }
 
         } else {
-            (!$isCoiEnabled) ? $sql->where('DOCID IS NULL') : $sql->where('DOCID = ?', 0); // fix Empty IN clause parameter list in MySQL
+            (!$isStrict) ? $sql->where('DOCID IS NULL') : $sql->where('DOCID = ?', 0); // fix Empty IN clause parameter list in MySQL
         }
+
+        $sql->orWhere("UID = ?", Episciences_Auth::getUid());
 
         // DataTable search
         if ($isFilterInfos && array_key_exists('search', $options)) {
@@ -1009,6 +1011,17 @@ class Episciences_Mail extends Zend_Mail
     public function setIsAutomatic(bool $isAutomatic): void
     {
         $this->_isAutomatic = $isAutomatic;
+    }
+
+    public function getUid(): ?int
+    {
+        return $this->uid;
+    }
+
+    public function setUid(int $uid = null): self
+    {
+        $this->uid = $uid;
+        return $this;
     }
 
 

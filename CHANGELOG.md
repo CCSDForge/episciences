@@ -15,28 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-## v1.0.45 - 2024-09-16
-
-### Added
-- [#580](https://github.com/CCSDForge/episciences/issues/580) zbMATH Open export: Authors: add affiliations and ORCIDs 
-
-### Fixed
-- Volume names are not translated in the volume drop-down list on the reviewing grids list page.
-- [#543](https://github.com/CCSDForge/episciences/issues/543): Not translate select options
-- [#546](https://github.com/CCSDForge/episciences/issues/546): Editors with different local default date formats cannot update the revision deadline.
-- [#571](https://github.com/CCSDForge/episciences/issues/571): The number of days before the review deadline was calculated incorrectly (one day difference).
-### Changed
-- Ability to block the automatic transfer of a submission from HAL
-
-
 ## Unreleased
 ### Changed
+- [#585](https://github.com/CCSDForge/episciences/issues/585): The history of manually sent emails is not visible when the CI option is enabled.
 - Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
 - Unlabeled volume when updating metadata from an Episciences journal to HAL.
 - [#555](https://github.com/CCSDForge/episciences/issues/555): CI translation
 
-## Unreleased
 ### Added
 - export to Json: include article's citations.
 - Profile photo storage management via uuid.
@@ -56,7 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New field in volume form (volume number)
 - [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
 - Add in export the publisher name and location when possible
-- [#580](https://github.com/CCSDForge/episciences/issues/580) add affiliations and orcid authors in zbjat export
 ### Changed
 - bump tinymce to latest version (7.2.0)
 - crossref export:
@@ -96,6 +81,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
 - [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
+
+## v1.0.45 - 2024-09-16
+
+### Added
+- [#580](https://github.com/CCSDForge/episciences/issues/580) zbMATH Open export: Authors: add affiliations and ORCIDs
+
+### Fixed
+- Volume names are not translated in the volume drop-down list on the reviewing grids list page.
+- [#543](https://github.com/CCSDForge/episciences/issues/543): Not translate select options
+- [#546](https://github.com/CCSDForge/episciences/issues/546): Editors with different local default date formats cannot update the revision deadline.
+- [#571](https://github.com/CCSDForge/episciences/issues/571): The number of days before the review deadline was calculated incorrectly (one day difference).
+### Changed
+- Ability to block the automatic transfer of a submission from HAL
 
 ## v1.0.44.3 - 2024-07-23
 ### Changed
