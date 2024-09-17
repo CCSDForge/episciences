@@ -109,8 +109,8 @@ $timestamp = time();
                 <?php
                 if (is_array($authors)) {
                     foreach ($authors as $order => $creatorName) {
-                        $givenName= '';
-                        $familyName= '';
+                        $givenName = '';
+                        $familyName = '';
                         if (str_contains($creatorName, ',')) {
                             [$familyName, $givenName] = explode(', ', $creatorName);
                             $givenName = trim($givenName, ',');
@@ -119,19 +119,31 @@ $timestamp = time();
                         }
                         ?>
                         <contrib contrib-type="author">
-                            <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?><contrib-id contrib-id-type="orcid"><?= strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></contrib-id><?php endif; ?>
+                            <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?>
+                                <contrib-id
+                                        contrib-id-type="orcid"><?= strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></contrib-id><?php endif; ?>
                             <name>
                                 <surname><?php echo $this->escape($familyName) ?></surname>
-                                <?php if($givenName !=='') : ?>
+                                <?php if ($givenName !== '') : ?>
                                     <given-names><?php echo $this->escape($givenName) ?></given-names>
                                 <?php endif; ?>
                             </name>
                             <?php if (!empty($enrichmentAuthors)): ?><?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
                                 <institution-wrap><?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor): ?>
-                                    <institution>
-                                        <?php if(isset($affiliationAuthor['id'])):?>
-                                            <?php foreach ($affiliationAuthor['id'] as $values):?><?php if(isset($values['id'])):?><institution_id type="ror"><?=$values['id']?></institution_id><?php endif;?><?php endforeach;?><?php endif;?><?php if(isset($affiliationAuthor['name'])):?><institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name><?php endif;?>
-                                    </institution><?php endforeach;?></institution-wrap>
+                                        <institution>
+                                            <?php if (isset($affiliationAuthor['id'])): ?>
+                                                <?php foreach ($affiliationAuthor['id'] as $values): ?>
+                                                    <?php if (isset($values['id'])): ?>
+                                                        <institution_id type="ror"><?= $this->escape($values['id']) ?></institution_id>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                            <?php if (isset($affiliationAuthor['name'])): ?>
+                                                <institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name>
+                                            <?php endif; ?>
+                                        </institution>
+                                    <?php endforeach; ?>
+                                </institution-wrap>
                             <?php endif; ?>
                             <?php endif; ?>
                         </contrib>
@@ -150,7 +162,7 @@ $timestamp = time();
 
             <?php if ($this->volume !== '') : ?>
 
-                <volume><?php echo Ccsd_Tools_String::truncate($this->escape($this->volume), 29, '...'); ?></volume>
+                <volume><?php echo $this->escape($this->volume); ?></volume>
 
             <?php endif; ?>
             <?php if ($this->section !== '') : ?>
@@ -217,9 +229,9 @@ $timestamp = time();
             </permissions>
 
             <?php if ($this->nbPages > 0): ?>
-            <counts>
-                <page-count count="<?= $this->nbPages ?>"/>
-            </counts>
+                <counts>
+                    <page-count count="<?= $this->nbPages ?>"/>
+                </counts>
             <?php endif; ?>
 
         </article-meta>
@@ -230,68 +242,68 @@ $timestamp = time();
         <back>
             <ref-list>
                 <?php foreach ($bibRefList as $ref): ?>
-                <ref>
-                        <?php if(!isset($ref['mixed-citation'])) {
+                    <ref>
+                        <?php if (!isset($ref['mixed-citation'])) {
                             echo "<element-citation>";
                         } else {
-                            echo "<mixed-citation>".$this->escape($ref['mixed-citation'])."</mixed-citation>";
+                            echo "<mixed-citation>" . $this->escape($ref['mixed-citation']) . "</mixed-citation>";
                         } ?>
-                        <?php if(isset($ref['authors'])) {
-                            foreach ($ref['authors'] as $author){
+                        <?php if (isset($ref['authors'])) {
+                            foreach ($ref['authors'] as $author) {
                                 echo "<name>";
                                 if (isset($author['surname'])) {
-                                    echo "<surname>".$this->escape($author['surname'])."</surname>";
+                                    echo "<surname>" . $this->escape($author['surname']) . "</surname>";
                                 }
                                 if (isset($author['given-names'])) {
-                                    echo "<given-names>".$this->escape($author['given-names'])."</given-names>";
+                                    echo "<given-names>" . $this->escape($author['given-names']) . "</given-names>";
                                 }
                                 echo "</name>";
                             }
                         } ?>
-                        <?php if(isset($ref['article-title'])) {
+                        <?php if (isset($ref['article-title'])) {
                             if (isset($ref['lang-article'])) {
-                                echo "<article-title xml:lang='".$this->escape($ref['lang-article'])."'>".$this->escape($ref['article-title'])."</article-title>";
+                                echo "<article-title xml:lang='" . $this->escape($ref['lang-article']) . "'>" . $this->escape($ref['article-title']) . "</article-title>";
                             } else {
-                                echo "<article-title>".$this->escape($ref['article-title'])."</article-title>";
+                                echo "<article-title>" . $this->escape($ref['article-title']) . "</article-title>";
                             }
 
                         } ?>
-                        <?php if(isset($ref['doi'])) {
-                            echo "<object-id pub-id-type='doi'>".$this->escape($ref['doi'])."</object-id>";
+                        <?php if (isset($ref['doi'])) {
+                            echo "<object-id pub-id-type='doi'>" . $this->escape($ref['doi']) . "</object-id>";
                         } ?>
-                        <?php if(isset($ref['source'])) {
-                            echo "<source>".$this->escape($ref['source'])."</source>";
+                        <?php if (isset($ref['source'])) {
+                            echo "<source>" . $this->escape($ref['source']) . "</source>";
                         } ?>
-                        <?php if(isset($ref['issn'])) {
-                            echo "<issn>".$this->escape($ref['issn'])."</issn>";
+                        <?php if (isset($ref['issn'])) {
+                            echo "<issn>" . $this->escape($ref['issn']) . "</issn>";
                         } ?>
-                        <?php if(isset($ref['eissn'])) {
-                            echo "<issn specific-use='electronic'>".$this->escape($ref['eissn'])."</issn>";
+                        <?php if (isset($ref['eissn'])) {
+                            echo "<issn specific-use='electronic'>" . $this->escape($ref['eissn']) . "</issn>";
                         } ?>
-                        <?php if(isset($ref['isbn'])) {
-                            echo "<isbn>".$this->escape($ref['isbn'])."</isbn>";
+                        <?php if (isset($ref['isbn'])) {
+                            echo "<isbn>" . $this->escape($ref['isbn']) . "</isbn>";
                         } ?>
-                        <?php if(isset($ref['year'])) {
-                            echo "<year>".$this->escape($ref['year'])."</year>";
+                        <?php if (isset($ref['year'])) {
+                            echo "<year>" . $this->escape($ref['year']) . "</year>";
                         } ?>
-                        <?php if(isset($ref['volume'])) {
-                            echo "<volume>".$this->escape($ref['volume'])."</volume>";
+                        <?php if (isset($ref['volume'])) {
+                            echo "<volume>" . $this->escape($ref['volume']) . "</volume>";
                         } ?>
-                        <?php if(isset($ref['issue'])) {
-                            echo "<issue>".$this->escape($ref['issue'])."</issue>";
+                        <?php if (isset($ref['issue'])) {
+                            echo "<issue>" . $this->escape($ref['issue']) . "</issue>";
                         } ?>
-                        <?php if(isset($ref['fpage']) && isset($ref['lpage'])) {
-                            echo "<fpage>".$this->escape($ref['fpage'])."</fpage>";
+                        <?php if (isset($ref['fpage']) && isset($ref['lpage'])) {
+                            echo "<fpage>" . $this->escape($ref['fpage']) . "</fpage>";
                         } elseif (isset($ref['fpage']) && !isset($ref['lpage'])) {
-                            echo "<size units='pages'>".$this->escape($ref['fpage'])."</size>";
+                            echo "<size units='pages'>" . $this->escape($ref['fpage']) . "</size>";
                         } ?>
-                        <?php if(isset($ref['lpage'])) {
-                            echo "<lpage>".$this->escape($ref['lpage'])."</lpage>";
+                        <?php if (isset($ref['lpage'])) {
+                            echo "<lpage>" . $this->escape($ref['lpage']) . "</lpage>";
                         } ?>
-                    <?php if(!isset($ref['mixed-citation'])) {
-                        echo "</element-citation>";
-                    } ?>
-                </ref>
+                        <?php if (!isset($ref['mixed-citation'])) {
+                            echo "</element-citation>";
+                        } ?>
+                    </ref>
                 <?php endforeach; ?>
             </ref-list>
         </back>
