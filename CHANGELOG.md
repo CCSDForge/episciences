@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+- [#585](https://github.com/CCSDForge/episciences/issues/585): The history of manually sent emails is not visible when the CI option is enabled.
 
 ## v1.0.45 - 2024-09-16
 

@@ -54,7 +54,7 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function setSocialMedias(string $socialMedias = null): Episciences_User
     {
-        if($socialMedias){
+        if ($socialMedias) {
             $this->_socialMedias = trim($socialMedias);
         }
 
@@ -75,7 +75,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public function setWebSites(array $webSites = null): Episciences_User
     {
 
-        $this->_webSites = Episciences_Tools::arrayFilterString($webSites, FILTER_VALIDATE_URL,FILTER_FLAG_NONE);
+        $this->_webSites = Episciences_Tools::arrayFilterString($webSites, FILTER_VALIDATE_URL, FILTER_FLAG_NONE);
         return $this;
     }
 
@@ -623,7 +623,7 @@ class Episciences_User extends Ccsd_User_Models_User
      * @return boolean
      * @throws Zend_Db_Statement_Exception
      */
-    public function hasRoles(int $uid, int $rvId = RVID ): bool
+    public function hasRoles(int $uid, int $rvId = RVID): bool
     {
         $select = $this->_db->select()
             ->from(T_USER_ROLES, 'ROLEID')
@@ -678,11 +678,11 @@ class Episciences_User extends Ccsd_User_Models_User
             return [];
         }
 
-        if(isset($result['ADDITIONAL_PROFILE_INFORMATION'])){
-           $this->setAdditionalProfileInformation($result['ADDITIONAL_PROFILE_INFORMATION']);
-           $result['WEB_SITES'] = $this->getWebSites();
-           $result['SOCIAL_MEDIAS'] = $this->getSocialMedias();
-           $result['AFFILIATIONS'] = $this->getAffiliations();
+        if (isset($result['ADDITIONAL_PROFILE_INFORMATION'])) {
+            $this->setAdditionalProfileInformation($result['ADDITIONAL_PROFILE_INFORMATION']);
+            $result['WEB_SITES'] = $this->getWebSites();
+            $result['SOCIAL_MEDIAS'] = $this->getSocialMedias();
+            $result['AFFILIATIONS'] = $this->getAffiliations();
         }
 
 
@@ -1344,6 +1344,18 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setRoles($userRoles);
 
         return $this;
+    }
+
+
+    public function isNotAllowedToDeclareConflict(): bool
+    {
+        $roles = $this->getRoles();
+        return (
+            count($roles) === 1 &&
+            (
+                $roles[0] === Episciences_Acl::ROLE_ROOT ||
+                $roles[0] === Episciences_Acl::ROLE_SECRETARY
+            ));
     }
 
 }

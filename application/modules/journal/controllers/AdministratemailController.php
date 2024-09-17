@@ -298,6 +298,8 @@ class AdministratemailController extends Zend_Controller_Action
         // process form (send mail)
         if ($post && !array_key_exists('ajax', $post)) {
 
+            $post['sender'] = Episciences_Auth::getUid();
+
             if ($this->checkRecipients($post)['isDetectedErrors']) {
                 $form->setDefaults($post);
             }
@@ -499,8 +501,13 @@ class AdministratemailController extends Zend_Controller_Action
         if (isset($post['docid'])) {
             /** @var Episciences_Paper $paper */
             $paper = Episciences_PapersManager::get((int)$post['docid']);
+            $mail->setDocid($paper->getDocid());
         }
-        
+
+        if (isset($post['sender'])) {
+            $mail->setUid($post['sender']);
+        }
+
         if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
             $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
@@ -520,15 +527,15 @@ class AdministratemailController extends Zend_Controller_Action
 
             if ($paper) {
 
-                    try {
-                        $paper->log(
-                            Episciences_Paper_Logger::CODE_MAIL_SENT,
-                            Episciences_Auth::getUid(),
-                            ['id' => $mail->getId(), 'mail' => $mail->toArray()]
-                        );
-                    } catch (Exception $e) {
-                        Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.mail');
-                    }
+                try {
+                    $paper->log(
+                        Episciences_Paper_Logger::CODE_MAIL_SENT,
+                        Episciences_Auth::getUid(),
+                        ['id' => $mail->getId(), 'mail' => $mail->toArray()]
+                    );
+                } catch (Exception $e) {
+                    Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.mail');
+                }
 
             } else {
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
@@ -885,11 +892,13 @@ class AdministratemailController extends Zend_Controller_Action
         $docIds = [];
         $isCoiEnabled = (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
+        $options['strict'] = $isCoiEnabled;
+
         if (!$isCoiEnabled) {
 
             if (Episciences_Auth::isSecretary()) {
                 try {
-                    $docIds = array_keys($review->getPapers());
+                    $docIds = array_keys($review->getPapers()); // all history
                 } catch (Zend_Db_Select_Exception $e) {
                     trigger_error($e->getMessage());
                 }
@@ -917,12 +926,9 @@ class AdministratemailController extends Zend_Controller_Action
             }
 
 
-        } else {
-
-            $options['isCoiEnabled'] = true;
+        } else { // COI enabled
 
             $editor = new Episciences_Editor();
-
             $suUid = Episciences_Auth::getOriginalIdentity()->getUid();
             $loggedUid = Episciences_Auth::getUid();
 
@@ -930,12 +936,15 @@ class AdministratemailController extends Zend_Controller_Action
 
                 try {
                     $editor->find($suUid);
+                    if ($editor->isNotAllowedToDeclareConflict()) {
+                        $options['strict'] = false;
+                    } else {
+                        $docIds = $this->papersNotInConflictProcessing($editor);
+                    }
+
                 } catch (Zend_Db_Statement_Exception $e) {
                     trigger_error($e->getMessage());
                 }
-
-                $docIds = $this->papersNotInConflictProcessing($editor);
-
 
             } elseif (Episciences_Auth::isAllowedToDeclareConflict()) {
 
@@ -948,10 +957,17 @@ class AdministratemailController extends Zend_Controller_Action
 
                 $docIds = $this->papersNotInConflictProcessing($editor);
 
-
-            } elseif (Episciences_Auth::isRoot() || Episciences_Auth::isAdministrator(RVID, true)) {
+            } elseif (
+                Episciences_Auth::isRoot() ||
+                Episciences_Auth::isAdministrator(RVID, true)
+            ) {
                 try {
-                    $docIds = !Episciences_Auth::isRoot() ? array_diff(array_keys($review->getPapers()), Episciences_PapersManager::getDocIdsInConflitByUid($loggedUid)) : array_keys($review->getPapers());
+                    if (!Episciences_Auth::isRoot()) {
+                        $docIds = array_diff(array_keys($review->getPapers()), Episciences_PapersManager::getDocIdsInConflitByUid($loggedUid));
+                    } else {
+                        $options['strict'] = false;
+                        $docIds = array_keys($review->getPapers());
+                    }
                 } catch (Zend_Db_Select_Exception $e) {
                     trigger_error($e->getMessage());
                 }
@@ -972,12 +988,11 @@ class AdministratemailController extends Zend_Controller_Action
 
         $currentAttachmentPath = Episciences_Tools::getAttachmentsPath();
 
-         $subStr = substr(
-                $currentAttachmentPath,
-                mb_strlen(REVIEW_FILES_PATH),
-                mb_strlen(Episciences_Mail_Send::ATTACHMENTS)
-         );
-
+        $subStr = substr(
+            $currentAttachmentPath,
+            mb_strlen(REVIEW_FILES_PATH),
+            mb_strlen(Episciences_Mail_Send::ATTACHMENTS)
+        );
 
 
         $isAttachments = $subStr === Episciences_Mail_Send::ATTACHMENTS;
