@@ -930,6 +930,11 @@ class AdministratemailController extends Zend_Controller_Action
                 if ($suEditor->isNotAllowedToDeclareConflict()) {
                     if ($loggedEditor->isNotAllowedToDeclareConflict()) {
                         $options['strict'] = false;
+                        try {
+                            $docIds = array_keys($review->getPapers());
+                        } catch (Zend_Db_Select_Exception $e) {
+                            trigger_error($e->getMessage());
+                        }
                     } else {
                         $docIds = $this->papersNotInConflictProcessing($loggedEditor);
                     }

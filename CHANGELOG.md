@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
-- [#585](https://github.com/CCSDForge/episciences/issues/585): The history of manually sent emails is not visible when the CI option is enabled.
 - Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
 - [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
 - Unlabeled volume when updating metadata from an Episciences journal to HAL.
@@ -81,6 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
 - [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
+
+## v1.0.45.1 - 2024-09-18
+- [#585](https://github.com/CCSDForge/episciences/issues/585): The history of manually sent emails is not visible when the "Conflict of Interest" option is enabled.
 
 ## v1.0.45 - 2024-09-16
 
