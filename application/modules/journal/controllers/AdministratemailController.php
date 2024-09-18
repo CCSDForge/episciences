@@ -896,13 +896,8 @@ class AdministratemailController extends Zend_Controller_Action
 
         if (!$isCoiEnabled) {
 
-            if (Episciences_Auth::isSecretary()) {
-                try {
-                    $docIds = array_keys($review->getPapers()); // all history
-                } catch (Zend_Db_Select_Exception $e) {
-                    trigger_error($e->getMessage());
-                }
-
+            if (Episciences_Auth::isSecretary()) { // // all history
+                $docIds = $this->allDocIds($review);
             } else {
 
                 $editor = new Episciences_Editor(['UID' => Episciences_Auth::getUid()]);
@@ -929,11 +924,7 @@ class AdministratemailController extends Zend_Controller_Action
                 if ($suEditor->isNotAllowedToDeclareConflict()) {
                     if ($loggedEditor->isNotAllowedToDeclareConflict()) {
                         $options['strict'] = false;
-                        try {
-                            $docIds = array_keys($review->getPapers());
-                        } catch (Zend_Db_Select_Exception $e) {
-                            trigger_error($e->getMessage());
-                        }
+                        $docIds = $this->allDocIds($review);
                     } else {
                         $docIds = $this->papersNotInConflictProcessing($loggedEditor);
                     }
@@ -950,16 +941,13 @@ class AdministratemailController extends Zend_Controller_Action
                 Episciences_Auth::isRoot() ||
                 Episciences_Auth::isAdministrator(RVID, true)
             ) {
-                try {
-                    if (!Episciences_Auth::isRoot()) {
-                        $docIds = array_diff(array_keys($review->getPapers()), Episciences_PapersManager::getDocIdsInConflitByUid($loggedUid));
-                    } else {
-                        $options['strict'] = false;
-                        $docIds = array_keys($review->getPapers());
-                    }
-                } catch (Zend_Db_Select_Exception $e) {
-                    trigger_error($e->getMessage());
+                if (!Episciences_Auth::isRoot()) {
+                    $docIds = array_diff($this->allDocIds($review), Episciences_PapersManager::getDocIdsInConflitByUid($loggedUid));
+                } else {
+                    $options['strict'] = false;
+                    $docIds = $this->allDocIds($review);
                 }
+
             }
 
         }
@@ -1003,6 +991,21 @@ class AdministratemailController extends Zend_Controller_Action
             }
 
         }
+
+    }
+
+    private function allDocIds(Episciences_Review $journal): array
+    {
+
+        $docIds = [];
+
+        try {
+            $docIds = array_keys($journal->getPapers());
+        } catch (Zend_Db_Select_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        return $docIds;
 
     }
 }
