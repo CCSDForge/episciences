@@ -1349,13 +1349,29 @@ class Episciences_User extends Ccsd_User_Models_User
 
     public function isNotAllowedToDeclareConflict(): bool
     {
-        $roles = $this->getRoles();
+
         return (
-            count($roles) === 1 &&
-            (
-                $roles[0] === Episciences_Acl::ROLE_ROOT ||
-                $roles[0] === Episciences_Acl::ROLE_SECRETARY
-            ));
+                $this->hasRole(Episciences_Acl::ROLE_ROOT) ||
+                $this->hasRole(Episciences_Acl::ROLE_ADMIN)
+            ) &&
+            !(
+                $this->hasRole(Episciences_Acl::ROLE_SECRETARY) &&
+                $this->hasRole(Episciences_Acl::ROLE_CHIEF_EDITOR) &&
+                $this->hasRole(Episciences_Acl::ROLE_GUEST_EDITOR) &&
+                $this->hasRole(Episciences_Acl::ROLE_EDITOR) &&
+                $this->hasRole(Episciences_Acl::ROLE_COPY_EDITOR)
+            );
+    }
+
+
+    private function multipleRolesUnsetMemberRole(array &$roles = []): void
+    {
+        if (count($roles) > 1) {
+            $key = array_search(Episciences_Acl::ROLE_MEMBER, $roles, true);
+            if ($key !== false) {
+                unset($roles[$key]);
+            }
+        }
     }
 
 }

@@ -905,12 +905,7 @@ class AdministratemailController extends Zend_Controller_Action
 
             } else {
 
-                $editor = new Episciences_Editor();
-                try {
-                    $editor->find(Episciences_Auth::getUid());
-                } catch (Zend_Db_Statement_Exception $e) {
-                    trigger_error($e->getMessage());
-                }
+                $editor = new Episciences_Editor(['UID' => Episciences_Auth::getUid()]);
 
                 if ($review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS)) {
                     try {
@@ -919,43 +914,28 @@ class AdministratemailController extends Zend_Controller_Action
                         trigger_error($e->getMessage());
                         $papers = [];
                     }
-
                     $docIds = array_keys($papers);
                 }
-
             }
 
-
         } else { // COI enabled
-
-            $editor = new Episciences_Editor();
             $suUid = Episciences_Auth::getOriginalIdentity()->getUid();
             $loggedUid = Episciences_Auth::getUid();
 
+            $loggedEditor = new Episciences_Editor(['UID' => $loggedUid]);
+
             if ($suUid !== $loggedUid) {
+                $suEditor = new Episciences_Editor(['UID' => $suUid]);
 
-                try {
-                    $editor->find($suUid);
-                    if ($editor->isNotAllowedToDeclareConflict()) {
-                        $options['strict'] = false;
-                    } else {
-                        $docIds = $this->papersNotInConflictProcessing($editor);
-                    }
-
-                } catch (Zend_Db_Statement_Exception $e) {
-                    trigger_error($e->getMessage());
+                if ($suEditor->isNotAllowedToDeclareConflict() && $loggedEditor->isNotAllowedToDeclareConflict()) {
+                    $options['strict'] = false;
+                } else {
+                    $docIds = $this->papersNotInConflictProcessing($suEditor);
                 }
 
             } elseif (Episciences_Auth::isAllowedToDeclareConflict()) {
 
-                try {
-                    $editor->find($loggedUid);
-
-                } catch (Zend_Db_Statement_Exception $e) {
-                    trigger_error($e->getMessage());
-                }
-
-                $docIds = $this->papersNotInConflictProcessing($editor);
+                $docIds = $this->papersNotInConflictProcessing($loggedEditor);
 
             } elseif (
                 Episciences_Auth::isRoot() ||
