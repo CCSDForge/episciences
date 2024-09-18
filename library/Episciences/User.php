@@ -1365,26 +1365,21 @@ class Episciences_User extends Ccsd_User_Models_User
 
     /**
      * @param string $role
+     * @param int $rvId
      * @return Episciences_User
      */
     public function addRole(string $role, int $rvId = RVID): \Episciences_User
     {
         $selfRoles = $this->getRoles($rvId) ?? [];
+        $this->multipleRolesUnsetMemberRole($selfRoles);
         $currentRoles = [];
 
         if (!in_array($role, $selfRoles, true)) { // 'reviewer'
             $currentRoles = array_merge($selfRoles, (array)$role);
         }
 
-        if (count($currentRoles) > 1) {
-            $key = array_search(Episciences_Acl::ROLE_MEMBER, $currentRoles, true);
-
-            if ($key !== false) {
-                unset($currentRoles[$key]);
-            }
-        }
-
         if (!empty($currentRoles)) {
+            $this->multipleRolesUnsetMemberRole($currentRoles);
             $this->saveUserRoles($this->getUid(), $currentRoles, $rvId);
             $userRoles[$rvId] = $currentRoles;
         } else {
