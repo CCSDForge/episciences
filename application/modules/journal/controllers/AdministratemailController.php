@@ -927,9 +927,13 @@ class AdministratemailController extends Zend_Controller_Action
 
             if ($suUid !== $loggedUid) {
                 $suEditor = new Episciences_Editor(['UID' => $suUid]);
+                if ($suEditor->isNotAllowedToDeclareConflict()) {
+                    if ($loggedEditor->isNotAllowedToDeclareConflict()) {
+                        $options['strict'] = false;
+                    } else {
+                        $docIds = $this->papersNotInConflictProcessing($loggedEditor);
+                    }
 
-                if ($suEditor->isNotAllowedToDeclareConflict() && $loggedEditor->isNotAllowedToDeclareConflict()) {
-                    $options['strict'] = false;
                 } else {
                     $docIds = $this->papersNotInConflictProcessing($suEditor);
                 }
