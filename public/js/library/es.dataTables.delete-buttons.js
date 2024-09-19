@@ -23,8 +23,8 @@ $(document).ready(function () {
                     data,
                     function (respond) {
                         if (respond == 1) {
-                            if (isDeleteGridAction || action === '/grid/deletecriterion') {
-                                window.location.replace("/grid/list");
+                            if (isDeleteGridAction || action === JS_PREFIX_URL + 'grid/deletecriterion') {
+                                window.location.replace(JS_PREFIX_URL + "grid/list");
                                 return false;
                             } else {
                                 if (table && tr) {

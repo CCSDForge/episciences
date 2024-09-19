@@ -19,7 +19,12 @@ class CommentsController extends PaperController
         $file = $this->getRequest()->getParam('file');
         $isTmp = (boolean)$this->getRequest()->getParam('istmp');
 
-        $paper = Episciences_PapersManager::get($docid, false, RVID);
+        try {
+            $paper = Episciences_PapersManager::get($docid, false, RVID);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+            $paper = null;
+        }
 
         if (!$paper) {
             return;
@@ -34,18 +39,10 @@ class CommentsController extends PaperController
             $controllerName = 'administratepaper';
         }
 
-        $url = '/' . $controllerName . '/view/id/' . $docid;
-
-        if (!$paper) {
-            $message = $this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST);
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-            $this->_helper->redirector->gotoUrl($url);
-            return;
-        }
-
+        $url = $this->url(['controller' => $controllerName, 'action' => 'view', 'id' => $docid ]);
         $comment = new Episciences_Comment();
 
-        if (null == $comment->find($pcid)) {
+        if (null === $comment->find($pcid)) {
             $message = $this->view->translate("Le commentaire demandé n’existe pas.");
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
             $this->_helper->redirector->gotoUrl($url);
@@ -54,9 +51,14 @@ class CommentsController extends PaperController
 
         $isJson = Episciences_Tools::isJson($comment->getFile());
 
-        $jFiles = $isJson ? json_decode($comment->getFile(), true) : (array)$comment->getFile();
+        try {
+            $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+            $jFiles = [];
+        }
 
-        $paperId = ($paper->getPaperid()) ? $paper->getPaperid() : $paper->getDocid();
+        $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
 
         if ($isTmp) { // fichiers joints aux commentaires des versions temporaires
 

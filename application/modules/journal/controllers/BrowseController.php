@@ -1,6 +1,6 @@
 <?php
 
-class BrowseController extends Zend_Controller_Action
+class BrowseController extends Episciences_Controller_Action
 {
     use Episciences\Notify\Headers;
 

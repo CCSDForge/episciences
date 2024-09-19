@@ -24,7 +24,7 @@ $files = $paper->getFiles();
                 <?php foreach ($files as $oFile) : ?>
                     <?php
                     if ($paper->isPublished()) {
-                        $href = '/' . $paper->getDocid() . "/$action/" . $oFile->getName();
+                        $href = sprintf('%s%s/%s/%s', PREFIX_URL, $paper->getDocid(), $action, $oFile->getName());
                     } else {
                         $href = $oFile->getSelfLink();
                     }

@@ -4,7 +4,7 @@
  * Controller permettant le rendu de scripts partiels
  *
  */
-class PartialDefaultController extends Zend_Controller_Action
+class PartialDefaultController extends Episciences_Controller_Action
 {
 
     /**

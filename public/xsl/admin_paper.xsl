@@ -8,10 +8,14 @@
     <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
     <xsl:template match="/record">
+        <xsl:variable name="prefixUrl" select="episciences/prefixUrl/text()"/>
         <xsl:variable name="rightOrcid" select="episciences/rightOrcid/text()"/>
         <xsl:if test="$rightOrcid = '1'">
             <!-- Modal -->
-            <form id="post-orcid-author" action="/paper/postorcidauthor" method="POST">
+            <form id="post-orcid-author" method="POST">
+                <xsl:attribute name="action">
+                    <xsl:value-of select="concat($prefixUrl,'paper/postorcidauthor')"/>
+                </xsl:attribute>
                 <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label" aria-hidden="true">
                     <div class="modal-dialog modal-orcid" role="document">
                         <div class="modal-content">
@@ -297,14 +301,14 @@
                         <xsl:when test="episciences/tmp/text() = '1'">
                             <xsl:variable name="docUrls"
                                           select="php:function('Episciences_Tools::buildHtmlTmpDocUrls', episciences/id)"/>
-                            <xsl:value-of select=" $docUrls" disable-output-escaping="yes"/>
+                            <xsl:value-of select="$docUrls" disable-output-escaping="yes"/>
                         </xsl:when>
                         <xsl:otherwise>
                             <a target="_blank">
                                 <xsl:attribute name="href">
                                     <xsl:choose>
                                         <xsl:when test="episciences/status = 16">
-                                            <xsl:value-of select="concat('/', episciences/id, '/pdf')"/>
+                                            <xsl:value-of select="concat($prefixUrl, episciences/id, '/pdf')"/>
                                         </xsl:when>
                                         <xsl:otherwise>
                                             <xsl:value-of select="episciences/paperURL"/>

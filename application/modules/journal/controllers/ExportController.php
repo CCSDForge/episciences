@@ -6,7 +6,7 @@ use Episciences\Paper\Export;
  * Class ExportController
  * Export formats of a paper
  */
-class ExportController extends Zend_Controller_Action
+class ExportController extends Episciences_Controller_Action
 {
     const TEXT_XML_CHARSET_UTF_8 = 'text/xml; charset=utf-8';
 

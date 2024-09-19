@@ -29,47 +29,47 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
 
 <?php if ($isAssignedToPaper && $this->isMonitoringRefused): ?>
     <div class="alert alert-warning" style="margin-top: 20px">
-        <strong><?= $this->translate($alertMsg); ?></strong><br/>
+        <strong><?= $this->translate($alertMsg) ?></strong><br/>
     </div>
 <?php endif; ?>
 
-<div id="<?= $this->id ? $this->id : 'editors' ; ?>" class="editors">
+<div id="<?= $this->id ?: 'editors' ?>" class="editors">
     <?php if (count($editors)) : ?>
 
         <?php /** @var Episciences_Editor $editor */
         foreach ($editors as $editor) : ?>
             <div class="editor" style="margin-bottom: 5px;">
-                <img src="/user/photo/name/<?= urlencode($this->escape($editor->getScreenName())); ?>/uid/<?= $editor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                <img src="/user/photo/name/<?= urlencode($this->escape($editor->getScreenName())) ?>/uid/<?= $editor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                      class="user-photo-small" alt="avatar">
 
-                <a class="btn btn-default" href="/user/view/userid/<?= $editor->getUid(); ?>" target="_blank">
+                <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $editor->getUid()])?>" target="_blank">
                     <span data-toggle="tooltip"
                           class="fas fa-address-card"
                           style="margin: 0.2rem"
-                          title="<?php echo $this->translate("Voir le profil") ?>">
+                          title="<?= $this->translate("Voir le profil") ?>">
                     </span>
                 </a>
                 <a class="modal-opener btn btn-default"
-                   href="/administratemail/send/recipient/<?= $editor->getUid(); ?>/paper/<?= $paper->getDocid(); ?>">
+                   href="<?= $this->url(['controller' => 'administratemail', 'action' => 'send', 'recipient' => $editor->getUid(), 'paper' => $paper->getDocid()])?>">
                     <span data-toggle="tooltip"
                           class="glyphicon glyphicon-envelope"
                           style="margin: 0.2rem"
-                          title="<?php echo $this->translate("Contacter ce rédacteur") ?>">
+                          title="<?= $this->translate("Contacter ce rédacteur") ?>">
                     </span>
                 </a>
 
                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                    <a class="btn btn-default" href="/user/su/uid/<?php echo $editor->getUid(); ?>">
+                    <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $editor->getUid()]) ?>">
                         <span data-toggle="tooltip"
                               style="margin: 0.2rem"
-                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                              title="<?= $this->translate("Se connecter avec ce compte.") ?>"
                               class="fas fa-user-secret">
 
                         </span>
                     </a>&nbsp;
                 <?php endif; ?>
 
-                <span style="margin-left: 0.5em;"><strong><?php echo $editor->getScreenName(); ?></strong></span>
+                <span style="margin-left: 0.5em;"><strong><?= $editor->getScreenName() ?></strong></span>
 
                 <?php
                 $sections = $editor->getAssignedSections();
@@ -86,23 +86,23 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
                 }
                 ?>
                 <?php if ($msg) : ?><span class="lightgrey text-info" style="margin-left: 5px;">
-                    (<?= $msg; ?>)</span><?php endif; ?>
+                    (<?= $msg ?>)</span><?php endif; ?>
             </div>
         <?php endforeach; ?>
     <?php else: ?>
         <p>
-            <?= $this->translate('Aucun rédacteur pour le moment') . '.'; ?>
+            <?= $this->translate('Aucun rédacteur pour le moment') . '.' ?>
         </p>
     <?php endif; // endif(count($editors)) ?>
 
     <?php if ($paper->getEditor(Episciences_Auth::getUid()) && $paper->isEditable()) : ?>
         <button id="refused_monitoring_button-<?= $loggedUid; ?>" data-toggle="tooltip" data-placement="right"
                 title="<?= $this->translate($title); ?>"
-                class="btn btn-default btn-sm popover-link <?= $disabled; ?>" role="button" <?= $ariaDisabled; ?>
-                onclick="getRefusedMonitoringForm(<?= $paper->getDocid(); ?>, <?= $loggedUid; ?>)"
+                class="btn btn-default btn-sm popover-link <?= $disabled ?>" role="button" <?= $ariaDisabled ?>
+                onclick="getRefusedMonitoringForm(<?= $paper->getDocid() ?>, <?= $loggedUid ?>)"
         >
             <span class="glyphicon glyphicon-log-out"></span>
-            <?= $this->translate('Je ne souhaite plus gérer cet article'); ?>
+            <?= $this->translate('Je ne souhaite plus gérer cet article') ?>
         </button>
     <?php endif; ?>
 

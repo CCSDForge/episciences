@@ -31,7 +31,8 @@
     },
     "SUPPORT": "email-support@platform.org",
     "CONTACT": "email-support@platform.org",
-    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": []
+    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": [],
+    "USE_NEW_FRONT" : false
   },
   "CAS": {
     "HOST": "a_db_host",

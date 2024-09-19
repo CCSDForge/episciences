@@ -5,8 +5,8 @@ $paper = $this->paper;
 <?php if ($this->canBeReviewed): ?>
 
     <?php
-    $url = '/administratepaper/invitereviewer?docid=' . $this->paper->getDocid();
-    $referer = '/' . $this->controller . '/' . $this->action;
+    $url = $this->url(['controller' => 'administratepaper', 'action' => 'invitereviewer', 'docid' => $this->paper->getDocid()]);
+    $referer = $this->url(['controller' => $this->controller, 'action' => $this->action ]);
     /** @var Episciences_Volume $volume */
     $volume = $this->volume;
     ?>

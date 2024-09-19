@@ -644,7 +644,8 @@ class Episciences_Review
      */
     public function getUrl(): string
     {
-        return SERVER_PROTOCOL . '://' . $this->getCode() . '.' . DOMAIN;
+        $assembledAppUrl = SERVER_PROTOCOL . '://' . $this->getCode() . '.' . DOMAIN;
+        return APPLICATION_URL !== $assembledAppUrl ? APPLICATION_URL . '/' . $this->getCode() : $assembledAppUrl;
     }
 
     /**
@@ -2163,7 +2164,7 @@ class Episciences_Review
         $backButtonOptions = [
             'class' => 'btn btn-default',
             'label' => 'Retour aux paramètres de la revue',
-            'onclick' => 'window.location.href=\'/review/settings\';',
+            'onclick' => 'window.location.href=JS_PREFIX_URL + "review/setting";',
             'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'closeOnly' => true]]]
         ];
 

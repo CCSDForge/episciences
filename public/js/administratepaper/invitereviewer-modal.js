@@ -219,7 +219,7 @@ function submit() {
                 reviewers_container.html(getLoader());
                 reviewers_container.fadeIn();
                 $.ajax({
-                    url: "/administratepaper/displayinvitations",
+                    url: JS_PREFIX_URL + "administratepaper/displayinvitations",
                     type: "POST",
                     data: {docid: docid, partial: false},
                     success: function (reviewers) {
@@ -235,7 +235,7 @@ function submit() {
                 logs_container.html(getLoader());
                 logs_container.fadeIn();
                 $.ajax({
-                    url: "/administratepaper/displaylogs",
+                    url: JS_PREFIX_URL + "administratepaper/displaylogs",
                     type: "POST",
                     data: {docid: docid},
                     success: function (logs) {
@@ -273,7 +273,7 @@ function resetStep1() {
  */
 function findUserByMail(email) {
     return $.ajax({
-        url: '/user/ajaxfindusersbymail',
+        url: JS_PREFIX_URL + 'user/ajaxfindusersbymail',
         type: 'POST',
         dataType: 'json',
         data: {email: email}
@@ -287,7 +287,7 @@ function findUserByMail(email) {
  */
 function findUsers(lastName) {
     return $.ajax({
-        url: '/user/findusersbyfirstnameandname',
+        url: JS_PREFIX_URL + 'user/findusersbyfirstnameandname',
         type: 'POST',
         dataType: 'json',
         data: {lastName: lastName}
@@ -771,7 +771,7 @@ function checkDuplicateUser(data, keys) {
  */
 function displayCcsdUsers(data) {
     return $.ajax({
-        url: '/administratepaper/displayccsdusers',
+        url: JS_PREFIX_URL + 'administratepaper/displayccsdusers',
         type: 'POST',
         dataType: 'html',
         data: data
@@ -786,7 +786,7 @@ function displayCcsdUsers(data) {
  */
 function findCasUser(uid) {
     return $.ajax({
-        url: '/user/ajaxfindcasuser',
+        url: JS_PREFIX_URL + 'user/ajaxfindcasuser',
         type: 'POST',
         dataType: 'json',
         data: {uid: uid}

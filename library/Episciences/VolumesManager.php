@@ -80,7 +80,7 @@ class Episciences_VolumesManager
         if ($editors) {
 
             $form = new Ccsd_Form();
-            $form->setAction('/volume/saveeditors');
+            $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'volume', 'action' => 'saveeditors']));
 
             // Filtrer les résultats
             $form->addElement(new Zend_Form_Element_Text([

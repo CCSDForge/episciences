@@ -1,6 +1,6 @@
 <?php
 
-class ErrorDefaultController extends Zend_Controller_Action
+class ErrorDefaultController extends Episciences_Controller_Action
 {
 	
 	public function indexAction()

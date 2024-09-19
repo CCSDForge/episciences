@@ -315,11 +315,9 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
     {
 
         $hostname = self::getCurrentHostname();
-
         $hostname = rtrim($hostname, '/');
-
-        $uri = $hostname . '/user/login';
-
+        $uri = $hostname;
+        $uri .= PREFIX_URL . 'user/login';
         $forwardController = $params['forward-controller'] ?? null;
         $forwardAction = $params['forward-action'] ?? null;
 
@@ -342,6 +340,7 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
                         case 'action':
                         case 'module':
                         case 'ticket':
+                        case PREFIX_ROUTE:
                             continue 2;
                         default:
                             $uri .= '/' . urlencode($name) . '/';

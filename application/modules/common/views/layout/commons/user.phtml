@@ -11,7 +11,7 @@
                 <table>
                     <tr>
                         <td>
-                            <a href="/user"><img
+                            <a href="<?= $this->url(['controller' => 'user']) ?>"><img
                                         src="/user/photo/size/normal?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                                         class="user-photo-normal img-thumbnail"
                                         alt="<?= $this->translate('Ma photo') ?>"/>
@@ -25,11 +25,11 @@
                             <br>
                             <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => Episciences_Auth::getUser()->getWebSites(), 'socialMedias' => (array)Episciences_Auth::getUser()->getSocialMedias(), 'height' => 16]) ?>
                             <br>
-                            <a href="/user/edit"
+                            <a href="<?= $this->url(['controller' => 'user', 'action' => 'edit'])?>"
                                class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon profil") ?></a>
-                            <a href="/user/changepassword"
+                            <a href="<?= $this->url(['controller' => 'user', 'action' => 'changepassword'])?>"
                                class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon mot de passe") ?></a>
-                            <a href="/user/reset_api_password" style="margin-top: 5px;"
+                            <a href="<?= $this->url(['controller' => 'user', 'action' => 'reset_api_password'])?>" style="margin-top: 5px;"
                                class="btn btn-default btn-xs"><?= $this->translate("Réinitialiser mon mot de passe API") ?></a>
                         </td>
                     </tr>
@@ -45,7 +45,7 @@
             </li>
             <li class="divider"></li>
             <li style="padding:0 10px 10px; text-align:center;">
-                <span><a href="/user/logout" class="btn btn-default btn-xs"><i
+                <span><a href="<?= $this->url(['controller' => 'user', 'action' => 'logout']) ?>" class="btn btn-default btn-xs"><i
                                 class="fas fa-sign-out-alt"></i>&nbsp;<?= $this->translate("Déconnexion") ?></a></span>
             </li>
         </ul>

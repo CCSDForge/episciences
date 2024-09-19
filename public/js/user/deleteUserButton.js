@@ -12,7 +12,7 @@ $(document).ready(function() {
 				if (result) {
 
 					$.post(
-			            '/user/delete/',
+			            JS_PREFIX_URL + 'user/delete/',
 			            {ajax: 1, userId: id, table: table},
 			            function (respond) {
 				            if (respond == 1) {

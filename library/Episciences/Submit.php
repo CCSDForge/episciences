@@ -1087,7 +1087,7 @@ class Episciences_Submit
         if ($paper->alreadyExists()) {
             $message = '<strong>' . $translator->translate("L'article que vous tentez d'envoyer existe déjà.") . '</strong>';
             $messenger->setNamespace('error')->addMessage($message);
-            $redirector->gotoUrl('submit');
+            $redirector->gotoUrl((new Episciences_View_Helper_Url())->url(['controller' => 'submit']));
         }
 
         $paper->setWhen();
@@ -1151,7 +1151,7 @@ class Episciences_Submit
         } else {
             $message = '<strong>' . $translator->translate("Une erreur s'est produite pendant l'enregistrement de votre article.") . '</strong>';
             $messenger->setNamespace('error')->addMessage($message);
-            $redirector->gotoUrl('submit');
+            $redirector->gotoUrl((new Episciences_View_Helper_Url())->url(['controller' => 'submit']));
 
         }
 

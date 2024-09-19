@@ -3148,6 +3148,7 @@ class Episciences_Paper
         $oReview->loadSettings();
 
         // Création des éléments et ajout au node episciences
+        $node->appendChild($dom->createElement('prefixUrl', PREFIX_URL));
         $node->appendChild($dom->createElement('id', $this->getDocid())); // Identifiant Episciences
         $node->appendChild($dom->createElement('paperId', $this->getPaperid())); // Identifiant unique perenne
         $repositoryIdentifier = Episciences_Repositories::getIdentifier($this->getRepoid(), $this->getIdentifier(), $this->getVersion());

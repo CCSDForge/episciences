@@ -24,7 +24,7 @@ $(function () {
         form_data.append('docId', $('#paper_docId').val());
         form_data.append('paperId', $('#paper_id').val());
         $.ajax({
-            url: "/administrategraphabstract/addgraphabs/",
+            url: JS_PREFIX_URL + "administrategraphabstract/addgraphabs/",
             dataType: 'text',
             cache: false,
             contentType: false,
@@ -45,7 +45,7 @@ $(function () {
             form_data.append('file', file_data);
             form_data.append('docId', $('#paper_docId').val());
             $.ajax({
-                url: "/administrategraphabstract/deletegraphabs/",
+                url: JS_PREFIX_URL + "administrategraphabstract/deletegraphabs/",
                 dataType: 'text',
                 cache: false,
                 contentType: false,

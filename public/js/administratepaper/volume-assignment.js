@@ -19,7 +19,7 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
     // Récupération du formulaire
     let request = $.ajax({
         type: "POST",
-        url: "/administratepaper/volumeform",
+        url: JS_PREFIX_URL + "administratepaper/volumeform",
         data: {docid: docid}
     });
 
@@ -48,7 +48,7 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
                 $.ajax({
-                    url: '/administratepaper/savemastervolume',
+                    url: JS_PREFIX_URL + 'administratepaper/savemastervolume',
                     type: 'POST',
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,
@@ -72,7 +72,7 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
 
                             } else { // refresh all master volumes display
 
-                                let url = '/administratepaper/refreshallmastervolumes';
+                                let url = JS_PREFIX_URL + 'administratepaper/refreshallmastervolumes';
                                 let jData = {docid: docid, vid: vid, old_vid: oldVid, from: 'list'};
                                 let refreshPositionsRequest = ajaxRequest(url, jData);
 
@@ -114,7 +114,7 @@ function getOtherVolumesForm(button, docid, partial) {
     // Récupération du formulaire
     let request = $.ajax({
         type: "POST",
-        url: "/administratepaper/othervolumesform",
+        url: JS_PREFIX_URL + "administratepaper/othervolumesform",
         data: {docid: docid}
     });
 
@@ -143,7 +143,7 @@ function getOtherVolumesForm(button, docid, partial) {
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
                 $.ajax({
-                    url: '/administratepaper/saveothervolumes',
+                    url: JS_PREFIX_URL + 'administratepaper/saveothervolumes',
                     type: 'POST',
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,
@@ -178,10 +178,10 @@ function closeResult() {
  */
 function refreshVolumes($jsonData, volumeType = 'master', $container = null) {
 
-    let url = '/administratepaper/refreshmastervolume';
+    let url = JS_PREFIX_URL + 'administratepaper/refreshmastervolume';
 
     if (volumeType === 'others') { // seconder volumes
-        url = '/administratepaper/refreshothervolumes';
+        url = JS_PREFIX_URL + 'administratepaper/refreshothervolumes';
     }
 
     let request = ajaxRequest(url, $jsonData);

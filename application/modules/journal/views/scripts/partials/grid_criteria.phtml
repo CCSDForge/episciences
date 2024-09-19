@@ -109,7 +109,7 @@
                 update: function (event, ui) {
                     $(this).find('span.handle').addClass('disabled');
                     $.ajax({
-                        url: "/grid/sortcriterion",
+                        url: JS_PREFIX_URL + "grid/sortcriterion",
                         type: 'POST',
                         data: {sorted: $(this).sortable("toArray"), rgid: <?php echo $this->grid->getId(); ?>},
                         dataType: "json",

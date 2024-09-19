@@ -2,13 +2,15 @@
     <ul class="nav nav-stacked nav-pills">
     	<?php foreach ($nav->getPages() as $page) {
     		//Page à ne pas afficher (pas le droit)
-            if (!$nav->accept($page)) continue;    		
+            if (!$nav->accept($page)) {
+                continue;
+            }
     		//Page active
     		$active = $page->isActive(true); 		
     		if ($page->hasPages()) {
 				//Présence de sous pages
                 $resource = $page->getController() . '-' . $page->getAction();
-                if ("administrate-index" == $resource || "rights-index" == $resource) {
+                if ("administrate-index" === $resource || "rights-index" === $resource) {
                    ?>
                    <li class="nav-header"><?php echo $this->view->translate($page->getLabel())?></li>
                    <?php

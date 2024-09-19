@@ -1171,7 +1171,7 @@ class PaperController extends PaperDefaultController
         }
 
 
-        $form->setAction('/paper/saveanswer?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'saveanswer', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
     }
@@ -1358,7 +1358,7 @@ class PaperController extends PaperDefaultController
         $oComment->find($id);
 
         $form = Episciences_Submit::getTmpVersionForm($oComment);
-        $form->setAction('/paper/savetmpversion?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'savetmpversion', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $form->setAttrib('method', 'post');
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
@@ -1782,7 +1782,7 @@ class PaperController extends PaperDefaultController
 
         // load form
         $form = Episciences_Submit::getNewVersionForm($paper, $options);
-        $form->setAction('/paper/savenewversion?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'savenewversion', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
 
         $this->view->form = $form;
 
@@ -2404,7 +2404,7 @@ class PaperController extends PaperDefaultController
         if (!$docId || !is_numeric($docId)) {
             $message = $this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST);
             $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
@@ -2414,7 +2414,7 @@ class PaperController extends PaperDefaultController
         if (!$paper) {
             $message = $this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST);
             $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
@@ -2425,9 +2425,9 @@ class PaperController extends PaperDefaultController
             $message = $this->view->translate("Cet article ne peut pas être relu par son auteur");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid())) {
-                $this->_helper->redirector('list', self::ADMINISTRATE_PAPER_CONTROLLER);
+                $this->_helper->redirector('list', self::ADMINISTRATE_PAPER_CONTROLLER, null, [PREFIX_ROUTE => RVCODE]);
             } else {
-                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             }
             return;
         }
@@ -2750,6 +2750,7 @@ class PaperController extends PaperDefaultController
 
         $this->_helper->FlashMessenger->setNamespace($type)->addMessage($message);
         $this->_helper->redirector('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, [
+            PREFIX_ROUTE => RVCODE,
             'id' => $paper->getDocid(),
             'is_completed' => json_encode($report_status)
         ]);
@@ -2849,7 +2850,7 @@ class PaperController extends PaperDefaultController
             if ($paper->isRevisionRequested()) {
                 $message = $this->view->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
                 return;
             }
 
@@ -2907,7 +2908,7 @@ class PaperController extends PaperDefaultController
             $this->_helper->redirector->gotoUrl('administratepaper/view?id=' . $paper->getDocid());
         } else {
             // show the usual reviewer all his reviews
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
         }
 
     }
@@ -3061,14 +3062,14 @@ class PaperController extends PaperDefaultController
         $file = $request->getParam('file');
 
         if (!$docid || !$uid) {
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
         $paper = Episciences_PapersManager::get($docid);
 
         if (!$paper) {
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
@@ -3784,7 +3785,7 @@ class PaperController extends PaperDefaultController
         $oComment = new Episciences_Comment;
         $oComment->find($id);
         $form = Episciences_CommentsManager::answerRevisionForm('contactRequest');
-        $form->setAction('/paper/saveanswer?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'saveanswer', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $form->addElement('hidden', 'type', [
             'id' => 'hidden-id-' . $id,
             'value' => Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT

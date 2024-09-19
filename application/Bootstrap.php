@@ -48,6 +48,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         return Zend_Db_Table_Abstract::getDefaultAdapter();
     }
 
+
     protected function _initModule(): void
     {
 
@@ -104,6 +105,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
         Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
     }
+
+
 
     /**
      * @throws Zend_Session_Exception
@@ -272,6 +275,25 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                     trigger_error($errorMessage, E_USER_ERROR);
                 }
             }
+        }
+    }
+
+
+    protected function _initRoutes(): void
+    {
+        /** @var Zend_Controller_Router_Rewrite $router */
+        $router = Zend_Controller_Front::getInstance()->getRouter();
+
+        if (defined('PREFIX_URL') && PREFIX_URL !== PORTAL_PREFIX_URL) {
+            $router->removeDefaultRoutes();
+            $route = sprintf(':%s/:controller/:action/*/*', PREFIX_ROUTE);
+            $router->addRoute(
+                'default',
+                new Zend_Controller_Router_Route($route, [
+                        'controller' => 'index',
+                        'action' => 'index'
+                    ],
+                ));
         }
     }
 }

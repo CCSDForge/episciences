@@ -24,7 +24,7 @@ $(document).ready(function () {
 
     setPlaceholder();
 
-    let hasHookRequest = ajaxRequest("/submit/ajaxhashook", {
+    let hasHookRequest = ajaxRequest(JS_PREFIX_URL + "submit/ajaxhashook", {
       repoId: repoValue,
     });
     hasHookRequest.done(function (response) {
@@ -90,7 +90,7 @@ $(document).ready(function () {
   });
 
   function checkDataverse() {
-    let isDataverseRequest = ajaxRequest("/submit/ajaxisdataverse", {
+    let isDataverseRequest = ajaxRequest(JS_PREFIX_URL + "submit/ajaxisdataverse", {
       repoId: $searchDocRepoId.val(),
     });
     isDataverseRequest.done(function (response) {

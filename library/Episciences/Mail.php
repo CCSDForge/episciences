@@ -147,10 +147,7 @@ class Episciences_Mail extends Zend_Mail
             return false;
         }
 
-        $lostLoginLink = SERVER_PROTOCOL . '://';
-        $lostLoginLink .= $rvCode . '.' . DOMAIN;
-        $lostLoginLink .= '/user/lostlogin';
-
+        $lostLoginLink = sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], (new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'lostlogin']));
 
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL, $recipient->getEmail());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $recipient->getFullName());

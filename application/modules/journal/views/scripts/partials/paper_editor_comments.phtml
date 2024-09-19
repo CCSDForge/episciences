@@ -15,9 +15,7 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
             <div><?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?></div>
             <?php if ($comment['FILE']) :?>
                 <div class="col-sm-10">
-                    <a href="/docfiles/comments/<?php echo $comment['DOCID'].'/'.$comment['FILE']?>" target="_blank">
-                        <?php echo $comment['FILE'];?>
-                    </a>
+                    <a href="<?= sprintf('%sdocfiles/comments/%s/%s', PREFIX_URL, $comment['DOCID'], $comment['FILE']) ?>" target="_blank"> <?= $comment['FILE'] ?></a>
                 </div>
             <div class="col-sm-2">
                 <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>

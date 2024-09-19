@@ -1,7 +1,7 @@
 <?php
 
 
-class IndexController extends Zend_Controller_Action
+class IndexController extends Episciences_Controller_Action
 {
     use Episciences\Notify\Headers;
 
@@ -19,7 +19,7 @@ class IndexController extends Zend_Controller_Action
             exit;
         }
         $this->view->controller = 'index';
-        $this->forward('index', 'page');
+        $this->forward('index', 'page', $this->getRequest()->getParams());
     }
 
     public function notfoundAction()

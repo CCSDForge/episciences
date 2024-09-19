@@ -40,7 +40,7 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                 if (!$epiUser->hasLocalData(Episciences_Auth::getUid())) {
                     //Le compte doit être complété
                     $redirector = Zend_Controller_Action_HelperBroker::getStaticHelper('redirector');
-                    $redirector->gotoUrl('user/edit');
+                    $redirector->gotoUrl((new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'edit']));
                 }
             }
         } else if (!$request->isXmlHttpRequest()) {

@@ -19,7 +19,7 @@ function assignReviewers(button, docid)
 	// Récupération du formulaire
 	var request = $.ajax({
 		type: "POST",
-		url: "/administratepaper/reviewersform",
+		url: JS_PREFIX_URL + "administratepaper/reviewersform",
 		data: {docid: docid}
 	});
 	
@@ -53,7 +53,7 @@ function assignReviewers(button, docid)
 			
 			// Traitement AJAX du formulaire
 			$.ajax({
-                url: '/administratepaper/assignreviewers',
+                url: JS_PREFIX_URL + 'administratepaper/assignreviewers',
                 type: 'POST',
                 datatype: 'json',
                 data: $(this).serialize() + "&docid="+docid,
@@ -69,7 +69,7 @@ function assignReviewers(button, docid)
                 		
                 		// Refresh de l'affichage
                 		$.ajax({
-                			url: "/administratepaper/reviewerslist",
+                			url: JS_PREFIX_URL + "administratepaper/reviewerslist",
                 			type: "POST",
                 			data: {docid: docid},
                 			success: function(result) {

@@ -61,18 +61,56 @@ function defineApplicationConstants()
  */
 function defineJournalConstants(string $rvCode = null): void
 {
-
+    $prefixUrl = PORTAL_PREFIX_URL;
     if (!defined('RVCODE')) {
+        if (!$rvCode) {
+            if (getenv('RVCODE')) {
+                $rvCode = getenv('RVCODE');
+            } else {
+                $rvCode = 'portal';
+                $front = Zend_Controller_Front::getInstance();
+                if ($front) {
+                    try {
+                        $front->setRequest(new Zend_Controller_Request_Http());
+                        $request = $front->getRequest();
+                        if ($request) {
+                            $requestUri = $request->getRequestUri();
+                            if ($requestUri !== '/') {
+                                $explodedUri = explode('/', $requestUri);
+                                $extractedCode = $explodedUri[1];
+                                $application = new Zend_Application(APPLICATION_ENV, APPLICATION_PATH . '/configs/application.ini');
+                                try {
+                                    $db = Zend_Db::factory('PDO_MYSQL', $application->getOption('resources')['db']['params']);
+                                } catch (Zend_Db_Exception $e) {
+                                    trigger_error($e->getMessage(), E_USER_ERROR);
+                                }
 
-        if (!$rvCode && getenv('RVCODE')) {
-            $rvCode = getenv('RVCODE');
+                                $select = $db
+                                    ->select()
+                                    ->from( T_REVIEW, ['CODE'])
+                                    ->where('STATUS = ?', 1)
+                                    ->where('CODE = ?', $extractedCode);
+
+                                $result = $db->fetchOne($select);
+                                if ($result && $result !== 'portal' ){
+                                    $rvCode = $result;
+                                    $prefixUrl = sprintf('/%s/', $result);
+                                }
+                            }
+                        }
+
+                    } catch (Zend_Controller_Exception $e) {
+                        trigger_error($e->getMessage());
+                    }
+                }
+            }
         }
-
         define('RVCODE', $rvCode);
-
+        define('PREFIX_URL', $prefixUrl);
     }
 
     if ($rvCode) {
+        $assembledApplicationUrl = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN;
         // define application module
         switch ($rvCode) {
             case PORTAL:
@@ -86,7 +124,8 @@ function defineJournalConstants(string $rvCode = null): void
         }
 
         // define application url
-        define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
+        define('APPLICATION_URL',  $_SERVER['SERVER_NAME'] !== $assembledApplicationUrl ? sprintf('%s://%s%s',SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')) : $assembledApplicationUrl);
+
 
         // define review path
         define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
@@ -207,6 +246,9 @@ function defineSimpleConstants()
     define('MAX_PWD_INPUT_SIZE', 40);
     define('MAX_PDF_SIZE', 500 * MO);
     define('ENCODING_TYPE', 'UTF-8');
+    define('PORTAL_PREFIX_URL', '/');
+    define('PREFIX_ROUTE', 'rv-code');
+
 }
 
 
@@ -298,5 +340,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('ENDPOINTS_INDEXING_TIMEOUT', 0);
         define('DOI_EMAIL_CONTACT', '');
         define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
+        define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
     }
 }
