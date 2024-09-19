@@ -61,7 +61,6 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION = 'reminder_after_revision_deadline_editor_version';
     public const TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION = 'reminder_not_enough_reviewers';
     public const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
-    public const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
 
     public const TYPE_PAPER_SUGGEST_ACCEPTATION = 'paper_suggest_acceptation';
     public const TYPE_PAPER_SUGGEST_REFUSAL = 'paper_suggest_refusal';
@@ -129,6 +128,17 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION = 'paper_accepted_ask_authors_final_version';
     public const TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION = 'paper_formatted_by_journal_waiting_author_validation';
     public const TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY = 'inbox_paper_submission_author_copy';
+    // git #513
+    public const TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION = 'reminder_reviewed_article_editors_copy';
+    public const TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION = 'reminder_submitted_article_editors_copy';
+
+    /**
+     * **** Used dynamically @see Episciences_Mail_Reminder constant($constant_name);
+     */
+
+    public const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
+    public const TYPE_REMINDER_REVIEWED_ARTICLE_CHIEF_EDITOR_VERSION = 'reminder_reviewed_article_editors_copy';
+    public const TYPE_REMINDER_SUBMITTED_ARTICLE_CHIEF_EDITOR_VERSION = 'reminder_submitted_article_editors_copy';
 
     // available in all templates
     public const COMMON_TAGS = [
@@ -146,7 +156,7 @@ class Episciences_Mail_TemplatesManager
     public const MANAGERS_COPY_EDITORS_EXCEPTED_EXP = "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction";
     public const REVIEWER_RECEP_EXP = "tous les relecteurs assignés à l'article dont la relecture n'est pas encore achevée";
 
-    public const AUTHORS_CO_AUTHORS =  "Authors and co authors (if exist)";
+    public const AUTHORS_CO_AUTHORS = "Authors and co authors (if exist)";
 
     // obsolete templates ?
     // protected $_paper_comment_answer_editor_copy_tags = [];
@@ -1396,7 +1406,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_ARTICLE_LINK,
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
-        Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE
+        Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
 
     public const paper_accepted_ask_authors_final_version_tags = [
@@ -1429,6 +1440,36 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_REPO_URL,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
 
+    ];
+
+    public const reminder_reviewed_article_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_LINK,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
+    ];
+
+    public const reminder_submitted_article_editor_version_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_LINK,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
 
     public const TEMPLATE_DESCRIPTION_AND_RECIPIENT = [
@@ -1476,7 +1517,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => "confirmation de soumission de l'article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR => [self::DESCRIPTION => "confirmation de soumission de la nouvelle version de l'article", self::RECIPIENT => self::AUTHORS_CO_AUTHORS],
         self::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR => [self::DESCRIPTION => "confirmation de soumission de la nouvelle version (temporaire) de l'article", self::RECIPIENT => self::AUTHORS_CO_AUTHORS],
-        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION => [self::DESCRIPTION => "notification de rappel du relecteur ne répondant pas à l'invitation" , self::RECIPIENT => 'relecteur'],
+        self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION => [self::DESCRIPTION => "notification de rappel du relecteur ne répondant pas à l'invitation", self::RECIPIENT => 'relecteur'],
         self::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs de la non-réponse du relecture à une invitation", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION => [self::DESCRIPTION => "notification de rappel de l'approche de la date de livraison de la relecture", self::RECIPIENT => 'relecteur'],
         self::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs de l'approche de la date de livraison de la relecture", self::RECIPIENT => self::EDITORS_RECEP_EXP],
@@ -1529,6 +1570,9 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => [self::DESCRIPTION => "demande de modifications mineures de l'article après son acceptation (si et seulement si l'option 'Permettre la demande de revision' est autoirisée par la revue)", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => [self::DESCRIPTION => "notification invitant l'auteur à confirmer la version aux normes de la revue (mise en forme par le préparateur de copie)", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => "confirmation de la soumission automatique de l'article depuis le serveur de preprint", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs que le travail de révision a été effectué par les relecteurs", self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs des articles bloqués à l'état soumis", self::RECIPIENT => self::EDITORS_RECEP_EXP],
+
 
     ];
 
@@ -1604,7 +1648,9 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_USER_LOST_LOGIN,
         self::TYPE_USER_LOST_PASSWORD,
         self::TYPE_USER_REGISTRATION,
-        self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY
+        self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY,
+        self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
+        self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION
     ];
 
     /**
@@ -1915,7 +1961,9 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => self::paper_accepted_tmp_version_managers_copy_tags,
             self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => self::paper_accepted_ask_authors_final_version_tags,
             self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => self::paper_formatted_by_journal_waiting_author_validation_tags,
-            self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => self::paper_submission_author_copy_tags
+            self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => self::paper_submission_author_copy_tags,
+            self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION => self::reminder_submitted_article_editor_version_tags,
+            self::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION => self::reminder_reviewed_article_editor_version_tags
         ];
 
         if (array_key_exists($key, $map)) {

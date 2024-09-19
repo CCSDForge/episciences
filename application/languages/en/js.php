@@ -65,7 +65,6 @@ return [
     "Rappel avant date limite de modification" => "Reminder before revision deadline",
     "Relance après date limite de modification" => "Reminder after revision deadline",
     "Pas assez de relecteurs" => "Not enough reviewers",
-    "Article bloqué à l'état accepté" => "Article blocked in accepted state",
     'Saisir un nombre de jours' => 'Enter a number of days',
     'un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder for an unanswered review invitation can be send x days after the invitation (defined in Journal Management/Review/Settings)',
     'un rappel automatique de la date limite pour une relecture peut être envoyé x jours avant cette date (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder before reviewing deadline can bend x days before the review deadline (defined in Journal Management/Review/Settings)',
@@ -229,4 +228,9 @@ return [
     'guest_editors' => 'Guest editors',
     'epiadmin' => 'Root',
     'copyeditor' => 'Copy editor',
+    // reminders
+    "Article bloqué à l'état accepté" => "Article blocked in accepted state",
+    "Article bloqué à l'état initial (soumis)" => "Article blocked in initial state (submitted)",
+    "Article bloqué à l'état relu" => "Article blocked in reviewed state)",
+    "Si un article est resté dans cet état pendant plus de 30 jours, le rappel sera envoyé après x jours." => "If an article has been in this state for more than 30 days, the reminder will be sent after x days.",
 ];

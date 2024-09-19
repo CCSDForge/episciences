@@ -9,28 +9,36 @@ class Episciences_Mail_Reminder
     public const TYPE_BEFORE_REVISION_DEADLINE = 3;    // before revision deadline
     public const TYPE_AFTER_REVISION_DEADLINE = 4;        // after revision deadline
     public const TYPE_NOT_ENOUGH_REVIEWERS = 5;        // not enough reviewers
-    public const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6; // artcile accepté: si rien n’est fait et qu’un article reste “bloqué” à ce stade.
+    public const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6; // article accepté : si rien n’est fait et qu’un article reste “bloqué” à ce stade.
+    public const TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE = 7;
+    public const TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE = 8;
+    public const DEFAULT_WAITING_TIME = 30; // days
 
     // reminder types labels
-    public static $_typeLabel = [
+    public static array $_typeLabel = [
         self::TYPE_UNANSWERED_INVITATION => 'Invitation de relecteur sans réponse',
         self::TYPE_BEFORE_REVIEWING_DEADLINE => 'Rappel avant date de livraison de relecture',
         self::TYPE_AFTER_REVIEWING_DEADLINE => 'Relance après date de livraison de relecture',
         self::TYPE_BEFORE_REVISION_DEADLINE => 'Rappel avant date limite de modification',
         self::TYPE_AFTER_REVISION_DEADLINE => 'Relance après date limite de modification',
         self::TYPE_NOT_ENOUGH_REVIEWERS => 'Pas assez de relecteurs',
-        self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => "Article bloqué à l'état accepté"
+        self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => "Article bloqué à l'état accepté",
+        self::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE => "Article bloqué à l'état initial (soumis)",
+        self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE => "Article bloqué à l'état relu"
     ];
 
     // reminder types keys
-    public static $_typeKey = [
+    public static array $_typeKey = [
         self::TYPE_UNANSWERED_INVITATION => 'reminder_unanswered_reviewer_invitation',
         self::TYPE_BEFORE_REVIEWING_DEADLINE => 'reminder_before_rating_deadline',
         self::TYPE_AFTER_REVIEWING_DEADLINE => 'reminder_after_rating_deadline',
         self::TYPE_BEFORE_REVISION_DEADLINE => 'reminder_before_revision_deadline',
         self::TYPE_AFTER_REVISION_DEADLINE => 'reminder_after_revision_deadline',
         self::TYPE_NOT_ENOUGH_REVIEWERS => 'reminder_not_enough_reviewers',
-        self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => 'reminder_article_blocked_in_accepted_state'
+        self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => 'reminder_article_blocked_in_accepted_state',
+        self::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE => 'reminder_submitted_article',
+        self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE => 'reminder_reviewed_article',
+
     ];
 
     private $_id;
@@ -115,7 +123,7 @@ class Episciences_Mail_Reminder
         // load default template
         $template = new Episciences_Mail_Template(['rvcode' => $review->getCode()]);
 
-        if (!isset(self::$_typeKey[$this->getType()])){
+        if (!isset(self::$_typeKey[$this->getType()])) {
             return false;
         }
 
@@ -234,6 +242,7 @@ class Episciences_Mail_Reminder
     public function loadRecipients(bool $debug = false, $date = null): void
     {
         $date = ($date) ? "'" . $date . "'" : 'CURDATE()';
+        $recipients = [];
 
         $filters = [
             Episciences_Paper::STATUS_PUBLISHED,
@@ -293,12 +302,28 @@ class Episciences_Mail_Reminder
 
             // article blocked at accepted state
             case self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE:
-                $recipients = $this->getArticleBlockedAtAcceptedStateReminders($debug, $date);
+            case self::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE:
+            case self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE:
+
+                $time = self::DEFAULT_WAITING_TIME;
+                $currentState = Episciences_Paper::STATUS_SUBMITTED;
+
+                if ((int)$this->getType() === self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE) {
+                    $time = 0;
+                    $currentState = Episciences_Paper::STATUS_ACCEPTED;
+                } elseif ((int)$this->getType() === self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE) {
+                    $currentState = Episciences_Paper::STATUS_REVIEWED;
+                }
+
+                try {
+                    $recipients = $this->getArticlesBlockedAtCurrentState($currentState, $debug, $date, $time);
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
                 break;
 
             // default: no recipients
             default:
-                $recipients = [];
                 break;
         }
 
@@ -1435,39 +1460,59 @@ class Episciences_Mail_Reminder
     }
 
     /**
-     * si rien n’est fait sur un article accepté après la date $date (il reste “bloqué” à ce stade).
+     * La relance n'est envoyée que si rien n'est fait pendant une période > (reminder delay + $time) = x (jours).
+     * @param int $status
      * @param $debug
      * @param $date
+     * @param int $waitingTime (days) : sensible à la date de modification "MODIFICATION_DATE"
      * @return array
+     * @throws DateMalformedStringException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Select_Exception
-     * @throws Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    private function getArticleBlockedAtAcceptedStateReminders($debug, $date): array
+    private function getArticlesBlockedAtCurrentState(int $status, $debug, $date, int $waitingTime = self::DEFAULT_WAITING_TIME): array
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
-        $papers = [];
+        $rRecipient = $this->getRecipient();
+        $editors = [];
+
+        $delay = (int)$this->getDelay();
+        $repetition = $this->getRepetition();
 
         $review = Episciences_ReviewsManager::find($this->getRvid());
 
         $settings = [
             'is' => [
                 'RVID' => $this->getRvid(),
-                'STATUS' => Episciences_Paper::STATUS_ACCEPTED
+                'STATUS' => $status,
             ]
         ];
 
         $paperQuery = Episciences_PapersManager::getListQuery($settings);
-        $paperQuery->where("MODIFICATION_DATE <= $date");
 
-        if ($this->getRepetition()) {
-            $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date) >= " . $this->getDelay()));
-            $paperQuery->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date), " . $this->getRepetition() . ') = 0'));
-        } else {
-            $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, MODIFICATION_DATE, $date) = " . $this->getDelay()));
+        $refDate = 'MODIFICATION_DATE';
+
+        if ($status === Episciences_Paper::STATUS_SUBMITTED) {
+            $refDate = 'WHEN';
         }
+
+        $deadline = "DATE_ADD(`$refDate`, INTERVAL $waitingTime DAY)";
+
+        if ($status !== Episciences_Paper::STATUS_ACCEPTED) {
+            $paperQuery->where(new Zend_Db_Expr("`$refDate` <= $date"));
+        }
+
+        if ($repetition) {
+            $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $deadline, $date) = $delay"));
+            $paperQuery->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, DATE_ADD($deadline, INTERVAL $delay DAY), $date), $repetition ) = 0"));
+        } else {
+            $paperQuery->where(new Zend_Db_Expr("DATE_ADD($deadline, INTERVAL $delay DAY) = $date"));
+        }
+
 
         if ($debug) {
             echo Episciences_Tools::$bashColors['light_blue'] . $paperQuery->__toString() . Episciences_Tools::$bashColors['default'] . PHP_EOL;
@@ -1475,18 +1520,8 @@ class Episciences_Mail_Reminder
 
         $resultQuery = $db->fetchAssoc($paperQuery);
 
-        foreach ($resultQuery as $id => $item) {
-            $papers[$id] = new Episciences_Paper($item);
-        }
-
-        $today = new DateTime();
-        $today = new DateTime($today->format('Y-m-d')); // strips time from today date
-
-        $rRecipient = $this->getRecipient();
-        $editors = [];
-
-        /** @var Episciences_Paper $paper */
-        foreach ($papers as $paper) {
+        foreach ($resultQuery as $item) {
+            $paper = new Episciences_Paper($item);
 
             if (Episciences_Acl::ROLE_CHIEF_EDITOR === $rRecipient) {
                 $editors = Episciences_Review::getChiefEditors();
@@ -1494,12 +1529,15 @@ class Episciences_Mail_Reminder
                 $editors = $paper->getEditors(true, true);
             }
 
-            $acceptedPaperDate = $paper->getModification_date();
-            $acceptedPaperDateTime = new DateTime($acceptedPaperDate);
-            $acceptedPaperDateTime = new DateTime($acceptedPaperDateTime->format('Y-m-d')); // strips time from datetime
-            $deadline = date_add($acceptedPaperDateTime, date_interval_create_from_date_string($this->getDelay() . ' days'));
-            // intervalle entre la deadline et aujourd'hui
-            $interval = (int)date_diff($today, $deadline)->format('%a');
+            $acceptanceDate = '';
+            $currentDate = $paper->getModification_date();
+
+            if ($paper->isAcceptedSubmission()) {
+                $acceptanceDate = $paper->getAcceptanceDate();
+                $currentDate = $acceptanceDate;
+            }elseif($paper->getStatus() === Episciences_Paper::STATUS_SUBMITTED){
+                $currentDate = $paper->getWhen();
+            }
 
             $commonTag = [
                 Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
@@ -1515,33 +1553,24 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
-                    Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE => Episciences_View_Helper_Date::Date($acceptedPaperDate, $editor->getLangueid())
+                    Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE => $acceptanceDate !== '' ? Episciences_View_Helper_Date::Date($acceptanceDate, $editor->getLangueid()) : '',
+                    Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getWhen(), $editor->getLangueid())
                 ];
 
-                // faut-il envoyer la relance aujourd'hui ?
-                if ($this->getRepetition()) {
-                    if ($interval % $this->getRepetition() === 0) {
-                        $recipients[] = [
-                            'uid' => $editor->getUid(),
-                            'fullname' => $editor->getFullName(),
-                            'email' => $editor->getEmail(),
-                            'lang' => $editor->getLangueid(true),
-                            'tags' => array_merge($commonTag, $tags)
-                        ];
-                    }
-                } else if ($interval === 0) {
-                    $recipients[] = [
-                        'uid' => $editor->getUid(),
-                        'fullname' => $editor->getFullName(),
-                        'email' => $editor->getEmail(),
-                        'lang' => $editor->getLangueid(true),
-                        'tags' => array_merge($commonTag, $tags)
-                    ];
-                }
+                $deadline = date_add($currentDate, date_interval_create_from_date_string($waitingTime . ' days'));
 
-            } // endforeach $editors
+                $recipients[] = [
+                    'uid' => $editor->getUid(),
+                    'fullname' => $editor->getFullName(),
+                    'email' => $editor->getEmail(),
+                    'lang' => $editor->getLangueid(true),
+                    'tags' => array_merge($commonTag, $tags),
+                    'deadline' => $deadline->format('Y-m-d')
+                ];
 
-        } // endforeach $papers
+            }
+
+        }
 
         return $recipients;
 

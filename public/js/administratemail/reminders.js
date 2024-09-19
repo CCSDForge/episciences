@@ -5,6 +5,8 @@ const TYPE_BEFORE_REVISION_DEADLINE = 3;
 const TYPE_AFTER_REVISION_DEADLINE = 4;
 const TYPE_NOT_ENOUGH_REVIEWERS = 5;
 const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6;
+const TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE = 7;
+const TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE = 8;
 
 function deleteReminder(btn) {
     bootbox.setDefaults({locale: locale});
@@ -229,9 +231,13 @@ function buildReminderMessage(reminderType) {
 
     } else if (type === TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE) {
         message += translate("la relance sera envoyée x jours après la date d'acceptation de l'article");
+    } else if (type === TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE || type === TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE  ){
+        message += translate("Si un article est resté dans cet état pendant plus de 30 jours, le rappel sera envoyé après x jours.");
     }
 
     message += ').'
+
+    console.log(message);
 
     return message;
 

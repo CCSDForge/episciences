@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#555](https://github.com/CCSDForge/episciences/issues/555): CI translation
 
 ### Added
+- [#513](https://github.com/CCSDForge/episciences/issues/513): Periodic Reminder E-Mails to Editors | editors in chief for 'Reviewed' and 'Submitted' articles 
 - export to Json: include article's citations.
 - Profile photo storage management via uuid.
 - Script to generate user's uuids.

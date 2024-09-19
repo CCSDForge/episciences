@@ -438,4 +438,9 @@ return [
     // Notification de la soumission d'un article – copie destinée aux rédacteurs en chef, administrateurs et secrétaires de rédaction (selon les paramètres de notification de la revue),
     "paper_submission_other_recipient_copy_tpl_name" => "Submitted article - chief editors, administrators and secretaries copy",
     "paper_submission_other_recipient_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - A new article has been submitted",
+    //gitHub #513
+    "reminder_reviewed_article_editors_copy_tpl_name" => "Article blocked in reviewed state (editors in chief | editors copy)",
+    "reminder_reviewed_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Reviewed article, decision required",
+    "reminder_submitted_article_editors_copy_tpl_name" => "Article blocked in initial state [submitted] - (editors in chief | editors copy)",
+    "reminder_submitted_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - New submission , decision required",
 ];

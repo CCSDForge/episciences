@@ -100,7 +100,7 @@ class Episciences_Mail_RemindersManager
             Episciences_Acl::ROLE_EDITOR
         );
 
-        // Artcile accepté: si rien n’est fait et qu’un article reste “bloqué” à ce stade.
+        // Article accepté : si rien n’est fait et qu’un article reste “bloqué” à ce stade.
         self::addReminderTemplate(
             $templates,
             Episciences_Mail_TemplatesManager::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION,
@@ -108,12 +108,42 @@ class Episciences_Mail_RemindersManager
             Episciences_Acl::ROLE_EDITOR
         );
 
-        // Artcile accepté: si rien n’est fait et qu’un article reste “bloqué” à ce stade.
+        // Article accepté : si rien n’est fait et qu’un article reste “bloqué” à ce stade.
         self::addReminderTemplate(
             $templates,
             Episciences_Mail_TemplatesManager::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION,
             Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE,
             Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        // Articles relus : si rien n’est fait et qu’un article reste “bloqué” à ce stade depuis un certain délai.
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE,
+            Episciences_Acl::ROLE_EDITOR
+        );
+
+        // Nouvel article : si rien n’est fait et qu’un article reste “bloqué” à l'état initial (soumis) depuis un certain délai.
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE,
+            Episciences_Acl::ROLE_EDITOR
         );
 
         return $templates;
@@ -155,7 +185,7 @@ class Episciences_Mail_RemindersManager
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public static function find($id)
+    public static function find($id): ?Episciences_Mail_Reminder
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -231,15 +261,7 @@ class Episciences_Mail_RemindersManager
         $form->addElement(new Ccsd_Form_Element_Select([
             'name' => 'type',
             'label' => 'Type',
-            'multioptions' => [
-                Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION],
-                Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE],
-                Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE],
-                Episciences_Mail_Reminder::TYPE_BEFORE_REVISION_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_BEFORE_REVISION_DEADLINE],
-                Episciences_Mail_Reminder::TYPE_AFTER_REVISION_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_AFTER_REVISION_DEADLINE],
-                Episciences_Mail_Reminder::TYPE_NOT_ENOUGH_REVIEWERS => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_NOT_ENOUGH_REVIEWERS],
-                Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE]
-            ],
+            'multioptions' => self::getAvailableReminders(),
             'value' => $type
         ]
         ));
@@ -340,10 +362,26 @@ class Episciences_Mail_RemindersManager
      * @param string $role
      * @throws Zend_Exception
      */
-    private static function addReminderTemplate(array &$allTemplates, string $templateTypeToAdd, string $reminderType, string $role){
+    private static function addReminderTemplate(array &$allTemplates, string $templateTypeToAdd, string $reminderType, string $role): void
+    {
         $oTemplate = new Episciences_Mail_Template();
         $oTemplate->findByKey($templateTypeToAdd);
         $oTemplate->loadTranslations();
         $allTemplates[$reminderType][$role]= $oTemplate->toArray();
+    }
+
+    private static function getAvailableReminders() : array {
+        //keep this list in this order
+        return [
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION],
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE],
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE],
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVISION_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_BEFORE_REVISION_DEADLINE],
+            Episciences_Mail_Reminder::TYPE_AFTER_REVISION_DEADLINE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_AFTER_REVISION_DEADLINE],
+            Episciences_Mail_Reminder::TYPE_NOT_ENOUGH_REVIEWERS => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_NOT_ENOUGH_REVIEWERS],
+            Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE],
+            Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE],
+            Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE => Episciences_Mail_Reminder::$_typeLabel[Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE]
+        ];
     }
 }
