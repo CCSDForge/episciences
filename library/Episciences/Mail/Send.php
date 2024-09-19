@@ -22,9 +22,9 @@ class Episciences_Mail_Send
     public static function getForm($prefix = null, bool $button_enabled = true, bool $to_enabled = true, ?int $docId = 0): Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
-
+        $urlHelper = new Episciences_View_Helper_Url();
         $form = new Ccsd_Form;
-        $form->setAction('/administratemail/send');
+        $form->setAction($urlHelper->url(['controller' => 'administratemail', 'action' => 'send']));
         $form->setAttrib('id', 'send_form');
         $form->setAttrib('class', 'form-horizontal');
 
@@ -77,7 +77,7 @@ class Episciences_Mail_Send
         } else {
 
             $options = [
-                'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=to">' . $translator->translate('À') . '</a>',
+                'label' => sprintf('<a class="show_contacts_button" title="%s" href="%s">%s</a>',$title, $urlHelper->url(['controller' => 'administratemail', 'action' => 'getcontacts', 'target' => 'to']), $translator->translate('À')),
                 'class' => 'autocomplete'
 
             ];
@@ -113,7 +113,7 @@ class Episciences_Mail_Send
         // cc
         $cc_element = self::getElementName('cc', $prefix);
         $form->addElement('text', $cc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%s">%s</a>',$title, $urlHelper->url(['controller' => 'administratemail', 'action' => 'getcontacts', 'target' => 'cc']), $translator->translate('Cc')),
             'class' => 'autocomplete'
         ]);
 
@@ -125,7 +125,7 @@ class Episciences_Mail_Send
         // bcc
         $bcc_element = self::getElementName('bcc', $prefix);
         $form->addElement('text', $bcc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%s">%s</a>',$title, $urlHelper->url(['controller' => 'administratemail', 'action' => 'getcontacts', 'target' => 'bcc']), $translator->translate('Bcc')),
             'class' => 'autocomplete'
         ]);
 

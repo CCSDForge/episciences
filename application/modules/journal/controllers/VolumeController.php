@@ -1,12 +1,12 @@
 <?php
 
-class VolumeController extends Zend_Controller_Action
+class VolumeController extends Episciences_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
     public const MIN_VOLUME_DATE = '1950';
     public function indexAction()
     {
-        $this->_helper->redirector('list');
+        $this->_helper->redirector('list',null, null, [PREFIX_ROUTE => RVCODE]);
     }
 
     public function listAction()
@@ -64,7 +64,7 @@ class VolumeController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
-                $this->_helper->redirector('index', 'volume');
+                $this->_helper->redirector('index', 'volume', null, [PREFIX_ROUTE => RVCODE]);
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -89,17 +89,17 @@ class VolumeController extends Zend_Controller_Action
         $from = $request->getParam('from');
 
         if (!empty($from) && $from === 'view' && !empty($docId)) {
-            $referer = '/administratepaper/view?id=' . $docId;
+            $referer = $this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
         } elseif ($from === 'list') {
-            $referer = '/administratepaper/list'; // papers list
+            $referer = $this->url(['controller' => 'administratepaper', 'action' => 'list']); // papers list
         } else {
-            $referer = '/volume/list';
+            $referer = $this->url(['controller' => 'volume', 'action' => 'list']);
         }
 
         $volume = Episciences_VolumesManager::find($vid);
 
         if (empty($volume)) {
-            $this->_helper->redirector('add');
+            $this->_helper->redirector('add', null, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 

@@ -1,7 +1,7 @@
 <?php
 
 
-class PageDefaultController extends Zend_Controller_Action
+class PageDefaultController extends Episciences_Controller_Action
 {
     const WIDGET_BROWSE_LATEST_DIV = '<div id="widget-browse-latest"></div>';
     private const MENU_ITEM_LABEL = 'label';

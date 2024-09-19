@@ -13,7 +13,7 @@ function affiliationManagement() {
                     'paperId': $("div#paperid-for-author").text()
                 });
 
-                let ajaxR = ajaxRequest('/paper/getaffiliationsbyauthor/', data);
+                let ajaxR = ajaxRequest(JS_PREFIX_URL + 'paper/getaffiliationsbyauthor/', data);
 
                 ajaxR.done(function (result) {
 

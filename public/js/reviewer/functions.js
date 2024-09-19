@@ -15,7 +15,7 @@ function getRoles(uid)
 {
 	var request = $.ajax({
 		type: "POST",
-		url: "/user/rolesform",
+		url: JS_PREFIX_URL + "user/rolesform",
 		data: {uid: uid}
 	});
 	

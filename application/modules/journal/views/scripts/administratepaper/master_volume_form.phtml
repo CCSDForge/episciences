@@ -10,7 +10,7 @@
         <strong><i class="fas fa-exclamation-circle"></i></strong> <?= $alert?>
     </div>
     <?php endif; ?>
-    <form action="/administratepaper/savemastervolume" id="volume-form-<?= $this->docid ?>" style="height : 34px;">
+    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'savemastervolume'])?>" id="volume-form-<?= $this->docid ?>" style="height : 34px;">
 
         <div class="pull-right" style="padding-left : 10px;">
             <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>

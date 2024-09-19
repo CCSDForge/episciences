@@ -1,6 +1,6 @@
 <?php
 
-class SitemapController extends Zend_Controller_Action
+class SitemapController extends Episciences_Controller_Action
 {
 
     public function indexAction()

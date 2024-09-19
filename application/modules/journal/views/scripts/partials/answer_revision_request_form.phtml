@@ -20,7 +20,7 @@ $paper = $this->paper;
                 <?php if (!$this->doNotDisplayContactChoice) : ?>
                     <?php if ($paper->isOwner()): ?>
                         <li>
-                            <a href="/paper/contactrequest?id=<?= $this->current_demand['PCID'] ?>"
+                            <a href="<?= $this->url(['controller' => $controller, 'action' => 'contactrequest', 'id' => $this->current_demand['PCID']])?>"
                                title="<?= $this->translate('Contacter sans dépôt de version') ?>"
                                class="modal-opener"
                                data-target="#"><?= $this->translate('Contacter sans dépôt de version') ?>
@@ -32,7 +32,7 @@ $paper = $this->paper;
 
                 <?php if ($paper->getStatus() !== Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED) : ?>
                     <li>
-                        <a href="/paper/answerrequest?id=<?php echo $this->current_demand['PCID']; ?>"
+                        <a href="<?= $this->url(['controller' => $controller, 'action' => 'answerrequest', 'id' => $this->current_demand['PCID']]) ?>"
                            title="<?php echo $this->translate('Répondre sans faire de modifications'); ?>"
                            class="modal-opener"
                            data-target="#"><?php echo $this->translate('Répondre sans faire de modifications'); ?>
@@ -42,7 +42,7 @@ $paper = $this->paper;
 
                     <?php if ($this->review->getSetting(Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION)) : ?>
                         <li>
-                            <a href="/paper/tmpversion?id=<?php echo $this->current_demand['PCID']; ?>"
+                            <a href="<?= $this->url(['controller' => $controller, 'action' => 'tmpversion', 'id' => $this->current_demand['PCID']]) ?>"
                                title="<?php echo $this->translate('Envoyer une version temporaire'); ?>"
                                class="modal-opener"
                                data-target="#"><?php echo $this->translate('Envoyer une version temporaire'); ?>
@@ -56,7 +56,7 @@ $paper = $this->paper;
                 <li>
                     <?php
 
-                    $newVersionHref = '/paper/newversion?id=' . $this->current_demand['PCID'];
+                    $newVersionHref = $this->url(['controller' => $controller, 'action' => 'newversion', 'id' => $this->current_demand['PCID']]);
 
                     if ($this->zIdentifier) {  // from z-submission: new version submission
                         $newVersionHref .= '&z-identifier=' . $this->zIdentifier;

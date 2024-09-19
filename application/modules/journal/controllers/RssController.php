@@ -1,6 +1,6 @@
 <?php
 
-class RssController extends Zend_Controller_Action
+class RssController extends Episciences_Controller_Action
 {
     /**
      * @throws Zend_Db_Select_Exception

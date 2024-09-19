@@ -9,7 +9,7 @@ $(document).ready(function () {
             $doiStatusLoader.html(getLoader());
             $doiStatusLoader.show();
             $.post(
-                '/administratepaper/ajaxrequestnewdoi',
+                JS_PREFIX_URL + 'administratepaper/ajaxrequestnewdoi',
                 {
                     docid: docid
                 },

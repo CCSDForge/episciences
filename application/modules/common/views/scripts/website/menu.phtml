@@ -106,7 +106,7 @@ $this->jQuery()
 </div>
 
 <?php //Liste des pages ?>
-<form action="/website/menu" enctype="multipart/form-data" method="post" class="form-horizontal">
+<form action="<?= $this->url(['controller' => 'website', 'action' => 'menu']) ?>" enctype="multipart/form-data" method="post" class="form-horizontal">
     <table class="table table-hover" id="tableHeader">
         <thead>
         <tr>
@@ -184,7 +184,7 @@ $this->jQuery()
     </div>
 
     <div class="form-actions text-center">
-        <a href="/website/reset">
+        <a href="<?= $this->url(['controller' => 'website', 'action' => 'reset'])?>">
             <button type="button" class="btn btn-default btn-sm"><?php echo $this->translate('Annuler'); ?></button>
         </a>
         <button type="submit" class="btn btn-primary"><?php echo $this->translate('Enregistrer'); ?></button>
@@ -212,7 +212,7 @@ $this->jQuery()
             placeholder: 'placeholder',
             stop: function (event, ui) {
                 $.ajax({
-                    url: '/website/ajaxorder',
+                    url: JS_PREFIX_URL + 'website/ajaxorder',
                     type: 'post',
                     data: $('ul.sortable').nestedSortable('serialize')
                 });
@@ -243,7 +243,7 @@ $this->jQuery()
 
     function formNewPage(type) {
         $.ajax({
-            url: "/website/ajaxformpage",
+            url: JS_PREFIX_URL + "website/ajaxformpage",
             type: 'post',
             data: {'type': type},
             success: function (result) {
@@ -271,7 +271,7 @@ $this->jQuery()
 
     function deletePage() {
         $.ajax({
-            url: "/website/ajaxrmpage",
+            url: JS_PREFIX_URL + "website/ajaxrmpage",
             type: 'post',
             data: {'idx': $('#confirm-id').val()},
             success: function (result) {

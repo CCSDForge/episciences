@@ -1275,7 +1275,7 @@ class Episciences_Tools
             return $text;
         }
 
-        $cHref = '/tmp_files/' . $paperId . '/';
+        $cHref = sprintf('%stmp_file/%s/', PREFIX_URL, $paperId);
 
         foreach ($result as $index => $fileName) {
             $href = $cHref . $fileName;

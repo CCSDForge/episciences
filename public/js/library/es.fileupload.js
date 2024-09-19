@@ -47,8 +47,7 @@ $(function () {
 
     // Initialize the jQuery File Upload plugin
     $('.upload_widget').fileupload({
-
-        url: '/file/upload/',
+        url: JS_PREFIX_URL + 'file/upload/',
         formData: formData,
         dataType: 'json',
 
@@ -194,7 +193,7 @@ $(function () {
 function ajaxDeleteFile(formData) {
 
     return $.ajax({
-        url: "/file/delete",
+        url: JS_PREFIX_URL + "file/delete",
         type: "POST",
         data: formData,
     });

@@ -32,29 +32,29 @@ $rvid = RVID;
                     </a>
                 <?php endif; ?>
 
-                <a class="btn btn-default" href="/user/view/userid/<?= $paper->getUid(); ?>" target="_blank">
+                <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $paper->getUid()]) ?>" target="_blank">
                     <span data-toggle="tooltip"
                           class="fas fa-address-card"
                           style="margin: 0.2rem"
-                          title="<?php echo $this->translate("Voir le profil") ?>">
+                          title="<?= $this->translate("Voir le profil") ?>">
                     </span>
                 </a>
 
                 <a id="modal-contributor" class="modal-opener btn btn-default"
-                   href="/administratemail/send/recipient/<?= $paper->getUid(); ?>/paper/<?= $paper->getDocid(); ?>">
+                   href="<?= $this->url(['controller' => 'administratemail', 'action' => 'send', 'recipient' => $paper->getUid(), 'paper' => $paper->getDocid()])?>">
                     <span data-toggle="tooltip"
                           class="glyphicon glyphicon-envelope"
                           style="margin: 0.2rem"
-                          title="<?php echo $this->translate("Contacter ce contributeur") ?>">
+                          title="<?= $this->translate("Contacter ce contributeur") ?>">
                     </span>
                 </a>
 
 
                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                    <a class="btn btn-default" href="/user/su/uid/<?php echo $paper->getUid(); ?>">
+                    <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $paper->getUid()])?>">
                         <span data-toggle="tooltip"
                               style="margin: 0.2rem"
-                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                              title="<?= $this->translate("Se connecter avec ce compte.")?>"
                               class="fas fa-user-secret">
 
                         </span>

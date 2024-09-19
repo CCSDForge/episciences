@@ -1,6 +1,6 @@
 <?php
 
-class AdministratemailController extends Zend_Controller_Action
+class AdministratemailController extends Episciences_Controller_Action
 {
 
     /**
@@ -70,14 +70,14 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
 
         if (!$this->isAllowedToEdit()) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
         }
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
         if (!$request->isXmlHttpRequest()) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
         }
 
         $params = $request->getPost();
@@ -104,7 +104,7 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
 
         if (!$this->isAllowedToEdit()) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
             return;
         }
 
@@ -139,7 +139,7 @@ class AdministratemailController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
         }
 
-        $this->_helper->redirector->gotoUrl('/administratemail/templates');
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratemail', 'action' => 'templates']));
     }
 
     /**
@@ -151,7 +151,7 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
 
         if (!$this->isAllowedToEdit()) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
         }
 
         $this->_helper->viewRenderer->setNoRender();
@@ -169,7 +169,7 @@ class AdministratemailController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('La suppression du template personnalisé a échoué');
         }
 
-        $this->_helper->redirector->gotoUrl('/administratemail/templates');
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratemail', 'action' => 'templates']));
 
     }
 
@@ -558,7 +558,7 @@ class AdministratemailController extends Zend_Controller_Action
             return $message;
         }
 
-        $this->_helper->redirector->gotoUrl('administratemail/send');
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratemail', 'action' => 'send']));
 
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-class ReviewController extends Zend_Controller_Action
+class ReviewController extends Episciences_Controller_Action
 {
     public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
     public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
@@ -49,7 +49,7 @@ class ReviewController extends Zend_Controller_Action
                 if ($review->save()) {
                     $message = '<strong>' . $this->view->translate("Les modifications ont bien été enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-                    $url = $this->_helper->url($this->getRequest()->getActionName(), $this->getRequest()->getControllerName());
+                    $url = $this->url(['action' => $this->getRequest()->getActionName(), 'controller' => $this->getRequest()->getControllerName()]);
                     $this->_helper->redirector->gotoUrl($url);
                 } else {
                     if ($reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER] === '' && $reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){

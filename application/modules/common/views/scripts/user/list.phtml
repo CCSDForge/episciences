@@ -107,47 +107,45 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
                 </td>
                 <td style="text-align:right;">
-                    <a href="/user/view?userid=<?php echo $user['uid']; ?>"><span data-toggle="tooltip"
-                                                                                  title="<?php echo $this->translate("Voir ce compte."); ?>"
-                                                                                  class="darkgrey fas fa-address-card"></span></a>&nbsp;
+                    <a href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $user['uid']])?>">
+                        <span data-toggle="tooltip" title="<?= $this->translate("Voir ce compte.")?>" class="darkgrey fas fa-address-card"></span>
+                    </a>&nbsp;
                     <?php if (Episciences_Auth::isSecretary()) : ?>
                         <?php if ($user['uid'] == Episciences_Auth::getUid()) : ?>
-                            <span style="cursor: pointer" data-toggle="tooltip"
-                                  title="<?php echo $this->translate("Vous êtes déjà connecté avec ce compte."); ?>"
-                                  class="lightergrey fas fa-user-secret"></span>
+                            <span style="cursor: pointer" data-toggle="tooltip" title="<?= $this->translate("Vous êtes déjà connecté avec ce compte.")?>" class="lightergrey fas fa-user-secret"></span>
                         <?php else : ?>
-                            <a href="/user/su/uid/<?php echo $user['uid']; ?>"><span data-toggle="tooltip"
-                                                                                     title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
-                                                                                     class="darkgrey fas fa-user-secret"></span></a>&nbsp;
+                            <a href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $user['uid']])?>">
+                                <span data-toggle="tooltip" title="<?= $this->translate("Se connecter avec ce compte.")?>" class="darkgrey fas fa-user-secret"></span>
+                            </a>&nbsp;
                         <?php endif; ?>
                     <?php endif; ?>
                     <?php if (Episciences_Auth::isSecretary()) : ?>
-                        <a href="/user/edit?userid=<?php echo $user['uid']; ?>">
-                            <span data-toggle="tooltip" title="<?php echo $this->translate("Modifier ce compte."); ?>" class="darkgrey glyphicon glyphicon-edit"></span>
+                        <a href="<?= $this->url(['controller' => 'user', 'action' => 'edit', 'userid' => $user['uid']])?>">
+                            <span data-toggle="tooltip" title="<?= $this->translate("Modifier ce compte."); ?>" class="darkgrey glyphicon glyphicon-edit"></span>
                         </a>&nbsp;
                         <?php if (APPLICATION_ENV == 'demo') : ?>
                             <span style="cursor: pointer" data-toggle="tooltip"
-                                  title="<?php echo $this->translate("Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes."); ?>"
+                                  title="<?= $this->translate("Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes.") ?>"
                                   class="lightergrey glyphicon glyphicon-trash">
                             </span>
                         <?php elseif (Episciences_Auth::getUid() == $user['uid']) : ?>
                             <span style="cursor: pointer" data-toggle="tooltip"
-                                  title="<?php echo $this->translate('Ce compte vous appartient, vous ne pouvez pas le supprimer.'); ?>"
+                                  title="<?= $this->translate('Ce compte vous appartient, vous ne pouvez pas le supprimer.') ?>"
                                   class="lightergrey glyphicon glyphicon-trash">
 
                             </span>
                         <?php else : ?>
-                            <a id="delete_localUsers_<?php echo $user['uid']; ?>" href="#">
-                                <span data-toggle="tooltip" title="<?php echo $this->translate("Supprimer ce compte."); ?>" class="darkgrey glyphicon glyphicon-trash"></span>
+                            <a id="delete_localUsers_<?= $user['uid'] ?>" href="#">
+                                <span data-toggle="tooltip" title="<?= $this->translate("Supprimer ce compte.") ?>" class="darkgrey glyphicon glyphicon-trash"></span>
                             </a>
                         <?php endif; ?>
                     <?php else : ?>
                         <span style="cursor: pointer" data-toggle="tooltip"
-                              title="<?= $this->translate("Vous n'avez pas les droits nécessaires pour modifier ce compte."); ?>"
+                              title="<?= $this->translate("Vous n'avez pas les droits nécessaires pour modifier ce compte.") ?>"
                               class="darkgrey glyphicon glyphicon-edit">
                         </span>
                         <span style="cursor: pointer" data-toggle="tooltip"
-                              title="<?= $this->translate('Vous n\'avez pas les droits nécessaires pour supprimer ce compte.'); ?>"
+                              title="<?= $this->translate('Vous n\'avez pas les droits nécessaires pour supprimer ce compte.') ?>"
                               class="lightergrey glyphicon glyphicon-trash">
                         </span>
                     <?php endif; ?>

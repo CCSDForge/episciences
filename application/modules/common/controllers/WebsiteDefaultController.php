@@ -1,6 +1,6 @@
 <?php
 
-class WebsiteDefaultController extends Zend_Controller_Action
+class WebsiteDefaultController extends Episciences_Controller_Action
 {
     protected $_session = null;
 
@@ -31,7 +31,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             unset($this->_session->website);
             Zend_Registry::set('languages', $form->getValue('languages'));
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
-            $this->redirect('/website/common');
+            $this->redirect($this->url(['controller' => 'website', 'action' => 'common']));
         }
         $this->view->form = $form;
     }
@@ -209,7 +209,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     unlink(REVIEW_PATH . 'config/' . 'acl.ini');
                 }
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
-                $this->redirect('/website/menu');
+                $this->redirect($this->url(['controller' => 'website', 'action' => 'menu']));
             } else {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur de saisie");
             }
@@ -274,7 +274,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
     public function resetAction()
     {
         unset($this->_session->website);
-        $this->redirect('/website/menu');
+        $this->redirect($this->url(['controller' => 'website', 'action' => 'menu']));
     }
 
     /**
@@ -291,7 +291,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             if ($form->isValid($post)) {
                 $news->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
-                $this->redirect('/website/news');
+                $this->redirect($this->url(['controller' => 'website', 'action' => 'news']));
 
             } elseif (isset($post['newsid'])) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur dans la saisie");

@@ -12,8 +12,7 @@
 
     		$active = $page->isActive(true);
     		$subPages = $page->getPages();
-    		$href = '/' . $page->getController() . '/' . $page->getAction();
-
+            $href = $this->url(['controller' =>$page->getController(), 'action' => $page->getAction()]);
     		$params = $page->getParams();
     		if ($params) {
     		    $href .= '?'.http_build_query($params);
@@ -35,7 +34,7 @@
     						}
     						$label = $this->translate($subPage->getLabel());
 
-    						$href = '/' . $subPage->getController() . '/' . $subPage->getAction();
+    						$href = PREFIX_URL . $subPage->getController() . '/' . $subPage->getAction();
     						$params = $subPage->getParams();
 				    		if ($params) {
 				    		    $href .= '?'.http_build_query($params);

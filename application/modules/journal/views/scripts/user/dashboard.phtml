@@ -1,14 +1,22 @@
 <?php // Bloc "Gérer la revue" ************************************************ ?>
 <?php $isAllowedToManegeReview = Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$this->review->getSetting('encapsulateEditors')); ?>
-<?php if (isset($this->onlyEditablePapersWithoutEditors) && !empty($this->onlyEditablePapersWithoutEditors) && Episciences_Auth::isSecretary()) : ?>
+<?php if (isset($this->onlyEditablePapersWithoutEditors) && !empty($this->onlyEditablePapersWithoutEditors) && Episciences_Auth::isSecretary()) :
+    $urlOptions = ['controller' => 'administratepaper'];
+    ?>
 
     <?php //Alert on the existence of papers without assigned editors ?>
     <div id="unassigned-papers-alert" class="alert alert-warning" style="margin-top: 20px">
         <strong><?= $this->translate("Attention, il n'y a aucun suivi effectué pour") . ' ' ?></strong>
-        <?php if (count($this->onlyEditablePapersWithoutEditors) > 1) : ?>
-            <a id="unassigned-papers" href="/administratepaper/list?onlyEditableWithoutEditors"><?= $this->translate('ces articles') ?>...</a> <?php // todo ?>
-        <?php else: ?>
-            <a href="/administratepaper/view?id=<?= array_key_first($this->onlyEditablePapersWithoutEditors) ?>"><?= $this->translate('cet article') ?>...</a>
+        <?php if (count($this->onlyEditablePapersWithoutEditors) > 1) :
+            $urlOptions['action'] = 'list';
+            $urlOptions['onlyEditableWithoutEditors'] = true;
+            ?>
+            <a id="unassigned-papers" href="<?= $this->url($urlOptions) ?>"><?= $this->translate('ces articles') ?>...</a> <?php // todo ?>
+        <?php else:
+            $urlOptions['action'] = 'view';
+            $urlOptions['id'] = array_key_first($this->onlyEditablePapersWithoutEditors);
+            ?>
+            <a href="<?= $this->url($urlOptions) ?>"><?= $this->translate('cet article') ?>...</a>
         <?php endif; ?>
     </div>
 
@@ -35,19 +43,19 @@
         </div>
 
         <div class="panel-footer">
-            <a class="btn btn-default btn-sm" href="/administratepaper/list"><span
+            <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'list'])?>"><span
                         class="glyphicon glyphicon-file"></span> <?= $this->translate("Gérer les articles") ?>
             </a>&nbsp;
             <?php if (Episciences_Auth::isSecretary()) : ?>
-                <a class="btn btn-default btn-sm" href="/volume/list"><span
+                <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'volume', 'action' => 'list']) ?>"><span
                             class="glyphicon glyphicon-book"></span> <?= $this->translate("Gérer les volumes") ?>
                 </a>&nbsp;
             <?php endif; ?>
-            <a class="btn btn-default btn-sm" href="/grid/list"><span
+            <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'grid', 'action' => 'list'])?>"><span
                         class="glyphicon glyphicon-tasks"></span> <?= $this->translate("Grilles de relecture") ?>
             </a>&nbsp;
             <?php if (Episciences_Auth::isSecretary()) : ?>
-                <a class="btn btn-default btn-sm" href="/review/settings"><span
+                <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'review', 'action' => 'settings'])?>"><span
                             class="glyphicon glyphicon-cog"></span> <?= $this->translate("Paramètres de la revue") ?>
                 </a>
             <?php endif; ?>
@@ -157,10 +165,10 @@
     </div>
 
     <div class="panel-footer">
-        <a class="btn btn-default btn-sm" href="/paper/submitted"><span
+        <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'paper', 'action' => 'submitted']) ?>"><span
                     class="glyphicon glyphicon-file"></span> <?= $this->translate('Voir tous mes articles') ?>
         </a>&nbsp;
-        <a class="btn btn-default btn-sm" href="/submit"><span
+        <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'submit'])?>"><span
                     class="glyphicon glyphicon-upload"></span> <?= $this->translate(Episciences_Submit::SUBMIT_DOCUMENT_LABEL) ?>
         </a>
     </div>
@@ -290,7 +298,7 @@
         <?php if ($this->reviewings && (Episciences_Auth::isReviewer() || Episciences_Auth::isAllowedToUploadPaperReport())) : ?>
             <div class="panel-footer">
                 <div class="small">
-                    <a href="/paper/ratings" class="btn btn-default btn-sm" role="button">
+                    <a href="<?= $this->url(['controller' => 'paper', 'action' => 'ratings'])?>" class="btn btn-default btn-sm" role="button">
                         <span class="glyphicon glyphicon-file"></span> <?= $this->translate("Relire les articles") ?>
                     </a>
                 </div>
@@ -312,11 +320,11 @@
     </div>
 
     <div class="panel-footer">
-        <a class="btn btn-default btn-sm" href="/user/change_account_email"><span class="fa-solid fa-envelope" style="margin-right: 5px;"></span><?= $this->translate("Modifier mon courriel") ?></a>
-        <a class="btn btn-default btn-sm" href="/user/edit"><span class="glyphicon glyphicon-user"></span> <?= $this->translate('Modifier mon profil') ?>
+        <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'user', 'action' => 'change_account_email'])?>"><span class="fa-solid fa-envelope" style="margin-right: 5px;"></span><?= $this->translate("Modifier mon courriel") ?></a>
+        <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'user', 'action' => 'edit'])?>"><span class="glyphicon glyphicon-user"></span> <?= $this->translate('Modifier mon profil') ?>
         </a>
 
-        <a class="btn btn-default btn-sm" href="/user/reset_api_password"><span
+        <a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'user', 'action' => 'reset_api_password'])?>"><span
                     class="glyphicon glyphicon-user"></span> <?= $this->translate('Réinitialiser mon mot de passe API') ?>
         </a>
 

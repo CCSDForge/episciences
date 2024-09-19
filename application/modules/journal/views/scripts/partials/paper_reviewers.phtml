@@ -331,6 +331,6 @@ try {
     });
 
     function confirmRating() {
-        location.href = "/paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
+        location.href = JS_PREFIX_URL + "paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
     }
 </script>

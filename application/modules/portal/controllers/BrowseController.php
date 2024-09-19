@@ -1,6 +1,6 @@
 <?php
 
-class BrowseController extends Zend_Controller_Action
+class BrowseController extends Episciences_Controller_Action
 {
 	// Consulter la liste des revues
 	public function reviewsAction()

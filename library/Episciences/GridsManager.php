@@ -75,7 +75,7 @@ class Episciences_GridsManager
             if (!empty($options)) {
 
                 $form = new Ccsd_Form();
-                $form->setAction('/grid/add');
+                $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'grid', 'action' => 'add']));
                 $form->setAttrib('class', 'form-horizontal');
 
                 $form->addElement('select', 'volume', [

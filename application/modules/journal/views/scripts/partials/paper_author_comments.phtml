@@ -12,7 +12,7 @@ $isAllowedToEditComment = (
 
     <?php if (!$this->author_comments) : ?>
         <?php if ($isAllowedToEditComment): ?>
-            <?php $addCommentUrl = '/comments/addcomment/docid/' . $this->paper->getDocid() ?>
+            <?php $addCommentUrl = $this->url(['controller' => 'comments', 'action' => 'addcomment', 'docid' => $this->paper->getDocid()]) ?>
             <button class="btn btn-default btn-xs pull-right" style="margin-right:9px;"
                     onclick="javascript:location.href='<?= $addCommentUrl ?>'">
                     <span class="glyphicon glyphicon-plus-sign"
@@ -29,7 +29,7 @@ $isAllowedToEditComment = (
                 [<?= ($value['UID'] == Episciences_Auth::getUid()) ? $this->translate('vous') : $value['SCREEN_NAME'] ?>
                 ]
                 <?php if ($isAllowedToEditComment): ?>
-                    <?php $edit_comment_url = '/comments/editcomment/pcid/' . $value['PCID']; ?>
+                    <?php $edit_comment_url = $this->url(['controller' => 'comments', 'action' => 'editcomment', 'pcid' => $value['PCID']]) ?>
                     <button class="btn btn-default btn-xs pull-right" style="margin-right:9px;"
                             onclick="javascript:location.href='<?= $edit_comment_url ?>'">
                     <span class="glyphicon glyphicon-pencil"
@@ -49,9 +49,8 @@ $isAllowedToEditComment = (
                         <tbody>
                         <tr>
                             <td>
-                                <a href="/docfiles/comments/<?php echo $value['DOCID'] . '/' . $value['FILE'] ?>"
-                                   target="_blank">
-                                    <?php echo $value['FILE']; ?>
+                                <a href="<?= sprintf('%sdocfiles/comments/%s/%s', PREFIX_URL, $value['DOCID'], $value['FILE'])?>" target="_blank">
+                                    <?= $value['FILE'] ?>
                                 </a>
                             </td>
                             <td style="text-align: right">

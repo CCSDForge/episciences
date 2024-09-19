@@ -1,9 +1,9 @@
-<h1><?php echo $this->translate('Déconnexion du serveur d\'authentification du') ?> <abbr
-            title="Centre pour la Communication Scientifique Directe">CCSD</abbr></h1>
+<h1><?= $this->translate('Déconnexion du serveur d\'authentification du') ?> <abbr title="Centre pour la Communication Scientifique Directe">CCSD</abbr></h1>
 
-<?php if ($this->message == Ccsd_User_Models_User::LOGOUT_SUCCESS) : ?>
+<?php if ($this->message === Ccsd_User_Models_User::LOGOUT_SUCCESS) : ?>
     <div class="alert alert-success" role="alert"><i class="fas fa-check"></i>
-        &nbsp;<?php echo $this->translate('Déconnexion réussie') ?></div>
+        &nbsp;<?= $this->translate('Déconnexion réussie') ?>
+    </div>
 
     <?php
     if ($this->reason) {
@@ -13,15 +13,15 @@
     }
     ?>
     <p>
-        <a href="/user/login" class="btn btn-primary"><i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+        <a href="<?=$this->url(['controller' => 'user', 'action' => 'login'])?>" class="btn btn-primary"><i class="fas fa-sign-in-alt" aria-hidden="true"></i>
             &nbsp;
-            <?php echo $this->translate('Nouvelle connexion') ?></a>
+            <?= $this->translate('Nouvelle connexion') ?></a>
     </p>
 
 
 <?php else : ?>
     <div class="alert alert-danger" role="alert"><?php echo $this->translate('Échec de la déconnexion') ?></div>
-    <p><a href="/" class="btn btn-danger"><?php echo $this->translate('Retourner à l\'accueil') ?></a></p>
+    <p><a href="<?= $this->url(['controller' => null]) //(href = '/') ?>" class="btn btn-danger"><?= $this->translate("Retourner à l'accueil") ?></a></p>
 <?php endif; ?>
 
 

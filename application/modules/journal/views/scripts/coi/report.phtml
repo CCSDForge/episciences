@@ -31,7 +31,7 @@ $paper = $this->paper;
     </div>
 
     <div class="col-md-5">
-        <form class="form-horizontal" action="/coi/report" method="post">
+        <form class="form-horizontal" action="<?= $this->url(['controller' => 'coi', 'action' => 'report']) ?>" method="post">
             <input type="hidden" name="id" value="<?= $paper->getDocid() ?>">
             <?= $this->form ?>
         </form>

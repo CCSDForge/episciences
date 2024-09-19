@@ -100,7 +100,7 @@ $(document).ready(function () {
 function applyMultipleFilters(controller, action, get = {}, filters = {}) {
 
     let badRequest = translate("Une erreur interne s'est produite, veuillez recommencer.");
-    let url = '/' + controller + '/' + action;
+    let url = JS_PREFIX_URL + controller + '/' + action;
     let data = (Object.keys(get).length !== 0) ? get : {
         status: ('status' in filters) ? filters['status'] : [],
         vid: ('volume' in filters) ? filters['volume'] : [],
@@ -234,7 +234,10 @@ function checkFilterParams(filters = {status: [], volume: [], section: [], edito
 function getUrlParams(param = null) {
     let params = {};
     let aParams = [];
-    let pathname = window.location.pathname.substr(1).split('/');
+    let uri = window.location.pathname;
+    uri = uri.replace(JS_PREFIX_URL, ''); // ignore prefix_url
+    console.log(uri);
+    let pathname = uri.substring(1).split('/');
     let urlSearch = window.location.search;
 
     if (urlSearch !== '') {

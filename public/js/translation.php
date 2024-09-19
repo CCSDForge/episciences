@@ -2,15 +2,13 @@
 
 header("content-type: application/x-javascript");
 
-require_once '../const.php';
-defineProtocol();
-defineSimpleConstants();
-defineSQLTableConstants();
-defineApplicationConstants();
-defineJournalConstants();
-
-
 $lang = $_GET['lang'] ?? 'en';
+
+// define application paths
+if (!defined('APPLICATION_PATH')) {
+    define('APPLICATION_PATH', dirname(__DIR__) . '/../application');
+}
+
 $path = APPLICATION_PATH . '/languages/';
 
 $translations = array();

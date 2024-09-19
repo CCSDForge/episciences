@@ -1,11 +1,11 @@
 <?php
 
-class GridController extends Zend_Controller_Action
+class GridController extends Episciences_Controller_Action
 {
 
     public function indexAction()
     {
-        $this->_helper->redirector('list', 'grid');
+        $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
     }
 
     /**
@@ -85,7 +85,7 @@ class GridController extends Zend_Controller_Action
             }
         }
 
-        $this->_helper->redirector('list', 'grid');
+        $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
     }
 
     /**
@@ -101,14 +101,14 @@ class GridController extends Zend_Controller_Action
         if (!$source_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $from . '.xml')) {
             $message = '<strong>' . $this->view->translate("La grille source n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector('list', 'grid');
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
         }
 
         $dest_grid = new Episciences_Rating_Grid;
         if (!$dest_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $to . '.xml')) {
             $message = '<strong>' . $this->view->translate("La grille de destination n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector('list', 'grid');
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
         }
 
         $dest_grid->setCriteria(array_merge($dest_grid->getCriteria(), $source_grid->getCriteria()));
@@ -121,7 +121,7 @@ class GridController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
-        $this->_helper->redirector('list', 'grid');
+        $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
 
     }
 
@@ -181,7 +181,7 @@ class GridController extends Zend_Controller_Action
         if (!$oGrid->loadXML(REVIEW_GRIDS_PATH . $filename)) {
             $message = '<strong>' . $this->view->translate("Cette grille n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector('list', 'grid');
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
         }
 
         $oCriterion = new Episciences_Rating_Criterion();
@@ -198,7 +198,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le nouveau critère n'a pas pu être ajouté.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
@@ -314,7 +314,7 @@ class GridController extends Zend_Controller_Action
         if (!$oGrid->loadXML(REVIEW_GRIDS_PATH . $filename)) {
             $message = '<strong>' . $this->view->translate("Cette grille n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector('list', 'grid');
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
         }
 
         $oCriterion = new Episciences_Rating_Criterion;
@@ -331,7 +331,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le nouveau séparateur n'a pas pu être ajouté.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
@@ -359,7 +359,7 @@ class GridController extends Zend_Controller_Action
         if (!Episciences_GridsManager::gridExists($filename)) {
             $message = '<strong>' . $this->view->translate("Cette grille n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector('list', 'grid');
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
         }
 
         $oGrid = new Episciences_Rating_Grid;
@@ -381,7 +381,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le séparateur n'a pas pu être modifié.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
@@ -416,7 +416,7 @@ class GridController extends Zend_Controller_Action
         if (!Episciences_GridsManager::gridExists($filename)) {
             $message = '<strong>' . $this->view->translate("Cette grille n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector('list', 'grid');
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
         }
 
         $oGrid = new Episciences_Rating_Grid();
@@ -437,7 +437,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le critère n'a pas pu être modifié.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
 
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';

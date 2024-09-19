@@ -520,7 +520,7 @@ function modalStructureExists() {
 function createModalStructure(params) {
     // create modal structure from a view script
     $.ajax({
-        url: '/partial/modal',
+        url: '/partial/modal', // todo add js_prefix_url ??
         type: 'POST',
         data: params,
         success: function (modalStructure) {

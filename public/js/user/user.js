@@ -2,7 +2,7 @@ $(document).ready(function() {
 
 	$("#delete-photo").click(function() {
         var ajax = $.ajax({
-			url : "/user/ajaxdeletephoto",
+			url : JS_PREFIX_URL + "user/ajaxdeletephoto",
 			type : "POST",
 			dataType : "html",
             data: {uid: $(this).attr('attr-uid')},

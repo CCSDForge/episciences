@@ -470,8 +470,7 @@ class Episciences_CommentsManager
 
         $group[] = 'file_comment_author';
         if (isset($values['FILE'])) {
-            $href = '<a href="/docfiles/comments/' . $values['DOCID'] . '/' . $values['FILE'] . '">' . $values['FILE'] . '</a>';
-
+            $href = sprintf('<a href="%sdocfiles/comments/%s/%s">%s</a>', PREFIX_URL, $values['DOCID'], $values['FILE'],$values['FILE']);
             $infos = $translator->translate('Ci-dessous votre ancienne lettre d’accompagnement, son remplacement est possible en joignant un nouveau fichier à votre commentaire.')
                 . '<br>' . $translator->translate('Ces modifications seront prises en compte une fois le formulaire est validé.');
 
@@ -563,7 +562,7 @@ class Episciences_CommentsManager
                 $form = Episciences_Submit::getNewVersionForm($paper, $options);
                 $form->addElement('hidden', 'copyEditingNewVersion'); // distinguer la nouvelle version suite à une demande de révision de celle de travail éditorial
                 $form->setAttrib('id', 'reply_with_new_version_' . $id);
-                $form->setAction('/paper/savenewversion?docid=' . $comment['DOCID'] . '&pcid=' . $comment['PCID']);
+                $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'paper', 'action' => 'savenewversion', 'docid' => $comment['DOCID'], 'pcid' => $comment['PCID']])) ;
 
             } else {
 

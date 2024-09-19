@@ -40,7 +40,7 @@ $(document).ready(function () {
         update: function (event, ui) {
 
             $.ajax({
-                url: "/volume/sort",
+                url: JS_PREFIX_URL + "volume/sort",
                 type: 'POST',
                 data: {sorted: $(this).sortable("toArray")},
                 dataType: "json"

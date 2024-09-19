@@ -46,31 +46,8 @@ class Episciences_Mail_Form extends Ccsd_Form
         $translator = Zend_Registry::get('Zend_Translate');
 
         $this->setAttrib('class', 'form-horizontal');
-        $this->setAction('/administratemail/send');
+        $this->setAction($this->_view->url(['controller' => 'administratemail', 'action' => 'send']));
         $this->setAttrib('id', $this->getPrefixedName('send_form'));
-
-/*
-        $decorators = array_keys($this->getDecorators());
-        var_dump ($decorators);
-        $decorators = array_merge([
-            'ViewScript', [
-                'viewScript' => '/administratemail/form.phtml'
-            ]],
-            $decorators);
-        var_dump ($decorators);
-        die;
-
-        $this->setDecorators([[
-            'ViewScript', [
-                'viewScript' => '/administratemail/form.phtml'
-            ]],
-            'FormActions',
-            'Form',
-            'FormCss',
-            'FormJavascript',
-            'FormRequired'
-        ]);
-*/
 
         // from
         // default from: recipient name <rvcode@episciences.org>
@@ -99,7 +76,7 @@ class Episciences_Mail_Form extends Ccsd_Form
             ]);
         } else {
             $this->addElement('text', $to_element, [
-                'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=to">' . $translator->translate('À') . '</a>',
+                'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=to">%s</a>', $title, PREFIX_URL, $translator->translate('À')),
                 'class' => 'autocomplete'
             ]);
 
@@ -118,7 +95,8 @@ class Episciences_Mail_Form extends Ccsd_Form
         // cc
         $cc_element = $this->getPrefixedName('cc');
         $this->addElement('text', $cc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=cc">%s</a>', $title, PREFIX_URL, $translator->translate('Cc'))
+            ,
             'class' => 'autocomplete'
         ]);
 
@@ -135,7 +113,7 @@ class Episciences_Mail_Form extends Ccsd_Form
         // bcc
         $bcc_element = $this->getPrefixedName('bcc');
         $this->addElement('text', $bcc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=bcc">%s</a>', $title, PREFIX_URL, $translator->translate('Bcc')),
             'class' => 'autocomplete'
         ]);
 

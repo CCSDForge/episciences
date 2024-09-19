@@ -89,7 +89,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
             file_put_contents($paperStatusAvatarFileNamePath, $data);
         }
 
-        return '/public/' . 'paper-status' . '/' . $paperStatusAvatarFileName;
+        return sprintf('%spublic/paper-status/%s', PREFIX_URL, $paperStatusAvatarFileName);
 
 
     }
