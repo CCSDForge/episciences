@@ -616,7 +616,7 @@ class Episciences_User extends Ccsd_User_Models_User
 
         $result = $select->query()->fetch();
 
-        if ((int)$result['nombre'] === 0) {
+        if (!$result || (int)$result['nombre'] === 0) {
             $this->setHasAccountData(false);
             return false;
         }
