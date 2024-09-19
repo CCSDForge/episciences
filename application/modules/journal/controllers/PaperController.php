@@ -2990,7 +2990,7 @@ class PaperController extends PaperDefaultController
                 $partial->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts');
                 $ratingDisplay = $partial->render('partials/paper_report_mail_version.phtml');
                 $ratingDisplay = str_replace(chr(13) . chr(10), '', $ratingDisplay);
-                $ratingDisplay = Ccsd_Tools::clear_nl(Ccsd_Tools::br2space($ratingDisplay));
+                //$ratingDisplay = Ccsd_Tools::clear_nl(Ccsd_Tools::br2space($ratingDisplay)); test #462
 
                 $editorTags = $commonTags + [
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getScreenName(),
