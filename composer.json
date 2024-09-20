@@ -29,7 +29,7 @@
     "guzzlehttp/guzzle": "^7.3",
     "html2text/html2text": "^4.3",
     "apereo/phpcas": "1.6.1",
-    "laravolt/avatar": "^4.1",
+    "laravolt/avatar": "^5.0",
     "neverbehave/hcaptcha": "~0.0.5",
     "phpmailer/phpmailer": "^6.5",
     "shardj/zf1-future": "1.23.*",
