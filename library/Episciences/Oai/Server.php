@@ -240,7 +240,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                         } else {
                             return 0;
                         }
-                    } else if ($result['response']['numFound'] > ($conf['cursor'] + count($out))) {
+                    } elseif ($result['response']['numFound'] > ($conf['cursor'] + count($out))) {
                         $out[] = '<resumptionToken expirationDate="' . gmdate("Y-m-d\TH:i:s\Z", time() + self::OAI_TOKEN_EXPIRATION_TIME) . '" completeListSize="' . $result['response']['numFound'] . '" cursor="' . $conf['cursor'] . '">' . $result['nextCursorMark'] . '</resumptionToken>';
                         $conf['cursor'] += (($method === self::OAI_VERB_LISTIDS) ? self::LIMIT_IDENTIFIERS : self::LIMIT_RECORDS);
                         $conf['solr'] = $queryString;

@@ -548,7 +548,7 @@ class PaperController extends PaperDefaultController
             if (!empty($params['savePaperPassword'])) {
 
                 $isErrors = true;
-                $message = $this->view->translate("Le mot de passe papier n'a pas été enregistré");
+                $message = $this->view->translate("Le mot de passe n'a pas été enregistré");
 
                 $postedPwd = trim($params['paperPassword']);
                 $detectedSize = mb_strlen($postedPwd);
@@ -570,7 +570,8 @@ class PaperController extends PaperDefaultController
                     $paper->setPassword($postedPwd, true);
 
                     if ($paper->save()) {
-                        $message = $this->view->translate("Votre mot de passe papier a bien été enregistré.");
+                        $message = $this->view->translate("Votre mot de passe a bien été enregistré.");
+                        $isErrors = false;
                     }
                 }
 
