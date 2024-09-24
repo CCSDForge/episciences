@@ -1036,6 +1036,7 @@ return [
     'copie destinée au rédacteur' => "editor copy",
     'copie destinée au relecteur' => "reviewer copy",
     'copie destinée au auteur' => "author copy",
+    'copie destinée au rédacteur en chef' => "chief editor copy",
     "Répétition" => "Repetition",
     "Jamais" => "Never",
     "Quotidienne" => "Daily",
