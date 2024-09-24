@@ -1,0 +1,126 @@
+services:
+  solr:
+    image: solr:9.6
+    container_name: solr
+    ports:
+      - "8983:8983"
+    networks:
+      - search
+    environment:
+      ZK_HOST: "zoo:2181"
+    depends_on:
+      - zoo
+    volumes:
+      - solr_data:/var/solr
+      - type: bind
+        source: ./src/solr
+        target: /opt/configsets
+        read_only: true
+
+  zoo:
+    image: zookeeper:3.9
+    container_name: zoo
+    networks:
+      - search
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
+
+  db-episciences:
+    image: "mysql:8.4"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    container_name: 'db-episciences'
+    expose:
+      - "3306"
+    ports:
+      - "33060:3306"
+    volumes:
+      - /var/lib/mysql
+      - type: bind
+        source: ./src/mysql/docker/episciences/episciences.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - src/mysql/docker/episciences/mysql.env
+    networks:
+      - search
+
+  db-indexing:
+    image: "mysql:8.4"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    container_name: 'db-indexing'
+    expose:
+      - "3306"
+    ports:
+      - "33061:3306"
+    volumes:
+      - mysql-db-indexing:/var/lib/mysql
+      - type: bind
+        source: ./src/mysql/docker/solr/solr_index_queue.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - src/mysql/docker/solr/mysql.env
+    networks:
+      - search
+
+  db-auth:
+    image: "mysql:8.4"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    container_name: 'db-auth'
+    expose:
+      - "3306"
+    ports:
+      - "33062:3306"
+    volumes:
+      - mysql-db-auth:/var/lib/mysql
+      - type: bind
+        source: ./src/mysql/docker/auth/cas_users.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - src/mysql/docker/auth/mysql.env
+    networks:
+      - search
+
+  pma:
+    container_name: 'db-phpmyadmin'
+    image: "phpmyadmin:latest"
+    environment:
+      - "PMA_PMADB=pma"
+      - "PMA_CONTROLUSER=root"
+      - "PMA_CONTROLPASS=root"
+      - "PMA_QUERYHISTORYDB=true"
+      - "PMA_USER=root"
+      - "PMA_PASSWORD=root"
+      - "PMA_ARBITRARY=1"
+      - "PMA_HOSTS=db-episciences,db-indexing,db-auth"
+      - "PMA_VERBOSES=episciences,indexing,auth"
+      - "UPLOAD_LIMIT=2G"
+      - "MEMORY_LIMIT=1G"
+    ports:
+      - "8001:80"
+    depends_on:
+      - db-episciences
+      - db-indexing
+      - db-auth
+    links:
+      - db-episciences
+      - db-indexing
+      - db-auth
+    networks:
+      - search
+
+
+networks:
+  search:
+    driver: bridge
+
+volumes:
+  mysql-db-episciences:
+  mysql-db-indexing:
+  mysql-db-auth:
+  solr_data:
+

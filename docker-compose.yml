@@ -1,0 +1,175 @@
+services:
+  httpd:
+      image: httpd:2.4-bookworm
+      container_name: httpd
+      build:
+        context: .
+        dockerfile: src/apache/Dockerfile
+      restart: always
+      volumes:
+        - ./src/apache/vhost.conf:/usr/local/apache2/conf/extra/episciences.conf
+        - .:/var/www/htdocs
+        - ./data:/var/www/data
+        - ./cache:/var/www/cache
+        - ./logs:/var/www/logs
+      ports:
+        - "80:80"  # Apache listens on port 80 internally, mapped to 8888 on the host
+      depends_on:
+        - php-fpm
+        - db-episciences
+        - db-indexing
+        - db-auth
+      networks:
+        - epi-network
+      command: >
+        /bin/sh -c "chown -R www-data:www-data /var/www/data /var/www/cache /var/www/logs && httpd-foreground"
+
+
+  php-fpm:
+    container_name: php-fpm
+    build:
+      context: .
+      dockerfile: src/php-fpm/Dockerfile
+    ports:
+      - "9003:9003" # Xdebug
+    restart: always
+    volumes:
+        - .:/var/www/htdocs
+        - ./data:/var/www/data
+        - ./cache:/var/www/cache
+        - ./logs:/var/www/logs
+        - ./src/php-fpm/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-custom.conf
+        - ./logs/xdebug.log:/var/www/logs
+    environment:
+        - PHP_FPM_LISTEN_PORT=9000
+        - XDEBUG_MODE=debug
+        - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003
+    expose:
+        - "9000"  # Expose internal port 9000
+    networks:
+        - epi-network
+
+  solr:
+    image: solr:9.6
+    container_name: solr
+    ports:
+      - "8983:8983"
+    networks:
+      - epi-network
+    environment:
+      ZK_HOST: "zoo:2181"
+    depends_on:
+      - zoo
+    volumes:
+      - solr_data:/var/solr
+      - type: bind
+        source: ./src/solr
+        target: /opt/configsets
+        read_only: true
+
+  zoo:
+    image: zookeeper:3.9
+    container_name: zoo
+    networks:
+      - epi-network
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
+
+  db-episciences:
+    image: "mysql:8.4"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    container_name: 'db-episciences'
+    expose:
+      - "3306"
+    ports:
+      - "33060:3306"
+    volumes:
+      - mysql-db-episciences:/var/lib/mysql
+      - type: bind
+        source: ./src/mysql/docker/episciences/episciences.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - src/mysql/docker/episciences/mysql.env
+    networks:
+      - epi-network
+
+  db-indexing:
+    image: "mysql:8.4"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    container_name: 'db-indexing'
+    expose:
+      - "3306"
+    ports:
+      - "33061:3306"
+    volumes:
+      - mysql-db-indexing:/var/lib/mysql
+      - type: bind
+        source: ./src/mysql/docker/solr/solr_index_queue.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - src/mysql/docker/solr/mysql.env
+    networks:
+      - epi-network
+
+  db-auth:
+    image: "mysql:8.4"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    container_name: 'db-auth'
+    expose:
+      - "3306"
+    ports:
+      - "33062:3306"
+    volumes:
+      - mysql-db-auth:/var/lib/mysql
+      - type: bind
+        source: ./src/mysql/docker/auth/cas_users.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - src/mysql/docker/auth/mysql.env
+    networks:
+      - epi-network
+
+  pma:
+    container_name: 'db-phpmyadmin'
+    image: "phpmyadmin:latest"
+    environment:
+      - "PMA_PMADB=pma"
+      - "PMA_CONTROLUSER=root"
+      - "PMA_CONTROLPASS=root"
+      - "PMA_QUERYHISTORYDB=true"
+      - "PMA_USER=root"
+      - "PMA_PASSWORD=root"
+      - "PMA_ARBITRARY=1"
+      - "PMA_HOSTS=db-episciences,db-indexing,db-auth"
+      - "PMA_VERBOSES=episciences,indexing,auth"
+      - "UPLOAD_LIMIT=2G"
+      - "MEMORY_LIMIT=1G"
+    ports:
+      - "8001:80"
+    depends_on:
+      - db-episciences
+      - db-indexing
+      - db-auth
+    links:
+      - db-episciences
+      - db-indexing
+      - db-auth
+    networks:
+      - epi-network
+
+networks:
+  epi-network:
+    driver: bridge
+
+volumes:
+  mysql-db-episciences:
+  mysql-db-indexing:
+  mysql-db-auth:
+  solr_data:
+

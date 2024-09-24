@@ -60,3 +60,7 @@ assets/node_modules/
 
 #PHPunit
 /.phpunit.result.cache
+/tmp/
+/docker-compose.override.yml
+/.user.ini
+/logs/
