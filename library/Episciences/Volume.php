@@ -935,14 +935,18 @@ class Episciences_Volume
     }
 
     /**
-     * @param null $lang
+     * @param string|null $lang
      * @param bool $forceResult
      * @return string
      */
-    public function getName(string $lang = null, bool $forceResult = true) : string
+    public function getName(string $lang = null, bool $forceResult = true): string
     {
 
         $titles = $this->getTitles();
+
+        if (!$titles) {
+            return self::UNLABELED_VOLUME;
+        }
 
         if (null === $lang) {
             try {
@@ -952,12 +956,7 @@ class Episciences_Volume
             }
         }
 
-        if (!isset($titles[$lang]) && $forceResult && $lang !== Episciences_Review::DEFAULT_LANG) {
-            $lang  = array_key_first($titles);
-        }
-
-
-        return $titles[$lang] ?? self::UNLABELED_VOLUME;
+        return $forceResult ? ($titles[$lang] ?? $titles[array_key_first($titles)]) : self::UNLABELED_VOLUME;
 
     }
 
