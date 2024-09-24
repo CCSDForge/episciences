@@ -992,6 +992,10 @@ class Episciences_Volume
 
         $titles = $this->getTitles();
 
+        if (!$titles) {
+            return self::UNLABELED_VOLUME;
+        }
+
         if (null === $lang) {
             try {
                 $lang = Zend_Registry::get('lang');
@@ -1000,12 +1004,7 @@ class Episciences_Volume
             }
         }
 
-        if (!isset($titles[$lang]) && $forceResult && $lang !== Episciences_Review::DEFAULT_LANG) {
-            $lang = array_key_first($titles);
-        }
-
-
-        return $titles[$lang] ?? self::UNLABELED_VOLUME;
+        return $forceResult ? ($titles[$lang] ?? $titles[array_key_first($titles)]) : self::UNLABELED_VOLUME;
 
     }
 

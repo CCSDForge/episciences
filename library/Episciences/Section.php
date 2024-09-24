@@ -513,10 +513,14 @@ class Episciences_Section
         $this->_countOfPapers = $countOfPapers;
     }
 
-    public function getName(string $lang = null, bool $forceResult = true) : string
+    public function getName(string $lang = null, bool $forceResult = true): string
     {
 
         $titles = $this->getTitles();
+
+        if (!$titles) {
+            return self::UNLABELED_SECTION;
+        }
 
         if (null === $lang) {
             try {
@@ -526,12 +530,7 @@ class Episciences_Section
             }
         }
 
-        if (!isset($titles[$lang]) && $forceResult && $lang !== Episciences_Review::DEFAULT_LANG) {
-            $lang  = array_key_first($titles);
-        }
-
-
-        return $titles[$lang] ?? 'Unlabeled section';
+        return $forceResult ? ($titles[$lang] ?? $titles[array_key_first($titles)]) : self::UNLABELED_SECTION;
 
     }
 
