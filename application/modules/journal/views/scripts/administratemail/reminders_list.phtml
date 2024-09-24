@@ -23,21 +23,26 @@
 
 <div id="reminders">
 <?php if ($this->reminders) : ?>
-<?php foreach ($this->reminders as $i => $reminder) : ?>
+<?php
+/**
+ * @var  Episciences_Mail_Reminder $reminder
+ */
+    foreach ($this->reminders as $i => $reminder) : ?>
+    <?php if(!($reminderName = $reminder->getName())) continue; ?>
 	<?php if ($i > 0 && $this->reminders[($i-1)]->getType() != $reminder->getType()) : ?><hr/><?php endif;?>
 	<div class="reminder">
-		<a class="delete" href="/administratemail/deletereminder?id=<?php echo $reminder->getId() ?>" title="<?php echo $this->translate('Supprimer')?>"><span class="darkgrey glyphicon glyphicon-remove-sign"></span></a>
+		<a class="delete" href="/administratemail/deletereminder?id=<?=  $reminder->getId() ?>" title="<?=  $this->translate('Supprimer')?>"><span class="darkgrey glyphicon glyphicon-remove-sign"></span></a>
 		<a 	class="modal-opener"
-			title="<?php echo $this->translate('Modifier une relance automatique'); ?>"
-			href="/administratemail/editreminder?id=<?php echo $reminder->getId() ?>"
+			title="<?=  $this->translate('Modifier une relance automatique'); ?>"
+			href="/administratemail/editreminder?id=<?=  $reminder->getId() ?>"
 			data-callback="submit"
 		    data-width="50%"
-			><?php echo $reminder->getName(); ?></a>
+			><?=  $reminderName ?></a>
 	</div>
 <?php endforeach; ?>
 <?php else : ?>
 	<div>
-		<?php echo $this->translate('Aucune relance automatique pour le moment.'); ?>
+		<?=  $this->translate('Aucune relance automatique pour le moment.'); ?>
 	</div>
 <?php endif; ?>
 </div>

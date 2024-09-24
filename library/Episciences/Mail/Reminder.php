@@ -114,12 +114,19 @@ class Episciences_Mail_Reminder
 
         // load default template
         $template = new Episciences_Mail_Template(['rvcode' => $review->getCode()]);
-        $constant_name = 'Episciences_Mail_TemplatesManager::TYPE_' . strtoupper(self::$_typeKey[$this->getType()] . '_' . $this->getRecipient() . '_version');
-        $templateConst = constant($constant_name);
 
-        if (null === $templateConst) {
-            error_log($constant_name . ' not defined');
+        if (!isset(self::$_typeKey[$this->getType()])){
             return false;
+        }
+
+        $constant_name = 'Episciences_Mail_TemplatesManager::TYPE_' . strtoupper(self::$_typeKey[$this->getType()] . '_' . $this->getRecipient() . '_version');
+
+        if (defined($constant_name)) {
+            $templateConst = constant($constant_name);
+        } else {
+            trigger_error($constant_name . ' not defined');
+            return false;
+
         }
 
         $template->findByKey($templateConst);
