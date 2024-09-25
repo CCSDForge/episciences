@@ -1500,14 +1500,10 @@ class Episciences_Mail_Reminder
             $refDate = 'WHEN';
         }
 
-        $deadline = "DATE_ADD(`$refDate`, INTERVAL $waitingTime DAY)";
-
-        if ($status !== Episciences_Paper::STATUS_ACCEPTED) {
-            $paperQuery->where(new Zend_Db_Expr("`$refDate` <= $date"));
-        }
+        $deadline = "DATE_ADD(DATE_FORMAT(`$refDate`,'%Y-%m-%d'), INTERVAL $waitingTime DAY)";
 
         if ($repetition) {
-            $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $deadline, $date) = $delay"));
+            $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $deadline, $date) >= $delay"));
             $paperQuery->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, DATE_ADD($deadline, INTERVAL $delay DAY), $date), $repetition ) = 0"));
         } else {
             $paperQuery->where(new Zend_Db_Expr("DATE_ADD($deadline, INTERVAL $delay DAY) = $date"));
@@ -1515,7 +1511,8 @@ class Episciences_Mail_Reminder
 
 
         if ($debug) {
-            echo Episciences_Tools::$bashColors['light_blue'] . $paperQuery->__toString() . Episciences_Tools::$bashColors['default'] . PHP_EOL;
+            $qToStr = $paperQuery->__toString();
+            echo Episciences_Tools::$bashColors['light_blue'] . $qToStr . Episciences_Tools::$bashColors['default'] . PHP_EOL;
         }
 
         $resultQuery = $db->fetchAssoc($paperQuery);
@@ -1557,7 +1554,6 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getWhen(), $editor->getLangueid())
                 ];
 
-                $deadline = date_add($currentDate, date_interval_create_from_date_string($waitingTime . ' days'));
 
                 $recipients[] = [
                     'uid' => $editor->getUid(),
@@ -1565,7 +1561,7 @@ class Episciences_Mail_Reminder
                     'email' => $editor->getEmail(),
                     'lang' => $editor->getLangueid(true),
                     'tags' => array_merge($commonTag, $tags),
-                    'deadline' => $deadline->format('Y-m-d')
+                    'deadline' => $currentDate
                 ];
 
             }

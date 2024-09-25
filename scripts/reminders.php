@@ -196,6 +196,7 @@ try {
                     displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])) . ')', 'default', true);
 
                     $target = date_create($recipient['deadline']);
+                    $target->setTime(0,0);
                     $interval = $origin->diff($target, true)->format('%a'); // in days
 
                     $mail->addTag(Episciences_Mail_Tags::TAG_REMINDER_DELAY, $interval);
