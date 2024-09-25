@@ -1504,7 +1504,7 @@ class Episciences_Review
 
         $form->addElement('checkbox', self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS, [
             'label' => "Activer la fonctionnalité",
-            'description' => "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs.",
+            'description' => "En cas de refus d'un article, le message envoyé aux auteurs/autrices expliquant la décision finale prise par le rédacteur/la rédactrice responsable est transmise automatiquement aux relecteurs/relectrices.",
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'decorators' => $checkboxDecorators
         ]);
