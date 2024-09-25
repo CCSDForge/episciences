@@ -40,8 +40,8 @@ return [
     "Relecteur" => ["Reviewer", "Reviewers"],
     // DOCUMENT TYPES
     'article' => ['article', 'articles'],
-    'Article'=> 'Article',
-    'Preprint'=>'Preprint',
+    'Article' => 'Article',
+    'Preprint' => 'Preprint',
     'ConferenceObject' => 'Conference paper',
     'Text' => "Preprint",
     'Dataset' => 'Jeux de données',
@@ -367,7 +367,7 @@ return [
     "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "This paper has already been accepted, it is useless to review it now.",
     "Cet article a été refusé, il n'est plus nécessaire de le relire." => "This paper has been refused, it is useless to review it now.",
     "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "This paper has been deleted, it is useless to review it now.",
-    "Cet article est obsolète, il n'est plus nécessaire de le relire." =>"This paper is obsolete, it is useless to review it now.",
+    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "This paper is obsolete, it is useless to review it now.",
     "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "This paper is under revision, it is useless to review it now.",
 
     "Articles de l'auteur" => "Articles of this author",
@@ -1163,15 +1163,12 @@ return [
     "Ce volume a été supprimé" => "This volume has been deleted",
     "Cette rubrique a été supprimée" => "This section has been removed",
 
-    // DEMO
-    "Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes." => "On this demo environment, you cannot delete any accounts.",
-    "Dans l'environnement de démo, vous ne pouvez pas modifier le mot de passe." => "On this demo environment, you cannot edit the password.",
     //Notifications
     "Paramètres de notification" => "Notification Settings",
     "Lorsqu'un article est soumis, mis à jour ou refusé, notifier les" => "When an article is submitted, updated or refused, notify the",
     "Administrateurs" => "Administrators",
     'Activer la fonctionnalité' => 'Enable feature',
-    "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs." => "In case an article has been refused, the message sent to the authors explaining the final decision made by the editor in charge is forwarded automatically to the reviewers.",
+    "En cas de refus d'un article, le message envoyé aux auteurs/autrices expliquant la décision finale prise par le rédacteur/la rédactrice responsable est transmise automatiquement aux relecteurs/relectrices." => "In case an article has been refused, the message sent to the authors explaining the final decision made by the editor in charge is forwarded automatically to the reviewers.",
 
 
     "Préparateurs de copie" => "Copy editors",
@@ -1301,7 +1298,7 @@ return [
     'Optionnelle' => 'Optional',
     'Cliquer ici pour ouvrir le calendrier' => 'Click here to open the calendar',
     'Version révisée attendue avant le :' => 'Revised version expected before:',
-    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj."  =>"Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
+    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
 
     /**
      * Tips
@@ -1954,7 +1951,7 @@ return [
     'En cours de publication' => 'Being published',
     "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
     'dont %s importés' => "including %s imported",
-    'dont %s importé'  => "including %s imported",
+    'dont %s importé' => "including %s imported",
     'publiés' => 'published',
     "Vous essayez de consulter les indicateurs statistiques pour l'année" => "You are trying to consult the statistical indicators for the year",
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
@@ -2462,8 +2459,8 @@ return [
     "IsPartOf" => "Is part of",
     "HasPart" => "Has part",
     "references" => "References",
-    "Références"=> "References",
-    "Références bibliographiques"=> "Bibliographic References",
+    "Références" => "References",
+    "Références bibliographiques" => "Bibliographic References",
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",
@@ -2472,7 +2469,7 @@ return [
     "Finances" => "Finances",
     "IsFinancedBy" => "Is financed by",
     "IsVersionOf" => "Is version of",
-    'IsRelatedTo'=>'Is related to',
+    'IsRelatedTo' => 'Is related to',
 
     // Journal's settings
     "Exiger que la demande de révision soit assortie d'un délai" => "To require that a deadline is given with revision request",
