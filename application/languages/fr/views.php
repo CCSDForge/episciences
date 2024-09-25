@@ -157,6 +157,7 @@ return [
     // log
     'Chief editor' => 'Rédacteur en chef',
 
+
     Episciences_Editor::TAG_SECTION_EDITOR => 'Rédacteur de la rubrique',
     Episciences_Editor::TAG_VOLUME_EDITOR => 'Rédacteur du volume',
     Episciences_Editor::TAG_SUGGESTED_EDITOR => "Rédacteur suggéré par l'auteur",
@@ -343,7 +344,7 @@ return [
     "IsReferencedBy" => "Est référencé par",
     "IsBasedOn" => "Est basé sur ",
     "IsBasisFor" => "Est basé pour",
-    "Requires" => "Requiert",
+    "Requires" => "Nécessite",
     "IsRequiredBy" => "Est requis pour",
     "Finances" => "Finance",
     "IsFinancedBy" => "Est financé par",

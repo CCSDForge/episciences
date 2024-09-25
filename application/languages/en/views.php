@@ -43,6 +43,7 @@ return [
     'Article' => 'Article',
     'Preprint' => 'Preprint',
     'ConferenceObject' => 'Conference paper',
+    'Text' => "Preprint",
     'Dataset' => 'Jeux de données',
 
 
@@ -1173,15 +1174,12 @@ return [
     "Ce volume a été supprimé" => "This volume has been deleted",
     "Cette rubrique a été supprimée" => "This section has been removed",
 
-    // DEMO
-    "Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes." => "On this demo environment, you cannot delete any accounts.",
-    "Dans l'environnement de démo, vous ne pouvez pas modifier le mot de passe." => "On this demo environment, you cannot edit the password.",
     //Notifications
     "Paramètres de notification" => "Notification Settings",
     "Lorsqu'un article est soumis, mis à jour ou refusé, notifier les" => "When an article is submitted, updated or refused, notify the",
     "Administrateurs" => "Administrators",
     'Activer la fonctionnalité' => 'Enable feature',
-    "En cas de refus d'un article, le message envoyé aux auteurs expliquant la décision finale prise par le rédcateur en charge est transmise automatiquement aux relecteurs." => "In case an article has been refused, the message sent to the authors explaining the final decision made by the editor in charge is forwarded automatically to the reviewers.",
+    "En cas de refus d'un article, le message envoyé aux auteurs/autrices expliquant la décision finale prise par le rédacteur/la rédactrice responsable est transmise automatiquement aux relecteurs/relectrices." => "In case an article has been refused, the message sent to the authors explaining the final decision made by the editor in charge is forwarded automatically to the reviewers.",
 
 
     "Préparateurs de copie" => "Copy editors",
@@ -2505,6 +2503,8 @@ return [
     "IsPartOf" => "Is part of",
     "HasPart" => "Has part",
     "references" => "References",
+    "Références" => "References",
+    "Références bibliographiques" => "Bibliographic References",
     "IsReferencedBy" => "Is referenced by",
     "IsBasedOn" => "Is based on",
     "IsBasisFor" => "Is based for",
