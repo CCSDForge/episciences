@@ -2142,7 +2142,7 @@ return [
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME] => "position of the article in a volume",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_RATING] => "article's reviewer",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_RATINGS] => "article's reviewers",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_REPO_URL] => "link to the open access repository (e.g. https://hal.archives-ouvertes.fr/hal-03242823v2)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_REPO_URL] => "link to the open access repository (e.g. https://hal.science/hal-03242823v2)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE] => 'submission date',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE_ISO] => "submission date at ISO format",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_URL] => "Link to article URL",
