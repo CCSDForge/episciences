@@ -432,7 +432,7 @@ return [
     "reminder_reviewed_article_editors_copy_tpl_name" => "Article bloqué à l'état relu (copie à destination des rédacteurs | rédacteurs en chef)",
     "reminder_reviewed_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Article relu, decision requise",
     "reminder_submitted_article_editors_copy_tpl_name" => "Article bloqué à l'état initial [soumis] - (copie à destination des rédacteurs | rédacteurs en chef)",
-    "reminder_submitted_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - New submission , decision required",
+    "reminder_submitted_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Nouvelle soumission, decision requise",
 
 
 ];

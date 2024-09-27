@@ -442,5 +442,5 @@ return [
     "reminder_reviewed_article_editors_copy_tpl_name" => "Article blocked in reviewed state (editors in chief | editors copy)",
     "reminder_reviewed_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Reviewed article, decision required",
     "reminder_submitted_article_editors_copy_tpl_name" => "Article blocked in initial state [submitted] - (editors in chief | editors copy)",
-    "reminder_submitted_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - New submission , decision required",
+    "reminder_submitted_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - New submission, decision required",
 ];
