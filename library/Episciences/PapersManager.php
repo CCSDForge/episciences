@@ -2151,7 +2151,7 @@ class Episciences_PapersManager
 
         $paper = new Episciences_Paper(array_merge($data, ['withxsl' => $withxsl]));
         $paper->setRevisionDeadline();
-        return $paper->setConflicts(Episciences_Paper_ConflictsManager::findByPaperId($paper->getPaperid()));
+        return $paper->setConflicts(Episciences_Paper_ConflictsManager::findByPaperId($paper->getPaperid(), $rvId));
 
     }
 
