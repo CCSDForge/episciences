@@ -1474,7 +1474,6 @@ class Episciences_Mail_Reminder
      */
     private function getArticlesBlockedAtCurrentState(int $status, $debug, $date, int $waitingTime = self::DEFAULT_WAITING_TIME): array
     {
-
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
         $rRecipient = $this->getRecipient();
@@ -1492,15 +1491,19 @@ class Episciences_Mail_Reminder
             ]
         ];
 
-        $paperQuery = Episciences_PapersManager::getListQuery($settings);
+        $pq = Episciences_PapersManager::getListQuery($settings);
 
-        $refDate = 'MODIFICATION_DATE';
+        $paperQuery = $db
+            ->select()
+            ->from(['p' => $pq])
+            ->join(['pl' => T_LOGS], 'pl.DOCID = p.DOCID', ['ACTION','max(DATE) as  date'])
+            ->where('ACTION = ?', 'status')
+            ->group('pl.DOCID')
+        ;
 
-        if ($status === Episciences_Paper::STATUS_SUBMITTED) {
-            $refDate = 'WHEN';
-        }
-
-        $deadline = "DATE_ADD(DATE_FORMAT(`$refDate`,'%Y-%m-%d'), INTERVAL $waitingTime DAY)";
+        $refDate = 'date'; // not based on the "MODIFICATION_DATE" column, which is not immutable: (e.g. modified when metadata is updated)
+        $deadline = new Zend_Db_Expr("DATE_ADD(DATE_FORMAT(`$refDate`,'%Y-%m-%d'), INTERVAL $waitingTime DAY)");
+        $date = new Zend_Db_Expr("DATE_FORMAT($date,'%Y-%m-%d')");
 
         if ($repetition) {
             $paperQuery->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $deadline, $date) >= $delay"));
@@ -1508,7 +1511,6 @@ class Episciences_Mail_Reminder
         } else {
             $paperQuery->where(new Zend_Db_Expr("DATE_ADD($deadline, INTERVAL $delay DAY) = $date"));
         }
-
 
         if ($debug) {
             $qToStr = $paperQuery->__toString();
@@ -1526,15 +1528,7 @@ class Episciences_Mail_Reminder
                 $editors = $paper->getEditors(true, true);
             }
 
-            $acceptanceDate = '';
-            $currentDate = $paper->getModification_date();
-
-            if ($paper->isAcceptedSubmission()) {
-                $acceptanceDate = $paper->getAcceptanceDate();
-                $currentDate = $acceptanceDate;
-            }elseif($paper->getStatus() === Episciences_Paper::STATUS_SUBMITTED){
-                $currentDate = $paper->getWhen();
-            }
+            $acceptanceDate = $paper->isAcceptedSubmission() ? $paper->getModification_date() : '';
 
             $commonTag = [
                 Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
@@ -1561,7 +1555,7 @@ class Episciences_Mail_Reminder
                     'email' => $editor->getEmail(),
                     'lang' => $editor->getLangueid(true),
                     'tags' => array_merge($commonTag, $tags),
-                    'deadline' => $currentDate
+                    'deadline' => $item['date']
                 ];
 
             }
