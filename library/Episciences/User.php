@@ -1356,7 +1356,20 @@ class Episciences_User extends Ccsd_User_Models_User
             $oConflicts = Episciences_Paper_ConflictsManager::findByUidAndAnswer($uid, Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']); // only confirmed: no conflict (answer = 'no')
             foreach ($oConflicts as $oConflict) {
                 $paperId = $oConflict->getPaperId();
-                $result[$paperId] = Episciences_PapersManager::get($paperId, false);
+                try {
+                    $current = Episciences_PapersManager::get($paperId, false);
+
+                    if (!$current){
+                        trigger_error(sprintf('NO found paper: [paperId #%s]',$paperId),E_USER_WARNING );
+                        continue;
+                    }
+
+                    $result[$paperId] = $current;
+
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                    continue;
+                }
             }
         }
 
