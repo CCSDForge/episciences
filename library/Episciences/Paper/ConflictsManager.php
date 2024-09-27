@@ -7,9 +7,10 @@ class Episciences_Paper_ConflictsManager
 
     /**
      * @param int $paperId
+     * @param int $rvId
      * @return  Episciences_Paper_Conflict []
      */
-    public static function findByPaperId(int $paperId): array
+    public static function findByPaperId(int $paperId, int $rvId = RVID): array
     {
 
         $oResult = [];
@@ -17,7 +18,9 @@ class Episciences_Paper_ConflictsManager
         $sql = $db->select()
             ->from(['c' => self::TABLE])
             ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME'])
+            ->join(['ur' => T_USER_ROLES], 'ur.UID = u.UID')
             ->where('paper_id = ?', $paperId)
+            ->where('ur.RVID = ?', $rvId)
             ->order('date DESC');
 
         $rows = $db->fetchAssoc($sql);
