@@ -1128,7 +1128,7 @@ return [
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => "Copy editing: awaiting formatting by author",
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version number updated',
-    Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New review deadline',
+    Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New deadline for review',
     Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission: automatically transferred from',
     Episciences_Paper_Logger::CODE_LD_ADDED => 'Linked data added',
     Episciences_Paper_Logger::CODE_LD_CHANGED => 'Linked data changed',
