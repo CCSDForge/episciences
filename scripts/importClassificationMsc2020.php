@@ -5,15 +5,15 @@
  */
 
 // Utility function to get the current timestamp
-function logMessage($message)
+function logMessage($message): void
 {
     echo "[" . date("Y-m-d H:i:s") . "] " . $message . "\n";
 }
 
 // Database and file information
 $databaseName = 'episciences';
-$tableName = 'msc2020';
-$dumpFileName = 'msc2020.sql';
+$tableName = 'classification-msc2020';
+$dumpFileName = sprintf("msc2020-%s.sql", date('Y-m-d-H-i-s'));
 $fileUrl = 'https://msc2020.org/MSC_2020.csv';
 
 // Get the system's temporary directory
