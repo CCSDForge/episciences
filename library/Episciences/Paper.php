@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Classification\jel;
+use Episciences\Classification\msc2020;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Serializer\Encoder\JsonEncode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
@@ -5006,6 +5008,22 @@ class Episciences_Paper
         }
 
         return $this;
+
+    }
+
+    public function getClassifications(): array
+    {
+        $classificationsList = Episciences_Paper_ClassificationsManager::getClassificationByDocId($this->getDocid());
+        $classificationCollection = [];
+        foreach ($classificationsList as $classification) {
+            if ($classification['classification_name'] == msc2020::$classificationName) {
+                $classificationCollection[msc2020::$classificationName][] = new msc2020($classification);
+            }
+            if ($classification['classification_name'] == jel::$classificationName) {
+                $classificationCollection[jel::$classificationName][] = new jel($classification);
+            }
+        }
+        return $classificationCollection;
 
     }
 

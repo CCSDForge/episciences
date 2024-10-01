@@ -216,8 +216,15 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php // paper ************************************************************************* ?>
 <div>
     <?= $paper->getXslt() ?>
+
+    <?php
+
+    if (!empty($this->classifications)) {
+        echo $this->partial('paper/paper_classifications.phtml', ['classifications' => $this->classifications]);
+    }
+    ?>
     <?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
-    <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor() || $graphAbs ) : ?>
+    <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor() || $graphAbs) : ?>
         <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
     <?php endif; ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
@@ -341,14 +348,16 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php endif; // end if $isAllowedToSeeNoPublicDetails ?>
 
 <?php if ($this->enabledBib): ?>
-    <div id="biblio-refs" class="panel panel-default collapsable" <?php if(!$this->enabledManageFromPublicPage){ echo 'style="display: none;"';} ?>>
+    <div id="biblio-refs" class="panel panel-default collapsable" <?php if (!$this->enabledManageFromPublicPage) {
+        echo 'style="display: none;"';
+    } ?>>
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Références bibliographiques') ?></h2>
         </div>
         <div class="panel-body in" style="max-height: 350px; overflow: auto;">
             <?php
             //REFERENCES EPI CITATIONS ****************************************************************
-            echo $this->partial('partials/paper_biblio_refs.phtml', ['paper' => $paper,'urlcallapibib'=>$this->urlcallapibib,'apiEpiBibCitation' => $this->apiEpiBibCitation, 'enabledManageFromPublicPage' => $this->enabledManageFromPublicPage, 'repoId' => $paper->getRepoid()]);
+            echo $this->partial('partials/paper_biblio_refs.phtml', ['paper' => $paper, 'urlcallapibib' => $this->urlcallapibib, 'apiEpiBibCitation' => $this->apiEpiBibCitation, 'enabledManageFromPublicPage' => $this->enabledManageFromPublicPage, 'repoId' => $paper->getRepoid()]);
             ?>
         </div>
     </div>
