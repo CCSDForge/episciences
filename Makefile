@@ -68,8 +68,15 @@ restart-httpd: ## Restart Apache httpd
 restart-php: ## Restart PHP-FPM Container
 	$(DOCKER_COMPOSE) restart $(CNTR_NAME_PHP)
 
+
 merge-pdf-volume: ## merge all pdf from a vid into one pdf
 	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/mergePdfVol.php --rvcode=$(rvcode) --ignorecache=$(or $(ignorecache),0) --removecache=$(or $(removecache),0)
+
+
+get-classification-msc: ## Get MSC 2020 Classifications
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/getClassificationMsc.php --rvcode=$(rvcode)
+
+
 
 
 can-i-use-update: ## To be launched when Browserslist: caniuse-lite is outdated.

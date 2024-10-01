@@ -184,7 +184,7 @@ function defineSQLTableConstants()
     define('T_PAPER_PROJECTS', 'paper_projects');
     define('T_PAPER_CITATIONS', 'paper_citations');
     define('T_PAGES', 'pages');
-    //define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
+    define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
 }
 
 /**
@@ -258,6 +258,7 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('APPLICATION_VERSION', '');
         define('PWD_PATH', '');
         define('FUSION_TOKEN_AUTH', '');
+        define('EPISCIENCES_LOG_PATH', '');
         define('EPISCIENCES_SOLR_LOG_PATH', '');
         define('EPISCIENCES_API_URL', '');
         define('EPISCIENCES_API_SECRET_KEY', '');
