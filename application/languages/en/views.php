@@ -293,7 +293,7 @@ return [
     'Motif de DOI incorrect' => 'Wrong DOI pattern',
     'Document non trouvé' => 'Document non found',
     'Échec de la mise à jour' => 'Update failed',
-    'Année du volume'=> 'Year of the volume',
+    'Année du volume' => 'Year of the volume',
     'Numéro du volume' => "Volume Number",
     "Volume de l'article" => "Volume of the paper",
     "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
@@ -2531,5 +2531,10 @@ return [
     "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
     "Ajouter un abstract graphique" => "Add a graphical abstract",
     "Modifier l'abstract graphique" => "Change the graphical abstract",
-    "Taille maximum du fichier : 100 ko, Hauteur maximal : 880px" => "Max size file: 100 ko, Max height: 880px"
+    "Taille maximum du fichier : 100 ko, Hauteur maximal : 880px" => "Max size file: 100 ko, Max height: 880px",
+
+    'classification_jel' => 'JEL Classification System',
+    'classification_msc2020' => 'Mathematics Subject Classification 2020'
+
+
 ];

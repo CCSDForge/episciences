@@ -7,27 +7,27 @@ class Episciences_Paper_Classifications
     /**
      * @var int
      */
-    protected int $_id;
+    protected int $id;
 
     /**
      * @var string
      */
-    protected string $_classification;
+    protected string $classificationCode;
 
     /**
      * @var string
      */
-    protected string $_type;
+    protected string $classificationName;
 
     /**
      * @var int
      */
-    protected int $_paperId;
+    protected int $docid;
 
     /**
      * @var int
      */
-    protected int $_sourceId;
+    protected int $sourceId;
 
     /**
      * Episciences_Paper_Classification constructor.
@@ -56,6 +56,21 @@ class Episciences_Paper_Classifications
         }
     }
 
+    /**
+     * @return int
+     */
+    public function getDocid(): int
+    {
+        return $this->docid;
+    }
+
+    /**
+     * @param int $paperId
+     */
+    public function setDocid(int $paperId): void
+    {
+        $this->docid = $paperId;
+    }
 
     /**
      * @return array
@@ -64,10 +79,10 @@ class Episciences_Paper_Classifications
     {
         return [
             'id' => $this->getId(),
-            'paperId'=> $this->getPaperId(),
-            'classification' => $this->getClassification(),
-            'sourceId' => $this->getSourceId(),
-            'type' => $this->getType(),
+            'docid' => $this->getDocid(),
+            'classificationCode' => $this->getClassificationCode(),
+            'classificationName' => $this->getClassificationName(),
+            'sourceId' => $this->getSourceId()
         ];
     }
 
@@ -76,7 +91,7 @@ class Episciences_Paper_Classifications
      */
     public function getId(): int
     {
-        return $this->_id;
+        return $this->id;
     }
 
     /**
@@ -85,74 +100,43 @@ class Episciences_Paper_Classifications
      */
     public function setId(int $id): self
     {
-        $this->_id = $id;
+        $this->id = $id;
         return $this;
     }
 
-    /**
-     * @return int
-     */
-    public function getPaperId(): ?int
+    public function getClassificationCode(): string
     {
-        return $this->_paperId;
+        return $this->classificationCode;
     }
 
-    /**
-     * @param int $paperId
-     */
-    public function setPaperId(int $paperId): void
+    public function setClassificationCode(string $classification): self
     {
-        $this->_paperId = $paperId;
+        $this->classificationCode = $classification;
+        return $this;
     }
 
-    public function getSourceId(): ?int
+    public function getClassificationName(): string
+    {
+        return $this->classificationName;
+    }
+
+    public function setClassificationName(string $type): self
+    {
+        $this->classificationName = $type;
+        return $this;
+    }
+
+    public function getSourceId(): int
     {
 
-        return $this->_sourceId;
+        return $this->sourceId;
 
     }
 
-    /**
-     * @param int $sourceId
-     * @return $this
-     */
 
     public function setSourceId(int $sourceId): self
     {
-        $this->_sourceId = $sourceId;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-
-    public function getClassification(): ?string
-    {
-        return $this->_classification;
-    }
-
-    /**
-     * @param string $classification
-     * @return Episciences_Paper_Classifications
-     */
-    public function setClassification(string $classification): self
-    {
-        $this->_classification = $classification;
-        return $this;
-    }
-
-    public function getType(): ?string
-    {
-        return $this->_type;
-    }
-    /**
-     * @param string $type
-     * @return Episciences_Paper_Classifications
-     */
-    public function setType(string $type): self
-    {
-        $this->_type = $type;
+        $this->sourceId = $sourceId;
         return $this;
     }
 

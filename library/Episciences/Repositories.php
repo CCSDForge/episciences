@@ -35,6 +35,8 @@ class Episciences_Repositories
     public const BIO_RXIV_ID = '10';
     public const MED_RXIV_ID = '11';
 
+    public const ZBMATH_OPEN = '17';
+
     public const EPI_USER_ID = '12';
     public const HAL_LABEl = 'HAL';
 

@@ -82,10 +82,10 @@ class getClassificationData extends JournalScript
                 $needleArray = $arrayClassification[$value['DOCID']];
                   foreach ($needleArray as $info){
                       $classification = new Episciences_Paper_Classifications();
-                      $classification->setClassification($info['subjects[0].value']);
-                      $classification->setType($info['subjects[0].type']);
+                      $classification->setClassificationCode($info['subjects[0].value']);
+                      $classification->setClassificationName($info['subjects[0].type']);
                       $classification->setSourceId(Episciences_Repositories::GRAPH_OPENAIRE_ID);
-                      $classification->setPaperId($value['PAPERID']);
+                      $classification->setDocid($value['PAPERID']);
                       $insert = Episciences_Paper_ClassificationsManager::insert([$classification]);
                       if ($insert>0) {
                           $this->displayInfo('New Classification for '.$value['PAPERID'], true);
@@ -132,5 +132,5 @@ class getClassificationData extends JournalScript
 
 }
 
-$script = new getClassificationData($localopts);
+$script = new GetClassificationMsc($localopts);
 $script->run();

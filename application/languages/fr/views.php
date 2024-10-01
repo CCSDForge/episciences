@@ -355,4 +355,7 @@ return [
     "Preprint" => "Pré-publication",
     'ConferenceObject' => 'Communication dans un congrès',
     'Dataset' => 'Jeu de données',
+
+    'classification_jel' => 'JEL Classification System',
+    'classification_msc2020' => 'Mathematics Subject Classification 2020'
 ];
