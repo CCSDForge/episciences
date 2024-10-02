@@ -50,7 +50,7 @@ class Episciences_Paper_ClassificationsManager
 
     public static function formatClassificationForview($paperId)
     {
-        $rawInfo = self::getClassificationByPaperId($paperId);
+        $rawInfo = self::getClassificationByDocId($paperId);
         if (!empty($rawInfo)) {
             $rawClassification = [];
             $templateClassification = "";
@@ -71,13 +71,17 @@ class Episciences_Paper_ClassificationsManager
         return "";
     }
 
-    public static function getClassificationByPaperId($paperId)
+    public static function getClassificationByDocId(int $docid): array
     {
-
+        /**
+         *  /!\ Be careful if 2 classifications share an identical code
+         */
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()->from(['pc' => T_PAPER_CLASSIFICATIONS])
-            ->joinLeft(['sp' => T_PAPER_METADATA_SOURCES], "pc.source_id = sp.id", ["pc.source_id_name" => 'sp.name'])
-            ->where('docid = ? ', $paperId)
+            ->joinLeft(['pms' => T_PAPER_METADATA_SOURCES], "pc.source_id = pms.id", ["source_name" => 'pms.name'])
+            ->joinLeft(['msc' => T_PAPER_CLASSIFICATION_MSC2020], "msc.code = pc.classification_code AND pc.classification_name='msc2020'", ["code.msc2020" => 'msc.code', "label.msc2020" => 'msc.label', "description.msc2020" => 'msc.description'])
+            ->joinLeft(['jel' => T_PAPER_CLASSIFICATION_JEL], "jel.code = pc.classification_code AND pc.classification_name='jel'", ["code.jel" => 'jel.code', "label.jel" => 'jel.label'])
+            ->where('docid = ? ', $docid)
             ->order("source_id");
         return $db->fetchAssoc($sql);
     }

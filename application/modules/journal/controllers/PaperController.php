@@ -125,6 +125,7 @@ class PaperController extends PaperDefaultController
         $isFromZSubmit = false;
 
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
+        $this->view->classifications = $paper->getClassifications();
 
         if ($this->isRestrictedAccess($paper)) {
 

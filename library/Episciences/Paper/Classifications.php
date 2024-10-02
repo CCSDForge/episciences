@@ -56,6 +56,21 @@ class Episciences_Paper_Classifications
         }
     }
 
+    /**
+     * @return int
+     */
+    public function getDocid(): int
+    {
+        return $this->docid;
+    }
+
+    /**
+     * @param int $paperId
+     */
+    public function setDocid(int $paperId): void
+    {
+        $this->docid = $paperId;
+    }
 
     /**
      * @return array
@@ -87,22 +102,6 @@ class Episciences_Paper_Classifications
     {
         $this->id = $id;
         return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getDocid(): int
-    {
-        return $this->docid;
-    }
-
-    /**
-     * @param int $paperId
-     */
-    public function setDocid(int $paperId): void
-    {
-        $this->docid = $paperId;
     }
 
     public function getClassificationCode(): string

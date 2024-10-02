@@ -12,7 +12,7 @@ function logMessage($message): void
 
 // Database and file information
 $databaseName = 'episciences';
-$tableName = 'classification-msc2020';
+$tableName = 'classification_msc2020';
 $dumpFileName = sprintf("msc2020-%s.sql", date('Y-m-d-H-i-s'));
 $fileUrl = 'https://msc2020.org/MSC_2020.csv';
 

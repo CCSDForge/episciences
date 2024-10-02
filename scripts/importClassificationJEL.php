@@ -30,7 +30,7 @@ echo "[" . date('Y-m-d H:i:s') . "] XML file successfully loaded.\n";
 $sqlDump = <<<SQL
 -- SQL Dump for JEL Classifications
 
-CREATE TABLE IF NOT EXISTS `classification-jel` (
+CREATE TABLE IF NOT EXISTS `classification_jel` (
   `code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

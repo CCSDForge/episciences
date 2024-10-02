@@ -185,6 +185,8 @@ function defineSQLTableConstants()
     define('T_PAPER_CITATIONS', 'paper_citations');
     define('T_PAGES', 'pages');
     define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
+    define('T_PAPER_CLASSIFICATION_MSC2020', 'classification_msc2020');
+    define('T_PAPER_CLASSIFICATION_JEL', 'classification_jel');
 }
 
 /**

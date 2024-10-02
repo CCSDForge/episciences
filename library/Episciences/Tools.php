@@ -1324,8 +1324,12 @@ class Episciences_Tools
         return $val;
     }
 
-    public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false)
+    public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false, string $stringToRemove = '')
     {
+
+        if ($stringToRemove!== '') {
+            $string = str_replace($stringToRemove , '', $string);
+        }
 
         if (self::isInUppercase($string, $separator)) {
             $string = strtolower($string);
@@ -1336,6 +1340,7 @@ class Episciences_Tools
         if (!$capitalizeFirstCharacter) {
             $str = lcfirst($str);
         }
+
 
         return $str;
     }
