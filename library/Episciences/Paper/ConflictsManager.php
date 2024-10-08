@@ -7,21 +7,26 @@ class Episciences_Paper_ConflictsManager
 
     /**
      * @param int $paperId
-     * @param int $rvId
+     * @param int | null $rvId
      * @return  Episciences_Paper_Conflict []
      */
-    public static function findByPaperId(int $paperId, int $rvId = RVID): array
+    public static function findByPaperId(int $paperId, int $rvId = null): array
     {
 
         $oResult = [];
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
             ->from(['c' => self::TABLE])
             ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME'])
             ->join(['ur' => T_USER_ROLES], 'ur.UID = u.UID')
-            ->where('paper_id = ?', $paperId)
-            ->where('ur.RVID = ?', $rvId)
-            ->order('date DESC');
+            ->where('paper_id = ?', $paperId);
+
+        if ($rvId) {
+            $sql->where('ur.RVID = ?', $rvId);
+        }
+
+        $sql->order('date DESC');
 
         $rows = $db->fetchAssoc($sql);
 
