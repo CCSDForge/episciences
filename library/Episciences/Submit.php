@@ -753,8 +753,13 @@ class Episciences_Submit
      * @return array
      * @throws Zend_Exception
      */
-    public static function getDoc($repoId, $id, int $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true, int $rvId = RVID, bool $isEpiNotify = false): array
+    public static function getDoc($repoId, $id, int $version = null, $latestObsoleteDocId = null, $manageNewVersionErrors = true, int $rvId = null, bool $isEpiNotify = false): array
     {
+
+        if (defined('RVID') && !Ccsd_Tools::isFromCli()) {
+            $rvId = RVID;
+        }
+
         $isNewVersionOf = !empty($latestObsoleteDocId);
         $result = [];
         $id = trim($id);
@@ -841,7 +846,7 @@ class Episciences_Submit
             $result['status'] = (!$docId = $paper->alreadyExists()) ? 1 : 2;
 
             if ($result['status'] === 2) {
-                $paper = Episciences_PapersManager::get($docId);
+                $paper = Episciences_PapersManager::get($docId, true, $rvId);
                 if ($manageNewVersionErrors) {
                     $result['newVerErrors'] = $paper->manageNewVersionErrors(['version' => $version, 'isNewVersionOf' => $isNewVersionOf, 'rvId' => $rvId, 'isEpiNotify' => $isEpiNotify]);
                 }
@@ -889,7 +894,7 @@ class Episciences_Submit
             } else {
 
                 if ($isNewVersionOf) {
-                    $oldPaper = Episciences_PapersManager::get($latestObsoleteDocId, false);
+                    $oldPaper = Episciences_PapersManager::get($latestObsoleteDocId, false, $rvId);
                     $hookHasDoiInfoRepresentsAllVersions = Episciences_Repositories::callHook('hookHasDoiInfoRepresentsAllVersions', ['repoId' => $repoId, 'record' => $result['record'], 'conceptIdentifier' => $oldPaper->getConcept_identifier()]);
                     if (array_key_exists('hasDoiInfoRepresentsAllVersions', $hookHasDoiInfoRepresentsAllVersions) && !$hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) {
                         $error = 'hookUnboundVersions: ';
