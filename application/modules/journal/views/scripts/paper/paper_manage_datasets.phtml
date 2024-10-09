@@ -1,10 +1,20 @@
-<form id="<?= $this->escape($this->formId)?>">
-    <div id="container-datasets" style=" margin: 2px; display: flex; gap: 3px; flex-wrap: wrap;">
-        <input id="input-ld" type="text" <?php if($this->idLd): ?> data-id="<?= $this->escape($this->idLd)?>"  <?php endif; ?> data-typeld="<?= $this->escape($this->typeld); ?>" class="form-control input-sm" placeholder='' style='flex-basis: max-content;flex-grow: 1;' <?php if ($this->valueLd !== '') : ?> value="<?= $this->escape($this->valueLd) ?>" <?php endif; ?> <?php if ($this->disabledValue === true) : ?> disabled="disabled" <?php endif; ?>>
+
+<div class="row">
+<form id="<?= $this->escape($this->formId)?>" class="form-horizontal" style="margin: 1% 2% 0 2%">
+    <fieldset>
+        <legend><?= $this->translate('Créer une relation') ?></legend>
+    <div id="container-datasets">
+        <div class="form-group">
+            <label class="col-sm-2 control-label" for="input-ld">Document</label>
+        <input  style="width: 75%" class="form-control" id="input-ld" type="text" <?php if($this->idLd): ?> data-id="<?= $this->escape($this->idLd)?>"  <?php endif; ?> data-typeld="<?= $this->escape($this->typeld); ?>" placeholder="" <?php if ($this->valueLd !== '') : ?> value="<?= $this->escape($this->valueLd) ?>" <?php endif; ?> <?php if ($this->disabledValue === true) : ?> disabled="disabled" <?php endif; ?>>
+        </div>
     </div>
     <button id="btn-cancel-dataset" type="button" class="btn btn-default btn-sm" style="margin: 2px;"><?= $this->translate('Annuler') ?></button>
     <button id="btn-dataset" type="submit" class="btn btn-primary" style="margin: 2px;"><?= $this->translate('Enregistrer') ?></button>
     <span class="hidden" id="error_msg_same_val"><?= $this->translate("Vous essayez d'insérer des données liées déjà existantes") ?></span>
     <span class="hidden" id="alert_msg_remove"><?= $this->translate("Voulez-vous supprimer la donnée liée ?") ?></span>
+    </fieldset>
 </form>
+
+</div>
 <?php $this->jQuery()->addJavascriptFile('/js/linkeddatas/managelinkeddatas.js'); ?>

@@ -2003,6 +2003,7 @@ return [
     'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',
     'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Software',
+    'Créer une relation'=>'Create a relationship',
     'Jeux de données' => 'Datasets',
     'Voir' => 'View',
     'Ajouter un jeu de données' => 'Add dataset',

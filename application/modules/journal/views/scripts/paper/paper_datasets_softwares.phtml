@@ -13,121 +13,136 @@ $keepOnlySourceUsed = [];
         <h2 class="panel-title"><?= $this->translate('software_bloc_label') ?></h2>
     </div>
     <div class="panel-body in">
-        <?php foreach ($softwares as $nameRelationship => $softwareArrayByRelationship) : ?>
-            <?php if ($nameRelationship !== null) {
-                echo "<span class='label label-default' style='margin-bottom: 8px;'>" . $this->escape($this->translate($nameRelationship)) . "</span><br>";
-            } ?>
-            <?php foreach ($softwareArrayByRelationship as $source => $softwareArrayBySource) : ?>
-                <?php
-                $getSource = new Episciences_Paper_Dataset();
-                $getSource->setSourceId($source);
-                $getSource = $getSource->getSourceLabel($source);
-                ?>
-                <?php foreach ($softwareArrayBySource as $software) : /** @var Episciences_Paper_Dataset $software */ ?>
-                    <div style="margin-top: 8px;">
-                        <?php if (!(Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir')) : ?>
-                                <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
-                            <?php else: ?>
-                                <div style="margin-bottom: 4px;">
+        <?php $sourceHtmlIdSuffix = 1; ?>
+        <?php foreach ($softwares
+
+        as $nameRelationship => $softwareArrayByRelationship) : ?>
+
+        <?php if ($nameRelationship !== null) {
+            echo "<span class='label label-default' style='margin-bottom: 8px;'>" . $this->escape($this->translate($nameRelationship)) . "</span><br>";
+        } ?>
+        <?php foreach ($softwareArrayByRelationship
+
+        as $source => $softwareArrayBySource) : ?>
+        <?php
+        $getSource = new Episciences_Paper_Dataset();
+        $getSource->setSourceId($source);
+        $getSource = $getSource->getSourceLabel($source);
+
+        ?>
+        <?php foreach ($softwareArrayBySource
+
+        as $software) : /** @var Episciences_Paper_Dataset $software */ ?>
+        <div style="margin-top: 8px;">
+            <?php if (!Episciences_Paper_DatasetsManager::isTypeOfSwhid($software->getValue(), 'dir')) : ?>
+            <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
+                <?php else: ?>
+                <div style="margin-bottom: 4px;">
+                    <?php endif; ?>
+                    <?php $escapedSoftwareValue = $this->escape($software->getValue());
+
+                    if (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner()): ?>
+                        <button id="remove-ld-<?= $sourceHtmlIdSuffix ?>"
+                                data-ld="<?= $this->escape($software->getId()) ?>"
+                                class="btn btn-default btn-xs"
+                                type="button"><i class="fa-solid fa-trash-can"></i>
+                        </button>
+                        <?php $sourceHtmlIdSuffix ++; ?>
+                        <a id="edit-ld" href="#manage-linked-data" data-ld="<?= $this->escape($software->getId()) ?>"
+                           data-type="<?= $this->escape($software->getCode()) ?>"
+                           data-relationship="<?= $this->escape($software->getRelationship()) ?>"
+                           data-ldval="<?= $escapedSoftwareValue ?>"
+                           class="btn btn-default btn-xs"> <i class="fa-solid fa-pen-to-square"></i> </a>
+                    <?php endif; ?>
+                    <?php if (Episciences_Paper_DatasetsManager::isTypeOfSwhid($software->getValue(), 'dir')
+                        || Episciences_Paper_DatasetsManager::isTypeOfSwhid($software->getValue(), 'rev')
+                        || Episciences_Paper_DatasetsManager::isTypeOfSwhid($software->getValue(), 'snp')) : ?>
+                        <a href="https://archive.softwareheritage.org/<?= $escapedSoftwareValue ?>"
+                           style="margin-top: 8px;" rel="noopener" target="_blank"> <img
+                                    src="https://archive.softwareheritage.org/badge/<?= $escapedSoftwareValue ?>"
+                                    alt="Archived | <?= $escapedSoftwareValue ?>"/> </a>
+                        <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) : ?>
+                            <sup><?= $listSources[$getSource] ?></sup>
                         <?php endif; ?>
-                        <?php if (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner()): ?>
-                            <button id="remove-ld" data-ld="<?= $software->getId() ?>" class="btn btn-default btn-xs"
-                                    type="button"><i class="fa-solid fa-trash-can"></i></button>
-                            <a id="edit-ld" href="#manage-linked-data" data-ld="<?= $software->getId() ?>"
-                               data-type="<?= $software->getCode()?>"
-                               data-relationship="<?= $software->getRelationship() ?>"
-                               data-ldval="<?= $software->getValue() ?>"
-                               class="btn btn-default btn-xs">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
+                    <?php else: ?>
+                        <?php if (Zend_Uri::check($software->getValue())): ?>
+                            <a href="<?= $this->escape($software->getLink()) ?>"><?= $escapedSoftwareValue ?></a>
                         <?php endif; ?>
-                        <?php if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir') : ?>
-                            <a href="https://archive.softwareheritage.org/<?= $software->getValue() ?>"
-                               style="margin-top: 8px;" rel="noopener" target="_blank">
-                                <img src="https://archive.softwareheritage.org/badge/<?= $software->getValue() ?>"
-                                     alt="Archived | <?= $software->getValue() ?>"/>
-                            </a>
-                            <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) : ?>
-                                <sup><?= $listSources[$getSource] ?></sup>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <?php if (Zend_Uri::check($software->getValue())): ?>
-                                <a href="<?= $software->getLink() ?>"><?= $software->getValue() ?></a>
-                            <?php endif;?>
-                        <?php endif; ?>
-                        <?php if ($software->getMetatext() !== null && Episciences_Tools::isHal($software->getValue())
-                            && (string)$source === Episciences_Repositories::EPI_USER_ID): ?>
-                            <div style="display: inline;">
-                                <?php
-                                $metadataHal = json_decode($software->getMetatext(),true);
-                                if(isset($metadataHal['swhidId'])){
-                                    echo Episciences_SoftwareHeritageTools::replaceByBadgeHalCitation(
-                                            $metadataHal["swhidId"],$metadataHal['citationFull']);
-                                } elseif(isset($metadataHal['citationFull'])) {
-                                    echo $metadataHal['citationFull'] ;
-                                }
-                                ?>
-                            </div>
-                        <?php endif; ?>
-                        <div style="margin-bottom: 4px"></div>
-                        <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
-                            && ($software->getName() === 'doi'
-                                || Episciences_Tools::isDoiWithUrl($software->getValue()) || $software->getName() === 'arXiv')
-                            && $software->getMetatext() !== null) {
-                            try {
-                                //pimp author names
-                                $authorFunction = static function ($authorItem, $renderedText) {
-                                    if (isset($authorItem->ORCID)) {
-                                        return $renderedText . " " . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID) . ' data-toggle="tooltip" data-placement="bottom" data-original-title="' . str_replace("http://orcid.org/", "", $authorItem->ORCID) . '" target="_blank"><img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
-                                    }
-                                    return $renderedText;
-                                };
-                                $linkDOI = static function ($citationItem, $renderedText) {
-                                    if (isset($citationItem->DOI)) {
-                                        return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'; //trick to undisplay prefix put in render
-                                    }
-                                    return $renderedText;
-                                };
-                                $additionalMarkup = [
-                                    "author" => $authorFunction,
-                                    "DOI" => $linkDOI,
-                                    "csl-entry" => static function ($cslItem, $renderedText) {
-                                        return str_replace(array("https://doi.org/", "http://doi.org/"), array('', 'https://doi.org/'), $renderedText); //trick to undisplay prefix put in render
-                                    }
-                                ];
-                                $addingBraceToJson = "[" . $software->getMetatext() . "]";
-                                $style = StyleSheet::loadStyleSheet("apa");
-                                $citeProc = new CiteProc($style, "en-US", $additionalMarkup);
-                                echo $citeProc->render(json_decode($addingBraceToJson), "bibliography");
-                            } catch (CiteProcException $e) {
-                                continue;
-                            }
-                        } ?>
-                        <?php if ($software->getName() === 'software'): ?>
+                    <?php endif; ?>
+                    <?php if ($software->getMetatext() !== null && Episciences_Tools::isHal($software->getValue())
+                        && (string)$source === Episciences_Repositories::EPI_USER_ID): ?>
+                        <div style="display: inline;">
                             <?php
-                            if (Episciences_Paper_DatasetsManager::CheckSwhidType($software->getValue()) === 'dir') {
-                                $urlSwd = "https://archive.softwareheritage.org/browse/embed/" . $software->getValue(); ?>
-                                <iframe title="Software Heritage" style="width: 100%; height: 500px; border: 1px solid rgba(0, 0, 0, 0.125);"
-                                        src=<?= $urlSwd ?>></iframe>
-                            <?php } ?>
-                        <?php endif; ?>
-                        <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && !array_key_exists($getSource, $keepOnlySourceUsed)) {
-                            $keepOnlySourceUsed[$listSources[$getSource]] = array_search($listSources[$getSource], $listSources);
-                        } ?>
+                            $metadataHal = json_decode($software->getMetatext(), true);
+                            if (isset($metadataHal['swhidId'])) {
+                                echo Episciences_SoftwareHeritageTools::replaceByBadgeHalCitation(
+                                    $metadataHal["swhidId"], $metadataHal['citationFull']);
+                            } elseif (isset($metadataHal['citationFull'])) {
+                                echo $metadataHal['citationFull'];
+                            }
+                            ?>
                         </div>
-                    </div>
+                    <?php endif; ?>
+                    <div style="margin-bottom: 4px"></div>
+                    <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
+                        && ($software->getName() === 'doi'
+                            || Episciences_Tools::isDoiWithUrl($software->getValue()) || $software->getName() === 'arXiv')
+                        && $software->getMetatext() !== null) {
+                        try {
+                            //pimp author names
+                            $authorFunction = static function ($authorItem, $renderedText) {
+                                if (isset($authorItem->ORCID)) {
+                                    return $renderedText . " " . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID) . ' data-toggle="tooltip" data-placement="bottom" data-original-title="' . str_replace("http://orcid.org/", "", $authorItem->ORCID) . '" target="_blank"><img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
+                                }
+                                return $renderedText;
+                            };
+                            $linkDOI = static function ($citationItem, $renderedText) {
+                                if (isset($citationItem->DOI)) {
+                                    return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'; //trick to undisplay prefix put in render
+                                }
+                                return $renderedText;
+                            };
+                            $additionalMarkup = [
+                                "author" => $authorFunction,
+                                "DOI" => $linkDOI,
+                                "csl-entry" => static function ($cslItem, $renderedText) {
+                                    return str_replace(array("https://doi.org/", "http://doi.org/"), array('', 'https://doi.org/'), $renderedText); //trick to undisplay prefix put in render
+                                }
+                            ];
+                            $addingBraceToJson = "[" . $software->getMetatext() . "]";
+                            $style = StyleSheet::loadStyleSheet("apa");
+                            $citeProc = new CiteProc($style, "en-US", $additionalMarkup);
+                            echo $citeProc->render(json_decode($addingBraceToJson), "bibliography");
+                        } catch (CiteProcException $e) {
+                            continue;
+                        }
+                    } ?>
+                    <?php if ($software->getName() === 'software'): ?>
+                        <?php
+                        if (Episciences_Paper_DatasetsManager::isTypeOfSwhid($software->getValue(), 'dir')) {
+                            $urlSwd = "https://archive.softwareheritage.org/browse/embed/" . $software->getValue(); ?>
+                            <iframe title="Software Heritage"
+                                    style="width: 100%; height: 500px; border: 1px solid rgba(0, 0, 0, 0.125);"
+                                    src=<?= $urlSwd ?>></iframe>
+                        <?php } ?>
+                    <?php endif; ?>
+                    <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID && !array_key_exists($getSource, $keepOnlySourceUsed)) {
+                        $keepOnlySourceUsed[$listSources[$getSource]] = array_search($listSources[$getSource], $listSources);
+                    } ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            <?php endforeach; ?>
+            <?php endforeach; ?>
+            <ul class="list-unstyled">
+                <?php foreach ($keepOnlySourceUsed as $id => $label): ?>
+                    <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
                 <?php endforeach; ?>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-        <ul class="list-unstyled">
-            <?php foreach ($keepOnlySourceUsed as $id => $label): ?>
-                <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
-            <?php endforeach; ?>
-        </ul>
-        <?php if (Episciences_Auth::isAllowedToManageOrcidAuthor($paper->isOwner())): ?>
-            <a class="btn btn-default btn-sm" href="#manage-linked-data" id="anchor-software-add"><span
-                        class="fa-regular fa-hard-drive"
-                        style="margin-right: 5px"></span><?= $this->translate("Ajouter un logiciel") ?></a>
-        <?php endif; ?>
+            </ul>
+            <?php if (Episciences_Auth::isAllowedToManageOrcidAuthor($paper->isOwner())): ?>
+                <a class="btn btn-default btn-sm" href="#manage-linked-data" id="anchor-software-add"><span
+                            class="fa-regular fa-hard-drive"
+                            style="margin-right: 5px"></span><?= $this->translate("Ajouter un logiciel") ?></a>
+            <?php endif; ?>
+        </div>
     </div>
-</div>
