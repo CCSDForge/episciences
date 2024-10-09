@@ -181,12 +181,13 @@ try {
                                         </div>
 
                                         <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE) : ?>
+
+                                            <?php if(isset($invitation['reviewer']['rating'])):?>
                                             <div>
                                                 <?php echo $this->translate("Progression : "); ?>
                                                 <span>
                                                     <?php if ($invitation['reviewer']['rating']['status'] === Episciences_Reviewer_Reviewing::STATUS_COMPLETE) : ?>
-                                                    <a class="go_to_rating" data-uid="<?php echo $invitation['UID'] ?>"
-                                                       href="#ratings">
+                                                    <a class="go_to_rating" data-uid="<?php echo $invitation['UID'] ?>" href="#ratings">
                                                     <?php endif; ?>
                                                     <?php $statusLabel = $this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($invitation['reviewer']['rating']['status']));
                                                     echo ucfirst($statusLabel); ?>
@@ -197,6 +198,8 @@ try {
                                                     } ?>
                                                 </span>
                                             </div>
+
+                                            <?php endif; ?>
                                         <?php endif; ?>
 
                                         <?php if (!array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $invitation)) : ?>
