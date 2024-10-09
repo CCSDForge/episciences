@@ -4,6 +4,7 @@ return [
 
     // Traductions Javascript
     // Invitation deadline  (review settings)
+    'Sélectionner | Désélectionner tout' => 'Select | Deselect all',
     'day' => "day(s)",
     'week' => 'week(s)',
     'month' => 'month(s)',
