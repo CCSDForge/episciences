@@ -1,12 +1,23 @@
+<?php $label = $this->translate('Sélectionner | Désélectionner tout') ?>
 <div id="askeditors-element" class="form-group row">
+    <div class="col-sm-12">
+        <div class="col-sm-offset-7 col-sm-5">
+            <label>
+                <input type="checkbox" name="selectAll" id="selectAll" />
+            </label> <b><span id="label"><?= $label ?></span></b>
+        </div>
+
+    </div>
+
     <label class="col-md-3 control-label">To</label>
+
     <div class="col-md-9" style="max-height: 80px; overflow: auto">
         <?php foreach ($this->element->getDecorator('ViewScript')->getOption('editors') as $editor) : ?>
             <div>
                 <label>
-                    <input name="editor_<?php echo $editor->getUid() ?>" type="checkbox"
+                    <input  class="editor-cb" name="editor_<?php echo $editor->getUid() ?>" type="checkbox"
                         <?php if (!$this->paper->getEditor($editor->getUid())) { // Si n'est pas editeur de cet article
-                            echo 'checked="checked"';
+                            echo '';
                         } ?>
                     />
                     <?php echo $editor->getFullname(); ?>
@@ -22,3 +33,31 @@
         <?php echo $element; ?>
     </div>
 <?php endforeach; ?>
+<script>
+    let $selectAll = $('#selectAll');
+    let $editorCb = $('.editor-cb');
+
+    $selectAll.on('click', function () {
+        let checkedStatus = this.checked;
+        $editorCb.each(function () {
+            $(this).prop('checked', checkedStatus);
+        });
+    });
+
+    $editorCb.on('click', function () {
+
+        $editorCb.each(function () {
+
+            if (!$(this).is(":checked")) {
+                $selectAll.prop('checked', false);
+                return false;
+            } else {
+                $selectAll.prop('checked', true);
+
+            }
+
+        })
+
+    });
+
+</script>
