@@ -16,11 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
-### Changed
-- Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
-- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
-- Unlabeled volume when updating metadata from an Episciences journal to HAL.
-- [#555](https://github.com/CCSDForge/episciences/issues/555): CI translation
+
+### Fixed
+- Linked Datasets
+  - fixed display of swhids for snapshots + revisions
+  - fixed delete button not working with multiple links in same category
+  - fixed no confirmation message in confirmation modal
+  - fixed duplicate html id elements
+  - fixed style of forms, use bootstrap
+  - used vanilla JS and fetch API instead of Jquery and xmlhttprequest to delete links
+  - added missing translations
+- Authors affiliation management: use bootstrap style for select
 
 ### Added
 - [#513](https://github.com/CCSDForge/episciences/issues/513): Periodic Reminder E-Mails to Editors | editors in chief for 'Reviewed' and 'Submitted' articles 
@@ -42,21 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New field in volume form (volume number)
 - [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
 - Add in export the publisher name and location when possible
-### Changed
-- bump tinymce to latest version (7.2.0)
-- crossref export:
-    - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
-    - ROR added to the schema (did not work on the previous version)
-- classification of keywords by language
-- [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
-- [#531](https://github.com/CCSDForge/episciences/issues/531) enhances volumes form translations
-### Changed
-- Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
-- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
-- Unlabeled volume when updating metadata from an Episciences journal to HAL. 
-## Unreleased
-### Added
-- export to Json: include article's citations.
+- Export to Json: include article's citations.
 - Profile photo storage management via uuid.
 - Script to generate user's uuids.
 - Include UUIDs when saving accounts
@@ -75,14 +67,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
 
 ### Changed
+- Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
+- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
+- Unlabeled volume when updating metadata from an Episciences journal to HAL.
+- [#555](https://github.com/CCSDForge/episciences/issues/555): CI translation
+- bump tinymce to latest version (7.2.0)
+- crossref export:
+    - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
+    - ROR added to the schema (did not work on the previous version)
+- classification of keywords by language
+- [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
+- [#531](https://github.com/CCSDForge/episciences/issues/531) enhances volumes form translations
+- Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
+- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
+- Unlabeled volume when updating metadata from an Episciences journal to HAL. 
 - bump tinymce to latest version (7.2.0)
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
   - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
 - [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
-## Unreleased [main
-### Changed
 - #564 Fixed and changed French label in journal settings
 
 
