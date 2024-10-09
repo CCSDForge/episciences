@@ -1,8 +1,8 @@
 <?php
 
+use Seboettg\CiteProc\CiteProc;
 use Seboettg\CiteProc\Exception\CiteProcException;
 use Seboettg\CiteProc\StyleSheet;
-use Seboettg\CiteProc\CiteProc;
 
 $publications = $this->publications;
 $paper = $this->paper;
@@ -15,6 +15,7 @@ $keepOnlySourceUsed = [];
         <h2 class="panel-title"><?= $this->translate('Publications') ?></h2>
     </div>
     <div class="panel-body in">
+        <?php $sourceHtmlIdSuffix = 1; ?>
         <?php foreach ($publications as $nameRelationship => $publicationArrayByRelationship) : ?>
             <?php if ($nameRelationship !== null) {
                 echo "<span class='label label-default'>" . $this->escape($this->translate($nameRelationship)) . "</span>";
@@ -31,24 +32,23 @@ $keepOnlySourceUsed = [];
                     <div style="margin-top: 8px;">
                         <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
                             <?php if (Episciences_Auth::isAllowedToManagePaper()
-                                    || $paper->isOwner()): ?>
-                                <button id="remove-ld" data-ld="<?= $publication->getId() ?>"
+                                || $paper->isOwner()): ?>
+                                <button id="remove-ld-<?= $sourceHtmlIdSuffix ?>" data-ld="<?= $publication->getId() ?>"
                                         class="btn btn-default btn-xs" type="button">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
+                                <?php $sourceHtmlIdSuffix++; ?>
                                 <a id="edit-ld" href="#manage-linked-data" data-ld="<?= $publication->getId() ?>"
-                                   data-type="<?= $publication->getCode()?>"
+                                   data-type="<?= $publication->getCode() ?>"
                                    data-relationship="<?= $publication->getRelationship() ?>"
                                    data-ldval="<?= $publication->getValue() ?>"
-                                   class="btn btn-default btn-xs">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
+                                   class="btn btn-default btn-xs"> <i class="fa-solid fa-pen-to-square"></i> </a>
                             <?php endif; ?>
                             <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) {
                                 $sourceToSup = $listSources[$getSource];
                             } ?>
                             <?php if (($publication->getName() === 'arXiv' && $publication->getMetatext() === null) ||
-                            (!Episciences_Tools::isDoiWithUrl($publication->getLink()) && $publication->getName() !== 'arXiv')
+                                (!Episciences_Tools::isDoiWithUrl($publication->getLink()) && $publication->getName() !== 'arXiv')
                                 || (Episciences_Tools::isDoiWithUrl($publication->getLink())
                                     && (string)$publication->getSourceId()
                                     !== Episciences_Repositories::EPI_USER_ID)): ?>
@@ -60,7 +60,7 @@ $keepOnlySourceUsed = [];
                             <?php if ($publication->getMetatext() !== null && Episciences_Tools::isHal($publication->getValue())): ?>
                                 <div style="display: inline;">
                                     <?php
-                                    $metadataHal = json_decode($publication->getMetatext(),true);
+                                    $metadataHal = json_decode($publication->getMetatext(), true);
                                     echo $metadataHal['citationFull'];
                                     ?>
                                 </div>
@@ -79,7 +79,7 @@ $keepOnlySourceUsed = [];
                                     };
                                     $linkDOI = static function ($citationItem, $renderedText) use ($sourceToSup) {
                                         if (isset($citationItem->DOI)) {
-                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'. ' <sup>'. $sourceToSup . '</sup>'; //trick to undisplay prefix put in render
+                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>' . ' <sup>' . $sourceToSup . '</sup>'; //trick to undisplay prefix put in render
                                         }
                                         return $renderedText;
                                     };
