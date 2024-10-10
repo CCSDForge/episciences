@@ -23,8 +23,6 @@ return [
     'coauthor' => 'Coauteur',
     'webmaster' => 'Webmaster',
     'secretary' => 'Secrétaire de rédaction',
-    'reviewer' => 'Relecteur',
-    'editor' => 'Rédacteur',
     'administrator' => 'Administrateur',
     'chief_editor' => 'Rédacteur en chef',
     'guest_editor' => 'Rédacteur invité',
