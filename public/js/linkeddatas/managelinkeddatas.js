@@ -49,19 +49,19 @@ $(function () {
       typeLd = "dataset";
     }
     if (typeLd === "publication") {
-      labelValue.textContent = translate('Publication');
+      labelValue.textContent = translate("Publication");
       inputLd.setAttribute(
         "placeholder",
         exTranslated + "https://doi.org/10.48550/arXiv.2103.16574",
       );
     } else if (typeLd === "software") {
-      labelValue.textContent = translate('Logiciel');
+      labelValue.textContent = translate("Logiciel");
       inputLd.setAttribute(
         "placeholder",
         exTranslated + "swh:1:dir:ebaa23a36a1a72a2362f34d14f44997e8392671b",
       );
     } else if (typeLd === "dataset") {
-      labelValue.textContent = translate('Jeu de données');
+      labelValue.textContent = translate("Jeu de données");
       inputLd.setAttribute(
         "placeholder",
         exTranslated + "https://doi.org/10.57745/MQDGI6",
@@ -69,36 +69,27 @@ $(function () {
     }
   }
 
-  document
-    .getElementById("add-linkdata")
-    .addEventListener("click", function () {
-      removeFormLd();
-      callAddForm("dataset");
-    });
+  $("button#add-linkdata").on("click", function () {
+    removeFormLd();
+    callAddForm("dataset");
+    changePlaceholder("dataset");
+  });
 
-  document
-    .getElementById("anchor-dataset-add")
-    .addEventListener("click", function () {
-      removeFormLd();
-      callAddForm("dataset");
-      changePlaceholder("dataset");
-    });
-
-  document
-    .getElementById("anchor-software-add")
-    .addEventListener("click", function () {
-      removeFormLd();
-      callAddForm("software");
-      changePlaceholder("software");
-    });
-
-  document
-    .getElementById("anchor-publication-add")
-    .addEventListener("click", function () {
-      removeFormLd();
-      callAddForm("publication");
-      changePlaceholder("publication");
-    });
+  $("#anchor-dataset-add").on("click", function () {
+    removeFormLd();
+    callAddForm("dataset");
+    changePlaceholder("dataset");
+  });
+  $("#anchor-software-add").on("click", function () {
+    removeFormLd();
+    callAddForm("software");
+    changePlaceholder("software");
+  });
+  $("#anchor-publication-add").on("click", function () {
+    removeFormLd();
+    callAddForm("publication");
+    changePlaceholder("publication");
+  });
 
   function ajaxModifyLd() {
     $('form[id="modifyLd"]').submit(function (e) {
@@ -267,7 +258,7 @@ document.addEventListener("click", function (e) {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          credentials: "same-origin",
+          "credentials": "same-origin",
           "X-Requested-With": "XMLHttpRequest",
         },
         body: new URLSearchParams({

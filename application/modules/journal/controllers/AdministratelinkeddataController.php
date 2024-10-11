@@ -11,7 +11,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
-            exit();
+            return;
         }
         $inputTypeLd = $this->getRequest()->getPost('typeld');
         $valueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
@@ -22,7 +22,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         if ($typeLd === false) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Format de donnée non reconnu');
-            exit();
+            return;
         }
         $idMetaDataLastId = null;
         $arraySoftware = [];
@@ -61,7 +61,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                 if ($citationDocType !== "SOFTWARE"){
                     echo json_encode([false], JSON_THROW_ON_ERROR);
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("L'identifiant HAL n'est pas de type logiciel");
-                    exit();
+                    return;
                 }
                 $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
                 if (!empty($citationFull->response->docs[0]->swhidId_s)){
@@ -101,7 +101,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             ($typeLd === 'doi' && !empty(Episciences_Tools::checkIsDoiFromArxiv($valueLd)) && $inputTypeLd === 'software')) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("L'archive ArXiv ne contient pas de logiciel");
-            exit();
+           return;
         }
 
 
@@ -128,8 +128,6 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $typeLd = 'software';
         }
 
-
-
         if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $valueLd, $inputTypeLd, $idMetaDataLastId, ['relationship' => $relationship]) > 0) {
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_ADDED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'relationship' => $relationship,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
             echo json_encode([true], JSON_THROW_ON_ERROR);
@@ -137,8 +135,6 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         } else {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_WARNING)->addMessage('Donnée liée déjà existante, veuillez changer ses informations via le formulaire');
         }
-
-        exit();
     }
     public function removeldAction(){
         $this->_helper->layout()->disableLayout();
@@ -149,7 +145,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
-            exit();
+            return;
         }
 
         $docId = $request->getPost('docId');
@@ -171,8 +167,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         } else {
             echo json_encode([false], JSON_THROW_ON_ERROR);
         }
-        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
-        exit();
+    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
     }
 
     public function ajaxgetldformAction()
