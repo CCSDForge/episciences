@@ -13,11 +13,7 @@ $(function () {
       },
     }).success(function (response) {
       $("#container-manager-linkeddatas").append(response);
-      $("#container-datasets").prepend(
-        createSelectTypeLd(),
-        createSelectRelationship(),
-      );
-      $("#select-ld-type").val(typeld);
+        $("#select-ld-type").val(typeld);
       changePlaceholder(typeld);
       $("#select-ld-type").on("change", function () {
         let type = this.value;
@@ -195,102 +191,6 @@ $(function () {
     }
   }
 
-  function createSelectRelationship() {
-    return (
-      '<div class="form-group">' +
-      '<label class="col-sm-2 control-label" for="select-relationship">' +
-      translate("Type de relation") +
-      "</label>" +
-      '<div class="col-sm-10">' +
-      '<select class="form-control" name="select-relationship" id="select-relationship"  style="width: auto">\n' +
-      '  <option value=""></option>\n' +
-      '  <optgroup label="Basis">\n' +
-      '  <option value="isBasedOn">isBasedOn</option>\n' +
-      '  <option value="isBasisFor">isBasisFor</option>\n' +
-      '  <option value="basedOnData">basedOnData</option>\n' +
-      '  <option value="isDataBasisFor">isDataBasisFor</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Comment">\n' +
-      '  <option value="isCommentOn">isCommentOn</option>\n' +
-      '  <option value="hasComment">hasComment</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Continuation">\n' +
-      '  <option value="isContinuedBy">isContinuedBy</option>\n' +
-      '  <option value="continues">continues</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Derivation">\n' +
-      '  <option value="isDerivedFrom">isDerivedFrom</option>\n' +
-      '  <option value="hasDerivation">hasDerivation</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Documentation">\n' +
-      '  <option value="isDocumentedBy">isDocumentedBy</option>\n' +
-      '  <option value="documents">documents</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Funding">\n' +
-      //'  <option value="finances">finances</option>\n' +
-      '  <option value="isFinancedBy">isFinancedBy</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Part">\n' +
-      '  <option value="isPartOf">isPartOf</option>\n' +
-      '  <option value="hasPart">hasPart</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Peer review">\n' +
-      '  <option value="isReviewOf">isReviewOf</option>\n' +
-      '  <option value="hasReview">hasReview</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="References">\n' +
-      '  <option value="references">references</option>\n' +
-      '  <option value="isReferencedBy">isReferencedBy</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Related material">\n' +
-      '  <option value="hasRelatedMaterial">hasRelatedMaterial</option>\n' +
-      '  <option value="isRelatedMaterial">isRelatedMaterial</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Reply">\n' +
-      '  <option value="isReplyTo">isReplyTo</option>\n' +
-      '  <option value="hasReply">hasReply</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Requirement">\n' +
-      '  <option value="requires">requires</option>\n' +
-      '  <option value="isRequiredBy">isRequiredBy</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Software compilation">\n' +
-      '  <option value="isCompiledBy">isCompiledBy</option>\n' +
-      '  <option value="compiles">compiles</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Supplement">\n' +
-      '  <option value="isSupplementTo">isSupplementTo</option>\n' +
-      '  <option value="isSupplementedBy">isSupplementedBy</option>\n' +
-      "  </optgroup>\n" +
-      "</select>\n" +
-      "</div>" +
-      "</div>"
-    );
-  }
-
-  function createSelectTypeLd() {
-    return (
-        '<div class="form-group">'+
-        '<label class="col-sm-2 control-label" for="select-ld-type">' +
-        translate("Type de document") +
-        "</label>" +
-        '<div class="col-sm-10">' +
-      '<select class="form-control" name="select-ld-type" id="select-ld-type" style="width: auto">\n' +
-      '  <option value="publication">' +
-      translate("Publication") +
-      "</option>\n" +
-      '  <option value="dataset">' +
-      translate("Jeu de données") +
-      "</option>\n" +
-      '  <option value="software">' +
-      translate("Logiciel") +
-      "</option>\n" +
-      "</select>\n" +
-        "</div>"
-
-    );
-  }
-
   $("a#edit-ld").on("click", function () {
     const option = {};
     option.relationship = $(this).data("relationship");
@@ -330,7 +230,7 @@ document.addEventListener("click", function (e) {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          credentials: "same-origin",
+          "credentials": "same-origin",
           "X-Requested-With": "XMLHttpRequest",
         },
         body: new URLSearchParams({
