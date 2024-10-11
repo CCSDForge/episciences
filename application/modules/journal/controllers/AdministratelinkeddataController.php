@@ -10,7 +10,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
 
         if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Modification non autorisé');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             exit();
         }
         $inputTypeLd = $this->getRequest()->getPost('typeld');
@@ -148,7 +148,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $request = $this->getRequest();
         if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Modification non autorisé');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             exit();
         }
 
@@ -198,7 +198,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                     $idLd = $ldOptions['idLd'];
                 }
             }
-
+            $this->view->supportedRelationShips = Episciences_Paper_Dataset::getSupportedRelationShips();
             $this->view->disabledValue = $disabledValue;
             $this->view->valueLd = $valueLd;
             $this->view->formId = $idForm;
@@ -207,7 +207,6 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $this->view->placeholder = $request->getPost('placeholder');
             $this->renderScript('paper/paper_manage_datasets.phtml');
         }
-        return;
     }
 
     public function setnewinfoldAction() {

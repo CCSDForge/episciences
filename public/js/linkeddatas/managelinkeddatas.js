@@ -13,10 +13,6 @@ $(function () {
       },
     }).success(function (response) {
       $("#container-manager-linkeddatas").append(response);
-      $("#container-datasets").prepend(
-        createSelectTypeLd(),
-        createSelectRelationship(),
-      );
       $("#select-ld-type").val(typeld);
       changePlaceholder(typeld);
       $("#select-ld-type").on("change", function () {
@@ -44,42 +40,65 @@ $(function () {
     }
   }
 
-  function changePlaceholder(typeLd) {
+  function changePlaceholder(typeLd = "unnamed") {
+    const exTranslated = translate("Exemple : ");
+    const inputLd = document.getElementById("input-ld");
+    const labelValue = document.getElementById("input-ld-label");
+
+    if (typeLd === "unnamed") {
+      typeLd = "dataset";
+    }
     if (typeLd === "publication") {
-      $("#input-ld").attr("placeholder", "exemple: 10.46298/epi.7337");
-    } else if (typeLd === "software") {
-      $("#input-ld").attr(
+      labelValue.textContent = translate('Publication');
+      inputLd.setAttribute(
         "placeholder",
-        "exemple: swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505",
+        exTranslated + "https://doi.org/10.48550/arXiv.2103.16574",
       );
-    } else {
-      $("#input-ld").attr("placeholder", "exemple: hal-02832821v1");
+    } else if (typeLd === "software") {
+      labelValue.textContent = translate('Logiciel');
+      inputLd.setAttribute(
+        "placeholder",
+        exTranslated + "swh:1:dir:ebaa23a36a1a72a2362f34d14f44997e8392671b",
+      );
+    } else if (typeLd === "dataset") {
+      labelValue.textContent = translate('Jeu de données');
+      inputLd.setAttribute(
+        "placeholder",
+        exTranslated + "https://doi.org/10.57745/MQDGI6",
+      );
     }
   }
 
-  $("button#add-linkdata").on("click", function () {
-    removeFormLd();
-    callAddForm("dataset");
-  });
+  document
+    .getElementById("add-linkdata")
+    .addEventListener("click", function () {
+      removeFormLd();
+      callAddForm("dataset");
+    });
 
-  $("#anchor-dataset-add").on("click", function () {
-    removeFormLd();
-    callAddForm("dataset");
-    $("#input-ld").attr("placeholder", "exemple: hal-02832821v1");
-  });
-  $("#anchor-software-add").on("click", function () {
-    removeFormLd();
-    callAddForm("software");
-    $("#input-ld").attr(
-      "placeholder",
-      "exemple: swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505",
-    );
-  });
-  $("#anchor-publication-add").on("click", function () {
-    removeFormLd();
-    callAddForm("publication");
-    $("#input-ld").attr("placeholder", "exemple: 10.46298/epi.7337");
-  });
+  document
+    .getElementById("anchor-dataset-add")
+    .addEventListener("click", function () {
+      removeFormLd();
+      callAddForm("dataset");
+      changePlaceholder("dataset");
+    });
+
+  document
+    .getElementById("anchor-software-add")
+    .addEventListener("click", function () {
+      removeFormLd();
+      callAddForm("software");
+      changePlaceholder("software");
+    });
+
+  document
+    .getElementById("anchor-publication-add")
+    .addEventListener("click", function () {
+      removeFormLd();
+      callAddForm("publication");
+      changePlaceholder("publication");
+    });
 
   function ajaxModifyLd() {
     $('form[id="modifyLd"]').submit(function (e) {
@@ -92,9 +111,7 @@ $(function () {
       let paperId = $("#paper_id").val();
       if (newRelationship.length === 0) {
         $("#error-relationship").remove();
-        let text = translate(
-          "Veuillez selectionner une relation pour la donnée",
-        );
+        let text = translate("Veuillez sélectionner un type de relation");
         $("#container-datasets").after(
           "<i id='error-relationship' class='pull-right' style='color: red;'>" +
             text +
@@ -135,16 +152,32 @@ $(function () {
       let docId = $("#paper_docId").val();
       let paperId = $("#paper_id").val();
       let relationship = $("#select-relationship").find(":selected").val();
-      if (!valueLd || !relationship) {
-        $("#error-form-ld").remove();
-        let text = translate("Veuillez saisir tous les champs du formulaire");
+
+      let textError = "";
+      $("#error-form-ld").remove();
+      if (!typeLd) {
+        textError = translate("Le type de document est obligatoire");
+      }
+
+      if (!relationship) {
+        textError =
+          textError + "<br>" + translate("Le type de relation est obligatoire");
+      }
+
+      if (!valueLd) {
+        textError =
+          textError + "<br>" + translate("Le document à lier est obligatoire");
+      }
+
+      if (textError !== "") {
         $("#container-datasets").after(
           "<i id='error-form-ld' class='pull-right' style='color: red;'>" +
-            text +
+            textError +
             "</i>",
         );
         return;
       }
+
       if ($("a#link-ld").length > 0) {
         let flagDoubleValue = 0;
         $("a#link-ld").each(function () {
@@ -193,102 +226,6 @@ $(function () {
     if ($("#error-input-ld").length > 0) {
       $("#error-input-ld").remove();
     }
-  }
-
-  function createSelectRelationship() {
-    return (
-      '<div class="form-group">' +
-      '<label class="col-sm-2 control-label" for="select-relationship">' +
-      translate("Type de relation") +
-      "</label>" +
-      '<div class="col-sm-10">' +
-      '<select class="form-control" name="select-relationship" id="select-relationship"  style="width: auto">\n' +
-      '  <option value=""></option>\n' +
-      '  <optgroup label="Basis">\n' +
-      '  <option value="isBasedOn">isBasedOn</option>\n' +
-      '  <option value="isBasisFor">isBasisFor</option>\n' +
-      '  <option value="basedOnData">basedOnData</option>\n' +
-      '  <option value="isDataBasisFor">isDataBasisFor</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Comment">\n' +
-      '  <option value="isCommentOn">isCommentOn</option>\n' +
-      '  <option value="hasComment">hasComment</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Continuation">\n' +
-      '  <option value="isContinuedBy">isContinuedBy</option>\n' +
-      '  <option value="continues">continues</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Derivation">\n' +
-      '  <option value="isDerivedFrom">isDerivedFrom</option>\n' +
-      '  <option value="hasDerivation">hasDerivation</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Documentation">\n' +
-      '  <option value="isDocumentedBy">isDocumentedBy</option>\n' +
-      '  <option value="documents">documents</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Funding">\n' +
-      //'  <option value="finances">finances</option>\n' +
-      '  <option value="isFinancedBy">isFinancedBy</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Part">\n' +
-      '  <option value="isPartOf">isPartOf</option>\n' +
-      '  <option value="hasPart">hasPart</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Peer review">\n' +
-      '  <option value="isReviewOf">isReviewOf</option>\n' +
-      '  <option value="hasReview">hasReview</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="References">\n' +
-      '  <option value="references">references</option>\n' +
-      '  <option value="isReferencedBy">isReferencedBy</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Related material">\n' +
-      '  <option value="hasRelatedMaterial">hasRelatedMaterial</option>\n' +
-      '  <option value="isRelatedMaterial">isRelatedMaterial</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Reply">\n' +
-      '  <option value="isReplyTo">isReplyTo</option>\n' +
-      '  <option value="hasReply">hasReply</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Requirement">\n' +
-      '  <option value="requires">requires</option>\n' +
-      '  <option value="isRequiredBy">isRequiredBy</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Software compilation">\n' +
-      '  <option value="isCompiledBy">isCompiledBy</option>\n' +
-      '  <option value="compiles">compiles</option>\n' +
-      "  </optgroup>\n" +
-      '  <optgroup label="Supplement">\n' +
-      '  <option value="isSupplementTo">isSupplementTo</option>\n' +
-      '  <option value="isSupplementedBy">isSupplementedBy</option>\n' +
-      "  </optgroup>\n" +
-      "</select>\n" +
-      "</div>" +
-      "</div>"
-    );
-  }
-
-  function createSelectTypeLd() {
-    return (
-        '<div class="form-group">'+
-        '<label class="col-sm-2 control-label" for="select-ld-type">' +
-        translate("Type de document") +
-        "</label>" +
-        '<div class="col-sm-10">' +
-      '<select class="form-control" name="select-ld-type" id="select-ld-type" style="width: auto">\n' +
-      '  <option value="publication">' +
-      translate("Publication") +
-      "</option>\n" +
-      '  <option value="dataset">' +
-      translate("Jeu de données") +
-      "</option>\n" +
-      '  <option value="software">' +
-      translate("Logiciel") +
-      "</option>\n" +
-      "</select>\n" +
-        "</div>"
-
-    );
   }
 
   $("a#edit-ld").on("click", function () {
