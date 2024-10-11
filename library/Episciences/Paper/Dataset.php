@@ -36,6 +36,65 @@ class Episciences_Paper_Dataset
         self::DOI_CODE => self::DOI_CODE,
         self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'SWHID'
     ];
+    protected static array $supportedRelationShips = [
+        "Basis" => [
+            "isBasedOn",
+            "isBasisFor",
+            "basedOnData",
+            "isDataBasisFor"
+        ],
+        "Comment" => [
+            "isCommentOn",
+            "hasComment"
+        ],
+        "Continuation" => [
+            "isContinuedBy",
+            "continues"
+        ],
+        "Derivation" => [
+            "isDerivedFrom",
+            "hasDerivation"
+        ],
+        "Documentation" => [
+            "isDocumentedBy",
+            "documents"
+        ],
+        "Funding" => [
+            "isFinancedBy"
+        ],
+        "Part" => [
+            "isPartOf",
+            "hasPart"
+        ],
+        "Peer review" => [
+            "isReviewOf",
+            "hasReview"
+        ],
+        "References" => [
+            "references",
+            "isReferencedBy"
+        ],
+        "Related material" => [
+            "hasRelatedMaterial",
+            "isRelatedMaterial"
+        ],
+        "Reply" => [
+            "isReplyTo",
+            "hasReply"
+        ],
+        "Requirement" => [
+            "requires",
+            "isRequiredBy"
+        ],
+        "Software compilation" => [
+            "isCompiledBy",
+            "compiles"
+        ],
+        "Supplement" => [
+            "isSupplementTo",
+            "isSupplementedBy"
+        ]
+    ];
     /**
      * @var int
      */
@@ -96,6 +155,14 @@ class Episciences_Paper_Dataset
                 $this->$method($value);
             }
         }
+    }
+
+    /**
+     * @return array
+     */
+    public static function getSupportedRelationShips(): array
+    {
+        return self::$supportedRelationShips;
     }
 
     public function getMetatextCitation($format = 'rawText'): string

@@ -19,6 +19,10 @@ return [
     'Logiciel' => 'Software',
     'Type de document' => 'Document type',
     'Type de relation' => 'Relation type',
+    'Le type de document est obligatoire'=>'The type of document is required',
+    'Le type de relation est obligatoire'=>'The type of relation is required',
+    'Le document à lier est obligatoire'=>'The document is required',
+
     'Document' => 'Document',
     "Partager" => "Share",
     "Filtrer" => "Filter",
@@ -215,11 +219,10 @@ return [
 
     //linked data
 
-    "Veuillez selectionner une relation pour la donnée" => "Please choose a relationship for the data",
-    "Veuillez saisir tous les champs du formulaire" => "Please fill in all the fields on the form",
-
+    "Veuillez sélectionner un type de relation" => "Please choose a relationship for the data",
+    "Veuillez saisir tous les champs du formulaire" => "Please fill in all the fields on the form, all fields are required",
+    "Exemple : "=>"Example: ",
     // Roles
-
     'guest' => 'Guest',
     'member' => 'Member',
     'editorial_board' => 'Editorial board',

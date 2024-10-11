@@ -17,6 +17,8 @@ class Episciences_Paper_DatasetsManager
 
     public const URL_PMC = 'https://www.ncbi.nlm.nih.gov/pmc/articles/';
 
+    public const VALID_TYPES_OF_SWHID = ['dir','rev','snp'];
+
     /**
      * @param int $docId
      * @return array [Episciences_Paper_Dataset]
@@ -361,6 +363,14 @@ class Episciences_Paper_DatasetsManager
             return true;
         }
         return false;
+    }
+
+    public static function hasValidSwhidType(string $swhid): bool
+    {
+        if (!in_array(self::checkSwhidType($swhid), self::VALID_TYPES_OF_SWHID)) {
+            return false;
+        }
+        return true;
     }
 
     /**

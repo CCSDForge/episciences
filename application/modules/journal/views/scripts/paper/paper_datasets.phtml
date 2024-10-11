@@ -8,7 +8,7 @@ $currentSmall = "";
 
 <?php if (!empty($metadata)) : ?>
     <?php if (array_key_exists('software',$metadata)) {
-        echo $this->partial('paper/paper_datasets_softwares.phtml', ['softwares' => $metadata['software'],'paper' => $paper, 'listSources' =>$metadata['listSources']]);
+        echo $this->partial('paper/paper_datasets_software.phtml', ['softwareCollection' => $metadata['software'],'paper' => $paper, 'listSources' =>$metadata['listSources']]);
     } ?>
     <?php if (array_key_exists('publication',$metadata)) {
         echo $this->partial('paper/paper_datasets_publications.phtml', ['publications' => $metadata['publication'],'paper' => $paper, 'listSources' => $metadata['listSources']]);
@@ -17,7 +17,7 @@ $currentSmall = "";
         echo $this->partial('paper/paper_datasets_datas.phtml', ['datasets' => $metadata['dataset'], 'paper' => $paper, 'listSources' => $metadata['listSources'] ]);
     } ?>
 <?php endif; ?>
-<?php if (Episciences_Auth::isAllowedToManageOrcidAuthor($paper->isOwner())): ?>
+<?php if (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner()): ?>
     <div class="panel panel-default collapsable" id="manage-linked-data">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Liens publications - données - logiciels') ?></h2>
@@ -25,8 +25,8 @@ $currentSmall = "";
         <input class="hidden" id="paper_docId" value="<?= $paper->getDocid() ?>">
         <input class="hidden" id="paper_id" value="<?= $paper->getPaperid() ?>">
         <div id="container-manager-linkeddatas" class="panel-body in">
-            <button id="add-linkdata" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-database" style="margin-right: 5px"></span>
-                <?= $this->translate('Ajouter un jeu de données ou lien de publication') ?>
+            <button id="add-linkdata" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-link" style="margin-right: 5px"></span>
+                <?= $this->translate('Ajouter une relation') ?>
             </button>
             <?php $this->jQuery()->addJavascriptFile('/js/linkeddatas/managelinkeddatas.js'); ?>
         </div>

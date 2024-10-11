@@ -16,9 +16,10 @@ $keepOnlySourceUsed = [];
     </div>
     <div class="panel-body in">
         <?php $sourceHtmlIdSuffix = 1; ?>
-        <?php foreach ($publications as $nameRelationship => $publicationArrayByRelationship) : ?>
+        <?php $isAllowedToManageRelations = Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner();
+        foreach ($publications as $nameRelationship => $publicationArrayByRelationship) : ?>
             <?php if ($nameRelationship !== null) {
-                echo "<span class='label label-default'>" . $this->escape($this->translate($nameRelationship)) . "</span>";
+                echo "<span class='label label-default'>" . $this->escape($this->translate(lcfirst($nameRelationship))) . "</span>";
             } ?>
             <?php foreach ($publicationArrayByRelationship as $source => $publicationArrayBySource) : ?>
                 <?php
@@ -31,14 +32,13 @@ $keepOnlySourceUsed = [];
                     /** @var Episciences_Paper_Dataset $publication */ ?>
                     <div style="margin-top: 8px;">
                         <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
-                            <?php if (Episciences_Auth::isAllowedToManagePaper()
-                                || $paper->isOwner()): ?>
-                                <button id="remove-ld-<?= $sourceHtmlIdSuffix ?>" data-ld="<?= $publication->getId() ?>"
+                            <?php if ($isAllowedToManageRelations): ?>
+                                <button title="<?= $this->translate('Supprimer la relation') ?>" id="remove-ld-<?= $sourceHtmlIdSuffix ?>" data-ld="<?= $publication->getId() ?>"
                                         class="btn btn-default btn-xs" type="button">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                                 <?php $sourceHtmlIdSuffix++; ?>
-                                <a id="edit-ld" href="#manage-linked-data" data-ld="<?= $publication->getId() ?>"
+                                <a title="<?= $this->translate('Modifier le type de relation') ?>" id="edit-ld" href="#manage-linked-data" data-ld="<?= $publication->getId() ?>"
                                    data-type="<?= $publication->getCode() ?>"
                                    data-relationship="<?= $publication->getRelationship() ?>"
                                    data-ldval="<?= $publication->getValue() ?>"
@@ -112,7 +112,7 @@ $keepOnlySourceUsed = [];
                 <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
             <?php endforeach; ?>
         </ul>
-        <?php if (Episciences_Auth::isAllowedToManageOrcidAuthor($paper->isOwner())): ?>
+        <?php if ($isAllowedToManageRelations): ?>
             <a class="btn btn-default btn-sm" href="#manage-linked-data" id="anchor-publication-add"><span
                         class="fa-regular fa-file-lines"
                         style="margin-right: 5px"></span><?= $this->translate("Ajouter une publication") ?></a>
