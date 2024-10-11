@@ -66,7 +66,7 @@ composer-update: ## Update composer dependencies
 	$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer update --no-interaction --prefer-dist --optimize-autoloader
 
 yarn-encore-production: ## yarn encore production
-	$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
+	$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install; yarn encore production
 
 restart-httpd: ## Restart Apache httpd
 	$(DOCKER_COMPOSE) restart httpd
