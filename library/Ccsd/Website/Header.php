@@ -15,7 +15,6 @@ class Ccsd_Website_Header
 
     /**
      * Type de logo (image)
-     * @var unknown_type
      */
     const LOGO_IMG = 'img';
 
