@@ -40,7 +40,6 @@ class Ccsd_Website_Header
     protected $_sid = 0;
     /**
      * Formulaire de création d'un logo
-     * @var unknown_type
      */
     protected $_form = null;
     /**
