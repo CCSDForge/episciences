@@ -417,7 +417,7 @@ return array(
     "Date de fin de la conférence" => "Conference end date",
     "DOI des actes" => "Proceedings DOI",
     "Actes de conférences" => 'Conferences proceedings',
-    "Le DOI qui va être demandé" => "Doi will be requested",
+    "Le DOI qui va être demandé" => "The DOI that will be requested",
     "Demande DOI" => "Request DOI",
     "Annulation DOI" => "Cancel DOI",
     'Du' => 'From',
@@ -429,7 +429,7 @@ return array(
     "nombre uniquement" => "number only",
     "supérieur à " => "greater than ",
     "dernière version soumise à la revue" => "latest version submitted to the journal",
-    "Ladite nouvelle version de l' article a bien été déposée dans l'archive ouverte" => "The said new version of the article has been deposited in the open access repository",
+    "La nouvelle version a bien été mise en ligne dans l'archive ouverte/l'entrepôt" => "The new version is online in the open archive/repository",
 
 
     // Gestion des articles
@@ -1671,6 +1671,9 @@ return array(
 
     "Ajouter un logo" => "Add a logo",
     "Type" => "Type",
+    "Élément texte" => "Text element",
+    "Élément image" => "Image element",
+
     "Texte" => "Preprint",
     "Image" => "Image",
     "Libellé" => "Label",

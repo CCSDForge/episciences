@@ -1736,7 +1736,7 @@ class Episciences_Submit
         $description .= $translator->translate('dernière version soumise à la revue');
         $description .= '</mark>';
         $description .= ' )</li><li>';
-        $description .= $translator->translate("Ladite nouvelle version de l' article a bien été déposée dans l'archive ouverte");
+        $description .= $translator->translate("La nouvelle version a bien été mise en ligne dans l'archive ouverte/l'entrepôt");
         $description .= ' (<mark> ' . mb_strtoupper(Episciences_Repositories::getLabel($repoId)) . ' </mark>)';
         $description .= '</li></ol>';
 
