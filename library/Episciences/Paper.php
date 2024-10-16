@@ -3144,7 +3144,8 @@ class Episciences_Paper
 
 
         $oaiPrefixString = 'oai:';
-        if (strpos($repositoryIdentifier, $oaiPrefixString) === 0) {
+
+        if($repositoryIdentifier && str_starts_with($repositoryIdentifier, $oaiPrefixString)) {
             $repositoryIdentifier = substr($repositoryIdentifier, strlen($oaiPrefixString));
         }
 
