@@ -70,9 +70,12 @@ class SectionController extends Episciences_Controller_Action
         $request = $this->getRequest();
         $id = $request->getQuery('id');
 
-        $section = Episciences_SectionsManager::find($id);
-        if (empty($section)) {
-            $this->_helper->redirector('add', null, null, [PREFIX_ROUTE => RVCODE]);
+        $section = Episciences_SectionsManager::find($id, RVID);
+        if (!$section) {
+            $message = sprintf("<strong>%s</strong>", $this->view->translate("La section n'a pas été trouvée"));
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector('list', null, null, [PREFIX_ROUTE => RVCODE]);
+            return;
         }
         $section->loadSettings();
         $defaults = $section->getFormDefaults($section);

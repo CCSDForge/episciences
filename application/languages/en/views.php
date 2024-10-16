@@ -1173,6 +1173,7 @@ return array(
     "Les modifications sont sauvegardées." => "Modifications have been saved.",
     "Ce volume a été supprimé" => "This volume has been deleted",
     "Le volume n'a pas été trouvé" => "The volume wasn't found",
+    "La section n'a pas été trouvée" => "The section wasn't found",
     "Cette rubrique a été supprimée" => "This section has been removed",
 
     //Notifications
