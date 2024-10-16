@@ -4,16 +4,14 @@ class Episciences_VolumesManager
 {
     public const MAX_STRING_LENGTH = 255;
 
-    /**
-     * Retourne un volume
-     * @param $vid
-     * @return bool|Episciences_Volume
-     */
-    public static function find($vid)
+      public static function find($vid, int $rvid = 0)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = $db->select()->from(T_VOLUMES)->where('VID = ?', $vid);
+        if ($rvid !== 0) {
+            $select->where('RVID = ?', $rvid);
+        }
         $volume = $db->fetchRow($select);
 
         if (empty($volume)) {
