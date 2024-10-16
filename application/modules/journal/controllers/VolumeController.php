@@ -96,10 +96,12 @@ class VolumeController extends Zend_Controller_Action
             $referer = '/volume/list';
         }
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
 
-        if (empty($volume)) {
-            $this->_helper->redirector('add');
+        if (!$volume) {
+            $message = sprintf("<strong>%s</strong>", $this->view->translate("Le volume n'a pas été trouvé"));
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl($this->_helper->url('add', 'volume'));
             return;
         }
 
