@@ -101,7 +101,7 @@ class VolumeController extends Zend_Controller_Action
         if (!$volume) {
             $message = sprintf("<strong>%s</strong>", $this->view->translate("Le volume n'a pas été trouvé"));
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl($this->_helper->url('add', 'volume'));
+            $this->_helper->redirector->gotoUrl($this->_helper->url('list', 'volume'));
             return;
         }
 
