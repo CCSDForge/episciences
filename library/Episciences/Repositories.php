@@ -88,15 +88,31 @@ class Episciences_Repositories
 
     public static function getIdentifier($repoId, $identifier, $version = null)
     {
-        if ($version) {
-            return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
+        $repoIdentifier = self::getRepositories()[$repoId][self::REPO_IDENTIFIER];
+
+        if (!empty($repoIdentifier)) {
+
+            if ($version) {
+                return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
+            }
+
+            return str_replace(['%%ID', 'v%%VERSION'], [$identifier, ''], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
+
         }
-        return str_replace(['%%ID', 'v%%VERSION'], [$identifier, ''], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
+
+        return $repoIdentifier;
+
     }
 
     public static function getDocUrl($repoId, $identifier, $version = null, $versionMinorNumber = Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER)
     {
-        return str_replace(['%%ID', '%%VERSION', '%%V_MINOR_NUMBER'], [$identifier, $version, $versionMinorNumber], self::getRepositories()[$repoId][self::REPO_DOCURL]);
+        $repoDocUrl = self::getRepositories()[$repoId][self::REPO_DOCURL];
+
+        if (!empty($repoDocUrl)) {
+            return str_replace(['%%ID', '%%VERSION', '%%V_MINOR_NUMBER'], [$identifier, $version, $versionMinorNumber], $repoDocUrl);
+        }
+
+        return $repoDocUrl;
     }
 
     public static function getApiUrl($repoId)
@@ -109,11 +125,16 @@ class Episciences_Repositories
      * @param $identifier
      * @param null $version
      * @return string
-     * @throws Zend_Exception
      */
     public static function getPaperUrl($repoId, $identifier, $version = null): string
     {
-        return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_PAPERURL]);
+        $repoPaperUrl = self::getRepositories()[$repoId][self::REPO_PAPERURL];
+
+        if (!empty($repoPaperUrl)) {
+            return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_PAPERURL]);
+        }
+
+        return $repoPaperUrl;
     }
 
     public static function getRepoDoiPrefix($repoId)
