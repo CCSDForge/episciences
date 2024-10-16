@@ -36,16 +36,14 @@ class Episciences_SectionsManager
         return $sections;
     }
 
-    /**
-     * Renvoie la rubrique dont l'id est passé en paramètre
-     * @param $sid
-     * @return bool|Episciences_Section
-     */
-    public static function find($sid)
+    public static function find($sid, int $rvid = 0)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $select = $db->select()->from(self::TABLE)->where('SID = ?', $sid);
+        if ($rvid !== 0) {
+            $select->where('RVID = ?', $rvid);
+        }
         $options = $db->fetchRow($select);
         if (empty($options)) {
             return false;
