@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## Unreleased
+- [#607](https://github.com/CCSDForge/episciences/issues/607):
+  - fixed: the two tags '%COMMENT%%' and '%%ANSWER%%' have identical content.
+  - improvement: the attachment with the original comment is now attached to the reply.
 
 ### Changed
 - [#564](https://github.com/CCSDForge/episciences/issues/564): Fixed and changed French label in journal settings

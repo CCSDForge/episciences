@@ -723,6 +723,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws JsonException
      */
     private function save_contributor_answer(int $id, Episciences_Paper $paper, int $commentType = Episciences_CommentsManager::TYPE_INFO_ANSWER): bool
     {
@@ -775,16 +776,21 @@ class PaperController extends PaperDefaultController
 
             $attachmentsFiles = [];
 
+            if($oComment->getFile()){
+                $attachmentsFiles[$oComment->getFile()] = $oComment->getFilePath();
+            }
+
             if ($oAnswer->getFile()) {
                 $attachmentsFiles[$oAnswer->getFile()] = $oAnswer->getFilePath();
             }
+
 
             return
                 Episciences_Mail_Send::sendMailFromReview(
                     $reviewer, Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY, $reviewerTags,
                     $paper, Episciences_Auth::getUid(), $attachmentsFiles, true
                 ) &&
-                $this->newCommentNotifyManager($paper, $oAnswer, $reviewerTags);
+                $this->newCommentNotifyManager($paper, $oAnswer, $reviewerTags, [$oComment->getFile() => $oComment->getFilePath()], ['replayedTo' => $oComment]);
         }
 
         return true;
