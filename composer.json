@@ -48,7 +48,7 @@
     "laminas/laminas-feed": "^2.18",
     "whitecube/lingua": "^1.1",
     "defuse/php-encryption": "^2.3",
-    "doctrine/annotations": "^1.13",
+    "doctrine/annotations": "^2.0",
     "vlucas/phpdotenv": "^5.5",
     "league/html-to-markdown": "^5.1",
     "league/commonmark": "^2.4",
