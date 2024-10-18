@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - [#564](https://github.com/CCSDForge/episciences/issues/564): Fixed and changed French label in journal settings
 - [#547](https://github.com/CCSDForge/episciences/issues/547): Ask for other editors opinion: select | deselect all option. 
+- epi-notify from HAL: resubmit the same version as a new version.
 
 
 ## v1.0.45.1 - 2024-09-18

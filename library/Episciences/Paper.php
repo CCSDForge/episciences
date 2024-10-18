@@ -2811,7 +2811,7 @@ class Episciences_Paper
 
                 if ($isEpiNotify) {
 
-                    if ($status === self::STATUS_OBSOLETE) { // probably latest version is tmp (tmp repository != original repository)
+                    if ($status === self::STATUS_OBSOLETE) { // probably latest version is tmp (tmp repository != original repository and identifier != original identifier)
 
                         // check latest version first
 

@@ -458,7 +458,14 @@ class InboxNotifications extends Script
         $isDebug = $this->isDebug();
         $isAdded = false;
         $canBeReplaced = $options['canBeReplaced'] ?? false;
-        $isFirstSubmission = !isset($options[self::PAPER_CONTEXT]);
+
+        $context = null;
+        $isFirstSubmission = true;
+        if(isset($options[self::PAPER_CONTEXT])){
+            $isFirstSubmission = false;
+            /** @var Episciences_Paper $context */
+            $context = $options[self::PAPER_CONTEXT]; // previous paper
+        }
 
         $logDetails = isset($data['notifyPayloads']) ? ['notifyPayloads' => $data['notifyPayloads']] : [];
 
@@ -474,13 +481,16 @@ class InboxNotifications extends Script
 
             $this->displayWarning($message . PHP_EOL);
 
+            if ($context && $context->getVersion() >= $paper->getVersion()){
+                $this->displayInfo(sprintf('Abort processing: identical versions.%s', PHP_EOL), true);
+                return false;
+            }
 
         } elseif (null === $this->addLocalUserInNotExist($data)) {
             return false;
         }
 
-        /** @var Episciences_Paper $context */
-        $context = !$isFirstSubmission ? $options[self::PAPER_CONTEXT] : null; // previous paper
+
 
         if (!$isFirstSubmission) {
 
