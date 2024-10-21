@@ -3,7 +3,7 @@
     $editTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour modifier ce template";
     $deleteTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour supprimer le template personnalisé";
 
-    $tagsListUrl = '/administratemail/tagslist';
+    $tagsListUrl = $this->url(['controller' => 'administratemail', 'action' => 'tagslist']);
 
     ?>
 
@@ -27,7 +27,7 @@
                     ?>
                     <a class="modal-opener"
                        title="<?= $this->translate($editTemplateTitle) ?>"
-                       href="/administratemail/edittemplate?id=<?= $template['ID'] ?>">
+                       href="<?= $this->url(['controller' => 'administratemail', 'action' => 'edittemplate', 'id' => $template['ID']])?>">
                         <?= $this->translate($template['KEY'] . '_tpl_name') ?>
                     </a>
                 <?php else: ?>
@@ -38,7 +38,7 @@
                 <div style="float: right">
                     <?php if ($this->editorsCanEditTmplates): ?>
                         <a class="modal-opener"
-                           href="/administratemail/edittemplate?id=<?= $template['ID'] ?>"
+                           href="<?= $this->url(['controller' => 'administratemail', 'action' => 'edittemplate', 'id' => $template['ID']])?>"
                            title="<?= $this->translate($editTemplateTitle) ?>">
                             <button class="btn btn-default btn-xs" data-toggle="tooltip"
                                     title="<?= $this->translate($editTemplateTitle) ?>"
@@ -48,7 +48,7 @@
                         </a>
                         <?php if ($template['PARENTID']) : ?>
                             <a class="delete-template"
-                               href="/administratemail/deletetemplate?id=<?= $template['ID'] ?>"
+                               href="<?= $this->url(['controller' => 'administratemail', 'action' => 'deletetemplate', 'id' => $template['ID']]) ?>"
                                title="<?= $this->translate($deleteTemplateTitle) ?>">
                                 <button class="btn btn-default btn-xs" data-toggle="tooltip"
                                         title="<?= $this->translate($deleteTemplateTitle) ?>"

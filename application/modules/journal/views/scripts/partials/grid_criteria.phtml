@@ -70,7 +70,7 @@
                         <a class="btn btn-xs btn-default pull-left"
                            title="<?php echo $this->translate('Modifier'); ?>"
                             <?php if ($criterion->getType() == 'separator') : ?>
-                           href="/grid/editseparator?rgid=<?php echo $this->grid->getId(); ?>&amp;id=<?php echo $criterion->getId(); ?>">
+                           href="<?= $this->url(['controller' => 'grid', 'action' => 'editseparator', 'rgid' => $this->grid->getId(), 'id' => $criterion->getId()]) ?>">
                             <?php else : ?>
                                 href="/grid/editcriterion?rgid=<?php echo $this->grid->getId(); ?>&amp;id=<?php echo $criterion->getId(); ?>">
                             <?php endif; ?>
@@ -79,7 +79,7 @@
                         </a>
                         <a class="btn btn-xs btn-danger delete"
                            title="<?php echo $this->translate('Supprimer'); ?>"
-                           href="/grid/deletecriterion?rgid=<?php echo $this->grid->getId(); ?>&amp;id=<?php echo $criterion->getId(); ?>">
+                           href="<?= $this->url(['controller' => 'grid', 'action' => 'deletecriterion', 'rgid' => $this->grid->getId(), 'id' => $criterion->getId()]) ?>">
                             <span class="glyphicon glyphicon-trash"></span>&nbsp;<?php echo $this->translate('Supprimer'); ?>
                         </a>
                     </td>
@@ -135,7 +135,7 @@
     <div id="grid-actions">
         <?php if ($this->defaultGrid) : ?>
         <?php if ($this->defaultGrid->getId() != $this->grid->getId()) : ?>
-            <a href="/grid/copy?from=<?php echo $this->defaultGrid->getId(); ?>&amp;to=<?php echo $this->grid->getId(); ?>">
+            <a href="<?= $this->url(['controller' => 'grid', 'action' => 'copy', 'from' => $this->defaultGrid->getId(), 'to' => $this->grid->getId()]) ?>">
                 <button type="button" class="btn btn-default">
                     <?php echo $this->translate('Copier grille par défaut'); ?>
                 </button>
@@ -143,14 +143,14 @@
             <?php endif; ?>
         <?php endif; ?>
 
-        <a href="/grid/addseparator?rgid=<?php echo $this->grid->getId(); ?>&amp;type=separator">
+        <a href="<?= $this->url(['controller' => 'grid', 'action' => 'addseparator', 'rgid' => $this->grid->getId(), 'type' => 'separator']) ?>">
             <button type="button" class="btn btn-default">
                 <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>&nbsp;
                 <?php echo $this->translate('Ajouter un séparateur'); ?>
             </button>
         </a>
 
-        <a href="/grid/addcriterion?rgid=<?php echo $this->grid->getId(); ?>">
+        <a href="<?= $this->url(['controller' => 'grid', 'action' => 'addcriterion', 'rgid' => $this->grid->getId()]) ?>">
             <button type="button" class="btn btn-default">
                 <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>&nbsp;
                 <?php echo $this->translate('Ajouter un critère'); ?>
@@ -160,7 +160,7 @@
 
         <?php if ($this->grid->getCriteria()) : ?>
             <a class="modal-opener"
-               href="/grid/view?rgid=<?php echo $this->grid->getId(); ?>"
+               href="<?= $this->url(['controller' => 'grid', 'action' => 'view', 'rgid' => $this->grid->getId()])?>"
                data-width="50%">
                 <button type="button" class="btn btn-default view-grid">
                     <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>&nbsp;
@@ -170,7 +170,7 @@
         <?php endif; ?>
 
     <?php if ((int)$this->grid->getId() !== 0) : ?>
-        <a class="delete" href="/grid/delete?rgid=<?php echo $this->grid->getId(); ?>">
+        <a class="delete" href="<?= $this->url(['controller' => 'grid', 'action' => 'delete', 'rgid' => $this->grid->getId()]) ?>">
             <button type="button" class="btn btn-danger">
                 <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>&nbsp;
                 <?php echo $this->translate('Supprimer cette grille'); ?>

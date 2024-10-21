@@ -10,7 +10,7 @@ $action = $request->getActionName();
             <a id="all-submission-stats-btn"
                class="btn btn-default btn-xs <?= !$this->yearQuery ? 'disabled' : '' ?>" <?= !$this->yearQuery ? 'aria-disabled="true"' : '' ?>
                role="button"
-               href="<?= '/' . $controller . '/' . $action ?>">
+               href="<?= $this->url(['controller' => $controller, 'action' => $action]) ?>">
                 <?= $this->translate('Tout') ?>
             </a>
 
@@ -18,7 +18,7 @@ $action = $request->getActionName();
                 <a id="submission-stats-"<?= $year ?>
                    class="btn btn-default btn-xs <?= ($this->yearQuery === $year) ? 'disabled' : '' ?>"
                    role="button" <?= ($this->yearQuery === $year) ? 'aria-disabled="true"' : '' ?>
-                   href="<?= '/' . $controller . '/' . $action . '?year=' . $year ?>"><?= $year ?></a>
+                   href="<?= $this->url(['controller' => $controller, 'action' => $action, 'year' => $year]) ?>"><?= $year ?></a>
             <?php endforeach; ?>
 
         </div>

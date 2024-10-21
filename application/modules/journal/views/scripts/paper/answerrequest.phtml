@@ -3,19 +3,6 @@
     (<?= $this->Date($this->comment['when'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>)
 </p>
 
-<?php /*if ($this->comment['file']) : */ ?><!--
-    <div>
-        &gt; <a href="/docfiles/comments/<?php /*echo $this->comment['docid'] . '/' . $this->comment['file'] */ ?>"
-                target="_blank">
-            <?php /*echo $this->translate('Fichier'); */ ?>
-        </a>
-    </div>
-<?php /*endif; */ ?>
-
-<?php /*echo $this->comment['message']; */ ?>
-
-<hr/>-->
-
 <?= $this->form ?>
 
 <script>

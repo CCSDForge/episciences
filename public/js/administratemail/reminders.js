@@ -236,9 +236,6 @@ function buildReminderMessage(reminderType) {
     }
 
     message += ').'
-
-    console.log(message);
-
     return message;
 
 }
