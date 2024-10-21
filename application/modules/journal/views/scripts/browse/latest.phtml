@@ -94,7 +94,7 @@
                 <?php if ($volume) : ?>
                     <div class="volume">
                         <?php if (isset($doc['volume_id_i'])) : ?>
-                            <a href="/volume/view/id/<?php echo $this->escape($doc['volume_id_i']) ?>"><?php echo $volume; ?></a>
+                            <a href="<?= $this->url(['controller' => 'volume', 'action' => 'view', 'id' => $this->escape($doc['volume_id_i'])]) ?>"><?php echo $volume; ?></a>
                         <?php else : ?>
                             <?php echo $volume; ?>
                         <?php endif; ?>
@@ -103,7 +103,7 @@
 
                 <?php if ($section) : ?>
                     <div class="section">
-                        <a href="/section/view/id/<?php echo $this->escape($doc['section_id_i']) ?>"><?php echo $section; ?></a>
+                        <a href="<?= $this->url(['controller' => 'section', 'action' => 'view', 'id' => $this->escape($doc['section_id_i'])])?>"><?php echo $section; ?></a>
                     </div>
                 <?php endif; ?>
                 <?php if (array_key_exists('publication_date_tdate', $doc)) : ?>

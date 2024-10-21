@@ -13,7 +13,7 @@
                 <ul class="pagination">
 
                     <?php if ($this->page - 1 > 0) : ?>
-                        <li><a href="<?= '/' . $controller . '/' . $action ?>/page/<?php echo $this->page - 1; ?>"
+                        <li><a href="<?= $this->url(['controller' => $controller, 'action' => $action, 'page' => $this->page - 1], null, false, true, false) ?>"
                                aria-label="Previous"><span
                                         aria-hidden="true">&laquo;</span></a></li>
                     <?php else: ?>
@@ -22,12 +22,12 @@
 
                     <?php for ($i = 1; $i <= $nbpages; $i++) : ?>
                         <li<?php if ($this->page == $i) echo ' class="active"' ?>><a
-                                    href="<?php echo '/' . $controller . '/' . $action; ?>/page/<?php echo $i; ?>"><?php echo $i; ?></a>
+                                    href="<?= $this->url(['controller' => $controller, 'action' => $action, 'page' => $i], null, false, true, false) ?>"><?php echo $i; ?></a>
                         </li>
                     <?php endfor; ?>
 
                     <?php if ($this->page < $this->total) : ?>
-                        <li><a href="<?= '/' . $controller . '/' . $action ?>/page/<?php echo $this->page + 1; ?>"
+                        <li><a href="<?= $this->url(['controller' => $controller, 'action' => $action, 'page' => $this->page + 1], null, false, true, false) ?>"
                                aria-label="Next"><span
                                         aria-hidden="true">&raquo;</span></a></li>
                     <?php else: ?>

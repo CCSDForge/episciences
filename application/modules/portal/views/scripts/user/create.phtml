@@ -4,7 +4,7 @@
 	if (Zend_Controller_Action_HelperBroker::getStaticHelper('FlashMessenger')->setNamespace('success')->hasMessages() || 
         Zend_Controller_Action_HelperBroker::getStaticHelper('FlashMessenger')->setNamespace('success')->hasCurrentMessages()) : 
 ?>
-	<p><a href="/" class="btn">Retourner à l'accueil</a></p>
+	<p><a href="<?= $this->url()?>" class="btn">Retourner à l'accueil</a></p>
 <?php else: ?>
 	<?php echo $this->form; ?>
 <?php endif; ?>
