@@ -75,7 +75,7 @@ return array(
     // Messages d'erreur
     'Fichier introuvable' => 'File not found',
     "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder." => "The requested file can not be found, or you don't have the required permissions.",
-    "Vous n'avez pas les droits suffisants pour accéder à cet article" => "You don't have the required permissions to see this paper",
+    "Vous n'avez pas les droits suffisants pour accéder à cet article" => "You don't have the required permissions to see this article",
     'Accès refusé' => 'Access denied',
     "Vous ne disposez pas des droits nécessaires pour accéder à cette page." => "You are not authorized to access this page.",
     "Les modifications n'ont pas abouti !" => "The changes were unsuccessful!",
@@ -295,14 +295,14 @@ return array(
     'Échec de la mise à jour' => 'Update failed',
     'Année du volume' => 'Year of the volume',
     'Numéro du volume' => "Volume Number",
-    "Volume de l'article" => "Volume of the paper",
-    "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
-    "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the paper (numbers only) [Replacement char for spaces]',
-    "Volume de l'article (Référence bibliographique du volume)" => "Volume of the paper (Bibliographical reference of the volume)",
+    "Volume de l'article" => "Volume of the article",
+    "Volume de l'article (seulement les nombres)" => 'Volume of the article (numbers only)',
+    "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the article (numbers only) [Replacement char for spaces]',
+    "Volume de l'article (Référence bibliographique du volume)" => "Volume of the article (Bibliographical reference of the volume)",
     "Numéro de l'article dans un volume (ordre)" => 'Paper number inside a volume (order)',
-    "Rubrique de l'article" => 'Section of the paper',
-    "Rubrique de l'article (seulement les nombres)" => 'Section of the paper (numbers only)',
-    "Rubrique de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Section of the paper (numbers only) [Replacement char for spaces]',
+    "Rubrique de l'article" => 'Section of the article',
+    "Rubrique de l'article (seulement les nombres)" => 'Section of the article (numbers only)',
+    "Rubrique de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Section of the article (numbers only) [Replacement char for spaces]',
     "Numéro de l'article (Identifiant pérenne)" => 'Paper number (permanent identifier)',
     "Année de publication" => 'Year of publication',
     "Mois de publication" => 'Month of publication',
@@ -372,12 +372,12 @@ return array(
     "Attention, cet article a été supprimé par son auteur." => "Please note that this article has been deleted by its author.",
     "Attention, cet article a été supprimé par la revue." => "Please note that this article has been deleted by the Journal.",
     "Supprimer l'article" => "Delete article",
-    "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "This paper has already been published, it is useless to review it now.",
-    "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "This paper has already been accepted, it is useless to review it now.",
-    "Cet article a été refusé, il n'est plus nécessaire de le relire." => "This paper has been refused, it is useless to review it now.",
-    "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "This paper has been deleted, it is useless to review it now.",
-    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "This paper is obsolete, it is useless to review it now.",
-    "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "This paper is under revision, it is useless to review it now.",
+    "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "This article has already been published, it is useless to review it now.",
+    "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "This article has already been accepted, it is useless to review it now.",
+    "Cet article a été refusé, il n'est plus nécessaire de le relire." => "This article has been refused, it is useless to review it now.",
+    "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "This article has been deleted, it is useless to review it now.",
+    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "This article is obsolete, it is useless to review it now.",
+    "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "This article is under revision, it is useless to review it now.",
 
     "Articles de l'auteur" => "Articles of this author",
     "Ajouter un DOI" => 'Add a DOI',
@@ -404,7 +404,7 @@ return array(
     "Vous êtes sur le point de reprendre le processus de publication de cet article.<br><span class='alert-info'>L'auteur a bien été informé qu'il ne pourra plus reprendre le processus de publication de son article et que cette décision est définitive.</span>" => "You are about to resume the publication process of this article.<br><span class='alert-info'>The author has been informed that they will not be able to resume the publication process of the article and that this decision is final.</span>",
     "Aller à la page de gestion de cet article" => "Go to the management page for this article",
     "Référence bibliographique du volume" => "Volume's bibliographical reference",
-    "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the paper is removed from the volume this does not cause the other articles to be reordered automatically.",
+    "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the article is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
     // proceedings
     "Nom de la conférence" => 'Conference title',
@@ -492,7 +492,7 @@ return array(
     "suggère de demander des modifications à l'article" => "suggests to ask for a revision",
     "compte temporaire : " => "temporary account:",
     "compte temporaire" => "temporary account",
-    "Assigner les rédacteurs de cette rubrique à cet article" => "Assign section editors to this paper",
+    "Assigner les rédacteurs de cette rubrique à cet article" => "Assign section editors to this article",
     "Date de réponse à l'invitation :" => "Invitation answer date:",
     "Anciennes demandes :" => "Previous requests:",
     "Demander des modifications mineures" => "Ask for a minor revision",
@@ -656,7 +656,7 @@ return array(
     "La grille par défault ne pas pu être supprimée" => "The default grid cannot be removed",
     "Cette grille n'existe pas." => "This review/rating grid does not exist",
     "Modifier ce volume" => "Edit this volume",
-    'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the papers: ',
+    'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the articles: ',
     "La grille a bien été supprimée." => "The grid has been successfully deleted.",
 
 
@@ -937,7 +937,7 @@ return array(
 
     "Vous êtes déjà connecté avec ce compte." => "You are already signed in to this account",
     "Vous n'avez pas les privilèges requis pour accéder à cette page." => "You are not allowed to do that",
-    "Vous n'avez pas les droits suffisants pour publier cet article" => "You don't have required permissions for publishing this paper",
+    "Vous n'avez pas les droits suffisants pour publier cet article" => "You don't have required permissions for publishing this article",
     "Cet identifiant n'est pas valide." => "Invalid user identifier",
     "Ce compte n'existe pas." => "This account could not be found",
     "Vous êtes connecté en tant que : " => "You are now signed in as: ",
@@ -993,7 +993,7 @@ return array(
 
     // RSS
     "RSS" => "RSS",
-    "Derniers articles" => "Latest papers",
+    "Derniers articles" => "Latest articles",
     'Dernières publications' => 'Latest Publications',
     "Dernières actualités" => "Latest news",
     "Flux des articles" => "Papers feed",
@@ -1046,10 +1046,10 @@ return array(
     "Mensuelle" => "Monthly",
     "Saisir un nombre de jours (un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation)." => "Enter a number of days (an automatic reminder for an unanswered review invitation can be send x days after the invitation).",
 
-    // paper versions
+    // article versions
     "Versions précédentes" => 'Previous versions',
 
-    // paper history
+    // article history
     'Préparation de copie : en attente des sources auteurs' => 'Copy editing: waiting for authors sources',
     'Préparation de copie : sources déposées' => 'Copy editing: sources submitted',
     "Posté le" => 'Posted on',
@@ -1157,7 +1157,7 @@ return array(
 
     'Revues' => 'Journals',
 
-    "Réassigner l'article" => "Reassign paper",
+    "Réassigner l'article" => "Reassign article",
     "Le status de la relecture a été changé avec succès" => 'The status of this review has been successfully updated',
 
     'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.' => 'Error: XML source of this document appears to be corrupted. Metadata cannot be parsed.',
@@ -1428,7 +1428,7 @@ return array(
     "en attente d'éclaircissements" => "pending clarification",
     "version temporaire" => "temporary version",
     "version temporaire acceptée, en attente de la version finale" => "accepted temporary version, waiting for author's final version",
-    "Vous n'avez soumis aucun papier pour le moment" => "You have not submitted any paper yet",
+    "Vous n'avez soumis aucun papier pour le moment" => "You have not submitted any article yet",
     "Aucun article pour le moment" => "No article yet",
     "Modifier le contenu de la page" => "Edit content page",
     "Privilèges" => "Privileges",
@@ -1446,7 +1446,7 @@ return array(
     "Remplacer" => 'Replace',
     "Cliquer ici" => "Click here",
     "Rechercher un utilisateur d'Episciences" => "Search an Episciences user",
-    'Liste des articles que j\'ai proposés à "%s".' => 'List of papers I\'ve submitted to "%s".',
+    'Liste des articles que j\'ai proposés à "%s".' => 'List of articles I\'ve submitted to "%s".',
     'Votre article a bien été enregistré.' => "Your article has been submitted.",
     'La nouvelle version de votre article a bien été enregistrée.' => "Your new version has been saved.",
     "Le document n'a pas été trouvé ou n'a pas pu être chargé." => "The document could not be found, or could not be loaded.",
@@ -1471,7 +1471,7 @@ return array(
     "Cet article a déjà été soumis et refusé, merci de contacter le comité editorial." => "This article has already been submitted and refused, please contact the editorial committee.",
     "Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer." => "The publication process of this article is in progress, so you will not be able to replace it.",
     "Maintenez la touche <mark>CTRL</mark> enfoncée et cliquez sur les éléments d'une liste pour les choisir. Cliquez sur tous les éléments que vous souhaitez sélectionner. Ils n'ont pas besoin d'être côte à côte. Cliquez à nouveau sur un élément pour le désélectionner. N'oubliez pas de maintenir la touche <mark>CTRL</mark> enfoncée." => "Hold the <mark>CTRL</mark> key and click the items in a list to choose them. Click all the items you want to select. They don’t have to be next to each other. Click any item again to deselect it. Remember to keep the <mark>CTRL</mark> key pressed.",
-    // updatePaper function
+    // updatearticle function
     "Aucune modification n'a été enregistrée" => "No changes were saved",
     "la version précédente est identique." => "the previous version is identical",
     "l'identifiant de l'article a changé." => "the item identifier has changed.",
@@ -1561,7 +1561,7 @@ return array(
     "Si votre relecteur n'est pas celui détecté par le système" => "If your reviewer is not the one detected by the system",
 
     // Réponse du relecteur
-    "Invitation à la relecture d'un article" => "Invitation to review a paper",
+    "Invitation à la relecture d'un article" => "Invitation to review an article",
     "Vous avez été invité à relire cet article : " => "You've been invited to review this article: ",
     "Invitation envoyée par :" => "Invitation sent by:",
     "Date d'envoi de l'invitation :" => "Invitation sent on:",
@@ -1876,7 +1876,7 @@ return array(
     "rapports de relecture supplémentaires" => "additional reviews/ratings reports",
     "rapport de relecture supplémentaire" => "additional reviews/rating report",
     "Vous êtes sur le point de supprimer un rapport de relecture." => "You are about to delete a review/rating report.",
-    "Lorsqu'un article est obsolète, les relecteurs sont désactivés" => 'When a paper is obsolete, reviewers are disabled',
+    "Lorsqu'un article est obsolète, les relecteurs sont désactivés" => 'When an article is obsolete, reviewers are disabled',
 
     "Relire les articles" => 'Review articles',
     "Vous n'avez rien à relire pour le moment." => "You haven't any article to review yet.",
@@ -1960,7 +1960,7 @@ return array(
 
     //stats
     "le nombre total d'articles acceptés" => 'the total number of accepted for publication',
-    "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of papers submitted during this period',
+    "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of articles submitted during this period',
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
     "En un coup d'oeil" => "At a glance",
@@ -2137,7 +2137,7 @@ return array(
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DEADLINE] => "expiration date of invitation",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_LINK] => 'invitation response form URL',
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_URL] => 'invitation response form URL',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT] => "the number of reviewers assigned to a paper (invitations accepted and pending)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT] => "the number of reviewers assigned to an article (invitations accepted and pending)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_LAST_REVISION_DATE] => "date of the last revision of the article",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_LAST_REVISION_DATE_ISO] => "date of the last revision of the article in ISO format",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_LAST_STATUS] => "last known status of the article",
@@ -2422,15 +2422,15 @@ return array(
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to confirm the version to the journal's standards (formatted by the copy preparer)",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the paper",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the paper",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => 'Confirmation of automatic article submission via a preprint server',
 
     // Mot de passe papier
     "Facultatif" => "Optional",
     "Requis" => 'Required',
-    "Votre soumission n'a pas été enregistrée : le mot de passe du papier n'a pas été rempli, veuillez réessayer." => "Your submission has not been registered: the paper password has not been filled in, please try again.",
-    'Mot de passe papier arXiv' => "arXiv's paper password",
+    "Votre soumission n'a pas été enregistrée : le mot de passe du papier n'a pas été rempli, veuillez réessayer." => "Your submission has not been registered: the article password has not been filled in, please try again.",
+    'Mot de passe papier arXiv' => "arXiv's article password",
     'Afficher le mot de passe' => 'Show Password',
     "Le mot de passe n'a pas été enregistré" => 'The password has not been saved',
     'le champ est vide.' => 'the field is blank.',
@@ -2438,11 +2438,11 @@ return array(
     'Votre mot de passe a bien été enregistré.' => 'Your password has been saved.',
     'Si vous le souhaitez et si la revue vous le demande, vous pouvez partager' => 'If you wish, and if the journal asks you to, you can share',
     'La revue vous demande de partager' => 'The journal asks you to share',
-    "ici le mot de passe papier lui permettant de mettre à jour ce papier dans arXiv, en particulier pour mettre en ligne la version finale mise en page de votre article. Ce mot de passe est chiffré et sera automatiquement supprimé à la publication de l'article. Seuls les gestionnaires de votre article ont accès à ce mot de passe." => 'here the paper password that will allow it to update this paper in arXiv, in particular to put the formatted version of your paper online. This password is encrypted and will be automatically deleted when the paper is published. Only the managers of your paper have access to this password.',
+    "ici le mot de passe papier lui permettant de mettre à jour ce papier dans arXiv, en particulier pour mettre en ligne la version finale mise en page de votre article. Ce mot de passe est chiffré et sera automatiquement supprimé à la publication de l'article. Seuls les gestionnaires de votre article ont accès à ce mot de passe." => 'here the article password that will allow it to update this article in arXiv, in particular to put the formatted version of your article online. This password is encrypted and will be automatically deleted when the article is published. Only the managers of your article have access to this password.',
     'L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv' => 'The author can delegate to the journal the updating of his submission published on arXiv',
     "Ce champ contient le mot de passe arXiv de l'article si les auteurs/autrices ont accepté de le partager avec la revue. Il peut servir à mettre en ligne une nouvelle version de l'article à la place de l'auteur." => "This field contains the arXiv password of the article if the authors have agreed to share it with the journal. It can be used to upload a new version of the article on behalf of the author.",
     'Copier' => 'Copy',
-    "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
+    "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv article password",
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
