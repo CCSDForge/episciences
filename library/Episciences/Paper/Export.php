@@ -23,6 +23,8 @@ use Exception;
 use JsonException;
 use Psr\Cache\InvalidArgumentException;
 use Smalot\PdfParser\Parser;
+use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Languages;
 use Zend_Db_Select_Exception;
 use Zend_Db_Statement_Exception;
 use Zend_Exception;
@@ -50,17 +52,17 @@ class Export
             $doi = $paper->getDoi();
         }
 
-        $paperLanguage = $paper->getMetadata('language');
+        $paperLanguage = self::getPaperLanguageCode($paper);
+        $titleCollection = self::crossrefGetTitlesWithLanguages($paper);
+        $abstractCollection = self::crossrefGetAbstractsWithLanguages($paper);
 
-        if ($paperLanguage == '') {
-            $paperLanguage = 'eng';
-        }
         $view = new Zend_View();
         $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
 
         return self::compactXml($view->partial('crossref.phtml', [
+            'titles' => $titleCollection,
+            'abstracts' => $abstractCollection,
             'volume' => $volume,
-            'proceedingInfo' => $proceedingInfo,
             'section' => $section,
             'journal' => $journal,
             'paper' => $paper,
@@ -137,6 +139,125 @@ class Export
             Zend_Registry::set($loadedSettings, $journal);
         }
         return $journal;
+    }
+
+    /**
+     * Handles 2 or 3 language code conversions
+     */
+    private static function getPaperLanguageCode(Episciences_Paper $paper, int $langCodeLength = 2, string $default = ''): string
+    {
+        // Ensure that the language metadata is treated as a string
+        $paperLanguage = (string)$paper->getMetadata('language');
+
+        $paperLanguagelength = strlen($paperLanguage);
+        if ($paperLanguagelength > 3 || $paperLanguagelength < 2) {
+            return $default;
+        }
+
+        if ($paperLanguage)
+
+            // Crossref schema 5.3.1 says language is optional
+            if (!Languages::exists($paperLanguage)) {
+                $paperLanguage = $default; // Invalid language, set to $default
+            }
+
+        // Crossref requires 2-character language codes
+        if ((strlen($paperLanguage) === 3) && ($langCodeLength === 2)) {
+            try {
+                $paperLanguage = Languages::getAlpha2Code($paperLanguage);
+            } catch (MissingResourceException $e) {
+                $paperLanguage = $default; // Fallback if invalid
+                trigger_error(
+                    sprintf("Paper # %s: %s", $paper->getDocid(), $e->getMessage()),
+                    E_USER_WARNING
+                );
+            }
+        }
+
+        // DOAJ requires 3-character language codes
+        if ((strlen($paperLanguage) === 2) && ($langCodeLength === 3)) {
+
+            try {
+                $paperLanguage = Languages::getAlpha3Code($paperLanguage);
+            } catch (MissingResourceException $e) {
+                $paperLanguage = $default; // Fallback if invalid
+                trigger_error(
+                    sprintf("Paper # %s: - %s - %s", $paper->getDocid(), $paperLanguage, $e->getMessage()),
+                    E_USER_WARNING
+                );
+            }
+        }
+        return $paperLanguage;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @depends Episciences_Paper::getAllTitles
+     * @return array
+     */
+    private static function crossrefGetTitlesWithLanguages(Episciences_Paper $paper): array
+    {
+        return self::getMetaWithLanguagesCode($paper, 'getAllTitles', 2, '');
+    }
+
+    private static function getMetaWithLanguagesCode(Episciences_Paper $paper, string $method, int $langCodeLength = 2, string $default = ''): array
+    {
+
+        $collection = [];
+        $items = $paper->$method();
+
+        foreach ($items as $language => $content) {
+
+            // Validate or set default language
+            if (!Languages::exists($language)) {
+                $language = $default; // invalid language, default to $default
+            }
+            $strlenOfMetaLanguage = strlen($language);
+
+            if ($strlenOfMetaLanguage > 3 || $strlenOfMetaLanguage < 2) {
+                $language = $default;
+            }
+
+            // Convert 3-character codes to 2-character codes
+
+            if (($strlenOfMetaLanguage === 3) && ($langCodeLength === 2)) {
+                try {
+                    $language = Languages::getAlpha2Code($language);
+                } catch (MissingResourceException $e) {
+                    $language = $default; // If the language is still invalid, set to $default
+                    trigger_error(
+                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
+                        E_USER_WARNING
+                    );
+                }
+            }
+
+            if (($strlenOfMetaLanguage === 2) && ($langCodeLength === 3)) {
+                try {
+                    $language = Languages::getAlpha3Code($language);
+                } catch (MissingResourceException $e) {
+                    $language = $default; // If the language is still invalid, set to $default
+                    trigger_error(
+                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
+                        E_USER_WARNING
+                    );
+                }
+            }
+
+            $collection[][$language] = trim($content);
+        }
+
+        return $collection;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @depends Episciences_Paper::getAllAbstracts
+     * @return array
+     */
+    private static function crossrefGetAbstractsWithLanguages(Episciences_Paper $paper): array
+    {
+        return self::getMetaWithLanguagesCode($paper, 'getAbstractsCleaned', 2, '');
     }
 
     private static function compactXml(string $xml)
@@ -240,12 +361,10 @@ class Export
         $doi = $paper->getDoi();
 
 
-        $paperLanguage = $paper->getMetadata('language');
+        $paperLanguage = self::getPaperLanguageCode($paper, 3, 'eng');
+        $abstracts = self::doajGetAbstractsWithLanguages($paper);
+        $titles = self::doajGetTitlesWithLanguages($paper);
 
-
-        if ($paperLanguage == '') {
-            $paperLanguage = 'eng';
-        }
         $view = new Zend_View();
         $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
         $view->addScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/partials/');
@@ -256,6 +375,8 @@ class Export
             'section' => $section,
             'journal' => $journal,
             'paper' => $paper,
+            'titles' => $titles,
+            'abstracts' => $abstracts,
             'doi' => $doi,
             'paperLanguage' => $paperLanguage,
             'previousVersionsUrl' => $previousVersionsUrl
@@ -540,21 +661,7 @@ class Export
             $authors[] = '';
         }
 
-        $paperLanguage = $paper->getMetadata('language');
-
-        if (empty($paperLanguage)) {
-            $paperLanguage = 'en';
-        }
-
-        if ($paperLanguage == 'eng') {
-            $paperLanguage = 'en';
-        } elseif ($paperLanguage == 'fre') {
-            $paperLanguage = 'fr';
-        }
-        if (strlen($paperLanguage) > 2) {
-            $paperLanguage = ''; // give up for the moment
-        }
-
+        $paperLanguage = self::getPaperLanguageCode($paper, 2, '');
         $view = new Zend_View();
         $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
 
@@ -580,85 +687,6 @@ class Export
 
         return $result;
     }
-
-    /**
-     * @param mixed $arrayContrib
-     * @param array $jsonCsl
-     * @param int $i
-     * @return array
-     */
-    public static function getAuthorsCsl(mixed $arrayContrib, array $jsonCsl, int $i): array
-    {
-        foreach ($arrayContrib['person_name'] as $value) {
-            if (!is_array($value)) {
-                $arrayContrib['person_name'] = [$arrayContrib['person_name']];
-                break;
-            }
-        }
-        foreach ($arrayContrib['person_name'] as $value) {
-            if (isset($value['surname'])) {
-                $jsonCsl['author'][$i]['family'] = $value['surname'];
-            }
-            if (isset($value['given_name'])) {
-                $jsonCsl['author'][$i]['given'] = $value['given_name'];
-            }
-            $i++;
-        }
-        return $jsonCsl;
-    }
-
-    /**
-     * @param $public_properties
-     * @param array $jsonCsl
-     * @return array
-     */
-    public static function getConferenceInfo($public_properties, array $jsonCsl): array
-    {
-        if (array_key_exists('conference', $public_properties)) {
-            $jsonCsl['event-title'] = $public_properties['conference']['event_metadata']['conference_name'];
-            $jsonCsl['event-place'] = !is_null($public_properties['conference']['event_metadata']['conference_location']) ? $public_properties['conference']['event_metadata']['conference_location'] : null;
-            $jsonCsl['event-date'] = $public_properties['conference']['event_metadata']['conference_date']['@start_year'];
-        }
-        return $jsonCsl;
-    }
-
-    /**
-     * OpenAIRE export format
-     * @param Episciences_Paper $paper
-     * @return string
-     * @deprecated use getOpenaire
-     */
-    public function getDatacite(Episciences_Paper $paper): string
-    {
-        return Export::getOpenaire($paper);
-    }
-
-    public static function getOpenaire(Episciences_Paper $paper): string
-    {
-        list($volume, $section, $proceedingInfo) = self::getPaperVolumeAndSection($paper);
-        $journal = self::getJournalSettings($paper);
-
-        $doi = $paper->getDoi();
-
-        $paperLanguage = $paper->getMetadata('language');
-
-        if (empty($paperLanguage)) {
-            $paperLanguage = 'eng';
-        }
-
-        $view = new Zend_View();
-        $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
-
-        return self::compactXml($view->partial('datacite.phtml', [
-            'volume' => $volume,
-            'section' => $section,
-            'journal' => $journal,
-            'paper' => $paper,
-            'doi' => $doi,
-            'paperLanguage' => $paperLanguage
-        ]));
-    }
-
 
     /**
      * @param $docid
@@ -713,6 +741,100 @@ class Export
         }
 
         return $jsonString;
+    }
+
+    /**
+     * @param mixed $arrayContrib
+     * @param array $jsonCsl
+     * @param int $i
+     * @return array
+     */
+    public static function getAuthorsCsl(mixed $arrayContrib, array $jsonCsl, int $i): array
+    {
+        foreach ($arrayContrib['person_name'] as $value) {
+            if (!is_array($value)) {
+                $arrayContrib['person_name'] = [$arrayContrib['person_name']];
+                break;
+            }
+        }
+        foreach ($arrayContrib['person_name'] as $value) {
+            if (isset($value['surname'])) {
+                $jsonCsl['author'][$i]['family'] = $value['surname'];
+            }
+            if (isset($value['given_name'])) {
+                $jsonCsl['author'][$i]['given'] = $value['given_name'];
+            }
+            $i++;
+        }
+        return $jsonCsl;
+    }
+
+    /**
+     * @param $public_properties
+     * @param array $jsonCsl
+     * @return array
+     */
+    public static function getConferenceInfo($public_properties, array $jsonCsl): array
+    {
+        if (array_key_exists('conference', $public_properties)) {
+            $jsonCsl['event-title'] = $public_properties['conference']['event_metadata']['conference_name'];
+            $jsonCsl['event-place'] = !is_null($public_properties['conference']['event_metadata']['conference_location']) ? $public_properties['conference']['event_metadata']['conference_location'] : null;
+            $jsonCsl['event-date'] = $public_properties['conference']['event_metadata']['conference_date']['@start_year'];
+        }
+        return $jsonCsl;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @depends Episciences_Paper::getAllTitles
+     * @return array
+     */
+    private static function doajGetTitlesWithLanguages(Episciences_Paper $paper): array
+    {
+        return self::getMetaWithLanguagesCode($paper, 'getAllTitles', 3, '');
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @depends Episciences_Paper::getAllAbstracts
+     * @return array
+     */
+    private static function doajGetAbstractsWithLanguages(Episciences_Paper $paper): array
+    {
+        return self::getMetaWithLanguagesCode($paper, 'getAbstractsCleaned', 3, 'eng');
+    }
+
+    /**
+     * OpenAIRE export format
+     * @param Episciences_Paper $paper
+     * @return string
+     * @deprecated use getOpenaire
+     */
+    public function getDatacite(Episciences_Paper $paper): string
+    {
+        return Export::getOpenaire($paper);
+    }
+
+    public static function getOpenaire(Episciences_Paper $paper): string
+    {
+        list($volume, $section, $proceedingInfo) = self::getPaperVolumeAndSection($paper);
+        $journal = self::getJournalSettings($paper);
+
+        $doi = $paper->getDoi();
+
+        $paperLanguage = self::getPaperLanguageCode($paper, 3, 'eng');
+
+        $view = new Zend_View();
+        $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
+
+        return self::compactXml($view->partial('datacite.phtml', [
+            'volume' => $volume,
+            'section' => $section,
+            'journal' => $journal,
+            'paper' => $paper,
+            'doi' => $doi,
+            'paperLanguage' => $paperLanguage
+        ]));
     }
 
 }

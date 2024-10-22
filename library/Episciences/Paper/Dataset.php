@@ -30,6 +30,7 @@ class Episciences_Paper_Dataset
         'proceedings' => 'proceedings',
         'report' => 'report',
         'article-journal' => self::PUBLICATION,
+        'graphic'=> 'graphic',
     ];
     public static array $_datasetsLink = [
         self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
@@ -476,6 +477,15 @@ class Episciences_Paper_Dataset
         }
         $metaDataSource = new Episciences_Paper_MetaDataSource($metadataSources[$sourcesId]);
         return $metaDataSource->getName();
+    }
+
+    public static function removeFirstLevel(array $inputArray): array {
+        // Flatten the first level, only keeping the sub-level values
+        return array_merge(...array_values($inputArray));
+    }
+
+    public static function getFlattenedRelationships(): array {
+        return self::removeFirstLevel(self::$supportedRelationShips);
     }
 
 }

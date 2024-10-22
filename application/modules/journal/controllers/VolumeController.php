@@ -4,6 +4,7 @@ class VolumeController extends Zend_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
     public const MIN_VOLUME_DATE = '1950';
+
     public function indexAction()
     {
         $this->_helper->redirector('list');
@@ -29,13 +30,13 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
         $form = Episciences_VolumesManager::getForm();
-        $journal =  Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
+        $journal = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
         $journal->loadSettings();
         $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
         if ($journalPrefixDoi !== '') {
-            $form->addElement('hidden',"journalprefixDoi",[
+            $form->addElement('hidden', "journalprefixDoi", [
                 'label' => "journalprefixDoi",
-                'value' => $journalPrefixDoi.'/'.RVCODE.".proceedings.",
+                'value' => $journalPrefixDoi . '/' . RVCODE . ".proceedings.",
                 'data-none' => true
             ]);
         }
@@ -45,11 +46,11 @@ class VolumeController extends Zend_Controller_Action
 
                 $oVolume = new Episciences_Volume();
 
-                $this->checkValidateDate($request->getPost()['year'],$request);
+                $this->checkValidateDate($request->getPost()['year'], $request);
                 $resVol = $oVolume->save($form->getValues(), null, $request->getPost());
                 $oVolume->saveVolumeMetadata($request->getPost());
                 $post = $request->getPost();
-                if ($post['conference_proceedings_doi'] !== ''){
+                if ($post['conference_proceedings_doi'] !== '') {
                     $volumequeue = new Episciences_Volume_DoiQueue();
                     $volumequeue->setVid($oVolume->getVid());
                     $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
@@ -77,140 +78,20 @@ class VolumeController extends Zend_Controller_Action
     }
 
     /**
-     * Edit a volume
-     * @throws Exception
+     * @param $year
+     * @param Zend_Controller_Request_Http $request
+     * @return void
      */
-    public function editAction(): void
+    private function checkValidateDate($year, Zend_Controller_Request_Http $request): void
     {
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        $vid = (int)$request->getParam('id');
-        $docId = $request->getParam('docid');
-        $from = $request->getParam('from');
-
-        if (!empty($from) && $from === 'view' && !empty($docId)) {
-            $referer = '/administratepaper/view?id=' . $docId;
-        } elseif ($from === 'list') {
-            $referer = '/administratepaper/list'; // papers list
-        } else {
-            $referer = '/volume/list';
-        }
-
-        $volume = Episciences_VolumesManager::find($vid, RVID);
-
-        if (!$volume) {
-            $message = sprintf("<strong>%s</strong>", $this->view->translate("Le volume n'a pas été trouvé"));
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl($this->_helper->url('list', 'volume'));
-            return;
-        }
-
-        $sorted_papers = $volume->getSortedPapersFromVolume();
-
-
-        if ($request->getHeader('Accept') === self::JSON_MIMETYPE && $request->getActionName() === 'all') {
-            $this->_helper->layout()->disableLayout();
-            $this->_helper->viewRenderer->setNoRender();
-            $arrayOfVolumesOrSections = [];
-            try {
-                $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
-                $sorted_papersForJson = [];
-
-                if (!empty($sorted_papers)) {
-                    foreach ($sorted_papers as $papersForJson) {
-                        unset($papersForJson['needsToBeSaved']);
-                        $papersForJson['statusLabel'] = $this->view->translate(Episciences_Paper::$_statusLabel[$papersForJson['status']], 'en');
-                        $sorted_papersForJson[] = $papersForJson;
-                    }
-                    // add papers to volume array
-                    $arrayOfVolumesOrSections[$volume->getVid()]['papers'] = $sorted_papersForJson;
-                }
-
-            } catch (Zend_Exception $exception) {
-                trigger_error($exception->getMessage(), E_USER_WARNING);
-                // $arrayOfVolumesOrSections default value
-            }
-
-            $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
-            $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
-            return;
-        }
-
-
-        $sorted_papersToBeSaved = [];
-        $needsToToBeSaved = false;
-
-        foreach ($sorted_papers as $position => $paper) {
-            $sorted_papersToBeSaved[$position] = $paper['paperid'];
-            if (($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved)) {
-                $needsToToBeSaved = true;
-            }
-        }
-
-        if (!empty($sorted_papersToBeSaved) && $needsToToBeSaved) {
-            Episciences_VolumesManager::savePaperPositionsInVolume($vid, $sorted_papersToBeSaved);
-        }
-
-        $gaps = Episciences_Volume::findGapsInPaperOrders($sorted_papers);
-        $this->view->gapsInOrderingPapers = $gaps;
-
-        $form = Episciences_VolumesManager::getForm($referer, $volume);
-        $journal =  Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
-        $journal->loadSettings();
-        $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
-        if ($journalPrefixDoi !== '') {
-            $form->addElement('hidden', "journalprefixDoi",[
-                'label' => "journalprefixDoi",
-                'value' => $journalPrefixDoi.'/'.RVCODE.".proceedings.",
-                'data-none' => true
-            ]);
-        }
-        if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
-            $post = $request->getPost();
-
-            if ($form->isValid($post)) {
-                $this->checkValidateDate($post['year'], $request);
-                $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
-
-                $volume->saveVolumeMetadata($request->getPost());
-
-                if ($post['conference_proceedings_doi'] !== '' &&
-                    (
-                        $post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED ||
-                        $post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED
-                    )
-                ) {
-                    $volumequeue = new Episciences_Volume_DoiQueue();
-                    $volumequeue->setVid($volume->getVid());
-                    $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
-                    Episciences_Volume_DoiQueueManager::add($volumequeue);
-                }
-                if ($resVol) {
-                    $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-                } else {
-                    $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-                }
-
-                $this->_helper->redirector->gotoUrl($referer);
-
-            } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+        if ($year !== '' && is_string($year)) {
+            $maxDate = date('Y', strtotime('+ 5 years'));
+            if (!($year >= self::MIN_VOLUME_DATE && $year <= $maxDate)) {
+                $message = '<strong>' . $this->view->translate("L'année du volume est incorrecte veuillez saisir entre: ") . self::MIN_VOLUME_DATE . ' ' . $this->view->translate('et') . ' ' . $maxDate . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                $this->_helper->redirector->gotoUrl($request->getRequestUri());
             }
         }
-        $defaults = Episciences_VolumesManager::getFormDefaults($volume);
-
-        if ($defaults) {
-            $form->setDefaults($defaults);
-        }
-
-        $this->view->form = $form;
-        $this->view->paperList = $sorted_papers;
-
-        $this->view->volume = $volume;
-        $this->view->metadataForm = Episciences_VolumesManager::getMetadataForm();
     }
 
     /**
@@ -431,22 +312,208 @@ class VolumeController extends Zend_Controller_Action
     }
 
     /**
-     * @param $year
-     * @param Zend_Controller_Request_Http $request
-     * @return void
+     * Edit a volume
+     * @throws Exception
      */
-    private function checkValidateDate($year, Zend_Controller_Request_Http $request): void
+    public function editAction(): void
     {
-        if ($year !== '' && is_string($year)) {
-            $maxDate = date('Y', strtotime('+ 5 years'));
-            if (!($year >= self::MIN_VOLUME_DATE && $year <= $maxDate)) {
-                $message = '<strong>' . $this->view->translate("L'année du volume est incorrecte veuillez saisir entre: ") . self::MIN_VOLUME_DATE . ' ' . $this->view->translate('et') . ' ' . $maxDate . '</strong>';
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl($request->getRequestUri());
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $vid = (int)$request->getParam('id');
+        $docId = $request->getParam('docid');
+        $from = $request->getParam('from');
+
+        if (!empty($from) && $from === 'view' && !empty($docId)) {
+            $referer = '/administratepaper/view?id=' . $docId;
+        } elseif ($from === 'list') {
+            $referer = '/administratepaper/list'; // papers list
+        } else {
+            $referer = '/volume/list';
+        }
+
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+
+        if (!$volume) {
+            $message = sprintf("<strong>%s</strong>", $this->view->translate("Le volume n'a pas été trouvé"));
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl($this->_helper->url('list', 'volume'));
+            return;
+        }
+
+        $sorted_papers = $volume->getSortedPapersFromVolume();
+
+
+        if ($request->getHeader('Accept') === self::JSON_MIMETYPE && $request->getActionName() === 'all') {
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            $arrayOfVolumesOrSections = [];
+            try {
+                $arrayOfVolumesOrSections = Episciences_Volume::volumesOrSectionsToPublicArray([$volume->getVid() => $volume], 'Episciences_Volume');
+                $sorted_papersForJson = [];
+
+                if (!empty($sorted_papers)) {
+                    foreach ($sorted_papers as $papersForJson) {
+                        unset($papersForJson['needsToBeSaved']);
+                        $papersForJson['statusLabel'] = $this->view->translate(Episciences_Paper::$_statusLabel[$papersForJson['status']], 'en');
+                        $sorted_papersForJson[] = $papersForJson;
+                    }
+                    // add papers to volume array
+                    $arrayOfVolumesOrSections[$volume->getVid()]['papers'] = $sorted_papersForJson;
+                }
+
+            } catch (Zend_Exception $exception) {
+                trigger_error($exception->getMessage(), E_USER_WARNING);
+                // $arrayOfVolumesOrSections default value
+            }
+
+            $this->getResponse()->setHeader('Content-type', self::JSON_MIMETYPE);
+            $this->getResponse()->setBody(json_encode($arrayOfVolumesOrSections));
+            return;
+        }
+
+
+        $sorted_papersToBeSaved = [];
+        $needsToToBeSaved = false;
+
+        foreach ($sorted_papers as $position => $paper) {
+            $sorted_papersToBeSaved[$position] = $paper['paperid'];
+            if (($paper[Episciences_Volume::PAPER_POSITION_NEEDS_TO_BE_SAVED]) && (!$needsToToBeSaved)) {
+                $needsToToBeSaved = true;
             }
         }
+
+        if (!empty($sorted_papersToBeSaved) && $needsToToBeSaved) {
+            Episciences_VolumesManager::savePaperPositionsInVolume($vid, $sorted_papersToBeSaved);
+        }
+
+        $gaps = Episciences_Volume::findGapsInPaperOrders($sorted_papers);
+        $this->view->gapsInOrderingPapers = $gaps;
+
+        $form = Episciences_VolumesManager::getForm($referer, $volume);
+        $journal = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
+        $journal->loadSettings();
+        $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
+        if ($journalPrefixDoi !== '') {
+            $form->addElement('hidden', "journalprefixDoi", [
+                'label' => "journalprefixDoi",
+                'value' => $journalPrefixDoi . '/' . RVCODE . ".proceedings.",
+                'data-none' => true
+            ]);
+        }
+        if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
+            $post = $request->getPost();
+
+            if ($form->isValid($post)) {
+                $this->checkValidateDate($post['year'], $request);
+                $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
+
+                $volume->saveVolumeMetadata($request->getPost());
+
+                if ($post['conference_proceedings_doi'] !== '' &&
+                    (
+                        $post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED ||
+                        $post['doi_status'] === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED
+                    )
+                ) {
+                    $volumequeue = new Episciences_Volume_DoiQueue();
+                    $volumequeue->setVid($volume->getVid());
+                    $volumequeue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+                    Episciences_Volume_DoiQueueManager::add($volumequeue);
+                }
+                if ($resVol) {
+                    $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
+                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                } else {
+                    $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                }
+
+                $this->_helper->redirector->gotoUrl($referer);
+
+            } else {
+                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            }
+        }
+        $defaults = Episciences_VolumesManager::getFormDefaults($volume);
+
+        if ($defaults) {
+            $form->setDefaults($defaults);
+        }
+
+        $this->view->form = $form;
+        $this->view->paperList = $sorted_papers;
+
+        $this->view->volume = $volume;
+        $this->view->metadataForm = Episciences_VolumesManager::getMetadataForm();
     }
 
+    public function exportAction()
+    {
+        $request = $this->getRequest();
+        $vid = $request->getParam('id');
+        $errorMessage = false;
+        $volume = false;
+
+
+
+        if (!$vid || !is_numeric($vid)) {
+            $errorMessage = "Identifiant du volume absent ou incorrect.";
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
+            $this->redirect('/browse/volumes');
+            return;
+        }
+
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+
+
+
+        if (!$volume) {
+            $errorMessage = "Ce volume n'existe pas.";
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
+            $this->redirect('/browse/volumes');
+            return;
+        }
+
+
+
+        if (!$volume->isProceeding()) {
+            $errorMessage = "Type de volume non pris en charge pour l'export Crossref.";
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
+            $this->redirect('/browse/volumes');
+            return;
+        }
+
+        $volume->loadMetadatas();
+
+        try {
+            $dateString =  $volume->getEarliestPublicationDateFromVolume();
+        } catch (Exception $exception) {
+            trigger_error($exception->getMessage(), E_USER_WARNING);
+        }
+
+        $dateObject = DateTime::createFromFormat('d/m/Y', $dateString);
+
+        // Check if the date object was created successfully
+        if ($dateObject) {
+            // Return the date in the desired format Y-m-d
+            $publicationDate =  $dateObject->format('Y');
+        } else {
+            $publicationDate =  date('Y');
+        }
+
+        $journal = Episciences_ReviewsManager::findByRvcode(RVCODE);
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        header('Content-Type: text/xml; charset=UTF-8');
+
+        $this->view->publicationDate = $publicationDate;
+        $this->view->journal = $journal;
+        $this->view->volume = $volume;
+
+        $this->renderScript('volume/crossref.phtml');
+    }
 
 }
 

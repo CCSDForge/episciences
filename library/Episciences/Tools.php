@@ -9,7 +9,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use League\HTMLToMarkdown\HtmlConverter;
-use WhiteCube\Lingua\Service as Lingua;
 
 class Episciences_Tools
 {
@@ -1595,19 +1594,6 @@ class Episciences_Tools
         return ctype_upper($latestSubString);
 
 
-    }
-
-    public static function translateToIso6392b(string $string): string {
-        return Lingua::create($string)->toISO_639_2b();
-    }
-
-    public static function translateToTwoLetterCode(string $string): ?string {
-        try {
-            return Lingua::create($string)->toISO_639_1();
-        } catch (Exception $e) {
-            trigger_error($e->getMessage());
-            return null;
-        }
     }
 
     public static function translateToICU(string $string): string {
