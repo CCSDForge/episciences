@@ -4763,8 +4763,7 @@ class Episciences_Paper
             )
         ) {
             $urlPdf = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN . '/' . $this->getDocid() . '/pdf';
-            $citations = Episciences_BibliographicalsReferencesTools::getBibRefFromApi($urlPdf);
-            return $citations;
+            return Episciences_BibliographicalsReferencesTools::getBibRefFromApi($urlPdf);
         }
         return [];
     }
