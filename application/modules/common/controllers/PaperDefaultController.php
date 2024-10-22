@@ -320,13 +320,14 @@ class PaperDefaultController extends DefaultController
      * @param Episciences_Comment $oComment : request comment
      * @param array $tags : additional tags
      * @param array $additionalAttachments
+     * @param array $options : others options
      * @return bool
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = []): bool
+    protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [], array $options = []): bool
     {
         $commentatorUid = $oComment->getUid();
         $commentator = new Episciences_User();
@@ -371,7 +372,7 @@ class PaperDefaultController extends DefaultController
         $recipientTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-            Episciences_Mail_Tags::TAG_COMMENT => $oComment->getMessage(),
+            Episciences_Mail_Tags::TAG_COMMENT => (isset($options['replayedTo']) && $options['replayedTo'] instanceof Episciences_Comment) ? $options['replayedTo']->getMessage() : $oComment->getMessage(),
             Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId),
             Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
