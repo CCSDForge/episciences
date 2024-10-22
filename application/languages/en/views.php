@@ -313,8 +313,6 @@ return array(
 
 
     // Revue : Membres du comité éditorial (Review: editorial staff)
-    "Téléphone :" => "Phone:",
-    "Fax :" => "Fax:",
     "Site web :" => "Website:",
 
 
