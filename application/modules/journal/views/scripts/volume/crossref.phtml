@@ -1,0 +1,87 @@
+<?php
+/** @var $journal Episciences_Review */
+$journal = $this->journal;
+$journalUrl = $journal->getUrl();
+$journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
+$journalDoiPrefix = $journal->getDoiSettings()->getDoiPrefix();
+/** @var $volume Episciences_Volume */
+$volume = $this->volume;
+$volumeSettings = $volume->getSettings();
+
+$dateTime = new DateTime('now');
+$timestamp = $dateTime->format('YmdHisv');
+
+?>
+<doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://www.crossref.org/schema/5.3.1 https://www.crossref.org/schemas/crossref5.3.1.xsd"
+           xmlns="http://www.crossref.org/schema/5.3.1"
+           version="5.3.1">
+    <head>
+        <doi_batch_id><?php echo DOMAIN . '_' . $volume->getVid() . '_' . $timestamp; ?></doi_batch_id>
+        <timestamp><?php echo $timestamp; ?></timestamp>
+        <depositor>
+            <depositor_name><?php echo DOMAIN; ?></depositor_name>
+            <email_address><?php echo DOI_EMAIL_CONTACT; ?></email_address>
+        </depositor>
+        <registrant><?php echo DOMAIN; ?></registrant>
+    </head>
+    <body>
+    <conference>
+        <event_metadata>
+            <conference_name><?= $this->escape($volumeSettings['conference_name']) ?></conference_name>
+            <?php if ($volumeSettings['conference_theme'] !== ''): ?>
+                <conference_theme><?= $this->escape($volumeSettings['conference_theme']) ?></conference_theme>
+            <?php endif; ?>
+            <?php if ($volumeSettings['conference_acronym'] !== ''): ?>
+                <conference_acronym><?= $this->escape($volumeSettings['conference_acronym']) ?></conference_acronym>
+            <?php endif; ?>
+            <?php if ($volumeSettings['conference_number'] !== ''): ?>
+                <conference_number><?= $this->escape($volumeSettings['conference_number']) ?></conference_number>
+            <?php endif; ?>
+            <?php if ($volumeSettings['conference_location'] !== ''): ?>
+                <conference_location><?= $this->escape($volumeSettings['conference_location']) ?></conference_location>
+            <?php endif; ?>
+
+            <?php if ($volumeSettings['conference_start'] !== '' && $volumeSettings['conference_end'] !== '') : ?>
+
+                <?php
+                $proceeding_start = new dateTime($volumeSettings['conference_start']);
+                $proceeding_end = new dateTime($volumeSettings['conference_end']);
+                ?>
+                <conference_date start_month="<?= $proceeding_start->format('m') ?>"
+                                 start_year="<?= $proceeding_start->format('Y') ?>"
+                                 start_day="<?= $proceeding_start->format('d') ?>"
+                                 end_year="<?= $proceeding_end->format('Y') ?>"
+                                 end_month="<?= $proceeding_end->format('m') ?>"
+                                 end_day="<?= $proceeding_end->format('d') ?>"></conference_date>
+            <?php endif; ?>
+        </event_metadata>
+        <proceedings_metadata language="en">
+            <?php
+            $titles = $volume->getTitles();
+            if (is_array($titles) && !empty($titles)) {
+                $firstTitle = array_values($titles)[0];
+            }
+            ?>
+            <proceedings_title><?= $this->escape($firstTitle) ?></proceedings_title>
+            <?php /* <proceedings_subject>Metadata</proceedings_subject> */ ?>
+            <publisher>
+                <publisher_name><?php echo $this->escape($journal->getName()); ?></publisher_name>
+            </publisher>
+
+            <publication_date media_type="online">
+                <year><?= $this->publicationDate ?></year>
+            </publication_date>
+
+            <noisbn reason="simple_series"/>
+            <doi_data>
+                <?php if ($journalDoiPrefix !== '' && substr(strrchr($volumeSettings['conference_proceedings_doi'], "."), 1) !== ''): ?>
+                    <doi><?php echo $this->escape($volumeSettings['conference_proceedings_doi']); ?></doi>
+                <?php endif; ?>
+                <timestamp><?php echo $timestamp; ?></timestamp>
+                <resource><?= $this->escape($journalUrl) . '/volume/view/id/' . $this->escape($volume->getVid()) ?></resource>
+            </doi_data>
+        </proceedings_metadata>
+    </conference>
+    </body>
+</doi_batch>

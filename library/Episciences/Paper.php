@@ -3,6 +3,8 @@
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Languages;
 use Symfony\Component\Serializer\Encoder\JsonEncode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
@@ -1948,25 +1950,37 @@ class Episciences_Paper
         return $this;
     }
 
-    private function processArraySubject($subject, &$result = []): void
+    private function processArraySubject($subjectCollection, &$result = []): void
     {
-        foreach ($subject as $key => $value) {
-            $isStringKey = is_string($key);
-            $key = ($isStringKey && $translatedKey = Episciences_Tools::translateToTwoLetterCode($key)) ? $translatedKey : $key;
+        foreach ($subjectCollection as $languageCode => $subject) {
+            $subject = trim($subject);
+            $isStringKey = is_string($languageCode);
+            try {
+                $languageCode = ($isStringKey && $translatedKey = Languages::getAlpha2Code($languageCode)) ? $translatedKey : $languageCode;
+            } catch (MissingResourceException $missingResourceException) {
+                // $languageCode remains $languageCode
+            }
+
             if ($isStringKey) {
-                $result[$key][] = $value;
+                $result[$languageCode][] = $subject;
             } else {
-                $result[] = $value;
+                $result[] = $subject;
             }
         }
     }
 
-    private function processSingleSubject($index, $subject, &$result = []): void
+    private function processSingleSubject($languageCode, $subject, &$result = []): void
     {
-        $isStringIndex = is_string($index);
-        $index = ($isStringIndex && $translatedIndex = Episciences_Tools::translateToTwoLetterCode($index)) ? $translatedIndex : $index;
+        $isStringIndex = is_string($languageCode);
+        $subject = trim($subject);
+        try {
+            $languageCode = ($isStringIndex && $translatedIndex = Languages::getAlpha2Code($languageCode)) ? $translatedIndex : $languageCode;
+        } catch (MissingResourceException $missingResourceException) {
+            // $index remains $index
+        }
+
         if ($isStringIndex) {
-            $result[$index][] = trim($subject);
+            $result[$languageCode][] = $subject;
         } else {
             $result[] = $subject;
         }
@@ -3145,7 +3159,7 @@ class Episciences_Paper
 
         $oaiPrefixString = 'oai:';
 
-        if($repositoryIdentifier && str_starts_with($repositoryIdentifier, $oaiPrefixString)) {
+        if ($repositoryIdentifier && str_starts_with($repositoryIdentifier, $oaiPrefixString)) {
             $repositoryIdentifier = substr($repositoryIdentifier, strlen($oaiPrefixString));
         }
 
