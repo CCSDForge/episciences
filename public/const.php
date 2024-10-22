@@ -297,6 +297,5 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('ENDPOINTS_INDEXING_HOST', '');
         define('ENDPOINTS_INDEXING_TIMEOUT', 0);
         define('DOI_EMAIL_CONTACT', '');
-        define('EPISCIENCES_LOG_PATH', '');
     }
 }
