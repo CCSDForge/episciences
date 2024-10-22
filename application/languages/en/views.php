@@ -1210,9 +1210,6 @@ return array(
     // users permissions
     "administrategraphabstract-addgraphabs" => "Graphical Abstract: Add/Edit",
     "administrategraphabstract-deletegraphabs" => "Graphical Abstract: Delete",
-    "administratelinkeddata-setnewinfoldAction" => "Related works: Edit a relationship",
-    "administratelinkeddata-addld" => "Add a related work",
-    "administratelinkeddata-removeld" => "Remove a related work",
     "administratemail-deletetemplate" => "Email: Delete customized template and revert back to default one",
     "administratemail-edittemplate" => "Email: Edit the template",
     "administratemail-history" => "Email: List email history",
@@ -2532,7 +2529,7 @@ return array(
     "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher.",
     // graphical abstract
     "Fichier non accepté" => "File not accepted",
-    'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max autorized",
+    'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max authorized",
     "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
     "Ajouter un abstract graphique" => "Add a graphical abstract",
     "Modifier l'abstract graphique" => "Change the graphical abstract",
