@@ -55,8 +55,7 @@
     "symfony/polyfill-php84": "*",
     "symfony/property-access": "^6.4",
     "symfony/serializer": "^6.4",
-    "vlucas/phpdotenv": "^5.5",
-    "whitecube/lingua": "^1.1"
+    "vlucas/phpdotenv": "^5.5"
   },
 
   "require-dev": {
