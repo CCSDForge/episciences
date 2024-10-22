@@ -71,8 +71,6 @@ return [
     "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexation de la revue",
 
 
-
-
     //Recherche : facettes
     "year" => "Année",
     "volume" => "Volume",
@@ -368,10 +366,13 @@ return [
     "Supplement" => "Supplément",
 
 
+    'Journal article' => 'Article',
+    'Publication' => 'Publication',
+
 
     // DOCUMENT TYPES
     "Preprint" => "Pré-publication",
-    'ConferenceObject' => 'Communication dans un congrès',
+    'Conferenceobject' => 'Communication dans un congrès',
     'Dataset' => 'Jeu de données',
 
     'classification_jel' => 'JEL Classification System',

@@ -1449,4 +1449,16 @@ class Episciences_Volume
         return $assoc;
 
     }
+
+    public function getEarliestPublicationDateFromVolume()
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, new Zend_Db_Expr('MIN(PUBLICATION_DATE) AS FIRST_PUB_DATE'))
+            ->where('VID = ?', $this->getVid())
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        return $db->fetchOne($select);
+    }
+
+
 }

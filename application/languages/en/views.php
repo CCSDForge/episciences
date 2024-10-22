@@ -42,7 +42,7 @@ return array(
     'article' => array('article', 'articles'),
     'Article' => 'Article',
     'Preprint' => 'Preprint',
-    'ConferenceObject' => 'Conference paper',
+    'Conferenceobject' => 'Conference paper',
     'Text' => "Preprint",
     'Dataset' => 'Jeux de données',
 
@@ -1156,6 +1156,8 @@ return array(
     "Avant" => "Before",
 
     'Revues' => 'Journals',
+    'Journal article' => 'Journal article',
+    'Publication' => 'Publication',
 
     "Réassigner l'article" => "Reassign paper",
     "Le status de la relecture a été changé avec succès" => 'The status of this review has been successfully updated',
@@ -2485,6 +2487,7 @@ return array(
     "Masquer les références bibliographique" => "Hide bibliographical references",
     "Gérer" => "Manage",
     "Import BibTeX" => "BibTeX import",
+    "Type de volume non pris en charge pour l'export Crossref." => 'Volume type not supported for Crossref export.',
 
     // relationships linked data
     "isDerivedFrom" => "Is derived from",
