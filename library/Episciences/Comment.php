@@ -130,10 +130,27 @@ class Episciences_Comment
             $this->setUid($result['UID']);
             $this->setMessage($result['MESSAGE']);
             $this->setFile($result['FILE']);
+
             if ($result['OPTIONS']) {
                 $this->setOptions(Zend_Json::decode($result['OPTIONS']));
             }
+
             $this->setWhen($result['WHEN']);
+
+            if (isset($result['FILE'])) {
+                if ($this->isCopyEditingComment()) {
+                    $path = Episciences_PapersManager::buildDocumentPath($this->getDocid());
+                    $path .= DIRECTORY_SEPARATOR;
+                    $path .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+                    $path .= DIRECTORY_SEPARATOR;
+                    $path .= $this->getPcid();
+                    $path .= DIRECTORY_SEPARATOR;
+                    $this->setFilePath($path);
+                } else {
+                    $this->setFilePath(sprintf('%s/comments/', Episciences_PapersManager::buildDocumentPath($this->getDocid())));
+                }
+
+            }
 
             return $result;
 

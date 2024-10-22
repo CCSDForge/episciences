@@ -760,7 +760,7 @@ class Episciences_Submit
             $rvId = RVID;
         }
 
-        $isNewVersionOf = !empty($latestObsoleteDocId);
+        $isNewVersionOf = !empty($latestObsoleteDocId); // empty $latestObsoleteDocId if submitted  via "Submit an article". (submit/index)
         $result = [];
         $id = trim($id);
 

@@ -61,9 +61,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - classification of keywords by language
 - [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
 - [#531](https://github.com/CCSDForge/episciences/issues/531) enhances volumes form translations
-- [#564](https://github.com/CCSDForge/episciences/issues/564): Fixed and changed French label in journal settings
-- [#547](https://github.com/CCSDForge/episciences/issues/547): Ask for other editors opinion: select | deselect all option. 
 - bump tinymce to latest version (7.2.0)
+
+
+## Unreleased [MAIN]
+- [#607](https://github.com/CCSDForge/episciences/issues/607):
+    - fixed: the two tags '%COMMENT%%' and '%%ANSWER%%' have identical content.
+    - improvement: the attachment with the original comment is now attached to the reply.
+
+### Changed
+- [#564](https://github.com/CCSDForge/episciences/issues/564): Fixed and changed French label in journal settings
+- [#547](https://github.com/CCSDForge/episciences/issues/547): Ask for other editors opinion: select | deselect all option.
+- epi-notify from HAL: resubmit the same version as a new version.
+
 
 
 ## v1.0.45.1 - 2024-09-18
@@ -72,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v1.0.45 - 2024-09-16
 
 ### Added
-- [#580](https://github.com/CCSDForge/episciences/issues/580) zbMATH Open export: Authors: add affiliations and ORCIDs
+- [#580](https://github.com/CCSDForge/episciences/issues/580) zbMATH Open export: Authors: add affiliations and ORCIDs 
 
 ### Fixed
 - Volume names are not translated in the volume drop-down list on the reviewing grids list page.
@@ -81,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#571](https://github.com/CCSDForge/episciences/issues/571): The number of days before the review deadline was calculated incorrectly (one day difference).
 ### Changed
 - Ability to block the automatic transfer of a submission from HAL
+
 
 ## v1.0.44.3 - 2024-07-23
 ### Changed
