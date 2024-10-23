@@ -73,6 +73,14 @@ class InboxNotifications extends Script
         $notificationsCollection = $reader->getNotifications();
         $count = count($notificationsCollection);
 
+        foreach ($this->getParams() as $name => $value) {
+
+            if ($this->isVerbose() || $this->isDebug()) {
+                $this->logger->info($name . ' param has been set to: ' . $value);
+            }
+
+        }
+
         if ($this->isVerbose()) {
 
             if ($count < 1) {
@@ -207,6 +215,8 @@ class InboxNotifications extends Script
                 $this->logger->warning($message);
             }
 
+            return false;
+
         } elseif ($type !== $this->getCoarNotifyType()) {
             $message .= "the 'type' property doesn't match: ";
             $message .= implode(', ', $this->getCoarNotifyType());
@@ -214,6 +224,8 @@ class InboxNotifications extends Script
             if ($this->isVerbose()) {
                 $this->logger->warning($message);
             }
+
+            return false;
 
 
         } elseif (
@@ -323,9 +335,12 @@ class InboxNotifications extends Script
 
         $result = $this->getRecord($data['repoid'], $data['identifier'], $data['version'], $journal->getRvid());
 
-        if (isset($result['record'])) {
-            $data['record'] = $result['record'];
+        if (isset($result['error']) || !isset($result['record'])) {
+            $this->logger->warning($result['error']);
+            return false;
         }
+
+        $data['record'] = $result['record'];
 
         if (isset($result[Episciences_Repositories_Common::ENRICHMENT])) {
             $data[Episciences_Repositories_Common::ENRICHMENT] = $result[Episciences_Repositories_Common::ENRICHMENT];
@@ -334,11 +349,7 @@ class InboxNotifications extends Script
 
         $newVerErrors = isset($result['newVerErrors']) ? (array)$result['newVerErrors'] : [];
 
-        if (isset($result['error'])) {
-
-            $this->logger->warning($result['error']);
-
-        } elseif ((int)$result['status'] === 1) {
+        if ((int)$result['status'] === 1) {
 
             $apply = true;
             if ($isVerbose) {
@@ -581,7 +592,7 @@ class InboxNotifications extends Script
 
             }
 
-            if ($this->isVerbose()){
+            if ($this->isVerbose()) {
                 $message = 'The article (identifier = ' . $paper->getIdentifier() . ') has been submitted';
                 $this->logger->info($message);
             }
@@ -601,7 +612,7 @@ class InboxNotifications extends Script
                     }
 
 
-                } else if($this->isVerbose()){
+                } else if ($this->isVerbose()) {
                     $message = '[Debug mode ON]: The article (identifier = ' . $data['identifier'] . ') has been submitted';
                     $this->logger->info($message);
 
@@ -730,7 +741,7 @@ class InboxNotifications extends Script
 
         $isVerbose = $this->isVerbose();
 
-        if($isVerbose){
+        if ($isVerbose) {
             $this->logger->info('Send notifications ...');
         }
 
@@ -1389,7 +1400,7 @@ class InboxNotifications extends Script
     private function initLogging(): void
     {
 
-        $loggerName = sprintf('%s_monolog', strtolower(get_class($this)));
+        $loggerName = sprintf('%s', strtolower(get_class($this)));
         $logger = new Logger($loggerName);
 
         $handler = new RotatingFileHandler(
@@ -1404,6 +1415,11 @@ class InboxNotifications extends Script
         $logger->pushHandler($handler);
         $logger->pushHandler(new StreamHandler('php://stdin', Logger::DEBUG));
         $this->setLogger($logger);
+    }
+
+    public function setParam($name, $value, bool $force = false): bool
+    {
+        return parent::setParam($name, $value, $force); // to avoid creating an unnecessary log file @see Script::log()
     }
 }
 
