@@ -290,5 +290,7 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('ENDPOINTS_SEARCH_PROTOCOL', '');
         define('ENDPOINTS_INDEXING_HOST', '');
         define('ENDPOINTS_INDEXING_TIMEOUT', 0);
+        define('EPISCIENCES_LOG_PATH', '');
+        define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
     }
 }
