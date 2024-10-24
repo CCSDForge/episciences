@@ -564,15 +564,22 @@ abstract class Script {
      * set user defined parameter
      * @param $name
      * @param $value
+     * @param bool $force
      * @return bool
      */
-    public function setParam($name, $value)
+    public function setParam($name, $value, bool $force = true)
     {
         $this->_params[$name] = $value;
-        $this->displayTrace($name . ' param has been set to: ' . $value);
+        if ($force){
+            $this->displayTrace($name . ' param has been set to: ' . $value);
+        }
 
-        if ($name == 'app_env' && !defined('APPLICATION_ENV')) {
-            $this->displayTrace('APPLICATION_ENV constant has been set to: ' . $value);
+        if ($name === 'app_env' && !defined('APPLICATION_ENV')) {
+
+            if ($force){
+                $this->displayTrace('APPLICATION_ENV constant has been set to: ' . $value);
+            }
+
             define('APPLICATION_ENV', $value);
         }
 

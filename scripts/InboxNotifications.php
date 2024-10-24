@@ -73,6 +73,14 @@ class InboxNotifications extends Script
         $notificationsCollection = $reader->getNotifications();
         $count = count($notificationsCollection);
 
+        foreach ($this->getParams() as $name => $value) {
+
+            if ($this->isVerbose() || $this->isDebug()) {
+                $this->logger->info($name . ' param has been set to: ' . $value);
+            }
+
+        }
+
         if ($this->isVerbose()) {
 
             if ($count < 1) {
@@ -131,13 +139,13 @@ class InboxNotifications extends Script
                 $rvCode = $this->getRvCodeFromUrl($notifyPayloads['target']['id']);
 
                 $journal = ($rvCode !== '') ? Episciences_ReviewsManager::findByRvcode($rvCode, true) : null;
-                $jCode = $journal ? $journal->getCode() : 'undefined';
-
-                if ($this->isVerbose()) {
-                    $this->logger->info(sprintf('Current journal: %s [#%s]', $jCode, Episciences_Review::$_currentReviewId));
-                }
 
                 if ($journal) {
+
+                    if ($this->isVerbose()) {
+                        $this->logger->info(sprintf('Current journal: %s [#%s]', $journal->getCode(), Episciences_Review::$_currentReviewId));
+                    }
+
 
                     Zend_Registry::set('reviewSettings', $journal->getSettings());
                     $actor = $notifyPayloads['actor']['id'] ?? null; // uid
@@ -195,7 +203,6 @@ class InboxNotifications extends Script
             TODO Fix test
             $message .= "the '@context' property doesn't match: ";
             $message .= implode(', ', self::COAR_NOTIFY_AT_CONTEXT);
-            $this->displayWarning($message, $this->isVerbose());
             // Test always fails but context is valid ???
             */
 
@@ -203,23 +210,37 @@ class InboxNotifications extends Script
 
             $message .= "the 'origin' property doesn't match: ";
             $message .= $this->getCoarNotifyOrigin()['inbox'];
-            $this->displayWarning($message, $this->isVerbose());
 
+            if ($this->isVerbose()) {
+                $this->logger->warning($message);
+            }
+
+            return false;
 
         } elseif ($type !== $this->getCoarNotifyType()) {
             $message .= "the 'type' property doesn't match: ";
             $message .= implode(', ', $this->getCoarNotifyType());
-            $this->displayWarning($message, $this->isVerbose());
+
+            if ($this->isVerbose()) {
+                $this->logger->warning($message);
+            }
+
+            return false;
+
 
         } elseif (
             !isset($notifyPayloads['target']['id']) ||
             !filter_var($notifyPayloads['target']['id'], FILTER_VALIDATE_URL) ||
-            strpos($notifyPayloads['target']['id'], DOMAIN) === false
+            !str_contains($notifyPayloads['target']['id'], DOMAIN)
         ) {
 
             $message .= 'Not valid notify target => ' . $notifyPayloads['target']['id'];
 
-            $this->displayError($message, $this->isVerbose());
+            if ($this->isVerbose()) {
+                $this->logger->critical($message);
+
+            }
+
             $result = false;
 
         }
@@ -260,7 +281,7 @@ class InboxNotifications extends Script
     {
 
         if (!$url) {
-            $this->displayWarning('EMPTY TARGET IDENTIFIER' . PHP_EOL);
+            $this->logger->warning('EMPTY TARGET IDENTIFIER');
             return '';
         }
 
@@ -270,7 +291,7 @@ class InboxNotifications extends Script
             mb_substr($parse['host'], 0, (mb_strlen($parse['host']) - mb_strlen(DOMAIN)) - 1) :
             '';
 
-        $this->displayDebug('CURRENT RVCODE: ' . $rvCode . PHP_EOL);
+        $this->logger->info('CURRENT RVCODE: ' . $rvCode);
         return $rvCode;
     }
 
@@ -284,12 +305,6 @@ class InboxNotifications extends Script
     private function initSubmission(Episciences_Review $journal, string $actor, string $object, array $notifyPayloads = []): bool
     {
 
-        $apply = false;
-        $newVerErrors = null;
-        $data = $this->dataFromUrl($object);
-        $data['rvid'] = $journal->getRvid();
-        $data['notifyPayloads'] = $notifyPayloads;
-
         $repoId = (int)Episciences_Repositories::HAL_REPO_ID;
 
         if (defined('NOTIFY_TARGET_HAL_LINKED_REPOSITORY')) {
@@ -297,82 +312,82 @@ class InboxNotifications extends Script
             $repoId = $this->getRepoId();
 
             if (null === $repoId) {
-                $this->displayError('Undefined repository ID');
+                $this->logger->critical('Undefined repository ID');
                 return false;
 
             }
         }
 
+        $apply = false;
+        $data = $this->dataFromUrl($object);
+        $data['rvid'] = $journal->getRvid();
+        $data['notifyPayloads'] = $notifyPayloads;
         $data['repoid'] = $repoId;
         $data['uid'] = $this->getUidFromMailString($actor);
 
         $isVerbose = $this->isVerbose();
 
-        $this->displayInfo('Submit to the journal : ' . $journal->getCode() . PHP_EOL, $isVerbose);
-        $this->displayInfo('Actor : ' . $actor . PHP_EOL, $isVerbose);
-        $this->displayInfo('Paper : ' . $data['identifier'] . '(version = ' . $data['version'] . ')' . PHP_EOL, $isVerbose);
+        if ($isVerbose) {
+            $this->logger->info(sprintf('Submit to the journal: %s', $journal->getCode()));
+            $this->logger->info(sprintf('Actor: %s', $actor));
+            $this->logger->info(sprintf('Paper: %s(version = %s)', $data['identifier'], $data['version']));
+        }
+
+        $result = $this->getRecord($data['repoid'], $data['identifier'], $data['version'], $journal->getRvid());
+
+        if (isset($result['error']) || !isset($result['record'])) {
+            $this->logger->warning($result['error']);
+            return false;
+        }
+
+        $data['record'] = $result['record'];
+
+        if (isset($result[Episciences_Repositories_Common::ENRICHMENT])) {
+            $data[Episciences_Repositories_Common::ENRICHMENT] = $result[Episciences_Repositories_Common::ENRICHMENT];
+        }
 
 
-        try {
+        $newVerErrors = isset($result['newVerErrors']) ? (array)$result['newVerErrors'] : [];
 
-            $result = $this->getRecord($data['repoid'], $data['identifier'], $data['version'], $journal->getRvid(), true);
+        if ((int)$result['status'] === 1) {
 
-            if (isset($result['record'])) {
-                $data['record'] = $result['record'];
+            $apply = true;
+            if ($isVerbose) {
+                $this->logger->info('Success: ready to submit...');
             }
 
-            if (isset($result[Episciences_Repositories_Common::ENRICHMENT])) {
-                $data[Episciences_Repositories_Common::ENRICHMENT] = $result[Episciences_Repositories_Common::ENRICHMENT];
+        } elseif ((int)$result['status'] === 2) {
+
+            if ($isVerbose) {
+                $this->logger->warning('Existing article...');
             }
 
 
-            if (isset($result['error'])) {
+            if (isset($newVerErrors['message'])) {
 
-                $this->displayError($result['error'] . PHP_EOL);
+                if ($isVerbose) {
+                    $this->logger->warning('Check if it is possible to replace this version...');
+                }
 
-            } elseif ($result['status'] === 1) {
+                if (isset($newVerErrors['canBeReplaced'])) {
 
-                $apply = true;
-
-                $this->displaySuccess('Success' . PHP_EOL, $isVerbose);
-                $this->displaySuccess('Ready to submit' . PHP_EOL, $isVerbose);
-
-
-            } elseif ($result['status'] === 2) {
-
-                $this->displayWarning('Existing article...' . PHP_EOL);
-
-                $newVerErrors = $result['newVerErrors'];
-
-                if ($newVerErrors && isset($result['newVerErrors']['message'])) {
-
-                    $this->displayTrace('Can be replaced...' . PHP_EOL);
-
-                    if (isset($newVerErrors['canBeReplaced'])) {
-
-                        $this->displayInfo($result['newVerErrors']['message'], $this->isVerbose());
-
-                        if (
-                            $newVerErrors['canBeReplaced'] || // replace existing version before the reviewing process begins
-                            isset($newVerErrors[self::PAPER_CONTEXT]) // new version following a request for the final version or modification
-                        ) {
-                            $apply = true;
-                        }
-
-                    } else {
-                        $this->displayError($result['newVerErrors']['message'] . PHP_EOL);
-
+                    if ($isVerbose) {
+                        $this->logger->info($newVerErrors['message']);
                     }
 
+                    if (
+                        $newVerErrors['canBeReplaced'] || // replace existing version before the reviewing process begins
+                        isset($newVerErrors[self::PAPER_CONTEXT]) // new version following a request for the final version or modification
+                    ) {
+                        $apply = true;
+                    }
+
+                } else if ($isVerbose) {
+                    $this->logger->warning($newVerErrors['message'] . PHP_EOL);
                 }
             }
-
-
-        } catch (Zend_Exception $e) {
-
-            $this->displayCritical($e->getMessage() . PHP_EOL);
-
         }
+
 
         return $apply && $this->addSubmission($journal, $data, $newVerErrors);
 
@@ -422,15 +437,20 @@ class InboxNotifications extends Script
      * @param int|null $rvId
      * @param bool $isEpiNotify : from Episciences - COAR Notification Manager inbox
      * @return array
-     * @throws Zend_Exception
+     *
      */
     private function getRecord(int $repoId, string $identifier, int $version = null, int $rvId = null, bool $isEpiNotify = true): array
     {
         if ($this->isVerbose()) {
-            $this->displayInfo('get record...' . PHP_EOL, true);
+            $this->logger->info('Get record...');
         }
 
-        return Episciences_Submit::getDoc($repoId, $identifier, $version, null, true, $rvId, $isEpiNotify);
+        try {
+            return Episciences_Submit::getDoc($repoId, $identifier, $version, null, true, $rvId, $isEpiNotify);
+        } catch (Zend_Exception $e) {
+            $this->logger->critical($e->getMessage());
+            return ['error' => 'Empty body'];
+        }
     }
 
     /**
@@ -445,9 +465,9 @@ class InboxNotifications extends Script
         $isDebug = $this->isDebug();
         $isAdded = false;
         $canBeReplaced = $options['canBeReplaced'] ?? false;
-
         $context = null;
         $isFirstSubmission = true;
+
         if (isset($options[self::PAPER_CONTEXT])) {
             $isFirstSubmission = false;
             /** @var Episciences_Paper $context */
@@ -466,19 +486,16 @@ class InboxNotifications extends Script
         $paper->setSubmission_date();
         $paper->setWhen();
 
-
         if ($paper->alreadyExists()) {
 
             $message = 'This article (identifier = ';
             $message .= $data['identifier'];
             $message .= ') has already been submitted';
 
-            $this->displayWarning($message . PHP_EOL);
+            $this->logger->info($message);
 
             if ($context && $context->getVersion() >= $paper->getVersion()) {
-                $debugMsg = sprintf('Abort processing: identical versions.%s', PHP_EOL);
-                $this->displayDebug($debugMsg, true);
-                $this->logger->debug($debugMsg);
+                $this->logger->warning('Abort processing: identical versions.');
                 return false;
             }
 
@@ -506,9 +523,16 @@ class InboxNotifications extends Script
                     if (isset($uResult['message'])) {
 
                         if ($uResult ['code'] === 0) {
-                            $this->displaySuccess($uResult['message'], $this->isVerbose());
+
+                            if ($this->isVerbose()) {
+                                $this->logger->info($uResult['message']);
+                            }
+
                         } else {
-                            $this->displayWarning($uResult['message'], $this->isVerbose());
+
+                            if ($this->isVerbose()) {
+                                $this->logger->warning($uResult['message']);
+                            }
 
                             if (!$isDebug) {
 
@@ -527,7 +551,7 @@ class InboxNotifications extends Script
 
                                     if (!$isAdded) {
                                         $message = 'An error occurred while saving the article (identifier = ' . $data['identifier'] . ')';
-                                        $this->displayError($message . PHP_EOL);
+                                        $this->logger->critical($message);
 
                                     }
 
@@ -555,7 +579,6 @@ class InboxNotifications extends Script
 
 
                 } catch (Exception $e) {
-                    $this->displayCritical($e->getMessage());
                     $this->logger->critical($e->getMessage());
                 }
 
@@ -564,15 +587,15 @@ class InboxNotifications extends Script
                 try {
                     $isAdded = $this->saveNewVersion($context, $data, $journal, $logDetails);
                 } catch (Exception $e) {
-                    $this->displayCritical($e->getMessage());
                     $this->logger->critical($e->getMessage());
                 }
 
             }
 
-            $message = 'The article (identifier = ' . $paper->getIdentifier() . ') has been submitted';
-            $this->displaySuccess($message . PHP_EOL, $this->isVerbose());
-            $this->logger->info($message . PHP_EOL);
+            if ($this->isVerbose()) {
+                $message = 'The article (identifier = ' . $paper->getIdentifier() . ') has been submitted';
+                $this->logger->info($message);
+            }
 
 
         } else {
@@ -584,21 +607,18 @@ class InboxNotifications extends Script
                     if (!$isAdded) {
 
                         $message = 'An error occurred while saving the article (identifier = ' . $data['identifier'] . ')';
-                        $this->displayError($message . PHP_EOL);
+                        $this->logger->critical($message);
 
                     }
 
 
-                } else {
-
+                } else if ($this->isVerbose()) {
                     $message = '[Debug mode ON]: The article (identifier = ' . $data['identifier'] . ') has been submitted';
-
-                    $this->displayDebug($message . PHP_EOL, $this->isVerbose());
-
+                    $this->logger->info($message);
 
                 }
             } catch (Exception $e) {
-                $this->displayCritical($e->getMessage() . PHP_EOL);
+                $this->logger->critical($e->getMessage());
             }
         }
 
@@ -609,9 +629,7 @@ class InboxNotifications extends Script
     private function addLocalUserInNotExist(array $data): ?Episciences_User
     {
         if ($this->isVerbose()) {
-            $debugMsg = 'Add local User if not exist' . PHP_EOL;
-            $this->displayInfo($debugMsg, true);
-            $this->logger->debug($debugMsg);
+            $this->logger->info('Add local User if not exist...');
         }
 
         $rvId = $data['rvid'];
@@ -621,7 +639,6 @@ class InboxNotifications extends Script
         try {
             $casUser = $user->findWithCAS($data['uid']);
         } catch (Zend_Db_Statement_Exception $e) {
-            $this->displayCritical($e->getMessage());
             $this->logger->critical($e->getMessage());
             return null;
         }
@@ -631,8 +648,7 @@ class InboxNotifications extends Script
             $message .= $data[self::NOTIFICATION_ID] ?? 'undefined';
             $message .= ' not processed:';
             $message .= ' CAS UID = ' . $uid . ' not found. Original string was: ' . $data['uid'];
-            $this->displayError($message . PHP_EOL);
-            $this->logger->warning($message . PHP_EOL);
+            $this->logger->warning($message);
             return null;
         }
 
@@ -645,8 +661,7 @@ class InboxNotifications extends Script
                         !$this->isDebug() &&
                         $user->save(false, false, $rvId) && $this->isVerbose()
                     ) {
-                        $this->displayInfo('local User added [UID = ' . $uid . PHP_EOL, true);
-                        $this->logger->info('local User added [UID = %s%s', $uid, PHP_EOL);
+                        $this->logger->info('local User added [UID = %s', $uid);
                     }
                 } catch (JsonException|Zend_Db_Adapter_Exception|Zend_Db_Statement_Exception|Zend_Exception   $e) {
 
@@ -656,8 +671,7 @@ class InboxNotifications extends Script
 
 
             } elseif ($this->isVerbose()) {
-                $this->displayInfo('Already existing profile' . PHP_EOL, true);
-                $this->logger->info(sprintf('Already existing profile%s', PHP_EOL));
+                $this->logger->info('Already existing profile.');
             }
         } catch (Zend_Db_Statement_Exception $e) {
             $this->logger->critical($e->getMessage());
@@ -686,9 +700,6 @@ class InboxNotifications extends Script
      * @param Episciences_Paper $paper
      * @param array $options
      * @return void
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Mail_Exception
      */
     private function notifyAuthorAndEditorialCommittee(Episciences_Review $journal, Episciences_Paper $paper, array $options = []): void
     {
@@ -710,13 +721,18 @@ class InboxNotifications extends Script
 
         $rvCode = $journal->getCode();
 
-        $translator = Zend_Registry::get('Zend_Translate');
+        try {
+            $translator = Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $e) {
+            $this->logger->critical($e->getMessage());
+            $translator = null;
+        }
 
         $journalPath = realpath(APPLICATION_PATH . '/../data/' . $rvCode);
 
         $journalPathLanguesDir = $journalPath ? $journalPath . '/languages' : null;
 
-        if ($journalPathLanguesDir && is_dir($journalPathLanguesDir) && count(scandir($journalPathLanguesDir)) > 2) {
+        if ($translator && $journalPathLanguesDir && is_dir($journalPathLanguesDir) && count(scandir($journalPathLanguesDir)) > 2) {
             $translator->addTranslation($journalPathLanguesDir);
         }
 
@@ -725,8 +741,9 @@ class InboxNotifications extends Script
 
         $isVerbose = $this->isVerbose();
 
-
-        $this->displayInfo('Send notifications' . PHP_EOL, $isVerbose);
+        if ($isVerbose) {
+            $this->logger->info('Send notifications ...');
+        }
 
         $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
 
@@ -740,11 +757,16 @@ class InboxNotifications extends Script
             Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $author->getFullName()
         ];
 
-        $authorTags = $commonTags + [
-                Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($aLocale, true),
-                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale)
-            ];
+        try {
+            $authorTags = $commonTags + [
+                    Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($aLocale, true),
+                    Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale)
+                ];
+        } catch (Zend_Exception $e) {
+            $this->logger->critical($e->getMessage());
+            $authorTags = $commonTags + [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl];
+        }
 
 
         try {
@@ -762,7 +784,11 @@ class InboxNotifications extends Script
                     $journalOptions
                 )
             ) {
-                $this->displaySuccess('Author: ' . $author->getScreenName() . ' notified' . PHP_EOL, $isVerbose);
+
+                if ($isVerbose) {
+                    $this->logger->info('Author: ' . $author->getScreenName() . ' notified.');
+                }
+
             }
         } catch (Exception $e) {
             $this->logger->critical($e->getMessage());
@@ -777,7 +803,6 @@ class InboxNotifications extends Script
                 $recipients = $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
             } catch (Zend_Db_Statement_Exception $e) {
                 $this->logger->critical($e->getMessage());
-
             }
         }
 
@@ -838,6 +863,8 @@ class InboxNotifications extends Script
 
             }
 
+            $unsent = [];
+
             foreach ($recipients as $recipient) {
 
                 $rLocale = $recipient->getLangueid(true);
@@ -857,32 +884,46 @@ class InboxNotifications extends Script
                 }
 
                 if ($refMessage !== '') {
-
-                    $refMessage = $translator->translate($refMessage, $rLocale, true);
+                    $refMessage = $translator ? $translator->translate($refMessage, $rLocale, true) : $refMessage;
                     $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $refMessage;
 
                 }
 
+                try {
+                    $isNotified = Episciences_Mail_Send::sendMailFromReview(
+                        $recipient,
+                        $managersTemplateKey,
+                        $adminTags,
+                        $paper,
+                        null,
+                        [],
+                        false,
+                        $cc,
+                        $journalOptions
+                    );
 
-                Episciences_Mail_Send::sendMailFromReview(
-                    $recipient,
-                    $managersTemplateKey,
-                    $adminTags,
-                    $paper,
-                    null,
-                    [],
-                    false,
-                    $cc,
-                    $journalOptions
-                );
+                } catch (Exception $e) {
+                    $this->logger->critical($e->getMessage());
+                    $isNotified = false;
+                    $unsent[] = $recipient->getUid();
 
-                $this->displaySuccess($recipient->getScreenName() . ' notified > OK' . PHP_EOL, $isVerbose);
-                $this->logger->info(sprintf('%s notified > OK%s', $recipient->getScreenName(), PHP_EOL));
+                }
+
+                if ($isVerbose && $isNotified) {
+                    $this->logger->info(sprintf('%s notified > OK', $recipient->getScreenName()));
+                }
 
             }
 
-            $this->displaySuccess('All editorial committee notified > OK' . PHP_EOL, $isVerbose);
-            $this->logger->info(sprintf('All editorial committee notified > OK%s', PHP_EOL));
+            if ($isVerbose) {
+
+                if (empty($unsent)) {
+                    $this->logger->info('All editorial committee notified > OK');
+                } else {
+                    $this->logger->warning(sprintf('Recipient(s) have not been notified: %s', implode(', ', $unsent)));
+                }
+
+            }
 
         }
 
@@ -899,7 +940,6 @@ class InboxNotifications extends Script
         $details = array_merge(['origin' => $paper->getRepoid()], $details);
 
         if ($this->isVerbose()) {
-            $this->displayInfo('log action...', true);
             $this->logger->debug('log action...');
         }
 
@@ -955,10 +995,6 @@ class InboxNotifications extends Script
                     $debugMsg = 'New submission submitted' . PHP_EOL;
                 }
 
-                $this->displayInfo(
-                    $debugMsg,
-                    true
-                );
                 $this->logger->debug($debugMsg);
             }
         }
@@ -1291,7 +1327,6 @@ class InboxNotifications extends Script
             }
 
         } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-            $this->displayCritical($e->getMessage());
             $this->logger->critical($e->getMessage());
         }
 
@@ -1303,10 +1338,6 @@ class InboxNotifications extends Script
      * @param array $data
      * @param array $options
      * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Mail_Exception
      */
     private function getFirstSubmissionResult(
         Episciences_Paper  $paper,
@@ -1333,13 +1364,22 @@ class InboxNotifications extends Script
             $nOptions['oldDocId'] = $options['logDetails']['oldDocId'];
         }
 
-        if ($paper->save()) {
-            $this->logAction($paper, $logDetails);
-            $this->notifyAuthorAndEditorialCommittee($journal, $paper, $nOptions);
-            $this->displaySuccess($message . PHP_EOL, $this->isVerbose());
-            $this->enrichment($paper, $data);
-            return true;
 
+        try {
+            if ($paper->save()) {
+
+                if ($this->isVerbose()) {
+                    $this->logger->info($message);
+                }
+
+                $this->logAction($paper, $logDetails);
+                $this->notifyAuthorAndEditorialCommittee($journal, $paper, $nOptions);
+                $this->enrichment($paper, $data);
+                return true;
+
+            }
+        } catch (Zend_Db_Adapter_Exception $e) {
+            $this->logger->critical($e->getMessage());
         }
 
         return false;
@@ -1360,7 +1400,7 @@ class InboxNotifications extends Script
     private function initLogging(): void
     {
 
-        $loggerName = sprintf('%s_monolog', strtolower(get_class($this)));
+        $loggerName = sprintf('%s', strtolower(get_class($this)));
         $logger = new Logger($loggerName);
 
         $handler = new RotatingFileHandler(
@@ -1375,6 +1415,11 @@ class InboxNotifications extends Script
         $logger->pushHandler($handler);
         $logger->pushHandler(new StreamHandler('php://stdin', Logger::DEBUG));
         $this->setLogger($logger);
+    }
+
+    public function setParam($name, $value, bool $force = false): bool
+    {
+        return parent::setParam($name, $value, $force); // to avoid creating an unnecessary log file @see Script::log()
     }
 }
 
