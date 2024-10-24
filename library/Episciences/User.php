@@ -590,23 +590,35 @@ class Episciences_User extends Ccsd_User_Models_User
      * check if user exists in Episciences database
      *
      * @param int|null $uid
+     * @param int|null $rvId
+     * @param bool $strict
      * @return boolean
      * @throws Zend_Db_Statement_Exception
      */
-    public function hasLocalData(int $uid = null): bool
+    public function hasLocalData(int $uid = null, int $rvId = null, bool $strict = true): bool
     {
 
         if (!$uid) {
             $uid = $this->getUid();
         }
 
+        if (!$rvId) {
+            $rvId = RVID;
+        }
+
         $select = $this->_db->select()
-            ->from(T_USERS, ['nombre' => 'COUNT(UID)'])
-            ->where('UID = ?', $uid);
+            ->from(['u' => T_USERS], ['nombre' => 'COUNT(u.UID)'])
+            ->where('u.UID = ?', $uid);
+
+        if ($strict) {
+            $select
+                ->join(['ur' => T_USER_ROLES], 'ur.UID = u.UID')
+                ->where('ur.RVID = ?', $rvId);
+        }
 
         $result = $select->query()->fetch();
 
-        if ($result['nombre'] == 0) {
+        if ((int)$result['nombre'] === 0) {
             $this->setHasAccountData(false);
             return false;
         }
