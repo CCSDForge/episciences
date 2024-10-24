@@ -144,7 +144,7 @@ class Export
     /**
      * Handles 2 or 3 language code conversions
      */
-    private static function getPaperLanguageCode(Episciences_Paper $paper, int $langCodeLength = 2, string $default = ''): string
+    public static function getPaperLanguageCode(Episciences_Paper $paper, int $langCodeLength = 2, string $default = ''): string
     {
         // Ensure that the language metadata is treated as a string
         $paperLanguage = (string)$paper->getMetadata('language');
@@ -195,7 +195,7 @@ class Export
      * @depends Episciences_Paper::getAllTitles
      * @return array
      */
-    private static function crossrefGetTitlesWithLanguages(Episciences_Paper $paper): array
+    public static function crossrefGetTitlesWithLanguages(Episciences_Paper $paper): array
     {
         return self::getMetaWithLanguagesCode($paper, 'getAllTitles', 2, '');
     }
@@ -255,7 +255,7 @@ class Export
      * @depends Episciences_Paper::getAllAbstracts
      * @return array
      */
-    private static function crossrefGetAbstractsWithLanguages(Episciences_Paper $paper): array
+    public static function crossrefGetAbstractsWithLanguages(Episciences_Paper $paper): array
     {
         return self::getMetaWithLanguagesCode($paper, 'getAbstractsCleaned', 2, '');
     }

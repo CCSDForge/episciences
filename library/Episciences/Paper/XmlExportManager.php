@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Paper\Export;
+
 class Episciences_Paper_XmlExportManager
 {
 
@@ -79,13 +81,14 @@ class Episciences_Paper_XmlExportManager
          *  arxiv doesnt have it, we need to fix this by asking the author additional information
          */
 
-        $paperLanguage = $paper->getMetadata('language');
-        $paperLanguage = !$paperLanguage ? self::DEFAULT_PAPER_LANGUAGE : $paperLanguage;
+        $paperLanguage = Export::getPaperLanguageCode($paper, 2, self::DEFAULT_PAPER_LANGUAGE );
 
         //header('Content-Type: text/xml; charset: utf-8');
         $view = new Zend_View();
         $view->paper = $paper;
         $view->paperLanguage = $paperLanguage;
+        $view->titles = Export::crossrefGetTitlesWithLanguages($paper);
+        $view->abstracts = Export::crossrefGetAbstractsWithLanguages($paper);
 
         $view->volume = $volume;
         $view->proceedingInfo = $proceedingInfo;
