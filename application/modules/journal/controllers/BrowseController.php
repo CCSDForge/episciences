@@ -287,7 +287,7 @@ class BrowseController extends Zend_Controller_Action
         $page = new Episciences_Website_Navigation_Page_AcceptedPapersList();
         $page->load();
         $review = Episciences_ReviewsManager::find(RVID);
-        $acceptedPapers = Episciences_PapersManager::getAcceptedPapersByRvid($review->getRvid());
+        $acceptedPapers = Episciences_PapersManager::getAcceptedPapersByRvid($review->getRvid(), 200);
         $page->setNbResults(count($acceptedPapers));
 
         $sortedPapers = [
