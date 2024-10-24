@@ -1316,6 +1316,7 @@ class Episciences_User extends Ccsd_User_Models_User
 
     /**
      * @param string $role
+     * @param int $rvId
      * @return Episciences_User
      */
     public function addRole(string $role, int $rvId = RVID): \Episciences_User

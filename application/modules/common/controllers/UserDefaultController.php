@@ -215,6 +215,11 @@ class UserDefaultController extends Zend_Controller_Action
                     $localeSession = new Zend_Session_Namespace('Zend_Translate');
                     $localeSession->lang = Episciences_Auth::getLangueid();
                     $this->synchroniseLocalUserFromCasIfNecessary($localUser);
+
+                    if (!$localUser->hasRoles($localUser->getUid())){
+                        $localUser->saveUserRoles($localUser->getUid(), [Episciences_Acl::ROLE_MEMBER]);
+                    }
+
                 } else {
                     $localUser->setScreenName();
                 }
