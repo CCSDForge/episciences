@@ -2522,7 +2522,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:^3.5.3":
+"chokidar@npm:>=3.0.0 <4.0.0, chokidar@npm:^3.5.3":
   version: 3.6.0
   resolution: "chokidar@npm:3.6.0"
   dependencies:
@@ -2538,15 +2538,6 @@ __metadata:
     fsevents:
       optional: true
   checksum: 10/c327fb07704443f8d15f7b4a7ce93b2f0bc0e6cea07ec28a7570aa22cd51fcf0379df589403976ea956c369f25aa82d84561947e227cd925902e1751371658df
-  languageName: node
-  linkType: hard
-
-"chokidar@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "chokidar@npm:4.0.0"
-  dependencies:
-    readdirp: "npm:^4.0.1"
-  checksum: 10/e9a65db724a9ba2a40ad10f1d55caa5ccb5ba17533414271ec315004664860439348e51fa4faaa640fcc5f6427a410919fa1608892fbad41ed86fce682633cfa
   languageName: node
   linkType: hard
 
@@ -4786,10 +4777,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"negotiator@npm:0.6.3, negotiator@npm:^0.6.3":
+"negotiator@npm:0.6.3":
   version: 0.6.3
   resolution: "negotiator@npm:0.6.3"
   checksum: 10/2723fb822a17ad55c93a588a4bc44d53b22855bf4be5499916ca0cab1e7165409d0b288ba2577d7b029f10ce18cf2ed8e703e5af31c984e1e2304277ef979837
+  languageName: node
+  linkType: hard
+
+"negotiator@npm:^0.6.3":
+  version: 0.6.4
+  resolution: "negotiator@npm:0.6.4"
+  checksum: 10/d98c04a136583afd055746168f1067d58ce4bfe6e4c73ca1d339567f81ea1f7e665b5bd1e81f4771c67b6c2ea89b21cb2adaea2b16058c7dc31317778f931dab
   languageName: node
   linkType: hard
 
@@ -5020,9 +5018,9 @@ __metadata:
   linkType: hard
 
 "package-json-from-dist@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "package-json-from-dist@npm:1.0.0"
-  checksum: 10/ac706ec856a5a03f5261e4e48fa974f24feb044d51f84f8332e2af0af04fbdbdd5bbbfb9cbbe354190409bc8307c83a9e38c6672c3c8855f709afb0006a009ea
+  version: 1.0.1
+  resolution: "package-json-from-dist@npm:1.0.1"
+  checksum: 10/58ee9538f2f762988433da00e26acc788036914d57c71c246bf0be1b60cdbd77dd60b6a3e1a30465f0b248aeb80079e0b34cb6050b1dfa18c06953bb1cbc7602
   languageName: node
   linkType: hard
 
@@ -5654,13 +5652,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"readdirp@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "readdirp@npm:4.0.1"
-  checksum: 10/f8a2d3308c9dd19d9da4fc7f19a02fc057259a80014949d8f3d98f4e6042896119fb96eb3f3e6a743747d12f0bf781b771902b0b03aba58f884589c50968fad4
-  languageName: node
-  linkType: hard
-
 "readdirp@npm:~3.6.0":
   version: 3.6.0
   resolution: "readdirp@npm:3.6.0"
@@ -5885,7 +5876,7 @@ __metadata:
     sass-loader: "npm:^14.2.1"
     ts-loader: "npm:^9.5.1"
     typescript: "npm:^5.6.2"
-    webpack: "npm:^5.94.0"
+    webpack: "npm:^5.95.0"
     webpack-cli: "npm:^5.1.4"
     webpack-notifier: "npm:^1.15.0"
     yarn-upgrade-all: "npm:^0.7.4"
@@ -5940,15 +5931,15 @@ __metadata:
   linkType: hard
 
 "sass@npm:^1.78.0":
-  version: 1.79.1
-  resolution: "sass@npm:1.79.1"
+  version: 1.78.0
+  resolution: "sass@npm:1.78.0"
   dependencies:
-    chokidar: "npm:^4.0.0"
+    chokidar: "npm:>=3.0.0 <4.0.0"
     immutable: "npm:^4.0.0"
     source-map-js: "npm:>=0.6.2 <2.0.0"
   bin:
     sass: sass.js
-  checksum: 10/e02d28401f371370e2444341ede4398916ab0fb368fe8cbbf5970a531a3ea57023f3fb743db63a17bca661c600b09d958417599d5d320767d06c410445750065
+  checksum: 10/a180135addd9108d9a3549e111b2b442a97761bc429ef04374d57ef741d4343378e7092a6cba12e1f94e48b02d9b997cc79e737c0a2b834ad9204a761b14734d
   languageName: node
   linkType: hard
 
@@ -6851,9 +6842,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webpack@npm:^5.94.0":
-  version: 5.94.0
-  resolution: "webpack@npm:5.94.0"
+"webpack@npm:^5.95.0":
+  version: 5.95.0
+  resolution: "webpack@npm:5.95.0"
   dependencies:
     "@types/estree": "npm:^1.0.5"
     "@webassemblyjs/ast": "npm:^1.12.1"
@@ -6883,7 +6874,7 @@ __metadata:
       optional: true
   bin:
     webpack: bin/webpack.js
-  checksum: 10/648449c5fbbb0839814116e3b2b044ac6c75a7ba272435155ddeb1e64dfaa2f8079be3adfbb691f648b69900756ce0f6fb73beab0ced3cf5e0fd46868b4593a6
+  checksum: 10/0377ad3a550b041f26237c96fb55754625b0ce6bae83c1c2447e3262ad056b0b0ad770dcbb92b59f188e9a2bd56155ce910add17dcf023cfbe78bdec774380c1
   languageName: node
   linkType: hard
 
