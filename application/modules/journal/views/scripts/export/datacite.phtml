@@ -18,11 +18,11 @@
 
     $abstracts = $paper->getAllAbstracts();
 
-    $dateAccepted = new DateTime($paper->getAcceptanceDate());
+    $dateAccepted = $paper->getAcceptanceDate() ? new DateTime($paper->getAcceptanceDate()) : null;
     $dateSubmitted = new DateTime($paper->getSubmission_date());
     $dateUpdated = new DateTime($paper->getModification_date());
     $dateIssued = new DateTime($paper->getPublication_date());
-    $publicationYear = new DateTime($paper->getPublication_date());
+    $publicationYear = $paper->getPublication_date() ? new DateTime($paper->getPublication_date()) : null;
 
     /** @var $journal Episciences_Review */
     $journal = $this->journal;
@@ -196,7 +196,9 @@
                                 uri="<?= $enrichmentLicence ?>"><?= $this->escape(Ccsd_Tools::translate($enrichmentLicence)) ?></oaire:licenseCondition>
     <?php endif; ?>
     <datacite:dates>
-        <datacite:date dateType="Accepted"><?= $dateAccepted->format('Y-m-d') ?></datacite:date>
+        <?php if ($dateAccepted) : ?>
+            <datacite:date dateType="Accepted"><?= $dateAccepted->format('Y-m-d') ?></datacite:date>
+        <?php endif; ?>
         <datacite:date dateType="Issued"><?= $dateIssued->format('Y-m-d') ?></datacite:date>
         <datacite:date dateType="Available"><?= $dateIssued->format('Y-m-d') ?></datacite:date>
     </datacite:dates>
