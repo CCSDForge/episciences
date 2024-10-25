@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+### Fixed
+- Users who have already validated their profile on one of the journals can connect to another without having to validate their profile on that journal (even if they don't have one)
 
 ## Unreleased
 ### Changed

@@ -1061,6 +1061,38 @@ class Episciences_User extends Ccsd_User_Models_User
         return true;
     }
 
+
+    public function saveNewRoles(int $uid, string|array $roles = Episciences_Acl::ROLE_MEMBER, int $rvId = null): bool
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        if(!$rvId) {
+            $rvId = RVID;
+        }
+
+        if(is_string($roles)) {
+            $roles = (array)$roles;
+        }
+
+        $values = [];
+
+        foreach ($roles as $roleId) {
+            $roleId = $this->_db->quote($roleId);
+            $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
+
+        }
+
+        $sql = sprintf('INSERT INTO %s (UID, RVID, ROLEID) VALUES %s ON DUPLICATE KEY UPDATE ROLEID = VALUES(ROLEID)', T_USER_ROLES, implode(',', $values));
+
+        if (!$db->getConnection()->query($sql)) {
+            trigger_error(sprintf('Failed to execute SQL query: %s', $sql));
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * fetch user alias for a given docid
      * @param $docId
