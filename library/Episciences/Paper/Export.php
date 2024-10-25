@@ -691,10 +691,10 @@ class Export
     /**
      * @param $docid
      * @return string
+     * @throws JsonException
      */
     public static function getCsl($docid): string
     {
-        $jsonCsl = [];
 
         try {
             $jsonDb = json_decode(\Episciences_PapersManager::getJsonDocumentByDocId($docid), true, 512, JSON_THROW_ON_ERROR);
@@ -705,12 +705,14 @@ class Export
 
         $jsonCsl = [];
         $isJournal = array_key_exists('journal', $jsonDb['public_properties']);
-
-
         $jsonCsl['type'] = $jsonDb['public_properties']['database']['current']['type']['title'];
         $jsonCsl['id'] = $isJournal
             ? "https://doi.org/" . $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi']
             : "https://doi.org/" . $jsonDb['public_properties']['conference']['conference_paper']['doi_data']['doi'];
+        
+        $publicationYear = $isJournal
+            ? ($jsonDb['public_properties']['journal']['journal_article']['publication_date']['year'] ?? null)
+            : ($jsonDb['public_properties']['conference']['conference_paper']['conference_paper']['year'] ?? null);
 
 
         $jsonCsl['author'] = [];
@@ -720,7 +722,7 @@ class Export
         $jsonCsl = self::getAuthorsCsl($arrayContrib, $jsonCsl, 0);
 
 
-        $jsonCsl['issued']["date-parts"][][] = $jsonDb['public_properties']['database']['database_metadata']['database_date']["publication_date"]['year'];
+        $jsonCsl['issued']["date-parts"][][] = $publicationYear;
 
         if ($isJournal) {
             $jsonCsl['DOI'] = $jsonDb['public_properties']['journal']['journal_article']['doi_data']['doi'];
