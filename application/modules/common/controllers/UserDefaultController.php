@@ -216,8 +216,16 @@ class UserDefaultController extends Zend_Controller_Action
                     $localeSession->lang = Episciences_Auth::getLangueid();
                     $this->synchroniseLocalUserFromCasIfNecessary($localUser);
 
-                    if (!$localUser->hasRoles($localUser->getUid())){
-                        $localUser->saveUserRoles($localUser->getUid(), [Episciences_Acl::ROLE_MEMBER]);
+                    try {
+                        if (!$localUser->hasRoles($localUser->getUid()) && !$localUser->saveNewRoles($localUser->getUid())) {
+                            trigger_error(sprintf('Profile #%s [rvCode = %s] not identified.', $localUser->getUid(), RVCODE), E_USER_WARNING);
+                            $this->view->message = 'Actuellement connecté en tant que :';
+                            $this->view->description = 'Profil non identifié !';
+                            $this->renderScript('error/error.phtml');
+                            return;
+                        }
+                    } catch (Zend_Db_Statement_Exception $e) {
+                        trigger_error($e->getMessage());
                     }
 
                 } else {
