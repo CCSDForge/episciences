@@ -452,11 +452,7 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
         $vid = $request->getParam('id');
-        $errorMessage = false;
-        $volume = false;
-
-
-
+        
         if (!$vid || !is_numeric($vid)) {
             $errorMessage = "Identifiant du volume absent ou incorrect.";
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');

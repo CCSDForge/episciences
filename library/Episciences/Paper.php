@@ -1455,13 +1455,8 @@ class Episciences_Paper
 
         }
 
-        /** Commented: Database data not used at the moment
+        $xmlToArray[$keyBody][$keyDatabase] = $extraData[$keyPublic][$keyDatabase];
 
-        $xmlToArray[$keyBody][$keyDatabase] = array_merge(
-            $xmlToArray[$keyBody][$keyDatabase],
-            $extraData[$keyPublic][$keyDatabase]
-        );
-         */
 
 // Update document keys
         $document[$keyPublic] = $xmlToArray[$keyBody];
