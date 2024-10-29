@@ -441,9 +441,8 @@ class ReviewerController extends PaperDefaultController
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         /** @var Episciences_User $recipient */
