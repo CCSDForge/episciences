@@ -1138,8 +1138,7 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
-        $url = self::ADMINPAPER_URL_STR . $paperId;
-        $this->_helper->redirector->gotoUrl($url);
+        $this->_helper->redirector->gotoUrl($this->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $paperId ]));
     }
 
     /**
