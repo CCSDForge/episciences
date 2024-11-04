@@ -896,9 +896,8 @@ class PaperController extends PaperDefaultController
             $recipients = [$requester->getUid() => $requester];
 
         } elseif (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         foreach ($recipients as $recipient) {
@@ -1558,9 +1557,8 @@ class PaperController extends PaperDefaultController
         $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         if (null !== $principalRecipient) {
@@ -2977,9 +2975,8 @@ class PaperController extends PaperDefaultController
             $CC = $paper->extractCCRecipients($recipients);
 
             if (empty($recipients)) {
-                $arrayKeyFirstCC = array_key_first($CC);
-                $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-                unset($CC[$arrayKeyFirstCC]);
+                $recipients = $CC;
+                $CC = [];
             }
 
             /** @var Episciences_User $recipient */
@@ -3392,9 +3389,8 @@ class PaperController extends PaperDefaultController
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         /** @var Episciences_User $editor */
@@ -3565,9 +3561,8 @@ class PaperController extends PaperDefaultController
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         /** @var Episciences_User $recipient */

@@ -1,0 +1,25 @@
+inputFile: ../application/languages/en/views.php
+outputFile: ../application/languages/en/zz_views.php
+
+# Arrays for search and replace terms
+search:
+  - article
+  - articles
+  - an article
+  - Article
+  - Articles
+  - An article
+
+replace:
+  - dataset/software
+  - datasets/software
+  - a dataset/software
+  - Dataset/software
+  - Datasets/software
+  - A dataset/software
+
+# Other configuration options
+case-sensitive: true
+force: true
+silent: false
+log: /tmp/translationUpdater.log

@@ -37,6 +37,7 @@
     "laravolt/avatar": "^6.0",
     "league/commonmark": "^2.4",
     "league/html-to-markdown": "^5.1",
+    "monolog/monolog": "^1.27",
     "neverbehave/hcaptcha": "~0.0.5",
     "phpmailer/phpmailer": "^6.5",
     "ramsey/uuid": "^4.7",
@@ -48,13 +49,13 @@
     "symfony/cache": "^5.4",
     "symfony/event-dispatcher": "^6.4",
     "symfony/filesystem": "^6.4",
-    "symfony/intl": "^6.4",
     "symfony/polyfill-mbstring": "*",
     "symfony/polyfill-php82": "*",
     "symfony/polyfill-php83": "*",
     "symfony/polyfill-php84": "*",
     "symfony/property-access": "^6.4",
     "symfony/serializer": "^6.4",
+    "symfony/yaml": "^6.4",
     "vlucas/phpdotenv": "^5.5"
   },
 

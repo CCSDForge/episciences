@@ -1413,7 +1413,7 @@ class InboxNotifications extends Script
         $formatter = new LineFormatter(null, null, false, true);
         $handler->setFormatter($formatter);
         $logger->pushHandler($handler);
-        $logger->pushHandler(new StreamHandler('php://stdin', Logger::DEBUG));
+        $logger->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
         $this->setLogger($logger);
     }
 

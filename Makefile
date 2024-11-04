@@ -1,4 +1,6 @@
+DOCKER:= docker
 DOCKER_COMPOSE:= docker compose
+NPX:= npx
 CNTR_NAME_SOLR := solr
 CNTR_NAME_PHP := php-fpm
 CNTR_APP_DIR := /var/www/htdocs
@@ -88,4 +90,8 @@ get-classification-jel: ## Get JEL Classifications from OpenAIRE Research Graph
 
 
 can-i-use-update: ## To be launched when Browserslist: caniuse-lite is outdated.
-	npx update-browserslist-db@latest
+	$(NPX) update-browserslist-db@latest
+
+enter-container-php: ## Open shell on PHP container
+	$(DOCKER) exec -it $(CNTR_NAME_PHP) sh -c "cd /var/www/htdocs && /bin/bash"
+
