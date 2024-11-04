@@ -56,7 +56,8 @@
     "symfony/property-access": "^6.4",
     "symfony/serializer": "^6.4",
     "symfony/yaml": "^6.4",
-    "vlucas/phpdotenv": "^5.5"
+    "vlucas/phpdotenv": "^5.5",
+    "symfony/intl": "^6.4"
   },
 
   "require-dev": {
