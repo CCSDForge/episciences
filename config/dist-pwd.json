@@ -1,5 +1,6 @@
 {
   "EPISCIENCES": {
+    "MANAGER_WHITELIST":["journal-code"],
     "ROOT_UID": 38,
     "UID": 1984,
     "USER_PHOTO_PATH": "/userPhoto/path/",

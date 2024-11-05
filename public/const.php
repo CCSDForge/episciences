@@ -62,6 +62,7 @@ function defineApplicationConstants()
 function defineJournalConstants(string $rvCode = null): void
 {
     $prefixUrl = PORTAL_PREFIX_URL;
+    $all = '*';
     if (!defined('RVCODE')) {
         if (!$rvCode) {
             if (getenv('RVCODE')) {
@@ -85,16 +86,21 @@ function defineJournalConstants(string $rvCode = null): void
                                     trigger_error($e->getMessage(), E_USER_ERROR);
                                 }
 
-                                $select = $db
-                                    ->select()
-                                    ->from( T_REVIEW, ['CODE'])
-                                    ->where('STATUS = ?', 1)
-                                    ->where('CODE = ?', $extractedCode);
+                                if (!defined('EPISCIENCES_MANAGER_WHITELIST')) {
+                                    trigger_error('Missing Const. {EPISCIENCES_MANAGER_WHITELIST}', E_USER_ERROR);
+                                } elseif (in_array($extractedCode, EPISCIENCES_MANAGER_WHITELIST, true)) {
+                                    $select = $db
+                                        ->select()
+                                        ->from(T_REVIEW, ['CODE'])
+                                        ->where('STATUS = ?', 1)
+                                        ->where('CODE = ?', $extractedCode);
+                                    $result = $db->fetchOne($select);
 
-                                $result = $db->fetchOne($select);
-                                if ($result && $result !== 'portal' ){
-                                    $rvCode = $result;
-                                    $prefixUrl = sprintf('/%s/', $result);
+                                    if ($result && $result !== 'portal') {
+                                        $rvCode = $result;
+                                        $prefixUrl = sprintf('/%s/', $result);
+                                    }
+
                                 }
                             }
                         }
@@ -124,7 +130,7 @@ function defineJournalConstants(string $rvCode = null): void
         }
 
         // define application url
-        define('APPLICATION_URL',  $_SERVER['SERVER_NAME'] !== $assembledApplicationUrl ? sprintf('%s://%s%s',SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')) : $assembledApplicationUrl);
+        define('APPLICATION_URL', $_SERVER['SERVER_NAME'] !== $assembledApplicationUrl ? sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')) : $assembledApplicationUrl);
 
 
         // define review path
@@ -341,5 +347,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('DOI_EMAIL_CONTACT', '');
         define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
+        define('EPISCIENCES_MANAGER_WHITELIST', ['*']); // whitelist of sites to be deployed on manager
     }
 }
