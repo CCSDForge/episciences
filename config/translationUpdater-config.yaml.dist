@@ -22,4 +22,4 @@ replace:
 case-sensitive: true
 force: true
 silent: false
-log: /tmp/translationUpdater.log
+log: ../tmp/translationUpdater.log
