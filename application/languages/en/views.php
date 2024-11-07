@@ -2131,7 +2131,7 @@ return array(
     "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
     "Ajouter un abstract graphique" => "Add a graphical abstract",
     "Modifier l'abstract graphique" => "Change the graphical abstract",
-    "Taille maximum du fichier : 100 ko, Hauteur maximal : 880px" => "Max size file: 100 ko, Max height: 880px",
+    "Poids maximum du fichier : 100 ko, Hauteur maximale : 880px" => "Max size file: 100 ko, Max height: 880px",
 
     'classification_jel' => 'JEL Classification System',
     'classification_msc2020' => 'Mathematics Subject Classification 2020'
