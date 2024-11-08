@@ -20,22 +20,18 @@ class Episciences_View_Helper_Url extends Zend_View_Helper_Url
      */
     public function url(array $urlOptions = [], $name = null, $reset = false, $encode = true, bool $withSegmentedParameters = false): string
     {
+        if (empty($urlOptions)) {
+
+            $urlOptions = [
+                'controller' => Zend_Controller_Front::getInstance()->getRequest()->getControllerName(),
+                'action' => Zend_Controller_Front::getInstance()->getRequest()->getActionName()
+            ];
+        }
+
         if ($withSegmentedParameters) {
 
             if (!defined('PREFIX_URL') || PREFIX_URL === PORTAL_PREFIX_URL) {
                 return parent::url($urlOptions, $name, $reset, $encode);
-            }
-
-            if (!is_array($urlOptions)) {
-                throw new Zend_Exception('urlOptions must be an array');
-            }
-
-            if (empty($urlOptions)) {
-
-                $urlOptions = [
-                    'controller' => Zend_Controller_Front::getInstance()->getRequest()->getControllerName(),
-                    'action' => Zend_Controller_Front::getInstance()->getRequest()->getActionName()
-                ];
             }
 
         }
