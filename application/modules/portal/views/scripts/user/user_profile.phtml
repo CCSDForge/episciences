@@ -1,6 +1,6 @@
 <div style="float: left; margin-right: 20px">
-    <img src="/user/photo/size/thumbnail?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>"
-         class="user-photo-normal"/>
+    <img src="<?= sprintf('%suser/photo/size/thumbnail?v=%s', PREFIX_URL, Episciences_Auth::getPhotoVersion())?>"
+         class="user-photo-normal" alt="<?= Episciences_Auth::getScreenName() ?>"/>
 </div>
 
 <div style="margin-bottom: 10px">

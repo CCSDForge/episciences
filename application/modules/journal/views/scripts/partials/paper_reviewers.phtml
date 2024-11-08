@@ -125,7 +125,7 @@ try {
                                     <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
                                         <div class="reviewer">
                                             <img
-                                                src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                                                src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                                                 class="user-photo-small" alt="avatar">
 
                                             <button

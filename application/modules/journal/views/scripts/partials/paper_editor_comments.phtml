@@ -8,7 +8,7 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
     <?php foreach ($this->editor_comments as $id=>$comment) : ?>
         <?php $margin = ($id == $first) ? '0' : '20px'; ?>
         <div style="margin-top: <?php echo $margin;?>" class="small">
-            <img src="/user/photo/name/<?= urlencode($this->escape($comment['SCREEN_NAME'])) ?>/uid/<?= $comment['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+            <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($comment['SCREEN_NAME'])) ?>/uid/<?= $comment['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
                  class="user-photo-thumb" alt="avatar">
             <strong><?php echo $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG.' - '.Zend_Date::TIME_SHORT); ?> : </strong>
             (<?php echo ($comment['UID'] == Episciences_Auth::getUid()) ? $this->translate('vous') : $comment['SCREEN_NAME']; ?>)
