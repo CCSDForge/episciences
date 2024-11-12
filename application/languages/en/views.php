@@ -370,12 +370,12 @@ return array(
     "Attention, cet article a été supprimé par son auteur." => "Please note that this article has been deleted by its author.",
     "Attention, cet article a été supprimé par la revue." => "Please note that this article has been deleted by the Journal.",
     "Supprimer l'article" => "Delete article",
-    "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "This article has already been published, it is useless to review it now.",
-    "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "This article has already been accepted, it is useless to review it now.",
-    "Cet article a été refusé, il n'est plus nécessaire de le relire." => "This article has been refused, it is useless to review it now.",
-    "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "This article has been deleted, it is useless to review it now.",
-    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "This article is obsolete, it is useless to review it now.",
-    "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "This article is under revision, it is useless to review it now.",
+    "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "Thank you but this article has already been published, it is useless to review it now.",
+    "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "Thank you but this article has already been accepted, it is useless to review it now.",
+    "Cet article a été refusé, il n'est plus nécessaire de le relire." => "Thank you but this article has been refused, it is useless to review it now.",
+    "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "Thank you but this article has been deleted, it is useless to review it now.",
+    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "Thank you but this article is obsolete, it is useless to review it now.",
+    "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "Thank you but this article is under revision, it is useless to review it now.",
 
     "Articles de l'auteur" => "Articles of this author",
     "Ajouter un DOI" => 'Add a DOI',
@@ -2131,7 +2131,7 @@ return array(
     "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
     "Ajouter un abstract graphique" => "Add a graphical abstract",
     "Modifier l'abstract graphique" => "Change the graphical abstract",
-    "Taille maximum du fichier : 100 ko, Hauteur maximal : 880px" => "Max size file: 100 ko, Max height: 880px",
+    "Poids maximum du fichier : 100 ko, Hauteur maximale : 880px" => "Max size file: 100 ko, Max height: 880px",
 
     'classification_jel' => 'JEL Classification System',
     'classification_msc2020' => 'Mathematics Subject Classification 2020'

@@ -64,3 +64,4 @@ assets/node_modules/
 /docker-compose.override.yml
 /.user.ini
 /logs/
+/config/translationUpdater-config.yaml
