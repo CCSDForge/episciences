@@ -1550,7 +1550,7 @@ class Episciences_Paper
         $citationMap = [];
 
         foreach ($datasets as $dataset) {
-            $itemValue = ltrim($dataset->getValue(), 'https://doi.org/');
+            $itemValue = str_replace('https://doi.org/', '', (string)$dataset->getValue());
             $metatextCitation = $dataset->getMetatextCitation($format);
 
             if ($itemValue !== '' && $metatextCitation !== null) {
