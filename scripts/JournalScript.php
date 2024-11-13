@@ -14,9 +14,10 @@ abstract class JournalScript extends Script
      * set user defined parameter
      * @param $name
      * @param $value
+     * @param bool $force
      * @return bool
      */
-    public function setParam($name, $value)
+    public function setParam($name, $value, bool $force = true)
     {
         parent::setParam($name, $value);
 
