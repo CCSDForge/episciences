@@ -173,7 +173,7 @@ class CommentsController extends PaperController
         } else {
             $message = "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire.";
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector->gotoUrl('/paper/submitted');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'submitted']));
             return;
         }
 

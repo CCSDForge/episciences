@@ -241,11 +241,18 @@ class Episciences_Mail_RemindersManager
         $langs = Episciences_Tools::getLanguages();
         $locale = Episciences_Tools::getLocale();
 
+        $urlOptions = ['controller' => 'administratemail', 'action' => 'savereminder'];
+
+        if($reminder){
+            $urlOptions['id'] = $reminder->getId();
+        }
+
         $form = new Ccsd_Form(array(
             'id' => 'reminder_form',
-            'action' => ($reminder) ? '/administratemail/savereminder?id=' . $reminder->getId() : '/administratemail/savereminder',
+            'action' => (new Episciences_View_Helper_Url())->url($urlOptions),
             'class' => 'form-horizontal'
         ));
+
         $form->setDecorators(array(
             array('ViewScript', array(
                 'viewScript' => '/administratemail/reminder_form.phtml',

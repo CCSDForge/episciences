@@ -137,7 +137,7 @@ class PaperController extends PaperDefaultController
                 $this->redirect('/' . $id);
             } elseif (!Episciences_Auth::isLogged()) {
                 // redirect to login if user is not logged in
-                $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
+                $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'view', 'id' => $docId ]));
             }
 
             $this->redirectsIfHaveNotEnoughPermissions($paper);
@@ -2486,7 +2486,7 @@ class PaperController extends PaperDefaultController
                     $message = $this->view->translate("Votre commentaire n'a pas pu être envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector->gotoUrl('/paper/rating?id=' . $paper->getDocid());
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'rating', 'id' => $paper->getDocid()]));
             }
         }
 
@@ -3091,8 +3091,8 @@ class PaperController extends PaperDefaultController
             $message = $this->view->translate("Vous n'avez pas les autorisations nécessaires pour supprimer ce fichier.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
         }
-        $url = '/paper/rating?id=' . $docid . '&reviewer_uid=' . $uid;
-        $this->redirect($url);
+
+        $this->redirect($this->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docid, 'reviewer_uid' => $uid]));
     }
 
     /**
