@@ -177,6 +177,7 @@ return array(
     "Permettre aux auteurs de choisir le volume" => 'Contributors can choose the volume',
     "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)" => "Contributors can submit a previously denied article again (new version)",
     "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ" => "You can enter a statistics start date in the following format: YYYY-MM-DD",
+    'Ville, Pays' => 'City, Country',
     // Choix de la section
     "Choix de rubrique" => "Section choice",
     "L'auteur ne peut pas choisir la rubrique" => "Contributors can't choose a section",
