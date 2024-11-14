@@ -644,7 +644,8 @@ class Episciences_Review
      */
     public function getUrl(): string
     {
-        return APPLICATION_URL;
+        $assembledAppUrl = SERVER_PROTOCOL . '://' . $this->getCode() . '.' . DOMAIN;
+        return APPLICATION_URL !== $assembledAppUrl ? APPLICATION_URL . '/' . $this->getCode() : $assembledAppUrl;
     }
 
     /**
