@@ -3953,6 +3953,22 @@ class Episciences_PapersManager
         return $db->fetchOne($select);
     }
 
+    public static function updateJsonDocumentData(int $docId): void
+    {
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $paper = self::get($docId, false);
+            $toJson = $paper->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
+            $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
+            $db->query($str)->closeCursor();
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+    }
+
+
+
+
 
 
 }
