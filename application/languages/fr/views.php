@@ -98,8 +98,6 @@ return [
     'Chief editor' => 'Rédacteur en chef',
 
 
-
-
     // users permissions
     "administrategraphabstract-addgraphabs" => "Ajouter/Modifier un abstract graphique",
     "administrategraphabstract-deletegraphabs" => "Supprimer un abstract graphique",
@@ -307,6 +305,7 @@ return [
 
     'Journal article' => 'Article',
     'Publication' => 'Publication',
+    'Report' => 'Rapport',
 
 
     // DOCUMENT TYPES

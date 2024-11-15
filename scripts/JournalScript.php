@@ -19,7 +19,7 @@ abstract class JournalScript extends Script
      */
     public function setParam($name, $value, bool $force = true)
     {
-        parent::setParam($name, $value);
+        parent::setParam($name, $value, $force);
 
         if ($name == self::PARAM_RVID && !defined('RVID')) {
             $this->displayTrace('RVID constant has been set to: ' . $value);

@@ -45,6 +45,7 @@ return array(
     'Conferenceobject' => 'Conference paper',
     'Text' => "Preprint",
     'Dataset' => 'Jeux de données',
+    'Report' => 'Report',
 
 
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
@@ -1120,7 +1121,6 @@ return array(
     "Accéder à la version finale" => "Go to the final version",
     //Mail history
     'Aucun sujet' => 'No subject',
-
 
 
     // users permissions
