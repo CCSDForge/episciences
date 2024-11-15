@@ -238,6 +238,10 @@ class Episciences_Paper_DatasetsManager
                 $dataset->setName("software");
                 $dataset->setLink("SWHID");
                 break;
+            case 'zbmath':
+                $dataset->setName("zbmath");
+                $dataset->setLink("url");
+                break;
             case 'url':
                 $dataset->setName("software");
                 if ($code === 'dataset' || $code === 'publication') {
