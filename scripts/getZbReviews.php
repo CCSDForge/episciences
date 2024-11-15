@@ -55,7 +55,7 @@ class GetZbReviews extends JournalScript
             ->where('DOI != ""')
             ->where("STATUS = ?", Episciences_Paper::STATUS_PUBLISHED)
             //->where('RVID = ?', 3)
-           // ->where('DOCID = 2050')
+            // ->where('DOCID = 2050')
             ->order('DOCID ASC');
 
         $papers = $db->fetchAll($select);
@@ -78,8 +78,8 @@ class GetZbReviews extends JournalScript
                 foreach ($reviews as $review) {
                     list($docId, $relationship, $typeLd, $valueLd, $inputTypeLd, $linkMetaText) = $this->prepareLinkedReview($value['DOCID'], $review);
                     $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$linkMetaText]);
-                    if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $valueLd, $inputTypeLd, $idMetaDataLastId, ['relationship' => $relationship]) > 0) {
-                         Episciences_PapersManager::updateJsonDocumentData($docId);
+                    if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $valueLd, $inputTypeLd, $idMetaDataLastId, ['relationship' => $relationship, 'sourceId' => Episciences_Repositories::ZBMATH_OPEN]) > 0) {
+                        Episciences_PapersManager::updateJsonDocumentData($docId);
                     }
                 }
             } catch (Exception $e) {
@@ -158,28 +158,6 @@ class GetZbReviews extends JournalScript
         return $review;
     }
 
-    public function isDryRun(): bool
-    {
-        return $this->_dryRun;
-    }
-
-    public function setDryRun(bool $dryRun): void
-    {
-        $this->_dryRun = $dryRun;
-    }
-
-
-
-    /**
-     * @param Episciences_Paper_DatasetMetadata $linkMetaText
-     * @param array $citation
-     * @return void
-     */
-    private function getSetMetatext(Episciences_Paper_DatasetMetadata $linkMetaText, array $citation): void
-    {
-        $linkMetaText->setMetatext(json_encode($citation));
-    }
-
     /**
      * @param $DOCID
      * @param mixed $review
@@ -201,6 +179,26 @@ class GetZbReviews extends JournalScript
         $this->logger->info("zbMATH Citation will be {$citation['citationFull']}:");
         $this->getSetMetatext($linkMetaText, $citation);
         return array($docId, $relationship, $typeLd, $valueLd, $inputTypeLd, $linkMetaText);
+    }
+
+    /**
+     * @param Episciences_Paper_DatasetMetadata $linkMetaText
+     * @param array $citation
+     * @return void
+     */
+    private function getSetMetatext(Episciences_Paper_DatasetMetadata $linkMetaText, array $citation): void
+    {
+        $linkMetaText->setMetatext(json_encode($citation));
+    }
+
+    public function isDryRun(): bool
+    {
+        return $this->_dryRun;
+    }
+
+    public function setDryRun(bool $dryRun): void
+    {
+        $this->_dryRun = $dryRun;
     }
 }
 
