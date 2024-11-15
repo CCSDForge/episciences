@@ -200,7 +200,7 @@ class Episciences_Paper_Dataset
                 $citeProc = new CiteProc($style, "en-US", self::getMetatextCitationAdditionalMarkup());
                 $metatextCitation = $citeProc->render(json_decode($metatextRaw));
             } catch (CiteProcException $e) {
-                // failed
+                trigger_error($e->getMessage());
             }
         }
 

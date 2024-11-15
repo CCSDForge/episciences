@@ -49,8 +49,20 @@ class Episciences_DoiTools
      * @return bool
      */
     public static function checkIfDomainExist(string $doi) : bool{
-        $regexDomain = "~^https://doi\.org/~";
+        $regexDomain = "~^https://(dx.)?doi\.org/~";
         return (bool)preg_match($regexDomain, $doi);
 
     }
+
+    /**
+     * to remove doi domain
+     * @param string $doi
+     * @return string
+     */
+
+    public static function cleanDoi(string $doi = ''): string
+    {
+        return ($doi !== '') ? str_replace(['https://doi.org/', 'https://dx.doi.org/'], '', $doi) : '';
+    }
+
 }
