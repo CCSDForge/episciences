@@ -52,7 +52,7 @@ class GetClassificationMsc extends JournalScript
             ->from(T_PAPERS, ["DOI", "DOCID"])
             ->where('DOI != ""')
             ->where("STATUS = ?", Episciences_Paper::STATUS_PUBLISHED)
-            ->where('RVID = ?', 3)
+            //->where('RVID = ?', 3)
             ->order('DOCID ASC');
 
         $papers = $db->fetchAll($select);
