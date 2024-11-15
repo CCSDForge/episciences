@@ -21,14 +21,17 @@
             $(this).find('img').attr('class', currentClass + '_selected');
         });
 
-
-        $delayInfo.attr('title', buildReminderMessage($reminderType.val()));
+        let $description = buildReminderMessage($reminderType.val());
+        $delayInfo.attr('title', $description);
+        $('#delay-element').find('.help-block').text($description);
 
         // Type de relance
         $reminderType.on('change', function () {
+
             clearErrors();
             setReminderType($(this).val(), null);
-            $delayInfo.attr('title', buildReminderMessage($reminderType.val()));
+            $delayInfo.attr('title', $description);
+            $('#delay-element').find('.help-block').text($description);
         });
 
         // Destinataire

@@ -290,7 +290,8 @@ class Episciences_Mail_RemindersManager
             'name' => 'delay',
             'label' => $tooltip . $translator->translate('Délai'),
             'required' => true,
-            'value' => ($reminder) ? $reminder->getDelay() : null
+            'value' => ($reminder) ? $reminder->getDelay() : null,
+            'description' => $tooltipMsg
         ]));
 
         // Select: Répétition ******************************************************
