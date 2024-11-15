@@ -113,6 +113,13 @@ class Episciences_Mail_Reminder
      */
     public function loadTranslations(): bool
     {
+        // Special processing: additional time (@see self::DEFAULT_WAITING_TIME) to be added to the delay.
+        $reminderConst = [
+            'TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION',
+            'TYPE_REMINDER_REVIEWED_ARTICLE_CHIEF_EDITOR_VERSION',
+            'TYPE_REMINDER_SUBMITTED_ARTICLE_CHIEF_EDITOR_VERSION',
+            'TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION'
+        ];
         $langs = Episciences_Tools::getLanguages();
         $translator = Zend_Registry::get('Zend_Translate');
         $translations = [];
@@ -128,6 +135,7 @@ class Episciences_Mail_Reminder
         }
 
         $constant_name = 'Episciences_Mail_TemplatesManager::TYPE_' . strtoupper(self::$_typeKey[$this->getType()] . '_' . $this->getRecipient() . '_version');
+        $cleanedConstName = str_replace('Episciences_Mail_TemplatesManager::', '', $constant_name);
 
         if (defined($constant_name)) {
             $templateConst = constant($constant_name);
@@ -140,6 +148,8 @@ class Episciences_Mail_Reminder
         $template->findByKey($templateConst);
         $template->loadTranslations($langs, $review->getCode());
 
+        $delay = in_array($cleanedConstName, $reminderConst, true) ? ($this->getDelay() + self::DEFAULT_WAITING_TIME) : $this->getDelay();
+
         foreach ($langs as $code => $lang) {
             // Reminder name
             if ($translator->isTranslated(self::$_typeLabel[$this->getType()], false, $code)) {
@@ -148,7 +158,7 @@ class Episciences_Mail_Reminder
                 $name = self::$_typeLabel[$this->getType()];
             }
             $name .= ' - ' . $translator->translate('copie destinée au ' . mb_strtolower($translator->translate($this->getRecipient(), 'fr'), 'utf-8'), $code);
-            $name .= ' (' . $this->getDelay() . ' ' . $translator->translate(array('jour', 'jours', $this->getDelay()), $code) . ')';
+            $name .= ' (' . $delay . ' ' . $translator->translate(array('jour', 'jours', $this->getDelay()), $code) . ')';
             $translations['name'][$code] = $name;
 
             // Reminder Subject & Body

@@ -110,7 +110,7 @@ class Episciences_Review
     public const SETTING_CONTACT_JOURNAL = 'contactJournal';
     public const SETTING_JOURNAL_NOTICE = 'contactJournalNotice';
     public const SETTING_CONTACT_JOURNAL_EMAIL = 'contactJournalEmail';
-    public const SETTING_CONTACT_TECH_SUPPORT = 'contactTechSupport';
+    //public const SETTING_CONTACT_TECH_SUPPORT = 'contactTechSupport'; // github#625
     public const SETTING_CONTACT_TECH_SUPPORT_EMAIL = 'contactTechSupportEmail';
     public const SETTING_ISSN_PRINT = 'ISSN_PRINT';
     public const SETTING_JOURNAL_DOI = 'journalAssignedDoi';
@@ -197,7 +197,6 @@ class Episciences_Review
             self::SETTING_CONTACT_JOURNAL,
             self::SETTING_JOURNAL_NOTICE,
             self::SETTING_CONTACT_JOURNAL_EMAIL,
-            self::SETTING_CONTACT_TECH_SUPPORT,
             self::SETTING_CONTACT_TECH_SUPPORT_EMAIL,
             self::SETTING_REPOSITORIES,
             self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
@@ -961,12 +960,7 @@ class Episciences_Review
                 'validators' => [new Zend_Validate_EmailAddress()]
             ]
         );
-        $form->addElement('text', self::SETTING_CONTACT_TECH_SUPPORT, [
-                'label' => 'Page de contact du support technique',
-                'description' => 'URL',
-                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
-            ]
-        );
+
         $form->addElement('text', self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, [
                 'label' => 'Courriel de contact du support technique',
                 'description' => 'Adresse de courriel',
@@ -982,12 +976,11 @@ class Episciences_Review
         $form->getElement(self::SETTING_JOURNAL_PUBLISHER_LOC)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_NOTICE)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_TECH_SUPPORT, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1747,7 +1740,6 @@ class Episciences_Review
         $settingsValues[self::SETTING_JOURNAL_DOI] = $this->getSetting(self::SETTING_JOURNAL_DOI);
         $settingsValues[self::SETTING_CONTACT_JOURNAL] = $this->getSetting(self::SETTING_CONTACT_JOURNAL);
         $settingsValues[self::SETTING_JOURNAL_NOTICE] = $this->getSetting(self::SETTING_JOURNAL_NOTICE);
-        $settingsValues[self::SETTING_CONTACT_TECH_SUPPORT] = $this->getSetting(self::SETTING_CONTACT_TECH_SUPPORT);
         $settingsValues[self::SETTING_CONTACT_JOURNAL_EMAIL] = $this->getSetting(self::SETTING_CONTACT_JOURNAL_EMAIL);
         $settingsValues[self::SETTING_CONTACT_TECH_SUPPORT_EMAIL] = $this->getSetting(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL);
 

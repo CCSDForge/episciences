@@ -57,13 +57,14 @@ $keepOnlySourceUsed = [];
                                        id="link-ld"><?= $publication->getValue() ?></a>
                                 <?php endif; ?>
                             <?php endif; ?>
-                            <?php if ($publication->getMetatext() !== null && Episciences_Tools::isHal($publication->getValue())): ?>
-                                <div style="display: inline;">
-                                    <?php
-                                    $metadataHal = json_decode($publication->getMetatext(), true);
-                                    echo $metadataHal['citationFull'];
-                                    ?>
-                                </div>
+                            <?php if (($publication->getMetatext() !== null) && (($publication->getName() === 'hal') || ($publication->getName() === 'zbmath')) ) : ?>
+                                <?php
+                                $metadataHal = json_decode($publication->getMetatext(), true);
+                                if (isset($metadataHal['citationFull'])) : ?>
+                                    <div style="display: inline;">
+                                        <?=$metadataHal['citationFull']?>
+                                    </div>
+                                <?php endif; ?>
                             <?php endif; ?>
                             <?php if (($publication->getName() === 'doi' || Episciences_Tools::isDoiWithUrl($publication->getValue())
                                     || (Episciences_Tools::isDoiWithUrl($publication->getValue()) || $publication->getName() === 'arXiv'))

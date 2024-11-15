@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#567](https://github.com/CCSDForge/episciences/issues/567): random message recipients.
 
 ## Unreleased
+### Removed 
+ - [#625](https://github.com/CCSDForge/episciences/issues/625): 'contact tech support' field has been removed (not used).
 ### Changed
 ### Fixed
 - Linked Datasets
