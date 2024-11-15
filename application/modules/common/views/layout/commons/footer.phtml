@@ -44,9 +44,7 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                         if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL] !== '') {
                             echo sprintf('<li><i aria-hidden="true" class="fas fa-life-ring"></i>&nbsp;<a href="mailto:%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT_EMAIL], $this->translate('Courriel support technique'));
                         }
-                        if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT]) && $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT] !== '') {
-                            echo sprintf('<li><i aria-hidden="true" class="fas fa-life-ring" ></i >&nbsp;<a href="%s">%s</a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_TECH_SUPPORT], $this->translate('Support technique'));
-                        }
+
                         ?>
                         <li>
                             <i aria-hidden="true" class="fas fa-balance-scale"></i>&nbsp;<a rel="noopener" href="//www.<?php echo DOMAIN; ?>/legal-terms/"><?php echo $this->translate('Mentions légales'); ?></a>
