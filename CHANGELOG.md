@@ -14,10 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-### Fixed
-- Users who have already validated their profile on one of the journals can connect to another without having to validate their profile on that journal (even if they don't have one)
-[#567](https://github.com/CCSDForge/episciences/issues/567): random message recipients.
 
 ## Unreleased
 ### Removed 
@@ -28,49 +24,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - fixed display of swhids for snapshots + revisions
   - fixed delete button not working with multiple links in same category
   - fixed no confirmation message in confirmation modal
-  - fixed duplicate html id elements
+  - fixed duplicate HTML id elements
   - fixed style of forms, use bootstrap
   - used vanilla JS and fetch API instead of Jquery and xmlhttprequest to delete links
   - added missing translations
 - Authors affiliation management: use bootstrap style for select
 - Update dependency geoip2/geoip2 to v3: todo: downloading databases: https://github.com/P3TERX/GeoLite.mmdb/releases/tag/2024.07.13
-- [#506](https://github.com/CCSDForge/episciences/issues/506): If you are editing the profile of someone who already has a photo, your profile photo will be displayed.
-- Unlabeled volume when updating metadata from an Episciences journal to HAL.
-- [#555](https://github.com/CCSDForge/episciences/issues/555): CI translation
+- [#506](https://github.com/CCSDForge/episciences/issues/506): Fixed wrong photo displayed when switching profiles.
+- Fixed missing volume title when updating metadata from an Episciences journal to HAL.
+- [#555](https://github.com/CCSDForge/episciences/issues/555): improved conflict of interest explanations and translations
+- Users who have already validated their profile on one of the journals can connect to another without having to validate their profile on that journal (even if they don't have one)
+  [#567](https://github.com/CCSDForge/episciences/issues/567): random message recipients. 
 
 ### Added
-- [#513](https://github.com/CCSDForge/episciences/issues/513): Periodic Reminder E-Mails to Editors | editors in chief for 'Reviewed' and 'Submitted' articles 
-- export to Json: include article's citations.
-- Profile photo storage management via uuid.
-- Script to generate user's uuids.
-- Include UUIDs when saving accounts
-- New settings for the journals 'Publisher' + 'Publisher location' The values are export to OpenAIRE and the DOAJ (not available for Crossref)
-- button to be redirected to the episciences bibliographic extraction application to import bibtex
-- If HAL, send coar notify message when updating metadata for published articles.
-- Added in zbjat export bibliographical references from bibtex import
-- Added button to redirect on epi citation without extract pdf
+- [#513](https://github.com/CCSDForge/episciences/issues/513): Periodic Reminder E-Mails to Editors | editors-in-chief for 'Reviewed' and 'Submitted' articles 
+- Metadata Export to JSON: include article's citations.
+- Created an Opaque UID for users using UUID
+  - Profile photo is now stored according to the user's UUID.
+  - Script to generate user's UUID.
+- New settings for the journals:
+  - 'Publisher'
+  - 'Publisher location'
+  - The values are exported to OpenAIRE and the DOAJ (not supported by Crossref)
+- Button to be redirected to the Episciences bibliographic extraction application to import bibtex
+- Using COAR Notify with HAL and Episciences to notify HAL of metadata updates for published articles.
+- Added in ZBJATS: export bibliographical references from bibtex import
+- Added button to redirect to Episciences citation management software without extracting form PDF
 - [#418](https://github.com/CCSDForge/episciences/issues/418) Enable edition of relationship and type for the linked data
 - Public representation of a document in JSON format (@see /json?v=2)
 - [#475](https://github.com/CCSDForge/episciences/issues/475) feature to add biography to profile
 - [#476](https://github.com/CCSDForge/episciences/issues/476) feature to add years in volumes forms
 - Functionality for migrating news to the new sql news table
-- Toolbar tinymce have heading edition
+- Tinymce toolbar: make headings available
 - New field in volume form (volume number)
 - [#534](https://github.com/CCSDForge/episciences/issues/534) feature graphical abstract
-- Add in export the publisher name and location when possible
+- Automatic discovery of JEL Classification for published articles, with OpenAIREAPI service
+- Automatic discovery of MSC2020 Classification for published articles, with zbMATH Open API service
+- Automatic discovery of Reviews on published articles, with zbMATH Open API service
 
 ### Changed
-- Ux: improvements to the editing form and the creation of reminders
-- bump tinymce to latest version (7.2.0)
-- crossref export:
+- UI/UX: improvements to the editing form and the creation of reminders
+- Bump tinymce to latest version (7.2.0)
+- Crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here
   - ROR added to the schema (did not work on the previous version)
 - classification of keywords by language
 - [#241](https://github.com/CCSDForge/episciences/issues/241) show users roles in mailing popup
 - [#531](https://github.com/CCSDForge/episciences/issues/531) enhances volumes form translations
-- bump tinymce to latest version (7.2.0)
-
-
 
 
 ## v1.0.45.2 - 2024-10-22
