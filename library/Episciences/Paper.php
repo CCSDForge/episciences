@@ -3627,6 +3627,7 @@ class Episciences_Paper
      */
     public function manageNewVersionErrors(array $options = [])
     {
+        $urlHelper = new Episciences_View_Helper_Url();
         $isEpiNotify = isset($options['isEpiNotify']) && $options['isEpiNotify'];
         $rvId = $options['rvId'] ?? RVID;
 
@@ -3654,7 +3655,7 @@ class Episciences_Paper
         $version = $this->getVersion();
         $repoId = $this->getRepoid();
         $isNewSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf'];
-        $link = $isNewSubmission ? '/submit/index' : '/paper/view?id=' . $id;
+        $link = $isNewSubmission ? $urlHelper->url(['controller' => 'submit']) : $urlHelper->url(['controller' =>'paper', 'action' => 'view', 'id' => $id]);
         $style = 'btn btn-default btn-xs';
 
         $exitLink = '&nbsp;&nbsp;&nbsp;';
@@ -3751,7 +3752,7 @@ class Episciences_Paper
                 } else {
 
 
-                    $url = '/paper/view/id/' . $this->getDocid();
+                    $url = $urlHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
                     $selfMsg = $result['message'];
                     $selfMsg .= $translator ?
                         $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ') :

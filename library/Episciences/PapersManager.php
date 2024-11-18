@@ -3076,7 +3076,7 @@ class Episciences_PapersManager
 
         $form = self::getModalPaperStatusCommonForm($default, 'authorFormattingRequest');
         $form->setAttrib('id', 'waiting-for-author-formatting-form');
-        $form->setAction((new Episciences_View_Helper_Url())->url(['controlller' => 'administratepaper', 'action' => 'waitingforauthorformatting', 'id/' => $default['id']]));
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'waitingforauthorformatting', 'id' => $default['id']]));
         return $form;
     }
 
