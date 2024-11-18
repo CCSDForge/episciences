@@ -232,13 +232,10 @@ function buildReminderMessage(reminderType) {
     } else if (type === TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE) {
         message += translate("la relance sera envoyée x jours après la date d'acceptation de l'article");
     } else if (type === TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE || type === TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE  ){
-        message += translate("Si un article est resté dans cet état pendant plus de 30 jours, le rappel sera envoyé après x jours.");
+        message += translate("Si une soumission est restée dans cet état pendant plus de 30 jours, le rappel sera envoyé après un délai de (30 + x jours), où x est le nombre de jours saisi dans le champ « Délai ».");
     }
 
     message += ').'
-
-    console.log(message);
-
     return message;
 
 }

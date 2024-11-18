@@ -17,9 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - Users who have already validated their profile on one of the journals can connect to another without having to validate their profile on that journal (even if they don't have one)
+[#567](https://github.com/CCSDForge/episciences/issues/567): random message recipients.
 
 ## Unreleased
-### Changed
+### Removed 
+ - [#625](https://github.com/CCSDForge/episciences/issues/625): 'contact tech support' field has been removed (not used).
+
 ### Fixed
 - Linked Datasets
   - fixed display of swhids for snapshots + revisions
@@ -57,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add in export the publisher name and location when possible
 
 ### Changed
+- Ux: improvements to the editing form and the creation of reminders
 - bump tinymce to latest version (7.2.0)
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here

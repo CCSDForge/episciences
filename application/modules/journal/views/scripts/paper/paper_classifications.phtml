@@ -19,12 +19,19 @@ $classificationsCollections = $this->classifications;
             echo '<ul class="list-unstyled">';
             foreach ($classification as $classificationElement) {
                 $sources[$sourceNumber] = $classificationElement->getSourceName();
-                if ($classificationElement::$classificationName == msc2020::$classificationName && $classificationElement->getDescription() !== '') {
+                $isMsc2020classification = $classificationElement::$classificationName == msc2020::$classificationName;
+                if ($isMsc2020classification && $classificationElement->getDescription() !== '') {
                     echo '<li title="' . $this->escape($classificationElement->getDescription()) . '">';
                 } else {
                     echo '<li>';
                 }
+                if ($isMsc2020classification) {
+                    echo '<a target="_blank" rel="noopener" href="' . msc2020::ZBMATH_ORG_CLASSIFICATION_BASE_QUERY . urlencode($classificationElement->getCode()). '">';
+                }
                 echo sprintf("%s - %s", $this->escape($classificationElement->getCode()), $this->escape($classificationElement->getLabel()));
+                if ($isMsc2020classification) {
+                    echo '</a>';
+                }
                 echo '</li>';
             }
             echo '</ul>';

@@ -15,7 +15,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         }
         $inputTypeLd = $this->getRequest()->getPost('typeld');
         $valueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
-        $docId = $this->getRequest()->getPost('docId');
+        $docId = (int)$this->getRequest()->getPost('docId');
         $paperId = $this->getRequest()->getPost('paperId');
         $relationship = $this->getRequest()->getPost('relationship');
         $typeLd = Episciences_Tools::checkValueType($valueLd);
@@ -129,6 +129,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         }
 
         if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $valueLd, $inputTypeLd, $idMetaDataLastId, ['relationship' => $relationship]) > 0) {
+            Episciences_PapersManager::updateJsonDocumentData($docId);
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_ADDED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'relationship' => $relationship,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
             echo json_encode([true], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Ajout de la donnée liée bien prise en compte');
@@ -148,7 +149,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             return;
         }
 
-        $docId = $request->getPost('docId');
+        $docId = (int)$request->getPost('docId');
         $paperId = $request->getPost('paperId');
         $idLd = $request->getPost('id');
         /** @var Episciences_Paper_Dataset $datasetInDb */
@@ -161,6 +162,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $isDeleted = Episciences_Paper_DatasetsManager::deleteById((int)$idLd);
         }
         if ($isDeleted) {
+            Episciences_PapersManager::updateJsonDocumentData($docId);
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_REMOVED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
 
             echo json_encode([true], JSON_THROW_ON_ERROR);
@@ -227,7 +229,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                 return json_encode([true], JSON_THROW_ON_ERROR);
             }
         }
-        return json_encode([false], JSON_THROW_ON_ERROR);;
+        return json_encode([false], JSON_THROW_ON_ERROR);
     }
 
 }

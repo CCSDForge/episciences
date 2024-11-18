@@ -1847,7 +1847,7 @@ class Episciences_Tools
      * @return bool
      */
     public static function isDoiWithUrl(string $strDoi){
-        $pattern = '~^((https?://)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
+        $pattern = '~^((https?://)?(dx.)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
         return (bool)preg_match($pattern, $strDoi);
     }
     /**

@@ -938,8 +938,9 @@ class Episciences_Paper
      * @param $xml
      * @param string $theme
      * @return $this
+     * @throws Exception
      */
-    public function setXslt($xml, $theme = 'full_paper'): self
+    public function setXslt($xml, string $theme = 'full_paper'): self
     {
         $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl');
         return $this;
@@ -1549,11 +1550,12 @@ class Episciences_Paper
         // Create a map of _value => metatextCitation
         $citationMap = [];
 
+        /** @var Episciences_Paper_Dataset $dataset */
         foreach ($datasets as $dataset) {
-            $itemValue = ltrim($dataset->getValue(), 'https://doi.org/');
+            $itemValue = Episciences_DoiTools::cleanDoi($dataset->getValue());
             $metatextCitation = $dataset->getMetatextCitation($format);
 
-            if ($itemValue !== '' && $metatextCitation !== null) {
+            if ($itemValue !== '') {
                 $citationMap[$itemValue] = $metatextCitation;
             }
         }
@@ -1566,7 +1568,11 @@ class Episciences_Paper
                     $data['unstructured_citation'] = $citationMap[$citationKey] ?? null;
                 }
             }
+
+            unset($data);
         }
+
+        unset($relation);
 
         // Rename the key 0 to 'related_item'
         if (isset($relations[0])) {
@@ -4750,7 +4756,7 @@ class Episciences_Paper
         }
 
         if (
-            EPISCIENCES_BIBLIOREF['ENABLE'] &&
+            (isset(EPISCIENCES_BIBLIOREF['ENABLE']) && EPISCIENCES_BIBLIOREF['ENABLE']) &&
             $this->getDocid() &&
             (
                 $this->getStatus() === self::STATUS_CE_READY_TO_PUBLISH ||

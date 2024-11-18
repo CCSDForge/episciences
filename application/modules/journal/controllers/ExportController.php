@@ -48,7 +48,7 @@ class ExportController extends Zend_Controller_Action
         }
 
         /** @var Episciences_Paper $paper */
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
 
         if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');

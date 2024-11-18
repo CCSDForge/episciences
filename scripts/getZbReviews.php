@@ -1,5 +1,6 @@
 <?php
 
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Formatter\LineFormatter;
@@ -11,10 +12,11 @@ use Symfony\Contracts\Cache\ItemInterface;
 require_once __DIR__ . '/loadHeader.php';
 require_once "JournalScript.php";
 
-class GetClassificationMsc extends JournalScript
+class GetZbReviews extends JournalScript
 {
     public const CACHE_ZBMATH_API_DOCUMENT = CACHE_PATH_METADATA . 'zbmathApiDocument';
     private const ONE_MONTH = 3600 * 24 * 31;
+    const HTTPS_ZBMATH_ORG_BASE_URL = 'https://zbmath.org/';
     private bool $_dryRun = false;
     private Logger $logger;
 
@@ -28,7 +30,7 @@ class GetClassificationMsc extends JournalScript
         $this->logger = new Logger(basename(__FILE__));
 
         // File handler
-        $fileHandler = new StreamHandler(EPISCIENCES_LOG_PATH . 'getMsc2020.log', Logger::DEBUG);
+        $fileHandler = new StreamHandler(EPISCIENCES_LOG_PATH . 'getzbMATH-reviews.log', Logger::DEBUG);
         $fileHandler->setFormatter(new LineFormatter(null, null, false, true));
         $this->logger->pushHandler($fileHandler);
 
@@ -40,7 +42,7 @@ class GetClassificationMsc extends JournalScript
 
     public function run(): void
     {
-        $this->logger->info('Starting Classification Data Enrichment process');
+        $this->logger->info('Starting zbMATH Open Reviews discovery');
         $this->initApp();
         $this->initDb();
         defineJournalConstants();
@@ -49,10 +51,11 @@ class GetClassificationMsc extends JournalScript
         $this->logger->info('Fetching papers from database');
         $select = $db
             ->select()
-            ->from(T_PAPERS, ["DOI", "DOCID"])
+            ->from(T_PAPERS, ["DOI", "DOCID", 'PAPERID'])
             ->where('DOI != ""')
             ->where("STATUS = ?", Episciences_Paper::STATUS_PUBLISHED)
             //->where('RVID = ?', 3)
+            // ->where('DOCID = 2050')
             ->order('DOCID ASC');
 
         $papers = $db->fetchAll($select);
@@ -64,27 +67,27 @@ class GetClassificationMsc extends JournalScript
                 $this->logger->info("Processing DOI: {$externalId}");
 
                 $apiResponse = $this->queryZbMathAPI($externalId);
-                $mscCodes = $this->extractMSC2020Codes($apiResponse);
+                $reviews = $this->extractzbMathReviews($apiResponse);
 
-                if (!empty($mscCodes)) {
-                    $this->logger->info("MSC 2020 Codes found for DOI {$externalId}:", $mscCodes);
+                if (!empty($reviews)) {
+                    $this->logger->info("zbMATH Reviews found for DOI {$externalId}:", $reviews);
                 } else {
-                    $this->logger->warning("No MSC 2020 Codes found for DOI {$externalId}");
+                    $this->logger->warning("No zbMATH Reviews found for DOI {$externalId}");
                 }
 
-                $docId = $value['DOCID'];
-                $collectionOfClassifications = $this->createClassifications($mscCodes, $docId);
-
-                if (!empty($collectionOfClassifications)) {
-                    $insert = Episciences_Paper_ClassificationsManager::insert($collectionOfClassifications);
-                    $this->logger->info("{$insert} classifications inserted/updated for DOI: {$externalId} - DOCID: {$docId}");
+                foreach ($reviews as $review) {
+                    list($docId, $relationship, $typeLd, $valueLd, $inputTypeLd, $linkMetaText) = $this->prepareLinkedReview($value['DOCID'], $review);
+                    $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$linkMetaText]);
+                    if (Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $valueLd, $inputTypeLd, $idMetaDataLastId, ['relationship' => $relationship, 'sourceId' => Episciences_Repositories::ZBMATH_OPEN]) > 0) {
+                        Episciences_PapersManager::updateJsonDocumentData($docId);
+                    }
                 }
             } catch (Exception $e) {
                 $this->logger->error("Error processing DOI {$externalId}: " . $e->getMessage());
             }
         }
 
-        $this->logger->info('MSC 2020 Classification Data Enrichment completed successfully');
+        $this->logger->info('zbMATH Open Reviews discovery completed successfully');
     }
 
     private function queryZbMathAPI(string $externalId): array
@@ -128,41 +131,64 @@ class GetClassificationMsc extends JournalScript
         });
     }
 
-    private function extractMSC2020Codes(array $apiResponse): array
+    private function extractzbMathReviews(array $apiResponse): array
     {
         if (!isset($apiResponse['result']) || !is_array($apiResponse['result']) || empty($apiResponse['result'])) {
             $this->logger->warning('No results found in the API response');
             return [];
         }
 
-        $mscCodes = [];
+        $review = [];
 
         foreach ($apiResponse['result'] as $result) {
-            if (isset($result['msc']) && is_array($result['msc'])) {
-                foreach ($result['msc'] as $mscItem) {
-                    if (isset($mscItem['scheme'], $mscItem['code']) && $mscItem['scheme'] === 'msc2020') {
-                        $mscCodes[] = $mscItem['code'];
+
+            if (isset($result['editorial_contributions']) && is_array($result['editorial_contributions'])) {
+                $reviewIndex = 0;
+                foreach ($result['editorial_contributions'] as $contribution) {
+                    if (isset($contribution['contribution_type'], $contribution['reviewer']) && $contribution['contribution_type'] === 'review') {
+                        $review[$reviewIndex]['zbmathid'] = htmlspecialchars($result['id']);
+                        $review[$reviewIndex]['language'] = htmlspecialchars($contribution['language']);
+                        $review[$reviewIndex]['reviewer'] = $contribution['reviewer'];
+                        $reviewIndex++;
                     }
                 }
             }
         }
 
-        return $mscCodes;
+        return $review;
     }
 
-    private function createClassifications(array $mscCodes, int $docId): array
+    /**
+     * @param $DOCID
+     * @param mixed $review
+     * @return array
+     */
+    private function prepareLinkedReview($DOCID, array $review): array
     {
-        $collectionOfClassifications = [];
-        foreach ($mscCodes as $mscCode) {
-            $classification = new Episciences_Paper_Classifications();
-            $classification->setClassificationCode($mscCode);
-            $classification->setClassificationName(Episciences\Classification\msc2020::$classificationName);
-            $classification->setDocid($docId);
-            $classification->setSourceId(Episciences_Repositories::ZBMATH_OPEN);
-            $collectionOfClassifications[] = $classification;
-        }
-        $this->logger->info("Found " . count($collectionOfClassifications) . " classifications for DOCID {$docId}");
-        return $collectionOfClassifications;
+        $docId = $DOCID;
+        $relationship = 'hasReview';
+        $typeLd = 'zbmath';
+        $valueLd = self::HTTPS_ZBMATH_ORG_BASE_URL . $review['zbmathid'];
+        $inputTypeLd = 'publication';
+
+        $linkMetaText = new Episciences_Paper_DatasetMetadata();
+        $reviewerSignature = htmlspecialchars($review["reviewer"]["sign"]);
+        $reviewerUrl = self::HTTPS_ZBMATH_ORG_BASE_URL . 'authors/?q=rv:' . htmlspecialchars($review["reviewer"]["reviewer_id"]);
+        $reviewerSignatureWithUrl = "<a target=\"_blank\" rel=\"noopener\" href=\"{$reviewerUrl}\">{$reviewerSignature}</a>";
+        $citation['citationFull'] = "<a target=\"_blank\" rel=\"noopener\" href=\"{$valueLd}\">Review available on zbMATH Open</a>, by {$reviewerSignatureWithUrl}&nbsp;({$review['language']})";
+        $this->logger->info("zbMATH Citation will be {$citation['citationFull']}:");
+        $this->getSetMetatext($linkMetaText, $citation);
+        return array($docId, $relationship, $typeLd, $valueLd, $inputTypeLd, $linkMetaText);
+    }
+
+    /**
+     * @param Episciences_Paper_DatasetMetadata $linkMetaText
+     * @param array $citation
+     * @return void
+     */
+    private function getSetMetatext(Episciences_Paper_DatasetMetadata $linkMetaText, array $citation): void
+    {
+        $linkMetaText->setMetatext(json_encode($citation));
     }
 
     public function isDryRun(): bool
@@ -176,5 +202,5 @@ class GetClassificationMsc extends JournalScript
     }
 }
 
-$script = new GetClassificationMsc([]);
+$script = new GetZbReviews([]);
 $script->run();

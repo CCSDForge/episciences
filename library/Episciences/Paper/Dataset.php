@@ -190,7 +190,8 @@ class Episciences_Paper_Dataset
     private function buildMetatextCitation(): void
     {
         $metatextCitation = '';
-        if ($this->getMetatext() !== null && Episciences_Tools::isHal($this->getValue())) {
+        // handling URLs for which we know we have an unstructured text to produce a citation
+        if ($this->getMetatext() !== null && (Episciences_Tools::isHal($this->getValue())  || ($this->getName() === 'zbmath'))    ) {
             $metadataHal = json_decode($this->getMetatext(), true);
             $metatextCitation = $metadataHal['citationFull'];
         } elseif ($this->getMetatext() !== null) {
@@ -200,7 +201,7 @@ class Episciences_Paper_Dataset
                 $citeProc = new CiteProc($style, "en-US", self::getMetatextCitationAdditionalMarkup());
                 $metatextCitation = $citeProc->render(json_decode($metatextRaw));
             } catch (CiteProcException $e) {
-                // failed
+                trigger_error($e->getMessage());
             }
         }
 

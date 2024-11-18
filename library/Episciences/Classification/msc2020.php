@@ -6,6 +6,7 @@ use Episciences\Classification;
 
 class msc2020 extends Classification
 {
+    public const ZBMATH_ORG_CLASSIFICATION_BASE_QUERY = 'https://zbmath.org/classification/?q=';
     public static string $classificationName = 'msc2020';
     protected string $description = '';
 
