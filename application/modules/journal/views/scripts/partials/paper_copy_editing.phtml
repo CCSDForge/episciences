@@ -11,7 +11,7 @@ foreach ($comments as $id => $comment) : ?>
     // TODO A CONVERTIR TOUT EN JSON DANS LA BD
     ?>
     <div class="small">
-        <div id="copy-editing-request-<?= $id ?>">
+        <div id="copy-editing-request-<?= $id ?>" class="row">
             <strong><em class="fas fa-paper-plane"
                         style="margin-right: 5px;"></em><?= $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) . $towPoints . ' ' ?>
             </strong>
