@@ -307,7 +307,7 @@ class PaperController extends PaperDefaultController
         }
 
         // process comment answer
-        if (isset($replyForms) && !empty($replyForms)) {
+        if (!empty($replyForms)) {
 
             /** @var Ccsd_Form $replyForm */
             foreach ($replyForms as $id => $replyForm) {
