@@ -690,6 +690,7 @@ class AdministratemailController extends Zend_Controller_Action
             $this->view->reminder = $reminder;
             $this->view->js_reminder = Zend_Json::encode($reminder->toArray());
         }
+        $this->view->js_recipient_options = Zend_Json::encode(Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS);
         $this->view->reminderForm = Episciences_Mail_RemindersManager::getForm($reminder);
     }
 

@@ -38,7 +38,18 @@ class Episciences_Mail_Reminder
         self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => 'reminder_article_blocked_in_accepted_state',
         self::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE => 'reminder_submitted_article',
         self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE => 'reminder_reviewed_article',
+    ];
 
+    public const MAPPING_REMINDER_RECIPIENTS = [
+        self::TYPE_UNANSWERED_INVITATION => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_BEFORE_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_AFTER_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_BEFORE_REVISION_DEADLINE => [Episciences_Acl::ROLE_AUTHOR => Episciences_Acl::ROLE_AUTHOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_AFTER_REVISION_DEADLINE => [Episciences_Acl::ROLE_AUTHOR => Episciences_Acl::ROLE_AUTHOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_NOT_ENOUGH_REVIEWERS => [Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => [Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE => [Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE => [Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR]
     ];
 
     private $_id;
