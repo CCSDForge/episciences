@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Removed 
  - [#625](https://github.com/CCSDForge/episciences/issues/625): 'contact tech support' field has been removed (not used).
-### Changed
+
 ### Fixed
 - Linked Datasets
   - fixed display of swhids for snapshots + revisions
@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add in export the publisher name and location when possible
 
 ### Changed
+- Ux: improvements to the editing form and the creation of reminders
 - bump tinymce to latest version (7.2.0)
 - crossref export:
   - For conference proceedings the title and original_language_title elements have been removed from proceedings_metadata: they are not authorised here

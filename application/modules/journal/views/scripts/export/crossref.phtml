@@ -284,19 +284,16 @@ $paperLanguage = $this->paperLanguage;
             <program xmlns="http://www.crossref.org/relations.xsd">
                 <?php if ($paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID) : ?>
                     <related_item>
-                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">
-                            arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                     <related_item>
                         <intra_work_relation identifier-type="doi"
-                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
-                            /arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                 <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID) : ?>
                     <related_item>
                         <intra_work_relation identifier-type="doi"
-                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
-                            /zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                 <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) : ?>
                     <related_item>

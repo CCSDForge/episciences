@@ -2,7 +2,7 @@
 
 class Episciences_Mail_RemindersManager
 {
-    const AUTHOR = 'author';
+    public const AUTHOR = 'author';
     /**
      * @return array
      * @throws Zend_Exception
@@ -275,17 +275,12 @@ class Episciences_Mail_RemindersManager
 
 
         // Select: Destinataire *************************************************************
-        $form->addElement(new Ccsd_Form_Element_Select(array(
+        $form->addElement(new Ccsd_Form_Element_Select([
             'name' => 'recipient',
             'label' => 'Destinataire',
-            'multioptions' => [
-                Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,
-                Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,
-                Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER,
-                self::AUTHOR => self::AUTHOR
-            ],
+            'multioptions' => ($reminder) ? Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS[$reminder->getType()] : Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS[Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION],
             'value' => ($reminder) ? $reminder->getRecipient() : Episciences_Acl::ROLE_REVIEWER
-        )));
+        ]));
 
         $translator = Zend_Registry::get('Zend_Translate');
 
