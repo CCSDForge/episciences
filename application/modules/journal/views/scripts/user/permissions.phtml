@@ -1,3 +1,25 @@
+<style>
+    .table-responsive {
+        max-height: 600px;
+        overflow: auto; /* Active le défilement vertical */
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse; /* fusionne les bordure de la table*/
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        thead th {
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    }
+</style>
+
 <?php $this->layout()->pageTitle = $this->translate('Permissions | Episciences');
 $description = $this->translate("Le tableau suivant décrit les différents niveaux de permission des utilisateurs.");
 $allowedClass = 'fas fa-toggle-on text-success';
