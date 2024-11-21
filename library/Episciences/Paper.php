@@ -1512,7 +1512,7 @@ class Episciences_Paper
     {
         $docType = null;
         $programPath = null;
-        $programKey = 'related_item';
+        $programKey = null;
 
         // Determine the document type and set the program path
         if (isset($xmlToArray['body']['journal']['journal_article']['program'])) {
@@ -1527,9 +1527,11 @@ class Episciences_Paper
         if ($docType !== null && is_array($programPath) && !empty($programPath)) {
             $items = [];
 
-            foreach ($programPath as $value) {
-                if (!empty($value)) {
-                    $items[] = $value;
+
+            // Collect all 'related_item' elements and $programKey from the program array
+            foreach ($programPath as $programKey => $value) {
+                if (!empty($value['related_item'])) {
+                    $items[] = $value['related_item'];
                 }
             }
 
@@ -1537,7 +1539,7 @@ class Episciences_Paper
             if (!empty($items)) {
                 $result = self::addUnstructuredCitationToDatasetsToJson($this->getDatasets(), $items);
                 // Update the corresponding keys in $programPath with the processed result
-                $programPath[$programKey] = $result['related_item'];
+                $programPath[$programKey] = $result;
             }
         }
 
