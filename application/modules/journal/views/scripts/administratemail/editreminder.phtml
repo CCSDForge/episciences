@@ -36,7 +36,7 @@
             $('#delay-element').find('.help-block').text(description);
             $recipient.empty(); // remove old options
             $.each(js_recipient_options[selectedType], function (key, value) {
-                $recipient.append($("<option></option>").attr("value", value).text(key));
+                $recipient.append($("<option></option>").attr("value", value).text(translate(key)));
                 setRecipient($recipient.val());
             });
         });

@@ -1521,15 +1521,16 @@ class Episciences_Paper
         if ($docType !== null && is_array($programPath) && !empty($programPath)) {
             $items = [];
 
+
             // Collect all 'related_item' elements and $programKey from the program array
             foreach ($programPath as $programKey => $value) {
-                if (isset($value['related_item']) && !empty($value['related_item'])) {
+                if (!empty($value['related_item'])) {
                     $items[] = $value['related_item'];
                 }
             }
 
             // If there are related items, process them
-            if (!empty($items) && $programKey !== null) {
+            if (!empty($items)) {
                 $result = self::addUnstructuredCitationToDatasetsToJson($this->getDatasets(), $items);
                 // Update the corresponding keys in $programPath with the processed result
                 $programPath[$programKey] = $result;
@@ -1549,7 +1550,7 @@ class Episciences_Paper
             $itemValue = Episciences_DoiTools::cleanDoi($dataset->getValue());
             $metatextCitation = $dataset->getMetatextCitation($format);
 
-            if ($itemValue !== '') {
+            if ($itemValue !== '' && $metatextCitation !== '') {
                 $citationMap[$itemValue] = $metatextCitation;
             }
         }
@@ -1559,7 +1560,9 @@ class Episciences_Paper
             foreach ($relation as &$data) {
                 if (isset($data['#'])) {
                     $citationKey = $data['#'];
-                    $data['unstructured_citation'] = $citationMap[$citationKey] ?? null;
+                    if (!empty($citationMap[$citationKey])) {
+                        $data['unstructured_citation'] = $citationMap[$citationKey];
+                    }
                 }
             }
 
@@ -1573,6 +1576,7 @@ class Episciences_Paper
             $relations['related_item'] = $relations[0];
             unset($relations[0]);
         }
+
 
         return $relations;
     }

@@ -3,6 +3,13 @@
 class Episciences_Mail_RemindersManager
 {
     public const AUTHOR = 'author';
+    public const REPETITION_MAP = [
+        0 => 'Jamais',
+        1 => 'Quotidienne',
+        7 => 'Hebdomadaire',
+        14 => 'Toutes les deux semaines',
+        31 => 'Mensuelle'
+    ];
     /**
      * @return array
      * @throws Zend_Exception
@@ -293,13 +300,7 @@ class Episciences_Mail_RemindersManager
         $form->addElement(new Ccsd_Form_Element_Select([
             'name' => 'repetition',
             'label' => 'Répétition',
-            'multioptions' => [
-                '0' => 'Jamais',
-                '1' => 'Quotidienne',
-                '7' => 'Hebdomadaire',
-                '14' => 'Toutes les deux semaines',
-                '31' => 'Mensuelle'
-            ],
+            'multioptions' => self::REPETITION_MAP,
             'value' => ($reminder) ? $reminder->getRepetition() : 0
         ]));
 
