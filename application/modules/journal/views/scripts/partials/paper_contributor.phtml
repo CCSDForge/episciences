@@ -97,7 +97,7 @@ $rvid = RVID;
                                     </span>
                                 </a>
                                 <a class="modal-opener btn btn-default"
-                                   href="/administratemail/send/recipient/<?= $coAuthorInfo->getUid() ?>/paper/<?= $paper->getDocid() ?>">
+                                   href="<?= $this->url(['controller' => 'administratemail', 'action' => 'send', 'recipient' => $coAuthorInfo->getUid(), 'paper' => $paper->getDocid()]) ?>">
                                     <span data-toggle="tooltip"
                                           class="glyphicon glyphicon-envelope"
                                           style="margin: 0.2rem"
@@ -105,7 +105,7 @@ $rvid = RVID;
                                     </span>
                                 </a>
                                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                                    <a class="btn btn-default" href="/user/su/uid/<?php echo $coAuthorInfo->getUid(); ?>">
+                                    <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $coAuthorInfo->getUid()])?>">
                                         <span data-toggle="tooltip"
                                               style="margin: 0.2rem"
                                               title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
@@ -124,7 +124,7 @@ $rvid = RVID;
                                 <?php endif; ?>
                             </div>
                             <div class="col-lg-9">
-                                <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($coAuthorInfo->getScreenName())); ?>/uid/<?= $coAuthorInfo->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
+                                <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($coAuthorInfo->getScreenName())) ?>/uid/<?= $coAuthorInfo->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
                                  class="user-photo-small" alt="avatar">
                                 <span id="co-author-<?= $authorUid ?>" style="margin-left: 0.5em;"><strong><?php echo $this->escape($coAuthorInfo->getScreenName()) ?></strong></span>
                             </div>

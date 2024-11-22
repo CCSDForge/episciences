@@ -20,7 +20,7 @@ $editors = $this->editors;
                      class="user-photo-small" alt="avatar">
 
 
-                <a class="btn btn-default" href="/user/view/userid/<?= $copyEditor->getUid(); ?>" target="_blank">
+                <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $copyEditor->getUid()]) ?>" target="_blank">
                     <span data-toggle="tooltip"
                           class="fas fa-address-card"
                           style="margin: 0.2rem"
@@ -28,7 +28,7 @@ $editors = $this->editors;
                     </span>
                 </a>
                 <a class="modal-opener btn btn-default"
-                   href="/administratemail/send/recipient/<?= $copyEditor->getUid(); ?>/paper/<?= $paper->getDocid(); ?>">
+                   href="<?= $this->url(['controller' => 'administratemail', 'action' => 'send', 'recipient' => $copyEditor->getUid(), 'paper' => $paper->getDocid()]) ?>">
                     <span data-toggle="tooltip"
                           class="glyphicon glyphicon-envelope"
                           style="margin: 0.2rem"
@@ -36,7 +36,7 @@ $editors = $this->editors;
                     </span>
                 </a>
                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                    <a class="btn btn-default" href="/user/su/uid/<?php echo $copyEditor->getUid(); ?>">
+                    <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $copyEditor->getUid()]) ?>">
                         <span data-toggle="tooltip"
                               style="margin: 0.2rem"
                               title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
