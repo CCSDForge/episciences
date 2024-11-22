@@ -2100,7 +2100,7 @@ return array(
     "isDocumentedBy" => "Is documented by",
     "documents" => "Documents",
     "isSupplementTo" => "Is supplement to",
-    "isSupplementedBy" => "Is supplement by",
+    "isSupplementedBy" => "Is supplemented by",
     "isContinuedBy" => "Is continued by",
     "continues" => "Continues",
     "isPartOf" => "Is part of",
