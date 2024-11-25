@@ -1388,12 +1388,13 @@ class Episciences_User extends Ccsd_User_Models_User
                 $this->hasRole(Episciences_Acl::ROLE_ADMIN)
             ) &&
             !(
-                $this->hasRole(Episciences_Acl::ROLE_SECRETARY) &&
-                $this->hasRole(Episciences_Acl::ROLE_CHIEF_EDITOR) &&
-                $this->hasRole(Episciences_Acl::ROLE_GUEST_EDITOR) &&
-                $this->hasRole(Episciences_Acl::ROLE_EDITOR) &&
+                $this->hasRole(Episciences_Acl::ROLE_SECRETARY) ||
+                $this->hasRole(Episciences_Acl::ROLE_CHIEF_EDITOR) ||
+                $this->hasRole(Episciences_Acl::ROLE_GUEST_EDITOR) ||
+                $this->hasRole(Episciences_Acl::ROLE_EDITOR) ||
                 $this->hasRole(Episciences_Acl::ROLE_COPY_EDITOR)
             );
+
     }
 
 
