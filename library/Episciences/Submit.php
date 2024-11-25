@@ -1757,7 +1757,7 @@ class Episciences_Submit
         $hasHook = $paper->hasHook;  // @see Episciences_Paper::setRepoid()
         $repository = $paper->getRepoid();
         $identifier = $paper->getIdentifier();
-        $version = $paper->getVersion();
+        $version = (int)$paper->getVersion();
 
         if ($isTmp) {
 
@@ -1767,7 +1767,6 @@ class Episciences_Submit
                 $repository = $firstSubmission->getRepoid();
                 $hasHook = $firstSubmission->hasHook;
                 $identifier = $firstSubmission->getIdentifier();
-                $version = $firstSubmission->getVersion();
             }
 
         }

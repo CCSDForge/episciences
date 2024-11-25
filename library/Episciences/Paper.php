@@ -383,6 +383,7 @@ class Episciences_Paper
     private $_repoId = 0;
     private $_record;
     private $_document;
+    private ?string $_document_private;
     /**
      * Pour vérifier si les versions (autres archives (exp Zenodo)) sont liées entre elles.
      * @var string
@@ -1347,74 +1348,67 @@ class Episciences_Paper
             }
         }
         $graphical_abstract_file = '';
-        $current = $this->getDocument()['public_properties']['database']['current'] ?? null;
+        $current = $this->getDocument()['database']['current'] ?? null;
         if (isset($current['graphical_abstract_file'])) {
             $graphical_abstract_file = $current['graphical_abstract_file'];
         }
         $extraData = [
-            Episciences_Paper_XmlExportManager::PUBLIC_KEY => [
-                Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY => [
-                    'keywords' => $this->getMetadata('subjects')
-                ],
-                Episciences_Paper_XmlExportManager::DATABASE_KEY => [
-                    'current' => [
-                        'original_language' => $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_METADATA_KEY]['@language'] ?? 'en',
-                        'identifiers' => [
-                            'permanent_item_number' => $this->getPaperid(),
-                            'document_item_number' => $this->getDocid(),
-                            'repository_identifier' => $this->getIdentifier(),
-                            'concept_identifier' => $this->getConcept_identifier()
-                        ],
-                        'isTmp' => $this->isTmp(),
-                        'flag' => $this->getFlag(),
-                        'type' => $this->getType(),
-                        'status' => [
-                            'id' => $this->getStatus(),
-                            'label' => [
-                                'en' => $this->getStatusLabel('en'),
-                                'fr' => $this->getStatusLabel(),
-                            ]
-                        ],
-                        'url' => sprintf('%s/%s', $journal->getUrl(), $this->getDocid()),
-                        'version' => $this->getVersion(),
-                        'files' => $this->processFiles($journal->getUrl()),
-                        'dates' => [
-                            'first_submission_date' => $this->getSubmission_date(),
-                            'posted_date' => $this->getWhen(),
-                            'modification_date' => $this->getModification_date(),
-                            'publication_date' => $this->getPublication_date()
-                        ],
-                        'volume' => $sVolume,
-                        'position_in_volume' => $this->getPosition(),
-                        'section' => $sSection,
-                        'journal' => [
-                            'id' => $journal->getRvid(),
-                            'code' => $journal->getCode(),
-                            'name' => $journal->getName(),
-                            'url' => $journal->getUrl(),
-                        ],
 
-                        'cited_by' => $citedBy,
-                        'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
-
-                        'metrics' => [
-                            'page_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid()),
-                            'file_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid(), 'file')
-                        ],
-                        'graphical_abstract_file' => $graphical_abstract_file,
-                    ],
-                    'latest_version_item_number' => (int)$this->getLatestVersionId(),
-                    'first_version_item_number' => $this->getPaperid(),
-                    'previous_versions' => $sPreviousVersions,
-                ]
+            Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY => [
+                'keywords' => $this->getMetadata('subjects')
             ],
-            // todo: to be completed later
-            Episciences_Paper_XmlExportManager::PRIVATE_KEY => [
+            Episciences_Paper_XmlExportManager::DATABASE_KEY => [
+                'current' => [
+                    'original_language' => $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_METADATA_KEY]['@language'] ?? 'en',
+                    'identifiers' => [
+                        'permanent_item_number' => $this->getPaperid(),
+                        'document_item_number' => $this->getDocid(),
+                        'repository_identifier' => $this->getIdentifier(),
+                        'concept_identifier' => $this->getConcept_identifier()
+                    ],
+                    'isTmp' => $this->isTmp(),
+                    'flag' => $this->getFlag(),
+                    'type' => $this->getType(),
+                    'status' => [
+                        'id' => $this->getStatus(),
+                        'label' => [
+                            'en' => $this->getStatusLabel('en'),
+                            'fr' => $this->getStatusLabel(),
+                        ]
+                    ],
+                    'url' => sprintf('%s/%s', $journal->getUrl(), $this->getDocid()),
+                    'version' => $this->getVersion(),
+                    'files' => $this->processFiles($journal->getUrl()),
+                    'dates' => [
+                        'first_submission_date' => $this->getSubmission_date(),
+                        'posted_date' => $this->getWhen(),
+                        'modification_date' => $this->getModification_date(),
+                        'publication_date' => $this->getPublication_date()
+                    ],
+                    'volume' => $sVolume,
+                    'position_in_volume' => $this->getPosition(),
+                    'section' => $sSection,
+                    'journal' => [
+                        'id' => $journal->getRvid(),
+                        'code' => $journal->getCode(),
+                        'name' => $journal->getName(),
+                        'url' => $journal->getUrl(),
+                    ],
 
-                //'comments' => $this->getComments()
+                    'cited_by' => $citedBy,
+                    'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
 
-
+                    'metrics' => [
+                        'page_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid()),
+                        'file_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid(), 'file')
+                    ],
+                    'graphical_abstract_file' => $graphical_abstract_file,
+                ],
+                'latest_version_item_number' => (int)$this->getLatestVersionId(),
+                'first_version_item_number' => $this->getPaperid(),
+                'previous_versions' => $sPreviousVersions,
             ]
+
         ];
         if ($graphical_abstract_file === '') {
             unset($extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY]['current']['graphical_abstract_file']);
@@ -1444,33 +1438,33 @@ class Episciences_Paper
 
             $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle] = array_merge(
                 $xmlToArray[$keyBody][$keyJournal][$keyJournalArticle],
-                $extraData[$keyPublic][$keyJournalArticle]
+                $extraData[$keyJournalArticle]
             );
 
         } else {
 
             $xmlToArray[$keyBody][$keyConf][$keyConfPaper] = array_merge(
                 $xmlToArray[$keyBody][$keyConf][$keyConfPaper],
-                $extraData[$keyPublic][$keyJournalArticle]
+                $extraData[$keyJournalArticle]
             );
 
         }
 
-        $xmlToArray[$keyBody][$keyDatabase] = $extraData[$keyPublic][$keyDatabase];
+        $xmlToArray[$keyBody][$keyDatabase] = $extraData[$keyDatabase];
 
 
 // Update document keys
-        $document[$keyPublic] = $xmlToArray[$keyBody];
-        $document[$keyPrivate] = $extraData[$keyPrivate];
+        $document = $xmlToArray[$keyBody];
+        //$document[$keyPrivate] = $extraData[$keyPrivate];
 
 // Check and update document based on key
-        if ($key !== $keyAll) {
-            if ($key === $keyPrivate || $key === $keyPublic) {
-                $document = $document[$key];
-            } else {
-                $document = $document[$keyPublic];
-            }
-        }
+//        if ($key !== $keyAll) {
+//            if ($key === $keyPrivate || $key === $keyPublic) {
+//                $document = $document[$key];
+//            } else {
+//                $document = $document[$keyPublic];
+//            }
+//        }
 
 
         $result = $serializer->serialize($document, 'json');
@@ -5047,6 +5041,28 @@ class Episciences_Paper
 
     }
 
+
+    public function getDocumentPrivate(): ?array
+    {
+        return $this->_document_private;
+    }
+
+
+    public function setDocumentPrivate(string $privateDocument = null): self
+    {
+        if ($privateDocument) {
+            try {
+                $privateDocument = json_decode($privateDocument, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
+
+        }
+
+        $this->_document = $privateDocument;
+        return $this;
+    }
+
     private function getJsonV2(): ?string
     {
         try {
@@ -5056,7 +5072,6 @@ class Episciences_Paper
         }
         return null;
     }
-
 
 }
 
