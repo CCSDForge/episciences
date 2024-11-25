@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - [#625](https://github.com/CCSDForge/episciences/issues/625): 'contact tech support' field has been removed (not used).
 
 ### Fixed
+- Citations are sometimes not retrieved
 - Linked Datasets
   - fixed display of swhids for snapshots + revisions
   - fixed delete button not working with multiple links in same category
