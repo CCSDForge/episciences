@@ -1507,6 +1507,7 @@ class Episciences_Paper
         $docType = null;
         $programPath = null;
         $programKey = null;
+        $renameFirstKey = true;
 
         // Determine the document type and set the program path
         if (isset($xmlToArray['body']['journal']['journal_article']['program'])) {
@@ -1524,14 +1525,19 @@ class Episciences_Paper
 
             // Collect all 'related_item' elements and $programKey from the program array
             foreach ($programPath as $programKey => $value) {
-                if (!empty($value['related_item'])) {
+
+                if (($programKey === 'related_item')) {
+                    $renameFirstKey = false;
+                    $items[] = $value;
+
+                } elseif (!empty($value['related_item'])) {
                     $items[] = $value['related_item'];
                 }
             }
 
             // If there are related items, process them
             if (!empty($items)) {
-                $result = self::addUnstructuredCitationToDatasetsToJson($this->getDatasets(), $items);
+                $result = self::addUnstructuredCitationToDatasetsToJson($this->getDatasets(), $items, 'markdown', $renameFirstKey);
                 // Update the corresponding keys in $programPath with the processed result
                 $programPath[$programKey] = $result;
             }
@@ -1540,7 +1546,7 @@ class Episciences_Paper
         return $xmlToArray;
     }
 
-    private static function addUnstructuredCitationToDatasetsToJson(array $datasets, array $relations, string $format = 'markdown'): array
+    private static function addUnstructuredCitationToDatasetsToJson(array $datasets, array $relations, string $format = 'markdown', bool $renameFirstkey = true): array
     {
         // Create a map of _value => metatextCitation
         $citationMap = [];
@@ -1572,13 +1578,12 @@ class Episciences_Paper
         unset($relation);
 
         // Rename the key 0 to 'related_item'
-        if (isset($relations[0])) {
+        if (isset($relations[0]) && $renameFirstkey) {
             $relations['related_item'] = $relations[0];
             unset($relations[0]);
         }
 
-
-        return $relations;
+        return $renameFirstkey ? $relations : $relations[0];
     }
 
     /**
