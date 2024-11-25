@@ -5,7 +5,7 @@ class Episciences_User extends Ccsd_User_Models_User
     /** @var int */
     protected $_uid;
 
-    protected  ?string $_uuid;
+    protected  ?string $_uuid = null;
 
     protected $_langueid;
 
