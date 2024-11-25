@@ -1524,7 +1524,14 @@ class Episciences_Paper
 
             // Collect all 'related_item' elements and $programKey from the program array
             foreach ($programPath as $programKey => $value) {
-                if (!empty($value['related_item'])) {
+
+                if(($programKey === 'related_item') && is_array($value)) {
+                    foreach ($value as $currentInterWorkRelation){
+                        if(!empty($currentInterWorkRelation['inter_work_relation'])){
+                            $items[0][] = $currentInterWorkRelation;
+                        }
+                    }
+                } elseif(!empty($value['related_item'])) {
                     $items[] = $value['related_item'];
                 }
             }
