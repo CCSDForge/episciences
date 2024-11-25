@@ -37,7 +37,7 @@ function generateSelectAuthors(){
         let clearString = "\""+author+"\"";
         selectString += '<option id='+index+' value='+clearString+'>'+author+'</option>';
     });
-    $("label#affiliations-label").before("<select id='select-author-affi' class='select-author-affi'>"+selectString+"</select>");
+    $("label#affiliations-label").before("<select id='select-author-affi' class='form-control select-author-affi' style='width: auto'>"+selectString+"</select>");
 }
 
 $(document).ready(function() {

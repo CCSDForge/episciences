@@ -423,12 +423,11 @@ class Ccsd_Visiteurs
             if ($geoIpReader) {
 
                 try {
-                    $record = $geoIpReader->city($this->_ip)->raw;
+                    $record = $geoIpReader->city($this->_ip)->jsonSerialize();
                 } catch (AddressNotFoundException|InvalidDatabaseException $e) {
                     trigger_error($e->getMessage());
                     $record = null;
                 }
-
 
                 $data['continent'] = utf8_encode($record['continent']['code'] ?? '');
                 $data['country'] = utf8_encode($record['country']['iso_code'] ?? '');

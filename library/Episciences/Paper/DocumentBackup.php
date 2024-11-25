@@ -4,6 +4,7 @@ class Episciences_Paper_DocumentBackup
 {
 
     public const DEFAULT_FILE_EXTENSION = 'pdf';
+    public const REVIEW_DOCUMENT_DIR_NAME = 'documents';
     /**
      * @var int
      */
@@ -28,11 +29,11 @@ class Episciences_Paper_DocumentBackup
      * Episciences_Paper_DocumentBackup constructor.
      * @param int $docid
      */
-    public function __construct(int $docid)
+    public function __construct(int $docid, string $rvcode)
     {
         $this
             ->setDocid($docid)
-            ->setPath()
+            ->setPath($rvcode)
             ->setPathFileName();
 
     }
@@ -95,10 +96,10 @@ class Episciences_Paper_DocumentBackup
     /**
      *
      */
-    public function setPath(string $path = null): \Episciences_Paper_DocumentBackup
+    public function setPath(string $rvcode, string $path = null): \Episciences_Paper_DocumentBackup
     {
         if (!$path) {
-            $this->path = REVIEW_FILES_PATH . $this->getDocid() . '/' . REVIEW_DOCUMENT_DIR_NAME . '/';
+            $this->path = APPLICATION_PATH . '/../data/' . $rvcode . '/' . 'files/' . $this->getDocid() . '/' . self::REVIEW_DOCUMENT_DIR_NAME . '/';
         } else {
             $this->path = $path;
         }
@@ -124,7 +125,7 @@ class Episciences_Paper_DocumentBackup
         } else {
             $this->pathFileName = sprintf("%s%s.%s", $this->getPath(), $this->getDocid(), $this->getExtension());
         }
-         return $this;
+        return $this;
     }
 
     /**

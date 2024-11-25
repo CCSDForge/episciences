@@ -88,8 +88,6 @@ class Ccsd_Error extends Exception
                 $message = self::DEFAULT_PREFIX_CODE;
                 $message .= ' ';
                 $message .= "Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
-
-                error_log($this->getMessage());
         }
 
         return $message;

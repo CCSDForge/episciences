@@ -2024,10 +2024,10 @@ class AdministratepaperController extends PaperDefaultController
             $currentType = $paper->getType();
 
             if (
-                $currentType && $paper->getTypeWithKey() !== Episciences_Paper::DATASET_TYPE  && $paper->getTypeWithKey() !== Episciences_Paper::DATA_PAPER_TYPE
+                $currentType && $paper->getTypeWithKey() !== Episciences_Paper::DATASET_TYPE_TITLE  && $paper->getTypeWithKey() !== Episciences_Paper::DATA_PAPER_TYPE
 
             ) {
-                $currentType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE;
+                $currentType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE_TITLE;
                 $paper->setType($currentType);
             }
 
@@ -2452,9 +2452,8 @@ class AdministratepaperController extends PaperDefaultController
             $CC = $paper->extractCCRecipients($recipients);
 
             if (empty($recipients)) {
-                $arrayKeyFirstCC = array_key_first($CC);
-                $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-                unset($CC[$arrayKeyFirstCC]);
+                $recipients = $CC;
+                $CC = [];
             }
 
             // new copy editor assignments

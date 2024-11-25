@@ -73,7 +73,7 @@ class Episciences_Paper_Logger
     public const CODE_INBOX_COAR_NOTIFY_REVIEW = 'coar_notify_review';
     public const CODE_LD_ADDED = 'ld_added';
     public const CODE_DOCUMENT_IMPORTED = 'paper_imported';
-
+    public const CODE_LD_CHANGED = 'ld_changed';
     public const CODE_LD_REMOVED = 'ld_remove';
     // alert-
     public const WARNING = 'warning';
@@ -144,6 +144,7 @@ class Episciences_Paper_Logger
         self::CODE_LD_REMOVED => self::INFO,
         self::CODE_REVISION_DEADLINE_UPDATED => self::WARNING,
         self::CODE_DOCUMENT_IMPORTED => self::INFO,
+        self::CODE_LD_CHANGED => self::INFO,
 
     ];
 
@@ -185,6 +186,7 @@ class Episciences_Paper_Logger
         self::CODE_LD_ADDED => "Ajout d'une donnée liée",
         self::CODE_LD_REMOVED => "Suppression d'une donnée liée",
         self::CODE_DOCUMENT_IMPORTED => "Le document a été importé",
+        self::CODE_LD_CHANGED => "Changement d'une donnée liée",
     ];
 
     /**

@@ -3,7 +3,7 @@
 CCSD
 Managed with zookeeper
 # bin/solr zk upconfig -n episciences -d /path/to/configset
-reload colection
+reload collection
 FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upload-a-configuration-set
 /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
 -->
@@ -117,7 +117,7 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
                sortMissingLast="true" indexed="true" stored="false"/>
 
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate" indexed="true" stored="true"/>
+    <fieldType name="location" class="solr.LatLonPointSpatialField" indexed="true" stored="true"/>
 
     <!-- Support for nested documents -->
     <fieldType name="_nest_path_" class="solr.NestPathField" />

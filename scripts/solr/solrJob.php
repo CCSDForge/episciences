@@ -15,6 +15,7 @@ $localopts = [
     'buffer|b=i' => " Nombre de doc à envoyer en même temps à l'indexeur",
 ];
 
+const APPLICATION_MODULE = 'journal';
 require_once __DIR__ . '/../../public/bdd_const.php';
 require_once __DIR__ . '/../loadHeader.php';
 
@@ -23,7 +24,9 @@ require_once 'Zend/Loader/Autoloader.php';
 $autoloader = Zend_Loader_Autoloader::getInstance();
 $autoloader->setFallbackAutoloader(true);
 # accepted core: episciences
+ini_set("memory_limit", '4096M');
 
+initTranslator();
 $options = [];
 
 if (!($opts->docid || $opts->sqlwhere || $opts->delete || $opts->cron || $opts->file)) {
@@ -61,11 +64,12 @@ Ccsd_Log::message('Indexation dans Apache Solr  | Solarium library version: ' . 
 
 
 // indexation via CRON
-if ( ($cronValue === 'update') || ($cronValue === 'delete') ){
+if (($cronValue === 'update') || ($cronValue === 'delete')) {
     Ccsd_Log::message(" Données récupérées dans la table d'indexation", $debug, '', $indexer->getLogFilename());
     $indexer->setOrigin(mb_strtoupper($opts->cron));
     $arrayOfDocId = $indexer->getListOfDocidFromIndexQueue();
     $indexer->processArrayOfDocid($arrayOfDocId);
+    unset($arrayOfDocId);
     exit();
 }
 
@@ -101,11 +105,35 @@ if (($opts->docid) && ($opts->docid !== '%')) {
     $indexer->processArrayOfDocid($arrayOfDocId);
 }
 
+unset($arrayOfDocId);
+
 $timeend = microtime(true);
 $time = $timeend - $timestart;
 
 Ccsd_Log::message('Début du script: ' . date("H:i:s", $timestart) . '/ fin du script: ' . date("H:i:s", $timeend), $debug, '', $indexer->getLogFilename());
 Ccsd_Log::message('Script executé en ' . number_format($time, 3) . ' sec.', $debug, '', $indexer->getLogFilename());
+
+function initTranslator(string $locale = null)
+{
+
+    $locale = $locale ?: null;
+
+    $translator = new Zend_Translate(
+        Zend_Translate::AN_ARRAY,
+        APPLICATION_PATH . '/languages',
+        $locale
+        ,
+        array('scan' => Zend_Translate::LOCALE_DIRECTORY));
+
+    Zend_Registry::set('Zend_Translate', $translator);
+    Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
+    Zend_Registry::set('lang', $translator->getLocale());
+
+    if (defined('REVIEW_PATH') && is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
+        $translator->addTranslation(REVIEW_PATH . 'languages');
+    }
+}
+
 exit(0);
 
 

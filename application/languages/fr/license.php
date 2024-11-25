@@ -33,6 +33,7 @@ return [
     'https://creativecommons.org/licenses/by/3.0' => 'Attribution 3.0 non transposé (CC BY 3.0)',
     'https://creativecommons.org/licenses/by/4.0' => 'Attribution 4.0 International (CC BY 4.0)',
     'https://creativecommons.org/publicdomain/zero/1.0' => 'CC0 1.0 universel (CC0 1.0) Transfert dans le Domaine Public',
+    'https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html'=>'CeCILL',
     'info:eu-repo/semantics/closedAccess' => 'Accès fermé',
     'info:eu-repo/semantics/embargoedAccess' => 'Accès sous embargo',
     'info:eu-repo/semantics/restrictedAccess' => 'Accès restreint',

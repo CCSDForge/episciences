@@ -1,0 +1,1 @@
+ALTER TABLE `VOLUME` CHANGE `vol_type` `vol_type` SET('special_issue','proceedings') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL;

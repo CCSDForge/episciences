@@ -1,0 +1,42 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Episciences
+message: an overlay journal platform
+type: software
+authors:
+  - given-names: Bruno
+    family-names: Marmol
+    orcid: 'https://orcid.org/0000-0003-2955-5678'
+    affiliation: CCSD
+  - given-names: Djamel
+    family-names: Chibane
+    affiliation: CCSD
+  - given-names: Julien
+    family-names: Charles
+    affiliation: CCSD
+  - given-names: Kevin
+    family-names: Loiseau
+  - given-names: Laurent
+    family-names: Capelli
+  - given-names: Loic
+    family-names: Comparet
+  - given-names: Yannick
+    family-names: Barborini
+    orcid: https://orcid.org/0000-0003-3756-8647
+    affiliation: CCSD
+  - given-names: Raphaël
+    family-names: Tournoy
+    email: raphael.tournoy@ccsd.cnrs.fr
+    affiliation: CCSD
+    orcid: 'https://orcid.org/0000-0003-1244-0823'
+identifiers:
+  - type: swh
+    value: 'swh:1:dir:42613c0abc9e2df2a630a7af694ec79f6ed9c658'
+repository-code: 'https://github.com/CCSDForge/episciences'
+url: 'https://www.episciences.org/'
+keywords:
+  - open access
+  - overlay journals
+license: GPL-3.0-or-later

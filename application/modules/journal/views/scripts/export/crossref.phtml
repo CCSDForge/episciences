@@ -1,17 +1,41 @@
 <?php
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
+$onlineType = 'online';
 $authors = $paper->getMetadata('authors');
 $subjects = $paper->getMetadata('subjects');
 
-$titles = $paper->getAllTitles();
+$titles = $this->titles;
 
-$abstracts = $paper->getAllAbstracts();
+$abstracts = $this->abstracts;
+try {
+    $publicationDate = $paper->isPublished() ? new DateTime($paper->getPublication_date()) : null;
+} catch (Exception $e) {
+    $publicationDate = null;
+    trigger_error($e->getMessage());
+}
 
-$dateSubmitted = new DateTime($paper->getSubmission_date());
-$dateUpdated = new DateTime($paper->getModification_date());
-$dateIssued = new DateTime($paper->getPublication_date());
-$publicationYear = new DateTime($paper->getPublication_date());
+$acceptanceDate = $paper->getAcceptanceDate();
+
+if ($acceptanceDate) {
+    try {
+        $acceptanceDate = new DateTime($acceptanceDate);
+    } catch (Exception $e) {
+        $acceptanceDate = null;
+        trigger_error($e->getMessage());
+    }
+}
+
+$modificationDate = $paper->getModification_date();
+
+if ($modificationDate) {
+    try {
+        $modificationDate = $acceptanceDate = new DateTime($modificationDate);
+    } catch (Exception $e) {
+        $modificationDate = null;
+        trigger_error($e->getMessage());
+    }
+}
 
 /** @var $journal Episciences_Review */
 $journal = $this->journal;
@@ -25,33 +49,18 @@ $enrichmentFundings = $paper->getFundings();
 $enrichmentLinkedData = $paper->getLinkedData();
 $bibliographicalRef = $paper->getBibRef();
 
-//conferences infos
-$proceedingInfo = $this->proceedingInfo;
+$interWorkRelationship = Episciences_Paper_Dataset::getFlattenedRelationships();
 
-$interWorkRelationship = [
-    "isDerivedFrom","hasDerivation","isReviewOf",'hasReview',
-    "isCommentOn","hasComment","isReplyTo","hasReply","basedOnData",
-    "isDataBasisFor","hasRelatedMaterial","isRelatedMaterial",
-    "isCompiledBy","compiles","isDocumentedBy","documents",
-    "isSupplementTo","isSupplementedBy","isContinuedBy",
-    "continues","isPartOf","hasPart","references",
-    "isReferencedBy","isBasedOn","isBasisFor","requires","isRequiredBy","finances","isFinancedBy"
-];
-
-
-if (defined('RVISSN')) {
-    $issn = $this->FormatIssn(RVISSN);
-} else {
-    $issn = '';
-}
+$issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));
 
 $dateTime = new DateTime('now');
 $timestamp = $dateTime->format('YmdHisv');
+$paperLanguage = $this->paperLanguage;
 ?>
 <doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://www.crossref.org/schema/5.3.0 https://www.crossref.org/schemas/crossref5.3.0.xsd"
-           xmlns="http://www.crossref.org/schema/5.3.0" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1"
-           xmlns:fr="http://www.crossref.org/fundref.xsd" xmlns:mml="http://www.w3.org/1998/Math/MathML" version="5.3.0"
+           xsi:schemaLocation="http://www.crossref.org/schema/5.3.1 https://www.crossref.org/schemas/crossref5.3.1.xsd"
+           xmlns="http://www.crossref.org/schema/5.3.1" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1"
+           version="5.3.1"
 >
     <head>
         <doi_batch_id><?php echo DOMAIN . '_' . $paper->getPaperid() . '_' . $timestamp; ?></doi_batch_id>
@@ -63,12 +72,7 @@ $timestamp = $dateTime->format('YmdHisv');
         <registrant><?php echo DOMAIN; ?></registrant>
     </head>
     <body>
-    <?php if (!is_array($proceedingInfo)): ?>
-        <journal>
-    <?php else:?>
-        <conference>
-    <?php endif;?>
-        <?php if (!is_array($proceedingInfo)): ?>
+    <journal>
         <journal_metadata language="en">
             <full_title><?php echo $this->escape($journal->getName()); ?></full_title>
             <?php if ($issn !== '') : ?>
@@ -81,108 +85,71 @@ $timestamp = $dateTime->format('YmdHisv');
                 </doi_data>
             <?php endif; ?>
         </journal_metadata>
-        <journal_issue>
-            <publication_date media_type="online">
-                <month><?php echo $publicationYear->format('m'); ?></month>
-                <day><?php echo $publicationYear->format('d'); ?></day>
-                <year><?php echo $publicationYear->format('Y'); ?></year>
-            </publication_date>
-
-            <?php if ($this->volume !== '') : ?>
-                <journal_volume>
-                    <volume><?php echo Ccsd_Tools_String::truncate($this->escape($this->volume), 29, '...'); ?></volume>
-                </journal_volume>
-            <?php endif; ?>
-            <?php if ($this->section !== '') : ?>
-                <issue><?php echo Ccsd_Tools_String::truncate($this->escape($this->section), 29, '...'); ?></issue>
-            <?php endif; ?>
-        </journal_issue>
-        <?php endif;?>
-        <?php if (!is_array($proceedingInfo)): ?>
-            <journal_article publication_type="full_text">
-        <?php else: ?>
-            <event_metadata>
-                <conference_name><?= $this->escape($proceedingInfo['conference_name']) ?></conference_name>
-                <?php if ($proceedingInfo['conference_theme'] !== ''): ?>
-                    <conference_theme><?= $this->escape($proceedingInfo['conference_theme']) ?></conference_theme>
-                <?php endif; ?>
-                <?php if ($proceedingInfo['conference_acronym'] !== ''): ?>
-                    <conference_acronym><?=  $this->escape($proceedingInfo['conference_acronym']) ?></conference_acronym>
-                <?php endif; ?>
-                <?php if ($proceedingInfo['conference_number'] !== ''): ?>
-                    <conference_number><?=  $this->escape($proceedingInfo['conference_number']) ?></conference_number>
-                <?php endif; ?>
-                <?php if ($proceedingInfo['conference_location'] !== ''): ?>
-                    <conference_location><?=  $this->escape($proceedingInfo['conference_location']) ?></conference_location>
-                <?php endif; ?>
-                <?php
-                if ($proceedingInfo['conference_start'] !== '' && $proceedingInfo['conference_end'] !== '') {
-                    $proceeding_start = new dateTime($proceedingInfo['conference_start']);
-                    $proceeding_end = new dateTime($proceedingInfo['conference_end']);
-                    echo '<conference_date start_month="'.$proceeding_start->format('m').'" start_year="'.$proceeding_start->format('Y').'" start_day="'.$proceeding_start->format('d').'" end_year="'.$proceeding_end->format('Y').'" end_month="'.$proceeding_end->format('m').'" end_day="'.$proceeding_end->format('d').'"/>';
-                }
-                ?>
-            </event_metadata>
-            <proceedings_metadata language="en">
-
-                    <?php if (is_array($proceedingInfo)): ?>
-                        <proceedings_title>
-                            <?= $this->escape($this->volume) ?>
-                        </proceedings_title>
-                    <?php endif;?>
-                    <?php /*<proceedings_subject>Metadata</proceedings_subject>*/ ?>
-                    <publisher>
-                        <publisher_name><?php echo $this->escape($journal->getName()); ?></publisher_name>
-                    </publisher>
-                    <publication_date media_type="online">
-                        <month><?php echo $publicationYear->format('m'); ?></month>
-                        <day><?php echo $publicationYear->format('d'); ?></day>
-                        <year><?php echo $publicationYear->format('Y'); ?></year>
+        <?php if ($publicationDate || $this->volume !== '' || $this->section !== ''): ?>
+            <journal_issue>
+                <?php if ($publicationDate) : ?>
+                    <publication_date media_type="<?= $onlineType ?>">
+                        <month><?php echo $publicationDate->format('m'); ?></month>
+                        <day><?php echo $publicationDate->format('d'); ?></day>
+                        <year><?php echo $publicationDate->format('Y'); ?></year>
                     </publication_date>
-                    <noisbn reason="simple_series"/>
-                    <doi_data>
-                        <?php if ($journalDoiPrefix !== '' && substr(strrchr($proceedingInfo['conference_proceedings_doi'], "."), 1) !== '' ): ?>
-                            <doi><?php echo $this->escape($proceedingInfo['conference_proceedings_doi']); ?></doi>
-                        <?php endif; ?>
-                        <timestamp><?php echo $timestamp; ?></timestamp>
-                        <resource><?= $this->escape($journalUrl).'/volume/view/id/'.$this->escape($paper->getVid()) ?></resource>
-                    </doi_data>
-                </proceedings_metadata>
-                <conference_paper publication_type="full_text">
-        <?php endif;?>
-            <?php if (!is_array($proceedingInfo)): ?>
-                <titles>
-                    <?php $titleCount = 0; ?>
-                    <?php foreach ($titles as $lang => $title) : ?>
-                        <?php
-                        if ($titleCount == 0): ?>
-                            <title><?php echo $this->escape($title) ?></title>
-                            <?php $titleCount++; ?>
-                        <?php elseif ($titleCount == 1) : ?>
-                            <original_language_title
-                                    language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
-                            <?php $titleCount++; ?>
-                        <?php endif; ?>
+                <?php endif; ?>
 
+                <?php if ($this->volume !== '') : ?>
+                    <journal_volume>
+                        <volume><?php echo Ccsd_Tools_String::truncate($this->escape($this->volume), 29, '...'); ?></volume>
+                    </journal_volume>
+                <?php endif; ?>
 
-                    <?php endforeach; ?>
-                </titles>
-            <?php endif;?>
+                <?php if ($this->section !== '') : ?>
+                    <issue><?php echo Ccsd_Tools_String::truncate($this->escape($this->section), 29, '...'); ?></issue>
+                <?php endif; ?>
+            </journal_issue>
+        <?php endif; ?>
+
+        <?php
+        if ($paperLanguage !== '') {
+            $paperLanguage = sprintf(' language="%s"', $paperLanguage);
+        }
+        ?>
+        <journal_article publication_type="full_text"<?= $paperLanguage; ?>>
+            <titles>
+                <?php foreach ($titles as $titleCount => $titleArray) : ?>
+                    <?php
+                    $titleLanguage = key($titleArray);
+                    if ($titleLanguage != '') {
+                        $titleLanguage = $this->escape($titleLanguage);
+                        $titleLanguage = sprintf(' language="%s"', $titleLanguage);
+                    } else {
+                        $titleLanguage = '';
+                    }
+                    $title = array_values($titleArray);
+                    $title = $this->escape($title[0])
+                    ?>
+                    <?php if ($titleCount === 0): ?>
+                        <title><?= $title ?></title>
+                    <?php else : ?>
+                        <original_language_title<?= $titleLanguage ?>><?= $title ?></original_language_title>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </titles>
 
 
             <?php
-            if (is_array($authors)) { ?>
+            if (is_array($authors)) : ?>
                 <contributors>
+                    <?php foreach ($authors
+
+                    as $order => $creatorName) : ?>
                     <?php
-                    foreach ($authors as $order => $creatorName) {
-                        $givenName= '';
-                        $familyName= '';
-                        if (str_contains($creatorName, ',')) {
-                            [$familyName, $givenName] = explode(', ', $creatorName);
-                            $givenName = trim($givenName, ',');
-                        } else {
-                            $familyName = $creatorName;
-                        }
+                    $givenName = '';
+                    $familyName = '';
+                    if (str_contains($creatorName, ',')) {
+                        [$familyName, $givenName] = explode(', ', $creatorName);
+                        $givenName = trim($givenName, ',');
+                    } else {
+                        $familyName = $creatorName;
+                    }
 
                     ?>
                     <?php if ($order === 0) : ?>
@@ -190,69 +157,61 @@ $timestamp = $dateTime->format('YmdHisv');
                         <?php else: ?>
                         <person_name sequence="additional" contributor_role="author">
                             <?php endif; ?>
-                            <?php if($givenName !=='') :?>
-                            <given_name><?php echo $this->escape($givenName) ?></given_name>
+                            <?php if ($givenName !== '') : ?>
+                                <given_name><?php echo $this->escape($givenName) ?></given_name>
                             <?php endif; ?>
                             <surname><?php echo $this->escape($familyName) ?></surname>
                             <?php if (!empty($enrichmentAuthors)): ?>
-                                    <?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
-                                        <affiliations>
-                                            <?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor) { ?>
-                                                <institution><institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name>
-                                                    <?php if (array_key_exists('id',$affiliationAuthor) && array_key_exists('acronym',$affiliationAuthor['id'][0])){ ?>
-                                                        <institution_acronym><?= $this->escape($affiliationAuthor['id'][0]['acronym']) ?></institution_acronym>
-                                                    <?php } ?>
-                                                </institution>
-                                            <?php } ?>
-                                        </affiliations>
-                                    <?php endif; ?>
+                                <?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
+                                    <affiliations>
+                                        <?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor): ?>
+                                            <institution>
+                                                <?php if (isset($affiliationAuthor['name'])): ?>
+                                                    <institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name>
+                                                <?php endif; ?>
+
+                                                <?php if (isset($affiliationAuthor['id'])): ?>
+                                                    <?php foreach ($affiliationAuthor['id'] as $values): ?>
+                                                        <?php if (isset($values['id'])): ?>
+                                                            <institution_id
+                                                                    type="ror"><?= $this->escape($values['id']) ?></institution_id>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+
+                                                    <?php foreach ($affiliationAuthor['id'] as $values): ?>
+                                                        <?php if (isset($values['acronym'])): ?>
+                                                            <institution_acronym><?= $this->escape($values['acronym']) ?></institution_acronym>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            </institution>
+                                        <?php endforeach; ?>
+                                    </affiliations>
+                                <?php endif; ?>
                                 <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?>
                                     <ORCID><?= "https://orcid.org/" . strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></ORCID>
                                 <?php endif; ?>
                             <?php endif; ?>
                         </person_name>
-                        <?php
-                        }
-                        ?>
+                        <?php endforeach; ?>
                 </contributors>
-                <?php
-            }
-            ?>
-            <?php if (is_array($proceedingInfo)): ?>
-                <titles>
-                    <?php $titleCount = 0; ?>
-                    <?php foreach ($titles as $lang => $title) : ?>
-                        <?php
-                        if ($titleCount == 0): ?>
-                            <title><?php echo $this->escape($title) ?></title>
-                            <?php $titleCount++; ?>
-                        <?php elseif ($titleCount == 1) : ?>
-                            <original_language_title
-                                    language="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></original_language_title>
-                            <?php $titleCount++; ?>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </titles>
-            <?php endif;?>
+            <?php endif; ?>
             <?php if ($abstracts): ?>
-
                 <jats:abstract>
                     <?php
-                    foreach ($abstracts as $lang => $abstract) {
-
-                        $abstract = trim($abstract);
-
-                        if (('International audience' === $abstract) || (preg_match("/^Comment:/", $abstract))) {
-                            continue;
-                        }
-
-                        if ($lang && Zend_Locale::isLocale($lang)) {
-                            $langId = ' xml:lang="' . $lang . '"';
+                    foreach ($abstracts as $abstractNumber => $abstractArray) {
+                        $abstractLang = key($abstractArray);
+                        if ($abstractLang != '') {
+                            $abstractLang = $this->escape($abstractLang);
+                            $abstractLang = sprintf(' xml:lang="%s"', $abstractLang);
                         } else {
-                            $langId = '';
+                            $abstractLang = '';
                         }
+                        $abstract = array_values($abstractArray);
+                        $abstract = $this->escape($abstract[0]);
 
-                        echo '<jats:p' . $langId . '>';
+
+                        echo '<jats:p' . $abstractLang . '>';
                         echo $this->escape($abstract);
                         echo '</jats:p>';
                     }
@@ -260,88 +219,126 @@ $timestamp = $dateTime->format('YmdHisv');
                 </jats:abstract>
             <?php endif; ?>
 
-            <publication_date media_type="online">
-                <month><?php echo $publicationYear->format('m'); ?></month>
-                <day><?php echo $publicationYear->format('d'); ?></day>
-                <year><?php echo $publicationYear->format('Y'); ?></year>
-            </publication_date>
+            <?php if ($publicationDate): ?>
+                <publication_date media_type="<?= $onlineType ?>">
+                    <month><?= $publicationDate->format('m') ?></month>
+                    <day><?= $publicationDate->format('d') ?></day>
+                    <year><?= $publicationDate->format('Y') ?></year>
+                </publication_date>
+            <?php endif; ?>
 
-            <publisher_item>
-                <item_number
-                        item_number_type="article_number"><?php echo $paper->getPaperid(); ?></item_number>
+            <?php if ($acceptanceDate) : ?>
+                <acceptance_date media_type="<?= $onlineType ?>">
+                    <month><?= $acceptanceDate->format('m') ?></month>
+                    <day><?= $acceptanceDate->format('d') ?></day>
+                    <year><?= $acceptanceDate->format('Y') ?></year>
+                </acceptance_date>
+            <?php endif; ?>
+
+            <publisher_item> <?php //A container for item identification numbers set by a publisher. ?>
+                <item_number item_number_type="article_number"><?php echo $paper->getPaperid(); ?></item_number>
             </publisher_item>
             <?php if (!empty($enrichmentFundings)): ?>
                 <program name="fundref" xmlns="http://www.crossref.org/fundref.xsd">
-                    <?php foreach ($enrichmentFundings as $fundingInfo) { ?>
-                        <?php if ($fundingInfo['funderName'] !== "unidentified" || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
-                                <assertion name="fundgroup">
-                                    <?php if ($fundingInfo['funderName'] !== "unidentified") : ?>
-                                        <assertion name="funder_name"><?= $this->escape($fundingInfo['funderName']) ?></assertion>
-                                    <?php endif; ?>
-                                    <?php if ($fundingInfo['code'] !== "unidentified") : ?>
-                                        <assertion name="award_number"><?= $this->escape($fundingInfo['code']) ?></assertion>
-                                    <?php endif; ?>
-                                </assertion>
+                    <?php foreach ($enrichmentFundings as $fundingInfo) {
+                        $isFunderName = isset($fundingInfo['funderName']) && $fundingInfo['funderName'] !== "unidentified";
+                        ?>
+                        <?php if ($isFunderName || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
+                            <assertion name="fundgroup">
+                                <?php if ($isFunderName) : ?>
+                                    <assertion
+                                            name="funder_name"><?= $this->escape($fundingInfo['funderName']) ?></assertion>
+                                <?php endif; ?>
+                                <?php if ($fundingInfo['code'] !== "unidentified") : ?>
+                                    <assertion
+                                            name="award_number"><?= $this->escape($fundingInfo['code']) ?></assertion>
+                                <?php endif; ?>
+                            </assertion>
                         <?php endif; ?>
                     <?php } ?>
                 </program>
             <?php endif; ?>
+
             <?php if ($enrichmentLicence !== ""): ?>
-                <program xmlns="http://www.crossref.org/AccessIndicators.xsd">
-                    <free_to_read/>
-                    <license_ref applies_to="vor" start_date="<?= date("Y-m-d", strtotime($paper->getPublication_date()))?>"><?= $this->escape($enrichmentLicence) ?></license_ref>
+                <program name="AccessIndicators" xmlns="http://www.crossref.org/AccessIndicators.xsd">
+
+                    <?php
+                    if ($paper->getPublication_date()) {
+                        $start_date = 'start_date="';
+                        $start_date .= date("Y-m-d", strtotime($paper->getPublication_date()));
+                        $start_date .= '"';
+                    } else {
+                        $start_date = '';
+                    }
+                    ?>
+                    <free_to_read <?= $start_date ?>/>
+                    <license_ref
+                            applies_to="am" <?= $start_date ?>><?= $this->escape($enrichmentLicence) ?></license_ref>
+                    <license_ref
+                            applies_to="vor" <?= $start_date ?>><?= $this->escape($enrichmentLicence) ?></license_ref>
+                    <license_ref
+                            applies_to="tdm" <?= $start_date ?>><?= $this->escape($enrichmentLicence) ?></license_ref>
                 </program>
             <?php endif; ?>
-            <program xmlns="http://www.crossref.org/relations.xsd">
 
-                <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
+            <program xmlns="http://www.crossref.org/relations.xsd">
+                <?php if ($paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID) : ?>
                     <related_item>
                         <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                     <related_item>
-                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="doi"
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
-                <?php elseif ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Zenodo')) : ?>
+                <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID) : ?>
                     <related_item>
-                        <intra_work_relation identifier-type="doi" relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="doi"
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
-                <?php elseif ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Hal')) : ?>
+                <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) : ?>
                     <related_item>
-                        <intra_work_relation identifier-type="uri" relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="uri"
+                                             relationship-type="isSameAs"><?php echo $this->escape($paper->getDocUrl()); ?></intra_work_relation>
                     </related_item>
                 <?php endif; ?>
 
-                <?php if (!empty($this->previousVersionsUrl)) :?>
-                    <?php foreach ($this->previousVersionsUrl as $preprintUrl) { ?>
+                <?php if (!empty($this->previousVersionsUrl)) : ?>
+                    <?php foreach ($this->previousVersionsUrl as $preprintUrl) : ?>
                         <related_item>
-                            <intra_work_relation identifier-type="uri" relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
+                            <intra_work_relation identifier-type="uri"
+                                                 relationship-type="hasPreprint"><?php echo $this->escape($preprintUrl); ?></intra_work_relation>
                         </related_item>
-                    <?php } ?>
+                    <?php endforeach; ?>
                 <?php endif; ?>
 
                 <?php if (!empty($enrichmentLinkedData)) : ?>
-                    <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
-                        <?php if (in_array(lcfirst($linkedData['relationship']), $interWorkRelationship, true)) :?>
+                    <?php foreach ($enrichmentLinkedData as $linkedData) {
+                        if (!isset($linkedData['relationship'])) {
+                            $linkedData['relationship'] = 'references';
+                        }
+                        ?>
+
+                        <?php if (in_array(lcfirst($linkedData['relationship']), $interWorkRelationship, true)) : ?>
                             <related_item>
                                 <?php
                                 $identifierType = strtolower($linkedData['link']);
                                 if ($identifierType === 'url') {
                                     $identifierType = 'uri';
-                                    $cleanDomainIfExist = str_replace("https://doi.org/",'',$linkedData['value']);
+                                    $cleanDomainIfExist = Episciences_DoiTools::cleanDoi($linkedData['value']);
                                     $cleanDoi = $cleanDomainIfExist;
                                     if (Episciences_Tools::isDoi($cleanDoi) === true) {
                                         $identifierType = 'doi';
                                     }
-                                }elseif ($identifierType === 'swhid') {
+                                } elseif ($identifierType === 'swhid') {
                                     $identifierType = 'other';
                                 }
                                 ?>
-                                <inter_work_relation identifier-type="<?= $this->escape($identifierType) ?>" relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo ($identifierType === 'doi') ?  $this->escape(str_replace("https://doi.org/",'',$linkedData['value'])) : $this->escape($linkedData['value'])?></inter_work_relation>
+                                <inter_work_relation identifier-type="<?= $this->escape($identifierType) ?>"
+                                                     relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo ($identifierType === 'doi') ? $this->escape(Episciences_DoiTools::cleanDoi( $linkedData['value'])) : $this->escape($linkedData['value']) ?></inter_work_relation>
                             </related_item>
                         <?php endif; ?>
                     <?php } ?>
                 <?php endif; ?>
-
             </program>
 
             <doi_data>
@@ -354,34 +351,27 @@ $timestamp = $dateTime->format('YmdHisv');
                 </collection>
                 <collection property="text-mining">
                     <item>
-                        <resource mime_type="application/pdf"><?php echo $journalUrl . '/' . $paper->getDocid() . '/pdf'; ?></resource>
+                        <resource
+                                mime_type="application/pdf"><?php echo $journalUrl . '/' . $paper->getDocid() . '/pdf'; ?></resource>
                     </item>
                 </collection>
             </doi_data>
             <?php if (!empty($bibliographicalRef)): ?>
-                    <citation_list>
-                        <?php $iRef = 1 ?>
-                        <?php foreach ($bibliographicalRef as $refInfo): ?>
-                            <citation key="ref<?=$iRef?>">
-                                <?php if (array_key_exists('doi',$refInfo) && Episciences_tools::isDoiWithUrl($refInfo['doi'])): ?>
-                                    <doi><?=str_replace('https://doi.org/','',$refInfo['doi'])?></doi>
-                                <?php endif; ?>
-                                <unstructured_citation><?= $this->escape($refInfo['unstructured_citation']) ?></unstructured_citation>
-                                <?php $iRef++;?>
-                            </citation>
-                        <?php endforeach; ?>
-                    </citation_list>
-            <?php endif;?>
-        <?php if (!is_array($proceedingInfo)): ?>
-            </journal_article>
-        <?php else: ?>
-            </conference_paper>
-        <?php endif; ?>
+                <citation_list>
+                    <?php $iRef = 1 ?>
+                    <?php foreach ($bibliographicalRef as $refInfo): ?>
+                        <citation key="ref<?= $iRef ?>">
+                            <?php if (array_key_exists('doi', $refInfo) && Episciences_tools::isDoiWithUrl($refInfo['doi'])): ?>
+                                <doi><?= Episciences_DoiTools::cleanDoi($refInfo['doi']) ?></doi>
+                            <?php endif; ?>
+                            <unstructured_citation><?= $this->escape($refInfo['unstructured_citation']) ?></unstructured_citation>
+                            <?php $iRef++; ?>
+                        </citation>
+                    <?php endforeach; ?>
+                </citation_list>
+            <?php endif; ?>
 
-        <?php if (!is_array($proceedingInfo)): ?>
-            </journal>
-        <?php else:?>
-            </conference>
-        <?php endif;?>
+        </journal_article>
+    </journal>
     </body>
 </doi_batch>

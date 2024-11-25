@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array(
 
     // Termes génériques
     'Par exemple' => 'e.g.',
@@ -31,20 +31,21 @@ return [
 
     "Rédacteur" => "Editor",
     "Rédacteurs" => "Editors",
-    "Rédacteur : " => ["Editor: ", "Editors: "],
+    "Rédacteur : " => array("Editor: ", "Editors: "),
 
     "Rédacteur invité" => "Guest editor",
     "Rédacteurs invités" => "Guest editors",
     "rédacteurs" => "editors",
 
-    "Relecteur" => ["Reviewer", "Reviewers"],
+    "Relecteur" => array("Reviewer", "Reviewers"),
     // DOCUMENT TYPES
-    'article' => ['article', 'articles'],
+    'article' => array('article', 'articles'),
     'Article' => 'Article',
     'Preprint' => 'Preprint',
-    'ConferenceObject' => 'Conference paper',
+    'Conferenceobject' => 'Conference paper',
     'Text' => "Preprint",
     'Dataset' => 'Jeux de données',
+    'Report' => 'Report',
 
 
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',
@@ -63,8 +64,8 @@ return [
     'Toutes' => 'All',
     "Précédente" => 'Previous',
     "Suivante" => 'Next',
-    "résultat" => ["result", "results"],
-    "jour" => ["day", "days"],
+    "résultat" => array("result", "results"),
+    "jour" => array("day", "days"),
     "Document sans titre" => "Untitled document",
     "connu" => "known",
     "et" => "and",
@@ -75,7 +76,7 @@ return [
     // Messages d'erreur
     'Fichier introuvable' => 'File not found',
     "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder." => "The requested file can not be found, or you don't have the required permissions.",
-    "Vous n'avez pas les droits suffisants pour accéder à cet article" => "You don't have the required permissions to see this paper",
+    "Vous n'avez pas les droits suffisants pour accéder à cet article" => "You don't have the required permissions to see this article",
     'Accès refusé' => 'Access denied',
     "Vous ne disposez pas des droits nécessaires pour accéder à cette page." => "You are not authorized to access this page.",
     "Les modifications n'ont pas abouti !" => "The changes were unsuccessful!",
@@ -95,6 +96,10 @@ return [
     // TO FIX
     'guest' => 'Guest',
     'member' => 'Member',
+    'editorial_board' => 'Editorial board',
+    'technical_board' => 'Technical board',
+    'scientific_advisory_board' => 'Scientific advisory board',
+    'former_member' => 'Former member',
     'coauthor' => 'Coauthor',
     'webmaster' => 'Webmaster',
     'secretary' => 'Editorial secretary',
@@ -125,6 +130,7 @@ return [
     "Les modifications ont bien été enregistrées." => "Changes have been saved.",
     "Modifications des affiliations bien prise en compte" => "Affiliations are updated",
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
+    "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
     "Fichier" => 'File',
     "Parcourir" => 'Browse',
     "Ajouter" => 'Add',
@@ -135,7 +141,7 @@ return [
     "Retour" => 'Back',
     "Fax" => 'Fax',
     "isEmpty" => "This field is required.",
-    "Champ requis" => ['Required field', 'Required fields'],
+    "Champ requis" => array('Required field', 'Required fields'),
     "Champs requis" => 'Required fields',
     "Valeur(s) manquante(s) pour les langues suivantes : '%value%'" => "Missing value(s) for the following languages: '%value%'",
     "Upload de fichier" => "File upload",
@@ -155,7 +161,7 @@ return [
     // Paramètres de la revue
     'Un préfixe DOI commence toujours par "10." et se poursuit par un nombre.' => 'A DOI prefix always starts with "10." and continues with a number.',
     'Enregistrer les paramètres' => 'Save settings',
-    'Le DOI de votre revue' => "Your journal's DOI",
+    'Le DOI de votre revue' => "Journal's DOI",
     'À renseigner si la revue possède un DOI' => 'To be filled if the journal has a DOI',
     "Paramètres généraux" => 'Global parameters',
     "Langues de la revue" => 'Journal languages',
@@ -172,15 +178,18 @@ return [
     "Permettre aux auteurs de choisir le volume" => 'Contributors can choose the volume',
     "Permettre aux auteurs de resoumettre un article déjà refusé (nouvelle version)" => "Contributors can submit a previously denied article again (new version)",
     "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ" => "You can enter a statistics start date in the following format: YYYY-MM-DD",
+    'Ville, Pays' => 'City, Country',
     // Choix de la section
     "Choix de rubrique" => "Section choice",
     "L'auteur ne peut pas choisir la rubrique" => "Contributors can't choose a section",
     "L'auteur peut choisir la rubrique" => "Contributors can choose a section",
     "L'auteur doit choisir la rubrique" => "Contributors have to choose a section",
     'Page de contact de la revue' => 'Journal contact URL',
+    'Page de la notice dans le catalogue' => 'Catalogue notice URL',
     'Courriel de contact de la revue' => 'Journal contact email',
     'Page de contact du support technique' => 'Journal technical contact URL',
     'Courriel de contact du support technique' => 'Journal technical contact email',
+    "Nom de l'éditeur de la revue" => "Journal's publisher name",
 
 
     //Assignation automatique des rédacteurs,
@@ -286,14 +295,16 @@ return [
     'Motif de DOI incorrect' => 'Wrong DOI pattern',
     'Document non trouvé' => 'Document non found',
     'Échec de la mise à jour' => 'Update failed',
-    "Volume de l'article" => "Volume of the paper",
-    "Volume de l'article (seulement les nombres)" => 'Volume of the paper (numbers only)',
-    "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the paper (numbers only) [Replacement char for spaces]',
-    "Volume de l'article (Référence bibliographique du volume)" => "Volume of the paper (Bibliographical reference of the volume)",
+    'Année du volume' => 'Year of the volume',
+    'Numéro du volume' => "Volume Number",
+    "Volume de l'article" => "Volume of the article",
+    "Volume de l'article (seulement les nombres)" => 'Volume of the article (numbers only)',
+    "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the article (numbers only) [Replacement char for spaces]',
+    "Volume de l'article (Référence bibliographique du volume)" => "Volume of the article (Bibliographical reference of the volume)",
     "Numéro de l'article dans un volume (ordre)" => 'Paper number inside a volume (order)',
-    "Rubrique de l'article" => 'Section of the paper',
-    "Rubrique de l'article (seulement les nombres)" => 'Section of the paper (numbers only)',
-    "Rubrique de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Section of the paper (numbers only) [Replacement char for spaces]',
+    "Rubrique de l'article" => 'Section of the article',
+    "Rubrique de l'article (seulement les nombres)" => 'Section of the article (numbers only)',
+    "Rubrique de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Section of the article (numbers only) [Replacement char for spaces]',
     "Numéro de l'article (Identifiant pérenne)" => 'Paper number (permanent identifier)',
     "Année de publication" => 'Year of publication',
     "Mois de publication" => 'Month of publication',
@@ -304,8 +315,6 @@ return [
 
 
     // Revue : Membres du comité éditorial (Review: editorial staff)
-    "Téléphone :" => "Phone:",
-    "Fax :" => "Fax:",
     "Site web :" => "Website:",
 
 
@@ -363,12 +372,12 @@ return [
     "Attention, cet article a été supprimé par son auteur." => "Please note that this article has been deleted by its author.",
     "Attention, cet article a été supprimé par la revue." => "Please note that this article has been deleted by the Journal.",
     "Supprimer l'article" => "Delete article",
-    "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "This paper has already been published, it is useless to review it now.",
-    "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "This paper has already been accepted, it is useless to review it now.",
-    "Cet article a été refusé, il n'est plus nécessaire de le relire." => "This paper has been refused, it is useless to review it now.",
-    "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "This paper has been deleted, it is useless to review it now.",
-    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "This paper is obsolete, it is useless to review it now.",
-    "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "This paper is under revision, it is useless to review it now.",
+    "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "Thank you but this article has already been published, it is useless to review it now.",
+    "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "Thank you but this article has already been accepted, it is useless to review it now.",
+    "Cet article a été refusé, il n'est plus nécessaire de le relire." => "Thank you but this article has been refused, it is useless to review it now.",
+    "Cet article a été supprimé, il n'est plus nécessaire de le relire." => "Thank you but this article has been deleted, it is useless to review it now.",
+    "Cet article est obsolète, il n'est plus nécessaire de le relire." => "Thank you but this article is obsolete, it is useless to review it now.",
+    "Cet article est en cours de révision, il n'est plus nécessaire de le relire." => "Thank you but this article is under revision, it is useless to review it now.",
 
     "Articles de l'auteur" => "Articles of this author",
     "Ajouter un DOI" => 'Add a DOI',
@@ -395,22 +404,22 @@ return [
     "Vous êtes sur le point de reprendre le processus de publication de cet article.<br><span class='alert-info'>L'auteur a bien été informé qu'il ne pourra plus reprendre le processus de publication de son article et que cette décision est définitive.</span>" => "You are about to resume the publication process of this article.<br><span class='alert-info'>The author has been informed that they will not be able to resume the publication process of the article and that this decision is final.</span>",
     "Aller à la page de gestion de cet article" => "Go to the management page for this article",
     "Référence bibliographique du volume" => "Volume's bibliographical reference",
-    "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the paper is removed from the volume this does not cause the other articles to be reordered automatically.",
+    "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the article is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
     // proceedings
     "Nom de la conférence" => 'Conference title',
-    "Theme de la conférence" => "Conference theme",
+    "Thème de la conférence" => "Conference theme",
     "Acronyme de la conférence" => "Conference acronym",
     "Titre de l'acte de conférence" => "Proceedings title",
     "Numéro de la conférence" => "Conference number",
     "Lieu de la conférence" => "Conference location",
     "Date de début de la conférence" => "Conference start date",
     "Date de fin de la conférence" => "Conference end date",
-    "DOI de l'acte de conférence" => "Proceeding DOI",
-    "Acte de conférence" => 'Proceedings act',
-    "Le DOI qui va être demandé" => "Doi will be requested",
+    "DOI des actes" => "Proceedings DOI",
+    "Actes de conférences" => 'Conferences proceedings',
+    "Le DOI qui va être demandé" => "The DOI that will be requested",
     "Demande DOI" => "Request DOI",
-    "Annulation DOI" => "Cancel Request",
+    "Annulation DOI" => "Cancel DOI",
     'Du' => 'From',
     'Au' => 'To',
 
@@ -420,7 +429,7 @@ return [
     "nombre uniquement" => "number only",
     "supérieur à " => "greater than ",
     "dernière version soumise à la revue" => "latest version submitted to the journal",
-    "Ladite nouvelle version de l' article a bien été déposée dans l'archive ouverte" => "The said new version of the article has been deposited in the open access repository",
+    "La nouvelle version a bien été mise en ligne dans l'archive ouverte/l'entrepôt" => "The new version is online in the open archive/repository",
 
 
     // Gestion des articles
@@ -458,15 +467,15 @@ return [
     "Demander une nouvelle version" => 'Ask for a revision',
     "Demander des modifications" => 'Ask for revisions',
     "Demander les modifications" => 'Ask for the revisions',
-    "Demander l'avis d'autres rédacteurs" => "Ask for other editors opinion",
+    "Demander l'avis d'autres rédacteurs" => "Ask other editors for their opinion",
     "Il n'y a pas d'autres rédacteurs à qui demander un avis." => "You're the only editor, you can't ask for other opinions.",
     "Modifications à apporter :" => "Revision request:",
     "Aucun article n'a été déposé pour le moment" => 'No submitted article yet',
-    "L'auteur a suggéré un rédacteur" => ['The contributor has suggested an editor', 'The contributor has suggested editors'],
+    "L'auteur a suggéré un rédacteur" => array('The contributor has suggested an editor', 'The contributor has suggested editors'),
     "L'auteur ne souhaite pas être relu par :" => "The contributor doesn't want to be reviewed by:",
     "L'auteur aimerait être relu par :" => "The contributor would like to be reviewed by:",
 
-    "L'auteur a suggéré un relecteur" => ['The contributor has suggested a reviewer', 'The contributor has suggested reviewers'],
+    "L'auteur a suggéré un relecteur" => array('The contributor has suggested a reviewer', 'The contributor has suggested reviewers'),
     "Suggestion de relecteur :" => "Reviewer suggestion:",
     "Détails de l'acceptation" => "Acceptance details",
     "Motif du refus" => "Rejection's reason",
@@ -483,31 +492,23 @@ return [
     "suggère de demander des modifications à l'article" => "suggests to ask for a revision",
     "compte temporaire : " => "temporary account:",
     "compte temporaire" => "temporary account",
-    "Assigner les rédacteurs de cette rubrique à cet article" => "Assign section editors to this paper",
+    "Assigner les rédacteurs de cette rubrique à cet article" => "Assign section editors to this article",
     "Date de réponse à l'invitation :" => "Invitation answer date:",
     "Anciennes demandes :" => "Previous requests:",
     "Demander des modifications mineures" => "Ask for a minor revision",
     "Demander des modifications majeures" => "Ask for a major revision",
     "Demande de modifications majeures" => "Major revision request",
     "Demande de modifications mineures" => "Minor revision request",
-    "Vous ne pouvez pas accepter cet article, car le nombre minimum de relectures (%s) n'a pas été atteint." => "You cannot accept this article, because the required number of reviews/ratings (%s) has not been reached.",
-    "Vous ne pouvez pas refuser cet article, car le nombre minimum de relectures (%s) n'a pas été atteint." => "You cannot decline this article, because the required number of reviews/ratings (%s) has not been reached.",
-    "Vous ne pouvez faire de demande de modifications, car le nombre minimum de relectures (%s) n'a pas été atteint." => "You cannot ask for revision, because the required number of reviews/ratings (%s) has not been reached.",
+    "Vous ne pouvez pas accepter cet article, car le nombre minimum de relectures (%s) n'a pas été atteint." => "You cannot accept this article, because the required number of reviews (%s) has not been reached.",
+    "Vous ne pouvez pas refuser cet article, car le nombre minimum de relectures (%s) n'a pas été atteint." => "You cannot decline this article, because the required number of reviews (%s) has not been reached.",
+    "Vous ne pouvez faire de demande de modifications, car le nombre minimum de relectures (%s) n'a pas été atteint." => "You cannot ask for revision, because the required number of reviews (%s) has not been reached.",
     "Demander à l'auteur ses sources (À mettre en forme par la revue)" => 'Ask the author for the sources (copy editing by the journal)',
     "Redemander à l'auteur ses sources (À mettre en forme par la revue)" => "Ask for the author's sources again (To be formatted by the journal)",
     "Demander la version finale (À mettre en forme par l’auteur)" => 'Ask for the final version (copy editing by the author)',
     "Demander à nouveau la version finale à l'auteur" => "ask the author for the final version again",
     "Mise en forme revue terminée, demander la version finale" => "Copy editing by the journal completed, ask for the final version",
     "Accepter comme version finale" => "Accept as final version",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES] => "Copy ed.: waiting for author's sources",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED] => 'Copy ed.: waiting for formatting by the journal',
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION] => "Copy ed.: waiting for author's final version",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED] => 'Copy ed.: final version submitted, waiting for validation',
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED] => 'Copy ed.: formatting by journal completed, waiting for a final version',
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED] => "Copy ed.: formatting by author completed, waiting for final version",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_CE_READY_TO_PUBLISH] => 'Copy ed.: ready to publish',
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION] => "Accepted - waiting for author's validation",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION] => 'Accepted - waiting for final publication',
+
     "Demander des sources auteur" => "Ask author's sources",
     "Demander la mise en forme par l'auteur (version finale)" => "Ask copy editing by the author (final version)",
     "Accepter et passer à la préparation de copie" => "Accept and proceed to copy editing",
@@ -647,7 +648,7 @@ return [
     "La grille par défault ne pas pu être supprimée" => "The default grid cannot be removed",
     "Cette grille n'existe pas." => "This review grid does not exist",
     "Modifier ce volume" => "Edit this volume",
-    'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the papers: ',
+    'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the articles: ',
     "La grille a bien été supprimée." => "The grid has been successfully deleted.",
 
 
@@ -675,7 +676,7 @@ return [
     "Nouveau relecteur" => "New reviewer",
     "Utilisateur connu" => "Known user",
     "Continuer" => "Next",
-    "Date limite de rendu de la relecture" => "Rating due date",
+    "Date limite de rendu de la relecture" => "Review due date",
     "Retourner au choix du relecteur" => "Back to reviewer selection",
     "Relecture attendue avant le :" => "Review report expected before:",
     "Ré-inviter les relecteurs à la nouvelle version de l'article" => "Invite the same reviewers to the new version of the article",
@@ -787,9 +788,9 @@ return [
     "Relire un article" => 'Review a submission',
     "Envoyer un message à l'auteur" => 'Send a message to the author',
     "Anciens messages" => 'Older messages',
-    "Evaluation" => 'Rating',
-    "Grille de relecture" => 'Rating Grid',
-    "Grilles de relecture" => 'Rating Grids',
+    "Evaluation" => 'Review',
+    "Grille de relecture" => 'Review Grid',
+    "Grilles de relecture" => 'Review Grids',
     "Critère" => 'Criterion',
     "Critères" => 'Criteria',
     "Notation" => 'Rating',
@@ -803,7 +804,7 @@ return [
     "Votre évaluation a bien été enregistrée." => "Your review has been saved.",
     "Votre évaluation n'a pas pu être enregistrée." => "Your review could not be saved.",
     "Terminer l'évaluation" => 'Submit review',
-    "Historique de votre relecture" => "Rating history",
+    "Historique de votre relecture" => "Review history",
     "Extensions autorisées : " => "Authorized extensions: ",
     "Taille maximale des fichiers que vous pouvez télécharger" => "Maximum file size you can Upload",
     "Votre avis" => "Your opinion",
@@ -812,8 +813,8 @@ return [
     "l'auteur" => "the author",
     "relecteur" => "reviewer",
     "comité éditorial" => "editorial committee",
-    "Paramètres de relecture" => "Rating settings",
-    "Délai de relecture" => "Rating delay",
+    "Paramètres de relecture" => "Review settings",
+    "Délai de relecture" => "Review delay",
     "Vous avez été redirigé, car vous n'êtes pas relecteur pour cet article." => "You've been redirected, because you're not reviewer for this article.",
     "Vous n'êtes pas relecteur pour cet article." => "You're not reviewer for this article.",
     "via" => "via",
@@ -865,6 +866,8 @@ return [
     "Déconnexion réussie" => 'You\'ve been successfully logged out',
     "Échec de la déconnexion" => 'Logging out failed',
     "Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !" => "You've been redirected to this page, your account on this application does not seem to be the right one!",
+    'Profil non identifié !' => 'Profile not identified!',
+    'Actuellement connecté en tant que :' => 'Currently connected as:',
 
     // Lost login
     "Courriel" => "E-mail",
@@ -922,13 +925,13 @@ return [
     "Si la recherche ne retourne aucun résultat, vous pouvez créer un compte pour l'utilisateur en cliquant sur le bouton &laquo;Créer un nouveau compte&raquo;." =>
         "If the search has not returned any answer, you can create an account for the person using the &laquo;create an account&raquo; button.",
 
-    "Rédacteur de la rubrique : " => ["Editor for section: ", "Editor for sections: "],
+    "Rédacteur de la rubrique : " => array("Editor for section: ", "Editor for sections: "),
     "Rédacteur de la rubrique :" => "Editor for section:",
     "Rédacteur des rubriques :" => "Editor for sections:",
 
     "Vous êtes déjà connecté avec ce compte." => "You are already signed in to this account",
     "Vous n'avez pas les privilèges requis pour accéder à cette page." => "You are not allowed to do that",
-    "Vous n'avez pas les droits suffisants pour publier cet article" => "You don't have required permissions for publishing this paper",
+    "Vous n'avez pas les droits suffisants pour publier cet article" => "You don't have required permissions for publishing this article",
     "Cet identifiant n'est pas valide." => "Invalid user identifier",
     "Ce compte n'existe pas." => "This account could not be found",
     "Vous êtes connecté en tant que : " => "You are now signed in as: ",
@@ -952,7 +955,8 @@ return [
     'Site(s) Web' => 'Web Site(s)',
     'Saisissez votre compte X (anciennement Twitter) (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your X (ex. Twitter) account (e.g @anonymous) or Mastodon account (e.g @username@server)',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
-
+    'Une courte biographie (700 caractères autorisés)' => 'A short biography (700 characters allowed.)',
+    'Biographie' => 'Biography',
     // User activation
     "Activation de votre compte" => 'Account activation',
     "Vous pouvez dès maintenant vous" => 'You can now',
@@ -983,7 +987,7 @@ return [
 
     // RSS
     "RSS" => "RSS",
-    "Derniers articles" => "Latest papers",
+    "Derniers articles" => "Latest articles",
     'Dernières publications' => 'Latest Publications',
     "Dernières actualités" => "Latest news",
     "Flux des articles" => "Papers feed",
@@ -1036,10 +1040,10 @@ return [
     "Mensuelle" => "Monthly",
     "Saisir un nombre de jours (un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation)." => "Enter a number of days (an automatic reminder for an unanswered review invitation can be send x days after the invitation).",
 
-    // paper versions
+    // article versions
     "Versions précédentes" => 'Previous versions',
 
-    // paper history
+    // article history
     'Préparation de copie : en attente des sources auteurs' => 'Copy editing: waiting for authors sources',
     'Préparation de copie : sources déposées' => 'Copy editing: sources submitted',
     "Posté le" => 'Posted on',
@@ -1052,78 +1056,7 @@ return [
     "Jusqu'à" => 'Until',
     "Effacer" => 'Clear',
     "Filtrer les logs" => 'Filter logs',
-    Episciences_Paper_Logger::CODE_RESTORATION_OF_STATUS => 'Restoration of status',
-    Episciences_Paper_Logger::CODE_STATUS => 'New status',
-    Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT => "Editor assignment",
-    Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT => "Editor unassignment",
-    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION => "Reviewer invitation",
-    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED => "Accepted invitation",
-    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED => "Declined invitation",
-    Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT => "Reviewer unassignment",
-    Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT => "Reviewer assignment",
-    Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS => "Ongoing review",
-    Episciences_Paper_Logger::CODE_REVIEWING_COMPLETED => "Review Completed",
-    Episciences_Paper_Logger::CODE_MAIL_SENT => "E-mail sent",
-    Episciences_Paper_Logger::CODE_REMINDER_SENT => "Reminder sent",
-    Episciences_Paper_Logger::CODE_VOLUME_SELECTION => "Moved to a volume",
-    Episciences_Paper_Logger::CODE_SECTION_SELECTION => "Moved to a section",
-    Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST => 'Minor revision request',
-    Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST => 'Major revision request',
-    Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER => 'Revision request answer (without any modifications)',
-    Episciences_Paper_Logger::CODE_REVISION_REQUEST_NEW_VERSION => 'Revision request answer (new version)',
-    Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION => 'Revision request answer (temporary version)',
-    Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION => "Secondary volumes assignment",
-    Episciences_Paper_Logger::CODE_ALTER_REPORT_STATUS => 'Permission to change the reviewing by',
-    Episciences_Paper_Logger::CODE_MONITORING_REFUSED => 'Handling of article refused',
-    Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS => 'Abandon publication process',
-    Episciences_Paper_Logger::CODE_COPY_EDITOR_ASSIGNMENT => "Copy editor assignment",
-    Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT => "Copy editor unassignment",
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST => 'Copy editing (waiting for authors sources)',
-    Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT => 'New comment',
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_DEPOSED => 'Copy editing (sources submitted)',
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST => 'Copy ed. : Pending a final author version',
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED => 'Copy ed. : final version submitted',
-    Episciences_Paper_Logger::CODE_CE_READY_TO_PUBLISH => 'Copy ed. : final version validated',
-    Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED => 'Copy ed. formatting review completed',
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Copy ed. final version submitted (new version)',
-    Episciences_Paper_Logger::CODE_AUTHOR_COMMENT_COVER_LETTER => "Author comment / Cover letter",
-    Episciences_Paper_Logger::CODE_EDITOR_COMMENT => "Editor comment",
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Clarification request (reviewer to contributor)",
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Clarification answer (contributor to reviewer)",
-    Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
-    Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
-    Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI canceled',
-    Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
-    Episciences_Paper_Logger::CODE_COI_REVERTED => 'Conflict Of Interest (COI): cancelled',
 
-    Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Update',
-    Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'New publication date',
-    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => "Accepted, ask author's final version",
-
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_REQUEST] => "request for clarification",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_INFO_ANSWER] => "response for clarification",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED] => "Copy editing: final version submitted",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST] => 'Copy editing: the formatting by the journal has been completed, awaiting the final version',
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_ANSWER] => 'Copy editing: final version submitted, awaiting validation',
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST] => 'Copy editing: the formatted version is accepted, waiting for the final version',
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_REQUEST] => "revision request",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT] => "revision request response (comment)",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION] => "revision request response (temporary version)",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION] => "revision request response (new version)",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION] => "acceptance suggestion",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_SUGGESTION_REFUS] => "refusal suggestion",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION] => "revision suggestion",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_MONITORING_REFUSED] => "refusal to follow up",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_COMMENT] => "editor's comment",
-    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => "Copy editing: awaiting formatting by author",
-    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
-    Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version number updated',
-    Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New deadline for review',
-    Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW => 'New submission: automatically transferred from',
-    Episciences_Paper_Logger::CODE_LD_ADDED => 'Linked data added',
-    Episciences_Paper_Logger::CODE_LD_REMOVED => 'Linked data removed',
-    Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'New revision deadline',
-    Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED => 'The document has been imported',
     "Date d'assignation" => "Assignation date",
     "Date de désassignation" => "De-assignment date",
     "Assigné par" => "Assigned by",
@@ -1145,6 +1078,8 @@ return [
     "Avant" => "Before",
 
     'Revues' => 'Journals',
+    'Journal article' => 'Journal article',
+    'Publication' => 'Publication',
 
     "Réassigner l'article" => "Reassign paper",
     "Le status de la relecture a été changé avec succès" => 'The status of this review has been successfully updated',
@@ -1187,9 +1122,6 @@ return [
     //Mail history
     'Aucun sujet' => 'No subject',
 
-    Episciences_Editor::TAG_SECTION_EDITOR => 'Section editor',
-    Episciences_Editor::TAG_VOLUME_EDITOR => 'Volume editor',
-    Episciences_Editor::TAG_SUGGESTED_EDITOR => "Suggested by author",
 
     // users permissions
     "Permissions | Episciences" => "Episciences | Permissions",
@@ -1197,6 +1129,8 @@ return [
     "Paramétrable par la revue" => "Configurable by the journal",
 
     // users permissions
+    "administrategraphabstract-addgraphabs" => "Graphical Abstract: Add/Edit",
+    "administrategraphabstract-deletegraphabs" => "Graphical Abstract: Delete",
     "administratemail-deletetemplate" => "Email: Delete customized template and revert back to default one",
     "administratemail-edittemplate" => "Email: Edit the template",
     "administratemail-history" => "Email: List email history",
@@ -1204,7 +1138,7 @@ return [
     "administratemail-send" => "Email: Send a mail from the platform",
     "administratemail-templates" => "Email: List email templates",
     "administratepaper-accept" => "Accept article",
-    "administratepaper-askothereditors" => "Ask for other editors opinion",
+    "administratepaper-askothereditors" => "Ask other editors for their opinion",
     "administratepaper-assigned" => "List only their assigned items",
     "administratepaper-copyeditingacceptfinalversion" => "Copy editing: accept a final version",
     "administratepaper-invitereviewer" => "Invite a reviewer",
@@ -1227,7 +1161,7 @@ return [
     "comments-editcomment" => "Edit cover letter",
     "comments-removefilecomment" => "Delete their file(s)",
     "export-bibtex" => "Export BibTex",
-    "export-datacite" => "Export DataCite",
+    "export-datacite" => "Export OpenAIRE",
     "export-dc" => "Export DC",
     "export-tei" => "Export TEI",
     "file-paper" => "Access the files attached to a document",
@@ -1295,6 +1229,16 @@ return [
     'administratepaper-acceptedaskauhorfinalversion' => "Accepted article - ask author's final version",
     'administratepaper-acceptedaskauthorvalidation' => "Accepted article - ask author's validation",
     "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission." => "You have been redirected because you declared a conflict of interest with this submission.",
+    'browse-accepted-docs' => 'Browse accepted articles to be published',
+    'coi-report' => "Report a conflict Of Interest",
+    'export-crossref' => 'Export Crossref',
+    'export-doaj' => 'Export DOAJ',
+    'export-jsonv2' => 'Export JSON',
+    'stats-index' => 'See statistics',
+    'export-zbjats' => 'Export ZbMATH Open',
+    'export-openaire' => 'Export OpenAIRE',
+    'export-volumesdoaj' => 'Export the volume to DOAJ format',
+    'paper-addaffiliationsauthor' => 'Add an affiliation to an author',
 
     // demande de revision
     'Optionnelle' => 'Optional',
@@ -1371,7 +1315,7 @@ return [
     "Archive" => "Repository",
     "Rechercher" => "Search",
     "Envoyer" => "Send",
-    Episciences_Submit::SUBMIT_DOCUMENT_LABEL => "Submit a document",
+
     "Proposer cet article" => "Submit this article",
     "Soumettre à" => "Submit to",
     "Proposer pour le volume :" => "Submit in the volume :",
@@ -1389,7 +1333,7 @@ return [
     "en attente de relecture" => "waiting for review",
     "en cours de relecture" => "under review",
     "relu" => "reviewed",
-    "évalué, en attente de décision éditoriale" => "reviewed pending editorial decision",
+    "évalué - en attente de décision éditoriale" => "reviewed pending editorial decision",
     "accepté" => "accepted",
     "publié" => "published",
     "refusé" => "refused",
@@ -1402,7 +1346,7 @@ return [
     "en attente d'éclaircissements" => "pending clarification",
     "version temporaire" => "temporary version",
     "version temporaire acceptée, en attente de la version finale" => "accepted temporary version, waiting for author's final version",
-    "Vous n'avez soumis aucun papier pour le moment" => "You have not submitted any paper yet",
+    "Vous n'avez soumis aucun papier pour le moment" => "You have not submitted any article yet",
     "Aucun article pour le moment" => "No article yet",
     "Modifier le contenu de la page" => "Edit content page",
     "Privilèges" => "Privileges",
@@ -1420,7 +1364,7 @@ return [
     "Remplacer" => 'Replace',
     "Cliquer ici" => "Click here",
     "Rechercher un utilisateur d'Episciences" => "Search an Episciences user",
-    'Liste des articles que j\'ai proposés à "%s".' => 'List of papers I\'ve submitted to "%s".',
+    'Liste des articles que j\'ai proposés à "%s".' => 'List of articles I\'ve submitted to "%s".',
     'Votre article a bien été enregistré.' => "Your article has been submitted.",
     'La nouvelle version de votre article a bien été enregistrée.' => "Your new version has been saved.",
     "Le document n'a pas été trouvé ou n'a pas pu être chargé." => "The document could not be found, or could not be loaded.",
@@ -1445,7 +1389,7 @@ return [
     "Cet article a déjà été soumis et refusé, merci de contacter le comité editorial." => "This article has already been submitted and refused, please contact the editorial committee.",
     "Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer." => "The publication process of this article is in progress, so you will not be able to replace it.",
     "Maintenez la touche <mark>CTRL</mark> enfoncée et cliquez sur les éléments d'une liste pour les choisir. Cliquez sur tous les éléments que vous souhaitez sélectionner. Ils n'ont pas besoin d'être côte à côte. Cliquez à nouveau sur un élément pour le désélectionner. N'oubliez pas de maintenir la touche <mark>CTRL</mark> enfoncée." => "Hold the <mark>CTRL</mark> key and click the items in a list to choose them. Click all the items you want to select. They don’t have to be next to each other. Click any item again to deselect it. Remember to keep the <mark>CTRL</mark> key pressed.",
-    // updatePaper function
+    // updatearticle function
     "Aucune modification n'a été enregistrée" => "No changes were saved",
     "la version précédente est identique." => "the previous version is identical",
     "l'identifiant de l'article a changé." => "the item identifier has changed.",
@@ -1527,7 +1471,7 @@ return [
     "Nous avons trouvé des utilisateurs avec une adresse de courriel identique" => "We have found users with the same e-mail address",
     "choisir un relecteur dans la liste ci-dessous : " => "choose a reviewer from the list below: ",
     "Si votre relecteur n'est pas dans la liste ci-dessous, continuez avec le nouvel utilisateur que vous venez de saisir." => 'If your reviewer is not in the list below, continue with the new user.',
-    "Relecture(s)" => "Rating(s)",
+    "Relecture(s)" => "Review(s)",
     "Une invitation de relecture a été envoyée à cet utilisateur" => "An invitation to review this article has been sent to this user",
     "ou bien vous n'avez pas les autorisations nécessaires." => "or you don't have the required permissions.",
     "même nom et même prénom" => "same name and same first name",
@@ -1535,7 +1479,7 @@ return [
     "Si votre relecteur n'est pas celui détecté par le système" => "If your reviewer is not the one detected by the system",
 
     // Réponse du relecteur
-    "Invitation à la relecture d'un article" => "Invitation to review a paper",
+    "Invitation à la relecture d'un article" => "Invitation to review an article",
     "Vous avez été invité à relire cet article : " => "You've been invited to review this article: ",
     "Invitation envoyée par :" => "Invitation sent by:",
     "Date d'envoi de l'invitation :" => "Invitation sent on:",
@@ -1647,6 +1591,9 @@ return [
 
     "Ajouter un logo" => "Add a logo",
     "Type" => "Type",
+    "Élément texte" => "Text element",
+    "Élément image" => "Image element",
+
     "Texte" => "Preprint",
     "Image" => "Image",
     "Libellé" => "Label",
@@ -1697,6 +1644,7 @@ return [
     => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their url or delete them.",
 
     "Ajouter un nouveau fichier" => "Add a new file",
+    "Ajouter un nouveau fichier" => "Add a new file",
     "Déposer le fichier" => "Upload the file",
     "Fichiers" => "Files",
     "Aucun fichier sélectionné." => "No file selected",
@@ -1726,20 +1674,32 @@ return [
     "Episciences_Website_Navigation_Page_Rss" => "RSS Feed",
     "Episciences_Website_Navigation_Page_RSS" => "RSS Feed",
     "Episciences_Website_Navigation_Page_Folder" => "Folder",
-    "Episciences_Website_Navigation_Page_BrowseByAuthor" => "Browse by author",
+    "Episciences_Website_Navigation_Page_BrowseByAuthor" => "Authors",
     "Episciences_Website_Navigation_Page_BrowseByDate" => "Browse by date",
-    "Episciences_Website_Navigation_Page_BrowseBySection" => "Browse by section",
-    "Episciences_Website_Navigation_Page_BrowseByVolume" => "Browse all volumes",
-    "Episciences_Website_Navigation_Page_BrowseLatest" => "Browse latest articles",
-    "Episciences_Website_Navigation_Page_BrowseCurrentIssues" => "Browse current issues",
-    "Episciences_Website_Navigation_Page_BrowseSpecialIssues" => "Browse special issues",
-    "Episciences_Website_Navigation_Page_BrowseRegularIssues" => "Browse regular issues",
-    "Episciences_Website_Navigation_Page_Search" => "Search an article",
+    "Episciences_Website_Navigation_Page_BrowseBySection" => "Section",
+    "Episciences_Website_Navigation_Page_BrowseByVolume" => "Volumes",
+    "Episciences_Website_Navigation_Page_BrowseLatest" => "Latest articles",
+    "Episciences_Website_Navigation_Page_BrowseCurrentIssues" => "Current issues",
+    "Episciences_Website_Navigation_Page_BrowseSpecialIssues" => "Special issues",
+    "Episciences_Website_Navigation_Page_BrowseRegularIssues" => "Regular issues",
+    "Episciences_Website_Navigation_Page_Search" => "Search",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
+    "Episciences_Website_Navigation_Page_About" => "About",
+
+    "Episciences_Website_Navigation_Page_EditorialBoard" => "Editorial board",
+    'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
+    'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Scientific advisory board',
+    'Episciences_Website_Navigation_Page_FormerMembers' => 'Former members',
+
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
+    "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
+    "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
+
+
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
     "Nombre de résultats par page" => "Number of results per page",
     "Photos des membres" => "Members' photos",
@@ -1771,7 +1731,7 @@ return [
     "article en cours de relecture" => 'article under review',
     "articles en cours de relecture" => 'articles under review',
     "article relu" => 'reviewed article',
-    "article évalué, en attente de décision éditoriale" => "reviewed article pending editorial decision",
+    "article évalué - en attente de décision éditoriale" => "reviewed article pending editorial decision",
     "articles évalués, en attente de décision éditoriale" => "reviewed articles pending editorial decision",
     "articles relus" => 'reviewed articles',
     "article en attente de modifications mineures" => 'article waiting for minor revision',
@@ -1801,7 +1761,7 @@ return [
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',
 
-    "%s article refusé" => ["%s refused article", "%s refused articles"],
+    "%s article refusé" => array("%s refused article", "%s refused articles"),
 
     "Gérer les articles" => 'Manage articles',
     "Gérer les volumes" => 'Manage volumes',
@@ -1832,8 +1792,8 @@ return [
     "invitations obsolètes" => "obsolete invitations",
     'invitation déclinée' => 'declined invitation',
     'invitations déclinées' => 'declined invitations',
-    "rapports de relecture supplémentaires" => "additional reviews/ratings reports",
-    "rapport de relecture supplémentaire" => "additional reviews/rating report",
+    "rapports de relecture supplémentaires" => "additional review reports",
+    "rapport de relecture supplémentaire" => "additional review report",
     "Vous êtes sur le point de supprimer un rapport de relecture." => "You are about to delete a review report.",
     "Lorsqu'un article est obsolète, les relecteurs sont désactivés" => 'When a paper is obsolete, reviewers are disabled',
 
@@ -1919,7 +1879,7 @@ return [
 
     //stats
     "le nombre total d'articles acceptés" => 'the total number of accepted for publication',
-    "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of papers submitted during this period',
+    "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of articles submitted during this period',
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
     "En un coup d'oeil" => "At a glance",
@@ -1961,29 +1921,36 @@ return [
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
     // datasets
-    'Liens publications - données - logiciels' => 'Linked publications - datasets - software',
-    'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage links between Publications - Datasets - Software',
+    'administratelinkeddata-addld' => 'Add a related work',
+    'administratelinkeddata-removeld' => 'Remove a related work',
+    'administratelinkeddata-setnewinfoldAction' => 'Edit a relationship with a Dataset, Publication or Software',
+    'Liens publications - données - logiciels' => 'Relationships with publications - datasets - software',
+    'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage relationships between Publications - Datasets - Software',
     'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Software',
+    'Créer une relation' => 'Create a relationship',
     'Jeux de données' => 'Datasets',
     'Voir' => 'View',
     'Ajouter un jeu de données' => 'Add dataset',
     'software_bloc_label' => 'Software',
     'Ajouter un logiciel' => 'Add software',
     'Ajouter une publication' => 'Add publication',
-    'Erreur, vous essayez peut-être d\'insérer des données liées déjà existantes.' => 'Error, sorry it seems you are trying to insert an already existing linked data',
-    'Ajout de la donnée liée bien prise en compte' => 'Linked data added successfully',
-    'Suppression de la donnée liée bien prise en compte' => 'Linked data has been deleted successfully',
-    'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the linked data?',
-    'Format de donnée non reconnu' => 'Data format not recognised',
-    "L'archive ArXiv ne contient pas de logiciel" => "The ArXiv archive does not contain any software",
+    'Erreur, vous essayez peut-être d\'insérer des données liées déjà existantes.' => 'Error, sorry it seems you are trying to insert an already existing relationship',
+    'Ajout de la donnée liée bien prise en compte' => 'New relationship added successfully',
+    'Modification de la donnée liée bien prise en compte' => 'Relationship updated successfully',
+    'Donnée liée déjà existante, veuillez changer ses informations via le formulaire' => 'The relationship already exists, please modify the information using the form',
+    'Suppression de la donnée liée bien prise en compte' => 'The relationship has been deleted successfully',
+    'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the relationship?',
+    'Format de donnée non reconnu' => 'The supplied data format is not recognised, please make sure to enter a valid identifier: URL, DOI, SWHID',
+    "L'archive ArXiv ne contient pas de logiciel" => "The ArXiv server is not supported for software relations at the moment, it seems it does not contain any software",
     "L'identifiant HAL n'est pas de type logiciel" => 'The HAL identifier is not of software type',
-    "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing linked data',
+    "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing relationship',
+    'Ajouter une relation' => 'Add a related work',
     'software' => 'Software',
     'doi' => 'DOI',
     'handle' => 'Handle',
     'hal' => 'HAL',
-    'Modification non autorisé' => "modification not allowed",
-    "Échec de l'ajout de la donnée liée. Veuillez réessayer." => "Failed to add linked data. Please try again.",
+    'Erreur: modification non autorisée' => "Error: The update does not seem to be allowed. Please report to the support if you think you should be allowed.",
+    "Échec de l'ajout de la donnée liée. Veuillez réessayer." => "Sorry we failed to add the relationship. Please try again and report to the support if it fails again.",
     //COI
     "Votre réponse à bien été enregistrée." => "Your answer has been saved.",
     "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",
@@ -2016,13 +1983,6 @@ return [
     "Permettre la demande de revision" => "Allow post - acceptance revisions of articles",
     "Article - décision finale" => "Post - acceptance revisions of articles",
     "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées" => "This feature allows post - acceptance revisions of articles, e . g . requesting new versions of accepted preprints",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION] => "accepted - waiting for author's final version",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted, waiting for major revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for formatting by copy editors",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_NO_REVISION] => "revision request answer: without any modifications",
 
     "Accepté - en attente de la version finale" => "Accepted - waiting for author's final version",
 
@@ -2060,341 +2020,24 @@ return [
     // affiliation desc
     "Affiliation en texte libre ou issue du " => "Free text affiliation or from the ",
 
-    Episciences_Mail_TemplatesManager::AUTHOR_RECEP_EXP => 'Article’s tenderer',
-    Episciences_Mail_TemplatesManager::MANAGERS_RECEP_EXP => "all editors and copy editors assigned to the article and, depending on the journal's settings, editors, administrators and editorial secretaries",
-    Episciences_Mail_TemplatesManager::EDITORS_RECEP_EXP => "all editors assigned to the article",
-    Episciences_Mail_TemplatesManager::MANAGERS_COPY_EDITORS_EXCEPTED_EXP => "all editors assigned to the article and, depending on the journal's settings, editors, administrators and editorial secretaries",
-    Episciences_Mail_TemplatesManager::REVIEWER_RECEP_EXP => "all reviewers assigned to the article whose review has not yet been completed",
-
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE] => "date of acceptance of an article",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACCEPTANCE_DATE_ISO] => "date d'acceptation d'un article in ISO format",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACTION_DATE] => "action date",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ACTION_TIME] => "action time",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK] => "link to journal's resources(e . g . https://dmtcs.episciences.org/website/public)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ANSWER] => "text of the answer to a request for modifications",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_ID] => 'article ID',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_LINK] => "link to the article's management page",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK] => "link to the form to fill in for the article's review",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] => 'article title',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] => "the authors of the article (e.g. Rodney, Hartman ;  Bryan, Daniel and John, Walls)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_COMMENT] => 'reviewer comment',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_COMMENT_DATE] => 'reviewer comments date',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME] => "tenderer First Name and Last Name",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_CURRENT_YEAR] => "current year (e.g. 2022)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_DOI] => "article's DOI: DOI_prefix/DOI_format (e.g. 10.46298/jdmdh.9251)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] => "editor's Screen Name at the origin of the action (add a comment / suggestion)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] => "editor's First Name and Last Name at the origin of the action (add a comment / suggestion)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EXPIRATION_DATE] => "expiration date of invitation",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DATE] => "date of sending the invitation",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DEADLINE] => "expiration date of invitation",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_LINK] => 'invitation response form URL',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_URL] => 'invitation response form URL',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT] => "the number of reviewers assigned to a paper (invitations accepted and pending)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_LAST_REVISION_DATE] => "date of the last revision of the article",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_LAST_REVISION_DATE_ISO] => "date of the last revision of the article in ISO format",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_LAST_STATUS] => "last known status of the article",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST] => "Account User List",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_NEW_VERSION_URL] => 'link to article’s new version',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL] => "link to the article's management page",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_ID] => "document ID (specific to an article version)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME] => "position of the article in a volume",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_RATING] => "article's reviewer",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_RATINGS] => "article's reviewers",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_REPO_URL] => "link to the open access repository (e.g. https://hal.science/hal-03242823v2)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE] => 'submission date',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE_ISO] => "submission date at ISO format",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PAPER_URL] => "Link to article URL",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID] => "permanent article ID (links all versions)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RATING_DEADLINE] => "deadline for the review (translated into the recipient's language)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL] => "Recipient's email address",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN] => "Link used for login recovery (e.g. https://jtcam.episciences.org/user/lostlogin)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME] => "recipient First Name and Last Name (e.g. Gaëlle Sample)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME] => "Recipient Screen Name (e.g. Gaëlle Sample)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME] => "recipient ID (e.g. gaelle_sample)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REFUSAL_REASON] => "reasons for refusing an invitation to review an article",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] => "contains this message: This article was previously rejected in its first version. To review it, please follow this link: ",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] => "link to the rejected version of the article",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REMINDER_DELAY] => "difference, in number of days, between the time the reminder was sent and the deadline",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REQUESTER_SCREEN_NAME] => "Screen Name of the requester of the action",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REQUEST_ANSWER] => "contributor's response",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REQUEST_DATE] => "request date",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REQUEST_MESSAGE] => 'request message',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT] => 'minimum review count: minimum reviews count required for accepting an article',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEWER_MAIL] => "reviewer's email",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME] => "reviewer's First Name and Last Name",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME] => "reviewer's Screen Name",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION] => "reviewer's suggestions (text)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_NAME] => "zipped folder name of the set of style files and the rules for copy editing(e.g. dmtcs_episciences.zip)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL] => "link to style files and document preparation rules",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_CODE] => "journal code (e.g. JDMDH)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVIEW_NAME] => "Journal name (e.g. Journal of Data Mining and Digital Humanities)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVISION_DATES] => 'revision dates',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVISION_DATES_ISO] => 'revision deadline in ISO format',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_REVISION_DEADLINE] => 'revision deadline',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_SECTION_ID] => 'section ID',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_SECTION_NAME] => 'section name',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_SENDER_EMAIL] => 'Sender’s email',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_SENDER_FULL_NAME] => "Sender’s First Name and Last Name",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME] => "Screen Name of the user who initiated the action",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] => 'submission date',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_SUBMISSION_DATE_ISO] => 'submission date in ISO format',
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] => "volume's bibliographical reference",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_TMP_PAPER_URL] => "link to the article's temporary version management page",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK] => "account activation link",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_UPDATED_DEADLINE] => "new review deadline",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_EDITORS] => "all editors assigned to the volume of the article (e.g. Hartman Rodney, Daniel Bryan, Walls John)",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_ID] => "volume ID",
-    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_NAME] => "volume name",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of confirmation and validation of a new account",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION][Episciences_Mail_TemplatesManager::RECIPIENT] => "User who’s just created an account",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_PASSWORD][Episciences_Mail_TemplatesManager::DESCRIPTION] => "password reset",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_PASSWORD][Episciences_Mail_TemplatesManager::RECIPIENT] => "user who forgot his/her password",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "login ID reminder",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN][Episciences_Mail_TemplatesManager::RECIPIENT] => "user who forgot his/her login",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of acceptance of article's temporary version",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the acceptance of article's temporary version ",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "article acceptance confirmation",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_EDITORS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the acceptance of the article",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "article publication confirmation",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the publication of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "article rejection confirmation",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED_EDITORS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the rejection of the article",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_REQUEST][Episciences_Mail_TemplatesManager::DESCRIPTION] => "not used",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST][Episciences_Mail_TemplatesManager::DESCRIPTION] => "minor revision request",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST][Episciences_Mail_TemplatesManager::RECIPIENT] => "the author of the article as the main recipient and in BCC (depending on the journal's settings), the editors-in-chief, administrators and editorial secretaries",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST][Episciences_Mail_TemplatesManager::DESCRIPTION] => 'major revision request',
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_UPDATED_RATING_DEADLINE][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewer of the new review deadline",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that has been assigned to an article",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "editor assigned to the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that his/her assignment to an article has been removed",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "the editor whose assignment was removed",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ASK_OTHER_EDITORS][Episciences_Mail_TemplatesManager::DESCRIPTION] => "request for an editor's opinion on the article",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewer of the author's response to his/her comment",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "reviewer (applicant)",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee when an editor comments on an article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author when a reviewer posts a comment on their article page",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee when a reviewer posts a comment on the article page",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "author reply to a request for modifications issued by an editor: the author does not make any changes",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewer of their reassignment to the new version of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewer of their reassignment to the temporary version of the article",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned reviewers if the 'Automatically reassign the same reviewers when a new version is submitted' option is enabled",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "author reply to a request for modifications issued by an editor: the author suggest a temporary version",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors and according to the journal's settings, the editors-in-chief, administrators and sub-editors",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "author reply to a request for modifications issued by an editor in chief: the author suggest a new version",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "message of thanks to the reviewer, following a complete review",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification warning editors a reviewer has completed its review",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of removal of an article by its author",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editors that an author has deleted his/her article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the reviewers that an author has deleted his/her article",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_DELETED_REVIEWER_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned reviewers",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation notification from a reviewer (already known to the journal, i.e. they have already accepted at least one review invitation) to review an article",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::RECIPIENT] => 'reviewer (known by the journal)',
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer (the user does not yet have a profile in the journal's website, but he/she is known by the CCSD authentication system)",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER][Episciences_Mail_TemplatesManager::RECIPIENT] => "new reviewer",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer with a temporary account. In this specific case and precise moment of the acceptance of the invitation, the user will be invited to create a new account to access the review grid",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REMOVAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of the cancellation of an invitation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of acceptance of the invitation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that a reviewer has just accepted an invitation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of invitation rejection",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that a reviewer has just refused an invitation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editors that a new article has been submitted",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "article’s submission confirmation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_REVIEWER_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "reminder notification of reviewer not responding to invitation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing editors of the non-response of the reviewer to an invitation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_REVIEWER_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "reminder notification of approaching reviewing deadline",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing editors of approaching reviewing deadline",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification to reviewers if reviewing deadline is exceeded",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification to editors if reviewing deadline is exceeded",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_AUTHOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "reminder notification of approaching revision deadline",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_REVISION_DEADLINE_EDITOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing editors of approaching revision deadline",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification if revision deadline is exceeded",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_REVISION_DEADLINE_EDITOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification to editors if revision deadline is exceeded",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_EDITOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing editors that does not have enough reviewers ",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editors that the status of the article has not changed since its acceptance",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors (editors in Chief)",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGEST_ACCEPTATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an editor suggests acceptance of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGEST_REFUSAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an editor suggests the rejection of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGEST_NEW_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial board that an editor suggests the request for revision (modifications) of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of the interruption of the publication process",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the interruption of the publication process of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_REVIEWER_REMOVAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her review",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation to the author of their decision to abandon the publication process",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the editorial committee that there is no need to assign an editor to the article",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_NO_ASSIGNED_EDITORS][Episciences_Mail_TemplatesManager::RECIPIENT] => "depending on the journal's settings, one of the (editors, administrators and editorial secretaries) as the main recipient, the others will be in CC",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CONTINUE_PUBLICATION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of the resumption of the publication process",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CONTINUE_PUBLICATION_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editors of the resumption of the publication process of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the copy editor that it has been assigned to an article",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "assigned copy editor",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the copy editor that his/her assignment to an article has been removed",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_UNASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "the copy editor whose assignment was removed",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author that his/her article is assigned for copy editing",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COPY_EDITOR_ASSIGN_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an article has just been assigned for copy editing",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the article is awaiting author sources",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_SOURCES_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to submit his/her sources",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author of the procedure to follow and the rules for preparing his/her document",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the article is awaiting copy editing by the author",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an editor has just added a comment",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors (except the one at the origin of the comment) and according to the journal's settings, the editors in chief, administrators and secretaries",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "sources submission conformation",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_COPYEDITORS_AND_EDITORS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the author has just submitted his/her sources for copy editing by the journal",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of submission of the version formatted to the journal's standards",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that the author has just finished formatting their article",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author that the final version (formatted by the journal) is now available and ready to be submitted in an open archive and then on the journal's website",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_REVIEW_FORMATTING_DEPOSED_EDITOR_AND_COPYEDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that a new version to the standards of the journal (formatted by the journal) is now available and ready for publication",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the author that the version to the standards of the journal (formatted by the author) is now accepted by the journal and ready to be deposited in an open archive and then on the journal's website",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_ACCEPTED_FINAL_VERSION_COPYEDITOR_AND_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the acceptance of the version to the standards of the journal of the article (formatted by the author)",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_ACCEPTED_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her review following acceptance of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her review following the request for revision of the article",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her review following the rejection of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation informing the reviewer of the non-necessity of continuing his/her review following the publication of the article",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an editor refuses to manage the article",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors and copy editors; in CC, the editors in chief, administrators and secretaries",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SECTION_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he/she has been automatically assigned to the article (as editor of the section)",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_VOLUME_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he/she has been automatically assigned to the article (as editor of the volume)",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGESTED_EDITOR_ASSIGN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editor that he/she has been chosen by the author to manage his/her article",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of the article version update: if the review process has not yet started (article without any reviewer, article waiting for review), the author will have the opportunity to replace a previously submitted version with a new one",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing editors of article version update",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing editors in chief, administrators and secretaries that a new article has been submitted",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "depending on the journal's settings, all editors in chief, administrators and editorial secretary",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "request for minor modifications of the article after its acceptance (if and only if the option 'Allow post-acceptance revisions of articles' is allowed by the journal)",
-
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification inviting the author to confirm the version to the journal's standards (formatted by the copy preparer)",
-
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the paper",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the paper",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => 'Confirmation of automatic article submission via a preprint server',
 
     // Mot de passe papier
     "Facultatif" => "Optional",
     "Requis" => 'Required',
-    "Votre soumission n'a pas été enregistrée : le mot de passe du papier n'a pas été rempli, veuillez réessayer." => "Your submission has not been registered: the paper password has not been filled in, please try again.",
-    'Mot de passe papier arXiv' => "arXiv's paper password",
+    "Votre soumission n'a pas été enregistrée : le mot de passe du papier n'a pas été rempli, veuillez réessayer." => "Your submission has not been registered: the article password has not been filled in, please try again.",
+    'Mot de passe papier arXiv' => "arXiv's article password",
     'Afficher le mot de passe' => 'Show Password',
-    "Le mot de passe papier n'a pas été enregistré" => 'Paper password has not been saved',
+    "Le mot de passe n'a pas été enregistré" => 'The password has not been saved',
     'le champ est vide.' => 'the field is blank.',
     'car il est identique à celui déjà enregistré.' => 'because it is identical to the one already registered.',
-    'Votre mot de passe papier a bien été enregistré.' => 'Paper password has been saved.',
+    'Votre mot de passe a bien été enregistré.' => 'Your password has been saved.',
     'Si vous le souhaitez et si la revue vous le demande, vous pouvez partager' => 'If you wish, and if the journal asks you to, you can share',
     'La revue vous demande de partager' => 'The journal asks you to share',
-    "ici le mot de passe papier lui permettant de mettre à jour ce papier dans arXiv, en particulier pour mettre en ligne la version finale mise en page de votre article. Ce mot de passe est chiffré et sera automatiquement supprimé à la publication de l'article. Seuls les gestionnaires de votre article ont accès à ce mot de passe." => 'here the paper password that will allow it to update this paper in arXiv, in particular to put the formatted version of your paper online. This password is encrypted and will be automatically deleted when the paper is published. Only the managers of your paper have access to this password.',
+    "ici le mot de passe papier lui permettant de mettre à jour ce papier dans arXiv, en particulier pour mettre en ligne la version finale mise en page de votre article. Ce mot de passe est chiffré et sera automatiquement supprimé à la publication de l'article. Seuls les gestionnaires de votre article ont accès à ce mot de passe." => 'here the article password that will allow it to update this article in arXiv, in particular to put the formatted version of your article online. This password is encrypted and will be automatically deleted when the article is published. Only the managers of your article have access to this password.',
     'L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv' => 'The author can delegate to the journal the updating of his submission published on arXiv',
     "Ce champ contient le mot de passe arXiv de l'article si les auteurs/autrices ont accepté de le partager avec la revue. Il peut servir à mettre en ligne une nouvelle version de l'article à la place de l'auteur." => "This field contains the arXiv password of the article if the authors have agreed to share it with the journal. It can be used to upload a new version of the article on behalf of the author.",
     'Copier' => 'Copy',
-    "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv paper password",
+    "Permettre aux auteurs de partager le mot de passe papier arXiv" => "Contributors can share arXiv article password",
     'car' => 'because',
     "le nombre maximum de caractères autorisé est de <strong>%u</strong>" => "the total number of characters allowed is <strong>%u</strong>",
     'Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.' => 'Due to security reasons the form has expired. Please resubmit the form.',
@@ -2437,45 +2080,62 @@ return [
     "Masquer les références bibliographique" => "Hide bibliographical references",
     "Gérer" => "Manage",
     "Import BibTeX" => "BibTeX import",
+    "Type de volume non pris en charge pour l'export Crossref." => 'Volume type not supported for Crossref export.',
 
     // relationships linked data
-    "IsDerivedFrom" => "Is derived from",
-    "HasDerivation" => "Has derivation",
-    "IsReviewOf" => "Is review of",
-    'HasReview' => "Has review",
-    "IsCommentOn" => "Is comment on",
-    "HasComment" => "Has comment",
-    "IsReplyTo" => "Is reply to",
-    "HasReply" => "Has reply",
-    "BasedOnData" => "Based on data",
-    "IsDataBasisFor" => "Is data basis for",
-    "HasRelatedMaterial" => "Has related material",
-    "IsRelatedMaterial" => "Is related material",
-    "IsCompiledBy" => "Is compiled by",
-    "Compiles" => "Compiles",
-    "IsDocumentedBy" => "Is documented by",
-    "Documents" => "Documents",
-    "IsSupplementTo" => "Is supplement to",
-    "IsSupplementedBy" => "Is supplement by",
-    "IsContinuedBy" => "Is continued by",
-    "Continues" => "continues",
-    "IsPartOf" => "Is part of",
-    "HasPart" => "Has part",
+    "isDerivedFrom" => "Is derived from",
+    "hasDerivation" => "Has derivation",
+    "isReviewOf" => "Is review of",
+    'hasReview' => "Has review",
+    "isCommentOn" => "Is comment on",
+    "hasComment" => "Has comment",
+    "isReplyTo" => "Is reply to",
+    "hasReply" => "Has reply",
+    "basedOnData" => "Based on data",
+    "isDataBasisFor" => "Is data basis for",
+    "hasRelatedMaterial" => "Has related material",
+    "isRelatedMaterial" => "Is a related material",
+    "isCompiledBy" => "Is compiled by",
+    "compiles" => "Compiles",
+    "isDocumentedBy" => "Is documented by",
+    "documents" => "Documents",
+    "isSupplementTo" => "Is supplement to",
+    "isSupplementedBy" => "Is supplemented by",
+    "isContinuedBy" => "Is continued by",
+    "continues" => "Continues",
+    "isPartOf" => "Is part of",
+    "hasPart" => "Has part",
     "references" => "References",
+    "isReferencedBy" => "Is referenced by",
+    "isBasedOn" => "Is based on",
+    "isBasisFor" => "Is basis for",
+    "requires" => "Requires",
+    "isRequiredBy" => "Is required by",
+    "finances" => "Finances",
+    "isFinancedBy" => "Is financed by",
+    "isVersionOf" => "Is version of",
+    'isRelatedTo' => 'Is related to',
+
+
     "Références" => "References",
     "Références bibliographiques" => "Bibliographic References",
-    "IsReferencedBy" => "Is referenced by",
-    "IsBasedOn" => "Is based on",
-    "IsBasisFor" => "Is based for",
-    "Requires" => "Requires",
-    "IsRequiredBy" => "Is required by",
-    "Finances" => "Finances",
-    "IsFinancedBy" => "Is financed by",
-    "IsVersionOf" => "Is version of",
-    'IsRelatedTo' => 'Is related to',
 
     // Journal's settings
     "Exiger que la demande de révision soit assortie d'un délai" => "To require that a deadline is given with revision request",
 
+    "Éditeur" => "Publisher",
+    "Lieu de publication" => "Location of the publisher",
+    "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher.",
+    // graphical abstract
+    "Fichier non accepté" => "File not accepted",
+    'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max authorized",
+    "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
+    "Ajouter un abstract graphique" => "Add a graphical abstract",
+    "Modifier l'abstract graphique" => "Change the graphical abstract",
+    "Poids maximum du fichier : 100 ko, Hauteur maximale : 880px" => "Max size file: 100 ko, Max height: 880px",
 
-];
+    'classification_jel' => 'JEL Classification System',
+    'classification_msc2020' => 'Mathematics Subject Classification 2020'
+
+
+);

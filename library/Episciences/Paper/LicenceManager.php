@@ -207,8 +207,12 @@ class Episciences_Paper_LicenceManager
     }
 
 
-    public static function getLicenceByDocId($docId): string
+    public static function getLicenceByDocId(int $docId = null): string
     {
+
+        if (!$docId) {
+            return '';
+        }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()->from(T_PAPER_LICENCES, ['licence','source_id'])->where('docid = ? ', $docId);

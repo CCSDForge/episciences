@@ -2631,7 +2631,7 @@ class Episciences_PapersManager
 
         $result = self::getPaperParams($docId);
 
-        $identifier = $result['IDENTIFIER'];
+        $identifier = str_replace('-REFUSED', '',$result['IDENTIFIER']);
         $repoId = (int)$result['REPOID'];
         $version = (float)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];
@@ -2668,12 +2668,14 @@ class Episciences_PapersManager
             }
 
         } else {
-            $record = $response['record'];
+            $record = $response['record'] ?? '';
             $enrichment = $response['enrichment'] ?? [];
 
         }
 
-        $record = preg_replace('#xmlns="(.*)"#', '', $record);
+        if($record !== ''){
+            $record = preg_replace('#xmlns="(.*)"#', '', $record);
+        }
 
         if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
             $record = Episciences_Repositories_Common::checkAndCleanRecord($record);
@@ -2707,7 +2709,7 @@ class Episciences_PapersManager
         }
 
         // delete all paper datasets
-        Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($docId, $repoId);
+        //Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($docId, $repoId);
 
         if (Episciences_Repositories::hasHook($repoId)) {
             // add all linked data : Zenodo only
@@ -3023,13 +3025,6 @@ class Episciences_PapersManager
         ]));
 
         return self::addHiddenDocIdElement($form, $prefix, $default['id']);
-
-
-        if (!empty($default['coAuthor'])) {
-            self::getCoAuthorsForm($default['coAuthor'], $form);
-        }
-        return $form;
-
     }
 
     /**
@@ -3728,7 +3723,7 @@ class Episciences_PapersManager
      * @param int $limit
      * @return array
      */
-    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 100): array
+    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 200): array
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -3950,14 +3945,30 @@ class Episciences_PapersManager
         return REVIEW_FILES_PATH . $docId;
     }
 
-    /**
-     * @param int $paperId
-     * @return array|null
-     */
-    public static function getAllDocIdByPaperId(int $paperId)
+
+    public static function getJsonDocumentByDocId(int $docid)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?', $paperId);
-        return $db->fetchAll($select);
+        $select = $db->select()->from(T_PAPERS, ['DOCUMENT'])->where('DOCID = ?', $docid);
+        return $db->fetchOne($select);
     }
+
+    public static function updateJsonDocumentData(int $docId): void
+    {
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $paper = self::get($docId, false);
+            $toJson = $paper->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
+            $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
+            $db->query($str)->closeCursor();
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+    }
+
+
+
+
+
+
 }

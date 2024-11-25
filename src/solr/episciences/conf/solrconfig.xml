@@ -21,7 +21,7 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
          that you fully re-index after changing this setting as it can
          affect both how text is indexed and queried.
     -->
-    <luceneMatchVersion>8.11.1</luceneMatchVersion>
+    <luceneMatchVersion>9.10</luceneMatchVersion>
 
     <!-- <lib/> directives can be used to instruct Solr to load any Jars
          identified and use them to resolve any "plugins" specified in
@@ -59,10 +59,10 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
          with their external dependencies.
       -->
     <!-- <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" /> -->
-    <lib dir="${solr.install.dir:../../../..}/contrib/analysis-extras/lib" regex="icu4j-\d.*\.jar"/>
-    <lib dir="${solr.install.dir:../../../..}/contrib/analysis-extras/lucene-libs"
-         regex="lucene-analyzers-icu-\d.*\.jar"/>
-    <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-analysis-extras-\d.*\.jar"/>
+
+    <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="icu4j-\d.*\.jar"/>
+    <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="lucene-analysis-icu-\d.*\.jar"/>
+    <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="solr-analysis-extras-\d.*\.jar"/>
 
     <!-- an exact 'path' can be used instead of a 'dir' to specify a
          specific jar file.  This will cause a serious error to be logged
@@ -402,7 +402,7 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
                           to occupy. Note that when this option is specified, the size
                           and initialSize parameters are ignored.
           -->
-        <filterCache class="solr.FastLRUCache"
+        <filterCache class="solr.CaffeineCache"
                      size="512"
                      initialSize="512"
                      autowarmCount="0"/>
@@ -415,7 +415,7 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
                 maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
                            to occupy
           -->
-        <queryResultCache class="solr.LRUCache"
+        <queryResultCache class="solr.CaffeineCache"
                           size="512"
                           initialSize="512"
                           autowarmCount="0"/>
@@ -426,14 +426,14 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
              document).  Since Lucene internal document ids are transient,
              this cache will not be autowarmed.
           -->
-        <documentCache class="solr.LRUCache"
+        <documentCache class="solr.CaffeineCache"
                        size="512"
                        initialSize="512"
                        autowarmCount="0"/>
 
         <!-- custom cache currently used by block join -->
         <cache name="perSegFilter"
-               class="solr.search.LRUCache"
+               class="solr.search.CaffeineCache"
                size="10"
                initialSize="0"
                autowarmCount="10"
@@ -676,22 +676,25 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
          queries across multiple shards
       -->
 
-    <!-- Standard Search Handler  -->
+    <!-- Standard Search Handler
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="inc-select-search-handler.xml">
       <xi:fallback>
-        <requestHandler name="/select" class="solr.SearchHandler">
-          <lst name="defaults">
+       -->
+    <requestHandler name="/select" class="solr.SearchHandler">
+        <lst name="defaults">
             <str name="echoParams">explicit</str>
             <int name="rows">30</int>
             <str name="df">text</str>
             <str name="wt">json</str>
             <str name="q.op">AND</str>
-            <str name="fl">*</str>
-          </lst>
-        </requestHandler>
+            <str name="fl">docid,doi_s,*_paper_title_t,paper_title_t,abstract_t,author_fullname_s,publication_date_tdate,volume_id_i,*_volume_title_t,section_id_i,*_section_title_t</str>
+        </lst>
+    </requestHandler>
+    <!--
       </xi:fallback>
     </xi:include>
-    
+    -->
+
 
     <!-- A request handler that returns indented JSON by default -->
     <requestHandler name="/query" class="solr.SearchHandler">

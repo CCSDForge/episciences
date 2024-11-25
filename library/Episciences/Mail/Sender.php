@@ -26,7 +26,7 @@ class Episciences_Mail_Sender
         $path = $this->setPath(EPISCIENCES_MAIL_PATH);
 
         if ($path == '') {
-            echo $path . " : Ce chemin n'existe pas\n";
+            echo EPISCIENCES_MAIL_PATH . " : Ce chemin n'existe pas\n";
             return false;
         }
 
@@ -73,14 +73,13 @@ class Episciences_Mail_Sender
         return $this->_path;
     }
 
-    /**
-     * @param string $path
-     */
-    public function setPath($path)
+
+    public function setPath(string $path): string
     {
-        if (!is_dir($path)) {
-            $path = '';
+        if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
+            return '';
         }
+
         $this->_path = $path;
         return $path;
     }

@@ -1,76 +1,77 @@
-<resource xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xmlns:dc="http://purl.org/dc/elements/1.1/"
-          xmlns:dcterms="http://purl.org/dc/terms/"
-          xmlns:datacite="http://datacite.org/schema/kernel-4"
-          xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
-          xsi:schemaLocation="http://namespace.openaire.eu/schema/oaire/ https://www.openaire.eu/schema/repo-lit/4.0/openaire.xsd">
-<?php
-/** @var Episciences_Paper $paper */
-$paper = $this->paper;
-$authors = $paper->getMetadata('authors');
-$subjects = $paper->getMetadata('subjects');
+<resource
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:dcterms="http://purl.org/dc/terms/"
+        xmlns:datacite="http://datacite.org/schema/kernel-4"
+        xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
+        xsi:schemaLocation="http://namespace.openaire.eu/schema/oaire/ https://www.openaire.eu/schema/repo-lit/4.0/openaire.xsd">
+    <?php
+    /** @var Episciences_Paper $paper */
 
-$titles = $paper->getAllTitles();
+    use Episciences\Paper\Export;
 
-$abstracts = $paper->getAllAbstracts();
+    $paper = $this->paper;
+    $authors = $paper->getMetadata('authors');
+    $subjects = $paper->getMetadata('subjects');
 
-$dateAccepted = new DateTime($paper->getAcceptanceDate());
-$dateSubmitted = new DateTime($paper->getSubmission_date());
-$dateUpdated = new DateTime($paper->getModification_date());
-$dateIssued = new DateTime($paper->getPublication_date());
-$publicationYear = new DateTime($paper->getPublication_date());
+    $titles = $paper->getAllTitles();
 
-/** @var $journal Episciences_Review */
-$journal = $this->journal;
-$journalUrl = $journal->getUrl();
-$enrichmentAuthors = $paper->getAuthors();
-$enrichmentLicence = $paper->getLicence();
-$enrichmentFundings = $paper->getFundings();
-$enrichmentLinkedData = $paper->getLinkedData();
+    $abstracts = $paper->getAllAbstracts();
 
-$authorizedRelationType = [
-    "IsCitedBy","Cites","IsSupplementTo","IsSupplementedBy",
-    "IsContinuedBy","Continues","IsDescribedBy",
-    "Describes","HasMetadata","IsMetadataFor",
-    "HasVersion","IsVersionOf","IsNewVersionOf","IsPreviousVersionOf",
-    "IsPartOf","HasPart","IsReferencedBy","References","IsDocumentedBy","Documents","IsCompiledBy","Compiles",
-    "IsVariantFormOf","IsOriginalFormOf","IsIdenticalTo","IsReviewedBy",
-    "Reviews","IsDerivedFrom","IsSourceOf","IsRequiredBy","Requires"
-];
+    $dateAccepted = $paper->getAcceptanceDate() ? new DateTime($paper->getAcceptanceDate()) : null;
+    $dateSubmitted = new DateTime($paper->getSubmission_date());
+    $dateUpdated = new DateTime($paper->getModification_date());
+    $dateIssued = new DateTime($paper->getPublication_date());
+    $publicationYear = $paper->getPublication_date() ? new DateTime($paper->getPublication_date()) : null;
 
-$authorizedRelatedIndentifier = [
-    "ARK","arXiv","bibcode","DOI",
-    "EAN13","EISSN","Handle",
-    "IGSN","ISBN","ISSN",
-    "ISTC","LISSN","LSID","PISSN",
-    "PMID","PURL","UPC",
-    "URL","URN","WOS","Software"
-];
+    /** @var $journal Episciences_Review */
+    $journal = $this->journal;
+    $journalUrl = $journal->getUrl();
+    $enrichmentAuthors = $paper->getAuthors();
+    $enrichmentLicence = $paper->getLicence();
+    $enrichmentFundings = $paper->getFundings();
+    $enrichmentLinkedData = $paper->getLinkedData();
 
-if (defined('RVISSN')) {
-    $issn = $this->FormatIssn(RVISSN);
-} else {
-    $issn = '';
-}
-?>
+    $authorizedRelationType = [
+        "IsCitedBy", "Cites", "IsSupplementTo", "IsSupplementedBy",
+        "IsContinuedBy", "Continues", "IsDescribedBy",
+        "Describes", "HasMetadata", "IsMetadataFor",
+        "HasVersion", "IsVersionOf", "IsNewVersionOf", "IsPreviousVersionOf",
+        "IsPartOf", "HasPart", "IsReferencedBy", "References", "IsDocumentedBy", "Documents", "IsCompiledBy", "Compiles",
+        "IsVariantFormOf", "IsOriginalFormOf", "IsIdenticalTo", "IsReviewedBy",
+        "Reviews", "IsDerivedFrom", "IsSourceOf", "IsRequiredBy", "Requires"
+    ];
 
-    <?php if($this->doi !== ''): ?>
+    $authorizedRelatedIndentifier = [
+        "ARK", "arXiv", "bibcode", "DOI",
+        "EAN13", "EISSN", "Handle",
+        "IGSN", "ISBN", "ISSN",
+        "ISTC", "LISSN", "LSID", "PISSN",
+        "PMID", "PURL", "UPC",
+        "URL", "URN", "WOS", "Software"
+    ];
+
+    $issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));
+    $publisher = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER);
+    ?>
+
+    <?php if ($this->doi !== ''): ?>
         <datacite:identifier identifierType="DOI"><?= htmlentities($this->doi, ENT_XML1) ?></datacite:identifier>
         <datacite:alternateIdentifiers>
-            <datacite:alternateIdentifier alternateIdentifierType="URL"><?= $journalUrl . '/' . $paper->getPaperid() ?></datacite:alternateIdentifier>
+            <datacite:alternateIdentifier
+                    alternateIdentifierType="URL"><?= $journalUrl . '/' . $paper->getPaperid() ?></datacite:alternateIdentifier>
         </datacite:alternateIdentifiers>
     <?php else: ?>
         <datacite:identifier identifierType="URL"><?= $journalUrl . '/' . $paper->getPaperid() ?></datacite:identifier>
-    <?php endif;?>
+    <?php endif; ?>
 
 
     <datacite:creators>
         <?php
         if (is_array($authors)) {
             foreach ($authors as $key => $creatorName) {
-                $givenName= '';
-                $familyName= '';
+                $givenName = '';
+                $familyName = '';
                 if (str_contains($creatorName, ',')) {
                     [$familyName, $givenName] = explode(', ', $creatorName);
                     $givenName = trim($givenName, ',');
@@ -80,21 +81,23 @@ if (defined('RVISSN')) {
                 ?>
                 <datacite:creator>
                     <datacite:creatorName><?= $this->escape($creatorName) ?></datacite:creatorName>
-                    <?php if($givenName !=='') :?>
+                    <?php if ($givenName !== '') : ?>
                         <datacite:givenName><?= $this->escape($givenName) ?></datacite:givenName>
                     <?php endif; ?>
                     <datacite:familyName><?= $this->escape($familyName) ?></datacite:familyName>
-                    <?php if (!empty($enrichmentAuthors)):?>
+                    <?php if (!empty($enrichmentAuthors)): ?>
                         <?php if (!empty($enrichmentAuthors[$key]['affiliation'])): ?>
-                                <?php foreach ($enrichmentAuthors[$key]['affiliation'] as $affiliationAuthor) { ?>
-                                     <datacite:affiliation><?= $this->escape($affiliationAuthor['name']); ?></datacite:affiliation>
-                                        <?php if (isset($affiliationAuthor['id'])): ?>
-                                            <datacite:nameIdentifier nameIdentifierScheme="ROR" schemeURI="http://ror.org/"><?= $this->escape($affiliationAuthor['id'][0]['id']) ?></datacite:nameIdentifier>
-                                        <?php endif; ?>
-                                <?php } ?>
-                            <?php endif; ?>
-                        <?php if (isset($enrichmentAuthors[$key]['orcid'])):?>
-                            <datacite:nameIdentifier nameIdentifierScheme="ORCID" schemeURI="http://orcid.org"><?= $this->escape($enrichmentAuthors[$key]['orcid']) ?></datacite:nameIdentifier>
+                            <?php foreach ($enrichmentAuthors[$key]['affiliation'] as $affiliationAuthor) { ?>
+                                <datacite:affiliation><?= $this->escape($affiliationAuthor['name']); ?></datacite:affiliation>
+                                <?php if (isset($affiliationAuthor['id'])): ?>
+                                    <datacite:nameIdentifier nameIdentifierScheme="ROR"
+                                                             schemeURI="https://ror.org/"><?= $this->escape($affiliationAuthor['id'][0]['id']) ?></datacite:nameIdentifier>
+                                <?php endif; ?>
+                            <?php } ?>
+                        <?php endif; ?>
+                        <?php if (isset($enrichmentAuthors[$key]['orcid'])): ?>
+                            <datacite:nameIdentifier nameIdentifierScheme="ORCID"
+                                                     schemeURI="https://orcid.org"><?= $this->escape($enrichmentAuthors[$key]['orcid']) ?></datacite:nameIdentifier>
                         <?php endif; ?>
                     <?php endif; ?>
                 </datacite:creator>
@@ -104,23 +107,26 @@ if (defined('RVISSN')) {
         ?>
     </datacite:creators>
 
-    <?php if (!empty($enrichmentFundings)):?>
+    <?php if (!empty($enrichmentFundings)): ?>
         <?php foreach ($enrichmentFundings as $fundingInfo) { ?>
-            <?php if ($fundingInfo['funderName'] !== "unidentified" || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
-                <oaire:fundingReferences>
-                    <oaire:fundingReference>
-                <?php if ($fundingInfo['funderName'] !== "unidentified") : ?>
-                            <oaire:funderName><?= $this->escape($fundingInfo['funderName']) ?></oaire:funderName>
-                <?php endif; ?>
-                <?php if ($fundingInfo['code'] !== "unidentified") : ?>
-                        <oaire:awardNumber><?= $this->escape($fundingInfo['code']) ?></oaire:awardNumber>
-                <?php endif; ?>
-                <?php if ($fundingInfo['projectTitle'] !== "unidentified") : ?>
-                        <oaire:awardTitle><?= $this->escape($fundingInfo['projectTitle']) ?></oaire:awardTitle>
-                <?php endif; ?>
+            <?php if ((is_array($fundingInfo) && array_key_exists(Export::FUNDER_NAME, $fundingInfo))): ?>
+                <?php if ($fundingInfo[Export::FUNDER_NAME] !== "unidentified" || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
+                    <oaire:fundingReferences>
+                        <oaire:fundingReference>
+                            <?php if ($fundingInfo[Export::FUNDER_NAME] !== "unidentified") : ?>
+                                <oaire:funderName><?= $this->escape($fundingInfo[Export::FUNDER_NAME]) ?></oaire:funderName>
+                            <?php endif; ?>
+                            <?php if ($fundingInfo['code'] !== "unidentified") : ?>
+                                <oaire:awardNumber><?= $this->escape($fundingInfo['code']) ?></oaire:awardNumber>
+                            <?php endif; ?>
+                            <?php if ($fundingInfo['projectTitle'] !== "unidentified") : ?>
+                                <oaire:awardTitle><?= $this->escape($fundingInfo['projectTitle']) ?></oaire:awardTitle>
+                            <?php endif; ?>
                         </oaire:fundingReference>
                     </oaire:fundingReferences>
+                <?php endif; ?>
             <?php endif; ?>
+
         <?php } ?>
     <?php endif; ?>
 
@@ -159,7 +165,6 @@ if (defined('RVISSN')) {
     <?php endif; ?>
 
 
-    <dc:publisher><?= DOMAIN; ?></dc:publisher>
 
     <?php if (is_array($subjects)): ?>
         <datacite:subjects>
@@ -187,41 +192,60 @@ if (defined('RVISSN')) {
     <?php endif; ?>
 
     <?php if ($enrichmentLicence !== ""): ?>
-        <oaire:licenseCondition startDate="<?= $paper->getPublication_date()?>" uri="<?= $enrichmentLicence ?>"><?= $this->escape(Ccsd_Tools::translate($enrichmentLicence)) ?></oaire:licenseCondition>
+        <oaire:licenseCondition startDate="<?= $paper->getPublication_date() ?>"
+                                uri="<?= $enrichmentLicence ?>"><?= $this->escape(Ccsd_Tools::translate($enrichmentLicence)) ?></oaire:licenseCondition>
     <?php endif; ?>
     <datacite:dates>
-        <datacite:date dateType="Accepted"><?= $dateAccepted->format('Y-m-d') ?></datacite:date>
+        <?php if ($dateAccepted) : ?>
+            <datacite:date dateType="Accepted"><?= $dateAccepted->format('Y-m-d') ?></datacite:date>
+        <?php endif; ?>
         <datacite:date dateType="Issued"><?= $dateIssued->format('Y-m-d') ?></datacite:date>
         <datacite:date dateType="Available"><?= $dateIssued->format('Y-m-d') ?></datacite:date>
     </datacite:dates>
 
 
     <dc:language><?= $this->paperLanguage ?></dc:language>
-
-    <oaire:resourceType resourceTypeGeneral="literature" uri="http://purl.org/coar/resource_type/c_6501">journal article</oaire:resourceType>
+    <?php if ($this->escape($publisher) !== '') : ?>
+        <dc:publisher><?= $this->escape($publisher) ?></dc:publisher>
+    <?php endif; ?>
+    <oaire:resourceType resourceTypeGeneral="literature" uri="http://purl.org/coar/resource_type/c_6501">journal
+        article
+    </oaire:resourceType>
 
     <datacite:relatedIdentifiers>
         <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
-            <datacite:relatedIdentifier relatedIdentifierType="arXiv" relationType="IsIdenticalTo">arXiv:<?= $paper->getIdentifier(); ?></datacite:relatedIdentifier>
-            <datacite:relatedIdentifier relatedIdentifierType="DOI" relationType="IsIdenticalTo"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?= $this->escape($paper->getIdentifier()); ?></datacite:relatedIdentifier>
+            <datacite:relatedIdentifier relatedIdentifierType="arXiv" relationType="IsIdenticalTo">
+                arXiv:<?= $paper->getIdentifier(); ?></datacite:relatedIdentifier>
+            <datacite:relatedIdentifier relatedIdentifierType="DOI"
+                                        relationType="IsIdenticalTo"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
+                /arXiv.<?= $this->escape($paper->getIdentifier()); ?></datacite:relatedIdentifier>
         <?php elseif ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('Zenodo')) : ?>
-            <datacite:relatedIdentifier relatedIdentifierType="DOI" relationType="IsIdenticalTo"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?= $this->escape($paper->getIdentifier()); ?></datacite:relatedIdentifier>
+            <datacite:relatedIdentifier relatedIdentifierType="DOI"
+                                        relationType="IsIdenticalTo"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
+                /zenodo.<?= $this->escape($paper->getIdentifier()); ?></datacite:relatedIdentifier>
         <?php else: ?>
-            <datacite:relatedIdentifier relatedIdentifierType="URL" relationType="IsIdenticalTo"><?= $paper->getDocUrl(); ?></datacite:relatedIdentifier>
+            <datacite:relatedIdentifier relatedIdentifierType="URL"
+                                        relationType="IsIdenticalTo"><?= $paper->getDocUrl(); ?></datacite:relatedIdentifier>
         <?php endif; ?>
 
         <?php if (isset($issn) && $issn !== '') : ?>
-            <datacite:relatedIdentifier relatedIdentifierType="ISSN" relationType="IsPartOf"><?= $this->escape($issn) ?></datacite:relatedIdentifier>
+            <datacite:relatedIdentifier relatedIdentifierType="ISSN"
+                                        relationType="IsPartOf"><?= $this->escape($issn) ?></datacite:relatedIdentifier>
         <?php endif; ?>
         <?php if (!empty($enrichmentLinkedData)) : ?>
             <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
                 <?php if (in_array((strtoupper($linkedData['link'])), $authorizedRelatedIndentifier, true) || $linkedData['link'] === 'handle' || $linkedData['link'] === 'doi' || $linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode' || $linkedData['link'] === 'software') : ?>
                     <?php if (in_array(ucfirst($linkedData['relationship']), $authorizedRelationType, true)) : ?>
                         <datacite:relatedIdentifier relatedIdentifierType="<?php
-                        if ($linkedData['link'] === 'handle') { echo $this->escape(ucfirst($linkedData['link'])); }
-                        elseif ($linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode') { echo $this->escape($linkedData['link']); }
-                        else { echo $this->escape(strtoupper($linkedData['link'])); }
-                        ?>" relationType="<?= $this->escape($linkedData['relationship']) ?>"><?php echo $this->escape($linkedData['value']); ?></datacite:relatedIdentifier>
+                        if ($linkedData['link'] === 'handle') {
+                            echo $this->escape(ucfirst($linkedData['link']));
+                        } elseif ($linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode') {
+                            echo $this->escape($linkedData['link']);
+                        } else {
+                            echo $this->escape(strtoupper($linkedData['link']));
+                        }
+                        ?>"
+                                                    relationType="<?= $this->escape($linkedData['relationship']) ?>"><?php echo $this->escape($linkedData['value']); ?></datacite:relatedIdentifier>
                     <?php endif; ?>
                 <?php endif; ?>
             <?php } ?>
@@ -231,19 +255,19 @@ if (defined('RVISSN')) {
 
     <datacite:rights rightsURI="http://purl.org/coar/access_right/c_abf2">open access</datacite:rights>
 
-    <oaire:file accessRightsURI="http://purl.org/coar/access_right/c_abf2" mimeType="application/pdf" objectType="fulltext"><?= $journalUrl . '/' . $paper->getPaperid() . '/pdf' ?></oaire:file>
+    <oaire:file accessRightsURI="http://purl.org/coar/access_right/c_abf2" mimeType="application/pdf"
+                objectType="fulltext"><?= $journalUrl . '/' . $paper->getPaperid() . '/pdf' ?></oaire:file>
 
     <oaire:version uri="http://purl.org/coar/version/c_970fb48d4fbd8a85">VoR</oaire:version>
 
     <dc:format>application/pdf</dc:format>
 
 
-
     <oaire:citationTitle><?= $this->escape($journal->getName()) ?></oaire:citationTitle>
-    <?php if($this->volume !== ''): ?>
+    <?php if ($this->volume !== ''): ?>
         <oaire:citationVolume><?= $this->escape($this->volume) ?></oaire:citationVolume>
     <?php endif; ?>
-    <?php if($this->section !== ''): ?>
+    <?php if ($this->section !== ''): ?>
         <oaire:citationIssue><?= $this->escape($this->section) ?></oaire:citationIssue>
     <?php endif; ?>
 

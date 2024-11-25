@@ -17,10 +17,8 @@ $publicationYear = new DateTime($paper->getPublication_date());
 /** @var $journal Episciences_Review */
 $journal = $this->journal;
 
-$journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
+$journalSettings = $journal->getSettings();
 $enrichmentAuthors = $paper->getAuthors();
-
-$journalSettings = Zend_Registry::get('reviewSettings');
 
 // bibliographical ref
 $bibRefList = $this->bibRef;
@@ -35,12 +33,12 @@ $timestamp = time();
 
             <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') : ?>
                 <journal-id journal-id-type="issn"
-                            specific-use="electronic"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></journal-id>
+                            specific-use="electronic"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></journal-id>
             <?php endif; ?>
 
             <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') : ?>
                 <journal-id journal-id-type="issn"
-                            specific-use="print"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></journal-id>
+                            specific-use="print"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></journal-id>
             <?php endif; ?>
 
             <journal-title-group>
@@ -49,20 +47,24 @@ $timestamp = time();
             </journal-title-group>
 
             <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') : ?>
-                <issn specific-use="electronic"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></issn>
+                <issn specific-use="electronic"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></issn>
             <?php endif; ?>
 
             <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') : ?>
-                <issn specific-use="print"><?php echo $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></issn>
+                <issn specific-use="print"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></issn>
             <?php endif; ?>
 
             <publisher>
-                <publisher-name><?php echo DOMAIN; ?></publisher-name>
+                <?php if (isset($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER]) && $journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER] !== '') : ?>
+                    <publisher-name><?php echo $this->escape($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER]); ?></publisher-name>
+                <?php endif; ?>
                 <publisher-loc>
-
+                    <?php if (isset($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC]) && $journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC] !== '') : ?>
+                        <?= $this->escape(htmlspecialchars($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC])) ?>
+                    <?php endif; ?>
                     <email>support@<?php echo DOMAIN; ?></email>
                     <uri><?php echo $this->escape('https://www.' . DOMAIN); ?></uri>
-                    <uri><?php echo $this->escape('https://' . RVCODE . '.' . DOMAIN); ?></uri>
+                    <uri><?php echo $this->escape('https://' . $this->journal->getCode() . '.' . DOMAIN); ?></uri>
                 </publisher-loc>
             </publisher>
         </journal-meta>
@@ -78,8 +80,10 @@ $timestamp = time();
                         pub-id-type="hal"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
             <?php endif; ?>
 
-            <article-id
-                    pub-id-type="publisher-id"><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?></article-id>
+            <article-id pub-id-type="publisher-id">
+                <?php $applicationUrl = SERVER_PROTOCOL . '://' . $this->journal->getCode() . '.' . DOMAIN;
+                echo $applicationUrl . '/' . $paper->getPaperid(); ?>
+            </article-id>
 
             <title-group>
                 <?php $titleCount = 0; ?>
@@ -134,7 +138,8 @@ $timestamp = time();
                                             <?php if (isset($affiliationAuthor['id'])): ?>
                                                 <?php foreach ($affiliationAuthor['id'] as $values): ?>
                                                     <?php if (isset($values['id'])): ?>
-                                                        <institution_id type="ror"><?= $this->escape($values['id']) ?></institution_id>
+                                                        <institution_id
+                                                                type="ror"><?= $this->escape($values['id']) ?></institution_id>
                                                     <?php endif; ?>
                                                 <?php endforeach; ?>
                                             <?php endif; ?>
@@ -170,9 +175,9 @@ $timestamp = time();
             <?php endif; ?>
 
 
-            <uri specific-use="for-review"><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?>/pdf</uri>
+            <uri specific-use="for-review"><?php echo $applicationUrl . '/' . $paper->getPaperid(); ?>/pdf</uri>
 
-            <self-uri><?php echo APPLICATION_URL . '/' . $paper->getPaperid(); ?></self-uri>
+            <self-uri><?php echo $applicationUrl . '/' . $paper->getPaperid(); ?></self-uri>
 
 
             <?php if ($abstracts): ?>

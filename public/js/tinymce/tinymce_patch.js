@@ -9,6 +9,15 @@ function __initMCE(selectorName, context, options) {
 
 function __initEditor(selectorName, context, options) {
 
+    let languageOptions = {}
+    let licenceKey = {license_key: 'gpl'}; //https://www.tiny.cloud/license-key/
+
+    if (navigator.language === 'fr'){
+        languageOptions = {
+            language_url: '/js/tinymce/langs/fr_FR.js',
+            language: 'fr_FR'
+        }
+    }
     // see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
     let domainAbsoluteURLsOptions = {
         convert_urls: false,
@@ -30,6 +39,8 @@ function __initEditor(selectorName, context, options) {
     } else {
         options = $.extend(options, domainAbsoluteURLsOptions);
     }
+
+    options = $.extend(options, languageOptions, licenceKey);
 
     if (context) {
         $(selectorName, $(context)).tinymce(options);

@@ -393,8 +393,10 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
         Ccsd_Log::message('In Core : ' . $this->getCore() . ' => ' . $this->getOrigin() . ' document UPDATED : ' . $docId, $this->isDebugMode(), '', $this->getLogFilename());
         $document = $updateQuery->createDocument();
         $document = $this->addMetadataToDoc($docId, $document);
-        if ($document === null) {
-            Ccsd_Log::message('Document non traité : ' . $docId, true, 'ERR', $this->getLogFilename());
+        if ((!$document) || ($document === null)) {
+            $errorMessage = 'Document not indexed: ' . $docId;
+            $this->setErrorMessage($errorMessage);
+            Ccsd_Log::message($errorMessage, true, 'ERR', $this->getLogFilename());
             $this->putProcessedRowInError($docId);
         } else {
             $updateQuery->addDocument($document, true);
@@ -454,6 +456,12 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
     public function getErrorMessage(): string
     {
         return $this->errorMessage;
+    }
+
+
+    public function setErrorMessage(string $errorMessage = 'Unknown Error'): void
+    {
+        $this->errorMessage = $errorMessage;
     }
 
     /**
@@ -527,7 +535,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
             }
 
             Ccsd_Log::message($message, $this->isDebugMode(), $logLevel, $this->getLogFilename());
-
+            unset($update);
             $this->resetBuffer();
         }
     }

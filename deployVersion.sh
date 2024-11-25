@@ -10,6 +10,7 @@ deployDate=$(date "+%Y-%m-%d %X %z")
 git fetch --all
 git fetch --tags
 git checkout $1
+git pull
 gitHashCommit=$(git rev-parse --short $1)
 echo '<?php' > 'version.php';
 echo "\$gitHash='$gitHashCommit';">>  'version.php';

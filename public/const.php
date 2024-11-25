@@ -149,6 +149,7 @@ function defineSQLTableConstants()
     define('T_MAIL_REMINDERS', 'REMINDERS');
     define('T_MAIL_TEMPLATES', 'MAIL_TEMPLATE');
     define('T_NEWS', 'NEWS');
+    define('T_JOURNAL_NEWS', 'news');
     define('T_PAPERS', 'PAPERS');
     define('T_PAPER_COMMENTS', 'PAPER_COMMENTS');
     define('T_PAPER_SETTINGS', 'PAPER_SETTINGS');
@@ -172,6 +173,7 @@ function defineSQLTableConstants()
     define('T_VOLUME_PAPER', 'VOLUME_PAPER');
     define('T_VOLUME_PAPER_POSITION', 'VOLUME_PAPER_POSITION');
     define('T_VOLUME_SETTINGS', 'VOLUME_SETTING');
+    define('T_VOLUME_PROCEEDING', 'volume_proceeding');
     define('VISITS_TEMP', 'STAT_TEMP');
     define('T_PAPER_FILES', 'paper_files');
     define('T_PAPER_DATASETS', 'paper_datasets');
@@ -182,7 +184,10 @@ function defineSQLTableConstants()
     define('T_PAPER_METADATA_SOURCES', 'metadata_sources');
     define('T_PAPER_PROJECTS', 'paper_projects');
     define('T_PAPER_CITATIONS', 'paper_citations');
-    //define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
+    define('T_PAGES', 'pages');
+    define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
+    define('T_PAPER_CLASSIFICATION_MSC2020', 'classification_msc2020');
+    define('T_PAPER_CLASSIFICATION_JEL', 'classification_jel');
 }
 
 /**
@@ -210,7 +215,7 @@ function defineSimpleConstants()
  */
 function defineVendorJsLibraries()
 {
-    define('VENDOR_BOOTBOX', 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.2/bootbox.min.js');
+    define('VENDOR_BOOTBOX', 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.3/bootbox.min.js');
     define('VENDOR_BOOTSTRAP_COLORPICKER', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/js/bootstrap-colorpicker.min.js');
     define('VENDOR_BOOTSTRAP_JS', "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js");
     define('VENDOR_DATATABLES_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap.min.js');
@@ -221,8 +226,8 @@ function defineVendorJsLibraries()
     define('VENDOR_JQUERY_UI', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'); // Do not upgrade
     define('VENDOR_JQUERY_URL_PARSER', 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js');
     define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
-    define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.4.1/tinymce.min.js');
-    define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.4.1/tinymce.min.js');
+    define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js');
+    define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js');
     define('VENDOR_CHART', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js');
     define('VENDOR_CHART_PLUGIN_DATALABELS', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js');
 }
@@ -235,9 +240,9 @@ function defineVendorCssLibraries()
     define('VENDOR_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css');
     define('VENDOR_BOOTSTRAP_COLORPICKER_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css');
     define('VENDOR_DATATABLES_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap.min.css');
-    define('VENDOR_FONT_AWESOME', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css");
-    define('VENDOR_FONT_AWESOME_BRAND', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css");
-    define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css");
+    define('VENDOR_FONT_AWESOME', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/fontawesome.min.css");
+    define('VENDOR_FONT_AWESOME_BRAND', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/brands.min.css");
+    define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/solid.min.css");
     define('VENDOR_JQUERY_UI_THEME_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css');
     define('VENDOR_CHART_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css');
     define('VENDOR_COOKIE_CONSENT_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css');
@@ -256,6 +261,7 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('APPLICATION_VERSION', '');
         define('PWD_PATH', '');
         define('FUSION_TOKEN_AUTH', '');
+        define('EPISCIENCES_LOG_PATH', '');
         define('EPISCIENCES_SOLR_LOG_PATH', '');
         define('EPISCIENCES_API_URL', '');
         define('EPISCIENCES_API_SECRET_KEY', '');
@@ -290,5 +296,8 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('ENDPOINTS_SEARCH_PROTOCOL', '');
         define('ENDPOINTS_INDEXING_HOST', '');
         define('ENDPOINTS_INDEXING_TIMEOUT', 0);
+        define('DOI_EMAIL_CONTACT', '');
+        define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
+        define('EPISCIENCES_BIBLIOREF', []);
     }
 }

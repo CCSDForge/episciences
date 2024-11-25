@@ -36,7 +36,7 @@ class Episciences_SectionsManager
         return $sections;
     }
 
-    public static function find($sid, int $rvid = 0)
+    public static function find($sid, int $rvid = 0): bool|Episciences_Section
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 

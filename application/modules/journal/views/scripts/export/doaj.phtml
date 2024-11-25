@@ -1,11 +1,15 @@
- <records>
-    <?php echo $this->partial('partials/doajpaper.phtml',[
-            'paper'=> $this->paper,
-            'journal'=>$this->journal,
-            'section'=>$this->section,
-            'volume' => $this->volume,
-            'previousVersionsUrl' => $this->previousVersionsUrl,
-            'doi' => $this->doi,
-            'paperLanguage' => $this->paperLanguage,
-    ]); ?>
- </records>
+<records>
+    <?php
+    echo $this->partial('doajpaper.phtml', [
+        'paper' => $this->paper,
+        'titles' => $this->titles,
+        'abstracts' => $this->abstracts,
+        'journal' => $this->journal,
+        'section' => $this->section,
+        'volume' => $this->volume,
+        'previousVersionsUrl' => $this->previousVersionsUrl,
+        'doi' => $this->doi,
+        'paperLanguage' => $this->paperLanguage,
+    ]);
+    ?>
+</records>

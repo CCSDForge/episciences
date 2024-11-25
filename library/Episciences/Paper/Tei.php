@@ -18,107 +18,6 @@ class Episciences_Paper_Tei
     private $_translator;
     private $_defaultLocale;
 
-
-    /**
-     * @return mixed
-     */
-    public function getTranslator()
-    {
-        return $this->_translator;
-    }
-
-    /**
-     * @param mixed $translator
-     */
-    public function setTranslator($translator)
-    {
-        $this->_translator = $translator;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getLanguages()
-    {
-        return $this->_languages;
-    }
-
-    /**
-     * @param mixed $languages
-     */
-    public function setLanguages($languages)
-    {
-        if (array_key_exists('en', $languages)) {
-            $defaultLocale = 'en';
-        } else {
-            reset($languages);
-            $defaultLocale = key($languages);
-        }
-        $this->setDefaultLocale($defaultLocale);
-        $this->_languages = $languages;
-    }
-
-    /**
-     * @return Episciences_Paper|null
-     */
-    public function getPaper()
-    {
-        return $this->_paper;
-    }
-
-    /**
-     * @param Episciences_Paper $paper
-     */
-    public function setPaper(Episciences_Paper $paper)
-    {
-        $this->_paper = $paper;
-    }
-
-    /**
-     * @return array
-     */
-    private function getVolumeName()
-    {
-        $languages = $this->getLanguages();
-
-        $volumeName = array();
-        if ($this->getPaper()->getVid()) {
-            $volume = Episciences_VolumesManager::find($this->getPaper()->getVid());
-            if ($volume instanceof Episciences_Volume) {
-                foreach ($languages as $locale => $language) {
-                    if ($volume->getNameKey()) {
-                        $volumeName[$locale] = $volume->getNameKey();
-                    }
-                }
-            }
-        }
-
-        return $volumeName;
-    }
-
-    /**
-     * @return array
-     */
-    private function getSectionName()
-    {
-        $languages = $this->getLanguages();
-        $translator = $this->getTranslator();
-
-        $sectionName = array();
-        if ($this->getPaper()->getSid()) {
-            $section = Episciences_SectionsManager::find($this->getPaper()->getSid());
-            if ($section instanceof Episciences_Section) {
-                foreach ($languages as $locale => $language) {
-                    if ($translator->isTranslated($section->getNameKey(), false, $locale)) {
-                        $sectionName[$locale] = $translator->translate($section->getNameKey(), $locale);
-                    }
-                }
-            }
-        }
-
-        return $sectionName;
-    }
-
     /**
      * Episciences_Paper_Tei constructor.
      * @param Episciences_Paper $paper
@@ -145,14 +44,50 @@ class Episciences_Paper_Tei
     }
 
     /**
-     * @return Episciences_User
+     * @param Episciences_Review $review
      */
-    public function getSubmitter()
+    private function setReview(Episciences_Review $review)
     {
-        $submitter = new Episciences_User();
-        $submitter->findWithCAS($this->getPaper()->getUid());
+        $this->_review = $review;
+    }
 
-        return $submitter;
+    /**
+     * @return mixed
+     */
+    public function getLanguages()
+    {
+        return $this->_languages;
+    }
+
+    /**
+     * @param mixed $languages
+     */
+    public function setLanguages($languages)
+    {
+        if (array_key_exists('en', $languages)) {
+            $defaultLocale = 'en';
+        } else {
+            reset($languages);
+            $defaultLocale = key($languages);
+        }
+        $this->setDefaultLocale($defaultLocale);
+        $this->_languages = $languages;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getTranslator()
+    {
+        return $this->_translator;
+    }
+
+    /**
+     * @param mixed $translator
+     */
+    public function setTranslator($translator)
+    {
+        $this->_translator = $translator;
     }
 
     /**
@@ -163,7 +98,7 @@ class Episciences_Paper_Tei
     {
         // xml init and settings
         $xml = new Ccsd_DOMDocument('1.0', 'utf-8');
-        $xml->formatOutput = true;
+        $xml->formatOutput = false;
         $xml->substituteEntities = true;
         $xml->preserveWhiteSpace = false;
 
@@ -201,8 +136,6 @@ class Episciences_Paper_Tei
         $ps->appendChild($xml->createElement('distributor', 'CCSD'));
         $headeravailability = $xml->createElement('availability');
         $headeravailability->setAttribute('status', 'restricted');
-//        $headerlicence = $xml->createElement('licence', 'Distributed under a Creative Commons Attribution 4.0 International License');
-//        $headerlicence->setAttribute('target', 'http://creativecommons.org/licenses/by/4.0/');
         $enrichmentLicence = $this->getPaper()->getLicence();
         if ($enrichmentLicence !== "") {
             $headerlicence = $xml->createElement('licence', Ccsd_Tools::translate($enrichmentLicence));
@@ -240,6 +173,45 @@ class Episciences_Paper_Tei
 
         return $head;
 
+    }
+
+    /**
+     * @return array
+     */
+    private function getComments()
+    {
+        $comments = array();
+        foreach ($this->getPaper()->getAllAbstracts() as $locale => $abstract) {
+            if (is_array($abstract)) {
+                $locale = array_key_first($abstract);
+                $abstractText = array_shift($abstract);
+                $abstractText = $this->cleanComment($abstractText);
+                if ($this->isComment($abstractText)) {
+                    $comments[][$locale] = $abstractText;
+                }
+
+            } else {
+                $abstract = $this->cleanComment($abstract);
+                // sort comments from abstracts
+                if ($this->isComment($abstract)) {
+                    $comments[$locale] = $abstract;
+                }
+            }
+        }
+        return $comments;
+    }
+
+    private function cleanComment(string $comment)
+    {
+        return trim(preg_replace("/\r|\n/", " ", $comment));
+    }
+
+    private function isComment(string $comment)
+    {
+        if (stripos($comment, 'comment:') === 0) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -287,6 +259,7 @@ class Episciences_Paper_Tei
     /**
      * @param DOMDocument $xml
      * @return DOMElement
+     * @throws DOMException
      */
     private function generateXmlTextTitleStmt(DOMDocument $xml)
     {
@@ -294,7 +267,7 @@ class Episciences_Paper_Tei
 
         foreach ($this->getPaper()->getAllTitles() as $locale => $t) {
             if (is_array($t)) {
-                foreach ($t as $tLang=>$title) {
+                foreach ($t as $tLang => $title) {
                     $tit = $xml->createElement('title', $title);
                     if (Zend_Locale::isLocale($tLang)) {
                         $tit->setAttribute('xml:lang', $tLang);
@@ -308,7 +281,6 @@ class Episciences_Paper_Tei
                 }
                 $ts->appendChild($tit);
             }
-
 
 
         }
@@ -333,19 +305,12 @@ class Episciences_Paper_Tei
             $aut->appendChild($persName);
             $aut->appendChild($xml->createElement('email'));
 
-            if (array_key_exists('orcid',$enrichmentAuthors['authors'][$order])) {
+            if (isset($enrichmentAuthors['authors'][$order]) && is_array($enrichmentAuthors['authors'][$order]) && array_key_exists('orcid', $enrichmentAuthors['authors'][$order])) {
                 $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
                 $orcid->setAttribute('type', 'ORCID');
                 $aut->appendChild($orcid);
             }
-            if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
-                foreach ($enrichmentAuthors['authors'][$order]['idAffi'] as $index => $affiNum) {
-                    $affiAuthorList = $xml->createElement('affiliation');
-                    $affiAuthorList->setAttribute("ref", "#struct-".array_search($index, array_keys($enrichmentAuthors['affiliationNumeric']), true));
-                    $aut->appendChild($affiAuthorList);
-                }
-            }
-            $ts->appendChild($aut);
+            $enrichmentAuthors = $this->getAuthorAffiliation($enrichmentAuthors, $order, $xml, $aut, $ts);
         }
 
         return $ts;
@@ -354,6 +319,7 @@ class Episciences_Paper_Tei
     /**
      * @param DOMDocument $xml
      * @return DOMElement
+     * @throws DOMException
      */
     private function generateXmlTextEditionStmt(DOMDocument $xml)
     {
@@ -392,6 +358,25 @@ class Episciences_Paper_Tei
     }
 
     /**
+     * @return Episciences_User
+     */
+    public function getSubmitter()
+    {
+        $submitter = new Episciences_User();
+        $submitter->findWithCAS($this->getPaper()->getUid());
+
+        return $submitter;
+    }
+
+    /**
+     * @return null|Episciences_Review
+     */
+    private function getReview()
+    {
+        return $this->_review;
+    }
+
+    /**
      * @param DOMDocument $xml
      * @return DOMElement
      */
@@ -415,7 +400,7 @@ class Episciences_Paper_Tei
 
         $enrichmentLicence = $this->getPaper()->getLicence();
 
-        if ($enrichmentLicence !== ""){
+        if ($enrichmentLicence !== "") {
             $licence = $xml->createElement('licence', Ccsd_Tools::translate($enrichmentLicence));
             $licence->setAttribute('target', $enrichmentLicence);
             $ps->appendChild($licence);
@@ -446,8 +431,7 @@ class Episciences_Paper_Tei
         $enrichmentAuthors = $this->getPaper()->getAuthorsWithAffiNumeric();
 
         foreach ($this->getPaper()->getMetadata('authors') as $order => $author) {
-            $firstname= '';
-            $lastname= '';
+            $firstname = '';
             if (str_contains($author, ',')) {
                 [$lastname, $firstname] = explode(', ', $author);
             } else {
@@ -462,21 +446,15 @@ class Episciences_Paper_Tei
             $persName->appendChild($xml->createElement('surname', $lastname));
             $aut->appendChild($persName);
             $aut->appendChild($xml->createElement('email'));
-            if (array_key_exists('orcid',$enrichmentAuthors['authors'][$order])) {
+
+            if (
+                isset($enrichmentAuthors['authors'][$order]) &&
+                (is_array($enrichmentAuthors['authors'][$order])) && (array_key_exists('orcid', $enrichmentAuthors['authors'][$order]))) {
                 $orcid = $xml->createElement('idno', $enrichmentAuthors['authors'][$order]['orcid']);
                 $orcid->setAttribute('type', 'ORCID');
                 $aut->appendChild($orcid);
             }
-            if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
-                foreach ($enrichmentAuthors['authors'][$order]['idAffi'] as $index => $affiNum) {
-                    $affiAuthorList = $xml->createElement('affiliation');
-                    $affiAuthorList->setAttribute("ref", "#struct-".array_search($index, array_keys($enrichmentAuthors['affiliationNumeric']), true));
-                    $aut->appendChild($affiAuthorList);
-                }
-            }
-
-
-            $analytic->appendChild($aut);
+            $enrichmentAuthors = $this->getAuthorAffiliation($enrichmentAuthors, $order, $xml, $aut, $analytic);
         }
         $biblStruct->appendChild($analytic);
 
@@ -497,18 +475,22 @@ class Episciences_Paper_Tei
         $monogr->appendChild($journal);
 
         $imprint = $xml->createElement('imprint');
-        $imprint->appendChild($xml->createElement('publisher', ucfirst(DOMAIN)));
-
-        $volumeName = $this->getVolumeName();
-        if (array_key_exists($this->getDefaultLocale(), $volumeName)) {
-            $vn = $xml->createElement('biblScope', $volumeName[$this->getDefaultLocale()]);
+        $publisher = $this->getReview()->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER) ?? DOMAIN;
+        $imprint->appendChild($xml->createElement('publisher', ucfirst(trim($publisher))));
+        $publisherLoc = $this->getReview()->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC);
+        if ($publisherLoc){
+            $imprint->appendChild($xml->createElement('pubPlace', ucfirst(trim($publisherLoc))));
+        }
+        $volumeName = $this->getVolumeName($this->getDefaultLocale());
+        if ($volumeName) {
+            $vn = $xml->createElement('biblScope', $volumeName);
             $vn->setAttribute('unit', 'volume');
             $imprint->appendChild($vn);
         }
 
-        $sectionName = $this->getSectionName();
-        if (array_key_exists($this->getDefaultLocale(), $sectionName)) {
-            $sn = $xml->createElement('biblScope', $sectionName[$this->getDefaultLocale()]);
+        $sectionName = $this->getSectionName($this->getDefaultLocale());
+        if ($sectionName) {
+            $sn = $xml->createElement('biblScope', $sectionName);
             $sn->setAttribute('unit', 'issue');
             $imprint->appendChild($sn);
         }
@@ -533,7 +515,7 @@ class Episciences_Paper_Tei
             if (!is_null($linkedData['relationship'])) {
                 $relatedItem->setAttribute('type', $linkedData['relationship']);
             }
-            $urlTargetLinkedData = Episciences_Paper_DatasetsManager::getUrlLinkedData($linkedData['value'],$linkedData['link']);
+            $urlTargetLinkedData = Episciences_Paper_DatasetsManager::getUrlLinkedData($linkedData['value'], $linkedData['link']);
             if ($urlTargetLinkedData !== '') {
                 $relatedItem->setAttribute('target', $urlTargetLinkedData);
                 $biblStruct->appendChild($relatedItem);
@@ -544,9 +526,69 @@ class Episciences_Paper_Tei
         return $sourceDesc;
     }
 
+    private function getVolumeName($locale = null): string
+    {
+        $volumeName = '';
+
+        $vid = $this->getPaper()->getVid();
+        if ($vid) {
+            $volume = Episciences_VolumesManager::find($vid);
+            if ($volume instanceof Episciences_Volume) {
+                $volumeName = $volume->getName($locale);
+            }
+        }
+        return $volumeName;
+    }
+
+    /**
+     * @return Episciences_Paper|null
+     */
+    public function getPaper()
+    {
+        return $this->_paper;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     */
+    public function setPaper(Episciences_Paper $paper)
+    {
+        $this->_paper = $paper;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getDefaultLocale()
+    {
+        return $this->_defaultLocale;
+    }
+
+    /**
+     * @param mixed $defaultLocale
+     */
+    public function setDefaultLocale($defaultLocale)
+    {
+        $this->_defaultLocale = $defaultLocale;
+    }
+
+    private function getSectionName($locale = null): string
+    {
+        $sectionName = '';
+        $sid = $this->getPaper()->getSid();
+        if ($sid) {
+            $section = Episciences_SectionsManager::find($sid);
+            if ($section instanceof Episciences_Section) {
+                $sectionName = $section->getName($locale);
+            }
+        }
+        return $sectionName;
+    }
+
     /**
      * @param DOMDocument $xml
      * @return DOMElement
+     * @throws DOMException
      */
     private function generateXmlTextProfileDesc(DOMDocument $xml)
     {
@@ -564,7 +606,6 @@ class Episciences_Paper_Tei
         $keywordsNode = $xml->createElement('keywords');
 
 
-
         $keywordsNode->setAttribute('scheme', 'author');
 
         $subjects = $this->getPaper()->getMetadata('subjects');
@@ -573,7 +614,7 @@ class Episciences_Paper_Tei
             foreach ($subjects as $lang => $keyword) {
 
                 if (is_array($keyword)) {
-                    foreach ($keyword as $kwdLang=>$kwd) {
+                    foreach ($keyword as $kwdLang => $kwd) {
                         $termNode = $xml->createElement('term', $kwd);
                         if (Zend_Locale::isLocale($kwdLang)) {
                             $termNode->setAttribute('xml:lang', $kwdLang);
@@ -610,84 +651,8 @@ class Episciences_Paper_Tei
         }
 
 
-
         return $profileDesc;
     }
-
-    /**
-     * @param DOMDocument $xml
-     * @return DOMElement
-     */
-    private function generateXmlBack(DOMDocument $xml) {
-
-        $listOrg = $xml->createElement('listOrg');
-        $listAffiliations = $this->getPaper()->getAuthorsWithAffiNumeric();
-        if (!empty($listAffiliations["affiliationNumeric"])){
-            foreach ($listAffiliations["affiliationNumeric"] as $affiIndex => $affi) {
-                $org = $xml->createElement('org');
-                $org->setAttribute('xml:id',"struct-".array_search($affiIndex, array_keys($listAffiliations["affiliationNumeric"])));
-
-                if (array_key_exists('type',$affi) && !is_null($affi['type'])) {
-                    $idno = $affi['type'] === "ROR" ? $xml->createElement('idno', $affi['url']) : $xml->createElement('idno');
-                    $idno->setAttribute('type', $affi['type']);
-                    $org->appendChild($idno);
-                }
-                $orgNameAcronym = "";
-                $orgName =  $xml->createElement('orgName', $affi['name']);
-                if (array_key_exists('acronym',$affi)){
-                    $orgNameAcronym =  $xml->createElement('orgName');
-                    $orgNameAcronym->setAttribute('acronym',$affi['acronym']);
-                }
-                $org->appendChild($orgName);
-                if ($orgNameAcronym !== "") {
-                    $org->appendChild($orgNameAcronym);
-                }
-                $listOrg->appendChild($org);
-
-            }
-        }
-
-        return $listOrg;
-    }
-
-    /**
-     * @return array
-     */
-    private function getComments()
-    {
-        $comments = array();
-        foreach ($this->getPaper()->getAllAbstracts() as $locale => $abstract) {
-            if (is_array($abstract)) {
-                $locale = array_key_first($abstract);
-                $abstractText = array_shift($abstract);
-                $abstractText = $this->cleanComment($abstractText);
-                    if ($this->isComment($abstractText)) {
-                        $comments[][$locale] = $abstractText;
-                    }
-
-            } else {
-                $abstract = $this->cleanComment($abstract);
-                // sort comments from abstracts
-                if ($this->isComment($abstract)) {
-                    $comments[$locale] = $abstract;
-                }
-            }
-        }
-        return $comments;
-    }
-
-    private function isComment(string $comment) {
-        if (stripos($comment, 'comment:') === 0) {
-            return true;
-        }
-        return false;
-    }
-
-
-    private function cleanComment(string $comment) {
-        return trim(preg_replace("/\r|\n/", " ", $comment));
-    }
-
 
     /**
      * Get an array of abstracts
@@ -711,40 +676,6 @@ class Episciences_Paper_Tei
         return $abstracts;
     }
 
-
-
-    /**
-     * @param Episciences_Review $review
-     */
-    private function setReview(Episciences_Review $review)
-    {
-        $this->_review = $review;
-    }
-
-    /**
-     * @return null|Episciences_Review
-     */
-    private function getReview()
-    {
-        return $this->_review;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getDefaultLocale()
-    {
-        return $this->_defaultLocale;
-    }
-
-    /**
-     * @param mixed $defaultLocale
-     */
-    public function setDefaultLocale($defaultLocale)
-    {
-        $this->_defaultLocale = $defaultLocale;
-    }
-
     /**
      * @param string $abstract
      * @return string
@@ -753,4 +684,66 @@ class Episciences_Paper_Tei
     {
         return trim(preg_replace("/\r|\n/", " ", $abstract));
     }
+
+    /**
+     * @param DOMDocument $xml
+     * @return DOMElement
+     * @throws DOMException
+     */
+    private function generateXmlBack(DOMDocument $xml)
+    {
+
+        $listOrg = $xml->createElement('listOrg');
+        $listAffiliations = $this->getPaper()->getAuthorsWithAffiNumeric();
+        if (!empty($listAffiliations["affiliationNumeric"])) {
+            foreach ($listAffiliations["affiliationNumeric"] as $affiIndex => $affi) {
+                $org = $xml->createElement('org');
+                $org->setAttribute('xml:id', "struct-" . array_search($affiIndex, array_keys($listAffiliations["affiliationNumeric"])));
+
+                if (array_key_exists('type', $affi) && !is_null($affi['type'])) {
+                    $idno = $affi['type'] === "ROR" ? $xml->createElement('idno', $affi['url']) : $xml->createElement('idno');
+                    $idno->setAttribute('type', $affi['type']);
+                    $org->appendChild($idno);
+                }
+                $orgNameAcronym = "";
+                $orgName = $xml->createElement('orgName', $affi['name']);
+                if (array_key_exists('acronym', $affi)) {
+                    $orgNameAcronym = $xml->createElement('orgName');
+                    $orgNameAcronym->setAttribute('acronym', $affi['acronym']);
+                }
+                $org->appendChild($orgName);
+                if ($orgNameAcronym !== "") {
+                    $org->appendChild($orgNameAcronym);
+                }
+                $listOrg->appendChild($org);
+
+            }
+        }
+
+        return $listOrg;
+    }
+
+    /**
+     * @param array $enrichmentAuthors
+     * @param int|string $order
+     * @param DOMDocument $xml
+     * @param bool|DOMElement $aut
+     * @param bool|DOMElement $ts
+     * @return array
+     * @throws DOMException
+     */
+    private function getAuthorAffiliation(array $enrichmentAuthors, int|string $order, DOMDocument $xml, bool|DOMElement $aut, bool|DOMElement $ts): array
+    {
+        if (isset($enrichmentAuthors['authors'][$order]['idAffi'])) {
+            foreach ($enrichmentAuthors['authors'][$order]['idAffi'] as $index => $affiNum) {
+                $affiAuthorList = $xml->createElement('affiliation');
+                $affiAuthorList->setAttribute("ref", "#struct-" . array_search($index, array_keys($enrichmentAuthors['affiliationNumeric']), true));
+                $aut->appendChild($affiAuthorList);
+            }
+        }
+        $ts->appendChild($aut);
+        return $enrichmentAuthors;
+    }
+
+
 }

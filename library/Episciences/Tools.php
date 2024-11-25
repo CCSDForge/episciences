@@ -9,7 +9,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use League\HTMLToMarkdown\HtmlConverter;
-use WhiteCube\Lingua\Service as Lingua;
 
 class Episciences_Tools
 {
@@ -284,7 +283,7 @@ class Episciences_Tools
     }
 
 
-    public static function getLocale(): ?string
+    public static function getLocale() :?string
     {
         try {
             return Zend_Registry::get("Zend_Translate")->getLocale();
@@ -586,13 +585,17 @@ class Episciences_Tools
      */
     public static function getMimeType($filename): string
     {
+        if (!is_readable($filename)) {
+            trigger_error(sprintf("Unable to read file: %s", $filename), E_USER_WARNING);
+            return '';
+        }
         $finfo = new finfo(FILEINFO_MIME);
         $mime = $finfo->file($filename);
-        if (strpos($mime, 'zip') !== false) {
+        if (str_contains($mime, 'zip')) {
             return static::getMimeFileZip($filename);
         }
 
-        if (strpos($mime, 'htm') !== false) {
+        if (str_contains($mime, 'htm')) {
             $mime = 'application/octet-stream';
         }
         return $mime;
@@ -605,11 +608,11 @@ class Episciences_Tools
 
         if (in_array($ext, ['odt', 'ott', 'odp', 'otp', 'ods', 'ots', 'sxw'])) {
             $mime = "application/opendocument";
-        } else if (in_array($ext, ['pptx', 'ppsx'])) {
+        } elseif (in_array($ext, ['pptx', 'ppsx'])) {
             $mime = "application/vnd.ms-powerpoint";
-        } else if (in_array($ext, ['docx', 'dotx'])) {
+        } elseif (in_array($ext, ['docx', 'dotx'])) {
             $mime = "application/msword";
-        } else if ($ext === 'xlsx') {
+        } elseif ($ext === 'xlsx') {
             $mime = "application/vnd.ms-excel";
         } else {
             $mime = "application/zip";
@@ -952,7 +955,7 @@ class Episciences_Tools
      * @param bool $replace
      */
 
-    public static function header(string $str, int $responseCode = 0, bool $replace = true): void
+    public static function header(string $str,int $responseCode = 0, bool $replace = true): void
     {
         header($str, $replace, $responseCode);
     }
@@ -1095,10 +1098,10 @@ class Episciences_Tools
      * @return bool
      */
     public static function cpFiles(
-        array  $filesList,
+        array $filesList,
         string $source,
         string $dest,
-        bool   $storeDestinationPathInSession = false
+        bool $storeDestinationPathInSession = false
     ): bool
     {
 
@@ -1252,7 +1255,7 @@ class Episciences_Tools
             trigger_error('Expression "%s" was not translated', $fileExp . ': ' . $e->getMessage());
         }
 
-        $paperId = $paper->getPaperid();
+        $paperId = (string)$paper->getPaperid();
 
         $identifier = $paper->getIdentifier();
         // Extract file(s) name
@@ -1320,8 +1323,12 @@ class Episciences_Tools
         return $val;
     }
 
-    public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false)
+    public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false, string $stringToRemove = '')
     {
+
+        if ($stringToRemove!== '') {
+            $string = str_replace($stringToRemove , '', $string);
+        }
 
         if (self::isInUppercase($string, $separator)) {
             $string = strtolower($string);
@@ -1332,6 +1339,7 @@ class Episciences_Tools
         if (!$capitalizeFirstCharacter) {
             $str = lcfirst($str);
         }
+
 
         return $str;
     }
@@ -1588,16 +1596,10 @@ class Episciences_Tools
 
     }
 
-    public static function translateToIso6392b(string $string): string
-    {
-        return Lingua::create($string)->toISO_639_2b();
-    }
-
-    public static function translateToICU(string $string): string
-    {
-        if ($string === 'en' || $string === 'eng') {
+    public static function translateToICU(string $string): string {
+        if ($string === 'en'|| $string ==='eng') {
             return 'en_GB';
-        } elseif ($string === 'fr' || $string === 'fra') {
+        } elseif ($string ==='fr' || $string === 'fra') {
             return 'fr_FR';
         } elseif ($string === 'de') {
             return 'de_DE';
@@ -1673,9 +1675,8 @@ class Episciences_Tools
     public static function getMastodonUrl(string $string): string
     {
         $explode = self::getMastodonSeparatedInfo($string);
-        return "https://" . $explode[2] . "/@" . $explode[1];
+        return "https://".$explode[2]."/@".$explode[1];
     }
-
     /**
      * @param string $string
      * @return array
@@ -1753,7 +1754,7 @@ class Episciences_Tools
      * @param int $permissions
      * @return string
      */
-    public static function recursiveMkdir(string $path, int $permissions = self::DEFAULT_MKDIR_PERMISSIONS): string
+    public static function recursiveMkdir(string $path, int $permissions = self::DEFAULT_MKDIR_PERMISSIONS) : string
     {
 
         if (!is_dir($path) && !mkdir($path, $permissions, true) && !is_dir($path)) {
@@ -1773,7 +1774,7 @@ class Episciences_Tools
      */
     public static function convertMarkdownToHtml(
         string $markdown,
-        array  $options = [],
+        array $options = [],
         string $converterType = 'commonMark'
     )
     {
@@ -1836,7 +1837,7 @@ class Episciences_Tools
     }
 
 
-    public static function isDoi(string $doi = ''): bool
+    public static function isDoi(string $doi = '') : bool
     {
         return !($doi === '' || !preg_match("/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i", $doi));
     }
@@ -1845,18 +1846,15 @@ class Episciences_Tools
      * @param string $strDoi
      * @return bool
      */
-    public static function isDoiWithUrl(string $strDoi)
-    {
-        $pattern = '~^((https?://)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
+    public static function isDoiWithUrl(string $strDoi){
+        $pattern = '~^((https?://)?(dx.)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
         return (bool)preg_match($pattern, $strDoi);
     }
-
     /**
      * @param string $halId
      * @return bool
      */
-    public static function isHal(string $halId): bool
-    {
+    public static function isHal(string $halId): bool {
         return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?/", $halId);
     }
 
@@ -1867,7 +1865,7 @@ class Episciences_Tools
     public static function getHalIdAndVer(string $halId): array
     {
         $matches = [];
-        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId, $matches);
+        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId,$matches);
         return $matches;
     }
 
@@ -1875,11 +1873,10 @@ class Episciences_Tools
      * @param string $url
      * @return array
      */
-    public static function getHalIdInString(string $url): array
-    {
+    public static function getHalIdInString(string $url): array {
 
         $matches = [];
-        preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~", $url, $matches);
+        preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~" , $url , $matches);
         return $matches;
     }
 
@@ -1887,8 +1884,7 @@ class Episciences_Tools
      * @param string $swhid
      * @return bool
      */
-    public static function isSoftwareHeritageId(string $swhid): bool
-    {
+    public static function isSoftwareHeritageId(string $swhid): bool {
         return (bool)preg_match("/^swh:1:(cnt|dir|rel|rev|snp):[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid);
     }
 
@@ -1896,8 +1892,7 @@ class Episciences_Tools
      * @param string $swhid
      * @return array
      */
-    public static function getSoftwareHeritageDirId(string $swhid): array
-    {
+    public static function getSoftwareHeritageDirId(string $swhid): array {
         $matches = [];
         preg_match("/swh:1:dir:[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid, $matches);
         return $matches;
@@ -1907,8 +1902,7 @@ class Episciences_Tools
      * @param string $handle
      * @return bool
      */
-    public static function isHandle(string $handle): bool
-    {
+    public static function isHandle(string $handle): bool {
         return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
     }
 
@@ -1916,8 +1910,7 @@ class Episciences_Tools
      * @param string $arxiv
      * @return bool
      */
-    public static function isArxiv(string $arxiv): bool
-    {
+    public static function isArxiv(string $arxiv): bool {
         return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
     }
 
@@ -1925,7 +1918,7 @@ class Episciences_Tools
     {
         $matches = [];
         preg_match("/^https?:\/\/arxiv\.org\/abs\/((?:\d{4}.\d{4,5}|[a-z\-]+(?:\.[A-Z]{2})?\/\d{7})(?:v\d+)?)/"
-            , $url, $matches);
+        , $url , $matches);
         return $matches;
     }
 
@@ -1934,19 +1927,16 @@ class Episciences_Tools
      * @param string $doi
      * @return array
      */
-    public static function checkIsDoiFromArxiv(string $doi)
-    {
+    public static function checkIsDoiFromArxiv(string $doi) {
         $matches = [];
-        preg_match("~/arxiv\.~i", $doi, $matches);
+        preg_match("~/arxiv\.~i", $doi , $matches);
         return $matches;
     }
-
     /**
      * @param $value
      * @return false|string
      */
-    public static function checkValueType($value)
-    {
+    public static function checkValueType($value) {
         $isHal = self::isHal($value);
         if ($isHal) {
             return 'hal';
@@ -1973,4 +1963,34 @@ class Episciences_Tools
         }
         return false;
     }
+
+    public static function getCleanedUuid(string $uuid = null): string
+    {
+        if (!self::isUuid($uuid)){
+            return '';
+        }
+
+        return str_replace('-','', $uuid);
+    }
+
+
+    public static function isUuid(string $uuid = null) : bool{
+
+        if(empty(trim((string)$uuid))){
+            return false;
+        }
+
+        return \Ramsey\Uuid\Uuid::isValid($uuid);
+
+    }
+
+    public static function reduceXmlSize(string $xml): string {
+        $dom = new DOMDocument();
+
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = false;
+        $dom->loadXML($xml);
+        return $dom->saveXML();
+    }
+
 }

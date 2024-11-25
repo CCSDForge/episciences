@@ -20,6 +20,7 @@ class RobotsDefaultController extends Zend_Controller_Action
                 '*/bibtex',
                 '*/dc',
                 '*/datacite',
+                '*/openaire',
                 '*/crossref',
                 '*/doaj',
                 '*/zbjats',
@@ -34,6 +35,11 @@ class RobotsDefaultController extends Zend_Controller_Action
             foreach ($pathsToDisallow as $path) {
                 echo 'Disallow: ' . $path . PHP_EOL;
             }
+
+            // Robots we do not care about:
+            echo 'User-agent: barkrowler' . PHP_EOL;
+            echo 'Disallow: /' . PHP_EOL;
+
             echo "# Sitemap\n";
             echo "Sitemap: " . $this->getRequest()->getScheme() . '://' . $_SERVER['HTTP_HOST'] . "/sitemap\n";
         } else {

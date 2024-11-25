@@ -1,5 +1,5 @@
 <script>
-
+    let js_recipient_options = <?= $this->js_recipient_options?>;
     <?php if ($this->js_reminder) : ?>
     var reminder = <?php echo $this->js_reminder ?>;
     var edit = true;
@@ -10,6 +10,7 @@
     $(document).ready(function () {
         let $reminderType = $('#type');
         let $delayInfo = $('#delay-info');
+        let $recipient = $("#recipient");
 
         // Language tabs
         $('a[data-toggle="tab"]').on('shown', function (e) {
@@ -21,14 +22,23 @@
             $(this).find('img').attr('class', currentClass + '_selected');
         });
 
-
-        $delayInfo.attr('title', buildReminderMessage($reminderType.val()));
+        let description = buildReminderMessage($reminderType.val());
+        $delayInfo.attr('title', description);
+        $('#delay-element').find('.help-block').text(description);
 
         // Type de relance
         $reminderType.on('change', function () {
+            let selectedType = $(this).val();
             clearErrors();
-            setReminderType($(this).val(), null);
-            $delayInfo.attr('title', buildReminderMessage($reminderType.val()));
+            setReminderType(selectedType, null);
+            description = buildReminderMessage($reminderType.val());
+            $delayInfo.attr('title', description);
+            $('#delay-element').find('.help-block').text(description);
+            $recipient.empty(); // remove old options
+            $.each(js_recipient_options[selectedType], function (key, value) {
+                $recipient.append($("<option></option>").attr("value", value).text(translate(key)));
+                setRecipient($recipient.val());
+            });
         });
 
         // Destinataire

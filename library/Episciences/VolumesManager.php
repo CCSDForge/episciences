@@ -3,8 +3,9 @@
 class Episciences_VolumesManager
 {
     public const MAX_STRING_LENGTH = 255;
+    public const MAX_STRING_LENGTH_VOL_NUM = 6;
 
-      public static function find($vid, int $rvid = 0)
+      public static function find($vid, int $rvid = 0): Episciences_Volume|bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -227,7 +228,7 @@ class Episciences_VolumesManager
             //suppression de la file pour le volume
 
             $db->delete(T_DOI_QUEUE_VOLUMES, 'VID = '. $id);
-
+            Episciences_VolumeProceeding::deleteByVid($id);
             return true;
         }
 
@@ -348,7 +349,26 @@ class Episciences_VolumesManager
                 [new Zend_Validate_StringLength(['max' => self::MAX_STRING_LENGTH])]
             ],
         ]);
+        $form->addElement('text', 'num', [
+            'label' => 'Numéro du volume',
+            'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Numéro du volume'),
+            'value' => ($volume !== null) ? $volume->getVol_num() : "",
+            'required' => true,
+            'style' => 'width:300px;position: static;',
+            'validators' => [
+                [new Zend_Validate_StringLength(['max' => self::MAX_STRING_LENGTH_VOL_NUM])],
+            ],
+        ]);
 
+        $form->addElement('text', 'year', [
+            'label' => 'Année du volume',
+            'value' => ($volume !== null) ? $volume->getVol_year() : '',
+            'required' => true,
+            'style' => 'width:300px;position: static;',
+            'validators' => [
+                [new Zend_Validate_Int()],
+            ],
+        ]);
         // Statut du volume
         $form->addElement('select', 'status', [
             'label' => 'Statut',
@@ -390,7 +410,7 @@ class Episciences_VolumesManager
             ['Errors', ['placement' => 'APPEND']]
         ];
         $form->addElement('checkbox', "is_proceeding", [
-            'label' => 'Acte de conférence',
+            'label' => 'Actes de conférences',
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'value' => 0,
             'decorators' => $checkboxDecorators]);
@@ -398,7 +418,7 @@ class Episciences_VolumesManager
             'label' => 'Nom de la conférence',
         ]);
         $form->addElement('text', "conference_theme", [
-            'label' => 'Theme de la conférence',
+            'label' => 'Thème de la conférence',
         ]);
         $form->addElement('text', "conference_acronym", [
             'label' => 'Acronyme de la conférence',

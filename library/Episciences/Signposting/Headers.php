@@ -4,7 +4,6 @@ namespace Episciences\Signposting;
 
 trait Headers
 {
-
     /**
      * @param bool $paperHasDoi
      * @param string $paperUrl
@@ -14,11 +13,7 @@ trait Headers
      */
     public static function getPaperHeaderLinks(bool $paperHasDoi, string $paperUrl, string $paperDoi = '', array $existingHeaderLinks = []): array
     {
-        $newHeaderLinks = [];
-
-        if (!empty($existingHeaderLinks)) {
-            $newHeaderLinks = array_merge($newHeaderLinks, $existingHeaderLinks);
-        }
+        $newHeaderLinks = $existingHeaderLinks;
 
         if ($paperHasDoi) {
             $newHeaderLinks[] = sprintf('<%s%s>; rel="cite-as"', \Episciences_DoiTools::DOI_ORG_PREFIX, $paperDoi);
@@ -26,19 +21,30 @@ trait Headers
 
         $newHeaderLinks[] = '<https://schema.org/ScholarlyArticle>; rel="type"';
 
+        $describedByTemplates = [
+            'pdf' => 'application/pdf',
+            'bibtex' => 'application/x-bibtex',
+            'tei' => 'application/xml',
+            'dc' => 'application/xml',
+            'openaire' => 'application/xml',
+            'crossref' => 'application/xml',
+        ];
 
-        $xmlMimeType = 'application/xml';
+        $formats = [
+            'tei' => 'http://www.tei-c.org/ns/1.0',
+            'dc' => 'http://purl.org/dc/elements/1.1/',
+            'openaire' => 'http://namespace.openaire.eu/schema/oaire/',
+            'crossref' => 'http://www.crossref.org/schema/5.3.1',
+        ];
 
-        $tplDescribedBy = '<%s/%s>; rel="describedby"; type="%s"';
-        $newHeaderLinks[] = sprintf($tplDescribedBy, $paperUrl, 'bibtex', 'application/x-bibtex');
-        $newHeaderLinks[] = sprintf($tplDescribedBy, $paperUrl, 'pdf', 'application/pdf');
-        $tplDescribedByWithFormat = '<%s/%s>; rel="describedby"; type="%s"; profile="%s"';
-        $newHeaderLinks[] = sprintf($tplDescribedByWithFormat, $paperUrl, 'tei', $xmlMimeType, 'http://www.tei-c.org/ns/1.0');
-        $newHeaderLinks[] = sprintf($tplDescribedByWithFormat, $paperUrl, 'dc', $xmlMimeType, 'http://purl.org/dc/elements/1.1/');
-        $newHeaderLinks[] = sprintf($tplDescribedByWithFormat, $paperUrl, 'datacite', $xmlMimeType, 'http://datacite.org/schema/kernel-4');
-        $newHeaderLinks[] = sprintf($tplDescribedByWithFormat, $paperUrl, 'crossref', $xmlMimeType, 'http://www.crossref.org/schema/4.4.2');
+        foreach ($describedByTemplates as $type => $mimeType) {
+            if (isset($formats[$type])) {
+                $newHeaderLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"; formats="%s"', $paperUrl, $type, $mimeType, $formats[$type]);
+            } else {
+                $newHeaderLinks[] = sprintf('<%s/%s>; rel="describedby"; type="%s"', $paperUrl, $type, $mimeType);
+            }
+        }
+
         return $newHeaderLinks;
     }
-
 }
-

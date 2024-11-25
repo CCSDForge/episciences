@@ -1,15 +1,18 @@
 <?php
+
+use Episciences\Paper\Export;
 use Solarium\QueryType\Update\Query\Document;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+
 class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 {
 
+    const OTHERS_STRING_PREFIX = 'Others';
     public static string $coreName = 'episciences';
 
-    public static int $maxDocsInBuffer = 50;
+    public static int $maxDocsInBuffer = 25;
 
     private ArrayAdapter $cache;
-
 
 
     public function __construct(array $options)
@@ -25,7 +28,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     private function initCache(): void
     {
-        $this->setCache(new ArrayAdapter(60, true, 60 * 5, 1000));
+        $this->setCache(new ArrayAdapter(60, true, 60 * 5, 10));
     }
 
     /**
@@ -52,7 +55,31 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         // _t : text (correspondance approximative : insensible à la casse, aux accents)
         // _s : string (correspondance exacte)
 
-        $paperData = $this->getDocidData($docId);
+        $paperData = Episciences_PapersManager::get($docId, false);
+
+        if (!$paperData) {
+            Ccsd_Log::message('Update doc ' . $docId . ' No content found for this article.', true, 'WARN');
+            return false;
+        }
+
+        $tei = Export::getTei($paperData);
+        $openaire = Export::getOpenaire($paperData);
+        $dc = Export::getDc($paperData);
+        $crossref = Export::getCrossref($paperData);
+        $zbjats = Export::getZbjats($paperData);
+        $doaj = Export::getDoaj($paperData);
+        $bibtex = Export::getBibtex($paperData);
+        $csl = Export::getCsl($paperData->getDocid());
+
+        $docToIndex->setField('doc_tei', $tei);
+        $docToIndex->setField('doc_dc', $dc);
+        $docToIndex->setField('doc_openaire', $openaire);
+        $docToIndex->setField('doc_crossref', $crossref);
+        $docToIndex->setField('doc_zbjats', $zbjats);
+        $docToIndex->setField('doc_doaj', $doaj);
+        $docToIndex->setField('doc_bibtex', $bibtex);
+        $docToIndex->setField('doc_csl', $csl);
+        $docToIndex->setField('doc_type_fs', $paperData->getTypeWithKey());
 
         if ($paperData === null) {
             Ccsd_Log::message('Update doc ' . $docId . ' : cet article n\'existe pas/plus.', true, 'WARN');
@@ -127,23 +154,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return $docToIndex;
     }
 
-    /**
-     * @throws Zend_Db_Statement_Exception
-     */
-    protected function getDocidData($docId)
-    {
-
-        $papersManager = new Episciences_PapersManager();
-        $paper = $papersManager::get($docId);
-
-        if (!$paper) {
-            return null;
-        }
-
-        return $paper;
-
-    }
-
     private function getJournalMetadata(int $rvid): Episciences_Review
     {
         $cache = $this->getCache();
@@ -170,8 +180,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     {
         $this->cache = $cache;
     }
-
-    // Renvoie les données d'une revue ainsi que ses fichiers de traduction
 
     /**
      * @param $paperData
@@ -200,16 +208,32 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         }
     }
 
+    // Renvoie les données d'une revue ainsi que ses fichiers de traduction
+
     /**
-     * @param string $authors
+     * @param string $author
      * @param Document $ndx
      */
-    protected function indexOneAuthor(string $authors, Document $ndx): void
+    protected function indexOneAuthor(string $author, Document $ndx): void
     {
-        $authorsCleaned = self::cleanAuthorName($authors);
-        $ndx->addField('author_fullname_fs', $authorsCleaned);
+        $authorCleaned = self::cleanAuthorName($author);
+        $ndx->addField('author_fullname_fs', $authorCleaned);
 
-        $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($authors);
+        $authorFirstLetters = mb_strtoupper(mb_substr($authorCleaned, 0, 1));
+        $firstLetterRange = range('A', 'Z');
+        $authorFirstLetters = in_array($authorFirstLetters, $firstLetterRange)
+            ? $authorFirstLetters
+            : self::OTHERS_STRING_PREFIX;
+
+        $ndx->addField('authorFirstLetters_s', $authorFirstLetters);
+
+        $authorLastNameFirstNamePrefixed_fs = $authorFirstLetters == self::OTHERS_STRING_PREFIX
+            ? self::OTHERS_STRING_PREFIX . self::SOLR_FACET_SEPARATOR . $authorCleaned
+            : $authorCleaned;
+
+        $ndx->addField('authorLastNameFirstNamePrefixed_fs', $authorLastNameFirstNamePrefixed_fs);
+
+        $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
         $authorsFormattedCleaned = self::cleanAuthorName($authorsFormatted);
         $ndx->addField('author_fullname_s', $authorsFormattedCleaned);
     }
@@ -267,7 +291,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return trim($outputString);
     }
 
-
     private function indexTitles($titles, $docToIndex)
     {
 
@@ -281,7 +304,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         }
         return $this->addArrayOfMetaToDoc($titlesToIndex, null, $docToIndex);
     }
-
 
     private function indexAbstracts($abstracts, Document $docToIndex): Document
     {
@@ -318,6 +340,8 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
                 foreach ($volumeTranslationsTitles as $lang => $translations) {
                     $docToIndex->addField($lang . '_volume_title_t', $translations);
+                    $docToIndex->addField('volume_title_fs', $vid . parent::SOLR_FACET_SEPARATOR . $lang . '_' . $translations);
+
                 }
             }
         } else {
@@ -412,9 +436,28 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
             foreach ($sectionTranslations as $lang => $translations) {
                 $docToIndex->addField($lang . '_section_title_t', $translations);
+                $docToIndex->addField('section_title_fs', $sectionId . parent::SOLR_FACET_SEPARATOR . $lang . '_' . $translations);
+
             }
         }
 
+
+    }
+
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function getDocidData($docId)
+    {
+
+        $papersManager = new Episciences_PapersManager();
+        $paper = $papersManager::get($docId);
+
+        if (!$paper) {
+            return null;
+        }
+
+        return $paper;
 
     }
 

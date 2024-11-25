@@ -2,6 +2,9 @@
 
 class ReviewController extends Zend_Controller_Action
 {
+    public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
+    public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
+
     public function indexAction()
     {
         $this->renderScript('index/submenu.phtml');
@@ -21,7 +24,6 @@ class ReviewController extends Zend_Controller_Action
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
         $reviewDefaults = $review->getSettings();
-        $reviewDefaultsDoi = $review->getDoiSettings();
 
         $defaults = ($request->isPost() && array_key_exists('submit', $request->getPost())) ? $request->getPost() : $reviewDefaults;
 
@@ -38,10 +40,10 @@ class ReviewController extends Zend_Controller_Action
                     'invitation_deadline_unit' => $request->getPost('invitation_deadline_unit')]);
 
 
-                if ($reviewDefaultsDoi instanceof Episciences_Review_DoiSettings) {
-                    // DOI Settings are managed in an other controller with different ACL, do not forget to merge them with new settings
-                    $reviewSettingsToSave = array_merge($reviewSettingsToSave, $reviewDefaultsDoi->__toArray());
-                }
+                // DOI Settings are managed in another controller with different ACL, do not forget to merge them with new settings
+                $reviewDefaultsDoi = $review->getDoiSettings();
+                $reviewSettingsToSave = array_merge($reviewSettingsToSave, $reviewDefaultsDoi->__toArray());
+
 
                 $review->setOptions($reviewSettingsToSave);
                 if ($review->save()) {
@@ -50,6 +52,10 @@ class ReviewController extends Zend_Controller_Action
                     $url = $this->_helper->url($this->getRequest()->getActionName(), $this->getRequest()->getControllerName());
                     $this->_helper->redirector->gotoUrl($url);
                 } else {
+                    if ($reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER] === '' && $reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){
+                        $message = '<strong>' . $this->view->translate("Le lieu de publication est renseigné, veuillez saisir l'éditeur également") . '</strong>';
+                        $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+                    }
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }

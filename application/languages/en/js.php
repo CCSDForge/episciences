@@ -12,6 +12,18 @@ return [
     "Annuler" => "Cancel",
     'Confirmer' => 'Confirm',
     "Voulez-vous supprimer ce fichier ?" => "Do you want to delete this file?",
+    'Merci de confirmer cette suppression' => 'Please confirm this deletion',
+    'Type de relation :' => 'Type of relation:',
+    'Jeu de données' => 'Dataset',
+    'Publication' => 'Publication',
+    'Logiciel' => 'Software',
+    'Type de document' => 'Document type',
+    'Type de relation' => 'Relation type',
+    'Le type de document est obligatoire'=>'The type of document is required',
+    'Le type de relation est obligatoire'=>'The type of relation is required',
+    'Le document à lier est obligatoire'=>'The document is required',
+
+    'Document' => 'Document',
     "Partager" => "Share",
     "Filtrer" => "Filter",
     "Pour répondre à cette demande" => "To answer this request",
@@ -66,7 +78,6 @@ return [
     "Rappel avant date limite de modification" => "Reminder before revision deadline",
     "Relance après date limite de modification" => "Reminder after revision deadline",
     "Pas assez de relecteurs" => "Not enough reviewers",
-    "Article bloqué à l'état accepté" => "Article blocked in accepted state",
     'Saisir un nombre de jours' => 'Enter a number of days',
     'un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder for an unanswered review invitation can be send x days after the invitation (defined in Journal Management/Review/Settings)',
     'un rappel automatique de la date limite pour une relecture peut être envoyé x jours avant cette date (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder before reviewing deadline can bend x days before the review deadline (defined in Journal Management/Review/Settings)',
@@ -204,6 +215,34 @@ return [
     "Je souhaite que mon article soit supervisé par : " => "I'd like my article to be handled by: ",
 
     // revision request
-    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd."
+    "La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj." => "Revision deadline is invalid: Please select a revision deadline date with the following format: YYYY-mm-dd.",
 
+    //linked data
+
+    "Veuillez sélectionner un type de relation" => "Please choose a relationship for the data",
+    "Veuillez saisir tous les champs du formulaire" => "Please fill in all the fields on the form, all fields are required",
+    "Exemple : "=>"Example: ",
+    // Roles
+    'guest' => 'Guest',
+    'member' => 'Member',
+    'editorial_board' => 'Editorial board',
+    'technical_board' => 'Technical board',
+    'scientific_advisory_board' => 'Scientific advisory board',
+    'former_member' => 'Former member',
+    'coauthor' => 'Coauthor',
+    'webmaster' => 'Webmaster',
+    'secretary' => 'Editorial secretary',
+    'reviewer' => 'Reviewer',
+    'editor' => 'Editor',
+    'administrator' => 'Administrator',
+    'chief_editor' => 'Editor in Chief',
+    'guest_editor' => 'Guest editor',
+    'guest_editors' => 'Guest editors',
+    'epiadmin' => 'Root',
+    'copyeditor' => 'Copy editor',
+    // reminders
+    "Article bloqué à l'état accepté" => "Article blocked in accepted state",
+    "Article bloqué à l'état initial (soumis)" => "Article blocked in initial state (submitted)",
+    "Article bloqué à l'état relu" => "Article blocked in reviewed state)",
+    "Si une soumission est restée dans cet état pendant plus de 30 jours, le rappel sera envoyé après un délai de (30 + x jours), où x est le nombre de jours saisi dans le champ « Délai »." => "If an submission has remained in this state for more than 30 days, the reminder will be sent after a period of (30 + x days), where x is the number of days entered in the 'Delay' field.",
 ];

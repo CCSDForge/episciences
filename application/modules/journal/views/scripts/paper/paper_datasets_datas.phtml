@@ -1,8 +1,8 @@
 <?php
 
+use Seboettg\CiteProc\CiteProc;
 use Seboettg\CiteProc\Exception\CiteProcException;
 use Seboettg\CiteProc\StyleSheet;
-use Seboettg\CiteProc\CiteProc;
 
 $datasets = $this->datasets;
 $paper = $this->paper;
@@ -14,9 +14,11 @@ $keepOnlySourceUsed = [];
         <h2 class="panel-title"><?= $this->translate('Datasets') ?></h2>
     </div>
     <div class="panel-body in">
-        <?php foreach ($datasets as $nameRelationship => $datasetsArrayByRelationship) : ?>
+        <?php $sourceHtmlIdSuffix = 1; ?>
+        <?php $isAllowedToManageRelations = Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner();
+        foreach ($datasets as $nameRelationship => $datasetsArrayByRelationship) : ?>
             <?php if ($nameRelationship !== null) {
-                echo "<span class='label label-default'>" . $this->escape($this->translate($nameRelationship)) . "</span>";
+                echo "<span class='label label-default'>" . $this->escape($this->translate(lcfirst($nameRelationship))) . "</span>";
             } ?>
             <?php foreach ($datasetsArrayByRelationship as $source => $datasetsArrayBySource) : ?>
                 <?php
@@ -29,11 +31,17 @@ $keepOnlySourceUsed = [];
                     /** @var Episciences_Paper_Dataset $dataset */ ?>
                     <div style="margin-top: 8px;">
                         <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
-                            <?php if ((string)$source === Episciences_Repositories::EPI_USER_ID && (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner())): ?>
-                                <button id="remove-ld" data-ld="<?= $dataset->getId() ?>"
+                            <?php if ($isAllowedToManageRelations): ?>
+                                <button title="<?= $this->translate('Supprimer la relation') ?>" id="remove-ld-<?= $sourceHtmlIdSuffix ?>" data-ld="<?= $dataset->getId() ?>"
                                         class="btn btn-default btn-xs" type="button">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
+                                <?php $sourceHtmlIdSuffix++; ?>
+                                <a title="<?= $this->translate('Modifier le type de relation') ?>" id="edit-ld" href="#manage-linked-data" data-ld="<?= $dataset->getId() ?>"
+                                   data-type="<?= $dataset->getCode() ?>"
+                                   data-relationship="<?= $dataset->getRelationship() ?>"
+                                   data-ldval="<?= $dataset->getValue() ?>"
+                                   class="btn btn-default btn-xs"> <i class="fa-solid fa-pen-to-square"></i> </a>
                             <?php endif; ?>
                             <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) {
                                 $sourceToSup = $listSources[$getSource];
@@ -62,7 +70,7 @@ $keepOnlySourceUsed = [];
                                     };
                                     $linkDOI = static function ($citationItem, $renderedText) use ($sourceToSup) {
                                         if (isset($citationItem->DOI)) {
-                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>'. ' <sup>'. $sourceToSup . '</sup>'; //trick to undisplay prefix put in render
+                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>' . ' <sup>' . $sourceToSup . '</sup>'; //trick to undisplay prefix put in render
                                         }
                                         return $renderedText;
                                     };
@@ -84,8 +92,8 @@ $keepOnlySourceUsed = [];
                             <?php if ($dataset->getMetatext() !== null && Episciences_Tools::isHal($dataset->getValue())): ?>
                                 <div style="display: inline;">
                                     <?php
-                                    $metadataHal = json_decode($dataset->getMetatext(),true);
-                                    if ($metadataHal['citationFull'] === NULL)  {
+                                    $metadataHal = json_decode($dataset->getMetatext(), true);
+                                    if ($metadataHal['citationFull'] === NULL) {
                                         echo $dataset->getValue();
                                     } else {
                                         echo $metadataHal['citationFull']; // escape volontaire ,car hal renvoi html
@@ -107,7 +115,7 @@ $keepOnlySourceUsed = [];
                 <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
             <?php endforeach; ?>
         </ul>
-        <?php if (Episciences_Auth::isAllowedToManageOrcidAuthor($paper->isOwner())): ?>
+        <?php if ($isAllowedToManageRelations): ?>
             <a class="btn btn-default btn-sm" id="anchor-dataset-add" href="#manage-linked-data"><span
                         class="fas fa-database"
                         style="margin-right: 5px"></span><?= $this->translate("Ajouter un jeu de données") ?></a>

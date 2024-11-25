@@ -13,6 +13,8 @@ class Episciences_Volume_Metadata
 
     private ?array $_title;
     private ?array $_content;
+    private ?string $date_creation = null;
+    private string $date_updated;
 
     public function __construct(array $options = null)
     {
@@ -45,6 +47,7 @@ class Episciences_Volume_Metadata
 
         // Executer les setters
         foreach ($execution_list as $key => $value) {
+            $key = Episciences_Tools::convertToCamelCase($key, '_', true);
             $method = 'set' . ucfirst($key);
             if (in_array($method, $methods)) {
                 $this->$method($value);
@@ -55,10 +58,10 @@ class Episciences_Volume_Metadata
     }
 
     /**
-     * @deprecated: titles and content are now loaded from 'T_VOLUME_METADATAS' table
      * @param null $langs
      * @throws Zend_Exception
      * load metadata translations
+     * @deprecated: titles and content are now loaded from 'T_VOLUME_METADATAS' table
      */
     public function loadTranslations($langs = null)
     {
@@ -170,7 +173,6 @@ class Episciences_Volume_Metadata
     }
 
 
-
     public function setTitle(?array $title = null): self
     {
         $this->_title = $title;
@@ -182,7 +184,7 @@ class Episciences_Volume_Metadata
      * @return string|null
      * @throws Zend_Exception
      */
-    public function getContent($lang = null) : ?string
+    public function getContent($lang = null): ?string
     {
         $contents = $this->getContents();
 
@@ -206,7 +208,7 @@ class Episciences_Volume_Metadata
     public function isPDF(): bool
     {
         $type = $this->getFileType();
-        return (is_array($type) && $type[1] === 'pdf');
+        return is_array($type) && isset($type[1]) && $type[1] === 'pdf';
     }
 
     /**
@@ -321,7 +323,8 @@ class Episciences_Volume_Metadata
             $values = [
                 'titles' => json_encode($this->getTitles(), JSON_THROW_ON_ERROR),
                 'CONTENT' => json_encode($this->getContents(), JSON_THROW_ON_ERROR), // descriptions
-                'FILE' => ($this->hasFile()) ? $this->getFile() : null, 'POSITION' => $this->getPosition()
+                'FILE' => ($this->hasFile()) ? $this->getFile() : null, 'POSITION' => $this->getPosition(),
+                'date_creation' => $this->getDateCreation()
             ];
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
@@ -391,7 +394,7 @@ class Episciences_Volume_Metadata
         return false;
     }
 
-    public function getContents() : ?array
+    public function getContents(): ?array
     {
         return $this->_content;
     }
@@ -407,9 +410,31 @@ class Episciences_Volume_Metadata
         return $this;
     }
 
-    public function getTitles() : ?array
+    public function getTitles(): ?array
     {
         return $this->_title;
+    }
+
+    public function getDateCreation(): ?string
+    {
+        return $this->date_creation;
+    }
+
+    public function setDateCreation(string $date_creation = null): self
+    {
+        $this->date_creation = $date_creation;
+        return $this;
+    }
+
+    public function getDateUpdated(): string
+    {
+        return $this->date_updated;
+    }
+
+    public function setDateUpdated(string $date_updated = new Zend_Db_Expr('NOW()')): self
+    {
+        $this->date_updated = $date_updated;
+        return $this;
     }
 
 }

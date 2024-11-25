@@ -1,13 +1,56 @@
-<button id="add-dataset" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-database" style="margin-right: 5px"></span><?= $this->translate('Ajouter un jeu de données') ?></button>
-<button id="add-software" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fa-regular fa-hard-drive" style="margin-right: 5px"></span><?= $this->translate('Ajouter un logiciel') ?></button>
-<button id="add-publication" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fa-regular fa-file-lines" style="margin-right: 5px"></span><?= $this->translate('Ajouter une publication') ?></button>
-<form id="addld" action="/administratelinkeddata/getformld">
-    <div id="container-datasets" style=" margin: 2px; display: flex; gap: 3px; flex-wrap: wrap;"></div>
-    <button id="btn-cancel-dataset" type="button" class="btn btn-default btn-sm hidden" style="margin: 2px;"><?= $this->translate('Annuler') ?></button>
-    <button id="btn-dataset" type="submit" class="btn btn-primary hidden" style="margin: 2px;"><?= $this->translate('Ajouter') ?></button>
-    <span class="hidden" id="error_msg_same_val"><?= $this->translate("Vous essayez d'insérer des données liées déjà existantes") ?></span>
-    <span class="hidden" id="alert_msg_remove"><?= $this->translate("Voulez-vous supprimer la donnée liée ?") ?></span>
-    <input class="hidden" id="paper_docId" value="<?= $this->docId ?>">
-    <input class="hidden" id="paper_id" value="<?= $this->paperId ?>">
-</form>
+<div class="row">
+    <form id="<?= $this->escape($this->formId) ?>" class="form-horizontal" style="margin: 1% 2% 0 2%">
+        <fieldset>
+            <legend><?= $this->translate('Créer une relation') ?></legend>
+            <div id="container-datasets">
+
+                <div class="form-group"><label class="col-sm-2 control-label required" for="select-ld-type">
+                        <?= $this->translate('Type de document') ?></label>
+                    <div class="col-sm-10"><select class="form-control" name="select-ld-type" id="select-ld-type"
+                                                   style="width: auto">
+                            <option value="publication"><?= $this->translate('Publication') ?></option>
+                            <option value="dataset"><?= $this->translate('Jeu de données') ?></option>
+                            <option value="software"><?= $this->translate('Logiciel') ?></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label required" for="select-relationship">
+                        <?= $this->translate('Type de relation') ?>
+                    </label>
+                    <div class="col-sm-10">
+                        <select class="form-control" name="select-relationship" id="select-relationship"
+                                style="width: auto">
+                            <option value=""></option>
+                            <?php foreach ($this->supportedRelationShips as $label => $group): ?>
+                                <optgroup label="<?= $this->translate($label) ?>">
+                                    <?php foreach ($group as $value): ?>
+                                        <option value="<?= $value ?>"><?= $this->translate($value) ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endforeach; ?>
+                        </select>
+
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label id="input-ld-label" class="col-sm-2 control-label required" for="input-ld">Document</label> <input style="width: 75%"
+                                                                                                 class="form-control"
+                                                                                                 id="input-ld"
+                                                                                                 type="text" <?php if ($this->idLd): ?> data-id="<?= $this->escape($this->idLd) ?>"  <?php endif; ?>
+                                                                                                 data-typeld="<?= $this->escape($this->typeld); ?>"
+                                                                                                 placeholder="" <?php if ($this->valueLd !== '') : ?> value="<?= $this->escape($this->valueLd) ?>" <?php endif; ?> <?php if ($this->disabledValue === true) : ?> disabled="disabled" <?php endif; ?>>
+                </div>
+            </div>
+            <button id="btn-cancel-dataset" type="button" class="btn btn-default btn-sm"
+                    style="margin: 2px;"><?= $this->translate('Annuler') ?></button>
+            <button id="btn-dataset" type="submit" class="btn btn-primary"
+                    style="margin: 2px;"><?= $this->translate('Enregistrer') ?></button>
+            <span class="hidden"
+                  id="error_msg_same_val"><?= $this->translate("Vous essayez d'insérer des données liées déjà existantes") ?></span>
+        </fieldset>
+    </form>
+
+</div>
 <?php $this->jQuery()->addJavascriptFile('/js/linkeddatas/managelinkeddatas.js'); ?>

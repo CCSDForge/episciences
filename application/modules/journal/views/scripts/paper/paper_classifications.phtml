@@ -1,0 +1,55 @@
+<?php
+
+use Episciences\Classification\msc2020;
+
+$classificationsCollections = $this->classifications;
+?>
+
+<div class="panel panel-default collapsable" id="manage-linked-data">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Classifications') ?></h2>
+    </div>
+
+    <div id="container-classifications" class="panel-body in">
+        <?php
+        $sourceNumber = 1;
+        $sources = [];
+        foreach ($classificationsCollections as $classificationType => $classification) {
+            echo '<div style="classification"><strong>' . $this->translate('classification_' . $classificationType) . '</strong><sup>' . $sourceNumber . '</sup></div>';
+            echo '<ul class="list-unstyled">';
+            foreach ($classification as $classificationElement) {
+                $sources[$sourceNumber] = $classificationElement->getSourceName();
+                $isMsc2020classification = $classificationElement::$classificationName == msc2020::$classificationName;
+                if ($isMsc2020classification && $classificationElement->getDescription() !== '') {
+                    echo '<li title="' . $this->escape($classificationElement->getDescription()) . '">';
+                } else {
+                    echo '<li>';
+                }
+                if ($isMsc2020classification) {
+                    echo '<a target="_blank" rel="noopener" href="' . msc2020::ZBMATH_ORG_CLASSIFICATION_BASE_QUERY . urlencode($classificationElement->getCode()). '">';
+                }
+                echo sprintf("%s - %s", $this->escape($classificationElement->getCode()), $this->escape($classificationElement->getLabel()));
+                if ($isMsc2020classification) {
+                    echo '</a>';
+                }
+                echo '</li>';
+            }
+            echo '</ul>';
+            $sourceNumber++;
+        }
+
+        ?>
+    </div>
+    <div class="panel-footer">
+        <?php
+        if (!empty($sources)) {
+            echo '<small>Sources:<ul class="list-inline">';
+            foreach ($sources as $sourceNumber => $labelSource) {
+                echo '<li>[' . $sourceNumber . '] ' . $this->escape($labelSource) . '.</li>';
+            }
+            echo '</ul></small>';
+        }
+        ?>
+    </div>
+</div>
+

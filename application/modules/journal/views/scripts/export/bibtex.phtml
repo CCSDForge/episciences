@@ -1,0 +1,48 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$subjects = $this->keywords;
+$authors = $this->authors;
+
+$title = array_values($paper->getAllTitles())[0];
+
+/** @var $journal Episciences_Review */
+$journal = $this->journal;
+$journalUrl = $journal->getUrl();
+$paperLanguage = $this->paperLanguage;
+
+
+
+$issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));
+$doi = $paper->getDoi();
+$paperPositionInVolume = $paper->getPaperPositionInVolume();
+?>
+@article{<?= $journal->getCode() . ':' . $paper->getPaperid() ?>,
+    title      = {<?= Ccsd_Tools::protectLatex($title) ?>},
+<?php if (!empty($authors)): ?>
+    author     = {<?= Ccsd_Tools::protectLatex(implode(' and ', $authors)) ?>},
+<?php endif; ?>
+    url        = {<?= Ccsd_Tools::protectLatex($journalUrl . '/' . $paper->getPaperid()) ?>},
+<?php if ($doi): ?>
+    doi        = {<?= Ccsd_Tools::protectLatex($doi) ?>},
+<?php endif; ?>
+    journal    = {<?= Ccsd_Tools::protectLatex($journal->getName()) ?>},
+<?php if ($issn): ?>
+    issn       = {<?= $issn ?>},
+<?php endif; ?>
+    volume     = {<?= Ccsd_Tools::protectLatex($this->volume) ?>},
+<?php if (!empty($this->section)): ?>
+    issuetitle = {<?= Ccsd_Tools::protectLatex($this->section) ?>},
+<?php endif; ?>
+<?php if (($paperPositionInVolume !== 0) && is_numeric($paperPositionInVolume)): ?>
+    eid        = <?= $paperPositionInVolume ?>,
+<?php endif; ?>
+    year       = {<?= Episciences_View_Helper_Date::Date($paper->getPublication_date(), null, 'y') ?>},
+    month      = {<?= Episciences_View_Helper_Date::Date($paper->getPublication_date(), null, 'MMM') ?>},
+<?php if (!empty($subjects)): ?>
+    keywords   = {<?= Ccsd_Tools::protectLatex(implode(', ', $subjects)) ?>},
+<?php endif; ?>
+<?php if ($paperLanguage != ''): ?>
+    language   = {<?= Ccsd_Tools::translate('lang_' . $paperLanguage, 'en') ?>},
+<?php endif; ?>
+}

@@ -156,6 +156,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
             $indexer->setOrigin(mb_strtoupper($cron));
             $arrayOfDocId = $indexer->getListOfDocidFromIndexQueue();
             $indexer->processArrayOfDocid($arrayOfDocId);
+            unset($arrayOfDocId);
             return;
         }
         /**
@@ -171,6 +172,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
             $indexer -> setOrigin($UPDATE);
             $arrayOfDocId [] = $docid;
             $indexer->processArrayOfDocid($arrayOfDocId);
+            unset($arrayOfDocId);
             return;
         }
 
@@ -180,6 +182,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
             $arrayOfDocId = $indexer->getListOfDocIdToIndexFromFile($file);
             Zend_Debug::dump($arrayOfDocId);
             $indexer->processArrayOfDocid($arrayOfDocId);
+            unset($arrayOfDocId);
             return;
         }
         //Une requete sql
@@ -188,7 +191,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
             $whereCondition = $sqlwhere;
             $arrayOfDocId = $indexer->getListOfDocIdToIndexFromDb($whereCondition);
             $indexer->processArrayOfDocid($arrayOfDocId);
-            return;
+            unset($arrayOfDocId);
         }
     }
 }

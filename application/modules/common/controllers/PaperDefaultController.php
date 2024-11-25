@@ -314,7 +314,7 @@ class PaperDefaultController extends DefaultController
     }
 
     /**
-     * notifie tous les rédacteurs de l'article, excepté le commentateur lui-même
+     * Notifie tous les rédacteurs de l'article, excepté le commentateur lui-même
      * Aussi, selon la configuration de la revue : le rédacteur en chef, l'administrateur et le secrétaire de rédaction
      * @param Episciences_Paper $paper
      * @param Episciences_Comment $oComment : request comment
@@ -341,12 +341,12 @@ class PaperDefaultController extends DefaultController
 
         $attachmentsFiles = [];
         $docId = $paper->getDocid();
-        $recipients = $this->getAllEditors($paper, false, true);
+        $recipients = $this->getAllEditors($paper);
 
         // ne pas notifier le commentateur
-
         unset($recipients[$commentatorUid]);
 
+        //false : si aucun rédacteur n'est affecté à l'article ou si le commentaire est une suggestion
         $strict = !empty($recipients) &&
             (   !in_array($oComment->getType(), [
                 Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
@@ -362,12 +362,11 @@ class PaperDefaultController extends DefaultController
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
-        $makeCopy = true; // en fonction du type de commentaire, pour eviter de recopier le même fichier:  si une copie existe existe dèjà.
+        $makeCopy = true; // en fonction du type de commentaire, pour éviter de recopier le même fichier : si une copie existe dèjà.
 
         $recipientTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
@@ -534,9 +533,8 @@ class PaperDefaultController extends DefaultController
             $recipients = [$principalRecipientUid => $principalRecipient];
 
         } elseif (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         foreach ($recipients as $recipient) {

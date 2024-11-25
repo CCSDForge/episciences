@@ -563,25 +563,22 @@ class Ccsd_Tools
 
 
     /**
-     * Transformation XSLT
+     * Apply an XSLT transformation to an XML string.
      *
-     * @param $xmlStr string
-     *            XML
-     * @param $xslFile string
-     *            fichier XSL
-     * @param $params array
-     *            parametres à passer à la transformation XSL
-     * @return string nouvelle chaine XML
-     * @throws Exception
+     * @param string $xmlStr The XML string to transform.
+     * @param string $xslFile The path to the XSLT file.
+     * @param array $params An array of parameters to pass to the XSLT processor.
+     * @throws Exception If the XML data is empty or the XSLT file is not found or not readable.
+     * @return string The result of the XSLT transformation.
      */
     public static function xslt($xmlStr, $xslFile, array $params = [])
     {
         $xml = new DOMDocument ();
         if (!$xmlStr) {
-            throw new Exception('pas de données');
+            throw new Exception('XML Data is empty');
         }
         if (!is_file($xslFile)) {
-            throw new Exception('fichier ' . $xslFile . " n'existe pas");
+            throw new Exception(sprintf("File %s is not found or not readable", $xslFile));
         }
 
         set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
@@ -621,7 +618,7 @@ class Ccsd_Tools
 
             return $translator->translate($str, $lang);
         } catch (Zend_Exception $e) {
-            Ccsd_Tools::panicMsg(__FILE__, __LINE__, "Zend registry: Zend_Translate not defined\n" . $e->getTrace());
+            Ccsd_Tools::panicMsg(__FILE__, __LINE__, "Zend registry: Zend_Translate not defined\n" . $e->getMessage());
             return $str;
         }
     }

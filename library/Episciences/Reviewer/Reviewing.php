@@ -222,6 +222,10 @@ class Episciences_Reviewer_Reviewing
      */
     public static function getStatusLabel($status)
     {
+        if ($status === null) {
+            trigger_error(sprintf('Unexpected null reviewing status at %s', __FUNCTION__), E_USER_WARNING);
+            return 'Unexpected status';
+        }
         return array_key_exists($status, self::$_statusLabel) ? self::$_statusLabel[$status] : $status;
     }
 

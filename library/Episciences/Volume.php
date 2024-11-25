@@ -28,6 +28,10 @@ class Episciences_Volume
 
     const VOLUME_IS_PROCEEDING = 'is_proceeding';
 
+    const VOLUME_YEAR = 'year';
+
+    const VOLUME_NUM = 'num';
+
     protected $_db = null;
     private $_vid;
     private $_rvid;
@@ -41,11 +45,12 @@ class Episciences_Volume
     private $_copyEditors = [];
     private $_bib_reference = null;
 
+    private ?string $_vol_type = null;
+    private ?int $_vol_year = null;
+    private ?string $_vol_num = null;
     private int $nbOfPapersInVolume = 0;
     private ?array $titles;
     private ?array $descriptions;
-
-
 
     /**
      * Episciences_Volume constructor.
@@ -323,7 +328,7 @@ class Episciences_Volume
     /**
      *
      */
-    public function loadReviewers()
+    public function loadReviewers(): void
     {
         $sql = $this->_db->select()
             ->from(T_REVIEWER_POOL, ['UID'])
@@ -358,7 +363,7 @@ class Episciences_Volume
      * @param array $params
      * @return array|bool
      */
-    public function assign($ids, $params = [])
+    public function assign($ids, array $params = [])
     {
         $params = [
             'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
@@ -377,7 +382,7 @@ class Episciences_Volume
      * @param array $params
      * @return array|bool
      */
-    public function unassign($ids, $params = [])
+    public function unassign($ids, array $params = [])
     {
         $params = [
             'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
@@ -389,7 +394,8 @@ class Episciences_Volume
         return Episciences_UsersManager::unassign($ids, $params);
     }
 
-    public function getSolrCountOfVolumePapers() {
+    public function getSolrCountOfVolumePapers(): int
+    {
 
         $numFound = 0;
         $query = 'q=*%3A*';
@@ -403,17 +409,18 @@ class Episciences_Volume
 
         if ($result && array_key_exists('response', $result)) {
             $response = $result['response'];
-            $numFound = (int) $response['numFound'];
+            $numFound = (int)$response['numFound'];
         }
 
         $this->setNbOfPapersInVolume($numFound);
         return $numFound;
 
     }
+
     /**
      * @throws Exception
      */
-    public function loadIndexedPapers()
+    public function loadIndexedPapers(): void
     {
         $query = 'q=*%3A*';
         $query .= '&sort=publication_date_tdate+asc&wt=phps&omitHeader=true';
@@ -548,7 +555,9 @@ class Episciences_Volume
                 'title' => $data['titles'],
                 'content' => $data['CONTENT'],
                 'VID' => $data['VID'],
-                'FILE' => $data['FILE']
+                'FILE' => $data['FILE'],
+                'date_creation' => $data['date_creation'],
+                'date_updated' => $data['date_updated']
             ];
 
             Episciences_VolumesAndSectionsManager::dataProcess($values, 'decode', ['title', 'content']);
@@ -609,7 +618,7 @@ class Episciences_Volume
     public function toPublicArray(): array
     {
         $res['vid'] = $this->getVid();
-        $res['name'] = $this->getName('en');
+        $res['name'] = $this->getName();
         return $res;
     }
 
@@ -653,11 +662,14 @@ class Episciences_Volume
     /**
      * @param array $data form data volume
      * @param int|null $vid
-     * @param array|null $post form data volume metadata
+     * @param array $post form data volume metadata
      * @return bool
      */
     public function save(array $data, int $vid = null, array $post = []): bool
     {
+        $post = array_merge($post, $data);
+        $post['description'] = $post['description'] ?? null;
+        $post['bib_reference'] = $post['bib_reference'] ?? null;
 
         // Enregistrement de la position des articles
         if (
@@ -667,18 +679,30 @@ class Episciences_Volume
         }
 
         $settings = [
-            self::SETTING_STATUS => $data['status'],
-            self::SETTING_CURRENT_ISSUE => $data['current_issue'],
-            self::SETTING_SPECIAL_ISSUE => $data['special_issue'],
+            self::SETTING_STATUS => $data['status'] ?? 0,
+            self::SETTING_CURRENT_ISSUE => $data['current_issue'] ?? 0,
+            self::SETTING_SPECIAL_ISSUE => $data['special_issue'] ?? 0,
             self::SETTING_ACCESS_CODE => $this->getSetting('access_code'),
-            self::VOLUME_IS_PROCEEDING => $data['is_proceeding'],
-            self::VOLUME_CONFERENCE_NAME => $data['conference_name'],
-            self::VOLUME_CONFERENCE_THEME => $data['conference_theme'],
-            self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'],
-            self::VOLUME_CONFERENCE_NUMBER => $data['conference_number'],
-            self::VOLUME_CONFERENCE_LOCATION => $data['conference_location'],
-            self::VOLUME_CONFERENCE_START_DATE => $data['conference_start'],
-            self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'],
+            self::VOLUME_IS_PROCEEDING => $data['is_proceeding'] ?? 0,
+            self::VOLUME_CONFERENCE_NAME => $data['conference_name'] ?? '',
+            self::VOLUME_CONFERENCE_THEME => $data['conference_theme'] ?? '',
+            self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'] ?? '',
+            self::VOLUME_CONFERENCE_NUMBER => $data['conference_number'] ?? '',
+            self::VOLUME_CONFERENCE_LOCATION => $data['conference_location'] ?? '',
+            self::VOLUME_CONFERENCE_START_DATE => $data['conference_start'] ?? '',
+            self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'] ?? '',
+        ];
+
+        $settingsProceeding = [
+            self::VOLUME_IS_PROCEEDING => $data['is_proceeding'] ?? 0,
+            self::VOLUME_CONFERENCE_NAME => $data['conference_name'] ?? '',
+            self::VOLUME_CONFERENCE_THEME => $data['conference_theme'] ?? '',
+            self::VOLUME_CONFERENCE_ACRONYM => $data['conference_acronym'] ?? '',
+            self::VOLUME_CONFERENCE_NUMBER => $data['conference_number'] ?? '',
+            self::VOLUME_CONFERENCE_LOCATION => $data['conference_location'] ?? '',
+            self::VOLUME_CONFERENCE_START_DATE => $data['conference_start'] ?? '',
+            self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'] ?? '',
+            self::VOLUME_CONFERENCE_DOI => ''
         ];
 
         if ((int)$settings[self::SETTING_SPECIAL_ISSUE] === 1 && !$settings['access_code']) {
@@ -694,24 +718,35 @@ class Episciences_Volume
         }
 
         if (
-            $post['conference_proceedings_doi'] !== '' &&
+            isset($post['conference_proceedings_doi']) && $post['conference_proceedings_doi'] !== '' &&
             (
                 $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED ||
                 $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED
             ) &&
 
-            $doiPrefix
-        ) {
+            $doiPrefix) {
             $doiPrefixSetting = $doiPrefix;
             $doiPrefixSetting .= '/';
             $doiPrefixSetting .= RVCODE;
             $doiPrefixSetting .= '.proceedings.';
             $doiPrefixSetting .= $post['conference_proceedings_doi'];
             $settings[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
+            $settingsProceeding[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
         }
 
-
+        $this->setVol_year($data['year'] ?? null);
+        $this->setVol_num($data['num'] ?? null);
         $this->setBib_reference($post['bib_reference']);
+
+        if ($data['special_issue'] === "1" && $data['is_proceeding'] === "1") {
+            $this->setVol_type('special_issue,proceedings');
+        } elseif ($data['special_issue'] === "1") {
+            $this->setVol_type('special_issue');
+        } elseif (isset($data['is_proceeding']) && $data['is_proceeding'] === "1") {
+            $this->setVol_type('proceedings');
+        } else {
+            $this->setVol_type(null);
+        }
         $this->setTitles($post['title']);
         $this->setDescriptions($post['description']);
 
@@ -731,6 +766,11 @@ class Episciences_Volume
 
             // Enregistrement des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid);
+            if (isset($data['is_proceeding']) && $data['is_proceeding'] === '1') {
+                $volumeProceeding = new Episciences_VolumeProceeding();
+                $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid);
+            }
+
 
         } else {
             // Modification d'un volume
@@ -738,6 +778,12 @@ class Episciences_Volume
 
             // Mise à jour des paramètres du volume
             $this->saveVolumeArraySettings($settings, $vid, true);
+
+            if ($data['is_proceeding'] === '1') {
+                $volumeProceeding = new Episciences_VolumeProceeding();
+                $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid, true);
+            }
+
 
         }
 
@@ -792,7 +838,9 @@ class Episciences_Volume
         $values['BIB_REFERENCE'] = $this->getBib_reference();
         $values['titles'] = $this->preProcess($this->getTitles());
         $values['descriptions'] = $this->preProcess($this->getDescriptions());
-
+        $values['vol_type'] = $this->getVol_type();
+        $values['vol_year'] = $this->getVol_year();
+        $values['vol_num'] = $this->getVol_num();
         Episciences_VolumesAndSectionsManager::dataProcess($values);
 
         try {
@@ -902,7 +950,7 @@ class Episciences_Volume
             }
         }
 
-       $this->deleteOldMetadata($newMetadataIds);
+        $this->deleteOldMetadata($newMetadataIds);
 
         return true;
 
@@ -986,7 +1034,7 @@ class Episciences_Volume
     /**
      * @return string
      */
-    public function getDescriptionKey(bool $force = false) : string
+    public function getDescriptionKey(bool $force = false): string
     {
         $descriptions = $this->getDescriptions();
 
@@ -1206,6 +1254,47 @@ class Episciences_Volume
         return $this;
     }
 
+    public function getVol_year()
+    {
+        return $this->_vol_year;
+    }
+
+    public function setVol_year($volYear): \Episciences_Volume
+    {
+        $this->_vol_year = $volYear;
+        return $this;
+    }
+
+    public function getVol_type()
+    {
+        return $this->_vol_type;
+    }
+
+    public function setVol_type(?string $volType): \Episciences_Volume
+    {
+        if (!is_null($volType)) {
+            $this->_vol_type = trim(strip_tags($volType));
+        } else {
+            $this->_vol_type = null;
+        }
+
+        return $this;
+    }
+
+    public function getVol_num()
+    {
+        return $this->_vol_num;
+    }
+
+    public function setVol_num($volNum): \Episciences_Volume
+    {
+        if($volNum){
+            $this->_vol_num = trim(strip_tags($volNum));
+        }
+
+        return $this;
+    }
+
     /**
      * update a volume
      * @return int
@@ -1217,7 +1306,9 @@ class Episciences_Volume
         $data['BIB_REFERENCE'] = $this->getBib_reference();
         $data['titles'] = $this->preProcess($this->getTitles());
         $data['descriptions'] = $this->preProcess($this->getDescriptions());
-
+        $data['vol_type'] = $this->getVol_type();
+        $data['vol_year'] = $this->getVol_year();
+        $data['vol_num'] = $this->getVol_num();
         Episciences_VolumesAndSectionsManager::dataProcess($data);
 
         try {
@@ -1261,6 +1352,7 @@ class Episciences_Volume
     {
         return (int)$this->getSetting(self::SETTING_STATUS);
     }
+
     public function isProceeding(): int
     {
         return (int)$this->getSetting(self::VOLUME_IS_PROCEEDING);
@@ -1284,7 +1376,7 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_DOI => $this->getSetting(self::VOLUME_CONFERENCE_DOI),
         ];
     }
-    
+
     /**
      * @return array|null
      */
@@ -1357,4 +1449,16 @@ class Episciences_Volume
         return $assoc;
 
     }
+
+    public function getEarliestPublicationDateFromVolume()
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, new Zend_Db_Expr('MIN(PUBLICATION_DATE) AS FIRST_PUB_DATE'))
+            ->where('VID = ?', $this->getVid())
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        return $db->fetchOne($select);
+    }
+
+
 }

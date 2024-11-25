@@ -26,7 +26,7 @@ class Episciences_Paper_FilesManager
                 $dUrl = Episciences_Repositories::getApiUrl($file->getSource());
                 $dUrl .= '/access/datafile/:persistentId?persistentId=';
                 $dUrl .= Episciences_Repositories_Dataverse_Hooks::IDENTIFIER_PREFIX;
-                $dUrl .= str_replace('https://doi.org/', '', $file->getSelfLink());
+                $dUrl .= Episciences_DoiTools::cleanDoi($file->getSelfLink());
                 $file->_downloadLike = $dUrl;
 
             } else {

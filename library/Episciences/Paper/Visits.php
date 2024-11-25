@@ -78,7 +78,7 @@ class Episciences_Paper_Visits
             ->where('DOCID = ?', $docId)
             ->where('ROBOT = 0')
             ->where('CONSULT = ?', $consult);
-        return $db->fetchOne($sql);
+        return (int)$db->fetchOne($sql);
     }
 
 }

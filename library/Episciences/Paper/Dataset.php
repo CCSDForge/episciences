@@ -1,48 +1,11 @@
 <?php
 
+use Seboettg\CiteProc\CiteProc;
+use Seboettg\CiteProc\Exception\CiteProcException;
+use Seboettg\CiteProc\StyleSheet;
+
 class Episciences_Paper_Dataset
 {
-
-    /**
-     * @var int
-     */
-    protected $_id;
-    /**
-     * @var int
-     */
-    protected $_docId;
-    /**
-     * @var string
-     */
-    protected $_code;
-
-    /**
-     * @var string
-     */
-    protected $_name;
-
-    /** @var string */
-    protected $_value;
-
-    /** @var string */
-    protected $_link;
-
-    /**
-     * @var int
-     */
-    protected $_sourceId;
-
-    /** @var string|null */
-    protected ?string $_relationship = null;
-
-    /**
-     * @var int|null
-     */
-    protected ?int $_idPaperDatasetsMeta = null;
-
-
-    /** @var DateTime */
-    protected $_time = 'CURRENT_TIMESTAMP';
 
     public const HAL_LINKED_DATA_DOI_CODE = 'researchData_s';
     public const HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE = 'swhidId_s';
@@ -67,16 +30,106 @@ class Episciences_Paper_Dataset
         'proceedings' => 'proceedings',
         'report' => 'report',
         'article-journal' => self::PUBLICATION,
+        'graphic'=> 'graphic',
     ];
-
     public static array $_datasetsLink = [
         self::HAL_LINKED_DATA_DOI_CODE => self::DOI_CODE,
         self::DOI_CODE => self::DOI_CODE,
         self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'SWHID'
     ];
-
+    protected static array $supportedRelationShips = [
+        "Basis" => [
+            "isBasedOn",
+            "isBasisFor",
+            "basedOnData",
+            "isDataBasisFor"
+        ],
+        "Comment" => [
+            "isCommentOn",
+            "hasComment"
+        ],
+        "Continuation" => [
+            "isContinuedBy",
+            "continues"
+        ],
+        "Derivation" => [
+            "isDerivedFrom",
+            "hasDerivation"
+        ],
+        "Documentation" => [
+            "isDocumentedBy",
+            "documents"
+        ],
+        "Funding" => [
+            "isFinancedBy"
+        ],
+        "Part" => [
+            "isPartOf",
+            "hasPart"
+        ],
+        "Peer review" => [
+            "isReviewOf",
+            "hasReview"
+        ],
+        "References" => [
+            "references",
+            "isReferencedBy"
+        ],
+        "Related material" => [
+            "hasRelatedMaterial",
+            "isRelatedMaterial"
+        ],
+        "Reply" => [
+            "isReplyTo",
+            "hasReply"
+        ],
+        "Requirement" => [
+            "requires",
+            "isRequiredBy"
+        ],
+        "Software compilation" => [
+            "isCompiledBy",
+            "compiles"
+        ],
+        "Supplement" => [
+            "isSupplementTo",
+            "isSupplementedBy"
+        ]
+    ];
+    /**
+     * @var int
+     */
+    protected $_id;
+    /**
+     * @var int
+     */
+    protected $_docId;
+    /**
+     * @var string
+     */
+    protected $_code;
+    /**
+     * @var string
+     */
+    protected $_name;
+    /** @var string */
+    protected $_value;
+    /** @var string */
+    protected $_link;
+    /**
+     * @var int
+     */
+    protected $_sourceId;
+    /** @var string|null */
+    protected ?string $_relationship = null;
+    /**
+     * @var int|null
+     */
+    protected ?int $_idPaperDatasetsMeta = null;
+    protected string $metatextCitation = '';
+    /** @var DateTime */
+    protected $_time = 'CURRENT_TIMESTAMP';
     protected $_metatext;
-
 
     /**
      * Episciences_Paper_Dataset constructor.
@@ -105,6 +158,119 @@ class Episciences_Paper_Dataset
         }
     }
 
+    /**
+     * @return array
+     */
+    public static function getSupportedRelationShips(): array
+    {
+        return self::$supportedRelationShips;
+    }
+
+    public function getMetatextCitation($format = 'rawText'): string
+    {
+        if ($this->metatextCitation === '') {
+            $this->buildMetatextCitation();
+        }
+        if ($format === 'rawText') {
+            $this->metatextCitation = strip_tags($this->metatextCitation);
+        } elseif ($format === 'markdown') {
+            $this->metatextCitation = Episciences_Tools::convertHtmlToMarkdown($this->metatextCitation);
+        }
+        return $this->metatextCitation;
+    }
+
+    /**
+     * @param string $metatextCitation
+     */
+    public function setMetatextCitation(string $metatextCitation): void
+    {
+        $this->metatextCitation = $metatextCitation;
+    }
+
+    private function buildMetatextCitation(): void
+    {
+        $metatextCitation = '';
+        // handling URLs for which we know we have an unstructured text to produce a citation
+        if ($this->getMetatext() !== null && (Episciences_Tools::isHal($this->getValue())  || ($this->getName() === 'zbmath'))    ) {
+            $metadataHal = json_decode($this->getMetatext(), true);
+            $metatextCitation = $metadataHal['citationFull'];
+        } elseif ($this->getMetatext() !== null) {
+            $metatextRaw = sprintf("[%s]", $this->getMetatext());
+            try {
+                $style = StyleSheet::loadStyleSheet("apa");
+                $citeProc = new CiteProc($style, "en-US", self::getMetatextCitationAdditionalMarkup());
+                $metatextCitation = $citeProc->render(json_decode($metatextRaw));
+            } catch (CiteProcException $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+
+        $this->setMetatextCitation($metatextCitation);
+    }
+
+    public function getMetatext(): ?string
+    {
+        return $this->_metatext;
+    }
+
+    public function setMetatext($metatext)
+    {
+        return $this->_metatext = $metatext;
+    }
+
+    /**
+     * @return string
+     */
+    public function getValue(): string
+    {
+        return $this->_value;
+    }
+
+    /**
+     * @param string $value
+     * @return Episciences_Paper_Dataset
+     */
+    public function setValue(string $value): self
+    {
+        $this->_value = $value;
+        return $this;
+    }
+
+    private static function getMetatextCitationAdditionalMarkup(): array
+    {
+        //pimp author names
+        $authorFunction = static function ($authorItem, $renderedText) {
+            if (isset($authorItem->ORCID)) {
+                return $renderedText
+                    . " "
+                    . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID)
+                    . ' data-toggle="tooltip" data-placement="bottom" data-original-title="'
+                    . ltrim($authorItem->ORCID, 'http://orcid.org/')
+                    . '" target="_blank"><img src="/icons/orcid.svg" alt="ORCID"/></a>';
+
+            }
+            return $renderedText;
+        };
+
+        $linkDOI = static function ($citationItem, $renderedText) {
+            if (isset($citationItem->DOI)) {
+                return '<a rel="noopener" href="http://doi.org/'
+                    . $citationItem->DOI
+                    . '"target="_blank">'
+                    . $renderedText
+                    . '</a>'; //trick to undisplay prefix put in render
+            }
+            return $renderedText;
+        };
+
+        return [
+            "author" => $authorFunction,
+            "DOI" => $linkDOI,
+            "csl-entry" => static function ($cslItem, $renderedText) {
+                return str_replace(array("https://doi.org/", "http://doi.org/"), array('', 'https://doi.org/'), $renderedText); //trick to undisplay prefix put in render
+            }
+        ];
+    }
 
     /**
      * @return array
@@ -123,16 +289,6 @@ class Episciences_Paper_Dataset
             'idPaperDatasetsMeta' => $this->getIdPaperDatasetsMeta(),
             'time' => $this->getTime()
         ];
-    }
-
-    public function getMetatext(): ?string
-    {
-        return $this->_metatext;
-    }
-
-    public function setMetatext($metatext)
-    {
-        return $this->_metatext = $metatext;
     }
 
     /**
@@ -210,24 +366,6 @@ class Episciences_Paper_Dataset
     /**
      * @return string
      */
-    public function getValue(): string
-    {
-        return $this->_value;
-    }
-
-    /**
-     * @param string $value
-     * @return Episciences_Paper_Dataset
-     */
-    public function setValue(string $value): self
-    {
-        $this->_value = $value;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
     public function getLink(): string
     {
         return $this->_link;
@@ -266,7 +404,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getRelationship(): ?string
     {
@@ -274,7 +412,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
-     * @param null $relationship
+     * @param string|null $relationship
      * @return Episciences_Paper_Dataset
      */
     public function setRelationship(string $relationship = null): self
@@ -334,17 +472,21 @@ class Episciences_Paper_Dataset
      */
     public function getSourceLabel(int $sourcesId): string
     {
-
         $metadataSources = Zend_Registry::get('metadataSources');
-
         if (!$metadataSources || !array_key_exists($sourcesId, $metadataSources)) {
             return 'Undefined';
         }
-
-        /** @var Episciences_Paper_MetaDataSource $metaDataSource */
         $metaDataSource = new Episciences_Paper_MetaDataSource($metadataSources[$sourcesId]);
-
         return $metaDataSource->getName();
+    }
+
+    public static function removeFirstLevel(array $inputArray): array {
+        // Flatten the first level, only keeping the sub-level values
+        return array_merge(...array_values($inputArray));
+    }
+
+    public static function getFlattenedRelationships(): array {
+        return self::removeFirstLevel(self::$supportedRelationShips);
     }
 
 }

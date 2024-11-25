@@ -1,4 +1,6 @@
+DOCKER:= docker
 DOCKER_COMPOSE:= docker compose
+NPX:= npx
 CNTR_NAME_SOLR := solr
 CNTR_NAME_PHP := php-fpm
 CNTR_APP_DIR := /var/www/htdocs
@@ -19,13 +21,19 @@ build: ## Build the docker containers
 
 up: ## Start all the docker containers
 	$(DOCKER_COMPOSE) up -d
+	@echo "====================================================================="
 	@echo "Make sure you have [127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org] in /etc/hosts"
 	@echo "Journal     : http://dev.episciences.org/"
 	@echo "OAI-PMH     : http://oai-dev.episciences.org/"
 	@echo "Data        : http://data-dev.episciences.org/"
 	@echo "PhpMyAdmin  : http://localhost:8001/"
 	@echo "Apache Solr : http://localhost:8983/solr"
-
+	@echo "====================================================================="
+	@echo "SQL Place Custom SQL dump files in ~/tmp/"
+	@echo "SQL: Import '~/tmp/episciences.sql' with 'make load-db-episciences'"
+	@echo "SQL: Import '~/tmp/cas_users.sql'   with 'make load-db-auth'"
+	@echo "Solr: Create Solr Collection with           'make collection'"
+	@echo "Solr: Index content in Solr Collection with 'make index'"
 
 down: ## Stop the docker containers and remove orphans
 	$(DOCKER_COMPOSE) down --remove-orphans
@@ -45,10 +53,10 @@ clean: down ## Clean up unused docker resources
 	docker system prune -f
 
 load-db-episciences: ## Load an SQL dump from ./tmp/episciences.sql
-	$(MYSQL_CONNECT_EPISCIENCES) < ./tmp/episciences.sql
+	$(MYSQL_CONNECT_EPISCIENCES) < ~/tmp/episciences.sql
 
 load-db-auth: ## Load an SQL dump from ./tmp/cas_users.sql
-	$(MYSQL_CONNECT_AUTH) < ./tmp/cas_users.sql
+	$(MYSQL_CONNECT_AUTH) < ~/tmp/cas_users.sql
 
 send-mails:
 	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/send_mails.php
@@ -60,7 +68,7 @@ composer-update: ## Update composer dependencies
 	$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer update --no-interaction --prefer-dist --optimize-autoloader
 
 yarn-encore-production: ## yarn encore production
-	$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
+	$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install; yarn encore production
 
 restart-httpd: ## Restart Apache httpd
 	$(DOCKER_COMPOSE) restart httpd
@@ -68,9 +76,21 @@ restart-httpd: ## Restart Apache httpd
 restart-php: ## Restart PHP-FPM Container
 	$(DOCKER_COMPOSE) restart $(CNTR_NAME_PHP)
 
+
 merge-pdf-volume: ## merge all pdf from a vid into one pdf
 	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/mergePdfVol.php --rvcode=$(rvcode) --ignorecache=$(or $(ignorecache),0) --removecache=$(or $(removecache),0)
 
 
+get-classification-msc: ## Get MSC 2020 Classifications from zbMATH Open
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/getClassificationMsc.php
+
+get-classification-jel: ## Get JEL Classifications from OpenAIRE Research Graph
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/getClassificationJEL.php
+
+
 can-i-use-update: ## To be launched when Browserslist: caniuse-lite is outdated.
-	npx update-browserslist-db@latest
+	$(NPX) update-browserslist-db@latest
+
+enter-container-php: ## Open shell on PHP container
+	$(DOCKER) exec -it $(CNTR_NAME_PHP) sh -c "cd /var/www/htdocs && /bin/bash"
+

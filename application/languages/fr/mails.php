@@ -428,5 +428,11 @@ return [
     "paper_submission_other_recipient_copy_tpl_name" => "Nouvel article - Copie à destination des rédacteurs en chefs, administrateurs et secrétaires de rédaction ",
     "paper_submission_other_recipient_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un nouvel article vient d'être proposé",
 
+    //gitHub #513
+    "reminder_reviewed_article_editors_copy_tpl_name" => "Article bloqué à l'état relu (copie à destination des rédacteurs | rédacteurs en chef)",
+    "reminder_reviewed_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Article relu, decision requise",
+    "reminder_submitted_article_editors_copy_tpl_name" => "Article bloqué à l'état initial [soumis] - (copie à destination des rédacteurs | rédacteurs en chef)",
+    "reminder_submitted_article_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Nouvelle soumission, decision requise",
+
 
 ];
