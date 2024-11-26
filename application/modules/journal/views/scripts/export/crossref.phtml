@@ -284,19 +284,16 @@ $paperLanguage = $this->paperLanguage;
             <program xmlns="http://www.crossref.org/relations.xsd">
                 <?php if ($paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID) : ?>
                     <related_item>
-                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">
-                            arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                     <related_item>
                         <intra_work_relation identifier-type="doi"
-                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
-                            /arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                 <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID) : ?>
                     <related_item>
                         <intra_work_relation identifier-type="doi"
-                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
-                            /zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                 <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) : ?>
                     <related_item>
@@ -327,7 +324,7 @@ $paperLanguage = $this->paperLanguage;
                                 $identifierType = strtolower($linkedData['link']);
                                 if ($identifierType === 'url') {
                                     $identifierType = 'uri';
-                                    $cleanDomainIfExist = str_replace("https://doi.org/", '', $linkedData['value']);
+                                    $cleanDomainIfExist = Episciences_DoiTools::cleanDoi($linkedData['value']);
                                     $cleanDoi = $cleanDomainIfExist;
                                     if (Episciences_Tools::isDoi($cleanDoi) === true) {
                                         $identifierType = 'doi';
@@ -337,7 +334,7 @@ $paperLanguage = $this->paperLanguage;
                                 }
                                 ?>
                                 <inter_work_relation identifier-type="<?= $this->escape($identifierType) ?>"
-                                                     relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo ($identifierType === 'doi') ? $this->escape(str_replace("https://doi.org/", '', $linkedData['value'])) : $this->escape($linkedData['value']) ?></inter_work_relation>
+                                                     relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo ($identifierType === 'doi') ? $this->escape(Episciences_DoiTools::cleanDoi( $linkedData['value'])) : $this->escape($linkedData['value']) ?></inter_work_relation>
                             </related_item>
                         <?php endif; ?>
                     <?php } ?>
@@ -365,7 +362,7 @@ $paperLanguage = $this->paperLanguage;
                     <?php foreach ($bibliographicalRef as $refInfo): ?>
                         <citation key="ref<?= $iRef ?>">
                             <?php if (array_key_exists('doi', $refInfo) && Episciences_tools::isDoiWithUrl($refInfo['doi'])): ?>
-                                <doi><?= str_replace('https://doi.org/', '', $refInfo['doi']) ?></doi>
+                                <doi><?= Episciences_DoiTools::cleanDoi($refInfo['doi']) ?></doi>
                             <?php endif; ?>
                             <unstructured_citation><?= $this->escape($refInfo['unstructured_citation']) ?></unstructured_citation>
                             <?php $iRef++; ?>

@@ -137,7 +137,7 @@ class PaperController extends PaperDefaultController
                 $this->redirect('/' . $id);
             } elseif (!Episciences_Auth::isLogged()) {
                 // redirect to login if user is not logged in
-                $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
+                $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'view', 'id' => $docId ]));
             }
 
             $this->redirectsIfHaveNotEnoughPermissions($paper);
@@ -307,7 +307,7 @@ class PaperController extends PaperDefaultController
         }
 
         // process comment answer
-        if (isset($replyForms) && !empty($replyForms)) {
+        if (!empty($replyForms)) {
 
             /** @var Ccsd_Form $replyForm */
             foreach ($replyForms as $id => $replyForm) {
@@ -896,9 +896,8 @@ class PaperController extends PaperDefaultController
             $recipients = [$requester->getUid() => $requester];
 
         } elseif (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         foreach ($recipients as $recipient) {
@@ -1138,8 +1137,7 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
-        $url = self::ADMINPAPER_URL_STR . $paperId;
-        $this->_helper->redirector->gotoUrl($url);
+        $this->_helper->redirector->gotoUrl($this->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $paperId ]));
     }
 
     /**
@@ -1559,9 +1557,8 @@ class PaperController extends PaperDefaultController
         $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         if (null !== $principalRecipient) {
@@ -2489,7 +2486,7 @@ class PaperController extends PaperDefaultController
                     $message = $this->view->translate("Votre commentaire n'a pas pu être envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector->gotoUrl('/paper/rating?id=' . $paper->getDocid());
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'rating', 'id' => $paper->getDocid()]));
             }
         }
 
@@ -2978,9 +2975,8 @@ class PaperController extends PaperDefaultController
             $CC = $paper->extractCCRecipients($recipients);
 
             if (empty($recipients)) {
-                $arrayKeyFirstCC = array_key_first($CC);
-                $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-                unset($CC[$arrayKeyFirstCC]);
+                $recipients = $CC;
+                $CC = [];
             }
 
             /** @var Episciences_User $recipient */
@@ -3095,8 +3091,8 @@ class PaperController extends PaperDefaultController
             $message = $this->view->translate("Vous n'avez pas les autorisations nécessaires pour supprimer ce fichier.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
         }
-        $url = '/paper/rating?id=' . $docid . '&reviewer_uid=' . $uid;
-        $this->redirect($url);
+
+        $this->redirect($this->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docid, 'reviewer_uid' => $uid]));
     }
 
     /**
@@ -3393,9 +3389,8 @@ class PaperController extends PaperDefaultController
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         /** @var Episciences_User $editor */
@@ -3566,9 +3561,8 @@ class PaperController extends PaperDefaultController
         $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
-            $arrayKeyFirstCC = array_key_first($CC);
-            $recipients = !empty($arrayKeyFirstCC) ? [$arrayKeyFirstCC => $CC[$arrayKeyFirstCC]] : [];
-            unset($CC[$arrayKeyFirstCC]);
+            $recipients = $CC;
+            $CC = [];
         }
 
         /** @var Episciences_User $recipient */

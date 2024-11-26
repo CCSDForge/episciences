@@ -254,7 +254,7 @@ document.addEventListener("click", function (e) {
       });
 
       // Send the POST request using fetch
-      fetch("/administratelinkeddata/removeld/", {
+      fetch(JS_PREFIX_URL + "administratelinkeddata/removeld/", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

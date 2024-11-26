@@ -168,7 +168,7 @@ class Episciences_Rating_Manager
                 if ($criterion->hasAttachment() && file_exists($grid->getPath() . $criterion->getAttachment())) {
                     $filepath = '/' . $grid->getDocid() . '/report/' . $grid->getId() . '/' . $criterion->getAttachment();
 
-                    $file_delete_url = '/paper/deleteattachmentreport/docid/' .
+                    $file_delete_url = PREFIX_URL . 'paper/deleteattachmentreport/docid/' .
                         $grid->getDocid() . '/uid/' . $grid->getUid() .
                         '/cid/' . $criterion->getId() .
                         '/file/' . $criterion->getAttachment();

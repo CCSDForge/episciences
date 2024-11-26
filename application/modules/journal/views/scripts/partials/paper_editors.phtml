@@ -39,7 +39,7 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
         <?php /** @var Episciences_Editor $editor */
         foreach ($editors as $editor) : ?>
             <div class="editor" style="margin-bottom: 5px;">
-                <img src="/user/photo/name/<?= urlencode($this->escape($editor->getScreenName())) ?>/uid/<?= $editor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($editor->getScreenName())) ?>/uid/<?= $editor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                      class="user-photo-small" alt="avatar">
 
                 <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $editor->getUid()])?>" target="_blank">

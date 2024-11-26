@@ -2,7 +2,14 @@
 
 class Episciences_Mail_RemindersManager
 {
-    const AUTHOR = 'author';
+    public const AUTHOR = 'author';
+    public const REPETITION_MAP = [
+        0 => 'Jamais',
+        1 => 'Quotidienne',
+        7 => 'Hebdomadaire',
+        14 => 'Toutes les deux semaines',
+        31 => 'Mensuelle'
+    ];
     /**
      * @return array
      * @throws Zend_Exception
@@ -241,11 +248,18 @@ class Episciences_Mail_RemindersManager
         $langs = Episciences_Tools::getLanguages();
         $locale = Episciences_Tools::getLocale();
 
+        $urlOptions = ['controller' => 'administratemail', 'action' => 'savereminder'];
+
+        if($reminder){
+            $urlOptions['id'] = $reminder->getId();
+        }
+
         $form = new Ccsd_Form(array(
             'id' => 'reminder_form',
-            'action' => ($reminder) ? '/administratemail/savereminder?id=' . $reminder->getId() : '/administratemail/savereminder',
+            'action' => (new Episciences_View_Helper_Url())->url($urlOptions),
             'class' => 'form-horizontal'
         ));
+
         $form->setDecorators(array(
             array('ViewScript', array(
                 'viewScript' => '/administratemail/reminder_form.phtml',
@@ -268,17 +282,12 @@ class Episciences_Mail_RemindersManager
 
 
         // Select: Destinataire *************************************************************
-        $form->addElement(new Ccsd_Form_Element_Select(array(
+        $form->addElement(new Ccsd_Form_Element_Select([
             'name' => 'recipient',
             'label' => 'Destinataire',
-            'multioptions' => [
-                Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,
-                Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,
-                Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER,
-                self::AUTHOR => self::AUTHOR
-            ],
+            'multioptions' => ($reminder) ? Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS[$reminder->getType()] : Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS[Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION],
             'value' => ($reminder) ? $reminder->getRecipient() : Episciences_Acl::ROLE_REVIEWER
-        )));
+        ]));
 
         $translator = Zend_Registry::get('Zend_Translate');
 
@@ -290,20 +299,15 @@ class Episciences_Mail_RemindersManager
             'name' => 'delay',
             'label' => $tooltip . $translator->translate('Délai'),
             'required' => true,
-            'value' => ($reminder) ? $reminder->getDelay() : null
+            'value' => ($reminder) ? $reminder->getDelay() : null,
+            'description' => $tooltipMsg
         ]));
 
         // Select: Répétition ******************************************************
         $form->addElement(new Ccsd_Form_Element_Select([
             'name' => 'repetition',
             'label' => 'Répétition',
-            'multioptions' => [
-                '0' => 'Jamais',
-                '1' => 'Quotidienne',
-                '7' => 'Hebdomadaire',
-                '14' => 'Toutes les deux semaines',
-                '31' => 'Mensuelle'
-            ],
+            'multioptions' => self::REPETITION_MAP,
             'value' => ($reminder) ? $reminder->getRepetition() : 0
         ]));
 

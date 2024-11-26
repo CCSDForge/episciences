@@ -1508,13 +1508,13 @@ class UserDefaultController extends Episciences_Controller_Action
 
 
         // photo of a specific user
-        if ($uid != 0) {
+        if ($uid !== 0) {
             $user = new Ccsd_User_Models_User(['uid' => $uid]);
             $photoPathName = $user->getPhotoPathName($size);
         } else {
             // nobody or logged user
-            $uid = Episciences_Auth::getUid();
-            if ($uid != 0) {
+            $uid = (int)Episciences_Auth::getUid();
+            if ($uid !== 0) {
                 $user = new Ccsd_User_Models_User(['uid' => $uid]);
                 $photoPathName = $user->getPhotoPathName($size);
             }

@@ -638,11 +638,10 @@ class Episciences_Mail extends Zend_Mail
 
         $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
 
-        if (defined('RVCODE')) {
-            $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $docid);
+        if (defined(APPLICATION_URL)) {
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, APPLICATION_URL . '/administratepaper/view/id/' . $docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, APPLICATION_URL. '/' . $docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, APPLICATION_URL . '/paper/rating/id/' . $docid);
         }
 
         return $this;

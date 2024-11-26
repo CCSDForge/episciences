@@ -341,5 +341,6 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('DOI_EMAIL_CONTACT', '');
         define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
+        define('EPISCIENCES_BIBLIOREF', []);
     }
 }
