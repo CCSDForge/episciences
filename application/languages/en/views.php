@@ -2066,6 +2066,10 @@ return array(
     "API Episciences" => 'Episciences API',
     "Réinitialiser mon mot de passe API" => "Reset my API password",
     "Réinitialiser le mot de passe API" => "Change your API password",
+    "Changer le mot de passe API associé à votre compte" => 'Updating the API password for your account',
+    'Changement de mot de passe API' => 'Updating the API password',
+    '8 caractères minimum pour votre nouveau mot de passe'=> '8 characters minimum for your new password',
+
     // co-author
     "Co-auteur" => "Co-author",
     "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
