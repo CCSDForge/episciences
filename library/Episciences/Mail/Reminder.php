@@ -178,7 +178,7 @@ class Episciences_Mail_Reminder
             if (file_exists($filepath)) {
                 $translations['custom'][$code] = 1;
                 $translations['body'][$code] = file_get_contents($filepath);
-                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . '_mail_subject', $code);
+                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT , $code);
             } else {
                 // else use default template
                 $translations['custom'][$code] = 0;
@@ -226,7 +226,7 @@ class Episciences_Mail_Reminder
         $key = 'reminder_' . $this->getId();
 
         // fetch translation file
-        $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, 'mails.php', '#^' . $key . '#');
+        $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME, '#^' . $key . '#');
 
         foreach ($this->getCustom() as $lang => $custom) {
             $path = REVIEW_LANG_PATH . $lang . '/emails/';
@@ -239,7 +239,7 @@ class Episciences_Mail_Reminder
                 file_put_contents($path . $filename, $this->getBody($lang));
 
                 // subject translations
-                $translations[$lang][$key . '_mail_subject'] = $this->getSubject($lang);
+                $translations[$lang][$key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT ] = $this->getSubject($lang);
             } else {
                 if ($edit && file_exists($path . $filename)) {
                     unlink($path . $filename);
@@ -248,7 +248,7 @@ class Episciences_Mail_Reminder
         }
 
         // update translation file
-        Episciences_Tools::writeTranslations($translations, REVIEW_LANG_PATH, 'mails.php');
+        Episciences_Tools::writeTranslations($translations, REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME);
 
         echo true;
     }

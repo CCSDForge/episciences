@@ -231,8 +231,8 @@ class Episciences_Mail_RemindersManager
         }
 
         // Supprimer traductions des sujets
-        $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, 'mails.php', '#^reminder_' . $id . '#');
-        Episciences_Tools::writeTranslations($translations, REVIEW_LANG_PATH, 'mails.php');
+        $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME, '#^reminder_' . $id . '#');
+        Episciences_Tools::writeTranslations($translations, REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME);
 
         return true;
     }
