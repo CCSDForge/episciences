@@ -3729,7 +3729,7 @@ class Episciences_PapersManager
      * @param int $limit
      * @return array
      */
-    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 100): array
+    public static function getAcceptedPapersByRvid(int $rvId, int $limit = 200): array
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();

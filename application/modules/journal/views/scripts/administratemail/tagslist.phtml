@@ -24,7 +24,7 @@ $this->layout()->pageTitle = $title
         <?php $key = $oTemplate->getKey(); ?>
         <p id="<?= $key ?>">
             <strong>
-                <?= $this->translate($key . '_tpl_name') ?> </strong>
+                <?= $this->translate($key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME) ?> </strong>
             <em>(<?= $key ?>)</em>
             <?php if ($oTemplate->isAutomatic()): ?>
                 <span class="badge"><?= $this->translate('Mail automatique') ?> </span><br>

@@ -288,7 +288,7 @@ class Episciences_Mail_Template
         // Ecriture des traductions ********************************
 
         // Récupération du fichier de traduction
-        $translations = Episciences_Tools::getOtherTranslations($this->getTranslationsFolder(), 'mails.php', '#^' . $key . '#');
+        $translations = Episciences_Tools::getOtherTranslations($this->getTranslationsFolder(), Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME, '#^' . $key . '#');
 
         // Traductions du nom du template
         $name = $this->getNameTranslations();
@@ -299,7 +299,7 @@ class Episciences_Mail_Template
         }
 
         foreach ($name as $lang => $translation) {
-            $translations[$lang][$key . '_tpl_name'] = $translation;
+            $translations[$lang][$key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME] = $translation;
         }
 
         // Traductions du sujet du template
@@ -311,11 +311,11 @@ class Episciences_Mail_Template
         }
 
         foreach ($subject as $lang => $translation) {
-            $translations[$lang][$key . '_mail_subject'] = $translation;
+            $translations[$lang][$key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT ] = $translation;
         }
 
         // Mise à jour du fichier de traduction
-        if (Episciences_Tools::writeTranslations($translations, $this->getTranslationsFolder(), 'mails.php') < 1) {
+        if (Episciences_Tools::writeTranslations($translations, $this->getTranslationsFolder(), Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME) < 1) {
             trigger_error('UPDATING_THE_TRANSLATION_FILE_TOTAL_BYTES_WRITTEN_IS_EMPTY');
         }
 
@@ -358,11 +358,13 @@ class Episciences_Mail_Template
         $key = $this->getKey();
 
         // Supprimer en base
-        $db->delete(T_MAIL_TEMPLATES, 'ID = ' . $id);
+        if ($db->delete(T_MAIL_TEMPLATES, 'ID = ' . $id) < 1){
+            return false;
+        }
 
         // Supprimer les fichiers de traduction
-        $translations = Episciences_Tools::getOtherTranslations($this->getTranslationsFolder(), 'mails.php', '#^' . $key . '#');
-        Episciences_Tools::writeTranslations($translations, $this->getTranslationsFolder(), 'mails.php');
+        $translations = Episciences_Tools::getOtherTranslations($this->getTranslationsFolder(), Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME, '#^' . $key . '#');
+        Episciences_Tools::writeTranslations($translations, $this->getTranslationsFolder(), Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME);
 
         // Supprimer le template
         $langFolders = scandir($this->getTranslationsFolder());
@@ -387,7 +389,7 @@ class Episciences_Mail_Template
             $langs = Episciences_Tools::getLanguages();
         }
 
-        Episciences_Tools::loadTranslations($this->getTranslationsFolder($rvCode), 'mails.php');
+        Episciences_Tools::loadTranslations($this->getTranslationsFolder($rvCode), Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME);
 
         $this->loadName($langs);
         $this->loadSubject($langs);
@@ -439,8 +441,8 @@ class Episciences_Mail_Template
         $name = [];
         $translator = Zend_Registry::get('Zend_Translate');
         foreach ($langs as $code => $lang) {
-            if ($translator->isTranslated($this->getKey() . '_tpl_name', false, $code)) {
-                $name[$code] = $translator->translate($this->getKey() . '_tpl_name', $code);
+            if ($translator->isTranslated($this->getKey() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME, false, $code)) {
+                $name[$code] = $translator->translate($this->getKey() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME, $code);
             }
         }
         if (!empty($name)) {
@@ -461,8 +463,8 @@ class Episciences_Mail_Template
         $translator = Zend_Registry::get('Zend_Translate');
         foreach ($langs as $code => $lang) {
             // Subject
-            if ($translator->isTranslated($this->getKey() . '_mail_subject', false, $code)) {
-                $subject[$code] = $translator->translate($this->getKey() . '_mail_subject', $code);
+            if ($translator->isTranslated($this->getKey() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT , false, $code)) {
+                $subject[$code] = $translator->translate($this->getKey() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT , $code);
             }
         }
         if (!empty($subject)) {

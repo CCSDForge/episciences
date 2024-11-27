@@ -283,7 +283,7 @@ class Episciences_Tools
     }
 
 
-    public static function getLocale() :?string
+    public static function getLocale(): ?string
     {
         try {
             return Zend_Registry::get("Zend_Translate")->getLocale();
@@ -554,12 +554,8 @@ class Episciences_Tools
         $translations = static::getTranslations($path, $file);
         // Filtre les traductions en fonction du pattern
         if (!empty($translations)) {
-            foreach ($translations as $lang => $tmp_translation) {
-                foreach ($tmp_translation as $key => $translation) {
-                    if (preg_match($pattern, $key)) {
-                        unset($translations[$lang][$key]);
-                    }
-                }
+            foreach ($translations as $lang => $currentTranslations) {
+                self::processTranslations($currentTranslations, $lang, $file, $pattern);
             }
         }
 
@@ -955,7 +951,7 @@ class Episciences_Tools
      * @param bool $replace
      */
 
-    public static function header(string $str,int $responseCode = 0, bool $replace = true): void
+    public static function header(string $str, int $responseCode = 0, bool $replace = true): void
     {
         header($str, $replace, $responseCode);
     }
@@ -1098,10 +1094,10 @@ class Episciences_Tools
      * @return bool
      */
     public static function cpFiles(
-        array $filesList,
+        array  $filesList,
         string $source,
         string $dest,
-        bool $storeDestinationPathInSession = false
+        bool   $storeDestinationPathInSession = false
     ): bool
     {
 
@@ -1326,8 +1322,8 @@ class Episciences_Tools
     public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false, string $stringToRemove = '')
     {
 
-        if ($stringToRemove!== '') {
-            $string = str_replace($stringToRemove , '', $string);
+        if ($stringToRemove !== '') {
+            $string = str_replace($stringToRemove, '', $string);
         }
 
         if (self::isInUppercase($string, $separator)) {
@@ -1596,10 +1592,11 @@ class Episciences_Tools
 
     }
 
-    public static function translateToICU(string $string): string {
-        if ($string === 'en'|| $string ==='eng') {
+    public static function translateToICU(string $string): string
+    {
+        if ($string === 'en' || $string === 'eng') {
             return 'en_GB';
-        } elseif ($string ==='fr' || $string === 'fra') {
+        } elseif ($string === 'fr' || $string === 'fra') {
             return 'fr_FR';
         } elseif ($string === 'de') {
             return 'de_DE';
@@ -1675,8 +1672,9 @@ class Episciences_Tools
     public static function getMastodonUrl(string $string): string
     {
         $explode = self::getMastodonSeparatedInfo($string);
-        return "https://".$explode[2]."/@".$explode[1];
+        return "https://" . $explode[2] . "/@" . $explode[1];
     }
+
     /**
      * @param string $string
      * @return array
@@ -1754,7 +1752,7 @@ class Episciences_Tools
      * @param int $permissions
      * @return string
      */
-    public static function recursiveMkdir(string $path, int $permissions = self::DEFAULT_MKDIR_PERMISSIONS) : string
+    public static function recursiveMkdir(string $path, int $permissions = self::DEFAULT_MKDIR_PERMISSIONS): string
     {
 
         if (!is_dir($path) && !mkdir($path, $permissions, true) && !is_dir($path)) {
@@ -1774,7 +1772,7 @@ class Episciences_Tools
      */
     public static function convertMarkdownToHtml(
         string $markdown,
-        array $options = [],
+        array  $options = [],
         string $converterType = 'commonMark'
     )
     {
@@ -1837,7 +1835,7 @@ class Episciences_Tools
     }
 
 
-    public static function isDoi(string $doi = '') : bool
+    public static function isDoi(string $doi = ''): bool
     {
         return !($doi === '' || !preg_match("/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i", $doi));
     }
@@ -1846,15 +1844,18 @@ class Episciences_Tools
      * @param string $strDoi
      * @return bool
      */
-    public static function isDoiWithUrl(string $strDoi){
+    public static function isDoiWithUrl(string $strDoi)
+    {
         $pattern = '~^((https?://)?(dx.)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
         return (bool)preg_match($pattern, $strDoi);
     }
+
     /**
      * @param string $halId
      * @return bool
      */
-    public static function isHal(string $halId): bool {
+    public static function isHal(string $halId): bool
+    {
         return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?/", $halId);
     }
 
@@ -1865,7 +1866,7 @@ class Episciences_Tools
     public static function getHalIdAndVer(string $halId): array
     {
         $matches = [];
-        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId,$matches);
+        preg_match("/([a-z]+[_-][0-9]{8})(v[0-9]*)?/", $halId, $matches);
         return $matches;
     }
 
@@ -1873,10 +1874,11 @@ class Episciences_Tools
      * @param string $url
      * @return array
      */
-    public static function getHalIdInString(string $url): array {
+    public static function getHalIdInString(string $url): array
+    {
 
         $matches = [];
-        preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~" , $url , $matches);
+        preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~", $url, $matches);
         return $matches;
     }
 
@@ -1884,7 +1886,8 @@ class Episciences_Tools
      * @param string $swhid
      * @return bool
      */
-    public static function isSoftwareHeritageId(string $swhid): bool {
+    public static function isSoftwareHeritageId(string $swhid): bool
+    {
         return (bool)preg_match("/^swh:1:(cnt|dir|rel|rev|snp):[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid);
     }
 
@@ -1892,7 +1895,8 @@ class Episciences_Tools
      * @param string $swhid
      * @return array
      */
-    public static function getSoftwareHeritageDirId(string $swhid): array {
+    public static function getSoftwareHeritageDirId(string $swhid): array
+    {
         $matches = [];
         preg_match("/swh:1:dir:[0-9a-f]{40}(;(origin|visit|anchor|path|lines)=\S+)*$/", $swhid, $matches);
         return $matches;
@@ -1902,7 +1906,8 @@ class Episciences_Tools
      * @param string $handle
      * @return bool
      */
-    public static function isHandle(string $handle): bool {
+    public static function isHandle(string $handle): bool
+    {
         return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
     }
 
@@ -1910,7 +1915,8 @@ class Episciences_Tools
      * @param string $arxiv
      * @return bool
      */
-    public static function isArxiv(string $arxiv): bool {
+    public static function isArxiv(string $arxiv): bool
+    {
         return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
     }
 
@@ -1918,7 +1924,7 @@ class Episciences_Tools
     {
         $matches = [];
         preg_match("/^https?:\/\/arxiv\.org\/abs\/((?:\d{4}.\d{4,5}|[a-z\-]+(?:\.[A-Z]{2})?\/\d{7})(?:v\d+)?)/"
-        , $url , $matches);
+            , $url, $matches);
         return $matches;
     }
 
@@ -1927,16 +1933,19 @@ class Episciences_Tools
      * @param string $doi
      * @return array
      */
-    public static function checkIsDoiFromArxiv(string $doi) {
+    public static function checkIsDoiFromArxiv(string $doi)
+    {
         $matches = [];
-        preg_match("~/arxiv\.~i", $doi , $matches);
+        preg_match("~/arxiv\.~i", $doi, $matches);
         return $matches;
     }
+
     /**
      * @param $value
      * @return false|string
      */
-    public static function checkValueType($value) {
+    public static function checkValueType($value)
+    {
         $isHal = self::isHal($value);
         if ($isHal) {
             return 'hal';
@@ -1966,17 +1975,18 @@ class Episciences_Tools
 
     public static function getCleanedUuid(string $uuid = null): string
     {
-        if (!self::isUuid($uuid)){
+        if (!self::isUuid($uuid)) {
             return '';
         }
 
-        return str_replace('-','', $uuid);
+        return str_replace('-', '', $uuid);
     }
 
 
-    public static function isUuid(string $uuid = null) : bool{
+    public static function isUuid(string $uuid = null): bool
+    {
 
-        if(empty(trim((string)$uuid))){
+        if (empty(trim((string)$uuid))) {
             return false;
         }
 
@@ -1984,13 +1994,63 @@ class Episciences_Tools
 
     }
 
-    public static function reduceXmlSize(string $xml): string {
+    public static function reduceXmlSize(string $xml): string
+    {
         $dom = new DOMDocument();
 
         $dom->preserveWhiteSpace = false;
         $dom->formatOutput = false;
         $dom->loadXML($xml);
         return $dom->saveXML();
+    }
+
+    /**
+     * Trim the regex pattern to remove delimiters.
+     * @param string $pattern
+     * @param string $delimiter
+     * @return string
+     */
+    public static function trimPattern(string $pattern, string $delimiter = '#'): string
+    {
+        return str_replace([sprintf('%s^', $delimiter), $delimiter], '', $pattern);
+    }
+
+
+    /**
+     * Process translations and remove keys based on conditions.
+     * @param array $translations
+     * @param string $lang
+     * @param string $file
+     * @param string $pattern
+     * @return void
+     */
+    private static function processTranslations(array &$translations, string $lang, string $file, string &$pattern): void
+    {
+        foreach ($translations as $key => $translation) {
+            if ($file === Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME) { // @see RT#228342: to avoid renaming the keys in the database and on the server
+                self::handleTemplateFile($translations, $key, $lang, $pattern);
+            } elseif (preg_match($pattern, $key)) {
+                unset($translations[$key]);
+            }
+        }
+    }
+
+    /**
+     * @param array $translations
+     * @param string $key
+     * @param string $lang
+     * @param string $pattern
+     * @return void
+     */
+    private static function handleTemplateFile(array &$translations, string $key, string $lang, string &$pattern): void
+    {
+
+        $cleanedPattern = self::trimPattern($pattern);
+        $cleanedKey = Episciences_Mail_TemplatesManager::cleanKey($key);
+
+        if ($cleanedKey === $cleanedPattern) {
+            unset($translations[$key]);
+        }
     }
 
 }

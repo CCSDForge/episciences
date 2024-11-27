@@ -113,7 +113,7 @@ class Ccsd_User_Models_User
      */
     protected $_uid;
 
-    protected ?string $_uuid;
+    protected ?string $_uuid = null;
 
     /**
      * Nom d'utilisateur / login
