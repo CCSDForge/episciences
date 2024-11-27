@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed 
+- [RT#228342]: in some cases, the translated name and translated subject of the email template may be lost when they are modified.
 
 ## v1.0.46 - 2024-11-25
 ### Removed 

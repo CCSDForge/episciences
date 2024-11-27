@@ -554,12 +554,8 @@ class Episciences_Tools
         $translations = static::getTranslations($path, $file);
         // Filtre les traductions en fonction du pattern
         if (!empty($translations)) {
-            foreach ($translations as $lang => $tmp_translation) {
-                foreach ($tmp_translation as $key => $translation) {
-                    if (preg_match($pattern, $key)) {
-                        unset($translations[$lang][$key]);
-                    }
-                }
+            foreach ($translations as $lang => $currentTranslations) {
+                self::processTranslations($currentTranslations, $lang, $file, $pattern);
             }
         }
 
@@ -1991,6 +1987,53 @@ class Episciences_Tools
         $dom->formatOutput = false;
         $dom->loadXML($xml);
         return $dom->saveXML();
+    }
+
+    /**
+     * Trim the regex pattern to remove delimiters.
+     * @param string $pattern
+     * @param string $delimiter
+     * @return string
+     */
+    public static function trimPattern(string $pattern, string $delimiter = '#' ): string {
+        return str_replace([sprintf('%s^', $delimiter), $delimiter], '', $pattern);
+    }
+
+
+    /**
+     * Process translations and remove keys based on conditions.
+     * @param array $translations
+     * @param string $lang
+     * @param string $file
+     * @param string $pattern
+     * @return void
+     */
+    private static function processTranslations(array &$translations, string $lang, string $file, string &$pattern): void {
+        foreach ($translations as $key => $translation) {
+            if ($file === Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME) { // @see RT#228342: to avoid renaming the keys in the database and on the server
+                self::handleTemplateFile($translations, $key, $lang, $pattern);
+            } elseif (preg_match($pattern, $key)) {
+                unset($translations[$key]);
+            }
+        }
+    }
+
+    /**
+     * @param array $translations
+     * @param string $key
+     * @param string $lang
+     * @param string $pattern
+     * @return void
+     */
+    private static function handleTemplateFile(array &$translations, string $key, string $lang, string &$pattern): void
+    {
+
+        $cleanedPattern = self::trimPattern($pattern);
+        $cleanedKey = Episciences_Mail_TemplatesManager::cleanKey($key);
+
+        if ($cleanedKey === $cleanedPattern) {
+            unset($translations[$key]);
+        }
     }
 
 }

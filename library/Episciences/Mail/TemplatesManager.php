@@ -1975,4 +1975,18 @@ class Episciences_Mail_TemplatesManager
 
         return $tags;
     }
+
+    /**
+     * Clean the key by removing specific suffixes.
+     * @param string $key
+     * @return string
+     */
+    public static function cleanKey(string $key): string {
+        return str_replace(
+            [self::SUFFIX_TPL_NAME, self::SUFFIX_TPL_SUBJECT],
+            '',
+            $key
+        );
+    }
+
 }
