@@ -2,6 +2,9 @@
 
 class Episciences_Mail_TemplatesManager
 {
+    public const SUFFIX_TPL_NAME = '_tpl_name';
+    public const SUFFIX_TPL_SUBJECT = '_mail_subject';
+    public const TPL_TRANSLATION_FILE_NAME = 'mails.php';
     public const TYPE_USER_REGISTRATION = 'user_registration';
     public const TYPE_USER_LOST_PASSWORD = 'user_lost_password';
     public const TYPE_USER_LOST_LOGIN = 'user_lost_login';
@@ -1972,4 +1975,18 @@ class Episciences_Mail_TemplatesManager
 
         return $tags;
     }
+
+    /**
+     * Clean the key by removing specific suffixes.
+     * @param string $key
+     * @return string
+     */
+    public static function cleanKey(string $key): string {
+        return str_replace(
+            [self::SUFFIX_TPL_NAME, self::SUFFIX_TPL_SUBJECT],
+            '',
+            $key
+        );
+    }
+
 }

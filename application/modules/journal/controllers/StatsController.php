@@ -168,6 +168,10 @@ class StatsController extends Episciences_Controller_Action
 
                 foreach ($values as $statusLabel => $nbSubmissions) {
 
+                    if ($statusLabel === 'strictly_accepted') {
+                        $statusLabel = str_replace('strictly_', '', $statusLabel);
+                    }
+
                     $status = array_search($statusLabel, Episciences_Paper::STATUS_DICTIONARY, true);
 
                     if ($status === false) {
