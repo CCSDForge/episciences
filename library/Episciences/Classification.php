@@ -3,6 +3,7 @@
 namespace Episciences;
 
 use Episciences_Tools;
+use http\Message\Body;
 
 abstract class Classification implements \JsonSerializable
 {
@@ -33,15 +34,16 @@ abstract class Classification implements \JsonSerializable
 
 
 // Implement the JsonSerializable interface
-    public function jsonSerialize(): array
+    public function jsonSerialize(bool $isSerializedDocId = true): array
     {
-        return [
-            'docid' => $this->docid,
+        $toArray = $isSerializedDocId ? ['docid' => $this->docid] : [];
+
+        return array_merge($toArray, [
             'code' => $this->code,
             'label' => $this->label,
             'classificationName' => static::$classificationName,
             'sourceName' => $this->source_name,
-        ];
+        ]);
     }
 
     /**
