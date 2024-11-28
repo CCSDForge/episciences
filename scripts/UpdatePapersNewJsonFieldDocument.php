@@ -150,7 +150,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 }
 
                 try {
-                    $toJson = $currentPaper->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
+                    $toJson = $currentPaper->toJson();
                 } catch (Zend_Db_Statement_Exception $e) {
                     $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
                 }

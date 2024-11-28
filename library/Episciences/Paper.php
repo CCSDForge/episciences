@@ -1157,7 +1157,12 @@ class Episciences_Paper
             }
         }
 
-        $document = $this->toJson(Episciences_Paper_XmlExportManager::ALL_KEY);
+        try {
+            $document = $this->toJson();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $document = null;
+            trigger_error($e->getMessage());
+        }
 
         if (!$docId) {
             // INSERT
@@ -1276,13 +1281,16 @@ class Episciences_Paper
     }
 
     /**
-     * @param string $key
      * @return string|null
      * @throws Zend_Db_Statement_Exception
      */
 
-    public function toJson(string $key = Episciences_Paper_XmlExportManager::PUBLIC_KEY): ?string
+    public function toJson(): ?string
     {
+        $sSection = null;
+        $citedBy = null;
+        $sVolume = null;
+
         $journal = Episciences_ReviewsManager::find($this->getRvid());
 
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder(), new JsonEncoder(new JsonEncode(['json_encode_options' => JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE]))]);
@@ -1295,15 +1303,9 @@ class Episciences_Paper
             $this->processTmpVersion($this);
         }
 
-
         $xmlToArray = $this->processDatasetsToJson($xmlToArray);
-
+        $this->processProjects($xmlToArray);
         $sPreviousVersions = $this->getPreviousVersionsToJson($journal);
-
-
-        $sSection = null;
-
-        $citedBy = null;
 
         if ($this->getDocid()) {
             $citations = Episciences_Paper_CitationsManager::getCitationByDocId($this->getDocid());
@@ -1311,7 +1313,7 @@ class Episciences_Paper
                 $citedBy = $citations;
             }
         }
-        $sVolume = null;
+
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
             if ($oVolume) {
@@ -1395,14 +1397,16 @@ class Episciences_Paper
                         'url' => $journal->getUrl(),
                     ],
 
-                    'cited_by' => $citedBy,
                     'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
+                    'cited_by' => $citedBy,
+                    'classifications' => $this->getClassifications(),
+                    'graphical_abstract_file' => $graphical_abstract_file,
 
                     'metrics' => [
                         'page_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid()),
                         'file_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid(), 'file')
                     ],
-                    'graphical_abstract_file' => $graphical_abstract_file,
+
                 ],
                 'latest_version_item_number' => (int)$this->getLatestVersionId(),
                 'first_version_item_number' => $this->getPaperid(),
@@ -1418,10 +1422,6 @@ class Episciences_Paper
         $keyJournal = Episciences_Paper_XmlExportManager::JOURNAL_KEY;
         $keyJournalArticle = Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY;
         $keyDatabase = Episciences_Paper_XmlExportManager::DATABASE_KEY;
-        $keyPublic = Episciences_Paper_XmlExportManager::PUBLIC_KEY;
-        $keyPrivate = Episciences_Paper_XmlExportManager::PRIVATE_KEY;
-        $keyAll = Episciences_Paper_XmlExportManager::ALL_KEY;
-
         $keyConf = Episciences_Paper_XmlExportManager::CONFERENCE_KEY;
         $isConf = isset($xmlToArray[$keyBody][$keyConf]);
         $keyConfPaper = Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY;
@@ -1455,18 +1455,6 @@ class Episciences_Paper
 
 // Update document keys
         $document = $xmlToArray[$keyBody];
-        //$document[$keyPrivate] = $extraData[$keyPrivate];
-
-// Check and update document based on key
-//        if ($key !== $keyAll) {
-//            if ($key === $keyPrivate || $key === $keyPublic) {
-//                $document = $document[$key];
-//            } else {
-//                $document = $document[$keyPublic];
-//            }
-//        }
-
-
         $result = $serializer->serialize($document, 'json');
 
         return str_replace(array('#', '%%ID', '%%VERSION'), array('value', $this->getIdentifier(), $this->getVersion()), $result);
@@ -5078,6 +5066,29 @@ class Episciences_Paper
             trigger_error($e->getMessage());
         }
         return null;
+    }
+
+    private function processProjects(array &$data): void{
+        $projectsInfo = Episciences_Paper_ProjectsManager::getProjectsByPaperId($this->getPaperid());
+        foreach ($projectsInfo as $pInfo) {
+            if (isset($pInfo['funding'])) {
+                try {
+                    $pInfoToArray = json_decode($pInfo['funding'], true, 512, JSON_THROW_ON_ERROR);
+                    foreach ($pInfoToArray as $index => $values) {
+                        if (isset($data[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][$index])) {
+                            $currentProgram = &$data[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][$index];
+                            if (isset($currentProgram['@name'], $values['projectTitle']) && $currentProgram['@name'] === 'fundref') {
+                                $currentProgram['assertion']['assertion'][] = ['@name' => 'project_title', '#' => $values['projectTitle']];
+                            }
+                        }
+
+                    }
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+        }
+
     }
 
 }
