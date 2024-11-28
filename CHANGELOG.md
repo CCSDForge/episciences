@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Added
+-  classifications and project title metadata in the document's JSON export.
+
 ## v1.0.46.1 - 2024-11-27
 ### Fixed 
 - In some cases, the translated 'name' and translated 'subject' of the email template may be lost when they are modified
