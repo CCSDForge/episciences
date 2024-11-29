@@ -5027,7 +5027,7 @@ class Episciences_Paper
             $classificationName = $classification['classification_name'];
             if ($classificationName !== msc2020::$classificationName || $classificationName !== jel::$classificationName) {
                 $current = ($classificationName === msc2020::$classificationName) ? new msc2020($classification) : new jel($classification);
-                $classificationCollection[$classificationName] = !$isSerialized ? $current : $current->jsonSerialize(false);
+                $classificationCollection[$classificationName][] = !$isSerialized ? $current : $current->jsonSerialize(false);
             }
         }
 
