@@ -17,6 +17,7 @@ class GetClassificationJel extends JournalScript
     private const ONE_MONTH = 3600 * 24 * 31;
     private bool $_dryRun = false;
     private Logger $logger;
+    private array $allClassificationCodes = [];
 
     public function __construct(array $localopts)
     {
@@ -46,14 +47,16 @@ class GetClassificationJel extends JournalScript
         defineJournalConstants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        $this->setAllClassificationCodes();
+
         $this->logger->info('Fetching papers from database');
         $select = $db
             ->select()
             ->from(T_PAPERS, ["DOI", "DOCID"])
             ->where('DOI != ""')
             ->where("STATUS = ?", Episciences_Paper::STATUS_PUBLISHED)
-          //  ->where('RVID = ?', 3)
-           // ->limit(10)
+            //  ->where('RVID = ?', 3)
+            // ->limit(10)
             ->order('DOCID ASC');
 
         $papers = $db->fetchAll($select);
@@ -136,7 +139,7 @@ class GetClassificationJel extends JournalScript
                         if (isset($subject['@classid']) && $subject['@classid'] === 'jel' && isset($subject['$'])) {
                             $value = $subject['$'];
                             if (str_starts_with($value, 'jel:')) {
-                                 $processedValue = ltrim($value, 'jel:');
+                                $processedValue = ltrim($value, 'jel:');
                                 if ($processedValue !== '') {
                                     $results[] = $processedValue;
                                 }
@@ -150,15 +153,25 @@ class GetClassificationJel extends JournalScript
         return array_unique($results);
     }
 
-
-
     private function createClassifications(array $jelCodes, int $docId): array
     {
         $collectionOfClassifications = [];
+
         foreach ($jelCodes as $jelCode) {
+
             $classification = new Episciences_Paper_Classifications();
-            $classification->setClassificationCode($jelCode);
             $classification->setClassificationName(Episciences\Classification\jel::$classificationName);
+
+            try {
+                $classification->checkClassificationCode($jelCode, $this->getAllClassificationCodes());
+
+            } catch (Zend_Exception $e) {
+                $this->logger->warning($e->getMessage());
+                $this->logger->warning(sprintf('[%s] classification ignored !', $jelCode));
+                continue;
+            }
+
+            $classification->setClassificationCode($jelCode);
             $classification->setDocid($docId);
             $classification->setSourceId(Episciences_Repositories::GRAPH_OPENAIRE_ID);
             $collectionOfClassifications[] = $classification;
@@ -175,6 +188,17 @@ class GetClassificationJel extends JournalScript
     public function setDryRun(bool $dryRun): void
     {
         $this->_dryRun = $dryRun;
+    }
+
+    private function setAllClassificationCodes(): void
+    {
+        $sql = $this->getDb()?->select()->from(T_PAPER_CLASSIFICATION_JEL, ['code']);
+        $this->allClassificationCodes = $this->getDb()?->fetchCol($sql);
+    }
+
+    public function getAllClassificationCodes(): array
+    {
+        return $this->allClassificationCodes;
     }
 }
 

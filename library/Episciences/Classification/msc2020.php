@@ -27,11 +27,10 @@ class msc2020 extends Classification
         $this->description = $description;
     }
 
-    public function jsonSerialize(): array
+    public function jsonSerialize(bool $isSerializedDocId = true): array
     {
         return array_merge(parent::jsonSerialize(), ['description' => $this->description]);
     }
-
 
 }
 

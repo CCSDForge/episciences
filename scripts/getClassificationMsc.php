@@ -18,6 +18,8 @@ class GetClassificationMsc extends JournalScript
     private bool $_dryRun = false;
     private Logger $logger;
 
+    private array $allClassificationCodes = [];
+
     public function __construct(array $localopts)
     {
         $this->setRequiredParams([]);
@@ -45,6 +47,8 @@ class GetClassificationMsc extends JournalScript
         $this->initDb();
         defineJournalConstants();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $this->setAllClassificationCodes();
 
         $this->logger->info('Fetching papers from database');
         $select = $db
@@ -152,11 +156,24 @@ class GetClassificationMsc extends JournalScript
 
     private function createClassifications(array $mscCodes, int $docId): array
     {
+
         $collectionOfClassifications = [];
+
         foreach ($mscCodes as $mscCode) {
+
             $classification = new Episciences_Paper_Classifications();
-            $classification->setClassificationCode($mscCode);
             $classification->setClassificationName(Episciences\Classification\msc2020::$classificationName);
+
+            try {
+                $classification->checkClassificationCode($mscCode, $this->getAllClassificationCodes());
+
+            } catch (Zend_Exception $e) {
+                $this->logger->warning($e->getMessage());
+                $this->logger->warning(sprintf('[%s] classification ignored !', $mscCode));
+                continue;
+            }
+
+            $classification->setClassificationCode($mscCode);
             $classification->setDocid($docId);
             $classification->setSourceId(Episciences_Repositories::ZBMATH_OPEN);
             $collectionOfClassifications[] = $classification;
@@ -173,6 +190,17 @@ class GetClassificationMsc extends JournalScript
     public function setDryRun(bool $dryRun): void
     {
         $this->_dryRun = $dryRun;
+    }
+
+    private function setAllClassificationCodes(): void
+    {
+        $sql = $this->getDb()?->select()->from(T_PAPER_CLASSIFICATION_MSC2020, ['code']);
+        $this->allClassificationCodes = $this->getDb()?->fetchCol($sql);
+    }
+
+    public function getAllClassificationCodes(): array
+    {
+        return $this->allClassificationCodes;
     }
 }
 

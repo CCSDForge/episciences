@@ -383,7 +383,7 @@ class Episciences_Paper
     private $_repoId = 0;
     private $_record;
     private $_document;
-    private ?string $_document_private;
+    private ?array $_document_private = null;
     /**
      * Pour vérifier si les versions (autres archives (exp Zenodo)) sont liées entre elles.
      * @var string
@@ -1399,7 +1399,7 @@ class Episciences_Paper
 
                     'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
                     'cited_by' => $citedBy,
-                    'classifications' => $this->getClassifications(),
+                    'classifications' => $this->getClassifications(true),
                     'graphical_abstract_file' => $graphical_abstract_file,
 
                     'metrics' => [
@@ -5020,18 +5020,19 @@ class Episciences_Paper
 
     }
 
-    public function getClassifications(): array
+    public function getClassifications(bool $isSerialized = false): array
     {
         $classificationsList = Episciences_Paper_ClassificationsManager::getClassificationByDocId($this->getDocid());
         $classificationCollection = [];
+
         foreach ($classificationsList as $classification) {
-            if ($classification['classification_name'] == msc2020::$classificationName) {
-                $classificationCollection[msc2020::$classificationName][] = new msc2020($classification);
-            }
-            if ($classification['classification_name'] == jel::$classificationName) {
-                $classificationCollection[jel::$classificationName][] = new jel($classification);
+            $classificationName = $classification['classification_name'];
+            if ($classificationName !== msc2020::$classificationName || $classificationName !== jel::$classificationName) {
+                $current = ($classificationName === msc2020::$classificationName) ? new msc2020($classification) : new jel($classification);
+                $classificationCollection[$classificationName] = !$isSerialized ? $current : $current->jsonSerialize(false);
             }
         }
+
         return $classificationCollection;
 
     }
@@ -5068,7 +5069,8 @@ class Episciences_Paper
         return null;
     }
 
-    private function processProjects(array &$data): void{
+    private function processProjects(array &$data): void
+    {
         $projectsInfo = Episciences_Paper_ProjectsManager::getProjectsByPaperId($this->getPaperid());
         foreach ($projectsInfo as $pInfo) {
             if (isset($pInfo['funding'])) {
