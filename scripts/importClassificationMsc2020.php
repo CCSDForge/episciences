@@ -73,7 +73,7 @@ try {
     $dumpFileContent .= "CREATE TABLE IF NOT EXISTS `$tableName` (\n";
     $dumpFileContent .= "  `code` varchar(10) COLLATE utf8mb4_general_ci NOT NULL,\n";
     $dumpFileContent .= "  `label` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,\n";
-    $dumpFileContent .= "  `description` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,\n";
+    $dumpFileContent .= "  `description` mediumtext COLLATE utf8mb4_general_ci NOT NULL,\n";
     $dumpFileContent .= "  PRIMARY KEY (`code`)\n";
     $dumpFileContent .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n";
 

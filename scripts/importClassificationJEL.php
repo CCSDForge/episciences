@@ -25,17 +25,17 @@ if (!$xml) {
 }
 
 echo "[" . date('Y-m-d H:i:s') . "] XML file successfully loaded.\n";
+$tableName = 'classification_jel';
 
 // Prepare the SQL dump content
 $sqlDump = <<<SQL
 -- SQL Dump for JEL Classifications
 
-CREATE TABLE IF NOT EXISTS `classification_jel` (
+CREATE TABLE IF NOT EXISTS `$tableName` (
   `code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
+  `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    PRIMARY KEY (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-ALTER TABLE `jel` ADD PRIMARY KEY (`code`);
 
 SQL;
 
@@ -52,7 +52,7 @@ foreach ($xml->classification as $classification) {
     $label = htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
     // Add the INSERT statement to the SQL dump
-    $sqlDump .= "INSERT INTO `jel` (`code`, `label`) VALUES ('$code', '$label');\n";
+    $sqlDump .= "INSERT INTO `$tableName` (`code`, `label`) VALUES ('$code', '$label');\n";
     $count++;
 }
 

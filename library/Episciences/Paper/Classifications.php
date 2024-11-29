@@ -141,4 +141,14 @@ class Episciences_Paper_Classifications
     }
 
 
+    /**
+     * @throws Zend_Exception
+     */
+    public function checkClassificationCode(string $code, array $availableClassificationCodes = []): void
+    {
+        if (!in_array($code, $availableClassificationCodes, true)) {
+            throw new Zend_Exception(sprintf('[%s] code not found in %s classifications table', $code, strtoupper($this->classificationName)));
+        }
+
+    }
 }
