@@ -3,7 +3,6 @@
 namespace Episciences;
 
 use Episciences_Tools;
-use http\Message\Body;
 
 abstract class Classification implements \JsonSerializable
 {

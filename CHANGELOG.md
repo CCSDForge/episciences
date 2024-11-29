@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ### Added
 -  classifications and project title metadata in the document's JSON export.
+-  improved scripts for importing and processing classifications
 
 ## v1.0.46.1 - 2024-11-27
 ### Fixed 
