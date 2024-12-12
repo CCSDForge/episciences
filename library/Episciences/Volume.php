@@ -47,7 +47,7 @@ class Episciences_Volume
 
     private ?string $_vol_type = null;
     //private ?int $_vol_year = null;
-    private $_vol_year;
+    private $_vol_year = null;
     //private ?string $_vol_num = null;
     private $_vol_num = null;
     private int $nbOfPapersInVolume = 0;
@@ -1258,6 +1258,9 @@ class Episciences_Volume
 
     public function getVol_year()
     {
+        if (!is_int($this->_vol_year)) {
+            return null;
+        }
         return $this->_vol_year;
     }
 
