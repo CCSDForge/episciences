@@ -1289,6 +1289,7 @@ class Episciences_Paper
     {
         $sSection = null;
         $citedBy = null;
+        $classifications = null;
         $sVolume = null;
 
         $journal = Episciences_ReviewsManager::find($this->getRvid());
@@ -1312,6 +1313,8 @@ class Episciences_Paper
             if (!empty($citations)) {
                 $citedBy = $citations;
             }
+
+            $classifications = $this->getClassifications(true);
         }
 
         if ($this->getVid()) {
@@ -1399,7 +1402,7 @@ class Episciences_Paper
 
                     'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
                     'cited_by' => $citedBy,
-                    'classifications' => $this->getClassifications(true),
+                    'classifications' => $classifications,
                     'graphical_abstract_file' => $graphical_abstract_file,
 
                     'metrics' => [
