@@ -353,7 +353,7 @@ class Episciences_VolumesManager
             'label' => 'Numéro du volume',
             'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Numéro du volume'),
             'value' => ($volume !== null) ? $volume->getVol_num() : "",
-            'required' => true,
+            //'required' => true,
             'style' => 'width:300px;position: static;',
             'validators' => [
                 [new Zend_Validate_StringLength(['max' => self::MAX_STRING_LENGTH_VOL_NUM])],
@@ -363,7 +363,7 @@ class Episciences_VolumesManager
         $form->addElement('text', 'year', [
             'label' => 'Année du volume',
             'value' => ($volume !== null) ? $volume->getVol_year() : '',
-            'required' => true,
+           // 'required' => true,
             'style' => 'width:300px;position: static;',
             'validators' => [
                 [new Zend_Validate_Int()],
