@@ -72,7 +72,7 @@
                             <?php if ($criterion->getType() == 'separator') : ?>
                            href="<?= $this->url(['controller' => 'grid', 'action' => 'editseparator', 'rgid' => $this->grid->getId(), 'id' => $criterion->getId()]) ?>">
                             <?php else : ?>
-                                href="/grid/editcriterion?rgid=<?php echo $this->grid->getId(); ?>&amp;id=<?php echo $criterion->getId(); ?>">
+                                href="<?= $this->url(['controller' => 'grid', 'action' => 'editcriterion', 'rgid' => $this->grid->getId(), ])?>&amp;id=<?php echo $criterion->getId(); ?>">
                             <?php endif; ?>
 
                             <span class="glyphicon glyphicon-edit"></span>&nbsp;<?php echo $this->translate('Modifier'); ?>
