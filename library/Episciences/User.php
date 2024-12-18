@@ -1043,7 +1043,13 @@ class Episciences_User extends Ccsd_User_Models_User
                 $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
             }
 
-            // Enregistrement des nouveaux rôles
+            // Preserve member as a role is the user has no other roles, to avoid they disappear from the user list
+            if (empty($values)) {
+                $roleId = Episciences_Acl::ROLE_MEMBER;
+                $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
+            }
+
+            // Save roles
             $sql = 'INSERT IGNORE INTO ' . T_USER_ROLES . ' (UID, RVID, ROLEID) VALUES ' . implode(',', $values);
             $this->_db->query($sql);
 
