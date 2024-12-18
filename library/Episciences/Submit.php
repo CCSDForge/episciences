@@ -433,9 +433,8 @@ class Episciences_Submit
     /**
      * save a temporary version of a paper
      * @param Episciences_Paper $paper
-     * @return mixed
+     * @return array
      * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_File_Transfer_Exception
      */
     public static function saveTmpVersion(Episciences_Paper $paper)
     {

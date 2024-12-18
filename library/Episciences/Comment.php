@@ -196,9 +196,7 @@ class Episciences_Comment
      * @param bool $strict
      * @param int|null $uid
      * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Json_Exception
+
      */
     public function save(bool $strict = false, int $uid = null): bool
     {
@@ -209,16 +207,24 @@ class Episciences_Comment
 
         $this->uploadFileComment($strict);
 
-        if (!$this->getPcid()) { // INSERT
+        try {
+            if (!$this->getPcid()) { // INSERT
 
-            if ($this->insertComment($db, $uid)) {
-                $this->setPcid($db->lastInsertId());
-                $this->find($this->getPcid());
+                try {
+                    if ($this->insertComment($db, $uid)) {
+                        $this->setPcid($db->lastInsertId());
+                        $this->find($this->getPcid());
+                        $result = true;
+                    }
+                } catch (Zend_Db_Adapter_Exception|Zend_Json_Exception  $e) {
+                    trigger_error($e->getMessage());
+                }
+
+            } elseif ($this->updateComment($db)) {
                 $result = true;
             }
-
-        } elseif ($this->updateComment($db)) {
-            $result = true;
+        } catch (Zend_Db_Adapter_Exception $e) {
+            trigger_error($e->getMessage());
         }
         // not log here if copy editing comment
         if (
@@ -588,6 +594,7 @@ class Episciences_Comment
     /**
      * @param Zend_Db_Adapter_Abstract $db
      * @return bool
+     *
      * @throws Zend_Db_Adapter_Exception
      */
     private function updateComment(Zend_Db_Adapter_Abstract $db): bool
@@ -620,7 +627,6 @@ class Episciences_Comment
 
     /**
      * @param bool $strict
-     * @throws Zend_File_Transfer_Exception
      */
     private function uploadFileComment(bool $strict): void
     {
