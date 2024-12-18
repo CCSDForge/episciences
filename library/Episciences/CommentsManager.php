@@ -747,9 +747,7 @@ class Episciences_CommentsManager
      * @param Episciences_Paper $paper
      * @param array $coverLetter
      * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Json_Exception
+
      */
 
     public static function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null]): bool
@@ -757,7 +755,7 @@ class Episciences_CommentsManager
         // Save author comment and attached file
         $authorComment = new Episciences_Comment();
         $authorComment->setFilePath(REVIEW_FILES_PATH . $paper->getDocid() . '/comments/');
-        $authorComment->setType(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
+        $authorComment->setType(self::TYPE_AUTHOR_COMMENT);
         $authorComment->setDocid($paper->getDocid());
         $authorComment->setMessage($coverLetter["message"]);
 
@@ -771,7 +769,7 @@ class Episciences_CommentsManager
             ) &&
             $result = $authorComment->save()
         ) {
-            error_log('SAVE_COVER_LETTER_FAILED_FOR_DOCID_ ', $paper->getDocid());
+            trigger_error(sprintf('Failed to save cover letter for document #%s', $paper->getDocid()));
         }
 
         return $result;

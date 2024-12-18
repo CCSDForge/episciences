@@ -227,9 +227,9 @@ class Episciences_Tools
      * @param $path : folder where the files will be stored
      * @param array $replace : if $replace is defined, delete files having the same id before upload
      * @return array
-     * @throws Zend_File_Transfer_Exception
+
      */
-    public static function uploadFiles($path, $replace = []): array
+    public static function uploadFiles($path, array $replace = []): array
     {
         $results = [];
         $upload = new Zend_File_Transfer_Adapter_Http();
@@ -257,11 +257,15 @@ class Episciences_Tools
                     }
 
                 }
-                $filename = Episciences_Tools::filenameRotate($path, $filename);
+                $filename = self::filenameRotate($path, $filename);
                 // save file
-                $upload->addFilter('Rename', $path . $filename, $file);
-                $results[$file]['name'] = $filename;
-                $results[$file]['errors'] = (!$upload->receive($file)) ? $upload->getMessages() : null;
+                try {
+                    $upload->addFilter('Rename', $path . $filename, $file);
+                    $results[$file]['name'] = $filename;
+                    $results[$file]['errors'] = (!$upload->receive($file)) ? $upload->getMessages() : null;
+                } catch (Zend_File_Transfer_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
             }
         }
         return $results;
