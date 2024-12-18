@@ -1552,7 +1552,7 @@ class PaperController extends PaperDefaultController
             $revisionInitiator->find($requestComment->getUid());
             $principalRecipient = $revisionInitiator;
         } else {
-            $principalRecipient = !empty($recipients) ? $recipients[array_key_first($editors)] : null;
+            $principalRecipient = !empty($recipients) ? $recipients[array_key_first($recipients)] : null;
         }
 
         $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
