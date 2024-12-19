@@ -151,14 +151,15 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
                 try {
                     $toJson = $currentPaper->toJson();
+
+                    if ($this->isVerbose()) {
+                        $this->displaySuccess(sprintf('** [#%s] exported to json format ...', $docId), true);
+                        $toUpdate .= sprintf('%sUPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', PHP_EOL, $db->quote($toJson), $docId);
+                    }
                 } catch (Zend_Db_Statement_Exception $e) {
                     $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
                 }
 
-                if ($this->isVerbose()) {
-                    $this->displaySuccess(sprintf('** [#%s] exported to json format ...', $docId), true);
-                    $toUpdate .= sprintf('%sUPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', PHP_EOL, $db->quote($toJson), $docId);
-                }
 
                 $this->getProgressBar()->setProgress($progress);
 
