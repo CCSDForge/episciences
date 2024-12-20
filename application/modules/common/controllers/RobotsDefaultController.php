@@ -16,6 +16,7 @@ class RobotsDefaultController extends Zend_Controller_Action
         if (APPLICATION_ENV == ENV_PROD) {
             $pathsToDisallow = [
                 '/search',
+                '/index.php/search',
                 '*/tei',
                 '*/bibtex',
                 '*/dc',
