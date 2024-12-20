@@ -26,8 +26,10 @@ class RobotsDefaultController extends Zend_Controller_Action
                 '*/doaj',
                 '*/zbjats',
                 '*/json',
+                '*/jsonv2',
                 '/browse/latest',
                 '/login',
+                '/logout',
                 '/submit',
                 '/user',
                 '/error'
