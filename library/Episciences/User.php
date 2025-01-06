@@ -2,6 +2,10 @@
 
 class Episciences_User extends Ccsd_User_Models_User
 {
+    public const STR_AFFILIATIONS = 'affiliations';
+    public const STR_WEB_SITES = 'webSites';
+    public const STR_BIOGRAPHY = 'biography';
+    public const STR_SOCIAL_MEDIAS = 'socialMedias';
     /** @var int */
     protected $_uid;
 
@@ -461,7 +465,7 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         if (!empty($this->getAffiliations())) {
-            $addProfileInformations['affiliations'] = Episciences_Tools::implodeOrExplode($this->getAffiliations());
+            $addProfileInformations['affiliations'] = $this->getAffiliations();
         }
 
         if (!empty($this->getBiography())) {
@@ -696,8 +700,9 @@ class Episciences_User extends Ccsd_User_Models_User
             return [];
         }
 
-        if(isset($result['ADDITIONAL_PROFILE_INFORMATION'])){
+        if(isset($result['ADDITIONAL_PROFILE_INFORMATION']) && $result['ADDITIONAL_PROFILE_INFORMATION'] !== '' ){
            $this->setAdditionalProfileInformation($result['ADDITIONAL_PROFILE_INFORMATION']);
+           //Initialized in Episciences_User::setAdditionalProfileInformation
            $result['WEB_SITES'] = $this->getWebSites();
            $result['SOCIAL_MEDIAS'] = $this->getSocialMedias();
            $result['AFFILIATIONS'] = $this->getAffiliations();
@@ -1306,7 +1311,7 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
     /**
-     * @param string|null $bioghaphy
+     * @param string|null $biography
      * @return $this
      */
     public function setBiography(string $biography = null): self
@@ -1336,18 +1341,18 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($addProfileInfo) {
 
-            $affiliations = $addProfileInfo ['affiliations'] ?? null;
+            $affiliations = $addProfileInfo [self::STR_AFFILIATIONS] ?? null;
 
-            $webSites = $addProfileInfo ['webSites'] ?? null;
+            $webSites = $addProfileInfo [self::STR_WEB_SITES] ?? null;
 
-            $biography = $addProfileInfo ['biography'] ?? null;
+            $biography = $addProfileInfo [self::STR_BIOGRAPHY] ?? null;
 
-            if (!empty($addProfileInfo ['socialMedias'])) {
+            if (!empty($addProfileInfo [self::STR_SOCIAL_MEDIAS])) {
 
-                if (is_array($addProfileInfo ['socialMedias'])) {
-                    $socialMedias = implode(" ", $addProfileInfo ['socialMedias']);
+                if (is_array($addProfileInfo [self::STR_SOCIAL_MEDIAS])) {
+                    $socialMedias = implode(" ", $addProfileInfo [self::STR_SOCIAL_MEDIAS]);
                 } else {
-                    $socialMedias = $addProfileInfo ['socialMedias'];
+                    $socialMedias = $addProfileInfo [self::STR_SOCIAL_MEDIAS];
                 }
 
             } else {
