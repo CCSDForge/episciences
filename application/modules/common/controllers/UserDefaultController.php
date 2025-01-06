@@ -700,17 +700,15 @@ class UserDefaultController extends Zend_Controller_Action
 
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
-
-        if (isset($userDefaults['AFFILIATIONS'])) {
-            $userDefaults['AFFILIATIONS'] = Episciences_Tools::implodeOrExplode($userDefaults['AFFILIATIONS'], 'implode');
-        }
-
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
         $form->setAction($this->view->url());
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Enregistrer les modifications',
             'class' => 'btn btn-primary'
         ]);
+
+
+        $userDefaults['AFFILIATIONS'] = $this->processAffiliations($userDefaults['AFFILIATIONS'], 'assemble');
 
         $form->setDefaults($userDefaults);
 
@@ -733,20 +731,23 @@ class UserDefaultController extends Zend_Controller_Action
                 }
                 try {
                     $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
-                        $values['episciences']['AFFILIATIONS'],
-                        $values['episciences']['SOCIAL_MEDIAS'],
-                        $values['episciences']['WEB_SITES'],
-                        $values['episciences']['BIOGRAPHY']
+                        Episciences_User::STR_AFFILIATIONS => $this->processAffiliations($values['episciences']['AFFILIATIONS']),
+                        Episciences_User::STR_SOCIAL_MEDIAS => $values['episciences']['SOCIAL_MEDIAS'],
+                        Episciences_User::STR_WEB_SITES => $values['episciences']['WEB_SITES'],
+                        Episciences_User::STR_BIOGRAPHY => $values['episciences']['BIOGRAPHY']
                     ], JSON_THROW_ON_ERROR);
 
                 } catch (JsonException $e) {
                     trigger_error($e->getMessage());
                 }
 
+
                 $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
 
-                $user = new Episciences_User($updatedUserValues);
+                // Initialized in Episciences_User::setAdditionalProfileInformation
+                unset($updatedUserValues['AFFILIATIONS'], $updatedUserValues['SOCIAL_MEDIAS'], $updatedUserValues['WEB_SITES'], $updatedUserValues['BIOGRAPHY']);
 
+                $user = new Episciences_User($updatedUserValues);
 
                 $subform = $form->getSubForm('ccsd');
 
@@ -1783,12 +1784,47 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $casUserData = $user->toArray();
-        unset($casUserData['ROLES'], $casUserData['affiliations'], $localUserData['biography'], $casUserData['web_sites'], $casUserData['social_medias']);
+        unset($casUserData['ROLES'], $casUserData['affiliations'], $casUserData['web_sites'], $casUserData['social_medias']);
 
         if (!empty(array_diff($localUserData, $casUserData))) {
             $data = array_merge($localUserData, $casUserData);
             $user = new Episciences_User($data);
             $user->save(false, false);
         }
+    }
+
+
+    /**
+     * @param array|null $input
+     * @param string|null $operationType
+     * @return array
+     */
+    private function processAffiliations(?array $input, ?string $operationType = 'disassemble'): array
+    {
+        $output = [];
+        $separator = '#';
+
+        if ($input) {
+            foreach ($input as $index => $value) {
+
+                if ($operationType === 'disassemble') {
+
+                    $explodedValue = explode($separator, $value);
+
+                    $label = trim($explodedValue[0]);
+                    $rorId = trim($explodedValue[1]);
+
+                    $rorId = Episciences_Tools::isRorIdentifier($rorId) ? $rorId : '';
+
+                    $output[$index] = ['label' => $label, 'rorId' => $rorId];
+
+                } elseif($operationType === 'assemble') {
+                    $output[$index] = isset($value['rorId']) && $value['rorId'] !== ''  ? implode(' ' . $separator, $value) : $value['label'];
+                }
+            }
+
+        }
+
+        return $output;
     }
 }
