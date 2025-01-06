@@ -1459,7 +1459,8 @@ class Episciences_Paper
 // Update document keys
         $document = $xmlToArray[$keyBody];
         $result = $serializer->serialize($document, 'json');
-        return str_replace(array('#', '%%ID', '%%VERSION'), array('value', Episciences_Tools::isJson($this->getIdentifier()) ? str_replace('"', '\"', $this->getIdentifier()) : $this->getIdentifier(), $this->getVersion()), $result);
+        $identifier = str_replace('"', '\"', $this->getIdentifier());
+        return str_replace(array('"#"', '%%ID', '%%VERSION'), array('"value"', $identifier, $this->getVersion()), $result);
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
