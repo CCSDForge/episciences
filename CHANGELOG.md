@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Fixed
+- Failed to change email address for profiles with affiliations.
+
+## v1.0.46.2 - 2025-01-03
 ### Added
 -  classifications and project title metadata in the document's JSON export.
 -  improved scripts for importing and processing classifications

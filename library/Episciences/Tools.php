@@ -1413,56 +1413,6 @@ class Episciences_Tools
     }
 
     /**
-     * @param array|null $input
-     * @param string $operationType
-     * @param string $separator
-     * @param bool $isIdentical // if $isIdentical = true, function (s) is identical to native functions
-     * @return array
-     */
-    public static function implodeOrExplode(?array $input, string $operationType = 'explode', string $separator = '#', bool $isIdentical = false): array
-    {
-        $output = [];
-
-        if ($input) {
-            foreach ($input as $index => $value) {
-
-                if ($operationType === 'explode') {
-
-                    $explodedValue = explode($separator, $value);
-
-                    if (!$isIdentical) {
-
-                        $label = trim($explodedValue[0]);
-                        $rorId = trim($explodedValue[1]);
-
-                        $rorId = self::isRorIdentifier($rorId) ? $rorId : '';
-
-                        $output[$index] = ['label' => $label, 'rorId' => $rorId];
-
-                    } else {
-
-                        $output[$index] = $explodedValue;
-                    }
-
-                } else {
-
-                    if (!$isIdentical) {
-                        $implodedValue = $value['rorId'] ? implode(' ' . $separator, $value) : $value['label'];
-                    } else {
-
-                        $implodedValue = implode($separator, $value);
-                    }
-
-                    $output[$index] = $implodedValue;
-                }
-            }
-
-        }
-
-        return $output;
-    }
-
-    /**
      *
      * Check if string is a valid ROR identifier (Research Organization Registry)
      * @param $string

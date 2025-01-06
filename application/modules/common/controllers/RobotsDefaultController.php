@@ -16,6 +16,7 @@ class RobotsDefaultController extends Zend_Controller_Action
         if (APPLICATION_ENV == ENV_PROD) {
             $pathsToDisallow = [
                 '/search',
+                '/index.php/search',
                 '*/tei',
                 '*/bibtex',
                 '*/dc',
@@ -25,8 +26,10 @@ class RobotsDefaultController extends Zend_Controller_Action
                 '*/doaj',
                 '*/zbjats',
                 '*/json',
+                '*/jsonv2',
                 '/browse/latest',
                 '/login',
+                '/logout',
                 '/submit',
                 '/user',
                 '/error'
