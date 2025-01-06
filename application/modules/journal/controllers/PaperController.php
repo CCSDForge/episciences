@@ -1423,11 +1423,7 @@ class PaperController extends PaperDefaultController
             $answerComment->setFile(json_encode($attachments));
         }
 
-        try {
-            $isSaved = $answerComment->save(false, $answerCommentUid);
-        } catch (Zend_Exception $e) {
-            throw new Zend_Exception('failure to save the answer comment', 0, $e);
-        }
+        $isSaved = $answerComment->save(false, $answerCommentUid);
 
         if (!$isSaved) {
             $message = 'TMP_VERSION : ';
