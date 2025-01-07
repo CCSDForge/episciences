@@ -15,9 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Fixed
+- When the "conflict of interest" option is activated reviewers are no longer visible for articles which the absence of conflict has been confirmed.
+- The small logo to the left of each article's permanent identifier will only appear if at least one conflict has been confirmed (Nb. If you hover over this logo, you will see the number of conflicts reported for that article)
+
+## v1.0.46.3 - 2025-01-06
+### Fixed
+- Failed to change email address for user profiles without affiliations.
+
+## v1.0.46.2 - 2025-01-03
 ### Added
 -  classifications and project title metadata in the document's JSON export.
 -  improved scripts for importing and processing classifications
+### Fixed
+- [RT#229027]: Multiple files attached to the temporary version: only one file is visible on the article page.
+- Prevent having empty roles when the last user role is deleted
 
 ## v1.0.46.1 - 2024-11-27
 ### Fixed 

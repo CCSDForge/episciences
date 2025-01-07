@@ -227,9 +227,9 @@ class Episciences_Tools
      * @param $path : folder where the files will be stored
      * @param array $replace : if $replace is defined, delete files having the same id before upload
      * @return array
-     * @throws Zend_File_Transfer_Exception
+
      */
-    public static function uploadFiles($path, $replace = []): array
+    public static function uploadFiles($path, array $replace = []): array
     {
         $results = [];
         $upload = new Zend_File_Transfer_Adapter_Http();
@@ -257,11 +257,15 @@ class Episciences_Tools
                     }
 
                 }
-                $filename = Episciences_Tools::filenameRotate($path, $filename);
+                $filename = self::filenameRotate($path, $filename);
                 // save file
-                $upload->addFilter('Rename', $path . $filename, $file);
-                $results[$file]['name'] = $filename;
-                $results[$file]['errors'] = (!$upload->receive($file)) ? $upload->getMessages() : null;
+                try {
+                    $upload->addFilter('Rename', $path . $filename, $file);
+                    $results[$file]['name'] = $filename;
+                    $results[$file]['errors'] = (!$upload->receive($file)) ? $upload->getMessages() : null;
+                } catch (Zend_File_Transfer_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
             }
         }
         return $results;
@@ -1406,56 +1410,6 @@ class Episciences_Tools
             $encoding = array_pop($encodings);
             mb_internal_encoding($encoding);
         }
-    }
-
-    /**
-     * @param array|null $input
-     * @param string $operationType
-     * @param string $separator
-     * @param bool $isIdentical // if $isIdentical = true, function (s) is identical to native functions
-     * @return array
-     */
-    public static function implodeOrExplode(?array $input, string $operationType = 'explode', string $separator = '#', bool $isIdentical = false): array
-    {
-        $output = [];
-
-        if ($input) {
-            foreach ($input as $index => $value) {
-
-                if ($operationType === 'explode') {
-
-                    $explodedValue = explode($separator, $value);
-
-                    if (!$isIdentical) {
-
-                        $label = trim($explodedValue[0]);
-                        $rorId = trim($explodedValue[1]);
-
-                        $rorId = self::isRorIdentifier($rorId) ? $rorId : '';
-
-                        $output[$index] = ['label' => $label, 'rorId' => $rorId];
-
-                    } else {
-
-                        $output[$index] = $explodedValue;
-                    }
-
-                } else {
-
-                    if (!$isIdentical) {
-                        $implodedValue = $value['rorId'] ? implode(' ' . $separator, $value) : $value['label'];
-                    } else {
-
-                        $implodedValue = implode($separator, $value);
-                    }
-
-                    $output[$index] = $implodedValue;
-                }
-            }
-
-        }
-
-        return $output;
     }
 
     /**

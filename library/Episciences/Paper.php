@@ -1459,14 +1459,12 @@ class Episciences_Paper
 // Update document keys
         $document = $xmlToArray[$keyBody];
         $result = $serializer->serialize($document, 'json');
-
-        return str_replace(array('#', '%%ID', '%%VERSION'), array('value', $this->getIdentifier(), $this->getVersion()), $result);
+        $identifier = str_replace('"', '\"', $this->getIdentifier());
+        return str_replace(array('"#"', '%%ID', '%%VERSION'), array('"value"', $identifier, $this->getVersion()), $result);
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
     {
-        $withoutFileStr = 'tmp_version_without_file';
-
         if (!$paper->isTmp()) {
             return;
         }
@@ -1482,7 +1480,6 @@ class Episciences_Paper
             }
             $tmpFiles = Episciences_Tools::arrayFilterEmptyValues($tmpFiles);
             $paper->tmpFiles = $tmpFiles;
-            $paper->setIdentifier(sprintf('%s/%s', $paper->getPaperid(), $tmpFiles[array_key_first($tmpFiles)] ?? $withoutFileStr));
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
         }
@@ -2013,7 +2010,7 @@ class Episciences_Paper
                 $fTmp = [
                     'name' => $oCFile->getName(),
                     'size' => $oCFile->getFileSize(),
-                    'link' => !$this->isPublished() ? $oCFile->getSelfLink() : sprintf('%s/%s/oafiles/%s', $journalUrl, $this->getDocid(), $oCFile->getName())
+                    'link' => !$this->isPublished() ? $oCFile->getSelfLink() : sprintf('%s/%s/oafiles/%s', $journalUrl, $this->getDocid(), urlencode($oCFile->getName()))
                 ];
 
                 $processedFile[] = $fTmp;
@@ -2027,7 +2024,8 @@ class Episciences_Paper
                 foreach ($this->tmpFiles as $fileName) {
 
                     $fTmp = [
-                        'link' => sprintf('%s/tmp_files/%s/%s', $journalUrl, $this->getDocid(), $fileName)
+                        'name' => $fileName,
+                        'link' => sprintf('%s/tmp_files/%s/%s', $journalUrl, $this->getPaperid(), urlencode($fileName))
                     ];
 
                     $processedFile[] = $fTmp;
@@ -4517,6 +4515,12 @@ class Episciences_Paper
      */
     public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
+
+        if($this->_conflicts){
+            $this->loadConflicts();
+        }
+
+
         if ($onlyConfirmed) {
 
             $this->_conflicts = array_filter($this->_conflicts, static function ($oConflict) {
@@ -5091,6 +5095,14 @@ class Episciences_Paper
                 }
             }
         }
+
+    }
+
+
+    private function loadConflicts() : void{
+
+        $allConflicts = Episciences_Paper_ConflictsManager::findByPaperId($this->getPaperid(), $this->getRvid());
+        $this->_conflicts = $allConflicts;
 
     }
 

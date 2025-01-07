@@ -236,7 +236,7 @@
                 </xsl:choose>
 
                 <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
-                    <div class="small">
+                    <div class="small force-word-wrap">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
                         <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
                             <xsl:value-of select="."/>

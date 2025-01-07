@@ -53,7 +53,7 @@ foreach ($this->list as $paper) : ?>
         $disabled = 'disabled';
         $ariaDisabled = 'aria-disabled="true"';
     }
-    $confirmedConflictsNb = count($paper->getConflicts());
+    $confirmedConflictsNb = count($paper->getConflicts(true));
     $coiTitle = ($confirmedConflictsNb > 1) ? 'conflits signalés' : 'conflit signalé';
     ?>
 
@@ -151,10 +151,13 @@ foreach ($this->list as $paper) : ?>
             ?>
         </td>
         <?php // article reviewers ***************************************** ?>
-        <td <?php if ($isConflictDetected || $paper->getUid() === $loggedUid ) {
-            $message = $isConflictDetected ? "Vous ne pouvez pas voir le statut d' un article pour lequel vous auriez un conflit d'intérêt" : "Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même";
-            echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate($message) . '"';
-        } ?>>
+        <td>
+
+<!--            --><?php //if ($isConflictDetected || $paper->getUid() === $loggedUid ) {
+//                $message = $isConflictDetected ? "Vous ne pouvez pas voir le statut d' un article pour lequel vous auriez un conflit d'intérêt" : "Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même";
+//                echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate($message) . '"';
+//            } ?>
+
             <?php // echo $this->partial('partials/paper_reviewers.phtml', array('article'=>$paper, 'isPartial'=>true)); ?>
             <?php // user can't see reviewers for his own submissions ?>
             <?php if (!$isConflictDetected && $paper->getUid() !== $loggedUid ) : ?>

@@ -1423,11 +1423,7 @@ class PaperController extends PaperDefaultController
             $answerComment->setFile(json_encode($attachments));
         }
 
-        try {
-            $isSaved = $answerComment->save(false, $answerCommentUid);
-        } catch (Zend_Exception $e) {
-            throw new Zend_Exception('failure to save the answer comment', 0, $e);
-        }
+        $isSaved = $answerComment->save(false, $answerCommentUid);
 
         if (!$isSaved) {
             $message = 'TMP_VERSION : ';
@@ -1552,7 +1548,7 @@ class PaperController extends PaperDefaultController
             $revisionInitiator->find($requestComment->getUid());
             $principalRecipient = $revisionInitiator;
         } else {
-            $principalRecipient = !empty($recipients) ? $recipients[array_key_first($editors)] : null;
+            $principalRecipient = !empty($recipients) ? $recipients[array_key_first($recipients)] : null;
         }
 
         $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
