@@ -473,7 +473,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
             $tmp['file_size'] = $dataFile['filesize'];
             $tmp['checksum'] = $dataFile['checksum']['value'];
             $tmp['checksum_type'] = $dataFile['checksum']['type'];
-            $tmp['self_link'] = $dataFile['pidURL'];
+            $tmp['self_link'] = $dataFile['pidURL'] ?? '#';
 
             $processedFiles[] = $tmp;
 

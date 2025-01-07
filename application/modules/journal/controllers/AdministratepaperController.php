@@ -140,7 +140,7 @@ class AdministratepaperController extends PaperDefaultController
                 $paper->setRevisionDeadline();
 
                 if ($isCoiEnabled) {
-                    $paper->getConflicts(true);
+                    $paper->getConflicts();
                 }
 
             }
@@ -309,7 +309,7 @@ class AdministratepaperController extends PaperDefaultController
                 $paper->setRevisionDeadline();
 
                 if ($isCoiEnabled) {
-                    $paper->getConflicts(true);
+                    $paper->getConflicts();
                 }
             }
             unset($paper);

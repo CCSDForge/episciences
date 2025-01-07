@@ -53,7 +53,7 @@ foreach ($this->list as $paper) : ?>
         $disabled = 'disabled';
         $ariaDisabled = 'aria-disabled="true"';
     }
-    $confirmedConflictsNb = count($paper->getConflicts());
+    $confirmedConflictsNb = count($paper->getConflicts(true));
     $coiTitle = ($confirmedConflictsNb > 1) ? 'conflits signalés' : 'conflit signalé';
     ?>
 
@@ -82,14 +82,13 @@ foreach ($this->list as $paper) : ?>
         <td class="text-center"><span data-toggle="tooltip" title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>" class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>"><?= $paper->getDocid() ?></span></td>
         <?php // article status icon ******************************************* ?>
         <td class="text-center">
-            <?php if (!$isConflictDetected) : ?>
-                <?php $paperStatusLabel =  mb_ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>
-                <?= $isTmp ? ('<div>' . '<span data-toggle="tooltip" class="label label-status-' . $paper->getStatus() . '" title="' . ucfirst($this->translate('version temporaire')) . '">TMP</span>') : '' ?>
-                <span data-toggle="tooltip" title="<?= $paperStatusLabel ?>">
-                    <img src="<?= Episciences_View_Helper_GetAvatar::asPaperStatusSvg($paperStatusLabel, $paper->getStatus()) ?>" alt="statusSvg"/>
+            <?php $paperStatusLabel = mb_ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>
+            <?= $isTmp ? ('<div>' . '<span data-toggle="tooltip" class="label label-status-' . $paper->getStatus() . '" title="' . ucfirst($this->translate('version temporaire')) . '">TMP</span>') : '' ?>
+            <span data-toggle="tooltip" title="<?= $paperStatusLabel ?>">
+                    <img src="<?= Episciences_View_Helper_GetAvatar::asPaperStatusSvg($paperStatusLabel, $paper->getStatus()) ?>"
+                         alt="statusSvg"/>
                 </span>
-                <?= $isTmp ? '</div>' : '' ?>
-            <?php endif; ?>
+            <?= $isTmp ? '</div>' : '' ?>
         </td>
         <?php
         // article title *******************************************
@@ -151,10 +150,13 @@ foreach ($this->list as $paper) : ?>
             ?>
         </td>
         <?php // article reviewers ***************************************** ?>
-        <td <?php if ($isConflictDetected || $paper->getUid() === $loggedUid ) {
-            $message = $isConflictDetected ? "Vous ne pouvez pas voir le statut d' un article pour lequel vous auriez un conflit d'intérêt" : "Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même";
-            echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate($message) . '"';
-        } ?>>
+        <td>
+
+<!--            --><?php //if ($isConflictDetected || $paper->getUid() === $loggedUid ) {
+//                $message = $isConflictDetected ? "Vous ne pouvez pas voir le statut d' un article pour lequel vous auriez un conflit d'intérêt" : "Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même";
+//                echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate($message) . '"';
+//            } ?>
+
             <?php // echo $this->partial('partials/paper_reviewers.phtml', array('article'=>$paper, 'isPartial'=>true)); ?>
             <?php // user can't see reviewers for his own submissions ?>
             <?php if (!$isConflictDetected && $paper->getUid() !== $loggedUid ) : ?>

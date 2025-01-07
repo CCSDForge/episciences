@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Changed
+- Display article's status on the page listing all articles, regardless of the conflict of interest option.
+### Fixed
+- When the "conflict of interest" option is activated reviewers are no longer visible for articles which the absence of conflict has been confirmed.
+- The small logo to the left of each article's permanent identifier will only appear if at least one conflict has been confirmed (Nb. If you hover over this logo, you will see the number of conflicts reported for that article)
+
 ## v1.0.46.3 - 2025-01-06
 ### Fixed
 - Failed to change email address for user profiles without affiliations.
