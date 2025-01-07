@@ -4515,6 +4515,12 @@ class Episciences_Paper
      */
     public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
+
+        if($this->_conflicts){
+            $this->loadConflicts();
+        }
+
+
         if ($onlyConfirmed) {
 
             $this->_conflicts = array_filter($this->_conflicts, static function ($oConflict) {
@@ -5089,6 +5095,14 @@ class Episciences_Paper
                 }
             }
         }
+
+    }
+
+
+    private function loadConflicts() : void{
+
+        $allConflicts = Episciences_Paper_ConflictsManager::findByPaperId($this->getPaperid(), $this->getRvid());
+        $this->_conflicts = $allConflicts;
 
     }
 
