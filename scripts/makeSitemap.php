@@ -1,11 +1,16 @@
 <?php
+/**
+ * Generate a sitemap for the specified RV code
+ * Example usage:
+ * php scripts/makeSitemap.php app:generate-sitemap dmtcs --pretty
+ */
 
 namespace App\Command;
 
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,19 +19,18 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 $localopts = [
-    'pretty' => "Pretty printing"
+    'pretty' => "Pretty printing",
+    'rvcode' => 'rvcode',
 ];
-
 
 require_once __DIR__ . '/loadHeader.php';
 require_once "JournalScript.php";
 
 class GenerateSitemap extends Command
 {
+    protected static $defaultName = 'app:generate-sitemap';
     private Logger $logger;
     private Client $httpClient;
-
-    protected static $defaultName = 'app:generate-sitemap';
 
     public function __construct()
     {
