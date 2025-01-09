@@ -41,10 +41,10 @@ class Episciences_Paper_ConflictsManager
      * @param int $uid
      * @param string|null $answer
      * @param string $mode
-     * @param string $mode
-     * @return  array | Episciences_Paper_Conflict[]
+     * @param int|null $paperId
+     * @return array
      */
-    public static function findByUidAndAnswer(int $uid, string $answer = null, string $mode = self::DEFAULT_MODE): array
+    public static function findByUidAndAnswer(int $uid, string $answer = null, string $mode = self::DEFAULT_MODE, int $paperId = null): array
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -57,7 +57,7 @@ class Episciences_Paper_ConflictsManager
             $sql->where('answer = ?', $answer);
         }
 
-        $rows = $db->fetchAll(self::findByUidAndAnswerQuery($uid, $answer));
+        $rows = $db->fetchAll(self::findByUidAndAnswerQuery($uid, $answer, $paperId));
 
         if ($mode !== self::DEFAULT_MODE) {
             return $rows;
@@ -238,9 +238,10 @@ class Episciences_Paper_ConflictsManager
     /**
      * @param int $uid
      * @param string|null $answer
+     * @param int|null $paperId
      * @return Zend_Db_Select
      */
-    public static function findByUidAndAnswerQuery(int $uid, string $answer = null): Zend_Db_Select
+    public static function findByUidAndAnswerQuery(int $uid, string $answer = null, int $paperId = null): Zend_Db_Select
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -251,6 +252,10 @@ class Episciences_Paper_ConflictsManager
 
         if ($answer) {
             $sql->where('answer = ?', $answer);
+        }
+
+        if($paperId){
+            $sql->where('paper_id = ?', $paperId);
         }
 
         return $sql;
