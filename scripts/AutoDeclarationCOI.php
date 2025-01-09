@@ -48,7 +48,7 @@ class AutoDeclarationCOI extends JournalScript
             $this->logger->critical(sprintf('Invalid Date format "Y-m-d" [%s]', $this->getParam('date') ?? 'Empty'));
             exit(1);
         }
-        
+
         defineSQLTableConstants();
         // Initialize the application and database
         $this->initApp(false);
@@ -89,67 +89,68 @@ class AutoDeclarationCOI extends JournalScript
         $logValues = [];
         $managersCanReportConflict = [];
         $tmpUsers = [];
+        $tmpList = [];
 
         $list = $db?->fetchAssoc($dataQuery);
 
-        $count = count($list);
+        foreach ($list as $item) {
+            try {
+                $tmpList[$item['PAPERID']] = new Episciences_Paper($item);
+            } catch (Zend_Db_Statement_Exception $e) {
+                $this->logger->critical($e->getMessage());
+                continue;
+            }
+        }
+
+        $count = count($tmpList);
 
         if ($count === 0) {
             $this->logger->info('No data to process');
             exit(0);
         }
 
+        try {
+            $this->addIfNotExists($journal::getChiefEditors(), $managersCanReportConflict);
+        } catch (Zend_Db_Statement_Exception $e) {
+            $this->logger->critical($e->getMessage());
 
-        $notificationSettings = $journal->getSetting($journal::SETTING_SYSTEM_NOTIFICATIONS);
-
-
-        $isChiefEditorsChecked = false;
-        $isSecretariesChecked = false;
-
-
-        if ($notificationSettings) {
-            $isChiefEditorsChecked = in_array($journal::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS, $notificationSettings, true);
-            $isSecretariesChecked = in_array($journal::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES, $notificationSettings, true);
         }
 
-        if ($isChiefEditorsChecked) {
-            try {
-                $this->addIfNotExists($journal::getChiefEditors(), $managersCanReportConflict);
-            } catch (Zend_Db_Statement_Exception $e) {
-                $this->logger->critical($e->getMessage());
-
-            }
+        try {
+            $this->addIfNotExists($journal::getSecretaries(), $managersCanReportConflict);
+        } catch (Zend_Db_Statement_Exception $e) {
+            $this->logger->critical($e->getMessage());
         }
 
-        if ($isSecretariesChecked) {
-            try {
-                $this->addIfNotExists($journal::getSecretaries(), $managersCanReportConflict);
-            } catch (Zend_Db_Statement_Exception $e) {
-                $this->logger->critical($e->getMessage());
-            }
-        }
-
-        $this->addIfNotExists($managersCanReportConflict, $tmpUsers);
+        /** @var Episciences_Paper $paper */
 
 
-        foreach ($list as $item) {
+        foreach ($tmpList as $paper) {
 
             try {
-                $paper = new Episciences_Paper($item);
+
                 $this->logger->info('Current Paper:');
                 $this->logger->info(sprintf('PAPERID = %s', $paper->getPaperid()));
+
                 $editors = $paper->getEditors();
+                $this->addIfNotExists($managersCanReportConflict, $tmpUsers);
                 $this->addIfNotExists($editors, $tmpUsers);
 
                 /** @var Episciences_User $user */
                 foreach ($tmpUsers as $user) {
                     $this->logger->info('Current User:');
                     $this->logger->info(sprintf('UID = %s', $user->getUid()));
+
                     $userConflict = Episciences_Paper_ConflictsManager::findByUidAndAnswer($user->getUid(), null, Episciences_Paper_ConflictsManager::DEFAULT_MODE, $paper->getPaperid());
 
                     if (!$userConflict) {
 
-                        $values[] = sprintf("(%s,%s,'%s',%s,'%s')", $paper->getPaperid(), $user->getUid(), Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'NULL', $date);
+                        $line = sprintf("(%s,%s,'%s',%s,'%s')", $paper->getPaperid(), $user->getUid(), Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'NULL', $date);
+                        if ($this->isVerbose()) {
+                            $this->logger->info(sprintf('Current insert in %s : %s', T_PAPER_CONFLICTS, $line));
+                        }
+
+                        $values[] = $line;
 
                         try {
                             $logDetail = json_encode([
@@ -169,14 +170,20 @@ class AutoDeclarationCOI extends JournalScript
                             $logDetail = 'NULL';
                         }
 
-                        $logValues[] = sprintf("(%s,%s,%s,'%s','%s','%s',%s,'%s')", $paper->getPaperid(), $paper->getDocid(), EPISCIENCES_UID, $journal->getRvid(), Episciences_Paper_Logger::CODE_COI_REPORTED, $logDetail, 'NULL', $date);
+                        $logLine = sprintf("(%s,%s,%s,'%s','%s','%s',%s,'%s')", $paper->getPaperid(), $paper->getDocid(), EPISCIENCES_UID, $journal->getRvid(), Episciences_Paper_Logger::CODE_COI_REPORTED, $logDetail, 'NULL', $date);
+
+                        if ($this->isVerbose()) {
+                            $this->logger->info(sprintf('Current insert in %s : %s', T_LOGS, $logLine));
+                        }
+
+                        $logValues[] = $logLine;
                     } else {
                         $this->logger->info("Has already reported a conflict");
                     }
 
                 }
 
-                $tmpUsers = [];
+                $tmpUsers = []; // to process next paper
 
             } catch (Zend_Db_Statement_Exception $e) {
                 $this->logger->critical($e->getMessage());
@@ -186,8 +193,8 @@ class AutoDeclarationCOI extends JournalScript
         }
 
         if (empty($values)) {
-            $conflictsDump = '';
-            $paperLogsDump = '';
+            $conflictsDump = 'EMPTY';
+            $paperLogsDump = 'EMPTY';
         } else {
             $conflictsDump = '--' . PHP_EOL;
             $conflictsDump .= '-- INSERT IN PAPER_CONFLICTS TABLE' . PHP_EOL;
@@ -197,21 +204,31 @@ class AutoDeclarationCOI extends JournalScript
             $paperLogsDump = PHP_EOL . '--' . PHP_EOL;
             $paperLogsDump .= '-- INSERT IN PAPER_LOG TABLE' . PHP_EOL;
             $paperLogsDump .= '--' . PHP_EOL;
-            $paperLogsDump .= sprintf("INSERT INTO %s (`PAPERID`, `DOCID`, `UID`, `RVID`, `ACTION`, `DETAIL`, `FILE`, `DATE`) VALUES %s;", $db->quoteIdentifier(T_LOGS), implode(',', $logValues) );
+            $paperLogsDump .= sprintf("INSERT INTO %s (`PAPERID`, `DOCID`, `UID`, `RVID`, `ACTION`, `DETAIL`, `FILE`, `DATE`) VALUES %s;", $db->quoteIdentifier(T_LOGS), implode(',', $logValues));
 
         }
 
 
-        $fileName = sprintf('updateCOI_%s.sql', date("Y-m-d_H-i-s"));
-        $file = fopen($fileName, 'wb+');
+        $conflictFileName = sprintf('autoDeclarationCOI_%s.sql', date("Y-m-d_H-i-s"));
+        $paperLogsFileName = sprintf('autoDeclarationPaperLogs_%s.sql', date("Y-m-d_H-i-s"));
+        $file1 = fopen($conflictFileName, 'wb+');
 
-        if (!$file) {
-            $this->logger->critical(sprintf('Unable to open file %s', $fileName));
+        if (!$file1) {
+            $this->logger->critical(sprintf('Unable to open file %s', $conflictFileName));
             exit(1);
         }
 
-        fwrite($file, $conflictsDump . $paperLogsDump);
-        fclose($file);
+        $file2 = fopen($paperLogsFileName, 'wb+');
+
+        if (!$file2) {
+            $this->logger->critical(sprintf('Unable to open file %s', $paperLogsFileName));
+            exit(1);
+        }
+
+        fwrite($file1, $conflictsDump);
+        fclose($file1);
+        fwrite($file2, $paperLogsDump);
+        fclose($file2);
 
         $timeEnd = microtime(true);
         $time = $timeEnd - $timeStart;
@@ -219,7 +236,10 @@ class AutoDeclarationCOI extends JournalScript
         $this->logger->info(sprintf('Start of script: %s ', date("H:i:s", $timeStart)));
         $this->logger->info(sprintf('End of script: %s', date("H:i:s", $timeEnd)));
         $this->logger->info(sprintf('Script executed in %s', number_format($time, 3) . ' sec.'));
-        $this->logger->info(sprintf('Dump generated: %s/%s', getcwd(), $fileName));
+        $this->logger->info(sprintf('Number of rows to insert in table %s: %s', T_PAPER_CONFLICTS, count($values)));
+        $this->logger->info(sprintf('Number of rows to insert in table %s: %s', T_LOGS, count($logValues)));
+        $this->logger->info(sprintf('Dump generated: %s/%s', getcwd(), $conflictFileName));
+        $this->logger->info(sprintf('Dump generated: %s/%s', getcwd(), $paperLogsFileName));
     }
 
     /**
