@@ -21,7 +21,6 @@ class PaperDefaultController extends DefaultController
     public const COMMENTS_STR = '/comments/';
     public const RATINGS_ACTION = 'ratings';
     public const RATING_ACTION = 'rating';
-    public const PAPER_URL_STR = 'paper/view?id=';
     public const ADMINPAPER_URL_STR = 'administratepaper/view?id=';
     public const STATUS = 'status';
     public const SERVER_NAME_STR = 'SERVER_NAME';

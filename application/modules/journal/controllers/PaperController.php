@@ -328,7 +328,7 @@ class PaperController extends PaperDefaultController
                         }
 
                         // redirect
-                        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+                        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]));
                         return;
 
                     }
@@ -448,7 +448,7 @@ class PaperController extends PaperDefaultController
                         }
 
                         // redirect
-                        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+                        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]));
                         return;
 
                     }
@@ -1193,8 +1193,6 @@ class PaperController extends PaperDefaultController
         $post = $request->getPost();
         $docId = $request->getQuery(self::DOC_ID_STR);
 
-        $url = self::PAPER_URL_STR . $docId;
-
         $message = "Votre réponse n'a pas pu être enregistrée : merci de bien vouloir compléter les champs marqués d'un astérisque (*).";
         $nameSpace = 'error';
 
@@ -1312,7 +1310,7 @@ class PaperController extends PaperDefaultController
 
         // redirection and success message
         $this->_helper->FlashMessenger->setNamespace($nameSpace)->addMessage($this->view->translate($message));
-        $this->_helper->redirector->gotoUrl($url);
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
 
     }
 
@@ -1428,7 +1426,7 @@ class PaperController extends PaperDefaultController
             $message = 'TMP_VERSION : ';
             $message .= $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre commentaire.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
         }
 
         // unassign reviewers from previous version
@@ -1503,7 +1501,7 @@ class PaperController extends PaperDefaultController
         } else {
             $message = $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
         }
 
 
@@ -1609,7 +1607,7 @@ class PaperController extends PaperDefaultController
                 ]);
         } else {
 
-            $url = self::PAPER_URL_STR . $tmpPaper->getDocid();
+            $url = $this->url(['controller' => 'paper', 'action' => 'view', 'id' => $tmpPaper->getDocid()]);
 
         }
 
@@ -1872,7 +1870,7 @@ class PaperController extends PaperDefaultController
             if (!$conceptIdentifier || $conceptIdentifier !== $paper->getConcept_identifier()) {
                 $message = $this->view->translate("Vos modifications n'ont pas été prises en compte : la version du document n'est pas liée à la précédente.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
                 return;
             }
 
@@ -1890,7 +1888,7 @@ class PaperController extends PaperDefaultController
         if ($currentVersion < $paper->getVersion()) {
             $message = $this->view->translate("la version de l'article à mettre à jour doit être supérieure à la version précédente.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
             return;
         }
 
@@ -1898,7 +1896,7 @@ class PaperController extends PaperDefaultController
         if (!$this->dataProcessing($post[self::SEARCH_DOC_STR])['isValid'] && $paper->isRequiredPaperPwd()) {
             $message = $this->view->translate("Votre soumission n'a pas été enregistrée : le mot de passe du papier n'a pas été rempli, veuillez réessayer.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
             return;
         }
 
@@ -1948,7 +1946,7 @@ class PaperController extends PaperDefaultController
         if ($newPaper->alreadyExists()) {
             $message = $this->view->translate("L'article que vous tentez d'envoyer existe déjà.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
             return;
         }
 
@@ -2173,12 +2171,16 @@ class PaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
 
             // Redirection
-            $redUrl = ($paper->isOwner()) ? 'paper/submitted' : '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $newPaper->getDocid();
+            if (($paper->isOwner())) {
+                $redUrl = $this->url(['controller' => 'paper', 'action' => 'submitted']);
+            } else {
+                $redUrl = $this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $newPaper->getDocid()]);
+            }
             $this->_helper->redirector->gotoUrl($redUrl);
         } else {
             $message = $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
         }
 
     }
@@ -2687,7 +2689,7 @@ class PaperController extends PaperDefaultController
     {
         $report = null;
         if ($reviewerUid < 0) {
-            $this->redirect('/administratepaper/view/id/' . $paper->getDocid());
+            $this->redirect($this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $paper->getDocid()]));
 
         } elseif ($reviewerUid === 0) { // Déjà relecteur pour cet article
             $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid());
@@ -2898,7 +2900,7 @@ class PaperController extends PaperDefaultController
         }
 
         if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid())) {
-            $this->_helper->redirector->gotoUrl('administratepaper/view?id=' . $paper->getDocid());
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $paper->getDocid()]));
         } else {
             // show the usual reviewer all his reviews
             $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
@@ -3200,7 +3202,7 @@ class PaperController extends PaperDefaultController
         }
 
         // redirect *******************************
-        $this->_helper->redirector->gotoUrl('paper/submitted');
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'submitted']));
     }
 
     /**
