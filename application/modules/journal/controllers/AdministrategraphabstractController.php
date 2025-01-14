@@ -4,7 +4,7 @@ class AdministrategraphabstractController extends Zend_Controller_Action
 {
     public const PATH_FILE = REVIEW_PATH . "public";
     public const DOCUMENT_COL = "DOCUMENT";
-    public const JSON_PATH_ABS_FILE = "$.public_properties.database.current.graphical_abstract_file";
+    public const JSON_PATH_ABS_FILE = Episciences_Paper::JSON_PATH_ABS_FILE;
 
     public const FILE_SIZE = 100000;
 
