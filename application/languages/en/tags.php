@@ -373,6 +373,8 @@ return array(
     Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI canceled',
     Episciences_Paper_Logger::CODE_COI_REPORTED => 'Conflict Of Interest (COI)',
     Episciences_Paper_Logger::CODE_COI_REVERTED => 'Conflict Of Interest (COI): cancelled',
+    Episciences_Paper_Logger::CODE_DD_UPLOADED => 'Data descriptor uploaded',
+    Episciences_Paper_Logger::CODE_SWD_UPLOADED => 'Software descriptor uploaded',
 
     Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Update',
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'New publication date',

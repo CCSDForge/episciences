@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- It is now possible to attach a data/software descriptor to a submission.
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
 ### fixed
 - The response to a modification request via "Contact without sending a new version" does not appear on the article page.

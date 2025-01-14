@@ -44,7 +44,7 @@ return array(
     'Preprint' => 'Preprint',
     'Conferenceobject' => 'Conference paper',
     'Text' => "Preprint",
-    'Dataset' => 'Jeux de données',
+    'Dataset' => 'Dataset',
     'Report' => 'Report',
 
 
@@ -2135,7 +2135,11 @@ return array(
     "Poids maximum du fichier : 100 ko, Hauteur maximale : 880px" => "Max size file: 100 ko, Max height: 880px",
 
     'classification_jel' => 'JEL Classification System',
-    'classification_msc2020' => 'Mathematics Subject Classification 2020'
+    'classification_msc2020' => 'Mathematics Subject Classification 2020',
+
+    //DD
+    'Descripteur de données' => 'Data descriptor',
+    'Descripteur de logiciel' => 'Software descriptor',
 
 
 );

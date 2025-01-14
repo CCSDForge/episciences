@@ -1178,7 +1178,7 @@ class Episciences_Tools
      * @param bool $forceAdditionalTranslation [true: translate also $additionalDescription]
      * @return string
      */
-    public static function buildAttachedFilesDescription(array $extensions = ALLOWED_EXTENSIONS, string $additionalDescription = '', $forceAdditionalTranslation = false)
+    public static function buildAttachedFilesDescription(array $extensions = ALLOWED_EXTENSIONS, string $additionalDescription = '', bool $forceAdditionalTranslation = false): string
     {
 
         $implode_extensions = implode(', ', $extensions);
