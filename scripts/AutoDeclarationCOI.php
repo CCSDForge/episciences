@@ -171,7 +171,7 @@ class AutoDeclarationCOI extends JournalScript
                                     'screenName' => $user->getScreenName()
                                 ]
 
-                            ], JSON_THROW_ON_ERROR);
+                            ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
                         } catch (JsonException $e) {
                             $this->logger->critical($e->getMessage());
                             $logDetail = 'NULL';
