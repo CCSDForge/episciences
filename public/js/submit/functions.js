@@ -325,6 +325,7 @@ $(function () {
       $("#xml").val(result["record"]); // insert record in hidden field
 
       if (!isEmptyData(result["enrichment"])) {
+        console.log(result["enrichment"].type);
         $("#h_enrichment").val(JSON.stringify(result["enrichment"]));
       }
     }

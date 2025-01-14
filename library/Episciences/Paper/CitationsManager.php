@@ -6,6 +6,7 @@ use Monolog\Logger;
 class Episciences_Paper_CitationsManager
 {
     public const NUMBER_OF_AUTHORS_WANTED_VIEWS = 5;
+
     public static function insert(array $citations): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -40,14 +41,16 @@ class Episciences_Paper_CitationsManager
         return $affectedRows;
     }
 
-    public static function getCitationByDocId($docId){
+    public static function getCitationByDocId($docId)
+    {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()->from(["citation" => T_PAPER_CITATIONS])->joinLeft(['source_paper'=>T_PAPER_METADATA_SOURCES],"citation.source_id = source_paper.id",["source_id_name"=>'source_paper.name'])->where('docid = ? ', $docId)->order("source_id");
+        $sql = $db->select()->from(["citation" => T_PAPER_CITATIONS])->joinLeft(['source_paper' => T_PAPER_METADATA_SOURCES], "citation.source_id = source_paper.id", ["source_id_name" => 'source_paper.name'])->where('docid = ? ', $docId)->order("source_id");
         return $db->fetchAssoc($sql);
     }
 
-    public static function formatCitationsForViewPaper($docId){
+    public static function formatCitationsForViewPaper($docId)
+    {
         $allCitation = self::getCitationByDocId($docId);
         $templateCitation = "";
         $counterCitations = 0;
@@ -56,10 +59,10 @@ class Episciences_Paper_CitationsManager
             $decodeCitations = json_decode($value['citation'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
             $counterCitations += count($decodeCitations);
             $decodeCitations = self::sortAuthorAndYear($decodeCitations);
-            foreach ($decodeCitations as $citationMetadataArray){
-                $templateCitation.="<ul class='list-unstyled'>";
-                $templateCitation.="<li>";
-                $citationMetadataArray = array_map('strip_tags',$citationMetadataArray);
+            foreach ($decodeCitations as $citationMetadataArray) {
+                $templateCitation .= "<ul class='list-unstyled'>";
+                $templateCitation .= "<li>";
+                $citationMetadataArray = array_map('strip_tags', $citationMetadataArray);
 
                 $citationType = $citationMetadataArray['type'] ?? null;
 
@@ -76,73 +79,78 @@ class Episciences_Paper_CitationsManager
                 }
 
                 foreach ($citationMetadataArray as $keyMetadata => $metadata) {
-                    if ($metadata !== ""){
+                    if ($metadata !== "") {
                         if ($keyMetadata === 'source_title') {
-                            $templateCitation.= "<i>".htmlspecialchars($metadata).'</i>';
+                            $templateCitation .= "<i>" . htmlspecialchars($metadata) . '</i>';
                         } elseif ($keyMetadata === 'type') {
                             continue;
                         } elseif ($keyMetadata === 'author') {
                             $metadata = self::reduceAuthorsView(htmlspecialchars($metadata));
-                            $templateCitation.= "<b>".self::formatAuthors(htmlspecialchars($metadata)).'</b>';
+                            $templateCitation .= "<b>" . self::formatAuthors(htmlspecialchars($metadata)) . '</b>';
                         } elseif ($keyMetadata === 'page') {
-                            $templateCitation.= "pp.&nbsp".trim(htmlspecialchars($metadata));
+                            $templateCitation .= "pp.&nbsp" . trim(htmlspecialchars($metadata));
                         } elseif ($keyMetadata === 'doi') {
-                            $templateCitation.= "<a rel='noopener' target='_blank' href=".$doiOrgDomain.$metadata.">".htmlspecialchars($metadata)."</a>";
-                        } elseif ($keyMetadata === 'oa_link' && $citationMetadataArray['doi'] !== $metadata){
-                            $templateCitation.= "<i class='fas fa-lock-open'></i>"." <a rel='noopener' target='_blank' href=".htmlspecialchars($metadata).">".htmlspecialchars($metadata)."</a>";
-                        } elseif ($keyMetadata === 'oa_link' && $citationMetadataArray['doi'] === $metadata){
-                            continue;
+                            $templateCitation .= "<a rel='noopener' target='_blank' href=" . $doiOrgDomain . $metadata . ">" . htmlspecialchars($metadata) . "</a>";
+                        } elseif ($keyMetadata === 'oa_link' && isset($citationMetadataArray['doi'])) {
+                            if ($citationMetadataArray['doi'] !== $metadata) {
+                                $templateCitation .= "<i class='fas fa-lock-open'></i>" . " <a rel='noopener' target='_blank' href=" . htmlspecialchars($metadata) . ">" . htmlspecialchars($metadata) . "</a>";
+                            } else {
+                                continue;
+                            }
                         } else {
-                            $templateCitation.= htmlspecialchars($metadata);
+                            $templateCitation .= htmlspecialchars($metadata);
                         }
-                        $templateCitation.= ', ';
+                        $templateCitation .= ', ';
                     }
                 }
-                $templateCitation = substr_replace($templateCitation,".",-2);
-                $templateCitation.= "</li>";
+                $templateCitation = substr_replace($templateCitation, ".", -2);
+                $templateCitation .= "</li>";
 
             }
-            $templateCitation.="</ul>";
-            $templateCitation .= "<small class='label label-default'>".Zend_Registry::get('Zend_Translate')->translate('Sources :') . ' ' . "OpenCitations, OpenAlex & Crossref" ."</small>";
-            $templateCitation.="<br>";
+            $templateCitation .= "</ul>";
+            $templateCitation .= "<small class='label label-default'>" . Zend_Registry::get('Zend_Translate')->translate('Sources :') . ' ' . "OpenCitations, OpenAlex & Crossref" . "</small>";
+            $templateCitation .= "<br>";
         }
-        return ['template'=>$templateCitation,'counterCitations'=>$counterCitations];
+        return ['template' => $templateCitation, 'counterCitations' => $counterCitations];
     }
 
     /**
      * @param array $arrayMetadata
      * @return array
      */
-    public static function sortAuthorAndYear(array $arrayMetadata = []) : array {
-        usort($arrayMetadata, static function($a, $b) {
+    public static function sortAuthorAndYear(array $arrayMetadata = []): array
+    {
+        usort($arrayMetadata, static function ($a, $b) {
             return strcmp($a['author'], $b['author']);
         });
-        usort($arrayMetadata, static function($a, $b) {
+        usort($arrayMetadata, static function ($a, $b) {
             return $b['year'] - $a['year'];
         });
         return $arrayMetadata;
     }
 
-    public static function formatAuthors($author){
+    public static function formatAuthors($author)
+    {
 
-        $getAllAuthorRow = explode(";",$author);
-        $getAllAuthorRow = array_map('trim',$getAllAuthorRow);
+        $getAllAuthorRow = explode(";", $author);
+        $getAllAuthorRow = array_map('trim', $getAllAuthorRow);
         $orcidReg = '/, \d{4}-\d{4}-\d{4}-\d{3}(?:\d|X)/'; //regex with comma
-        foreach ($getAllAuthorRow as $value){
+        foreach ($getAllAuthorRow as $value) {
             preg_match($orcidReg, $value, $matches);
-            if (!empty($matches)){
-                $author = str_replace($value,preg_replace($orcidReg, self::createOrcidStringForView($matches[0]), $value),$author);
+            if (!empty($matches)) {
+                $author = str_replace($value, preg_replace($orcidReg, self::createOrcidStringForView($matches[0]), $value), $author);
             }
 
         }
         return rtrim($author);
     }
 
-    public static function reduceAuthorsView($author){
-        $getAllAuthorRow = explode(";",$author);
-        $getAllAuthorRow = array_map('trim',$getAllAuthorRow);
-        if (count($getAllAuthorRow) > self::NUMBER_OF_AUTHORS_WANTED_VIEWS){
-            $getAllAuthorRow = array_slice($getAllAuthorRow,0,self::NUMBER_OF_AUTHORS_WANTED_VIEWS, true);
+    public static function reduceAuthorsView($author)
+    {
+        $getAllAuthorRow = explode(";", $author);
+        $getAllAuthorRow = array_map('trim', $getAllAuthorRow);
+        if (count($getAllAuthorRow) > self::NUMBER_OF_AUTHORS_WANTED_VIEWS) {
+            $getAllAuthorRow = array_slice($getAllAuthorRow, 0, self::NUMBER_OF_AUTHORS_WANTED_VIEWS, true);
             $getAllAuthorRow[] = "et al.";
         }
         $strAuthorsReduced = implode(';', $getAllAuthorRow);
@@ -168,18 +176,18 @@ class Episciences_Paper_CitationsManager
      * @param array $citation
      * @return string[]
      */
-    public static function reorganizeForBookChapter(array $citation) : array
+    public static function reorganizeForBookChapter(array $citation): array
     {
         $arrayForBc = [
             'author' => "",
-            'source_title'=> "",
-            'title'=> "",
-            'volume'=> "",
-            'issue'=> "",
-            'page'=> "",
-            'year'=> "",
-            'doi'=> "",
-            'oa_link'=> ""
+            'source_title' => "",
+            'title' => "",
+            'volume' => "",
+            'issue' => "",
+            'page' => "",
+            'year' => "",
+            'doi' => "",
+            'oa_link' => ""
         ];
         foreach ($citation as $key => $val) {
             $arrayForBc[$key] = $val;
@@ -191,19 +199,19 @@ class Episciences_Paper_CitationsManager
      * @param array $citation
      * @return string[]
      */
-    public static function reorganizeForProceedingsArticle(array $citation) : array
+    public static function reorganizeForProceedingsArticle(array $citation): array
     {
         $arrayForPa = [
             'author' => "",
-            'source_title'=> "",
-            'title'=> "",
-            'volume'=> "",
-            'page'=> "",
-            'issue'=> "",
-            'year'=> "",
+            'source_title' => "",
+            'title' => "",
+            'volume' => "",
+            'page' => "",
+            'issue' => "",
+            'year' => "",
             'event_place' => "",
-            'doi'=> "",
-            'oa_link'=> ""
+            'doi' => "",
+            'oa_link' => ""
         ];
         foreach ($citation as $key => $val) {
             $arrayForPa[$key] = $val;
@@ -220,7 +228,7 @@ class Episciences_Paper_CitationsManager
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function getAllCitationInfoAndFormat(array $metadataInfoCitation, array $globalInfoMetadata, int $i, string $doiWhoCite) : array
+    public static function getAllCitationInfoAndFormat(array $metadataInfoCitation, array $globalInfoMetadata, int $i, string $doiWhoCite): array
     {
         $globalInfoMetadata[$i]['type'] = $metadataInfoCitation['type_crossref'];
         $globalInfoMetadata[$i]['author'] = Episciences_OpenalexTools::getAuthors($metadataInfoCitation['authorships']);
@@ -264,7 +272,7 @@ class Episciences_Paper_CitationsManager
     {
         $setsMetadata = Episciences_OpenalexTools::getMetadataOpenAlexByDoi($doiWhoCite);
         if (PHP_SAPI === 'cli') {
-            echo PHP_EOL .'METADATA FOUND IN CACHE ' . $doiWhoCite . PHP_EOL;
+            echo PHP_EOL . 'METADATA FOUND IN CACHE ' . $doiWhoCite . PHP_EOL;
         }
         self::logInfoMessage('METADATA FOUND IN CACHE ' . $doiWhoCite);
         $metadataInfoCitation = json_decode($setsMetadata->get(), true, 512, JSON_THROW_ON_ERROR);
@@ -295,14 +303,14 @@ class Episciences_Paper_CitationsManager
             $citationObject->setSourceId(Episciences_Repositories::OPENCITATIONS_ID);
             if (self::insert([$citationObject]) >= 1) {
                 if (PHP_SAPI === 'cli') {
-                    echo PHP_EOL .'CITATION INSERTED FOR ' . $docId . PHP_EOL;
+                    echo PHP_EOL . 'CITATION INSERTED FOR ' . $docId . PHP_EOL;
                 }
                 self::logInfoMessage('CITATION INSERTED FOR ' . $docId);
             } else {
                 if (PHP_SAPI === 'cli') {
-                    echo PHP_EOL .'NO CHANGING CITATIONS FOR ' . $docId . PHP_EOL;
+                    echo PHP_EOL . 'NO CHANGING CITATIONS FOR ' . $docId . PHP_EOL;
                 }
-                self::logInfoMessage('NO CHANGING CITATIONS FOR ' . $docId );
+                self::logInfoMessage('NO CHANGING CITATIONS FOR ' . $docId);
             }
         }
     }

@@ -1784,7 +1784,7 @@ class PaperController extends PaperDefaultController
 
         $zSubmitUrl = null;
 
-        if (!$isFromZSubmit) {
+        if ($isFromZSubmit) {
 
             $zSubmitUrl = $this->getZSubmitUrl(null, [
                 'newVersion' => true,
@@ -1816,6 +1816,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
+
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -1833,6 +1834,7 @@ class PaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId, false);
 
         $paper->loadOtherVolumes(); // github #48
+        $paper->loadDataDescriptor();
 
         //tmp version
         $hasHook = isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
@@ -1982,23 +1984,30 @@ class PaperController extends PaperDefaultController
             $response = Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
 
             Episciences_Repositories::callHook('hookLinkedDataProcessing', array_merge($hookParams, ['response' => $response]));
-            // Author comment
-            $author_comment = new Episciences_Comment();
+
             // admin can submit new version
             $commentUid = (Episciences_Auth::isSecretary() && ($paper->getUid() !== Episciences_Auth::getUid())) ? $paper->getUid() : Episciences_Auth::getUid();
-            $author_comment->setDocid($newPaper->getDocid());
-            $author_comment->setMessage($post['new_author_comment']);
-            $author_comment->setUid($commentUid);
-            $author_comment->setType(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
-            $author_comment->setFilePath(REVIEW_FILES_PATH . $newPaper->getDocid() . self::COMMENTS_STR);
-            $author_comment->save(false, $commentUid);
+
+
+            $data = [
+                Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME => $post[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME],
+                Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME => $_FILES[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? null,
+                Episciences_Submit::DD_FILE_ELEMENT_NAME => $_FILES[Episciences_Submit::DD_FILE_ELEMENT_NAME]['name'] ?? null,
+                Episciences_Submit::DD_PREVIOUS_VERSION_STR => $paper->getDataDescriptor()?->getVersion()
+            ];
+
+
+            (new Episciences_Submit())->processCoverLetterAndDataDescriptor($newPaper, $data);
 
             // save answer (new version)
             $answerCommentType = !in_array($requestComment->getType(), Episciences_CommentsManager::$_copyEditingFinalVersionRequest, true) ?
                 Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION :
                 Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED;
 
-            $answerComment = clone($author_comment);
+            $answerComment = new Episciences_Comment();
+            $answerComment->setFilePath(REVIEW_FILES_PATH . $newPaper->getDocid() . self::COMMENTS_STR);
+            $answerComment->setUid($commentUid);
+            $answerComment->setMessage($post[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME]);
             $answerComment->setParentid($requestId);
             $answerComment->setType($answerCommentType);
             $answerComment->setDocid($docId);

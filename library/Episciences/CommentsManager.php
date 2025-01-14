@@ -446,19 +446,19 @@ class Episciences_CommentsManager
             $allowedToSeeCoverLetterTranslated[] = $translator->translate($roleAllowedToSee);
         }
         $descriptionAllowedToSeeCoverLetterTranslated = $translator->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
-        $form->addElement('textarea', 'author_comment', [
+        $form->addElement('textarea', Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME, [
             'label' => 'Commentaire', 'rows' => 5,
             'value' => $values['MESSAGE'] ?? '',
             'description' => $descriptionAllowedToSeeCoverLetterTranslated,
             'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]],
             'required' => !isset($values['MESSAGE'])
         ]);
-        $group[] = 'author_comment';
+        $group[] = Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME;
         // Attached file
         $descriptions = self::getDescriptions();
         $description = $descriptions['description'];
         $description .= '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated;
-        $form->addElement('file', 'file_comment_author', [
+        $form->addElement('file', Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME, [
             'label' => "Lettre d'accompagnement",
             'description' => $description,
             'valueDisabled' => true,
@@ -469,7 +469,7 @@ class Episciences_CommentsManager
             ]
         ]);
 
-        $group[] = 'file_comment_author';
+        $group[] = Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME;
         if (isset($values['FILE'])) {
             $href = '<a href="/docfiles/comments/' . $values['DOCID'] . '/' . $values['FILE'] . '">' . $values['FILE'] . '</a>';
 
@@ -748,33 +748,32 @@ class Episciences_CommentsManager
     /**
      * @param Episciences_Paper $paper
      * @param array $coverLetter
+     * @param bool $ignoreUpload // [true] the attached file has already been uploaded
      * @return bool
-
      */
 
-    public static function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null]): bool
+    public static function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null], bool $ignoreUpload = false): bool
     {
+
+        if (empty($coverLetter['message']) && empty($coverLetter['attachedFile'])) { //Avoid inserting an empty row
+            return true;
+        }
+
         // Save author comment and attached file
         $authorComment = new Episciences_Comment();
         $authorComment->setFilePath(REVIEW_FILES_PATH . $paper->getDocid() . '/comments/');
         $authorComment->setType(self::TYPE_AUTHOR_COMMENT);
         $authorComment->setDocid($paper->getDocid());
         $authorComment->setMessage($coverLetter["message"]);
+        $authorComment->setFile($coverLetter["attachedFile"]);
 
-        $result = false;
 
-        //Avoid inserting an empty row in the table
-        if (
-            (
-                !empty($coverLetter['message']) ||
-                !empty($coverLetter["attachedFile"])
-            ) &&
-            $result = $authorComment->save()
-        ) {
+        if (!$authorComment->save(false, null, $ignoreUpload)) {
             trigger_error(sprintf('Failed to save cover letter for document #%s', $paper->getDocid()));
+            return false;
         }
 
-        return $result;
+        return true;
     }
 
     /**
