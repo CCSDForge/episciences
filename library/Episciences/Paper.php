@@ -269,7 +269,7 @@ class Episciences_Paper
         self::TEXT_TYPE_TITLE,
         self::WORKING_PAPER_TYPE_TITLE,
     ];
-    public const JSON_PATH_ABS_FILE = "$.public_properties.database.current.graphical_abstract_file";
+    public const JSON_PATH_ABS_FILE = "$.database.current.graphical_abstract_file";
     public static array $_statusPriority = [
         self::STATUS_SUBMITTED => 0,
         self::STATUS_BEING_REVIEWED => 1,
@@ -4824,7 +4824,7 @@ class Episciences_Paper
     public function getGraphical_abstract($docId): ?string
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(DOCUMENT, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
+        $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(`DOCUMENT`, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
         try {
             foreach ($query->fetch() as $val) {
                 if (!is_null($val)) {
