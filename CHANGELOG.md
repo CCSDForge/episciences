@@ -14,8 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-### added
-- Script to auto-declaration of conflicts of interest.
+
+## Unreleased
+### Added
+- New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
 
 ## v1.0.47 - 2025-01-08
 ### Added

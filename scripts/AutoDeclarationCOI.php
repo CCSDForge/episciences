@@ -136,6 +136,13 @@ class AutoDeclarationCOI extends JournalScript
                 $this->addIfNotExists($managersCanReportConflict, $tmpUsers);
                 $this->addIfNotExists($editors, $tmpUsers);
 
+                $owner = $paper->getUid();
+
+                if(array_key_exists($owner, $tmpUsers)){
+                     unset($tmpUsers[$owner]); // exp. @see DMTCS #8
+                     $ignored[] = ['paperId' => $paper->getPaperid(), 'uid' => $owner];
+                }
+
                 /** @var Episciences_User $user */
                 foreach ($tmpUsers as $user) {
                     $this->logger->info('Current User:');
@@ -240,6 +247,16 @@ class AutoDeclarationCOI extends JournalScript
         $this->logger->info(sprintf('Number of rows to insert in table %s: %s', T_LOGS, count($logValues)));
         $this->logger->info(sprintf('Dump generated: %s/%s', getcwd(), $conflictFileName));
         $this->logger->info(sprintf('Dump generated: %s/%s', getcwd(), $paperLogsFileName));
+
+        if (isset($ignored)) {
+            try {
+                $this->logger->info('Ignored users cannot manage their own submissions:');
+                $this->logger->info(json_encode($ignored, JSON_THROW_ON_ERROR));
+            } catch (JsonException $e) {
+                $this->logger->critical($e->getMessage());
+            }
+        }
+
     }
 
     /**
