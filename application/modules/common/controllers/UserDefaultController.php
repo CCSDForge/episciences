@@ -1179,7 +1179,7 @@ class UserDefaultController extends Episciences_Controller_Action
                 $affectedRows = $userMapper->savePassword($user);
 
                 if ($affectedRows === 1) {
-                    $this->redirect('/user/logout/reason/passwordupdated/lang/' . Episciences_Auth::getLangueid());
+                    $this->redirect($this->url(['controller' => 'user', 'action' => 'logout', 'reason' => 'passwordupdated', 'lang' => Episciences_Auth::getLangueid()]));
                 } else {
                     $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
                     $this->render('changepassword');
@@ -1660,18 +1660,8 @@ class UserDefaultController extends Episciences_Controller_Action
 
 
             if ($alertType === self::SUCCESS) {
-                $url = $fController . '/' . $fAction;
-
-                if ($postedUid) {
-
-                    $url .= '?userid=' . $postedUid;
-
-                }
-
-                $this->redirect($url);
+                $this->redirect($this->url(['controller' => $fController, 'action' => $fAction, 'userid' => $postedUid]));
             }
-
-
         }
 
     }
@@ -1749,7 +1739,7 @@ class UserDefaultController extends Episciences_Controller_Action
                     $successMsg = "Votre mot de passe API a bien été réinitialisé";
 
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($successMsg);
-                    $this->redirect('/user/dashboard');
+                    $this->redirect($this->url(['controller' => 'user', 'action' => 'dashboard']));
 
                 } else {
                     $this->view->resultMessage = $this->view->message(

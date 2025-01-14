@@ -136,13 +136,13 @@ class ReviewerController extends PaperDefaultController
 
             // accepted invitation
             $this->accept($oInvitation, $assignment, $paper, $data);
-            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'ratings', 'action' => 'paper']));
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'ratings']));
 
         } elseif (array_key_exists('submitrefuse', $data)) {
 
             // declined invitation
             $this->decline($oInvitation, $assignment, $paper, $data);
-            $this->redirect('/');
+            $this->redirect($this->url(['controller' => 'index']));
 
         }
     }

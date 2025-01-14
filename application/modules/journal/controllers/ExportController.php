@@ -74,15 +74,17 @@ class ExportController extends Episciences_Controller_Action
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
             $id = Episciences_PapersManager::getPublishedPaperId($paperId);
 
-            if ($id != 0) {
+            if ($id > 0) {
                 // redirection vers la version publiée
-                $this->redirect('/' . $id . '/' . $request->getActionName());
+                $this->redirect(sprintf('%s%s/%s', PREFIX_URL, $id, $request->getActionName()));
                 exit;
 
             }
 
+            $url = $this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => $request->getControllerName() , 'id' => $paper->getDocid(), 'forward-action' => $request->getActionName()] );
+
             // redirection vers la page d'authentification
-            $this->redirect('/user/login/forward-controller/' . $request->getControllerName() . '/id/' . $paper->getDocid() . '/forward-action/' . $request->getActionName());
+            $this->redirect($url);
             exit;
         }
 

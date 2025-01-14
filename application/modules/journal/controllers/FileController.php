@@ -339,7 +339,7 @@ class FileController extends DefaultController
 
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->redirect('/');
+            $this->redirect($this->url(['controller' => 'index']));
             return;
         }
 
