@@ -8,7 +8,7 @@
 			<?php echo $this->translate($this->exception->getMessage()); ?>
 		<?php } ?>
 	</p>
-	<p><a href="<?= $this->url() ?>" class="btn btn-danger"><?php echo $this->translate('Retourner à l\'accueil') ?></a></p>
+	<p><a href="<?= $this->url(['controller' => 'index']) ?>" class="btn btn-danger"><?php echo $this->translate('Retourner à l\'accueil') ?></a></p>
 		
 </div>
 

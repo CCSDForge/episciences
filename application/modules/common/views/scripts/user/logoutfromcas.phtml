@@ -21,7 +21,7 @@
 
 <?php else : ?>
     <div class="alert alert-danger" role="alert"><?php echo $this->translate('Échec de la déconnexion') ?></div>
-    <p><a href="<?= $this->url() ?>" class="btn btn-danger"><?= $this->translate("Retourner à l'accueil") ?></a></p>
+    <p><a href="<?= $this->url(['controller' => 'index']) ?>" class="btn btn-danger"><?= $this->translate("Retourner à l'accueil") ?></a></p>
 <?php endif; ?>
 
 
