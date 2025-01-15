@@ -36,7 +36,7 @@ class Episciences_View_Helper_Url extends Zend_View_Helper_Url
 
         }
 
-        return rtrim($this->processUri($urlOptions, $encode, $withSegmentedParameters), self::URI_DELIMITER);
+        return $this->processUri($urlOptions, $encode, $withSegmentedParameters);
 
     }
 
