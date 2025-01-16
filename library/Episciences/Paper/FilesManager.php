@@ -24,7 +24,7 @@ class Episciences_Paper_FilesManager
             if (Episciences_Repositories::isDataverse($file->getSource())) {
 
                 $dUrl = Episciences_Repositories::getApiUrl($file->getSource());
-                $dUrl .= '/access/datafile/:persistentId?persistentId=';
+                $dUrl .= 'access/datafile/:persistentId?persistentId=';
                 $dUrl .= Episciences_Repositories_Dataverse_Hooks::IDENTIFIER_PREFIX;
                 $dUrl .= Episciences_DoiTools::cleanDoi($file->getSelfLink());
                 $file->_downloadLike = $dUrl;
