@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @property string $_downloadLike
+ * @property string $_downloadLike // @see Episciences_Paper_FilesManager::findByDocId
  */
 class Episciences_Paper_File
 {
