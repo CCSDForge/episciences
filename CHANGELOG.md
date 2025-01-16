@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
 ### fixed
 - Wrong links for the Dataverse repository
+- The graphical abstract is no longer displayed
 
 ## v1.0.47 - 2025-01-08
 ### Added
