@@ -262,7 +262,7 @@ class Episciences_Rating_Criterion
 
     public function setNote($note)
     {
-        $this->_note = $note;
+        $this->_note = (int)$note;
     }
 
     /**
