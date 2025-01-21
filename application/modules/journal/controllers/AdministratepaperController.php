@@ -689,16 +689,14 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!empty($demands)) {
 
-            $current = current($demands);
+            $currentDemand = current($demands);
 
             if (
-                !array_key_exists('replies', $current) ||
+                !array_key_exists('replies', $currentDemand) ||
                 (
-                    isset($current['replies']) &&
-                    (int)$current['replies'][array_key_first($current['replies'])]['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT)
+                    isset($currentDemand['replies']) &&
+                    (int)$currentDemand['replies'][array_key_first($currentDemand['replies'])]['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT)
             ) {
-
-                $currentDemand = array_shift($demands);
                 $revisionDeadline = $currentDemand['DEADLINE'];
             }
 
