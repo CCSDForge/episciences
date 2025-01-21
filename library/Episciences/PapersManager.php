@@ -21,17 +21,18 @@ class Episciences_PapersManager
      * @param bool $cached
      * @param bool $isFilterInfos
      * @param bool $isLimit
+     * @param string|array|Zend_Db_Expr $cols // The columns to select
      * @return array
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true): array
+    public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true, string|array|Zend_Db_Expr $cols = '*'): array
     {
         $rvId = $settings['is']['RVID'] ?? RVID;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = self::getListQuery($settings, $isFilterInfos, $isLimit);
+        $select = self::getListQuery($settings, $isFilterInfos, $isLimit, $cols);
 
         $list = $db->fetchAssoc($select, $cached);
 
@@ -72,12 +73,13 @@ class Episciences_PapersManager
      * @param array $settings
      * @param bool $isFilterInfos
      * @param bool $isLimit
+     * @param string|array|Zend_Db_Expr $cols // The columns to select
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    public static function getListQuery(array $settings = [], bool $isFilterInfos = false, bool $isLimit = true): \Zend_Db_Select
+    public static function getListQuery(array $settings = [], bool $isFilterInfos = false, bool $isLimit = true, string|array|Zend_Db_Expr $cols = '*'): \Zend_Db_Select
     {
-        $select = self::getFilterQuery($settings, false, $isFilterInfos);
+        $select = self::getFilterQuery($settings, false, $isFilterInfos, $cols);
 
         // limit
         if ($isLimit && array_key_exists('limit', $settings)) {
@@ -108,15 +110,16 @@ class Episciences_PapersManager
      * @param array $settings
      * @param bool $isCount
      * @param bool $isFilterInfos
+     * @param string|array|Zend_Db_Expr $cols // The columns to select
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function getFilterQuery(array $settings = [], bool $isCount = false, bool $isFilterInfos = false): \Zend_Db_Select
+    private static function getFilterQuery(array $settings = [], bool $isCount = false, bool $isFilterInfos = false, string|array|Zend_Db_Expr $cols = '*'): \Zend_Db_Select
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $papersQuery = $db->select()->from(['papers' => T_PAPERS]);
+        $papersQuery = $db->select()->from(['papers' => T_PAPERS], $cols);
 
         $countQuery = $db->select()->from($papersQuery, [new Zend_Db_Expr("COUNT('DOCID')")]);
 
