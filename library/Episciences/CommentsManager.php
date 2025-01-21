@@ -56,7 +56,8 @@ class Episciences_CommentsManager
         self::TYPE_AUTHOR_FORMATTING_VALIDATED_REQUEST => 'Préparation de copie : la version formatée est validée, en attente de la version définitive',
         self::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST => 'Préparation de copie : la mise en forme par la revue est terminée, en attente de la version finale',
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Préparation de copie : version finale soumise',
-        self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur"
+        self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur",
+        self::TYPE_REVISION_CONTACT_COMMENT => "réponse à une demande de modifications (sans dépôt de version)",
     ];
 
     public static array $_copyEditingRequestTypes = [
