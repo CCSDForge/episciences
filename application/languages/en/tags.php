@@ -394,6 +394,8 @@ return array(
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_MONITORING_REFUSED] => "refusal to follow up",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_EDITOR_COMMENT] => "editor's comment",
     Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST] => "Copy editing: awaiting formatting by author",
+    Episciences_CommentsManager::$_typeLabel[Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT] => "revision request response (without sending a new version)",
+
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'Accepted, waiting for authors validation',
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => 'Version number updated',
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE => 'New deadline for review',
