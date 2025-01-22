@@ -547,6 +547,7 @@ return array(
     "Le fichier a bien été supprimé." => "The file has been deleted.",
     "Vos changements ont été enregistrés." => "Your changes have been saved.",
     "Le commentaire demandé n’existe pas." => "The required comment does not exist.",
+    'Ce fichier est attaché à la version temporaire, vous ne pouvez donc pas le supprimer.' => 'This file is attached to the temporary version, so you cannot delete it.',
 
     // Gestion d'un article (déposant)
 
