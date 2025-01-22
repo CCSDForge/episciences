@@ -17,9 +17,13 @@ class CommentsController extends PaperController
         $docid = (int)$this->getRequest()->getParam('docid');
         $pcid = (int)$this->getRequest()->getParam('pcid');
         $file = $this->getRequest()->getParam('file');
-        $isTmp = (boolean)$this->getRequest()->getParam('istmp');
 
-        $paper = Episciences_PapersManager::get($docid, false, RVID);
+        try {
+            $paper = Episciences_PapersManager::get($docid, false, RVID);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+            $paper = null;
+        }
 
         if (!$paper) {
             return;
@@ -34,38 +38,48 @@ class CommentsController extends PaperController
             $controllerName = 'administratepaper';
         }
 
-        $url = '/' . $controllerName . '/view/id/' . $docid;
-
-        if (!$paper) {
-            $message = $this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST);
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-            $this->_helper->redirector->gotoUrl($url);
-            return;
-        }
-
+        $url = sprintf('%s/view/id/%s',  $controllerName, $paper->getLatestVersionId());
         $comment = new Episciences_Comment();
 
-        if (null == $comment->find($pcid)) {
-            $message = $this->view->translate("Le commentaire demandé n’existe pas.");
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+        try {
+            if (null === $comment->find($pcid)) {
+                $message = $this->view->translate("Le commentaire demandé n’existe pas.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+            }
+        } catch (Zend_Json_Exception $e) {
+            trigger_error($e->getMessage());
+            return;
+        }
+
+
+        if($comment->getUid() !== Episciences_Auth::getUid()){
+            $message = $this->view->translate("Vous n'avez pas les autorisations nécessaires pour supprimer ce fichier.");
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             $this->_helper->redirector->gotoUrl($url);
             return;
         }
+
+
+        if($comment->getType() === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION){
+            $message = $this->view->translate("Ce fichier est attaché à la version temporaire, vous ne pouvez donc pas le supprimer.");
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl($url);
+            return;
+        }
+
 
         $isJson = Episciences_Tools::isJson($comment->getFile());
 
-        $jFiles = $isJson ? json_decode($comment->getFile(), true) : (array)$comment->getFile();
+        try {
+            $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+            $jFiles = [];
+        }
 
-        $paperId = ($paper->getPaperid()) ? $paper->getPaperid() : $paper->getDocid();
-
-        if ($isTmp) { // fichiers joints aux commentaires des versions temporaires
-
-            $dir = $paperId;
-            $dir .= DIRECTORY_SEPARATOR;
-            $dir .= 'tmp';
-            $dir .= DIRECTORY_SEPARATOR;
-
-        } elseif ($comment->isCopyEditingComment()) {
+        if ($comment->isCopyEditingComment()) {
             $dir = $comment->getDocid();
             $dir .= DIRECTORY_SEPARATOR;
             $dir .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
@@ -80,17 +94,17 @@ class CommentsController extends PaperController
 
         $is_file = is_file($comment_path);
         if ($file && $is_file) {//note that is_file() returns false if the parent directory doesn't have +x set for you
-            if (Episciences_Auth::isLogged() && Episciences_Auth::getUid() == $comment->getUid()) {
-                $key = array_search($file, $jFiles, true);
-                if ($key !== false) {
-                    unset($jFiles[$key]);
-                }
-                !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
-                unlink($comment_path);
-                $comment->save(true);
-                $message = $this->view->translate("Le fichier a bien été supprimé.");
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+
+            $key = array_search($file, $jFiles, true);
+            if ($key !== false) {
+                unset($jFiles[$key]);
             }
+            !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
+            unlink($comment_path);
+            $comment->save(true);
+            $message = $this->view->translate("Le fichier a bien été supprimé.");
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
+
         } else {
             $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);

@@ -97,7 +97,7 @@ $commentUrl = '/docfiles/comments/' . $paper->getDocid();
                                 </a>
                             </div>
                             <div class="col-sm-2">
-                                <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file, 'istmp' => true]) ?>
+                                <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file]) ?>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -184,7 +184,7 @@ $commentUrl = '/docfiles/comments/' . $paper->getDocid();
                                             </a>
                                         </div>
                                         <div class="col-sm-2">
-                                            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file, 'istmp' => true]) ?>
+                                            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file]) ?>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
