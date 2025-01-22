@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+
+### changed 
+- It is no longer possible to delete files attached to the temporary version.
+
 ## Unreleased
 ### Added
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
