@@ -86,7 +86,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
         $processedData = $response['data'];
 
-        self::dataProcess($processedData);
+        self::dataProcess($processedData, $hookParams);
 
         $elements = [
             'headers' => $processedData[self::TO_COMPILE_OAI_DC]['headers'],
@@ -158,7 +158,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
         return ['result' => Episciences_Repositories_Common::isRequiredVersion()];
     }
 
-    private static function dataProcess(array &$data): void
+    private static function dataProcess(array &$data, array $hookParams = []): void
     {
 
         $result = [];
@@ -440,12 +440,12 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
         $files = $data['files'] ?? [];
 
-        $result[Episciences_Repositories_Common::ENRICHMENT]['files'] = self::processFiles($files);
+        $result[Episciences_Repositories_Common::ENRICHMENT]['files'] = self::processFiles($files, $hookParams);
 
         $data = $result;
     }
 
-    private static function processFiles(array $files = []): array
+    private static function processFiles(array $files = [], $hookParams = []): array
     {
 
         if (empty($files)) {
@@ -453,7 +453,6 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
         }
 
         $processedFiles = [];
-
 
         foreach ($files as $val) {
 
@@ -467,20 +466,38 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
                 $type = $explodedContentType[0];
             }
 
-
             $tmp['file_name'] = $dataFile['filename'] ?? $dataFile['label'];
             $tmp['file_type'] = $type;
             $tmp['file_size'] = $dataFile['filesize'];
             $tmp['checksum'] = $dataFile['checksum']['value'];
             $tmp['checksum_type'] = $dataFile['checksum']['type'];
-            $tmp['self_link'] = $dataFile['pidURL'] ?? '#';
-
+            $tmp['self_link'] = self::getAssembledLink($val, $hookParams['repoId']);
             $processedFiles[] = $tmp;
-
-
         }
 
         return $processedFiles;
+
+    }
+
+    private static function getAssembledLink(array $values, ?int $repoId = null) : string{
+
+        if (isset($values['dataFile']['pidURL'])){
+            return $values['dataFile']['pidURL'];
+        }
+
+        if($repoId && isset($values['dataFile']['id'])){
+            $assembledLink = preg_replace('#api/v\d/#', '',Episciences_Repositories::getApiUrl($repoId));
+            $assembledLink .= 'file.xhtml?fileId=';
+            $assembledLink .= $values['dataFile']['id'];
+            if(isset($values['version'])){
+                $assembledLink .= sprintf('&version=%s', $values['version']);
+            }
+
+            return $assembledLink;
+
+        }
+
+        return '#';
 
     }
 

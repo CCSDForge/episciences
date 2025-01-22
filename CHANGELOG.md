@@ -15,7 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Unreleased
+### Added
+- New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
+### fixed
+- The response to a modification request via "Contact without sending a new version" does not appear on the article page.
+- Wrong links for the Dataverse repository
+- The graphical abstract is no longer displayed
+
+## v1.0.47 - 2025-01-08
+### Added
+- A script to generate sitemaps for the sites using the new UI/UX
+
 ### Fixed
+- The graphical abstract is no longer displayed.
 - When the "conflict of interest" option is activated reviewers are no longer visible for articles which the absence of conflict has been confirmed.
 - The small logo to the left of each article's permanent identifier will only appear if at least one conflict has been confirmed (Nb. If you hover over this logo, you will see the number of conflicts reported for that article)
 
