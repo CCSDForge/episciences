@@ -2,15 +2,15 @@
 <?php // le champ file de la table paperComments est encoder en JSON si plusieurs fichiers sont attachés à ce commentaire ?>
     <?php $file = $this->fileName ?? $this->comment['FILE']; ?>
     <?php $file_delete_url = '/comments/removefilecomment/pcid/' .
-        $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file . '/istmp/' . $this->istmp; ?>
+        $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file ?>
     <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>')">
         <span class="glyphicon glyphicon-trash"
               style="margin-right: 5px;"></span><?php echo $this->translate('Supprimer'); ?>
     </a>
     <script>
-        function confirmDeleteFile(herf) {
+        function confirmDeleteFile(href) {
             if (confirm(translate('Voulez-vous supprimer ce fichier ?'))) {
-                location.href = herf;
+                location.href = href;
             }
         }
     </script>
