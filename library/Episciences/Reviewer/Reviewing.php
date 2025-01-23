@@ -83,7 +83,7 @@ class Episciences_Reviewer_Reviewing
         $this->setPaper(Episciences_PapersManager::get($docid));
     }
 
-    public function getPaper()
+    public function getPaper(): \Episciences_Paper
     {
         if (!$this->_paper) {
             $this->loadPaper($this->getAssignment()->getItemid());
@@ -91,13 +91,30 @@ class Episciences_Reviewer_Reviewing
         return $this->_paper;
     }
 
-    public function loadAssignment($params = array())
+    public function loadAssignment($params = array()) :self
     {
         $params['item'] = Episciences_User_Assignment::ITEM_PAPER;
         $assignment = Episciences_User_AssignmentsManager::find($params);
+
+
         if ($assignment) {
-            $this->setAssignment($assignment);
+
+            try {
+                $paper = Episciences_PapersManager::get($assignment->getItemid());
+
+                if(!$paper){
+                    trigger_error(sprintf('Missing paper #%s', $assignment->getItemid()));
+                    return $this;
+                }
+
+                $this->setAssignment($assignment);
+
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
         }
+
         return $this;
     }
 

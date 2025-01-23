@@ -2134,7 +2134,7 @@ class Episciences_PapersManager
      * @return bool|Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      */
-    public static function get($docId, bool $withxsl = true, int $rvId = null)
+    public static function get($docId, bool $withxsl = true, int $rvId = null): Episciences_Paper|bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
