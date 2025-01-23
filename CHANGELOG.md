@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
-### fixed
+- New button on volume pages to download all the PDF files at once with a single PDF file
+
+### Fixed
 - The response to a modification request via "Contact without sending a new version" does not appear on the article page.
 - Wrong links for the Dataverse repository
 - The graphical abstract is no longer displayed
