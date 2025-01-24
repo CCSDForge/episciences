@@ -1761,6 +1761,10 @@ class PaperController extends PaperDefaultController
 
         $options = ['newVersionOf' => $paper->getDocid()];
 
+        if($paper->isDataSet()){
+            $options['isDataset'] = true;
+        }
+
         $isFromZSubmit = false;
 
         if ($zIdentifier) {
@@ -1816,7 +1820,6 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -1832,6 +1835,15 @@ class PaperController extends PaperDefaultController
         $docId = $request->getQuery(self::DOC_ID_STR);
 
         $paper = Episciences_PapersManager::get($docId, false);
+
+        $form = Episciences_Submit::getNewVersionForm($paper,  $paper->isDataSet() ? ['newVersionOf' => $paper->getDocid(), 'isDataset' => true] : []);
+
+        if(!$form?->isValid($post)){
+            $this->renderFormErrors($form);
+            $this->view->form = $form;
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            return;
+        }
 
         $paper->loadOtherVolumes(); // github #48
         $paper->loadDataDescriptor();

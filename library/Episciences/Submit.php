@@ -677,8 +677,9 @@ class Episciences_Submit
 
             $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
 
-            self::addDdElement($form, $group);
-
+            if (isset($settings['isDataset'])){
+                self::addDdElement($form, $group);
+            }
 
             $form->addElement('checkbox', 'disclaimer1', [
                 'required' => true,
@@ -2187,6 +2188,7 @@ class Episciences_Submit
     private static function addDdElement(Zend_Form $form, array &$group = []): Zend_Form
     {
         $form->addElement('file', self::DD_FILE_ELEMENT_NAME, [
+            'required' => true,
             'id' => self::DD_FILE_ELEMENT_NAME,
             'label' => "Descripteur de données",
             'description' => Episciences_Tools::buildAttachedFilesDescription(['doc', 'docx', 'pdf', 'txt', 'md']),
@@ -2199,7 +2201,11 @@ class Episciences_Submit
             ]
         ]);
 
+        $hiddenElementName =  sprintf('%s_is_required', self::DD_FILE_ELEMENT_NAME);
+        $form->addElement(new Zend_Form_Element_Hidden($hiddenElementName));
+
         $group[] = self::DD_FILE_ELEMENT_NAME;
+        $group[] = $hiddenElementName;
 
         return $form;
 
