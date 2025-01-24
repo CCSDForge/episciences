@@ -1833,12 +1833,12 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId, false);
 
+
         $form = Episciences_Submit::getNewVersionForm($paper,  $paper->isDataSet() ? ['newVersionOf' => $paper->getDocid(), 'isDataset' => true] : []);
 
         if(!$form?->isValid($post)){
             $this->renderFormErrors($form);
-            $this->view->form = $form;
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId ]));
             return;
         }
 

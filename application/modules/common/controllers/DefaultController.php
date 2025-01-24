@@ -354,12 +354,12 @@ class DefaultController extends Episciences_Controller_Action
 
     protected function renderFormErrors(Zend_Form $form = null): void{
 
-        if(!$form){
+        if(!$form || empty($errors = $form->getMessages())) {
             return;
         }
 
         $validationErrors = '<ol  type="i">';
-        foreach ($form->getMessages() as $val) {
+        foreach ($errors as $val) {
             foreach ($val as $v) {
                 $v = is_array($v) ? implode(' ', array_values($v)) : $v;
                 $validationErrors .= '<li>';
