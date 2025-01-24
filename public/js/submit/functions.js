@@ -197,9 +197,12 @@ $(function () {
         result["error"] +
         "</div></div>";
     } else {
+
+      toggleDD('file_data_descriptor', result['displayDDForm']);
+
       if ("conceptIdentifier" in result) {
         $submit_form.append(
-          '<input id = "concept_identifier" type="hidden" name="concept_identifier" value="' +
+            '<input id = "concept_identifier" type="hidden" name="concept_identifier" value="' +
             result.conceptIdentifier +
             '">',
         );
@@ -480,7 +483,7 @@ $(function () {
 
     search();
   }
-});
+}); // end Ready
 
 /**
  *
@@ -584,4 +587,19 @@ function applyAction($elementsIds, actionName = "hide") {
       $(id).show();
     }
   });
+}
+
+function toggleDD(ddIdentifier, value) {
+  //let $ddLabel = $('label[for="' + ddIdentifier + 'file_data_descriptor' + '"]');
+  let $hRequiredSelector = $('#' + ddIdentifier + '_is_required');
+  let $ddSelectorElement = $('#' + ddIdentifier + '-element');
+
+  $hRequiredSelector.val(value);
+
+  if ($hRequiredSelector.val().toLowerCase() !== 'true') {
+    $ddSelectorElement.hide();
+  } else {
+    $ddSelectorElement.show();
+  }
+
 }
