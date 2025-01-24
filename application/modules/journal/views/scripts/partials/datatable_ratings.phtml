@@ -33,15 +33,20 @@ foreach ($this->papers as $paper) : ?>
         <td>
             <?php
 
-            if ($reviewing->getAssignment()->getDeadline()) {
-                $date = date_create($reviewing->getAssignment()->getDeadline());
+            $assignment = $reviewing->getAssignment();
 
-            } else {
-                $date = date_create($reviewing->getAssignment()->getWhen());
-                date_add($date, date_interval_create_from_date_string($this->review_deadline));
+            if ($assignment) {
+
+                if($assignment->getDeadline()){
+                    $date = date_create($reviewing->getAssignment()->getDeadline());
+                }else {
+                    $date = date_create($reviewing->getAssignment()->getWhen());
+                    date_add($date, date_interval_create_from_date_string($this->review_deadline));
+                }
+                echo $this->Date(date_format($date, 'Y-m-d'));
+
             }
 
-            echo $this->Date(date_format($date, 'Y-m-d'));
 
             ?>
         </td>
