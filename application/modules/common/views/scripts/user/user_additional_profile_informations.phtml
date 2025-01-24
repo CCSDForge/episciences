@@ -11,12 +11,19 @@
                            target="_blank">
                             <?= $socialMediaTruncated ?>
                         </a>
+                    <?php elseif (str_contains($socialMedia, '.')): ?>
+                            <a rel="noopener" class="bluesky" href="<?= Episciences_Tools::getBlueskyUrl($socialMedia) ?>"
+                                    target="_blank"> <span
+                                    class="fa-brands fa-bluesky" style="margin-left: 10px;"></span>
+                                    <?= $socialMediaTruncated ?>
+                            </a>
                     <?php else: ?>
-                        <a rel="noopener" class="twitter" href="https://twitter.com/<?= $socialMedia ?>"
+                        <a rel="noopener" class="twitter" href="https://x.com/<?= $socialMedia ?>"
                            target="_blank"> <span
                                     class="fa-brands fa-x-twitter" style="margin-left: 10px;"></span>
                             <?= $socialMediaTruncated ?>
                         </a>
+
                     <?php endif; ?>
                 </small>
             </p>

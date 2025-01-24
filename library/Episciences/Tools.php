@@ -1629,6 +1629,15 @@ class Episciences_Tools
         return "https://" . $explode[2] . "/@" . $explode[1];
     }
 
+    public static function getBlueskyUrl(string $socialMedia): string
+    {
+        if (str_starts_with($socialMedia, 'https://bsky.app/profile/')) {
+            return $socialMedia;
+        }
+        $socialMedia = str_replace('@', '', $socialMedia);
+        return 'https://bsky.app/profile/' . $socialMedia;
+    }
+
     /**
      * @param string $string
      * @return array

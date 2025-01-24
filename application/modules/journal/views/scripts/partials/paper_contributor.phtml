@@ -24,7 +24,7 @@ $rvid = RVID;
                             </span>
                     </a>
                 <?php elseif ($this->escape($this->socialMedia) !== '' && substr_count($this->socialMedia, "@") === 1): ?>
-                    <a class="btn btn-default" href="https://twitter.com/<?= $this->socialMedia ?>" target="_blank">
+                    <a class="btn btn-default" href="https://x.com/<?= $this->socialMedia ?>" target="_blank">
                             <span data-toggle="tooltip"
                                   class="fa-brands fa-x-twitter"
                                   style="margin: 0.2rem">
@@ -80,7 +80,7 @@ $rvid = RVID;
                                     </a>
                                 <?php elseif ($this->escape($coAuthorInfo->getSocialMedias()) !== '' && substr_count($coAuthorInfo->getSocialMedias(), "@") === 1): ?>
                                     <a class="btn btn-default"
-                                       href="https://twitter.com/<?= $coAuthorInfo->getSocialMedias() ?>"
+                                       href="https://x.com/<?= $coAuthorInfo->getSocialMedias() ?>"
                                        target="_blank">
                                         <span data-toggle="tooltip"
                                               class="fa-brands fa-x-twitter"

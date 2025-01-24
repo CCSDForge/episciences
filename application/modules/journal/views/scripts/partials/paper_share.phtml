@@ -5,7 +5,7 @@ $title = $this->escape($this->paper->getTitle());
 $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
 // twitter
 
-$url = "https://twitter.com/intent/tweet/?text=".$title."&url=".$doi;
+$url = "https://x.com/intent/tweet/?text=".$title."&url=".$doi;
 $contributorSocialMedia = $this->contributorSocialMedia;
 
 $coAuthors = $this->coAuthorsList;
@@ -21,7 +21,7 @@ if (Episciences_Auth::isLogged()) {
 
 $socialCoAuthorList = [];
 if ($contributorSocialMedia && substr_count($contributorSocialMedia, "@") === 1) {
-    $url = "https://twitter.com/intent/tweet/?text=".$title;
+    $url = "https://x.com/intent/tweet/?text=".$title;
     if (!is_null($contributorSocialMedia)) {
         foreach ($coAuthors as $coAuthorInfo) {
             /** @var Episciences_User $coAuthorInfo */
@@ -62,7 +62,7 @@ if ($contributorSocialMedia && substr_count($contributorSocialMedia, "@") === 1)
                 </div>
             </a>
 
-            <!-- Sharingbutton Twitter -->
+            <!-- Sharingbutton Twitter/X -->
             <a class="resp-sharing-button__link"
                href="<?= $url ?>"
                target="_blank" rel="noopener" aria-label="">
