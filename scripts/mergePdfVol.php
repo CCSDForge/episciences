@@ -52,13 +52,19 @@ class MergePdfVol extends JournalScript
             }
 
             if ($this->getParam('removecache') === '1') {
-                $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, dirname(APPLICATION_PATH) . '/cache/');
+                $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
                 $cache->clear();
                 $this->logger->info("Cache cleared for RV code: $rvCode");
             }
 
             $volumeList = $this->getVolumeList($rvCode);
-            $client = new Client();
+
+            $guzzleOptions = [
+                'headers' => ['User-Agent' => EPISCIENCES_USER_AGENT,]
+            ];
+
+            $client = new Client($guzzleOptions);
+
             foreach ($volumeList as $oneVolume) {
                 $this->mergePdfFromVolume($oneVolume, $client, $rvCode);
             }
@@ -138,7 +144,7 @@ class MergePdfVol extends JournalScript
      */
     public static function getCacheDocIdsList(string $vid, string $rvCode): string
     {
-        $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, dirname(APPLICATION_PATH) . '/cache/');
+        $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
         $getVidsList = $cache->getItem($vid);
         if (!$getVidsList->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
@@ -172,7 +178,7 @@ class MergePdfVol extends JournalScript
 
     public function getPdfAndPath(string $rvCode, mixed $docId): array
     {
-        $pdf = "https://" . $rvCode . ".episciences.org" . "/" . $docId . '/pdf';
+        $pdf = "https://" . $rvCode . "." . DOMAIN . "/" . $docId . '/pdf';
         $pathDocId = APPLICATION_PATH . '/../data/' . $rvCode . '/files/' . $docId . '/';
         $path = APPLICATION_PATH . '/../data/' . $rvCode . '/files/' . $docId . '/documents/';
         return [$pdf, $pathDocId, $path];
@@ -180,29 +186,21 @@ class MergePdfVol extends JournalScript
 
     public function downloadPdf(Client $client, string $pdf, string $pathPdf, string $path, string $pathDocId): void
     {
-        $response = $client->get($pdf, ['sink' => $pathPdf]);
-        $this->logger->info("Downloaded", [$pdf]);
-        if ($response->getStatusCode() !== 200 || !file_exists($pathPdf)) {
-            $this->removeDirectory($pathPdf, $path);
+        try {
+            $client->get($pdf, ['sink' => $pathPdf]);
+            $this->logger->info("Downloaded", ['PDF' => $pdf]);
+        } catch (GuzzleException $e) {
+            $this->logger->info("Failed to download", [$e->getMessage()]);
         }
-        $this->removePdfNotValid($pathPdf, $path, $pathDocId);
+
+        $this->removeInvalidPDF($pathPdf);
     }
 
-    public function removeDirectory(string $pathPdf, string $path): void
-    {
-        unlink($pathPdf);
-        $this->logger->info("Removed", [$pathPdf]);
-        rmdir($path);
-        $this->logger->info("Removed", [$path]);
-    }
-
-    public function removePdfNotValid(string $pathPdf, string $path, string $pathDocId): void
+    public function removeInvalidPDF(string $pathPdf): void
     {
         if (!self::isValidPdf($pathPdf)) {
             unlink($pathPdf);
-            rmdir($path);
-            rmdir($pathDocId);
-            $this->logger->warning("Removed invalid", [$pathPdf]);
+            $this->logger->warning("Removed invalid PDF", [$pathPdf]);
         }
     }
 
@@ -213,7 +211,7 @@ class MergePdfVol extends JournalScript
 
     public static function setCacheDocIdsList($vid, array $jsonVidList, string $rvCode): void
     {
-        $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, dirname(APPLICATION_PATH) . '/cache/');
+        $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
         $setVidList = $cache->getItem($vid);
         $setVidList->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($setVidList);
