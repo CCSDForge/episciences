@@ -1840,7 +1840,6 @@ class PaperController extends PaperDefaultController
 
         if(!$form?->isValid($post)){
             $this->renderFormErrors($form);
-            $this->view->form = $form;
             $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
             return;
         }

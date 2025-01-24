@@ -542,7 +542,7 @@ class Episciences_Submit
             $docIdOptions = [
                 'label' => 'Identifiant du document',
                 'disabled' => true,
-                'required' => $isRequiredIdentifier,
+                'value' => $defaults['docId'],
                 'placeholder' => $placeholder,
                 'style' => 'width:33%;',
             ];
