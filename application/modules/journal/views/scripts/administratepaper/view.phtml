@@ -42,6 +42,10 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
 <?php // Bloc "Papier" ***************************************************** ?>
 <div>
     <?= $paper->getXslt() ?>
+    <?php // Data Descriptor ?>
+    <?= $this->render('partials/paper_data_descriptor_bloc.phtml') ?>
+    <?php // Cover letter?>
+    <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
     <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>
         <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
     <?php endif; ?>
@@ -100,7 +104,6 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
         'isEditableVersion' => $this->isEditableVersion
     ]) ?>
 <?php echo $this->partial('partials/paper_doi.phtml', ['doiAssignMode'=> $this->doiAssignMode, 'canBeAssignedDOI' => $this->canBeAssignedDOI, 'paperid' => $paper->getPaperid(), 'docid' => $paper->getDocid(), 'paperDoi' => $paper->getDoi(), 'doiQueueStatus' => $this->doiQueueStatus, 'doiQueueStatusHtml' => $this->doiQueueStatusHtml]) ?>
-<?php echo $this->render('partials/paper_author_comments_bloc.phtml'); ?>
 
 <?php // paper status ***************************************************** ?>
 <div class="panel panel-default collapsable">

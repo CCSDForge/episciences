@@ -2,6 +2,7 @@
 
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
+use Episciences\Paper\DataDescriptorManager;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Intl\Exception\MissingResourceException;
 use Symfony\Component\Intl\Languages;
@@ -239,6 +240,7 @@ class Episciences_Paper
     public const TEXT_TYPE_TITLE = 'text';//arXiv
     public const ARTICLE_TYPE_TITLE = 'article';
     public const DATASET_TYPE_TITLE = 'dataset';
+    public const SOFTWARE_TYPE_TITLE = 'software';
     public const DATA_PAPER_TYPE = 'dataPaper';
     public const OTHER_TYPE = 'other';
     public const TMP_TYPE_TITLE = 'temporary version';
@@ -452,6 +454,7 @@ class Episciences_Paper
     private array $_linkedData;
     private ?string $_password = null;
     private ?string $_graphical_abstract = null;
+    private ?\Episciences\Paper\DataDescriptor $_data_descriptor = null;
 
     /**
      * Episciences_Paper constructor.
@@ -4047,6 +4050,17 @@ class Episciences_Paper
         return $this->_solrData;
     }
 
+    public function getDataDescriptor(): ?\Episciences\Paper\DataDescriptor
+    {
+        return $this->_data_descriptor;
+    }
+
+    public function setDataDescriptor(?\Episciences\Paper\DataDescriptor $data_descriptor = null): self
+    {
+        $this->_data_descriptor = $data_descriptor;
+        return $this;
+    }
+
     /**
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -5108,6 +5122,27 @@ class Episciences_Paper
         $allConflicts = Episciences_Paper_ConflictsManager::findByPaperId($this->getPaperid(), $this->getRvid());
         $this->_conflicts = $allConflicts;
 
+    }
+
+    public function loadDataDescriptor(): void
+    {
+        if ($this->isDataSet()) {
+            $this->setDataDescriptor(DataDescriptorManager::getByDocId($this->getDocid()));
+        }
+    }
+
+    public function isDataSet(): bool
+    {
+        return
+            Episciences_Repositories::isDataverse($this->getRepoid()) ||
+            $this->getType()[self::TITLE_TYPE] === self::DATASET_TYPE_TITLE ||
+            $this->isSoftware();
+    }
+
+
+    public function isSoftware(): bool
+    {
+        return $this->getType()[self::TITLE_TYPE] === self::SOFTWARE_TYPE_TITLE;
     }
 
 }

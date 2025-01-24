@@ -1,12 +1,19 @@
 <?php
 
 use Episciences\DataSet;
+use Episciences\Files\Uploader;
+use Episciences\Paper\DataDescriptor;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Submit
 {
     public const SUBMIT_DOCUMENT_LABEL = 'Proposer un document';
+
+    public const COVER_LETTER_FILE_ELEMENT_NAME = 'file_comment_author';
+    public const COVER_LETTER_COMMENT_ELEMENT_NAME = 'author_comment';
+    public const DD_FILE_ELEMENT_NAME = 'file_data_descriptor';
+    public const DD_PREVIOUS_VERSION_STR = 'previous_dataset_version_number';
     protected $_db = null;
 
     public function __construct()
@@ -283,19 +290,19 @@ class Episciences_Submit
         $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
 
-        $form->addElement('textarea', 'author_comment', [
+        $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
             'label' => 'Commentaire', 'rows' => 5,
             'description' => $descriptionAllowedToSeeCoverLetterTranslated,
             'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]]
         ]);
-        $group[] = 'author_comment';
+        $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
 
         // Attached file
         $extensions = ALLOWED_EXTENSIONS;
         $implode_extensions = implode(',', $extensions);
         $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
 
-        $form->addElement('file', 'file_comment_author', [
+        $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
             'label' => "Lettre d'accompagnement",
             'description' => $description,
             'valueDisabled' => true,
@@ -306,7 +313,11 @@ class Episciences_Submit
                 'Size' => [false, MAX_FILE_SIZE]
             ]
         ]);
-        $group[] = 'file_comment_author';
+
+        $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
+
+        $form = self::addDdElement($form, $group);
+
 
         $form->addElement('checkbox', 'disclaimer1', [
             'required' => true,
@@ -382,6 +393,7 @@ class Episciences_Submit
      * Retourne le formulaire de réponse avec une version temporaire (réponse à une demande de modification)
      * @param Episciences_Comment|null $comment
      * @return Ccsd_Form
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Form_Exception
      */
     public static function getTmpVersionForm(Episciences_Comment $comment = null): \Ccsd_Form
@@ -500,6 +512,7 @@ class Episciences_Submit
      * @param array $settings
      * @return Ccsd_Form|null
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public static function getNewVersionForm(Episciences_Paper $paper, array $settings = []): ?Ccsd_Form
     {
@@ -636,21 +649,21 @@ class Episciences_Submit
 
             $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
-            $form->addElement('textarea', 'new_author_comment', [
+            $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
                 'label' => 'Commentaire', 'rows' => 5,
                 'decscription' => $descriptionAllowedToSeeCoverLetterTranslated,
                 'validators' => [[
                     'StringLength', false, ['max' => MAX_INPUT_TEXTAREA]
                 ]]
             ]);
-            $group[] = 'new_author_comment';
+            $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
 
 
             // Attached file [new version]
             $extensions = ALLOWED_EXTENSIONS;
             $implode_extensions = implode(',', $extensions);
             $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
-            $form->addElement('file', 'file_new_version_comment_author', [
+            $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
                 'label' => "Lettre d'accompagnement",
                 'description' => $description,
                 'valueDisabled' => true,
@@ -661,8 +674,12 @@ class Episciences_Submit
                     'Size' => [false, MAX_FILE_SIZE]
                 ]
             ]);
-            $group[] = 'file_new_version_comment_author';
 
+            $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
+
+            if (isset($settings['isDataset'])){
+                self::addDdElement($form, $group);
+            }
 
             $form->addElement('checkbox', 'disclaimer1', [
                 'required' => true,
@@ -747,7 +764,7 @@ class Episciences_Submit
      * @param int|null $version
      * @param null $latestObsoleteDocId
      * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
-     * @param int $rvId
+     * @param int|null $rvId
      * @param bool $isEpiNotify
      * @return array
      * @throws Zend_Exception
@@ -1064,7 +1081,7 @@ class Episciences_Submit
             }
         }
 
-        /**Zend_Translate $translator */
+        /**Zend_Translate $translatof */
         $translator = Zend_Registry::get('Zend_Translate');
         /** @var Zend_Controller_Action_Helper_Redirector $redirector */
         $redirector = Zend_Controller_Action_HelperBroker::getStaticHelper('redirector');
@@ -1154,12 +1171,7 @@ class Episciences_Submit
 
         }
 
-        $coverLetter = [
-            "message" => $values['AUTHOR_COMMENT'],
-            "attachedFile" => $values['FILE_AUTHOR']
-        ];
-
-        Episciences_CommentsManager::saveCoverLetter($paper, $coverLetter);
+        $this->processCoverLetterAndDataDescriptor($paper, $data);
 
         // Sauvegarder les options *************************************************************
         $this->saveAllAuthorSuggestions($data, $result);
@@ -1253,10 +1265,11 @@ class Episciences_Submit
      * Assigne automatiquement les rédacteurs à un article (git #43), selon les paramètres de la revue
      * @param Episciences_Paper $paper
      * @param array $suggestEditors : editeurs suggérés par l'auteur,
-     * @param int $sid : l'ID de la rubrique; Null par defaut
-     * @param int $vid : l'ID du volume; Null par defaut
+     * @param null $sid : l'ID de la rubrique; Null par defaut
+     * @param null $vid : l'ID du volume; Null par defaut
      * @return array : les Editeurs assignés à l'articles
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
     private function assignEditors(Episciences_Paper $paper, array $suggestEditors = [], $sid = null, $vid = null)
     {
@@ -1281,8 +1294,8 @@ class Episciences_Submit
             self::addIfNotExists($volumeEditors, $editors, Episciences_Editor::TAG_VOLUME_EDITOR);
         }
 
-        if (!empty($autoAssignation) && in_array(Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation)) { // Assignation de rédacteurs en chef
-            $chiefEditors = $review->getChiefEditors();
+        if (!empty($autoAssignation) && in_array(Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)) { // Assignation de rédacteurs en chef
+            $chiefEditors = $review::getChiefEditors();
             self::addIfNotExists($chiefEditors, $editors, Episciences_Editor::TAG_CHIEF_EDITOR);
         }
 
@@ -1316,9 +1329,10 @@ class Episciences_Submit
      * @param $vid
      * @param Episciences_Review $review
      * @return array
+     * @throws Zend_Db_Statement_Exception
      */
 
-    private function getVolumeEditors($vid, Episciences_Review $review)
+    private function getVolumeEditors($vid, Episciences_Review $review): array
     {
         /** @var Episciences_Volume $volume */
         $volume = Episciences_VolumesManager::find($vid);
@@ -1342,15 +1356,15 @@ class Episciences_Submit
     /**
      * @param array $suggestEditors
      * @return Episciences_Editor[] || []
+     * @throws Zend_Db_Statement_Exception
      */
-    private function findSuggestEditors(array $suggestEditors)
+    private function findSuggestEditors(array $suggestEditors): array
     {
 
         $editors = [];
 
         if (!empty($suggestEditors)) {
             foreach ($suggestEditors as $editorId) {
-                /** @var Episciences_Editor $oEditor */
                 $oEditor = new Episciences_Editor();
                 $oEditor->findWithCAS($editorId);
                 $oEditor->setTag(Episciences_Editor::TAG_SUGGESTED_EDITOR);
@@ -1415,7 +1429,7 @@ class Episciences_Submit
      * @param string $format
      * @return bool
      */
-    private static function isHalNotice(string $record, string $id, string $format = 'dcterms')
+    private static function isHalNotice(string $record, string $id, string $format = 'dcterms'): bool
     {
         $docPattern = '<' . $format . ':identifier>https:\/\/(.*)\/' . $id . '(v\d+)?\/document<\/' . $format . ':identifier>';
         $word = Episciences_Tools::extractPattern('/' . $docPattern . '/', $record);
@@ -1427,7 +1441,7 @@ class Episciences_Submit
      * @param string $record
      * @return string
      */
-    private static function extractEmbargoDate(string $record)
+    private static function extractEmbargoDate(string $record): string
     {
         $datePattern = '\d{4}-\d{2}-\d{2}';
 
@@ -1448,7 +1462,7 @@ class Episciences_Submit
      * @param array $output
      * @param string $tag
      */
-    public static function addIfNotExists(array $input, array &$output, string $tag = '')
+    public static function addIfNotExists(array $input, array &$output, string $tag = ''): void
     {
         $arrayDiff = array_diff_key($input, $output);
         foreach ($arrayDiff as $uid => $user) {
@@ -1470,7 +1484,7 @@ class Episciences_Submit
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private static function notifyManagers(Episciences_Paper $paper, array $managers, $oldDocId, $oldPaperStatus = 0, array $tags = [], bool $canReplace = false)
+    private static function notifyManagers(Episciences_Paper $paper, array $managers, int $oldDocId, int $oldPaperStatus = 0, array $tags = [], bool $canReplace = false): void
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $defaultTemplateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_EDITOR_COPY; // default template
@@ -1496,7 +1510,7 @@ class Episciences_Submit
 
 
         if ($canReplace) {
-            if ($oldPaperStatus == Episciences_Paper::STATUS_REFUSED) {// Si l'article a été déjà refusé
+            if ($oldPaperStatus === Episciences_Paper::STATUS_REFUSED) {// Si l'article a été déjà refusé
                 $message = 'Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : ';
                 // Lien vers l'article qui a été déjà refusé
                 $refusedPaperUrl = $view->url([
@@ -1558,7 +1572,7 @@ class Episciences_Submit
      * @param array $result
      * @throws Zend_Exception
      */
-    private function saveAllAuthorSuggestions(array $data, array &$result)
+    private function saveAllAuthorSuggestions(array $data, array &$result): void
     {
         /**Zend_Translate_Adapter $translator */
         $translator = Zend_Registry::get('Zend_Translate');
@@ -1627,8 +1641,8 @@ class Episciences_Submit
         $values['RECORD'] = $data['xml'];
 
         // To populate PAPER_COMMENT
-        $values['AUTHOR_COMMENT'] = $data['author_comment'];
-        $values['FILE_AUTHOR'] = $data['file_comment_author'];
+        $values['AUTHOR_COMMENT'] = $data[self::COVER_LETTER_COMMENT_ELEMENT_NAME];
+        $values['FILE_AUTHOR'] = $data[self::COVER_LETTER_FILE_ELEMENT_NAME];
 
         if ($paperId) {
             $values['PAPERID'] = $paperId;
@@ -2091,4 +2105,109 @@ class Episciences_Submit
 
     }
 
+    /**
+     * @param Episciences_Paper $paper
+     * @param array $data
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_File_Transfer_Exception
+     */
+
+    public function processCoverLetterAndDataDescriptor(Episciences_Paper $paper, array $data): void
+    {
+
+        $filesPath = [];
+
+        if (isset($data[self::COVER_LETTER_FILE_ELEMENT_NAME])) {
+            $filesPath[self::COVER_LETTER_FILE_ELEMENT_NAME] = sprintf('%s/comments/', REVIEW_FILES_PATH . $paper->getDocid());
+        }
+
+        if (isset($data[self::DD_FILE_ELEMENT_NAME])) {
+            $filesPath[self::DD_FILE_ELEMENT_NAME] = sprintf('%s/dd/', REVIEW_FILES_PATH . $paper->getDocid());
+        }
+
+
+
+        $uploader = new Uploader($filesPath);
+
+        $uploads = $uploader->upload()->getInfo()[$uploader::UPLOADED_FILES_KEY];
+
+        if (isset($uploads[self::DD_FILE_ELEMENT_NAME])) {
+
+            /** @var \Episciences\Files\File $ddFile */
+            $ddFile = $uploads[self::DD_FILE_ELEMENT_NAME];
+            $ddFile->setDocId($paper->getDocid());
+            $ddFile->setSource();
+
+            if ($ddFile->save()->getId()) {
+
+                $dd = new DataDescriptor([
+                    'uid' => Episciences_Auth::getUid(),
+                    'fileid' => $ddFile->getId(),
+                    'docid' => $ddFile->getDocid(),
+                    'submission_date' => null,
+                    'version' => ($data[self::DD_PREVIOUS_VERSION_STR] + 1) ?? 1
+                ]);
+
+                $dd->save();
+                $dd->loadFile();
+                /** @var Episciences_User $user */
+                $user = Episciences_Auth::getUser();
+
+                // paper log
+                $logDetails = ['dd' => $dd->toArray(), 'file' => $dd->getFile()->toArray(), 'user' => ['screen'], 'user' => ['fullname' => $user->getFullName()]];
+                $action = $paper->isSoftware() ? Episciences_Paper_Logger::CODE_SWD_UPLOADED : Episciences_Paper_Logger::CODE_DD_UPLOADED;
+                $paper->log($action, Episciences_Auth::getUid(), $logDetails);
+
+            }
+        }
+
+        $coveLetterFile = $data[self::COVER_LETTER_FILE_ELEMENT_NAME] ?? '';
+
+        if (isset($uploads[self::COVER_LETTER_FILE_ELEMENT_NAME])) {
+            /** @var \Episciences\Files\File $coveLetterFile */
+            $coveLetterFile = $uploads[self::COVER_LETTER_FILE_ELEMENT_NAME];
+            $coveLetterFile =  $coveLetterFile->getName();
+        }
+
+        $coverLetter = [
+            "message" => $data[self::COVER_LETTER_COMMENT_ELEMENT_NAME] ?? '',
+            "attachedFile" => $coveLetterFile
+        ];
+
+        Episciences_CommentsManager::saveCoverLetter($paper, $coverLetter, true);
+
+    }
+
+    /**
+     * @param Zend_Form $form
+     * @param array $group
+     * @return Zend_Form
+     * @throws Zend_Form_Exception
+     */
+    private static function addDdElement(Zend_Form $form, array &$group = []): Zend_Form
+    {
+        $form->addElement('file', self::DD_FILE_ELEMENT_NAME, [
+            'required' => true,
+            'id' => self::DD_FILE_ELEMENT_NAME,
+            'label' => "Descripteur de données",
+            'description' => Episciences_Tools::buildAttachedFilesDescription(['doc', 'docx', 'pdf', 'txt', 'md']),
+            'valueDisabled' => true,
+            'maxFileSize' => MAX_FILE_SIZE,
+            'validators' => [
+                'Count' => [false, 1],
+                'Extension' => [false, implode(',', ['doc', 'docx', 'pdf', 'txt', 'md'])],
+                'Size' => [false, MAX_FILE_SIZE]
+            ]
+        ]);
+
+        $hiddenElementName =  sprintf('%s_is_required', self::DD_FILE_ELEMENT_NAME);
+        $form->addElement(new Zend_Form_Element_Hidden($hiddenElementName));
+
+        $group[] = self::DD_FILE_ELEMENT_NAME;
+        $group[] = $hiddenElementName;
+
+        return $form;
+
+    }
 }

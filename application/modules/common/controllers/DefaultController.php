@@ -351,4 +351,33 @@ class DefaultController extends Episciences_Controller_Action
 
     }
 
+
+    protected function renderFormErrors(Zend_Form $form = null): void{
+
+        if(!$form){
+            return;
+        }
+
+        $validationErrors = '<ol  type="i">';
+        foreach ($form->getMessages() as $val) {
+            foreach ($val as $v) {
+                $v = is_array($v) ? implode(' ', array_values($v)) : $v;
+                $validationErrors .= '<li>';
+                $validationErrors .= '<code>' . $v . '</code>';
+                $validationErrors .= '</li>';
+            }
+        }
+        $validationErrors .= '</ol>';
+
+        $message = '<strong>';
+        $message .= $this->view->translate("Ce formulaire comporte des erreurs");
+        $message .= $this->view->translate(' :');
+        $message .= $validationErrors;
+        $message .= $this->view->translate('Merci de les corriger.');
+        $message .= '</strong>';
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+        $this->view->error = true;
+
+    }
+
 }

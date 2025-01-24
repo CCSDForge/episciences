@@ -153,8 +153,8 @@ class CommentsController extends PaperController
                 $form_values = $form->getValues();
                 $newComment = new Episciences_Comment();
 
-                if (isset($form_values['file_comment_author'])) { // Chargement d'un nouveau fichier
-                    $newComment->setFile($form_values['file_comment_author']);
+                if (isset($form_values[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME])) { // Chargement d'un nouveau fichier
+                    $newComment->setFile($form_values[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]);
                     $strict = false;
                 } else {
                     $newComment->setFile($oldComment['FILE']);
@@ -163,7 +163,7 @@ class CommentsController extends PaperController
                 $newComment->setFilePath(REVIEW_FILES_PATH . $oldComment['DOCID'] . '/comments/');
                 $newComment->setType($oldComment['TYPE']);
                 $newComment->setDocid($oldComment['DOCID']);
-                $newComment->setMessage($form_values['author_comment']);
+                $newComment->setMessage($form_values[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME]);
                 $newComment->setPcid($oldComment['PCID']);
                 if (!$newComment->save($strict)) {
                     $message = $this->view->translate("Une erreur est survenue lors de l'enregistrement de votre commentaire.");
@@ -243,8 +243,8 @@ class CommentsController extends PaperController
                     $formValues = $form->getValues();
 
                     $coverLetter = [
-                        "message" => $formValues['author_comment'] ?? '',
-                        "attachedFile" => $formValues['file_comment_author'] ?? null
+                        "message" => $formValues[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME] ?? '',
+                        "attachedFile" => $formValues[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME] ?? null
                     ];
 
                     if (Episciences_CommentsManager::saveCoverLetter($paper, $coverLetter)) {
