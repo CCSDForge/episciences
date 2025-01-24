@@ -112,6 +112,12 @@ class SubmitController extends DefaultController
                 $suggestionsElement->setRegisterInArrayValidator(false);
             }
 
+            $requiredDdKey = sprintf('%s_is_required', Episciences_Submit::DD_FILE_ELEMENT_NAME);
+
+            if (isset($post[$requiredDdKey])) {
+                $form->getElement(Episciences_Submit::DD_FILE_ELEMENT_NAME)?->setRequired($post[$requiredDdKey] === 'true');
+            }
+
             if ($form->isValid($post)) {
                 $form_values = $form->getValues();
 
@@ -155,26 +161,8 @@ class SubmitController extends DefaultController
                 return;
             } // End isValid
 
-            $validationErrors = '<ol  type="i">';
-            foreach ($form->getMessages() as $val) {
-                foreach ($val as $v) {
-                    $v = is_array($v) ? implode(' ', array_values($v)) : $v;
-                    $validationErrors .= '<li>';
-                    $validationErrors .= '<code>' . $v . '</code>';
-                    $validationErrors .= '</li>';
-                }
-            }
-            $validationErrors .= '</ol>';
+            $this->renderFormErrors($form);
 
-            $message = '<strong>';
-            $message .= $this->view->translate("Ce formulaire comporte des erreurs");
-            $message .= $this->view->translate(' :');
-            $message .= $validationErrors;
-            $message .= $this->view->translate('Merci de les corriger.');
-            $message .= '</strong>';
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-
-            $this->view->error = true;
         }
 
         $this->view->form = $form;
@@ -229,7 +217,12 @@ class SubmitController extends DefaultController
 
             $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', $input);
             unset ($result['repoId']);
+
             $respond = !empty($result) ? $result : $respond;
+
+            $type = $respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT][0] ?? null;
+
+            $respond['displayDDForm'] = $type && (strtolower($type) === Episciences_Paper::SOFTWARE_TYPE_TITLE || strtolower($type) === Episciences_Paper::DATASET_TYPE_TITLE);
             $respond['xslt'] = Ccsd_Tools::xslt($respond['record'], APPLICATION_PUBLIC_PATH . '/xsl/full_paper.xsl');
         }
 
