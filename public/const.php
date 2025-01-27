@@ -89,7 +89,8 @@ function defineJournalConstants(string $rvCode = null): void
                                     ->select()
                                     ->from( T_REVIEW, ['CODE'])
                                     ->where('STATUS = ?', 1)
-                                    ->where('CODE = ?', $extractedCode);
+                                    ->where('CODE = ?', $extractedCode)
+                                    ->where ('is_new_front_switched = ?', 'yes');
 
                                 $result = $db->fetchOne($select);
                                 if ($result && $result !== 'portal' ){
