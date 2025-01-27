@@ -1761,8 +1761,8 @@ class PaperController extends PaperDefaultController
 
         $options = ['newVersionOf' => $paper->getDocid()];
 
-        if($paper->isDataSet()){
-            $options['isDataset'] = true;
+        if($paper->isDataSetOrSoftware()){
+            $options['dataType'] = $paper->getType()[Episciences_Paper::TITLE_TYPE];
         }
 
         $isFromZSubmit = false;
@@ -1836,7 +1836,7 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId, false);
 
-        $form = Episciences_Submit::getNewVersionForm($paper,  $paper->isDataSet() ? ['newVersionOf' => $paper->getDocid(), 'isDataset' => true] : []);
+        $form = Episciences_Submit::getNewVersionForm($paper,  $paper->isDataSetOrSoftware() ? ['newVersionOf' => $paper->getDocid(), 'dataType' => $paper->isSoftware() ? Episciences_Paper::SOFTWARE_TYPE_TITLE : Episciences_Paper::DATASET_TYPE_TITLE] : []);
 
         if(!$form?->isValid($post)){
             $this->renderFormErrors($form);
