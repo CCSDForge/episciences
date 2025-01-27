@@ -198,7 +198,7 @@ $(function () {
         "</div></div>";
     } else {
 
-      toggleDD('file_data_descriptor', result['displayDDForm']);
+      toggleDD('file_data_descriptor', result['ddOptions']);
 
       if ("conceptIdentifier" in result) {
         $submit_form.append(
@@ -589,17 +589,21 @@ function applyAction($elementsIds, actionName = "hide") {
   });
 }
 
-function toggleDD(ddIdentifier, value) {
-  //let $ddLabel = $('label[for="' + ddIdentifier + 'file_data_descriptor' + '"]');
+function toggleDD(ddIdentifier, ddOptions) {
+  let $ddLabel = $('label[for="' + ddIdentifier + '"]');
   let $hRequiredSelector = $('#' + ddIdentifier + '_is_required');
   let $ddSelectorElement = $('#' + ddIdentifier + '-element');
 
-  $hRequiredSelector.val(value);
+  $hRequiredSelector.val(ddOptions['displayDDForm']);
 
-  if ($hRequiredSelector.val().toLowerCase() !== 'true') {
+  if (!ddOptions.displayDDForm) {
     $ddSelectorElement.hide();
   } else {
+
+    if (ddOptions.isSoftware) {
+      $ddLabel.text(translate('Descripteur de logiciel'));
+    }
+
     $ddSelectorElement.show();
   }
-
 }

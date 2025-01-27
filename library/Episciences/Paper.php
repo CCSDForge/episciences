@@ -5124,23 +5124,25 @@ class Episciences_Paper
 
     public function loadDataDescriptor(): void
     {
-        if ($this->isDataSet()) {
+        if ($this->isDataSetOrSoftware()) {
             $this->setDataDescriptor(DataDescriptorManager::getByDocId($this->getDocid()));
         }
     }
 
-    public function isDataSet(): bool
+    public function isDataSetOrSoftware(): bool
     {
-        return
-            Episciences_Repositories::isDataverse($this->getRepoid()) ||
-            $this->getType()[self::TITLE_TYPE] === self::DATASET_TYPE_TITLE ||
-            $this->isSoftware();
+        return $this->isDataset() || $this->isSoftware();
     }
-
 
     public function isSoftware(): bool
     {
         return $this->getType()[self::TITLE_TYPE] === self::SOFTWARE_TYPE_TITLE;
+    }
+
+    public function isDataset(): bool{
+        return
+            Episciences_Repositories::isDataverse($this->getRepoid()) ||
+            $this->getType()[self::TITLE_TYPE] === self::DATASET_TYPE_TITLE;
     }
 
 }

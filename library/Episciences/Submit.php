@@ -677,8 +677,8 @@ class Episciences_Submit
 
             $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
 
-            if (isset($settings['isDataset'])){
-                self::addDdElement($form, $group);
+            if (isset($settings['dataType'])){
+                self::addDdElement($form, $group,$settings['dataType']);
             }
 
             $form->addElement('checkbox', 'disclaimer1', [
@@ -2182,15 +2182,16 @@ class Episciences_Submit
     /**
      * @param Zend_Form $form
      * @param array $group
+     * @param string $type
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    private static function addDdElement(Zend_Form $form, array &$group = []): Zend_Form
+    private static function addDdElement(Zend_Form $form, array &$group = [], string $type = Episciences_Paper::DATASET_TYPE_TITLE): Zend_Form
     {
         $form->addElement('file', self::DD_FILE_ELEMENT_NAME, [
             'required' => true,
             'id' => self::DD_FILE_ELEMENT_NAME,
-            'label' => "Descripteur de données",
+            'label' => ($type === Episciences_Paper::SOFTWARE_TYPE_TITLE) ? 'Descripteur de logiciel' : 'Descripteur de données',
             'description' => Episciences_Tools::buildAttachedFilesDescription(['doc', 'docx', 'pdf', 'txt', 'md']),
             'valueDisabled' => true,
             'maxFileSize' => MAX_FILE_SIZE,

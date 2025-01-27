@@ -193,6 +193,7 @@ class SubmitController extends DefaultController
     /**
      * @return void
      * @throws Zend_Exception
+     * @throws Exception
      */
     public function getdocAction(): void
     {
@@ -219,10 +220,18 @@ class SubmitController extends DefaultController
             unset ($result['repoId']);
 
             $respond = !empty($result) ? $result : $respond;
+            $respond['ddOptions'] = ['displayDDForm' => Episciences_Repositories::isDataverse($params['repoId']) , 'isSoftware' => false];
 
+            // form repository
             $type = $respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT][0] ?? null;
 
-            $respond['displayDDForm'] = $type && (strtolower($type) === Episciences_Paper::SOFTWARE_TYPE_TITLE || strtolower($type) === Episciences_Paper::DATASET_TYPE_TITLE);
+            if ($type){
+                $isSoftware = strtolower($type) === Episciences_Paper::SOFTWARE_TYPE_TITLE;
+                $isSoftwareOrDataset = $isSoftware || (strtolower($type) === Episciences_Paper::DATASET_TYPE_TITLE);
+                $respond['ddOptions']['displayDDForm'] = $isSoftwareOrDataset || $respond['ddOptions']['displayDDForm'];
+                $respond['ddOptions']['isSoftware'] = $isSoftware;
+            }
+
             $respond['xslt'] = Ccsd_Tools::xslt($respond['record'], APPLICATION_PUBLIC_PATH . '/xsl/full_paper.xsl');
         }
 
