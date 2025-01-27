@@ -83,6 +83,9 @@ class Episciences_Paper_Logger
     public const SUCCESS = 'success';
     public const DANGER = 'danger';
     public const PRIMARY = 'primary';
+    public const CODE_DD_UPLOADED = 'dd_uploaded';
+    public const CODE_SWD_UPLOADED = 'swd_uploaded';
+
 
     public const CODE_REVISION_DEADLINE_UPDATED = 'revision_deadline_updated';
 
@@ -145,6 +148,8 @@ class Episciences_Paper_Logger
         self::CODE_REVISION_DEADLINE_UPDATED => self::WARNING,
         self::CODE_DOCUMENT_IMPORTED => self::INFO,
         self::CODE_LD_CHANGED => self::INFO,
+        self::CODE_DD_UPLOADED => self::INFO,
+        self::CODE_SWD_UPLOADED => self::INFO,
 
     ];
 
@@ -187,6 +192,8 @@ class Episciences_Paper_Logger
         self::CODE_LD_REMOVED => "Suppression d'une donnée liée",
         self::CODE_DOCUMENT_IMPORTED => "Le document a été importé",
         self::CODE_LD_CHANGED => "Changement d'une donnée liée",
+        self::CODE_DD_UPLOADED => 'Descripteur de données chargé',
+        self::CODE_SWD_UPLOADED=> 'Descripteur de logiciel chargé',
     ];
 
     /**

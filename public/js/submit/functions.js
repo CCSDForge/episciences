@@ -197,9 +197,12 @@ $(function () {
         result["error"] +
         "</div></div>";
     } else {
+
+      toggleDD('file_data_descriptor', result['ddOptions']);
+
       if ("conceptIdentifier" in result) {
         $submit_form.append(
-          '<input id = "concept_identifier" type="hidden" name="concept_identifier" value="' +
+            '<input id = "concept_identifier" type="hidden" name="concept_identifier" value="' +
             result.conceptIdentifier +
             '">',
         );
@@ -480,7 +483,7 @@ $(function () {
 
     search();
   }
-});
+}); // end Ready
 
 /**
  *
@@ -584,4 +587,23 @@ function applyAction($elementsIds, actionName = "hide") {
       $(id).show();
     }
   });
+}
+
+function toggleDD(ddIdentifier, ddOptions) {
+  let $ddLabel = $('label[for="' + ddIdentifier + '"]');
+  let $hRequiredSelector = $('#' + ddIdentifier + '_is_required');
+  let $ddSelectorElement = $('#' + ddIdentifier + '-element');
+
+  $hRequiredSelector.val(ddOptions['displayDDForm']);
+
+  if (!ddOptions.displayDDForm) {
+    $ddSelectorElement.hide();
+  } else {
+
+    if (ddOptions.isSoftware) {
+      $ddLabel.text(translate('Descripteur de logiciel'));
+    }
+
+    $ddSelectorElement.show();
+  }
 }

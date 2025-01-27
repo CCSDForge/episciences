@@ -216,6 +216,15 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
 <?php // paper ************************************************************************* ?>
 <div>
     <?= $paper->getXslt() ?>
+    <?php // Data Descriptor ?>
+    <?= $this->render('partials/paper_data_descriptor_bloc.phtml') ?>
+
+
+    <?php // author's comments and cover letter ************************************************************************* ?>
+    <?php if (!$paper->isPublished() || $paper->isOwner()) : ?>
+        <?php // Author comments  *****************************************?>
+        <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
+    <?php endif; ?>
 
     <?php
 
@@ -294,11 +303,6 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
                 <?= $this->partial('partials/paper_reports.phtml', ['paper' => $paper, 'reports' => $this->reports, 'isAllowedToSeeReportDetails' => $this->isAllowedToSeeReportDetails]) ?>
             </div>
         </div>
-    <?php endif; ?>
-    <?php // author's comments and cover letter ************************************************************************* ?>
-    <?php if (!$paper->isPublished()) : ?>
-        <?php // Author comments  *****************************************?>
-        <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
     <?php endif; ?>
 
     <?php // reviewer comments ************************************** ?>

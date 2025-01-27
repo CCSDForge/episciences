@@ -51,6 +51,8 @@ return array(
     Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE => 'Nouvelle date de publication',
     Episciences_Paper_Logger::CODE_COI_REPORTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REPORTED],
     Episciences_Paper_Logger::CODE_COI_REVERTED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_COI_REVERTED],
+    Episciences_Paper_Logger::CODE_DD_UPLOADED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_DD_UPLOADED],
+    Episciences_Paper_Logger::CODE_SWD_UPLOADED =>Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_SWD_UPLOADED],
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION],
     Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED],
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION],

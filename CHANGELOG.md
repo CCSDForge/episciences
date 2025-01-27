@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- It is now possible to attach a data/software descriptor to a submission.
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
 - New button on volume pages to download all the PDF files at once with a single PDF file
 

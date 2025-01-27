@@ -195,17 +195,19 @@ class Episciences_Comment
      * Eviter aussi  l'écrasement de l'ancien fichier lors de l'edition de ce dernier.
      * @param bool $strict
      * @param int|null $uid
+     * @param bool $ignoreUpload // [true] the attached file has already been uploaded
      * @return bool
-
      */
-    public function save(bool $strict = false, int $uid = null): bool
+    public function save(bool $strict = false, int $uid = null, bool $ignoreUpload = false): bool
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $result = false;
 
-        $this->uploadFileComment($strict);
+        if (!$ignoreUpload) {
+            $this->uploadFileComment($strict);
+        }
 
         try {
             if (!$this->getPcid()) { // INSERT

@@ -15,6 +15,7 @@ $(document).ready(function () {
 
   $searchDocRepoId.on("change", function () {
     toggleVersionBloc();
+
   });
 
   function toggleVersionBloc() {
