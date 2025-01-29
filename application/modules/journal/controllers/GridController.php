@@ -158,7 +158,7 @@ class GridController extends Episciences_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
-        // la redirection vers "/gid/list" est faite dans "js/grid/es.dataTables.delete-buttons.js"
+        // la redirection vers "/gid/list" est faite dans "js/library/es.dataTables.delete-buttons.js"
         echo true;
     }
 
@@ -472,7 +472,7 @@ class GridController extends Episciences_Controller_Action
         $oGrid->loadXML(REVIEW_GRIDS_PATH . $filename);
         $oGrid->removeCriterion($item_id);
         $oGrid->save();
-        // la redirection vers "grid/list" est faite dans "js/grid/es.dataTables.delete-buttons.js"
+        // la redirection vers "grid/list" est faite dans "js/library/es.dataTables.delete-buttons.js"
         $message = '<strong>' . $this->view->translate("La modification a été effectuée avec succès.") . '</strong>';
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
 
