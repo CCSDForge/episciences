@@ -3230,10 +3230,13 @@ class Episciences_Paper
 
         $node->appendChild($dom->createElement('isOwner', $this->isOwner()));
 
+        $oVolume = false;
+
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
-            if ($oVolume instanceof Episciences_Volume) {
+
+            if ($oVolume) {
                 $node->appendChild($dom->createElement('volumeName', $oVolume->getNameKey()));
                 $oVolume->loadSettings();
             }
@@ -3284,9 +3287,11 @@ class Episciences_Paper
         // si l'option est activée
         // et qu'il s'agit d'un volume spécial
         // et qu'on est rédacteur de l'article
-        if ($this->getDocid() &&
+        if (
+            $oVolume &&
+            $this->getDocid() &&
             $oReview->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES) &&
-            isset($oVolume) && $oVolume instanceof Episciences_Volume && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+            $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
             array_key_exists(Episciences_Auth::getUid(), $this->getEditors(true, true))
         ) {
 

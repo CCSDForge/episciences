@@ -236,7 +236,6 @@ function getUrlParams(param = null) {
     let aParams = [];
     let uri = window.location.pathname;
     uri = uri.replace(JS_PREFIX_URL, ''); // ignore prefix_url
-    console.log(uri);
     let pathname = uri.substring(1).split('/');
     let urlSearch = window.location.search;
 

@@ -523,10 +523,12 @@ function getPublicationDateForm(button, docId) {
         popoverParams.content = result;
         $(button).popover(popoverParams).popover('show');
 
-        $('form[action^="/administratepaper/savepublicationdate"]').on('submit', function () {
+        let formAction = JS_PREFIX_URL + 'administratepaper/savepublicationdate';
+
+        $('form[action^="' + formAction + '"]').on('submit', function () {
             let $publicationDate = $("#publication-date");
             // Traitement AJAX du formulaire
-            let sRequest = ajaxRequest(JS_PREFIX_URL + 'administratepaper/savepublicationdate', $(this).serialize() + "&docid=" + docId, 'POST', 'json');
+            let sRequest = ajaxRequest(formAction, $(this).serialize() + "&docid=" + docId, 'POST', 'json');
             sRequest.done(function (response) {
                 // Destruction du popup
                 $(button).popover('destroy');
@@ -686,7 +688,7 @@ function getVersionEditingForm(button, docId) {
         popoverParams.content = result;
         $(button).popover(popoverParams).popover('show');
 
-        let actionStr = '/administratepaper/savenewpostedversion';
+        let actionStr = JS_PREFIX_URL + 'administratepaper/savenewpostedversion';
 
         $('form[action^="' + actionStr + '"]').on('submit', function () {
             let $inProgress = $('#in-progress');
@@ -774,11 +776,12 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
         // Affichage du formulaire dans le popover
         popoverParams.content = result;
         $(button).popover(popoverParams).popover('show');
+        let actionForm = JS_PREFIX_URL + 'administratepaper/updaterevisiondeadline';
 
-        $('form[action^="/administratepaper/updaterevisiondeadline"]').on('submit', function () {
+        $('form[action^="' + actionForm + '"]').on('submit', function () {
             let $revisionDeadline = $("#revision-deadline");
             // Traitement AJAX du formulaire
-            let sRequest = ajaxRequest(JS_PREFIX_URL + 'administratepaper/updaterevisiondeadline', $(this).serialize() + "&docid=" + docId + "&pcid=" + commentId, 'POST', 'json');
+            let sRequest = ajaxRequest(actionForm, $(this).serialize() + "&docid=" + docId + "&pcid=" + commentId, 'POST', 'json');
             sRequest.done(function (response) {
                 // Destruction du popup
                 $(button).popover('destroy');
