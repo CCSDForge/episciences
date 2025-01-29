@@ -43,12 +43,14 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
             'content': result
         }).popover('show');
 
-        $('form[action^="/administratepaper/savemastervolume"]').on('submit', function () {
+        let actionForm = JS_PREFIX_URL + 'administratepaper/savemastervolume';
+
+        $('form[action^="' + actionForm + '"]').on('submit', function () {
             if (!$(this).data('submitted')) { // to fix duplicate ajax request
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
                 $.ajax({
-                    url: JS_PREFIX_URL + 'administratepaper/savemastervolume',
+                    url: actionForm,
                     type: 'POST',
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,
@@ -58,18 +60,7 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
                             $(button).popover('destroy');
 
                             if (!isPartial) {// not partial
-
-                                // // refresh master volume
-                                // refreshVolumes({vid: vid, docId: docid, from: 'view'}, 'master',  $('#master_volume_name_' + docid) );
-                                //
-                                // // refresh secondary volumes
-                                // refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
-                                //
-                                // // refresh paper history
-                                // refreshPaperHistory(docid);
-
                                 location.replace(location.href);
-
                             } else { // refresh all master volumes display
 
                                 let url = JS_PREFIX_URL + 'administratepaper/refreshallmastervolumes';
@@ -138,12 +129,14 @@ function getOtherVolumesForm(button, docid, partial) {
             'content': result
         }).popover('show');
 
-        $('form[action^="/administratepaper/saveothervolumes"]').on('submit', function () {
+        let actionForm = JS_PREFIX_URL + 'administratepaper/saveothervolumes';
+
+        $('form[action^="' + actionForm + '"]').on('submit', function () {
             if (!$(this).data('submitted')) { // to fix duplicate ajax request
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
                 $.ajax({
-                    url: JS_PREFIX_URL + 'administratepaper/saveothervolumes',
+                    url: actionForm,
                     type: 'POST',
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,

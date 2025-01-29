@@ -6,6 +6,7 @@ if ($file) : ?>
         $files = Episciences_Tools::isJson($file) ? json_decode($file, true, 512, JSON_THROW_ON_ERROR) : (array)$file;
     } catch (JsonException $e) {
         trigger_error($e->getMessage());
+        $files = [];
     } ?>
     <hr>
     <p class="small">
@@ -14,7 +15,7 @@ if ($file) : ?>
 
     <?php foreach ($files as $file) : ?>
         <div class="col-sm-10">
-            <a href="/docfiles/ce/<?= $comment['DOCID'] . '/' . $file . '/' . $comment['PCID'] ?>"
+            <a href="<?= sprintf('%sdocfiles/ce/%s/%s/%s', PREFIX_URL, $comment['DOCID'], $file, $comment['PCID'])?>"
                target="_blank">
                 <?= $file ?>
             </a>

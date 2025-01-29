@@ -2455,12 +2455,20 @@ class Episciences_PapersManager
             }
         }
 
+
+        $helperUrl = new Episciences_View_Helper_Url();
+
         $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-        $url = $site . (new Episciences_View_Helper_Url())->url([
+        $url = sprintf('%s%s', $site, $helperUrl->url([
                 'controller' => 'paper',
                 'action' => 'view',
                 'id' => $paper->getDocid()
-            ]);
+            ]));
+
+        $lostLoginUrl = sprintf('%s%s', $site, $helperUrl->url([
+            'controller' => 'user',
+            'action' => 'lostlogin'
+        ]));
 
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
@@ -2477,7 +2485,7 @@ class Episciences_PapersManager
             Episciences_Mail_Tags::TAG_PAPER_URL => $url,
             Episciences_Mail_Tags::TAG_PAPER_RATINGS => $ratings_string,
             Episciences_Mail_Tags::TAG_PAPER_REPO_URL => $paper->getDocUrl(),
-            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin'
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginUrl
         ]);
 
 
@@ -2522,6 +2530,8 @@ class Episciences_PapersManager
                 $revisionsDateIso = $paper->buildRevisionDates(); // all versions in ISO format
                 $paperPosition = $paper->getPaperPositionInVolume(); // position of paper in volume
                 $acceptanceDate = $paper->getAcceptanceDate();
+                $ceRessourcesUrl = sprintf('%s%spublic/', $site, PREFIX_URL);
+                $ceRessourcesUrl .= sprintf('%s_episciences.zip',RVCODE);
 
                 $addTags = array_merge($defaultTags, [
                     Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paperSubmissionDate, $locale),
@@ -2541,7 +2551,7 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_SECTION_NAME => $sectionName,
                     Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME => !empty($paperPosition) ? $paperPosition : $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_CURRENT_YEAR => date('Y'),
-                    Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL => $site . '/public/' . RVCODE . '_episciences.zip',
+                    Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL =>$ceRessourcesUrl,
                     Episciences_Mail_Tags::TAG_VOLUME_EDITORS => ($volume && $volume->formatEditors()) ? $volume->formatEditors() : $translator->translate('Aucun', $locale)
                 ]);
 

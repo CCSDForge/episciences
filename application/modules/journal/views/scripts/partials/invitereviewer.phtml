@@ -6,7 +6,7 @@
 </style>
 <?php
 
-if ($this->referer !== '/administratepaper/list') {
+if ($this->referer !== $this->url(['controller' => 'administratepaper', 'action' => 'list' ])) {
     $back = "Gestion de l'article";
 } else {
     $back = 'Gestion des articles';

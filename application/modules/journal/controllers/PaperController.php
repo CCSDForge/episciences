@@ -576,7 +576,7 @@ class PaperController extends PaperDefaultController
                 }
 
                 $isErrors ? $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message) : $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-                $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => self::CONTROLLER_NAME, 'action' => 'view', 'id' => $paper->getDocid()]));
 
 
             }
@@ -940,7 +940,7 @@ class PaperController extends PaperDefaultController
         $docId = $paper->getDocid();
 
         // La page de l'article
-        $paperUrl = '/' . self::CONTROLLER_NAME . '/view?id=' . $docId;
+        $paperUrl = $this->url(['controller' => self::CONTROLLER_NAME, 'action' => 'view', 'id' => $docId ]);
         $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         $tags = [
@@ -3139,7 +3139,7 @@ class PaperController extends PaperDefaultController
             if (!in_array($paper->getStatus(), $authorizedStatus, true)) {
                 $message = $this->view->translate("L'article ne peut pas être supprimé en raison de son statut.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl('/' . $docId);
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'id' => $docId]));
                 return;
             }
 
@@ -3147,7 +3147,7 @@ class PaperController extends PaperDefaultController
             if (!$paper->isOwner()) {
                 $message = $this->view->translate("L'article ne peut être supprimé que par son déposant.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl('/' . $docId);
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'id' =>  $docId]));
                 return;
             }
 

@@ -47,13 +47,14 @@ function assignReviewers(button, docid)
 		// Handlers du filtre des relecteurs
 		$('#filter').on('keyup', function() {filterList('#filter', '.editors-list label')} );
 		$('#filter').on('paste', function() {setTimeout(function() {filterList('#filter', '.reviewers-list label')}, 4)});
-		
-		
-		$('form[action^="assignreviewers"]').on('submit', function() {
+
+		let actionForm = JS_PREFIX_URL + 'administratepaper/assignreviewers';
+
+		$('form[action^="' + actionForm +'"]').on('submit', function() {
 			
 			// Traitement AJAX du formulaire
 			$.ajax({
-                url: JS_PREFIX_URL + 'administratepaper/assignreviewers',
+                url: actionForm,
                 type: 'POST',
                 datatype: 'json',
                 data: $(this).serialize() + "&docid="+docid,

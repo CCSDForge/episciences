@@ -372,12 +372,12 @@
                             </xsl:attribute>
                             <xsl:attribute name="href">
                                 <xsl:value-of
-                                        select="concat('/administratepaper/reassign/docid/', episciences/id)"/>
+                                        select="concat($prefixUrl,'administratepaper/reassign/docid/', episciences/id)"/>
                             </xsl:attribute>
 
                             <button class="btn btn-danger btn-sm popover-link decline-paper-assignment"
                                     id="reassign-button"
-                                    style="float: right">
+                                    style="float: right; margin-left: 5px;">
                                 <xsl:value-of select="php:function('Ccsd_Tools::translate', $string)"/>
                             </button>
                         </a>
