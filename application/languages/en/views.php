@@ -651,6 +651,10 @@ return array(
     "Modifier ce volume" => "Edit this volume",
     'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the articles: ',
     "La grille a bien été supprimée." => "The grid has been successfully deleted.",
+    "La grille de destination n'existe pas." => "The destination grid does not exist.",
+    "Il n'est pas possible de fusionner la grille par défaut avec une grille déjà finalisée." => "It is not possible to merge the default grid with a grid that has already been finalised.",
+    "La grille source est vide." => "The source grid is empty",
+    "La grille cible contient déjà des éléments." => "The target grid already contains criteria.",
 
 
     // Gestion des relecteurs

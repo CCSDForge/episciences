@@ -4,7 +4,7 @@ $(document).ready(function () {
         let url = $(this).url();
         let action = url.attr('path');
         let params = url.param();
-        let isDeleteGridAction = (action === '/grid/delete');
+        let isDeleteGridAction = (action === JS_PREFIX_URL + 'grid/delete');
         let table = null;
         let tr = null;
         let data = {};
@@ -28,7 +28,6 @@ $(document).ready(function () {
                                 return false;
                             } else {
                                 if (table && tr) {
-                                    console.log(table, tr);
                                     $('#' + table).dataTable().fnDeleteRow(document.getElementById(tr));
                                     location.reload();
                                 }

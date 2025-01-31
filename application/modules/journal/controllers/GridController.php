@@ -91,25 +91,44 @@ class GridController extends Episciences_Controller_Action
     /**
      *  Copie les critères d'une grille de notation vers une autre
      */
-    public function copyAction()
+    public function copyAction(): void
     {
         $request = $this->getRequest();
-        $from = $request->getQuery('from');
-        $to = $request->getQuery('to');
+        $from = $request?->getQuery('from');
+        $to = $request?->getQuery('to');
 
         $source_grid = new Episciences_Rating_Grid;
         if (!$source_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $from . '.xml')) {
             $message = '<strong>' . $this->view->translate("La grille source n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
+            return;
         }
+
+        if (empty($source_grid->getCriteria())) {
+            $message = '<strong>' . $this->view->translate("La grille source est vide.") . '</strong>';
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
+            return;
+        }
+
 
         $dest_grid = new Episciences_Rating_Grid;
         if (!$dest_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $to . '.xml')) {
             $message = '<strong>' . $this->view->translate("La grille de destination n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
+            return;
         }
+
+
+        if (!empty($dest_grid->getCriteria())) {
+            $message = '<strong>' . $this->view->translate("Il n'est pas possible de fusionner la grille par défaut avec une grille déjà finalisée.") . '</strong>';
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+            $this->_helper->redirector('list', 'grid', null, [PREFIX_ROUTE => RVCODE]);
+            return;
+        }
+
 
         $dest_grid->setCriteria(array_merge($dest_grid->getCriteria(), $source_grid->getCriteria()));
 
@@ -158,7 +177,7 @@ class GridController extends Episciences_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
-        // la redirection vers "/gid/list" est faite dans "js/grid/es.dataTables.delete-buttons.js"
+        // la redirection vers "/gid/list" est faite dans "js/library/es.dataTables.delete-buttons.js"
         echo true;
     }
 
@@ -472,7 +491,7 @@ class GridController extends Episciences_Controller_Action
         $oGrid->loadXML(REVIEW_GRIDS_PATH . $filename);
         $oGrid->removeCriterion($item_id);
         $oGrid->save();
-        // la redirection vers "grid/list" est faite dans "js/grid/es.dataTables.delete-buttons.js"
+        // la redirection vers "grid/list" est faite dans "js/library/es.dataTables.delete-buttons.js"
         $message = '<strong>' . $this->view->translate("La modification a été effectuée avec succès.") . '</strong>';
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
 
