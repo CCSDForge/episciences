@@ -133,14 +133,29 @@
 
 <?php if (Episciences_Auth::isSecretary()) : ?>
     <div id="grid-actions">
-        <?php if ($this->defaultGrid) : ?>
-        <?php if ($this->defaultGrid->getId() != $this->grid->getId()) : ?>
+        <?php if ($this->defaultGrid && $this->defaultGrid->getId() !== $this->grid->getId()) : ?>
+            <?php
+            $title = '';
+            $isEmptySource = empty($this->defaultGrid->getCriteria());
+            $isEmptyDestination = empty($this->grid->getCriteria());
+
+            if ($isEmptySource) {
+                $title = $this->translate('La grille source est vide.');
+            }
+            if (!$isEmptyDestination) {
+                $title = $this->translate("La grille cible contient déjà des éléments.");
+
+            }
+            ?>
+
             <a href="<?= $this->url(['controller' => 'grid', 'action' => 'copy', 'from' => $this->defaultGrid->getId(), 'to' => $this->grid->getId()]) ?>">
-                <button type="button" class="btn btn-default">
+                <button type="button"
+                        class="btn btn-default" <?= $isEmptySource || !$isEmptyDestination ? 'disabled' : '' ?>
+                        title="<?= $this->translate($title) ?>">
                     <?php echo $this->translate('Copier grille par défaut'); ?>
                 </button>
             </a>
-            <?php endif; ?>
+
         <?php endif; ?>
 
         <a href="<?= $this->url(['controller' => 'grid', 'action' => 'addseparator', 'rgid' => $this->grid->getId(), 'type' => 'separator']) ?>">

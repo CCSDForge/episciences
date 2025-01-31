@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Changed
+- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
+
 ## Unreleased
 ### Added
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
