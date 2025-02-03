@@ -166,13 +166,13 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if ($request->isPost()) {
+        if ($request->isPost() && !$request->getPost('lang')) {
             $valid = true;
             $pagesDisplay = [];
 
             foreach ($request->getPost() as $id => $options) {
 
-                if (strpos($id, 'pages_') !== 0) {
+                if (!str_starts_with($id, 'pages_')) {
                     continue;
                 }
 
@@ -215,9 +215,12 @@ class WebsiteDefaultController extends Episciences_Controller_Action
             }
             $this->view->pagesDisplay = $pagesDisplay;
         }
+        $pageTypes = $this->_session->website->getPageTypes(true);
+        $groupedPageTypes = $this->processPageTypes($pageTypes);
         $this->view->pages = $this->_session->website->getPages();
         $this->view->order = $this->_session->website->getOrder();
-        $this->view->pageTypes = $this->_session->website->getPageTypes(true);
+        $this->view->pageTypes = $pageTypes;
+        $this->view->groupedPageTypes = $groupedPageTypes;
 
     }
 
@@ -335,6 +338,30 @@ class WebsiteDefaultController extends Episciences_Controller_Action
             $news->delete($params['newsid']);
             Episciences_JournalNews::deleteByLegacyId($params['newsid']);
         }
+    }
+
+    private function processPageTypes(array $pageTypes = []): array
+    {
+
+        try {
+            $translator = Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $e) {
+            $translator = null;
+            trigger_error($e->getMessage());
+        }
+        asort($pageTypes);
+        $processed = [];
+
+        foreach ($pageTypes as $type => $label) {
+            foreach (Episciences_Website_Navigation::$groupedPages as $group => $gTypes) {
+                if(in_array($type, $gTypes, true )){
+                    $processed[$translator?->translate($group)][] = $type;
+                }
+            }
+        }
+        ksort($processed);
+        return $processed;
+
     }
 }
 

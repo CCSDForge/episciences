@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
+- Website menu:
+  - It is no longer possible to manually add certain public pages to the site.
+  - The list of pages has been reorganised by group.
 
 ## Unreleased
 ### Added

@@ -314,5 +314,14 @@ return [
     'Dataset' => 'Jeu de données',
 
     'classification_jel' => 'JEL Classification System',
-    'classification_msc2020' => 'Mathematics Subject Classification 2020'
+    'classification_msc2020' => 'Mathematics Subject Classification 2020',
+
+    #grouped website pages
+    'Home (backend)' => 'Accueil (backend)',
+    'About the journal' => 'À propos de la revue',
+    'Board' => 'Comité',
+    'Board (backed)' => 'Comité (backend)',
+    'For authors' => "Pour les auteurs",
+    'Other' => 'Autres',
+
 ];
