@@ -2149,6 +2149,8 @@ return array(
     //DD
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
+    // Website > menu
+    'Choisissez une page' => 'Select a page'
 
 
 );

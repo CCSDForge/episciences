@@ -151,8 +151,9 @@ function defineJournalConstants(string $rvCode = null): void
     }
 
     if (defined('REVIEW_PATH')) {
+        $urlPrefix = (PREFIX_URL !== PORTAL_PREFIX_URL) ? PREFIX_URL : '/portal/';
         define('REVIEW_TMP_PATH', REVIEW_PATH . 'tmp/');
-        define('REVIEW_URL', APPLICATION_URL . '/public/');
+        define('REVIEW_URL', APPLICATION_URL . $urlPrefix .  'public/');
         define('REVIEW_PUBLIC_PATH', REVIEW_PATH . 'public/');
         define('REVIEW_PAGE_PATH', REVIEW_PATH . 'pages/');
         define('REVIEW_FILES_PATH', REVIEW_PATH . 'files/');
