@@ -54,8 +54,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             self::PAGE_FORMER_MEMBERS
         ],
 
-        'Board (backed)' => [self::PAGE_EDITORIAL_STAFF],
-
         'For authors' => [
             self::PAGE_EDITORIAL_WORKFLOW,
             self::PAGE_ETHICAL_CHARTER,
@@ -84,6 +82,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         self::PAGE_BROWSE_REGULAR_ISSUES,
         self::PAGE_ACCEPTED_PAPERS_LIST,
         self::PAGE_SEARCH,
+        self::PAGE_EDITORIAL_STAFF,
     ];
 
     public function setOptions($options = []): void

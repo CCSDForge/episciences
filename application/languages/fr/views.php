@@ -320,7 +320,6 @@ return [
     'Home (backend)' => 'Accueil (backend)',
     'About the journal' => 'À propos de la revue',
     'Board' => 'Comité',
-    'Board (backed)' => 'Comité (backend)',
     'For authors' => "Pour les auteurs",
     'Other' => 'Autres',
 
