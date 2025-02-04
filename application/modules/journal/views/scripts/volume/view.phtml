@@ -19,7 +19,7 @@ $indexedPapers = $volume->getIndexedPapers();
                     </p>
                     <p>
                         <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== '' ? $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) . ";" : '' ?>
-                        <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== '' ? "N°" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) . ";" : '' ?>
+                        <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== '' ? "N°" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) : '' ?>
                     </p>
                     <p>
                         <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) !== '' ? $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) . ";" : '' ?>
