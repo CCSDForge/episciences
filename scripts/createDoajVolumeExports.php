@@ -19,21 +19,26 @@ if (file_exists(__DIR__ . "/loadHeader.php")) {
 }
 require_once "JournalScript.php";
 
-class MergePdfVol extends JournalScript
+class buildDoajVolumeExport extends JournalScript
 {
     public const APICALLVOL = "volumes?page=1&itemsPerPage=1000&rvcode=";
 
     protected bool $_dryRun = true;
     private Logger $logger;
+    private Client $client;
 
     public function __construct($localopts)
     {
-        $loggerName = 'mergePdfVol';
+        $loggerName = 'doajVolumeExports';
         $this->logger = new Logger($loggerName);
         $this->logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . $loggerName . '.log', Logger::INFO));
 
         $this->setRequiredParams([]);
         $this->setArgs(array_merge($this->getArgs(), $localopts));
+        $guzzleOptions = [
+            'headers' => ['User-Agent' => EPISCIENCES_USER_AGENT,]
+        ];
+        $this->client = new Client($guzzleOptions);
         parent::__construct();
     }
 
@@ -45,31 +50,29 @@ class MergePdfVol extends JournalScript
             $this->initTranslator();
             defineJournalConstants();
 
+
             $rvCode = $this->getParam('rvcode');
+
+
             if ($rvCode === null) {
                 $this->logger->error('ERROR: MISSING RVCODE');
                 die('ERROR: MISSING RVCODE' . PHP_EOL);
             }
 
             if ($this->getParam('removecache') === '1') {
-                $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
+                $cache = new FilesystemAdapter("doaj-volume-export-" . $rvCode, 0, CACHE_PATH_METADATA);
                 $cache->clear();
                 $this->logger->info("Cache cleared for RV code: $rvCode");
             }
 
             $volumeList = $this->getVolumeList($rvCode);
 
-            $guzzleOptions = [
-                'headers' => ['User-Agent' => EPISCIENCES_USER_AGENT,]
-            ];
-
-            $client = new Client($guzzleOptions);
 
             foreach ($volumeList as $oneVolume) {
-                $this->mergePdfFromVolume($oneVolume, $client, $rvCode);
+                $this->mergeDoajExportFromVolume($oneVolume, $rvCode);
             }
 
-            $this->logger->info('Volumes PDF fusion completed.');
+            $this->logger->info('Volumes Export completed.');
         } catch (Exception $e) {
             $this->logger->error('An error occurred: ' . $e->getMessage(), ['exception' => $e]);
             die('An error occurred. Check the logs for details.' . PHP_EOL);
@@ -82,37 +85,43 @@ class MergePdfVol extends JournalScript
      */
     private function getVolumeList(string $rvCode): mixed
     {
-        $client = new Client();
-        $response = $client->get(EPISCIENCES_API_URL . self::APICALLVOL . $rvCode)->getBody()->getContents();
+
+        $apiUrl = EPISCIENCES_API_URL . self::APICALLVOL . $rvCode;
+        $this->logger->info("Fetching Volumes from $apiUrl");
+        $response = $this->client->get($apiUrl)->getBody()->getContents();
         return json_decode($response, true, 512, JSON_THROW_ON_ERROR)['hydra:member'];
     }
 
     /**
      * @throws JsonException
      */
-    private function mergePdfFromVolume(mixed $res, Client $client, string $rvCode): void
+    private function mergeDoajExportFromVolume(mixed $res, string $rvCode): void
     {
-        $listOfPdfFilesToMerge = '';
+        $listOfDoajExportsToMerge = [];
         $paperIdCollection = self::getPaperIdCollection($res['papers']);
 
-        $docIdCollection = $this->getDocIdsSortedByPosition($client, $paperIdCollection);
+        $docIdCollection = $this->getDocIdsSortedByPosition($paperIdCollection);
 
         $volumeId = $res['vid'];
 
         if ($this->getParam('ignorecache') === '1' || (string)(json_decode(self::getCacheDocIdsList($volumeId, $rvCode), true, 512, JSON_THROW_ON_ERROR) !== $paperIdCollection)) {
             foreach ($docIdCollection as $docId) {
-                $listOfPdfFilesToMerge = $this->fetchPdfFiles($docId, $rvCode, $client, $listOfPdfFilesToMerge);
+                $listOfDoajExportsToMerge[] = $this->fetchDoajExport($docId, $this->client);
+
             }
-            $pathPdfMerged = sprintf("%s/../data/%s/public/volume-pdf/%s/", APPLICATION_PATH, $rvCode, $volumeId);
-            if (!is_dir($pathPdfMerged) && !mkdir($pathPdfMerged, 0777, true) && !is_dir($pathPdfMerged)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathPdfMerged));
+            $pathDoajVolumeDir = sprintf("%s/../data/%s/public/volume-doaj/%s/", APPLICATION_PATH, $rvCode, $volumeId);
+            if (!is_dir($pathDoajVolumeDir) && !mkdir($pathDoajVolumeDir, 0777, true) && !is_dir($pathDoajVolumeDir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathDoajVolumeDir));
             }
             self::setCacheDocIdsList((string)$volumeId, $paperIdCollection, $rvCode);
-            $exportPdfPath = $pathPdfMerged . $volumeId . '.pdf';
-            $this->logger->info("Merging volume", ['VolId' => $volumeId]);
-            system("pdfunite " . escapeshellcmd($listOfPdfFilesToMerge) . " " . escapeshellcmd($exportPdfPath));
-            $this->logger->info("List of PDF Files merged", [$listOfPdfFilesToMerge]);
-            $this->logger->info("New PDF file created", [$exportPdfPath]);
+            $exportDoajVolumePath = $pathDoajVolumeDir . $volumeId . '.xml';
+
+
+            $stringOfDoajTexts = '<?xml version="1.0"?>' . PHP_EOL . '<records>' . PHP_EOL . implode(PHP_EOL, $listOfDoajExportsToMerge) . PHP_EOL . '</records>';
+            file_put_contents($exportDoajVolumePath, $stringOfDoajTexts);
+
+            $this->logger->info("Creating DOAJ volume export", ['VolId' => $volumeId]);
+            $this->logger->info('Wrote XML file', [$exportDoajVolumePath]);
         } else {
             $this->logger->info("DocIds are the same from the API", ['Volume' => $volumeId]);
         }
@@ -123,11 +132,11 @@ class MergePdfVol extends JournalScript
         return array_column($data, 'paperid');
     }
 
-    public function getDocIdsSortedByPosition(Client $client, array $paperIdCollection): array
+    public function getDocIdsSortedByPosition(array $paperIdCollection): array
     {
         $docidCollection = [];
         foreach ($paperIdCollection as $paperId) {
-            $response = $client->get(EPISCIENCES_API_URL . 'papers/' . $paperId)->getBody()->getContents();
+            $response = $this->client->get(EPISCIENCES_API_URL . 'papers/' . $paperId)->getBody()->getContents();
             $paperProperties = json_decode($response);
             $docId = $paperProperties->document->database->current->identifiers->document_item_number;
             $position = $paperProperties->document->database->current->position_in_volume;
@@ -144,7 +153,7 @@ class MergePdfVol extends JournalScript
      */
     public static function getCacheDocIdsList(string $vid, string $rvCode): string
     {
-        $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter("doaj-volume-export-" . $rvCode, 0, CACHE_PATH_METADATA);
         $getVidsList = $cache->getItem($vid);
         if (!$getVidsList->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
@@ -152,71 +161,68 @@ class MergePdfVol extends JournalScript
         return $getVidsList->get();
     }
 
-    public function fetchPdfFiles(mixed $docId, string $rvCode, Client $client, string $strPdf): string
+    public function fetchDoajExport(mixed $docId): string
     {
         $this->logger->info("Processing", ['docId' => $docId]);
-        list($pdf, $pathDocId, $path) = $this->getPdfAndPath($rvCode, $docId);
-        if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
-        }
-        $pathPdf = $path . $docId . ".pdf";
-        $realpathPDF = realpath($pathPdf);
-        if (!file_exists($pathPdf)) {
-            try {
-                $this->downloadPdf($client, $pdf, $pathPdf, $path, $pathDocId);
-            } catch (GuzzleException $e) {
-                unlink($pathPdf);
-                $this->logger->info('Removed', [$realpathPDF]);
-            }
-        }
-        if (file_exists($pathPdf)) {
-            $this->logger->info('Added', [$realpathPDF]);
-            $strPdf .= $pathPdf . ' ';
-        }
-        return $strPdf;
+        $doajText = $this->downloadDoajExport($docId);
+        return str_replace(['<?xml version="1.0"?>', '<records>', '</records>'], '', $doajText);
     }
 
-    public function getPdfAndPath(string $rvCode, mixed $docId): array
+    public function downloadDoajExport(string $docId): string
     {
-        $pdf = "https://" . $rvCode . "." . DOMAIN . "/" . $docId . '/pdf';
-        $pathDocId = APPLICATION_PATH . '/../data/' . $rvCode . '/files/' . $docId . '/';
-        $path = APPLICATION_PATH . '/../data/' . $rvCode . '/files/' . $docId . '/documents/';
-        return [$pdf, $pathDocId, $path];
-    }
-
-    public function downloadPdf(Client $client, string $pdf, string $pathPdf, string $path, string $pathDocId): void
-    {
+        $doajText = '';
+        $urlApi = sprintf(EPISCIENCES_API_URL . 'papers/export/%s/doaj', $docId);
         try {
-            $client->get($pdf, ['sink' => $pathPdf]);
-            $this->logger->info("Downloaded", ['PDF' => $pdf]);
+            $doajText = $this->client->get($urlApi)->getBody()->getContents();
+            $this->logger->info("Downloaded", ['DOAJ' => $docId]);
         } catch (GuzzleException $e) {
             $this->logger->info("Failed to download", [$e->getMessage()]);
         }
-
-        $this->removeInvalidPDF($pathPdf);
-    }
-
-    public function removeInvalidPDF(string $pathPdf): void
-    {
-        if (!self::isValidPdf($pathPdf)) {
-            unlink($pathPdf);
-            $this->logger->warning("Removed invalid PDF", [$pathPdf]);
-        }
-    }
-
-    public static function isValidPdf(string $filePath): bool
-    {
-        return mime_content_type($filePath) === 'application/pdf';
+        return $doajText;
     }
 
     public static function setCacheDocIdsList($vid, array $jsonVidList, string $rvCode): void
     {
-        $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter("doaj-volume-export-" . $rvCode, 0, CACHE_PATH_METADATA);
         $setVidList = $cache->getItem($vid);
         $setVidList->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($setVidList);
     }
+
+    /*    public function retrieveJournalCodes($itemsPerPage = 30)
+        {
+            $page = 1;
+            $allCodes = [];
+            try {
+                do {
+                    $response = $this->client->request('GET', EPISCIENCES_API_URL . 'journals/', [
+                        'query' => [
+                            'page' => $page,
+                            'itemsPerPage' => $itemsPerPage,
+                            'pagination' => 'false'
+                        ]
+                    ]);
+
+                    $journals = json_decode($response->getBody(), true);
+
+                    $codes = array_column($journals, 'code');
+                    $allCodes = array_merge($allCodes, $codes);
+
+                    $page++;
+                } while (count($journals) === $itemsPerPage);
+
+                return $allCodes;
+            } catch (RequestException $e) {
+                $this->logger->error($e->getMessage(), [$e->getCode()]);
+                return [];
+            } catch (GuzzleException $e) {
+                $this->logger->error($e->getMessage(), [$e->getCode()]);
+                return [];
+            }
+        }*/
+
+
 }
 
-$script = new MergePdfVol($localopts);
+$script = new buildDoajVolumeExport($localopts);
 $script->run();

@@ -25,13 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## Unreleased
+### Changed
+- It is now possible to re-point to a new version when the article status is: Copy ed.: final version submitted, waiting for validation
 ### Added
 - It is now possible to attach a data/software descriptor to a submission.
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
-### fixed
+- New button on volume pages to download all the PDF files at once with a single PDF file
+
+### Fixed
 - The response to a modification request via "Contact without sending a new version" does not appear on the article page.
 - Wrong links for the Dataverse repository
 - The graphical abstract is no longer displayed
+- Volume's metadata is displayed twice
 
 ## v1.0.47 - 2025-01-08
 ### Added
