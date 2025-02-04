@@ -116,20 +116,11 @@ $paperLanguage = $this->paperLanguage;
             <titles>
                 <?php foreach ($titles as $titleCount => $titleArray) : ?>
                     <?php
-                    $titleLanguage = key($titleArray);
-                    if ($titleLanguage != '') {
-                        $titleLanguage = $this->escape($titleLanguage);
-                        $titleLanguage = sprintf(' language="%s"', $titleLanguage);
-                    } else {
-                        $titleLanguage = '';
-                    }
                     $title = array_values($titleArray);
                     $title = $this->escape($title[0])
                     ?>
                     <?php if ($titleCount === 0): ?>
                         <title><?= $title ?></title>
-                    <?php else : ?>
-                        <original_language_title<?= $titleLanguage ?>><?= $title ?></original_language_title>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </titles>

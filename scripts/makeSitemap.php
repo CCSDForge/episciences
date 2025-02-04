@@ -84,6 +84,9 @@ class GenerateSitemap extends Command
 
         // Fetch entries from the API
         $entries = $this->getSitemapArticleEntries($rvcode);
+        $staticEntries = $this->getSitemapGenericEntries($rvcode);
+
+        $entries = array_merge($staticEntries, $entries);
 
         if (empty($entries)) {
             $this->logger->warning("No entries found for the provided RV code", ['rvcode' => $rvcode]);
@@ -112,8 +115,8 @@ class GenerateSitemap extends Command
                     $entries[] = [
                         'loc' => sprintf("https://%s/articles/%s", $journalBaseUrl, $paper['docid']),
                         'lastmod' => null,
-                        'changefreq' => 'monthly',
-                        'priority' => '0.5',
+                        'changefreq' => 'weekly',
+                        'priority' => '0.9',
                     ];
                 }
 
@@ -154,6 +157,47 @@ class GenerateSitemap extends Command
             $xml->asXML($filePath);
         }
     }
+
+    private function getSitemapGenericEntries(string $rvcode): array
+    {
+        $journalBaseUrl = sprintf('%s.%s', $rvcode, DOMAIN);
+
+        // Helper function to create entry arrays
+        $createEntry = static fn(string $path, string $changefreq, string $priority): array => [
+            'loc' => sprintf("https://%s%s", $journalBaseUrl, $path),
+            'lastmod' => null,
+            'changefreq' => $changefreq,
+            'priority' => $priority,
+        ];
+
+        // Define URL collections with their respective metadata
+        $urlCollections = [
+            'daily' => [
+                'priority' => '1',
+                'paths' => ['/'],
+            ],
+            'daily_articles_authors' => [
+                'priority' => '0.8',
+                'paths' => ['/articles', '/authors'],
+            ],
+            'weekly' => [
+                'priority' => '0.8',
+                'paths' => ['/volumes', '/sections', '/about'],
+            ],
+        ];
+
+        // Generate entries dynamically
+        $entries = [];
+        foreach ($urlCollections as $frequency => $data) {
+            $changefreq = explode('_', $frequency, 2)[0] ?? 'weekly'; // Derive frequency from key
+            foreach ($data['paths'] as $path) {
+                $entries[] = $createEntry($path, $changefreq, $data['priority']);
+            }
+        }
+
+        return $entries;
+    }
+
 }
 
 // Setup and run the application

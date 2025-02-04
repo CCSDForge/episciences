@@ -377,16 +377,15 @@ class PaperController extends PaperDefaultController
 
         if (!empty($revision_requests)) {
 
-            $current = current($revision_requests);
+            $currentDemand = current($revision_requests);
 
             if (
-                !array_key_exists('replies', $current) ||
+                !array_key_exists('replies', $currentDemand) ||
                 (
-                    isset($current['replies']) &&
-                    (int)$current['replies'][array_key_first($current['replies'])]['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT)
+                    isset($currentDemand['replies']) &&
+                    (int)$currentDemand['replies'][array_key_first($currentDemand['replies'])]['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT)
             ) {
 
-                $currentDemand = array_shift($revision_requests);
                 $revisionDeadline = $currentDemand['DEADLINE'];
             }
 
@@ -2105,10 +2104,10 @@ class PaperController extends PaperDefaultController
                 $principalRecipient = $revisionInitiator;
 
             } else {
-                $principalRecipient = !empty($recipients) ? $recipients[array_key_first($editors)] : null;
+                $principalRecipient = !empty($recipients) ? $recipients[array_key_first($recipients)] : null;
             }
 
-            $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
+            $CC = $paper->extractCCRecipients($recipients, $principalRecipient?->getUid());
 
 
             if ($principalRecipient) {
