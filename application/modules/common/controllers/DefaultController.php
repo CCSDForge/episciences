@@ -50,7 +50,7 @@ class DefaultController extends Episciences_Controller_Action
                 }
 
                 Episciences_Tools::header('HTTP/1.1 301 Moved Permanently', 301);
-                $location = sprintf('/%s/pdf', $publishedPaper->getDocid());
+                $location = sprintf('%s%s/pdf',PREFIX_URL, $publishedPaper->getDocid());
                 header('Location: ' . $location);
                 exit();
 
