@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+## Changed
+- It is now possible to re-point to a new version when the article status is: Copy ed.: final version submitted, waiting for validation
+
 ## Unreleased
 ### Added
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
