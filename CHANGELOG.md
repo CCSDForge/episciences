@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+### Fixed 
+- volume's metadata is displayed twice
+
 ## Changed
 - It is now possible to re-point to a new version when the article status is: Copy ed.: final version submitted, waiting for validation
 

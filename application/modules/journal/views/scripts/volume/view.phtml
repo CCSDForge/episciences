@@ -11,6 +11,41 @@ $indexedPapers = $volume->getIndexedPapers();
 <div id="volume">
 
     <div class="row">
+        <div class="col-md-12" id="proceeding-info">
+            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1"): ?>
+                <div class="col-sm-12">
+                    <p>
+                        <b style="font-size: 14px"><?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) ?></b>
+                    </p>
+                    <p>
+                        <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== '' ? $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) . ";" : '' ?>
+                        <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== '' ? "N°" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) . ";" : '' ?>
+                    </p>
+                    <p>
+                        <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) !== '' ? $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) . ";" : '' ?>
+                        <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== '' && $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== '') : ?>
+                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) === $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE)) : ?>
+
+                                <?= $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) ?>
+                            <?php else: ?>
+                                <?= Zend_Registry::get('Zend_Translate')->translate('Du') . ' ' . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) . ' ' . Zend_Registry::get('Zend_Translate')->translate('Au') . ' ' . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) ?>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </p>
+                    <p><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== '') {
+                            echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) . ";";
+                        } ?></p>
+                </div>
+                <div class="col-sm-12">
+                    <p>
+                        <?php if (substr(strrchr($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI), "."), 1) !== '') {
+                            echo "DOI: <a href='https://doi.org/" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) . "'target='_blank' rel='noopener'>" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) . "</a>";
+                        } ?>
+                    </p>
+                </div>
+            <?php endif; ?>
+
+        </div>
         <div class="col-sm-12">
 
             <div id="description" class="col-sm-12">
@@ -22,47 +57,8 @@ $indexedPapers = $volume->getIndexedPapers();
                     <?= $this->partial('volume/volume-metadatas.phtml', ['metadatas' => $metadatas, 'volume' => $volume]) ?>
 
                 </div>
-            <?php else: ?>
-                <?php if ($volume->getSetting(Episciences_Volume::VOLUME_IS_PROCEEDING) === "1"): ?>
-                    <div class="col-sm-12">
-                        <p>
-                            <b style="font-size: 14px"><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME) !== '') {
-                                    echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME);
-                                } ?></b></p>
-                        <p>
-                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) !== '') {
-                                echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_ACRONYM) . ";";
-                            } ?>
-                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) !== '') {
-                                echo "N°" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NUMBER) . ";";
-                            } ?>
-                        </p>
-                        <p>
-                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) !== '') {
-                                echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_LOCATION) . ";";
-                            } ?>
-                            <?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) !== '' && $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE) !== '') {
-                                if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) === $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE)) {
-                                    echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE);
-                                } else {
-                                    echo Zend_Registry::get('Zend_Translate')->translate('Du') . ' ' . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_START_DATE) . ' ' . Zend_Registry::get('Zend_Translate')->translate('Au') . ' ' . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_END_DATE);
-                                }
-                            }
-                            ?>
-                        </p>
-                        <p><?php if ($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) !== '') {
-                                echo $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_THEME) . ";";
-                            } ?></p>
-                    </div>
-                    <div class="col-sm-12">
-                        <p>
-                            <?php if (substr(strrchr($volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI), "."), 1) !== '') {
-                                echo "DOI: <a href='https://doi.org/" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) . "'target='_blank' rel='noopener'>" . $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) . "</a>";
-                            } ?>
-                        </p>
-                    </div>
-                <?php endif; ?>
             <?php endif; ?>
+
         </div>
 
     </div>
