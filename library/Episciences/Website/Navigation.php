@@ -38,16 +38,15 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
     public static array $groupedPages = [
         'Home (backend)' => [self::PAGE_INDEX],
-        'About the journal' => [
+        'About' => [
             self::PAGE_ABOUT,
             self::PAGE_PUBLISHING_POLICIES,
             self::PAGE_PUBLISHING_POLICIES,
-            self::PAGE_CREDITS,
             self::PAGE_JOURNAL_INDEXING
 
         ],
 
-        'Board' => [
+        'Boards' => [
             self::PAGE_EDITORIAL_BOARD,
             self::PAGE_TECHNICAL_BOARD,
             self::PAGE_SCIENTIFIC_ADVISORY_BOARD,
@@ -61,6 +60,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         ],
 
         'Other' => [
+            self::PAGE_CREDITS,
             self::PAGE_CUSTOM,
             self::PAGE_NEWS,
             self::PAGE_FILE,

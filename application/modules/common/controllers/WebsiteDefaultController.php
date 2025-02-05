@@ -343,19 +343,11 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     private function processPageTypes(array $pageTypes = []): array
     {
 
-        try {
-            $translator = Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            $translator = null;
-            trigger_error($e->getMessage());
-        }
-        asort($pageTypes);
         $processed = [];
-
         foreach ($pageTypes as $type => $label) {
             foreach (Episciences_Website_Navigation::$groupedPages as $group => $gTypes) {
-                if(in_array($type, $gTypes, true )){
-                    $processed[$translator?->translate($group)][] = $type;
+                if (in_array($type, $gTypes, true)) {
+                    $processed[$group][] = $type;
                 }
             }
         }
