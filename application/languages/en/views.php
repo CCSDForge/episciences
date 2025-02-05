@@ -1689,7 +1689,7 @@ return array(
     "Episciences_Website_Navigation_Page_Search" => "Search",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
-    "Episciences_Website_Navigation_Page_About" => "About",
+    "Episciences_Website_Navigation_Page_About" => "The Journal",
 
     "Episciences_Website_Navigation_Page_EditorialBoard" => "Editorial board",
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
@@ -1701,7 +1701,7 @@ return array(
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
-    "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexed in",
 
 
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',

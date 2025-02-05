@@ -76,8 +76,8 @@ $this->jQuery()
         <div class="col-md-5 offset-md-1">
             <select name="type" id="type" class="form-control">
                 <option value=""><?= $this->translate('Choisissez une page') ?></option>
-                <?php foreach ($this->groupedPageTypes as $translatedGroupLabel => $types) : ?>
-                    <optgroup label="<?= $translatedGroupLabel ?>">
+                <?php foreach ($this->groupedPageTypes as $group => $types) : ?>
+                    <optgroup label="<?= $this->translate($group) ?>">
                         <?php foreach ($types as $type) :
 
                             $label = sprintf('Episciences_Website_Navigation_Page_%s', ucfirst($type));

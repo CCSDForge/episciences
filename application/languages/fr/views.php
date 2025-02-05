@@ -54,7 +54,7 @@ return [
     "Episciences_Website_Navigation_Page_Search" => "Rechercher un article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Membres du comité éditorial",
     "Episciences_Website_Navigation_Page_Credits" => "Crédits",
-    "Episciences_Website_Navigation_Page_About" => "À propos",
+    "Episciences_Website_Navigation_Page_About" => "La revue",
 
     "Episciences_Website_Navigation_Page_EditorialBoard" => "Comité éditorial",
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Comité technique',
@@ -64,11 +64,11 @@ return [
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Flux de travail éditorial",
-    "Episciences_Website_Navigation_Page_PrepareSubmission" => "Preparer votre soumission",
+    "Episciences_Website_Navigation_Page_PrepareSubmission" => "Préparer votre soumission",
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
-    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexation de la revue",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Référencement",
 
 
     //Recherche : facettes
@@ -318,8 +318,8 @@ return [
 
     #grouped website pages
     'Home (backend)' => 'Accueil (backend)',
-    'About the journal' => 'À propos de la revue',
-    'Board' => 'Comité',
+    'About' => 'À propos',
+    'Boards' => 'Comités',
     'For authors' => "Pour les auteurs",
     'Other' => 'Autres',
 
