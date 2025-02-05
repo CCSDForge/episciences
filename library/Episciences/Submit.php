@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\DataSet;
+use Episciences\Files\File;
 use Episciences\Files\Uploader;
 use Episciences\Paper\DataDescriptor;
 use GuzzleHttp\Client;
@@ -1978,6 +1979,10 @@ class Episciences_Submit
             $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
         }
 
+        if($currentType === Episciences_Paper::OTHER_TYPE) {
+            $currentType = strtolower($type[array_key_last($type)]);
+        }
+
         $currentType = str_replace(
             search: [
                 ' ',
@@ -2134,7 +2139,7 @@ class Episciences_Submit
 
         if (isset($uploads[self::DD_FILE_ELEMENT_NAME])) {
 
-            /** @var \Episciences\Files\File $ddFile */
+            /** @var File $ddFile */
             $ddFile = $uploads[self::DD_FILE_ELEMENT_NAME];
             $ddFile->setDocId($paper->getDocid());
             $ddFile->setSource();
@@ -2146,7 +2151,7 @@ class Episciences_Submit
                     'fileid' => $ddFile->getId(),
                     'docid' => $ddFile->getDocid(),
                     'submission_date' => null,
-                    'version' => ($data[self::DD_PREVIOUS_VERSION_STR] + 1) ?? 1
+                    'version' => isset($data[self::DD_PREVIOUS_VERSION_STR]) ? ($data[self::DD_PREVIOUS_VERSION_STR] + 1) : 1
                 ]);
 
                 $dd->save();
@@ -2155,7 +2160,7 @@ class Episciences_Submit
                 $user = Episciences_Auth::getUser();
 
                 // paper log
-                $logDetails = ['dd' => $dd->toArray(), 'file' => $dd->getFile()->toArray(), 'user' => ['screen'], 'user' => ['fullname' => $user->getFullName()]];
+                $logDetails = ['dd' => $dd->toArray(), 'file' => $dd->getFile()->toArray(), 'user' => ['fullname' => $user->getFullName()]];
                 $action = $paper->isSoftware() ? Episciences_Paper_Logger::CODE_SWD_UPLOADED : Episciences_Paper_Logger::CODE_DD_UPLOADED;
                 $paper->log($action, Episciences_Auth::getUid(), $logDetails);
 
@@ -2165,7 +2170,7 @@ class Episciences_Submit
         $coveLetterFile = $data[self::COVER_LETTER_FILE_ELEMENT_NAME] ?? '';
 
         if (isset($uploads[self::COVER_LETTER_FILE_ELEMENT_NAME])) {
-            /** @var \Episciences\Files\File $coveLetterFile */
+            /** @var File $coveLetterFile */
             $coveLetterFile = $uploads[self::COVER_LETTER_FILE_ELEMENT_NAME];
             $coveLetterFile =  $coveLetterFile->getName();
         }
