@@ -314,5 +314,6 @@ return [
     'Dataset' => 'Jeu de données',
 
     'classification_jel' => 'JEL Classification System',
-    'classification_msc2020' => 'Mathematics Subject Classification 2020'
+    'classification_msc2020' => 'Mathematics Subject Classification 2020',
+    "File 'file_data_descriptor' was not uploaded" => "Fichier descripteur non téléchargé.",
 ];

@@ -2147,5 +2147,6 @@ return array(
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
 
+    "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded."
 
 );

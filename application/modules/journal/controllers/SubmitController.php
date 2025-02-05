@@ -223,9 +223,14 @@ class SubmitController extends DefaultController
             $respond['ddOptions'] = ['displayDDForm' => Episciences_Repositories::isDataverse($params['repoId']) , 'isSoftware' => false];
 
             // form repository
-            $type = $respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT][0] ?? null;
+            $type = null;
 
-            if ($type){
+            if (isset($respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT])) {
+                $types = $respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT];
+                $type = $types[array_key_last($types)] ?? null;
+            }
+
+            if ($type) {
                 $isSoftware = strtolower($type) === Episciences_Paper::SOFTWARE_TYPE_TITLE;
                 $isSoftwareOrDataset = $isSoftware || (strtolower($type) === Episciences_Paper::DATASET_TYPE_TITLE);
                 $respond['ddOptions']['displayDDForm'] = $isSoftwareOrDataset || $respond['ddOptions']['displayDDForm'];

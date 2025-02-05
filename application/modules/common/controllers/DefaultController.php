@@ -364,7 +364,7 @@ class DefaultController extends Zend_Controller_Action
             foreach ($val as $v) {
                 $v = is_array($v) ? implode(' ', array_values($v)) : $v;
                 $validationErrors .= '<li>';
-                $validationErrors .= '<code>' . $v . '</code>';
+                $validationErrors .= '<code>' . $this->view->translate($v) . '</code>';
                 $validationErrors .= '</li>';
             }
         }
