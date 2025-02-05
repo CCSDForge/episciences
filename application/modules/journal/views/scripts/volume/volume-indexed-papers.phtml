@@ -5,8 +5,8 @@
 
         <?php // Titre de l'article ******************************** ?>
         <h3>
-            <?= $i + 1 ?>.
-            <a href="/<?= $this->escape($doc['docid']); ?>"><?= htmlspecialchars(Episciences_Tools::decodeLatex(Episciences_Tools::getTitleFromIndexedPaper($doc, $locale))) ?></a>
+            <?= $i + 1 ?>. <a
+                    href="/<?= $this->escape($doc['docid']); ?>"><?= htmlspecialchars(Episciences_Tools::decodeLatex(Episciences_Tools::getTitleFromIndexedPaper($doc, $locale))) ?></a>
         </h3>
 
         <?php // Noms des auteurs *********************************** ?>
@@ -71,8 +71,7 @@
         <?php $section = Episciences_Tools::getSectionFromIndexedPaper($doc, $locale); ?>
         <?php if ($section) : ?>
             <div class="small">
-                <span><?= $this->translate('Rubrique : ') ?></span>
-                <span><?= $section ?></span>
+                <span><?= $this->translate('Rubrique : ') ?></span> <span><?= $section ?></span>
             </div>
         <?php endif; ?>
 
@@ -82,10 +81,16 @@
 </div>
 
 <?php if (Episciences_Auth::isSecretary()) : ?>
+
+    <?php $getvid = $this->escape($this->volume->getvid()); ?>
+
     <div class="row">
         <div class="col-sm-12">
             <a class="btn btn-default btn-sm" target="_blank"
-               href="/export/volumesdoaj?vid=<?= $this->volume->getvid() ?>"><?= $this->translate('Exporter le volume au format DOAJ') ?></a>
+               href="/volumes-doaj/<?= $getvid ?>/<?= $getvid ?>.xml"><?= $this->translate('Exporter le volume au format DOAJ') ?></a>
+            <br><br> <a class="btn btn-default btn-sm" target="_blank"
+                    href="/volumes/<?= $getvid ?>/<?= $getvid ?>.pdf"><?= $this->translate('Exporter le volume complet (PDF)') ?></a>
         </div>
+
     </div>
 <?php endif; ?>
