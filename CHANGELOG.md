@@ -20,10 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - It is no longer possible to delete files attached to the temporary version.
 - Metadata updates will take account of author enrichment, except for arXiv articles.
 - It is now possible to select a new version when the article status is: Copy ed.: final version submitted, waiting for validation
+- Version panel: temporary versions are now labeled as temporary
+ 
 ### Added
 - It is now possible to attach a data/software descriptor to a submission if the submission type is Dataset or Software.
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
 - New button on volume pages to download all the PDF files at once with a single PDF file (at the moment only available after login)
+
 ### Fixed
 - The response to a modification request via "Contact without sending a new version" did not appear on the article page.
 - Wrong links for the Dataverse repository with versioned datasets

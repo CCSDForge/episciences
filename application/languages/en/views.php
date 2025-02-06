@@ -36,6 +36,7 @@ return array(
     "Rédacteur invité" => "Guest editor",
     "Rédacteurs invités" => "Guest editors",
     "rédacteurs" => "editors",
+    'temporaire' => 'temporary',
 
     "Relecteur" => array("Reviewer", "Reviewers"),
     // DOCUMENT TYPES
