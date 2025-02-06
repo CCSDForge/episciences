@@ -36,6 +36,7 @@ return array(
     "Rédacteur invité" => "Guest editor",
     "Rédacteurs invités" => "Guest editors",
     "rédacteurs" => "editors",
+    'temporaire' => 'temporary',
 
     "Relecteur" => array("Reviewer", "Reviewers"),
     // DOCUMENT TYPES
@@ -2150,8 +2151,10 @@ return array(
     //DD
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
+
+    "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
+
     // Website > menu
     'Choisissez une page' => 'Select a page'
-
 
 );

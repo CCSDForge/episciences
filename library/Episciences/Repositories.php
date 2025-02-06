@@ -107,7 +107,14 @@ class Episciences_Repositories
     }
 
     public static function getDocUrl($repoId, $identifier, $version = null, $versionMinorNumber = Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER)
+
     {
+        if($version && self::isDataverse($repoId) ){
+            $exploded = explode('.', (string)$version);
+            $version = (int)($exploded[0] ?? 1);
+            $versionMinorNumber = (int)($exploded[1] ?? Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER);
+        }
+
         $repoDocUrl = self::getRepositories()[$repoId][self::REPO_DOCURL];
 
         if (!empty($repoDocUrl)) {

@@ -56,6 +56,7 @@
 			<tr class="file">
 				<td width="10px"><span class="<?php echo Ccsd_File::getIconeExtension($ext);?> active"></span></td>
 				<td>
+                    <?php $href = REVIEW_URL . $name ?>
 					<a href="<?php echo REVIEW_URL . $name?>" target="_blank"><span class="name"><?php echo $name?></span></a>
 					<blockquote style="display:none;"><?php echo $this->translate("Lien"); ?> :  <b><?php echo REVIEW_URL . $name?></b><br />
 					<?php echo $this->translate("Extension"); ?> : <b><?php echo $ext?></b><br />

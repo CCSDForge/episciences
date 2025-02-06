@@ -50,6 +50,7 @@ class CommentsController extends PaperController
             }
         } catch (Zend_Json_Exception $e) {
             trigger_error($e->getMessage());
+            return;
         }
 
 
@@ -59,7 +60,6 @@ class CommentsController extends PaperController
             $this->_helper->redirector->gotoUrl($url);
             return;
         }
-
 
 
         if($comment->getType() === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION){
@@ -78,7 +78,6 @@ class CommentsController extends PaperController
             trigger_error($e->getMessage());
             $jFiles = [];
         }
-
 
         if ($comment->isCopyEditingComment()) {
             $dir = $comment->getDocid();

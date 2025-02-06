@@ -323,4 +323,7 @@ return [
     'For authors' => "Pour les auteurs",
     'Other' => 'Autres',
 
+    // form errors
+    "File 'file_data_descriptor' was not uploaded" => "Fichier descripteur non téléchargé.",
+
 ];

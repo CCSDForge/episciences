@@ -20,13 +20,6 @@ class ExportController extends Episciences_Controller_Action
         echo Export::getJson($paper);
     }
 
-    public function jsonv2Action(): void
-    {
-        $paper = $this->getPaperToExport();
-        header('Content-Type: application/json; charset=UTF-8');
-        echo $paper->toJson();
-    }
-
     /**
      * @return Episciences_Paper|void
      * @throws Zend_Db_Statement_Exception
@@ -88,6 +81,13 @@ class ExportController extends Episciences_Controller_Action
             exit;
         }
 
+    }
+
+    public function jsonv2Action(): void
+    {
+        $paper = $this->getPaperToExport();
+        header('Content-Type: application/json; charset=UTF-8');
+        echo $paper->toJson();
     }
 
     /**
@@ -152,16 +152,6 @@ class ExportController extends Episciences_Controller_Action
         return $this->displayXml(Export::getDoaj($paper));
     }
 
-    /**
-     * Export to DOAJ from a volume
-     */
-    public function volumesdoajAction()
-    {
-        $paper = $this->getPaperToExport();
-        $request = $this->getRequest();
-        $params = $request->getParams();
-        $this->displayXml(Export::getVolDoaj($params['vid'], $paper->getRvid()));
-    }
 
     /**
      * Export to ZbJats

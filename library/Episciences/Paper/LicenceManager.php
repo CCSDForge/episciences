@@ -160,8 +160,7 @@ class Episciences_Paper_LicenceManager
      */
     public static function InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier): int
     {
-        $pathFile =  APPLICATION_PATH . '/../data/enrichmentLicences/';
-        $cleanID = str_replace('/', '', $identifier); // ARXIV CAN HAVE "/" in ID
+        $cleanID = md5($identifier);
         $repoId = (string) $repoId;
         $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         $sets = $cache->getItem($cleanID . "_licence.json");
