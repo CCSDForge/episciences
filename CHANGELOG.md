@@ -15,13 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-
-### changed 
+## Unreleased
+### removed
+- help versions link
+### Changed
 - It is no longer possible to delete files attached to the temporary version.
 - Metadata updates will take account of author enrichment, except for arXiv articles.
-
-## Unreleased
-### Changed
+- tagging temporary version
 - It is now possible to re-point to a new version when the article status is: Copy ed.: final version submitted, waiting for validation
 ### Added
 - It is now possible to attach a data/software descriptor to a submission.
