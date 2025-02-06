@@ -1,0 +1,45 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$dd = $paper->getDataDescriptor()
+?>
+
+<?php if ($dd): ?>
+
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate($paper->isSoftware() ? 'Descripteur de logiciel' : 'Descripteur de données') ?></h2>
+        </div>
+        <div class="panel-body in">
+            <div style="" class="small">
+
+
+                <?php if ($fileName = $dd->getFile()->getName()) : ?>
+                    <table class="table" id="data-descriptor">
+                        <thead>
+                        <tr>
+                            <th style="border: none;"><?= $this->translate("Fichier") ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td><a href="<?= sprintf('/docfiles/dd/%s/%s', $dd->getDocid(), $fileName) ?>"
+                                   target="_blank"><?= sprintf('%s (v%s)', $fileName, $dd->getVersion()) ?>
+                                </a>
+                            </td>
+                            <td>
+                                <strong class="pull-right">
+                                    <?= $this->translate('Soumis le : ') . $this->Date($dd->getSubmissionDate(), null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>
+                                </strong>
+
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+<?php endif; ?>
+

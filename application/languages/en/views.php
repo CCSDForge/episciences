@@ -36,6 +36,7 @@ return array(
     "Rédacteur invité" => "Guest editor",
     "Rédacteurs invités" => "Guest editors",
     "rédacteurs" => "editors",
+    'temporaire' => 'temporary',
 
     "Relecteur" => array("Reviewer", "Reviewers"),
     // DOCUMENT TYPES
@@ -44,7 +45,7 @@ return array(
     'Preprint' => 'Preprint',
     'Conferenceobject' => 'Conference paper',
     'Text' => "Preprint",
-    'Dataset' => 'Jeux de données',
+    'Dataset' => 'Dataset',
     'Report' => 'Report',
 
 
@@ -547,6 +548,7 @@ return array(
     "Le fichier a bien été supprimé." => "The file has been deleted.",
     "Vos changements ont été enregistrés." => "Your changes have been saved.",
     "Le commentaire demandé n’existe pas." => "The required comment does not exist.",
+    'Ce fichier est attaché à la version temporaire, vous ne pouvez donc pas le supprimer.' => 'This file is attached to the temporary version, so you cannot delete it.',
 
     // Gestion d'un article (déposant)
 
@@ -955,9 +957,9 @@ return array(
     "Civilité" => 'Title',
     "Photo" => 'Picture',
     "Complément de nom" => 'Middle Name',
-    'Login X (anciennement Twitter)' => 'X (ex. Twitter) or Mastodon username',
+    'Mastodon, Bluesky, X handle' => 'Mastodon, Bluesky, X handle',
     'Site(s) Web' => 'Web Site(s)',
-    'Saisissez votre compte X (anciennement Twitter) (par exemple @anonymous) ou mastodon (par exemple @username@server)' => 'Enter your X (ex. Twitter) account (e.g @anonymous) or Mastodon account (e.g @username@server)',
+    'Saisissez votre handle Mastodon (e.g @username@server), Bluesky (e.g @anonymous.bsky.social) ou X' => 'Enter your Mastodon (e.g @username@server), Bluesky (e.g @anonymous.bsky.social) or X handle',
     'Veuillez saisir le site web que vous souhaitez ajouter' => 'Please enter the website you wish to add',
     'Une courte biographie (700 caractères autorisés)' => 'A short biography (700 characters allowed.)',
     'Biographie' => 'Biography',
@@ -2146,6 +2148,13 @@ return array(
     'classification_jel' => 'JEL Classification System',
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
 
+    //DD
+    'Descripteur de données' => 'Data descriptor',
+    'Descripteur de logiciel' => 'Software descriptor',
+
+    "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
+
     // Website > menu
     'Choisissez une page' => 'Select a page'
+
 );

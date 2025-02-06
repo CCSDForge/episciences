@@ -39,7 +39,7 @@ class Episciences_Reviewer_Reviewing
      * reviewed paper
      * @var Episciences_Paper
      */
-    protected $_paper;
+    protected $_paper = null;
 
 
     // reviewing status labels
@@ -73,31 +73,52 @@ class Episciences_Reviewer_Reviewing
         return $this->_invitation;
     }
 
-    public function setPaper(Episciences_Paper $paper)
+    public function setPaper(Episciences_Paper $paper = null)
     {
         $this->_paper = $paper;
     }
 
-    public function loadPaper($docid)
+    public function loadPaper($docid): void
     {
-        $this->setPaper(Episciences_PapersManager::get($docid));
+        try {
+            $this->setPaper(Episciences_PapersManager::get($docid));
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
     }
 
-    public function getPaper()
+    public function getPaper(): ?\Episciences_Paper
     {
-        if (!$this->_paper) {
+        if (!$this->_paper && $this->getAssignment()) {
             $this->loadPaper($this->getAssignment()->getItemid());
         }
         return $this->_paper;
     }
 
-    public function loadAssignment($params = array())
+    public function loadAssignment($params = array()) :self
     {
         $params['item'] = Episciences_User_Assignment::ITEM_PAPER;
         $assignment = Episciences_User_AssignmentsManager::find($params);
+
+
         if ($assignment) {
-            $this->setAssignment($assignment);
+
+            try {
+                $paper = Episciences_PapersManager::get($assignment->getItemid());
+
+                if(!$paper){
+                    trigger_error(sprintf('Missing paper #%s', $assignment->getItemid()));
+                    return $this;
+                }
+
+                $this->setAssignment($assignment);
+
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+            }
+
         }
+
         return $this;
     }
 
@@ -131,7 +152,7 @@ class Episciences_Reviewer_Reviewing
 
         if ($this->hasRating()) {
             $report = $this->getRating();
-            if (!$report->isCompleted() && !$this->getPaper()->canBeReviewed()) {
+            if (!$report->isCompleted() && !$this->getPaper()?->canBeReviewed()) {
                 $result = self::STATUS_NOT_NEED_REVIEWING;
             } else if ($report->isCompleted()) {
                 $result = self::STATUS_COMPLETE;

@@ -229,6 +229,8 @@ function defineSQLTableConstants()
     define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
     define('T_PAPER_CLASSIFICATION_MSC2020', 'classification_msc2020');
     define('T_PAPER_CLASSIFICATION_JEL', 'classification_jel');
+    define('T_PAPER_DATA_DESCRIPTOR', 'data_descriptor');
+    define('T_FILES', 'files');
 }
 
 /**

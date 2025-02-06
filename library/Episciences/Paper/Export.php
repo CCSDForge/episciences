@@ -384,37 +384,6 @@ class Export
 
     }
 
-    /**
-     * @param int $volumeId
-     * @param int $journalId
-     * @return string
-     * @throws Zend_Db_Select_Exception
-     * @throws Zend_Exception
-     */
-    public static function getVolDoaj(int $volumeId, int $journalId): string
-    {
-        $getVolume = Episciences_VolumesManager::find($volumeId);
-        $review = Episciences_ReviewsManager::find($journalId);
-
-        $listOfPaper = $getVolume->getSortedPapersFromVolume('object');
-        foreach ($listOfPaper as $key => $value) {
-            if (!$value->isPublished()) {
-                unset($listOfPaper[$key]);
-            }
-        }
-
-        $journal = $review;
-        $journal->loadSettings();
-        $view = new Zend_View();
-        $view->listOfPaper = $listOfPaper;
-        $view->journal = $journal;
-        $view->volume = $getVolume->getName('en', true);
-
-        header('Content-Type: text/xml; charset: utf-8');
-
-        return $view->render('export/volumesdoaj.phtml');
-
-    }
 
     /**
      * Return TEI formatted paper

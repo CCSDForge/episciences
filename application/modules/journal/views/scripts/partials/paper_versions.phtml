@@ -37,14 +37,10 @@ $isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper-
                         <a class="btn btn-default btn-xs" role="button"
                            onclick="getVersionEditingForm(this, <?= $docId ?>)"><i class="fas fa-edit" style="margin-right: 5px"></i><?= $this->translate('Modifier') ?></a>
                     <?php endif; ?>
+                    <?php if($paper->isTmp()) : ?><span class="label label-status-0"><?= $this->translate('temporaire')?></span><?php endif; ?>
                 </li>
 
             <?php endforeach; ?>
-            <li>
-                <a class="pull-right" target="_blank" href="<?= $this->translate('help_versions_link') ?>">
-                    <em class="glyphicon glyphicon-question-sign"></em>&nbsp;<?= $this->translate('help_versions_text') ?>
-                </a>
-            </li>
         </ol>
     </div>
 </div>

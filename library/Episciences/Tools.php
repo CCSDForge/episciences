@@ -1178,7 +1178,7 @@ class Episciences_Tools
      * @param bool $forceAdditionalTranslation [true: translate also $additionalDescription]
      * @return string
      */
-    public static function buildAttachedFilesDescription(array $extensions = ALLOWED_EXTENSIONS, string $additionalDescription = '', $forceAdditionalTranslation = false)
+    public static function buildAttachedFilesDescription(array $extensions = ALLOWED_EXTENSIONS, string $additionalDescription = '', bool $forceAdditionalTranslation = false): string
     {
 
         $implode_extensions = implode(', ', $extensions);
@@ -1627,6 +1627,15 @@ class Episciences_Tools
     {
         $explode = self::getMastodonSeparatedInfo($string);
         return "https://" . $explode[2] . "/@" . $explode[1];
+    }
+
+    public static function getBlueskyUrl(string $socialMedia): string
+    {
+        if (str_starts_with($socialMedia, 'https://bsky.app/profile/')) {
+            return $socialMedia;
+        }
+        $socialMedia = str_replace('@', '', $socialMedia);
+        return 'https://bsky.app/profile/' . $socialMedia;
     }
 
     /**

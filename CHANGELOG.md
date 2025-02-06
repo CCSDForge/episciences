@@ -22,9 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The list of pages has been reorganised by group.
 
 ## Unreleased
+### removed
+- help versions link
 ### Changed
+- It is no longer possible to delete files attached to the temporary version.
+- Metadata updates will take account of author enrichment, except for arXiv articles.
+- tagging temporary version
 - It is now possible to re-point to a new version when the article status is: Copy ed.: final version submitted, waiting for validation
 ### Added
+- It is now possible to attach a data/software descriptor to a submission.
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
 - New button on volume pages to download all the PDF files at once with a single PDF file
 
