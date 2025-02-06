@@ -1903,7 +1903,7 @@ class Episciences_Submit
 
                 $authors = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
 
-                if (empty($authors)) { // to prevent manual changes being overwritten.
+                if (empty($authors) || $paper->getRepoid() !== (int)Episciences_Repositories::ARXIV_REPO_ID) { // to prevent manual changes being overwritten.
 
                     $insertedRows += Episciences_Paper_AuthorsManager::insert([
                         [
