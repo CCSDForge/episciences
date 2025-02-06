@@ -18,27 +18,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 - Website menu:
-  - It is no longer possible to manually add certain public pages to the site.
-  - The list of pages has been reorganised by group.
+    - It is no longer possible to manually add certain public pages to the site.
+    - The list of pages has been reorganised by group.
 
-## Unreleased
-### removed
-- help versions link
-### Changed
+## v1.0.48 - 2025-02-06
+### Changed 
 - It is no longer possible to delete files attached to the temporary version.
 - Metadata updates will take account of author enrichment, except for arXiv articles.
-- tagging temporary version
-- It is now possible to re-point to a new version when the article status is: Copy ed.: final version submitted, waiting for validation
+- It is now possible to select a new version when the article status is: Copy ed.: final version submitted, waiting for validation
+- Version panel: temporary versions are now labeled as temporary
+ 
 ### Added
-- It is now possible to attach a data/software descriptor to a submission.
+- It is now possible to attach a data/software descriptor to a submission if the submission type is Dataset or Software.
 - New script to auto-declare conflicts of interest for journals activating the feature with an important backlog of articles
-- New button on volume pages to download all the PDF files at once with a single PDF file
+- New button on volume pages to download all the PDF files at once with a single PDF file (at the moment only available after login)
 
 ### Fixed
-- The response to a modification request via "Contact without sending a new version" does not appear on the article page.
-- Wrong links for the Dataverse repository
-- The graphical abstract is no longer displayed
-- Volume's metadata is displayed twice
+- The response to a modification request via "Contact without sending a new version" did not appear on the article page.
+- Wrong links for the Dataverse repository with versioned datasets
+- The graphical abstract was no longer displayed
+- Volume's metadata was displayed twice
 
 ## v1.0.47 - 2025-01-08
 ### Added
