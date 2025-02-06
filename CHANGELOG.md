@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### changed 
 - It is no longer possible to delete files attached to the temporary version.
+- Metadata updates will take account of author enrichment, except for arXiv articles.
 
 ## Unreleased
 ### Changed
