@@ -121,13 +121,16 @@ class Episciences_Paper_CitationsManager
     public static function sortAuthorAndYear(array $arrayMetadata = []): array
     {
         usort($arrayMetadata, static function ($a, $b) {
-            return strcmp($a['author'], $b['author']);
+            return strcmp($a['author'] ?? '', $b['author'] ?? '');
         });
+
         usort($arrayMetadata, static function ($a, $b) {
-            return $b['year'] - $a['year'];
+            return ($b['year'] ?? 0) - ($a['year'] ?? 0);
         });
+
         return $arrayMetadata;
     }
+
 
     public static function formatAuthors($author)
     {
