@@ -40,8 +40,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         'Home (backend)' => [self::PAGE_INDEX],
         'About' => [
             self::PAGE_ABOUT,
-            self::PAGE_PUBLISHING_POLICIES,
-            self::PAGE_PUBLISHING_POLICIES,
             self::PAGE_JOURNAL_INDEXING
 
         ],
@@ -81,6 +79,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         self::PAGE_BROWSE_SPECIAL_ISSUES,
         self::PAGE_BROWSE_REGULAR_ISSUES,
         self::PAGE_ACCEPTED_PAPERS_LIST,
+        self::PAGE_PUBLISHING_POLICIES,
         self::PAGE_SEARCH,
         self::PAGE_EDITORIAL_STAFF,
     ];
