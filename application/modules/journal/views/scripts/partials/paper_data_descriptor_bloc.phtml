@@ -7,9 +7,10 @@ $dataDescriptors = $paper->getDataDescriptors();
 <?php if (!empty($dataDescriptors)):
     $isMultiple = count($dataDescriptors) > 1;
 
-    if ($paper->isPublished() && !Episciences_Auth::isSecretary() && !$paper->isOwner()) {
+    if ($isMultiple && $paper->isPublished() && !Episciences_Auth::isSecretary() && !$paper->isOwner()) {
         $latest = array_shift($dataDescriptors);
         $dataDescriptors = [$latest];
+
     }
 
     ?>
