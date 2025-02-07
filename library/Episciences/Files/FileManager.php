@@ -24,4 +24,18 @@ class FileManager
         return $db?->select()->from(static::TABLE)->where('id= ?', $fileId);
     }
 
+
+    public static function findByMd5(int $docId): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()
+            ->from(self::TABLE, 'md5')
+            ->where('docid = ?', $docId)
+            ->where('source = ?', self::DD_SOURCE)
+            ->order('uploaded_date DESC');
+
+        return $db->fetchCol($sql);
+
+    }
+
 }

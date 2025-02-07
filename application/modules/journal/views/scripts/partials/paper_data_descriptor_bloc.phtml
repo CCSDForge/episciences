@@ -1,45 +1,83 @@
 <?php
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
-$dd = $paper->getDataDescriptor()
+$dataDescriptors = $paper->getDataDescriptors();
 ?>
 
-<?php if ($dd): ?>
+<?php if (!empty($dataDescriptors)):
+    $isMultiple = count($dataDescriptors) > 1;
+
+    if ($paper->isPublished() && !Episciences_Auth::isSecretary() && !$paper->isOwner()) {
+        $latest = array_shift($dataDescriptors);
+        $dataDescriptors = [$latest];
+    }
+
+    ?>
 
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate($paper->isSoftware() ? 'Descripteur de logiciel' : 'Descripteur de données') ?></h2>
+            <?php
+
+            if ($paper->isSoftware()) {
+                $panelTile = $isMultiple ? 'Descripteurs de logiciel' : 'Descripteur de logiciel';
+            } else {
+                $panelTile = $isMultiple ? 'Descripteurs de données' : 'Descripteur de données';
+            }
+
+            ?>
+            <h2 class="panel-title"><?= $this->translate($panelTile) ?></h2>
         </div>
         <div class="panel-body in">
             <div style="" class="small">
+                <table class="table" id="data-descriptor">
+                    <thead>
+                    <tr>
+                        <th style="border: none;"><?= $isMultiple ? $this->translate("Fichiers") : $this->translate("Fichier") ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($dataDescriptors as $dd): ?>
+                        <?php if ($fileName = $dd->getFile()->getName()) : ?>
+                            <tr id="data-descriptor-<?= $dd->getId() ?>" <?= count($dataDescriptors) === $dd->getVersion() ? 'class="active"' : '' ?>>
+                                <td><a href="<?= sprintf('/docfiles/dd/%s/%s', $dd->getDocid(), $fileName) ?>"
+                                       target="_blank"><?= sprintf('%s (v%s)', $fileName, $dd->getVersion()) ?>
+                                    </a>
+                                </td>
+                                <td>
+                                    <strong class="pull-right">
+                                        <?= $this->translate('Soumis le : ') . $this->Date($dd->getSubmissionDate(), null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>
+                                    </strong>
 
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
 
-                <?php if ($fileName = $dd->getFile()->getName()) : ?>
-                    <table class="table" id="data-descriptor">
-                        <thead>
-                        <tr>
-                            <th style="border: none;"><?= $this->translate("Fichier") ?></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td><a href="<?= sprintf('/docfiles/dd/%s/%s', $dd->getDocid(), $fileName) ?>"
-                                   target="_blank"><?= sprintf('%s (v%s)', $fileName, $dd->getVersion()) ?>
-                                </a>
-                            </td>
-                            <td>
-                                <strong class="pull-right">
-                                    <?= $this->translate('Soumis le : ') . $this->Date($dd->getSubmissionDate(), null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>
-                                </strong>
-
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
             </div>
+
+            <?php if ($this->ddNewVersionForm) : ?>
+
+                <?php if ($this->isAllowedToAddNewVersion): ?>
+
+                    <div>
+                        <button id="btn-add" class="btn btn-sm btn-default" type="button"
+                                onclick="processForm($(this));"><i
+                                    class="fa-solid fa-plus"></i>&nbsp;<?= $this->translate("Ajouter une nouvelle version") ?>
+                        </button>
+                    </div>
+
+                <?php endif; ?>
+
+                <div id="dd-new-version-form" style="display: none;"><?= $this->ddNewVersionForm ?></div>
+
+            <?php endif; ?>
+
         </div>
     </div>
+
+    <?php $this->jQuery()->addJavascriptFile('/js/paper/data_descriptor.js'); ?>
 
 <?php endif; ?>
 
