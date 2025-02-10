@@ -38,11 +38,28 @@ $dataDescriptors = $paper->getDataDescriptors();
                     </thead>
                     <tbody>
                     <?php foreach ($dataDescriptors as $dd): ?>
+                        <?php
+
+                        $vLabel = '';
+
+                        if ($isMultiple) {
+
+                            if ($dd->getId() === $dataDescriptors[array_key_first($dataDescriptors)]->getId()) {
+                                $vLabel = !Episciences_Auth::isLogged() ? '' : sprintf('<span class="label label-status-0">%s</span>', $this->translate('dernière version'));
+                            } else {
+
+                                $vLabel = sprintf('(v%s)', $dd->getVersion());
+
+                            }
+
+                        }
+
+                        ?>
                         <?php if ($fileName = $dd->getFile()->getName()) : ?>
                             <tr id="data-descriptor-<?= $dd->getId() ?>" <?= count($dataDescriptors) === $dd->getVersion() ? 'class="active"' : '' ?>>
                                 <td><a href="<?= sprintf('/docfiles/dd/%s/%s', $dd->getDocid(), $fileName) ?>"
-                                       target="_blank"><?= sprintf('%s (v%s)', $fileName, $dd->getVersion()) ?>
-                                    </a>
+                                       target="_blank"><?= sprintf('%s', $fileName) ?>
+                                    </a>&nbsp;<?= $vLabel ?>
                                 </td>
                                 <td>
                                     <strong class="pull-right">
