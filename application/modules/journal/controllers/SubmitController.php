@@ -226,7 +226,13 @@ class SubmitController extends DefaultController
             $type = null;
 
             if (isset($respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT])) {
+
                 $types = $respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT];
+
+                if (!is_array($types)) {
+                    $types = (array)$types;
+                }
+
                 $type = $types[array_key_last($types)] ?? null;
             }
 
