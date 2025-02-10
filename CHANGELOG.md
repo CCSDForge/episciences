@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
+## Unreleased
+### Fixed
+- RT#235731: failed to submit manuscript via ArXiv.
+- Cancelling a file download does not work.
 ## v1.0.48 - 2025-02-06
 ### Changed 
 - It is no longer possible to delete files attached to the temporary version.
