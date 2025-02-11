@@ -3918,7 +3918,6 @@ class Episciences_PapersManager
     }
 
     /**
-     * ignores users who have reported a conflict
      * @param int $paperId
      * @param array $recipients
      * @return void
@@ -3939,7 +3938,7 @@ class Episciences_PapersManager
 
         if ($isCoiEnabled) {
 
-            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paperId]);
+            $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], 'paper_id' => $paperId]);
             /** @var Episciences_User $recipient */
 
             foreach ($recipients as $recipient) {

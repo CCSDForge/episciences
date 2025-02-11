@@ -2149,6 +2149,7 @@ return array(
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
 
     //DD
+    'dernière version' => 'latest version',
     'Ajouter une nouvelle version' => 'Add a new version',
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
