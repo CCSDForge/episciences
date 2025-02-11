@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Fixed
+- The editorial committee is not notified when a new version is submitted.
 - RT#235731: failed to submit manuscript via ArXiv.
 - Cancelling a file download does not work.
 - Website resources: the file to be downloaded is saved repeatedly each time the page is refreshed.
