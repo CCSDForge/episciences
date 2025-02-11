@@ -247,6 +247,7 @@ return [
     "Si une soumission est restée dans cet état pendant plus de 30 jours, le rappel sera envoyé après un délai de (30 + x jours), où x est le nombre de jours saisi dans le champ « Délai »." => "If an submission has remained in this state for more than 30 days, the reminder will be sent after a period of (30 + x days), where x is the number of days entered in the 'Delay' field.",
     //DD
     'Descripteur de logiciel' => 'Software descriptor',
+    'Descripteurs de logiciel' => 'Software descriptors',
 
 
 ];

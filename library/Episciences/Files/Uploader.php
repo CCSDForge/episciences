@@ -33,9 +33,11 @@ class Uploader
     }
 
     /**
+     * @param bool $debug : to check file info
+     * @return $this
      * @throws Zend_File_Transfer_Exception
      */
-    public function upload(): self
+    public function upload(bool $debug = false): self
     {
         $upload = new Zend_File_Transfer_Adapter_Http();
 
@@ -64,7 +66,7 @@ class Uploader
                 continue;
             }
 
-            if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
+            if (!$debug && !is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
                 $log = sprintf('Failed to create directory: %s', $path);
                 $this->logger?->critical($log);
                 $result[$file][self::ERRORS_KEY] = $log;
@@ -85,7 +87,7 @@ class Uploader
                 $tmp['uploaded_date'] = null;
                 $tmp['path'] = $path;
 
-                if ((!$upload->receive($file))) {
+                if (!$debug && !$upload->receive($file)) {
                     $result[$file][self::ERRORS_KEY] = $upload->getMessages();
                 } else {
                     $result[self::UPLOADED_FILES_KEY][$file] = new File($tmp);
