@@ -87,13 +87,13 @@ function defineJournalConstants(string $rvCode = null): void
 
                                 $select = $db
                                     ->select()
-                                    ->from( T_REVIEW, ['CODE'])
+                                    ->from(T_REVIEW, ['CODE'])
                                     ->where('STATUS = ?', 1)
                                     ->where('CODE = ?', $extractedCode)
-                                    ->where ('is_new_front_switched = ?', 'yes');
+                                    ->where('is_new_front_switched = ?', 'yes');
 
                                 $result = $db->fetchOne($select);
-                                if ($result && $result !== 'portal' ){
+                                if ($result && $result !== 'portal') {
                                     $rvCode = $result;
                                     $prefixUrl = sprintf('/%s/', $result);
                                 }
@@ -111,7 +111,27 @@ function defineJournalConstants(string $rvCode = null): void
     }
 
     if ($rvCode) {
-        $assembledApplicationUrl = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN;
+
+        // define application ur
+        if (!defined('APPLICATION_URL')) {
+
+            if (getenv('RVCODE')) {
+                define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
+            } elseif (!isset($_SERVER['SERVER_NAME'])) {
+
+                if (APPLICATION_ENV !== ENV_PROD) {
+                    $appUrl = sprintf('%s://manager-%s.%s', SERVER_PROTOCOL, APPLICATION_ENV, DOMAIN);
+                } else {
+                    $appUrl = sprintf('%s://manager.%s', SERVER_PROTOCOL, DOMAIN);
+                }
+
+                define('APPLICATION_URL', $appUrl);
+
+            } else {
+                define('APPLICATION_URL', sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')));
+            }
+        }
+
         // define application module
         switch ($rvCode) {
             case PORTAL:
@@ -123,10 +143,6 @@ function defineJournalConstants(string $rvCode = null): void
             default:
                 define('APPLICATION_MODULE', 'journal');
         }
-
-        // define application url
-        define('APPLICATION_URL',  $_SERVER['SERVER_NAME'] !== $assembledApplicationUrl ? sprintf('%s://%s%s',SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')) : $assembledApplicationUrl);
-
 
         // define review path
         define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
@@ -151,9 +167,20 @@ function defineJournalConstants(string $rvCode = null): void
     }
 
     if (defined('REVIEW_PATH')) {
-        $prefix = (PREFIX_URL !== PORTAL_PREFIX_URL) ? '/' : '/portal/';
+
+        $isFromCli = !isset($_SERVER ['SERVER_SOFTWARE']) && (PHP_SAPI === 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
+
+        if (
+            $isFromCli ||
+            PREFIX_URL !== PORTAL_PREFIX_URL ||
+            getenv('RVCODE')) {
+            $prefix = '/';
+        } else {
+            $prefix = '/portal/';
+        }
+
         define('REVIEW_TMP_PATH', REVIEW_PATH . 'tmp/');
-        define('REVIEW_URL', APPLICATION_URL . $prefix .  'public/');
+        define('REVIEW_URL', APPLICATION_URL . $prefix . 'public/');
         define('REVIEW_PUBLIC_PATH', REVIEW_PATH . 'public/');
         define('REVIEW_PAGE_PATH', REVIEW_PATH . 'pages/');
         define('REVIEW_FILES_PATH', REVIEW_PATH . 'files/');
