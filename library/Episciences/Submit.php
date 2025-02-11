@@ -1230,7 +1230,7 @@ class Episciences_Submit
         Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
 
 
-        if ($isCoiEnabled) {
+        if ($isCoiEnabled) { // The article is sometimes replaced by another version.
 
             // conflicts UIDs
             $cUidS = Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]);
