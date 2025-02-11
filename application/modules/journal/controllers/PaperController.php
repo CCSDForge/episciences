@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Files\Uploader;
 use GuzzleHttp\Exception\GuzzleException;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
@@ -101,9 +102,11 @@ class PaperController extends PaperDefaultController
             exit;
         }
 
-        $this->view->doctype(Zend_View_Helper_Doctype::XHTML1_RDFA);
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+
+        $this->view->doctype(Zend_View_Helper_Doctype::XHTML1_RDFA);
+
         $docId = (int)$request->getParam('id');
 
         $zIdentifier = $request->get('z-identifier');
@@ -121,8 +124,51 @@ class PaperController extends PaperDefaultController
 
         $loggedUid = Episciences_Auth::getUid();
         $isSecretary = Episciences_Auth::isSecretary();
-
         $isFromZSubmit = false;
+
+        if ($paper->isDataSetOrSoftware()) {
+            $isAllowedToAddDataDescriptor =  ($paper->isOwner() || $isSecretary) && !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true);
+            $url = $this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]);
+            $ddForm = Episciences_Submit::getDDNewVersionForm();
+            $this->view->ddNewVersionForm = $ddForm;
+            $this->view->isAllowedToAddNewVersion = $isAllowedToAddDataDescriptor;
+
+            if (
+                $isAllowedToAddDataDescriptor &&
+                isset($_FILES[Episciences_Submit::DD_FILE_ELEMENT_NAME]['size']) &&
+                $request->isPost() &&
+                $request->getPost('postDdNewVersion') &&
+                $ddForm->isValid($request->getPost())
+            ) {
+
+                $uploader = new Uploader(sprintf('%s/dd/', REVIEW_FILES_PATH . $paper->getDocid()));
+                try {
+                    $allMd5 = \Episciences\Files\FileManager::findByMd5($paper->getDocid());
+                    /** @var \Episciences\Files\File $dFile */
+                    $dFile = $uploader->upload(true)->getInfo()[$uploader::UPLOADED_FILES_KEY][Episciences_Submit::DD_FILE_ELEMENT_NAME];
+                    if(in_array($dFile->getMd5(), $allMd5, true)) {
+                        $message = $this->view->translate("La version que vous essayez d'envoyer existe déjà.");
+                        $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                        $this->_helper->redirector->gotoUrl($url);
+                        return;
+                    }
+                    $uploads = $uploader->upload()->getInfo()[$uploader::UPLOADED_FILES_KEY];
+                } catch (Zend_File_Transfer_Exception $e) {
+                    trigger_error($e->getMessage());
+                    $uploads = [];
+                }
+
+                if (Episciences_Submit::saveDataDescriptor($uploads, $paper)) {
+                    $message = $this->view->translate("La nouvelle version a bien été enregistrée.");
+                    $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                }
+
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+
+            }
+
+        }
 
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
         $this->view->classifications = $paper->getClassifications();
@@ -527,6 +573,7 @@ class PaperController extends PaperDefaultController
         }
         $this->view->enabledBib = $enabledBib;
         $this->view->enabledManageFromPublicPage = $enabledManageFromPublicPage;
+
     }
 
     /**
@@ -648,7 +695,7 @@ class PaperController extends PaperDefaultController
 
             $attachmentsFiles = [];
 
-            if($oComment->getFile()){
+            if ($oComment->getFile()) {
                 $attachmentsFiles[$oComment->getFile()] = $oComment->getFilePath();
             }
 
@@ -1758,7 +1805,7 @@ class PaperController extends PaperDefaultController
 
         $options = ['newVersionOf' => $paper->getDocid()];
 
-        if($paper->isDataSetOrSoftware()){
+        if ($paper->isDataSetOrSoftware()) {
             $options['dataType'] = $paper->getType()[Episciences_Paper::TITLE_TYPE];
         }
 
@@ -1833,16 +1880,16 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId, false);
 
-        $form = Episciences_Submit::getNewVersionForm($paper,  $paper->isDataSetOrSoftware() ? ['newVersionOf' => $paper->getDocid(), 'dataType' => $paper->isSoftware() ? Episciences_Paper::SOFTWARE_TYPE_TITLE : Episciences_Paper::DATASET_TYPE_TITLE] : []);
+        $form = Episciences_Submit::getNewVersionForm($paper, $paper->isDataSetOrSoftware() ? ['newVersionOf' => $paper->getDocid(), 'dataType' => $paper->isSoftware() ? Episciences_Paper::SOFTWARE_TYPE_TITLE : Episciences_Paper::DATASET_TYPE_TITLE] : []);
 
-        if(!$form?->isValid($post)){
+        if (!$form?->isValid($post)) {
             $this->renderFormErrors($form);
             $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
             return;
         }
 
         $paper->loadOtherVolumes(); // github #48
-        $paper->loadDataDescriptor();
+        $paper->loadDataDescriptors();
 
         //tmp version
         $hasHook = isset($post[self::SEARCH_DOC_STR]['h_hasHook']) && filter_var($post[self::SEARCH_DOC_STR]['h_hasHook'], FILTER_VALIDATE_BOOLEAN);
@@ -2001,7 +2048,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME => $post[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME],
                 Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME => $_FILES[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? null,
                 Episciences_Submit::DD_FILE_ELEMENT_NAME => $_FILES[Episciences_Submit::DD_FILE_ELEMENT_NAME]['name'] ?? null,
-                Episciences_Submit::DD_PREVIOUS_VERSION_STR => $paper->getDataDescriptor()?->getVersion()
+                Episciences_Submit::DD_PREVIOUS_VERSION_STR => $paper->getDataDescriptors()?->getVersion()
             ];
 
 

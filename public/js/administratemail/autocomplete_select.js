@@ -22,5 +22,3 @@ if (!(recipientsList) || !('user_'+ui.item.uid in recipientsList)) {
 }
 
 $('#recipientsForm-ac_newRecipient').val('');
-
-return false;
