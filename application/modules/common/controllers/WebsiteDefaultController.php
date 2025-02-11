@@ -140,6 +140,8 @@ class WebsiteDefaultController extends Episciences_Controller_Action
                 }
 
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($message);
+                //Prevent the file from being saved repeatedly each time the page is refreshed.
+                $this->_helper->redirector->goToUrl($request->getRequestUri());
             }
         }
 
