@@ -455,7 +455,7 @@ class Episciences_Paper
     private array $_linkedData;
     private ?string $_password = null;
     private ?string $_graphical_abstract = null;
-    private ?\Episciences\Paper\DataDescriptor $_data_descriptor = null;
+    private ?array $_data_descriptors = null;
 
     /**
      * Episciences_Paper constructor.
@@ -473,6 +473,7 @@ class Episciences_Paper
      * set paper options
      * @param array $options
      * @return $this
+     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public function setOptions(array $options): self
@@ -4056,14 +4057,14 @@ class Episciences_Paper
         return $this->_solrData;
     }
 
-    public function getDataDescriptor(): ?\Episciences\Paper\DataDescriptor
+    public function getDataDescriptors(): array | null
     {
-        return $this->_data_descriptor;
+        return $this->_data_descriptors;
     }
 
-    public function setDataDescriptor(?\Episciences\Paper\DataDescriptor $data_descriptor = null): self
+    public function setDataDescriptors(array $data_descriptors = null): self
     {
-        $this->_data_descriptor = $data_descriptor;
+        $this->_data_descriptors = $data_descriptors;
         return $this;
     }
 
@@ -5130,10 +5131,13 @@ class Episciences_Paper
 
     }
 
-    public function loadDataDescriptor(): void
+    public function loadDataDescriptors(bool $force = false): void
     {
         if ($this->isDataSetOrSoftware()) {
-            $this->setDataDescriptor(DataDescriptorManager::getByDocId($this->getDocid()));
+
+            if($force || !$this->_data_descriptors){
+                $this->setDataDescriptors(DataDescriptorManager::getByDocId($this->getDocid()));
+            }
         }
     }
 

@@ -4,6 +4,7 @@ use Episciences\DataSet;
 use Episciences\Files\File;
 use Episciences\Files\Uploader;
 use Episciences\Paper\DataDescriptor;
+use Episciences\Paper\DataDescriptorManager;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -678,8 +679,8 @@ class Episciences_Submit
 
             $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
 
-            if (isset($settings['dataType'])){
-                self::addDdElement($form, $group,$settings['dataType']);
+            if (isset($settings['dataType'])) {
+                self::addDdElement($form, $group, $settings['dataType']);
             }
 
             $form->addElement('checkbox', 'disclaimer1', [
@@ -1979,7 +1980,7 @@ class Episciences_Submit
             $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
         }
 
-        if($currentType === Episciences_Paper::OTHER_TYPE) {
+        if ($currentType === Episciences_Paper::OTHER_TYPE) {
             $currentType = strtolower($type[array_key_last($type)]);
         }
 
@@ -2114,7 +2115,6 @@ class Episciences_Submit
      * @param Episciences_Paper $paper
      * @param array $data
      * @return void
-     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_File_Transfer_Exception
      */
 
@@ -2132,47 +2132,18 @@ class Episciences_Submit
         }
 
 
-
         $uploader = new Uploader($filesPath);
 
         $uploads = $uploader->upload()->getInfo()[$uploader::UPLOADED_FILES_KEY];
 
-        if (isset($uploads[self::DD_FILE_ELEMENT_NAME])) {
-
-            /** @var File $ddFile */
-            $ddFile = $uploads[self::DD_FILE_ELEMENT_NAME];
-            $ddFile->setDocId($paper->getDocid());
-            $ddFile->setSource();
-
-            if ($ddFile->save()->getId()) {
-
-                $dd = new DataDescriptor([
-                    'uid' => Episciences_Auth::getUid(),
-                    'fileid' => $ddFile->getId(),
-                    'docid' => $ddFile->getDocid(),
-                    'submission_date' => null,
-                    'version' => isset($data[self::DD_PREVIOUS_VERSION_STR]) ? ($data[self::DD_PREVIOUS_VERSION_STR] + 1) : 1
-                ]);
-
-                $dd->save();
-                $dd->loadFile();
-                /** @var Episciences_User $user */
-                $user = Episciences_Auth::getUser();
-
-                // paper log
-                $logDetails = ['dd' => $dd->toArray(), 'file' => $dd->getFile()->toArray(), 'user' => ['fullname' => $user->getFullName()]];
-                $action = $paper->isSoftware() ? Episciences_Paper_Logger::CODE_SWD_UPLOADED : Episciences_Paper_Logger::CODE_DD_UPLOADED;
-                $paper->log($action, Episciences_Auth::getUid(), $logDetails);
-
-            }
-        }
+        self::saveDataDescriptor($uploads, $paper);
 
         $coveLetterFile = $data[self::COVER_LETTER_FILE_ELEMENT_NAME] ?? '';
 
         if (isset($uploads[self::COVER_LETTER_FILE_ELEMENT_NAME])) {
             /** @var File $coveLetterFile */
             $coveLetterFile = $uploads[self::COVER_LETTER_FILE_ELEMENT_NAME];
-            $coveLetterFile =  $coveLetterFile->getName();
+            $coveLetterFile = $coveLetterFile->getName();
         }
 
         $coverLetter = [
@@ -2207,7 +2178,7 @@ class Episciences_Submit
             ]
         ]);
 
-        $hiddenElementName =  sprintf('%s_is_required', self::DD_FILE_ELEMENT_NAME);
+        $hiddenElementName = sprintf('%s_is_required', self::DD_FILE_ELEMENT_NAME);
         $form->addElement(new Zend_Form_Element_Hidden($hiddenElementName));
 
         $group[] = self::DD_FILE_ELEMENT_NAME;
@@ -2216,4 +2187,98 @@ class Episciences_Submit
         return $form;
 
     }
+
+
+    /**
+     * DD new version form
+     * @return Ccsd_Form
+     */
+    public static function getDDNewVersionForm(): \Ccsd_Form
+    {
+        $form = new Ccsd_Form();
+
+        $form->setAttrib('enctype', 'multipart/form-data');
+        $form->setAttrib('class', 'form-horizontal');
+        $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
+
+        try {
+
+            $form->addElement('hash', 'no_csrf_foo', array('salt' => 'unique'));
+            $form->getElement('no_csrf_foo')->setTimeout(3600);
+
+            $form->addElement('file', self::DD_FILE_ELEMENT_NAME, [
+                'required' => false,
+                'id' => self::DD_FILE_ELEMENT_NAME,
+                'label' => '',
+                'description' => Episciences_Tools::buildAttachedFilesDescription(['doc', 'docx', 'pdf', 'txt', 'md']),
+                'valueDisabled' => true,
+                'maxFileSize' => MAX_FILE_SIZE,
+                'validators' => [
+                    'Count' => [false, 1],
+                    'Extension' => [false, implode(',', ['doc', 'docx', 'pdf', 'txt', 'md'])],
+                    'Size' => [false, MAX_FILE_SIZE]
+                ]
+            ]);
+        } catch (Zend_Form_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        // Boutons : Valider et Annuler
+        $form->setActions(true)->createSubmitButton('postDdNewVersion', array(
+            'label' => 'Enregistrer',
+            'class' => 'btn btn-sm btn-primary'
+        ));
+        $form->setActions(true)->createCancelButton('back', array(
+            'label' => 'Annuler',
+            'class' => 'btn btn-sm btn-default',
+            'onclick' => "cancel()"));
+
+
+        return $form;
+    }
+
+
+    public static function saveDataDescriptor(array $uploads, Episciences_Paper $paper): bool
+    {
+
+        if (!isset($uploads[self::DD_FILE_ELEMENT_NAME])) {
+            return false;
+        }
+
+        /** @var File $ddFile */
+        $ddFile = $uploads[self::DD_FILE_ELEMENT_NAME];
+        $ddFile->setDocId($paper->getDocid());
+        $ddFile->setSource();
+
+        try {
+            if ($ddFile->save()->getId()) {
+
+                $dd = new DataDescriptor([
+                    'uid' => Episciences_Auth::getUid(),
+                    'fileid' => $ddFile->getId(),
+                    'docid' => $ddFile->getDocid(),
+                    'submission_date' => null,
+                    'version' => (DataDescriptorManager::getLatestVersion($paper->getDocid()) + 1)
+                ]);
+
+                $dd->save();
+                $dd->loadFile();
+                /** @var Episciences_User $user */
+                $user = Episciences_Auth::getUser();
+
+                // paper log
+                $logDetails = ['dd' => $dd->toArray(), 'file' => $dd->getFile()->toArray(), 'user' => ['fullname' => $user->getFullName()]];
+                $action = $paper->isSoftware() ? Episciences_Paper_Logger::CODE_SWD_UPLOADED : Episciences_Paper_Logger::CODE_DD_UPLOADED;
+                $paper->log($action, Episciences_Auth::getUid(), $logDetails);
+
+            }
+        } catch (Zend_Db_Adapter_Exception $e) {
+            trigger_error($e->getMessage());
+            return false;
+        }
+
+        return true;
+
+    }
+
 }

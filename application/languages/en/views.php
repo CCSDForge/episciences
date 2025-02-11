@@ -2149,10 +2149,13 @@ return array(
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
 
     //DD
+    'Ajouter une nouvelle version' => 'Add a new version',
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
-
+    'Descripteurs de données' => 'Data descriptors',
+    'Descripteurs de logiciel' => 'Software descriptors',
     "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
+    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
 
     // Website > menu
     'Choisissez une page' => 'Select a page'
