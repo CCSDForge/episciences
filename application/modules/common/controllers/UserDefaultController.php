@@ -1376,9 +1376,6 @@ class UserDefaultController extends Episciences_Controller_Action
                 ->setAttrib('onclick', 'closeResult()');
             $form->addElement($button);
 
-
-            $form->setDecorators([['ViewScript', ['viewScript' => 'user/form_roles_user.phtml', 'name' => 'rolesUser']]]);
-
             $this->_helper->layout->disableLayout();
             $this->view->form = $form;
         }
