@@ -2134,9 +2134,9 @@ class Episciences_Submit
 
         $uploader = new Uploader($filesPath);
 
-        $uploads = $uploader->upload()->getInfo()[$uploader::UPLOADED_FILES_KEY];
+        $uploadsInfo = $uploader->upload()->getInfo();
 
-        self::saveDataDescriptor($uploads, $paper);
+        self::saveDataDescriptor($uploadsInfo, $paper);
 
         $coveLetterFile = $data[self::COVER_LETTER_FILE_ELEMENT_NAME] ?? '';
 
@@ -2238,15 +2238,15 @@ class Episciences_Submit
     }
 
 
-    public static function saveDataDescriptor(array $uploads, Episciences_Paper $paper): bool
+    public static function saveDataDescriptor(array $uploadsInfo, Episciences_Paper $paper): bool
     {
 
-        if (!isset($uploads[self::DD_FILE_ELEMENT_NAME])) {
+        if (!isset($uploadsInfo[Uploader::UPLOADED_FILES_KEY][self::DD_FILE_ELEMENT_NAME])) {
             return false;
         }
 
         /** @var File $ddFile */
-        $ddFile = $uploads[self::DD_FILE_ELEMENT_NAME];
+        $ddFile = $uploadsInfo[Uploader::UPLOADED_FILES_KEY][self::DD_FILE_ELEMENT_NAME];
         $ddFile->setDocId($paper->getDocid());
         $ddFile->setSource();
 
