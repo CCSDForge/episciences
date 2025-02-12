@@ -169,7 +169,7 @@ class Episciences_Mail_Reminder
                 $name = self::$_typeLabel[$this->getType()];
             }
             $name .= ' - ' . $translator->translate('copie destinée au ' . mb_strtolower($translator->translate($this->getRecipient(), 'fr'), 'utf-8'), $code);
-            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code),lcfirst($translator->translate('Répétition', $code)),$translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[$this->getRepetition()], $code)));
+            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code),lcfirst($translator->translate('Répétition', $code)),$translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
             $translations['name'][$code] = $name;
 
             // Reminder Subject & Body
