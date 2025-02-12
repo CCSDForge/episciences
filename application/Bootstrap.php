@@ -1,5 +1,6 @@
 <?php
 
+use Dotenv\Dotenv;
 use Episciences\MonoLog\MonologFactory;
 
 
@@ -52,6 +53,18 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     protected function _initModule(): void
     {
+
+        $dotEnv = Dotenv::createImmutable(dirname(__DIR__));
+
+        foreach ($dotEnv->load() as $key => $value) {
+
+            if(!defined($key)){
+                define($key, $value);
+            }
+
+        }
+
+
         if (APPLICATION_MODULE === 'oai') {
             defined('RVID') || define('RVID', 0);
             defined('RVNAME') || define('RVNAME', 'OAI Episciences');

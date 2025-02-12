@@ -1,7 +1,6 @@
 <?php
 
 require_once 'const.php';
-require_once __DIR__ . '/../vendor/autoload.php';
 defineProtocol();
 defineSimpleConstants();
 defineSQLTableConstants();
@@ -14,6 +13,9 @@ require_once 'bdd_const.php';
 
 // Ensure library/ is on include_path
 set_include_path(implode(PATH_SEPARATOR, array_merge([__DIR__ . '/../library'], [get_include_path()])));
+
+
+require_once __DIR__ . '/../vendor/autoload.php';
 defineJournalConstants();
 
 // Create application, bootstrap, and run

@@ -1,5 +1,7 @@
 <?php
-function defineProtocol(): void
+
+
+function defineProtocol()
 {
     if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
         $protocol = 'https';
@@ -15,7 +17,7 @@ function defineProtocol(): void
 /**
  * define application constants
  */
-function defineApplicationConstants(): void
+function defineApplicationConstants()
 {
     // environnements
     define('ENV_PROD', 'production');
@@ -52,16 +54,6 @@ function defineApplicationConstants(): void
     define('APPLICATION_PUBLIC_PATH', dirname(APPLICATION_PATH) . '/public');
     define('PATH_TRANSLATION', APPLICATION_PATH . '/languages');
 
-
-    $dotEnv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-    $entries = $dotEnv->load();
-
-    foreach ($entries as $key => $value) {
-
-        if (!defined($key)) {
-            define($key, $value);
-        }
-    }
 }
 
 /**
