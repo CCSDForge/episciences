@@ -16,7 +16,7 @@ class Uploader
     public const UPLOADED_FILES_KEY = 'uploaded';
 
     private array|string $uploadDir;
-    private array $info = [self::UPLOADED_FILES_KEY => []];
+    private array $info = [];
     private ?Logger $logger;
 
 

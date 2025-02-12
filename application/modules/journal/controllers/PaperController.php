@@ -152,13 +152,13 @@ class PaperController extends PaperDefaultController
                         $this->_helper->redirector->gotoUrl($url);
                         return;
                     }
-                    $uploads = $uploader->upload()->getInfo()[$uploader::UPLOADED_FILES_KEY];
+                    $uploadsInfo = $uploader->upload()->getInfo();
                 } catch (Zend_File_Transfer_Exception $e) {
                     trigger_error($e->getMessage());
-                    $uploads = [];
+                    $uploadsInfo = [];
                 }
 
-                if (Episciences_Submit::saveDataDescriptor($uploads, $paper)) {
+                if (Episciences_Submit::saveDataDescriptor($uploadsInfo, $paper)) {
                     $message = $this->view->translate("La nouvelle version a bien été enregistrée.");
                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
                 }
