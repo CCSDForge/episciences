@@ -1,11 +1,9 @@
 <?php
-
-
-function defineProtocol()
+function defineProtocol(): void
 {
     if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
         $protocol = 'https';
-    } elseif ((isset($_SERVER['HTTPS'])) && (!empty($_SERVER['HTTPS'])) && (strtolower($_SERVER['HTTPS']) === 'on')) {
+    } elseif ((!empty($_SERVER['HTTPS'])) && (strtolower($_SERVER['HTTPS']) === 'on')) {
         $protocol = 'https';
     } else {
         $protocol = 'http';
@@ -17,20 +15,37 @@ function defineProtocol()
 /**
  * define application constants
  */
-function defineApplicationConstants()
+function defineApplicationConstants(): void
 {
-    // environnements
-    define('ENV_PROD', 'production');
-    define('ENV_PREPROD', 'preprod');
-    define('ENV_TEST', 'testing');
-    define('ENV_DEV', 'development');
 
-    // modules
-    define('PORTAL', 'portal');
-    define('OAI', 'oai');
-    define('JOURNAL', 'journal');
-    define('CONFIG', 'config/');
+    $dotEnv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+    $entries = $dotEnv->load();
 
+    foreach ($entries as $key => $value) {
+
+        if (!defined($key)) {
+            define($key, $value);
+        }
+    }
+
+    $entries = [
+        // environnements
+        'ENV_PROD' => 'production',
+        'ENV_PREPROD' => 'preprod',
+        'ENV_TEST' => 'testing',
+        'ENV_DEV' => 'development',
+        // modules
+        'PORTAL' => 'portal',
+        'OAI' => 'oai',
+        'JOURNAL' => 'journal',
+        'CONFIG' => 'config/'
+    ];
+
+    foreach ($entries as $key => $value) {
+        if (!defined($key)) {
+            define($key, $value);
+        }
+    }
 
     // define application environment
     if (!defined('APPLICATION_ENV') && getenv('APPLICATION_ENV')) {
@@ -53,7 +68,6 @@ function defineApplicationConstants()
 
     define('APPLICATION_PUBLIC_PATH', dirname(APPLICATION_PATH) . '/public');
     define('PATH_TRANSLATION', APPLICATION_PATH . '/languages');
-
 }
 
 /**
@@ -205,7 +219,7 @@ function defineJournalConstants(string $rvCode = null): void
 /**
  * define db table constants
  */
-function defineSQLTableConstants()
+function defineSQLTableConstants(): void
 {
     define('T_ALIAS', 'REVIEWER_ALIAS');
     define('T_ASSIGNMENTS', 'USER_ASSIGNMENT');
@@ -263,7 +277,7 @@ function defineSQLTableConstants()
 /**
  * define some simple constants
  */
-function defineSimpleConstants()
+function defineSimpleConstants(): void
 {
     define('DOMAIN', 'episciences.org');
     define('KO', 1024);
@@ -286,7 +300,7 @@ function defineSimpleConstants()
 /**
  * Constants to include vendor JS Libraries
  */
-function defineVendorJsLibraries()
+function defineVendorJsLibraries(): void
 {
     define('VENDOR_BOOTBOX', 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.3/bootbox.min.js');
     define('VENDOR_BOOTSTRAP_COLORPICKER', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/js/bootstrap-colorpicker.min.js');
@@ -308,7 +322,7 @@ function defineVendorJsLibraries()
 /**
  * Constants to include vendor CSS
  */
-function defineVendorCssLibraries()
+function defineVendorCssLibraries(): void
 {
     define('VENDOR_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css');
     define('VENDOR_BOOTSTRAP_COLORPICKER_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css');
@@ -326,7 +340,7 @@ function defineVendorCssLibraries()
  * Prevent warning from code analyzers for undefined constants
  * @see config pwd.json
  */
-function fixUndefinedConstantsForCodeAnalysis()
+function fixUndefinedConstantsForCodeAnalysis(): void
 {
     if (0 > 1) {
         define('EPISCIENCES_EXCEPTIONS_LOG_PATH', '');
@@ -373,5 +387,8 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
         define('EPISCIENCES_BIBLIOREF', []);
+        define('OAI', '');
+        define('PORTAL', '');
+        define('ENV_PROD', '');
     }
 }
