@@ -151,6 +151,7 @@ class Episciences_Review
      * @var Episciences_Review_DoiSettings
      */
     protected $_doiSettings;
+    private bool $isNewFrontSwitched = false;
 
     /**
      * Episciences_Review constructor.
@@ -253,7 +254,14 @@ class Episciences_Review
         $this->setDoiSettings($doiSet);
 
         foreach ($options as $key => $value) {
-            $method = 'set' . ucfirst(strtolower($key));
+
+            $method = 'set';
+            if ($key === 'is_new_front_switched') {
+                $method .= sprintf('%s', Episciences_Tools::convertToCamelCase($key, '_', true));
+            } else {
+                $method .= ucfirst(strtolower($key));
+            }
+
             if (in_array($method, $methods, true)) {
                 $this->$method($value);
             } elseif (in_array($key, $this->_settingsKeys, true)) {
@@ -2316,6 +2324,18 @@ class Episciences_Review
     public function getSettings(): array
     {
         return $this->_settings;
+    }
+
+
+    public function isNewFrontSwitched(): bool
+    {
+        return $this->isNewFrontSwitched;
+    }
+
+    public function setIsNewFrontSwitched(bool $isNewFrontSwitched ): self
+    {
+        $this->isNewFrontSwitched = $isNewFrontSwitched;
+        return $this;
     }
 
     /**
