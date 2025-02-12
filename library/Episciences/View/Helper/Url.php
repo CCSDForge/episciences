@@ -49,7 +49,11 @@ class Episciences_View_Helper_Url extends Zend_View_Helper_Url
      */
     public function processUri(array &$urlOptions, bool $encode = true, bool  $withRewrittenParameters = true): string
     {
-        $uri = PREFIX_URL;
+        if (defined('PREFIX_URL')) {
+            $uri = PREFIX_URL;
+        } else {
+            $uri = '/';
+        }
 
         if (isset ($urlOptions ['controller']) && $urlOptions['controller'] !== 'index') {
 
