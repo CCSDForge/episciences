@@ -1738,6 +1738,7 @@ return array(
     "articles en cours de relecture" => 'articles under review',
     "article relu" => 'reviewed article',
     "article évalué - en attente de décision éditoriale" => "reviewed article pending editorial decision",
+    'article évalué, en attente de décision éditoriale' => 'reviewed article pending editorial decision',
     "articles évalués, en attente de décision éditoriale" => "reviewed articles pending editorial decision",
     "articles relus" => 'reviewed articles',
     "article en attente de modifications mineures" => 'article waiting for minor revision',

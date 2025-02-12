@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
 ### Fixed
+- [#652](https://github.com/CCSDForge/episciences/issues/652): missing translation
 - RT#235731: failed to submit manuscript via ArXiv.
 - Cancelling a file download does not work.
 - Website resources: the file to be downloaded is saved repeatedly each time the page is refreshed.
