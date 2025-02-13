@@ -1,4 +1,7 @@
 <?php
+
+use Symfony\Component\Dotenv\Dotenv;
+
 function defineProtocol(): void
 {
     if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
@@ -17,16 +20,6 @@ function defineProtocol(): void
  */
 function defineApplicationConstants(): void
 {
-
-    $dotEnv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-    $entries = $dotEnv->load();
-
-    foreach ($entries as $key => $value) {
-
-        if (!defined($key)) {
-            define($key, $value);
-        }
-    }
 
     $entries = [
         // environnements
@@ -47,9 +40,19 @@ function defineApplicationConstants(): void
         }
     }
 
+    $dotEnv = new Dotenv();
+    $envPath = sprintf('%s/.env', dirname(__DIR__));
+    //Loads env vars from .env. local. php if the file exists or from the other .env files otherwise
+    $dotEnv->bootEnv($envPath);
+
+
     // define application environment
-    if (!defined('APPLICATION_ENV') && getenv('APPLICATION_ENV')) {
-        define('APPLICATION_ENV', getenv('APPLICATION_ENV'));
+    if (!defined('APPLICATION_ENV')) {
+        if (getenv('APPLICATION_ENV')) {
+            define('APPLICATION_ENV',getenv('APPLICATION_ENV') );
+        } elseif (isset($_ENV['APPLICATION_ENV'])) {
+            define('APPLICATION_ENV', $_ENV['APPLICATION_ENV']);
+        }
     }
 
     // define application paths
@@ -128,21 +131,12 @@ function defineJournalConstants(string $rvCode = null): void
 
         // define application ur
         if (!defined('APPLICATION_URL')) {
-
             if (getenv('RVCODE')) {
                 define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
-            } elseif (!isset($_SERVER['SERVER_NAME'])) {
-
-                if (APPLICATION_ENV !== ENV_PROD) {
-                    $appUrl = sprintf('%s://manager-%s.%s', SERVER_PROTOCOL, APPLICATION_ENV, DOMAIN);
-                } else {
-                    $appUrl = sprintf('%s://manager.%s', SERVER_PROTOCOL, DOMAIN);
-                }
-
-                define('APPLICATION_URL', $appUrl);
-
-            } else {
+            } elseif(isset($_SERVER['SERVER_NAME'])) {
                 define('APPLICATION_URL', sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')));
+            } elseif(isset($_ENV['MANAGER_APPLICATION_URL'])){
+                define('APPLICATION_URL', sprintf('%s%s', rtrim($_ENV['MANAGER_APPLICATION_URL'], '/'), rtrim(PREFIX_URL, '/')));
             }
         }
 
