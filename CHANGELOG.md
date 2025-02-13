@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+### Changed
+- Improved licence enrichment for dataset
 ### Fixed
 - [#652](https://github.com/CCSDForge/episciences/issues/652): missing translation
 - RT#235731: failed to submit manuscript via ArXiv.
