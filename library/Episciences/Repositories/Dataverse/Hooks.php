@@ -223,15 +223,22 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
              * Licence Creative Commons Attribution -  Partage dans les Mêmes Conditions 4.0 International</a>.
              */
 
-            $license = mb_substr(trim(str_replace('"', '', stripslashes(explode(">", explode("<a", $data['termsOfUse'])[1])[0]))), 5); // 5 => size of (href=)
-            $pattern = '~<a.*?(http|https)://[\w]+\.[\w/-]+[\d.]+[\d]?/\\\?~';
-            $isMatched = preg_match_all($pattern, $data['termsOfUse'], $matches, PREG_SET_ORDER, 0);
 
-            if ($isMatched) {
-                $license = explode('href="', stripslashes($matches[0][0]))[1];
+            $explodedTermsOfUse = explode("<a", $data['termsOfUse']);
+            $processed = trim(str_replace('"', '', stripslashes(explode(">", $explodedTermsOfUse[array_key_last($explodedTermsOfUse)])[0])));
+
+            if (str_contains($processed, 'href=')) {
+                $license = mb_substr($processed, 5); //5 => size of (href=)
+                $pattern = '~<a.*?(http|https)://[\w]+\.[\w/-]+[\d.]+[\d]?/\\\?~';
+                $isMatched = preg_match_all($pattern, $data['termsOfUse'], $matches, PREG_SET_ORDER, 0);
+                if ($isMatched) {
+                    $license = explode('href="', stripslashes($matches[0][0]))[1];
+                }
+            } else {
+                $license = $processed; // (eg. darus doi:10.18419/DARUS-4228)
             }
-        }
 
+        }
 
         $metadata = $data['metadataBlocks'];
 
