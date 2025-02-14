@@ -83,7 +83,9 @@ function defineApplicationConstants(): void
 function defineJournalConstants(string $rvCode = null): void
 {
     $prefixUrl = PORTAL_PREFIX_URL;
-    if (!defined('RVCODE')) {
+    $isFromCli = !isset($_SERVER ['SERVER_SOFTWARE']) && (PHP_SAPI === 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
+
+    if (!defined('RVCODE') && !$isFromCli) {
         if (!$rvCode) {
             if (getenv('RVCODE')) {
                 $rvCode = getenv('RVCODE');
@@ -180,8 +182,6 @@ function defineJournalConstants(string $rvCode = null): void
 
     if (defined('REVIEW_PATH')) {
         $prefix = '/';
-
-        $isFromCli = !isset($_SERVER ['SERVER_SOFTWARE']) && (PHP_SAPI === 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
 
         // la condition sur getenv : pour les sites de type : rvcode.domain
 
