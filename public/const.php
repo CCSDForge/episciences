@@ -40,18 +40,22 @@ function defineApplicationConstants(): void
         }
     }
 
-    $dotEnv = new Dotenv();
-    $envPath = sprintf('%s/.env', dirname(__DIR__));
-    //Loads env vars from .env. local. php if the file exists or from the other .env files otherwise
-    $dotEnv->bootEnv($envPath);
+    if (empty($_ENV)) {
+        $dotEnv = new Dotenv();
+        $envPath = sprintf('%s/.env', dirname(__DIR__));
+        //Loads env vars from .env. local. php if the file exists or from the other .env files otherwise
+        $dotEnv->bootEnv($envPath);
+    }
 
+    // Some cron jobs are started with the app_env parameter, which is initialised elsewhere. @sse  Script::initApp()
+    $isFromCli = !isset($_SERVER ['SERVER_SOFTWARE']) && (PHP_SAPI === 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
 
     // define application environment
-    if (!defined('APPLICATION_ENV')) {
+    if (!defined('APPLICATION_ENV') && !$isFromCli) {
         if (getenv('APPLICATION_ENV')) {
-            define('APPLICATION_ENV',getenv('APPLICATION_ENV') );
-        } elseif (isset($_ENV['APPLICATION_ENV'])) {
-            define('APPLICATION_ENV', $_ENV['APPLICATION_ENV']);
+            define('APPLICATION_ENV', getenv('APPLICATION_ENV'));
+        } elseif (isset($_ENV['APP_ENV'])) {
+            define('APPLICATION_ENV', $_ENV['APP_ENV']);
         }
     }
 
@@ -175,15 +179,14 @@ function defineJournalConstants(string $rvCode = null): void
     }
 
     if (defined('REVIEW_PATH')) {
+        $prefix = '/';
 
         $isFromCli = !isset($_SERVER ['SERVER_SOFTWARE']) && (PHP_SAPI === 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
 
+        // la condition sur getenv : pour les sites de type : rvcode.domain
+
         if (
-            $isFromCli ||
-            PREFIX_URL !== PORTAL_PREFIX_URL ||
-            getenv('RVCODE')) {
-            $prefix = '/';
-        } else {
+            !$isFromCli && (PREFIX_URL === PORTAL_PREFIX_URL) && !getenv('RVCODE')) {
             $prefix = '/portal/';
         }
 

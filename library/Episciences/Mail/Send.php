@@ -255,7 +255,7 @@ class Episciences_Mail_Send
             $mail->setFromReview($journalOptions['rvCode']);
         }
 
-        $mail->setTo($recipient, $journalOptions['rvCode']);
+        $mail->setTo($recipient, $journalOptions);
         /** @var Episciences_User $ccRep */
         if (!empty($CC)) {
             foreach ($CC as $ccRep) {

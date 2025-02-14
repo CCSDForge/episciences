@@ -7,6 +7,8 @@
 class Episciences_Review
 {
 
+    public const IS_NEW_FRONT_SWITCHED = 'is_new_front_switched';
+
     public const STATUS_NOTVALID = 0;
     public const STATUS_VALID = 1;
     public const STATUS_REFUSED = 2;
@@ -256,7 +258,7 @@ class Episciences_Review
         foreach ($options as $key => $value) {
 
             $method = 'set';
-            if ($key === 'is_new_front_switched') {
+            if ($key === self::IS_NEW_FRONT_SWITCHED) {
                 $method .= sprintf('%s', Episciences_Tools::convertToCamelCase($key, '_', true));
             } else {
                 $method .= ucfirst(strtolower($key));

@@ -429,7 +429,7 @@ abstract class Script {
         // check environment is valid
         if ($isRequiredAppEnv && $this->getParam('app_env') && !in_array($this->getParam('app_env'), $this->_valid_envs, true))  {
             $this->displayError("Incorrect application environment: " . $this->getParam('app_env') . PHP_EOL . "Should be one of these: " . implode(', ', $this->_valid_envs));
-        } else {
+        } elseif(empty($_ENV)) {
             $dotEnv = new Dotenv();
             $envPath = sprintf('%s/.env', dirname(__DIR__));
             //Loads env vars from .env. local. php if the file exists or from the other .env files otherwise
@@ -440,8 +440,6 @@ abstract class Script {
         if (!defined('APPLICATION_ENV')) {
             if ($this->getParam('app_env')) {
                 define('APPLICATION_ENV', $this->getParam('app_env'));
-            } elseif (isset($_ENV['APPLICATION_ENV'])) {
-                define('APPLICATION_ENV', $_ENV['APPLICATION_ENV']);
             } elseif (isset($_ENV['APP_ENV'])) {
                 define('APPLICATION_ENV', $_ENV['APP_ENV']);
             } else {

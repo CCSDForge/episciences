@@ -45,12 +45,13 @@ class Episciences_Mail extends Zend_Mail
     private $_sendDate;
     private $_rawBody;
     protected bool $_isAutomatic = false;
-    private ?int $uid = null ;
+    private ?int $uid = null;
 
     /**
      * Episciences_Mail constructor.
      * @param null $charset
      * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     public function __construct($charset = null, $rvCode = RVCODE)
     {
@@ -67,7 +68,7 @@ class Episciences_Mail extends Zend_Mail
         if (defined('RVNAME')) {
             $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, RVNAME);
         }
-        if (php_sapi_name() !== 'cli' && Episciences_Auth::isLogged()) {
+        if (PHP_SAPI !== 'cli' && Episciences_Auth::isLogged()) {
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME, Episciences_Auth::getScreenName());
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
@@ -81,7 +82,7 @@ class Episciences_Mail extends Zend_Mail
         if ($mailError === false || $mailError === "0") {
             $this->setReturnPath('error@' . DOMAIN);
         } else {
-            $this->setReturnPath($review->getCode().'-error@'.DOMAIN);
+            $this->setReturnPath($review->getCode() . '-error@' . DOMAIN);
         }
     }
 
@@ -90,7 +91,7 @@ class Episciences_Mail extends Zend_Mail
      * @param string $path
      * @throws Exception
      */
-    public function setPath($path = '')
+    public function setPath(string $path = ''): void
     {
         if ($path) {
             $this->path = $path;
@@ -102,7 +103,7 @@ class Episciences_Mail extends Zend_Mail
      * check if application folders exist, and create them if they don't
      * @throws Exception
      */
-    private function checkAppDirectory()
+    private function checkAppDirectory(): void
     {
         $folders = [
             $this->path,
@@ -129,25 +130,46 @@ class Episciences_Mail extends Zend_Mail
      * set reply-to header : noreply@episciences.org
      * @throws Zend_Mail_Exception
      */
-    public function setFromReview($rvCode = RVCODE)
+    public function setFromReview($rvCode = RVCODE): void
     {
         $this->setFrom($rvCode . '@' . DOMAIN, $rvCode);
         $this->setReplyTo('noreply@' . DOMAIN);
     }
 
     /**
-     * set an unique recipient from an Episciences_User, and set recipient tags
+     * set a unique recipient from an Episciences_User, and set recipient tags
      * @param Episciences_User $recipient
-     * @param array|false|string|null $rvCode
+     * @param array $options
      * @return bool
+     * @throws Zend_Exception
      */
-    public function setTo(Episciences_User $recipient, $rvCode = RVCODE)
+    public function setTo(Episciences_User $recipient, array $options = []): bool
     {
         if (empty($recipient->getEmail())) {
             return false;
         }
 
-        $lostLoginLink = sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], (new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'lostlogin']));
+        if (!Ccsd_Tools::isFromCli()) {
+            $lostLoginLink = sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], (new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'lostlogin']));
+        } elseif (isset($options['rvCode'])) {
+
+            if (isset($options[Episciences_Review::IS_NEW_FRONT_SWITCHED]) && $options[Episciences_Review::IS_NEW_FRONT_SWITCHED]) {
+                $lostLoginLink = rtrim(MANAGER_APPLICATION_URL, DIRECTORY_SEPARATOR);
+                $lostLoginLink .= DIRECTORY_SEPARATOR;
+                $lostLoginLink .= $options['rvCode'];
+
+            } else {
+                $lostLoginLink = SERVER_PROTOCOL . '://';
+                $lostLoginLink .= $options['rvCode'] . '.' . DOMAIN;
+
+            }
+
+            $lostLoginLink .= '/user/lostlogin';
+
+        } else {
+            $lostLoginLink = '';
+        }
+
 
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL, $recipient->getEmail());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $recipient->getFullName());
@@ -164,17 +186,17 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
-     * @param string $rvCode
+     * @param array|false|string|null $rvCode
+     * @param int $rvId
      * @param bool $debug
      * @return bool
      * @throws Zend_Mail_Exception
-     * @throws Exception
      */
     public function writeMail($rvCode = RVCODE, int $rvId = RVID, bool $debug = false): bool
     {
 
         if (!$this->getFrom()) {
-            if (php_sapi_name() !== 'cli' && Episciences_Auth::isLogged()) {
+            if (PHP_SAPI !== 'cli' && Episciences_Auth::isLogged()) {
                 $this->setFromWithTags(Episciences_Auth::getUser(), $rvCode);
             } else {
                 $this->setFrom($rvCode . '@' . DOMAIN, $rvCode);
@@ -228,7 +250,7 @@ class Episciences_Mail extends Zend_Mail
      * @return bool
      * @throws Zend_Mail_Exception
      */
-    public function setFromWithTags(Episciences_User $sender, $rvCode = RVCODE)
+    public function setFromWithTags(Episciences_User $sender, $rvCode = RVCODE): bool
     {
         if (empty($sender->getEmail())) {
             return false;
@@ -258,9 +280,9 @@ class Episciences_Mail extends Zend_Mail
      * @return bool
      * @throws Exception
      */
-    public function write($debug = false)
+    public function write($debug = false): bool
     {
-        if (null == $this->path) {
+        if (null === $this->path) {
             throw new Exception('Invalid working directory', self::STATUS_FAILED_INVALID_DIR);
         }
 
@@ -356,7 +378,7 @@ class Episciences_Mail extends Zend_Mail
      * @param string $path
      * @return bool|string
      */
-    private function createMailDirectory(string $path)
+    private function createMailDirectory(string $path): bool|string
     {
         $mailDirectory = uniqid(gethostname() . '_', true);
         if (mkdir($concurrentDirectory = $path . $mailDirectory, 0777, true) || !is_dir($concurrentDirectory)) {
@@ -370,7 +392,7 @@ class Episciences_Mail extends Zend_Mail
      * @param $fieldname
      * @return string
      */
-    private function extractSingle($value, $fieldname)
+    private function extractSingle($value, $fieldname): string
     {
         $value = $value[$fieldname][0];
         $xmlString = "\t";
@@ -387,7 +409,7 @@ class Episciences_Mail extends Zend_Mail
         return $xmlString . PHP_EOL;
     }
 
-    private function extractList($array, $fieldname)
+    private function extractList($array, $fieldname): string
     {
         $xmlString = "\t<" . strtolower($fieldname) . '_list>' . PHP_EOL;
         $tmpString = '';
@@ -410,7 +432,7 @@ class Episciences_Mail extends Zend_Mail
         return $xmlString . "\t</" . strtolower($fieldname) . '_list>' . PHP_EOL;
     }
 
-    public function getDecodedSubject()
+    public function getDecodedSubject(): bool|string
     {
         return iconv_mime_decode($this->getSubject(), 0, 'UTF-8');
     }
@@ -427,7 +449,7 @@ class Episciences_Mail extends Zend_Mail
         } else {
             $body = $this->replaceTags($this->getRawBody());
         }
-        
+
         return $body ? htmlspecialchars($body) : '';
     }
 
@@ -469,7 +491,7 @@ class Episciences_Mail extends Zend_Mail
     public function replaceTags($text)
     {
 
-        if ($text){
+        if ($text) {
             $myTags = $this->getTags();
             $text = str_replace(array_keys($myTags), array_values($myTags), $text);
             $text = nl2br($text);
@@ -640,7 +662,7 @@ class Episciences_Mail extends Zend_Mail
 
         if (defined('APPLICATION_URL')) {
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, APPLICATION_URL . '/administratepaper/view/id/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, APPLICATION_URL. '/' . $docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, APPLICATION_URL . '/' . $docid);
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, APPLICATION_URL . '/paper/rating/id/' . $docid);
         }
 
@@ -995,7 +1017,7 @@ class Episciences_Mail extends Zend_Mail
     private function removeTag(string $tag): void
     {
 
-        if(array_key_exists($tag, $this->getTags())){
+        if (array_key_exists($tag, $this->getTags())) {
             unset($this->tags[$tag]);
         }
 
