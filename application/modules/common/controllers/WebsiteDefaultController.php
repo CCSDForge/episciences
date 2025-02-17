@@ -89,7 +89,6 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     public function publicAction(): void
     {
 
-
         $dir = REVIEW_PATH . 'public/';
         if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
             throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
@@ -103,7 +102,8 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         try {
             $translator = Zend_Registry::get('Zend_Translate');
         } catch (Zend_Exception $e) {
-            error_log($e->getMessage);
+            error_log($e->getMessage());
+            $translator = null;
         }
 
         if (isset($params['method']) && $request->isPost()) {
@@ -122,21 +122,24 @@ class WebsiteDefaultController extends Episciences_Controller_Action
 
                 $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
 
-                copy($_FILES['file']['tmp_name'], $dir . $renamedFile );
+                copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
 
-                $message = $translator->translate('Le fichier a été déposé.');
+                if ($translator) {
+                    $message = $translator->translate('Le fichier a été déposé.');
 
-                if ($renamedFile !== $_FILES['file']['name'] ) {
-                    $message = $translator->translate( 'Le fichier a été téléchargé et a été renommé');
-                    $message .=' "';
-                    $message .= $renamedFile;
-                    $message .= '"';
-                    $message .= ' ';
-                    $message .= $translator->translate('car');
-                    $message .= ' "';
-                    $message .= $_FILES['file']['name'];
-                    $message .= '" ';
-                    $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
+                    if ($renamedFile !== $_FILES['file']['name']) {
+                        $message = $translator->translate('Le fichier a été téléchargé et a été renommé');
+                        $message .= ' "';
+                        $message .= $renamedFile;
+                        $message .= '"';
+                        $message .= ' ';
+                        $message .= $translator->translate('car');
+                        $message .= ' "';
+                        $message .= $_FILES['file']['name'];
+                        $message .= '" ';
+                        $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
+                    }
+
                 }
 
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($message);

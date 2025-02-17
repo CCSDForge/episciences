@@ -16,7 +16,7 @@ function defineProtocol(): void
 }
 
 /**
- * define application constants
+ * defines application constants
  */
 function defineApplicationConstants(): void
 {
@@ -82,14 +82,14 @@ function defineApplicationConstants(): void
  */
 function defineJournalConstants(string $rvCode = null): void
 {
-    $prefixUrl = PORTAL_PREFIX_URL;
+    $prefixUrl = ($rvCode && $rvCode !== 'portal') ? sprintf('/%s/', $rvCode) : PORTAL_PREFIX_URL;
     $isFromCli = !isset($_SERVER ['SERVER_SOFTWARE']) && (PHP_SAPI === 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
 
-    if (!defined('RVCODE') && !$isFromCli) {
+    if (!defined('RVCODE')) {
         if (!$rvCode) {
             if (getenv('RVCODE')) {
                 $rvCode = getenv('RVCODE');
-            } else {
+            } elseif (!$isFromCli) {
                 $rvCode = 'portal';
                 $front = Zend_Controller_Front::getInstance();
                 if ($front) {
@@ -166,7 +166,11 @@ function defineJournalConstants(string $rvCode = null): void
 
         if (is_file(CONFIGURABLE_CONSTANTS_PATH)) {
             /** @var array $configurableConst */
-            $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true);
+            try {
+                $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
 
             $allowedExtensions = $configurableConst['allowed_extensions'] ?? ['pdf'];
             $allowedMimesTypes = $configurableConst['allowed_mimes_types'] ?? ['application/pdf'];
@@ -181,17 +185,8 @@ function defineJournalConstants(string $rvCode = null): void
     }
 
     if (defined('REVIEW_PATH')) {
-        $prefix = '/';
-
-        // la condition sur getenv : pour les sites de type : rvcode.domain
-
-        if (
-            !$isFromCli && (PREFIX_URL === PORTAL_PREFIX_URL) && !getenv('RVCODE')) {
-            $prefix = '/portal/';
-        }
-
         define('REVIEW_TMP_PATH', REVIEW_PATH . 'tmp/');
-        define('REVIEW_URL', APPLICATION_URL . $prefix . 'public/');
+        define('REVIEW_URL', APPLICATION_URL . '/public/');
         define('REVIEW_PUBLIC_PATH', REVIEW_PATH . 'public/');
         define('REVIEW_PAGE_PATH', REVIEW_PATH . 'pages/');
         define('REVIEW_FILES_PATH', REVIEW_PATH . 'files/');
