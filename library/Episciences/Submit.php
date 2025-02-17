@@ -2159,33 +2159,51 @@ class Episciences_Submit
      * @param Zend_Form $form
      * @param array $group
      * @param string $type
+     * @param bool $withRequiredHiddenElement
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    private static function addDdElement(Zend_Form $form, array &$group = [], string $type = Episciences_Paper::DATASET_TYPE_TITLE): Zend_Form
+    private static function addDdElement(Zend_Form $form, array &$group , string $type = Episciences_Paper::DATASET_TYPE_TITLE, bool $withRequiredHiddenElement = true): Zend_Form
     {
+
+        $availableExtensions = ['pdf'];
+
+        if ($type === (Episciences_Paper::SOFTWARE_TYPE_TITLE)) {
+            $label = 'Descripteur de logiciel';
+        } elseif ($type === Episciences_Paper::DATASET_TYPE_TITLE) {
+            $label = 'Descripteur de données';
+        } else {
+            $label = '';
+        }
+
         $form->addElement('file', self::DD_FILE_ELEMENT_NAME, [
             'required' => true,
             'id' => self::DD_FILE_ELEMENT_NAME,
-            'label' => ($type === Episciences_Paper::SOFTWARE_TYPE_TITLE) ? 'Descripteur de logiciel' : 'Descripteur de données',
-            'description' => Episciences_Tools::buildAttachedFilesDescription(['doc', 'docx', 'pdf', 'txt', 'md']),
+            'label' => $label,
+            'description' => Episciences_Tools::buildAttachedFilesDescription($availableExtensions),
             'valueDisabled' => true,
             'maxFileSize' => MAX_FILE_SIZE,
             'validators' => [
                 'Count' => [false, 1],
-                'Extension' => [false, implode(',', ['doc', 'docx', 'pdf', 'txt', 'md'])],
+                'Extension' => [false, implode(',', $availableExtensions)],
                 'Size' => [false, MAX_FILE_SIZE]
             ]
         ]);
 
-        $hiddenElementName = sprintf('%s_is_required', self::DD_FILE_ELEMENT_NAME);
-        $form->addElement(new Zend_Form_Element_Hidden($hiddenElementName));
 
-        $group[] = self::DD_FILE_ELEMENT_NAME;
-        $group[] = $hiddenElementName;
+        if ($withRequiredHiddenElement) {
+            $hiddenElementName = sprintf('%s_is_required', self::DD_FILE_ELEMENT_NAME);
+            $form->addElement(new Zend_Form_Element_Hidden($hiddenElementName));
+        }
+
+        if ($group) {
+            $group[] = self::DD_FILE_ELEMENT_NAME;
+            if(isset($hiddenElementName)){
+                $group[] = $hiddenElementName;
+            }
+        }
 
         return $form;
-
     }
 
 
@@ -2201,24 +2219,15 @@ class Episciences_Submit
         $form->setAttrib('class', 'form-horizontal');
         $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
 
+        $group = [];
+
         try {
 
             $form->addElement('hash', 'no_csrf_foo', array('salt' => 'unique'));
             $form->getElement('no_csrf_foo')->setTimeout(3600);
 
-            $form->addElement('file', self::DD_FILE_ELEMENT_NAME, [
-                'required' => false,
-                'id' => self::DD_FILE_ELEMENT_NAME,
-                'label' => '',
-                'description' => Episciences_Tools::buildAttachedFilesDescription(['doc', 'docx', 'pdf', 'txt', 'md']),
-                'valueDisabled' => true,
-                'maxFileSize' => MAX_FILE_SIZE,
-                'validators' => [
-                    'Count' => [false, 1],
-                    'Extension' => [false, implode(',', ['doc', 'docx', 'pdf', 'txt', 'md'])],
-                    'Size' => [false, MAX_FILE_SIZE]
-                ]
-            ]);
+            self::addDdElement($form, $group, '', false );
+
         } catch (Zend_Form_Exception $e) {
             trigger_error($e->getMessage());
         }
