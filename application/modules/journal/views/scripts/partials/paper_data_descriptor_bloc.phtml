@@ -2,19 +2,11 @@
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $dataDescriptors = $paper->getDataDescriptors();
+$tmp = $dataDescriptors;
+
 ?>
 
-<?php if (!empty($dataDescriptors)):
-    $isMultiple = count($dataDescriptors) > 1;
-
-    if ($isMultiple && $paper->isPublished() && !Episciences_Auth::isSecretary() && !$paper->isOwner()) {
-        $latest = array_shift($dataDescriptors);
-        $dataDescriptors = [$latest];
-
-    }
-
-    ?>
-
+<?php if (!empty($dataDescriptors)): $isMultiple = count($dataDescriptors) > 1; ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
             <?php
@@ -28,72 +20,99 @@ $dataDescriptors = $paper->getDataDescriptors();
             ?>
             <h2 class="panel-title"><?= $this->translate($panelTile) ?></h2>
         </div>
+
         <div class="panel-body in">
-            <div style="" class="small">
-                <table class="table" id="data-descriptor">
-                    <thead>
-                    <tr>
-                        <th style="border: none;"><?= $isMultiple ? $this->translate("Fichiers") : $this->translate("Fichier") ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($dataDescriptors as $dd): ?>
-                        <?php
 
-                        $vLabel = '';
+            <?php
+            $latest = array_shift($tmp);
+            $file = $latest->getFile();
+            $preview = sprintf('%sdocfiles/dd/%s/%s', PREFIX_URL, $file->getDocid(), $file->getName());
 
-                        if ($isMultiple) {
+            ?>
 
-                            if ($dd->getId() === $dataDescriptors[array_key_first($dataDescriptors)]->getId()) {
-                                $vLabel = !Episciences_Auth::isLogged() ? '' : sprintf('<span class="label label-status-0">%s</span>', $this->translate('dernière version'));
-                            } else {
+            <?php if ($paper->isPublished()) :
+                $linkedData = $paper->getLinkedDataByRelation();
+                if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEl) {
+                    $preview = Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
+                }
+                ?>
+            <?php endif; ?>
 
-                                $vLabel = sprintf('(v%s)', $dd->getVersion());
+            <?= $this->partial('partials/data_descriptor_preview.phtml', ['typeMime' => $latest->getFile()->getTypeMime(), 'preview' => $preview]) ?>
+
+            <?php if (Episciences_Auth::isSecretary() || $paper->isOwner()) : ?>
+
+                <div class="small" style="margin-top: 10px;">
+                    <table class="table" id="data-descriptor">
+                        <thead>
+                        <tr>
+                            <th style="border: none;"><?= $isMultiple ? $this->translate("Fichiers") : $this->translate("Fichier") ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($dataDescriptors as $dd): ?>
+                            <?php
+
+                            $vLabel = '';
+
+                            if ($isMultiple) {
+
+                                if ($dd->getId() === $dataDescriptors[array_key_first($dataDescriptors)]->getId()) {
+                                    $vLabel = !Episciences_Auth::isLogged() ? '' : sprintf('<span class="label label-status-0">%s</span>', $this->translate('dernière version'));
+                                } else {
+
+                                    $vLabel = sprintf('(v%s)', $dd->getVersion());
+
+                                }
 
                             }
 
-                        }
+                            ?>
+                            <?php if ($fileName = $dd->getFile()->getName()) : ?>
+                                <tr id="data-descriptor-<?= $dd->getId() ?>" <?= count($dataDescriptors) === $dd->getVersion() ? 'class="active"' : '' ?>>
+                                    <td>
+                                        <a href="<?= sprintf('%sdocfiles/dd/%s/%s', PREFIX_URL, $dd->getDocid(), $fileName) ?>"
+                                           target="_blank"><?= sprintf('%s', $fileName) ?>
+                                        </a>&nbsp;<?= $vLabel ?>
+                                    </td>
+                                    <td>
+                                        <strong class="pull-right">
+                                            <?= $this->translate('Soumis le : ') . $this->Date($dd->getSubmissionDate(), null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>
+                                        </strong>
 
-                        ?>
-                        <?php if ($fileName = $dd->getFile()->getName()) : ?>
-                            <tr id="data-descriptor-<?= $dd->getId() ?>" <?= count($dataDescriptors) === $dd->getVersion() ? 'class="active"' : '' ?>>
-                                <td><a href="<?= sprintf('/docfiles/dd/%s/%s', $dd->getDocid(), $fileName) ?>"
-                                       target="_blank"><?= sprintf('%s', $fileName) ?>
-                                    </a>&nbsp;<?= $vLabel ?>
-                                </td>
-                                <td>
-                                    <strong class="pull-right">
-                                        <?= $this->translate('Soumis le : ') . $this->Date($dd->getSubmissionDate(), null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>
-                                    </strong>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
 
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                </div>
 
-            </div>
+                <?php if ($this->ddNewVersionForm) : ?>
 
-            <?php if ($this->ddNewVersionForm) : ?>
+                    <?php if ($this->isAllowedToAddNewVersion): ?>
 
-                <?php if ($this->isAllowedToAddNewVersion): ?>
+                        <div>
+                            <button id="btn-add" class="btn btn-sm btn-default" type="button"
+                                    onclick="processForm($(this));"><i
+                                        class="fa-solid fa-plus"></i>&nbsp;<?= $this->translate("Ajouter une nouvelle version") ?>
+                            </button>
+                        </div>
 
-                    <div>
-                        <button id="btn-add" class="btn btn-sm btn-default" type="button"
-                                onclick="processForm($(this));"><i
-                                    class="fa-solid fa-plus"></i>&nbsp;<?= $this->translate("Ajouter une nouvelle version") ?>
-                        </button>
-                    </div>
+                    <?php endif; ?>
+
+                    <div id="dd-new-version-form" style="display: none;"><?= $this->ddNewVersionForm ?></div>
 
                 <?php endif; ?>
-
-                <div id="dd-new-version-form" style="display: none;"><?= $this->ddNewVersionForm ?></div>
 
             <?php endif; ?>
 
         </div>
+
+
     </div>
+
 
     <?php $this->jQuery()->addJavascriptFile('/js/paper/data_descriptor.js'); ?>
 
