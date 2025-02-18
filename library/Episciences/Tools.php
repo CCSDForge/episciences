@@ -1517,6 +1517,9 @@ class Episciences_Tools
 
     public static function epi_html_decode($html, array $allowedElements = ['HTML.AllowedElements' => ['p', 'b', 'u', 'i', 'a', 'strong', 'em', 'span', 'br']]): string
     {
+        if (empty($html)) {
+            return '';
+        }
         return (new Episciences_HTMLPurifier($allowedElements))->purifyHtml(html_entity_decode($html, ENT_QUOTES, ENCODING_TYPE));
 
     }

@@ -25,11 +25,7 @@ $tableId = 'conflict-list_' . $answer;
         <tr id="tr-<?= $cId ?>">
             <td class="text-center"><code><?= $conflict->getBY() ?></code></td>
             <td class="text-center"><?= $this->escape($conflict->getScreenName()) ?></td>
-            <td>
-                <?php if ($conflict->getMessage()): ?>
-                <?= Episciences_Tools::epi_html_decode($conflict->getMessage()) ?>
-                <?php endif ?>
-            </td>
+            <td><?= Episciences_Tools::epi_html_decode($conflict->getMessage()) ?></td>
             <td class="text-center"><?= $this->Date($conflict->getDate()->format('Y-m-d')) ?></td>
             <td class="text-center">
 
