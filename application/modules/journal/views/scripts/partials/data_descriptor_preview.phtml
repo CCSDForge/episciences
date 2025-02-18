@@ -1,6 +1,3 @@
 <div id="dd-viewer">
-    <object type="<?= $this->typeMime ?>" data="<?= $this->preview ?>" width="100%" height="600">
-        <iframe src="<?= $this->preview ?>" width="100%" height="600" style="border: none;"></iframe>
-    </object>
-
+    <embed type="<?= $this->typeMime ?>" src="<?= $this->preview ?>" width="100%" height="600"/>
 </div>
