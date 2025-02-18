@@ -252,16 +252,16 @@
         },
         {
             "name": "citation-style-language/styles",
-            "version": "v0.0.580",
+            "version": "v0.0.587",
             "source": {
                 "type": "git",
                 "url": "https://github.com/citation-style-language/styles.git",
-                "reference": "2e90b3afc1aa6fc90c46d674798936cd438af1fa"
+                "reference": "efc310c60dd435a14dbbe798c7bea9a388177781"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/citation-style-language/styles/zipball/2e90b3afc1aa6fc90c46d674798936cd438af1fa",
-                "reference": "2e90b3afc1aa6fc90c46d674798936cd438af1fa",
+                "url": "https://api.github.com/repos/citation-style-language/styles/zipball/efc310c60dd435a14dbbe798c7bea9a388177781",
+                "reference": "efc310c60dd435a14dbbe798c7bea9a388177781",
                 "shasum": ""
             },
             "type": "library",
@@ -279,7 +279,7 @@
             "homepage": "http://citationstyles.org/",
             "support": {
                 "issues": "https://github.com/citation-style-language/styles/issues",
-                "source": "https://github.com/citation-style-language/styles/tree/v0.0.580"
+                "source": "https://github.com/citation-style-language/styles/tree/v0.0.587"
             },
             "funding": [
                 {
@@ -287,7 +287,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-01-22T19:16:26+00:00"
+            "time": "2025-02-07T12:20:08+00:00"
         },
         {
             "name": "composer/ca-bundle",
@@ -2707,16 +2707,16 @@
         },
         {
             "name": "laminas/laminas-escaper",
-            "version": "2.15.0",
+            "version": "2.16.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laminas/laminas-escaper.git",
-                "reference": "c612b0488ae486284c39885efca494c180f16351"
+                "reference": "9cf1f5317ca65b4fd5c6a3c2855e24a187b288c8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-escaper/zipball/c612b0488ae486284c39885efca494c180f16351",
-                "reference": "c612b0488ae486284c39885efca494c180f16351",
+                "url": "https://api.github.com/repos/laminas/laminas-escaper/zipball/9cf1f5317ca65b4fd5c6a3c2855e24a187b288c8",
+                "reference": "9cf1f5317ca65b4fd5c6a3c2855e24a187b288c8",
                 "shasum": ""
             },
             "require": {
@@ -2728,12 +2728,11 @@
                 "zendframework/zend-escaper": "*"
             },
             "require-dev": {
-                "infection/infection": "^0.27.11",
+                "infection/infection": "^0.29.8",
                 "laminas/laminas-coding-standard": "~3.0.1",
-                "maglnet/composer-require-checker": "^3.8.0",
-                "phpunit/phpunit": "^9.6.22",
-                "psalm/plugin-phpunit": "^0.19.0",
-                "vimeo/psalm": "^5.26.1"
+                "phpunit/phpunit": "^10.5.45",
+                "psalm/plugin-phpunit": "^0.19.2",
+                "vimeo/psalm": "^6.6.2"
             },
             "type": "library",
             "autoload": {
@@ -2765,7 +2764,7 @@
                     "type": "community_bridge"
                 }
             ],
-            "time": "2024-12-17T19:39:54+00:00"
+            "time": "2025-02-17T12:40:19+00:00"
         },
         {
             "name": "laminas/laminas-feed",
@@ -3540,16 +3539,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "2.72.6",
+            "version": "2.73.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/CarbonPHP/carbon.git",
-                "reference": "1e9d50601e7035a4c61441a208cb5bed73e108c5"
+                "reference": "9228ce90e1035ff2f0db84b40ec2e023ed802075"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/1e9d50601e7035a4c61441a208cb5bed73e108c5",
-                "reference": "1e9d50601e7035a4c61441a208cb5bed73e108c5",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/9228ce90e1035ff2f0db84b40ec2e023ed802075",
+                "reference": "9228ce90e1035ff2f0db84b40ec2e023ed802075",
                 "shasum": ""
             },
             "require": {
@@ -3643,7 +3642,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-12-27T09:28:11+00:00"
+            "time": "2025-01-08T20:10:23+00:00"
         },
         {
             "name": "nette/schema",
@@ -7611,16 +7610,16 @@
         },
         {
             "name": "myclabs/deep-copy",
-            "version": "1.12.1",
+            "version": "1.13.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/myclabs/DeepCopy.git",
-                "reference": "123267b2c49fbf30d78a7b2d333f6be754b94845"
+                "reference": "024473a478be9df5fdaca2c793f2232fe788e414"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/myclabs/DeepCopy/zipball/123267b2c49fbf30d78a7b2d333f6be754b94845",
-                "reference": "123267b2c49fbf30d78a7b2d333f6be754b94845",
+                "url": "https://api.github.com/repos/myclabs/DeepCopy/zipball/024473a478be9df5fdaca2c793f2232fe788e414",
+                "reference": "024473a478be9df5fdaca2c793f2232fe788e414",
                 "shasum": ""
             },
             "require": {
@@ -7659,7 +7658,7 @@
             ],
             "support": {
                 "issues": "https://github.com/myclabs/DeepCopy/issues",
-                "source": "https://github.com/myclabs/DeepCopy/tree/1.12.1"
+                "source": "https://github.com/myclabs/DeepCopy/tree/1.13.0"
             },
             "funding": [
                 {
@@ -7667,7 +7666,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-11-08T17:47:46+00:00"
+            "time": "2025-02-12T12:17:51+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -8059,16 +8058,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.12.16",
+            "version": "1.12.18",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "e0bb5cb78545aae631220735aa706eac633a6be9"
+                "reference": "fef9f07814a573399229304bb0046affdf558812"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e0bb5cb78545aae631220735aa706eac633a6be9",
-                "reference": "e0bb5cb78545aae631220735aa706eac633a6be9",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/fef9f07814a573399229304bb0046affdf558812",
+                "reference": "fef9f07814a573399229304bb0046affdf558812",
                 "shasum": ""
             },
             "require": {
@@ -8113,7 +8112,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-01-21T14:50:05+00:00"
+            "time": "2025-02-13T12:44:44+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -8602,12 +8601,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Roave/SecurityAdvisories.git",
-                "reference": "ec1d1ce93931a0560cbb5b9ba2d6a3a2719c0c79"
+                "reference": "3dafa2bcf6675854ed6410d1c84c0f71f819fc26"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/ec1d1ce93931a0560cbb5b9ba2d6a3a2719c0c79",
-                "reference": "ec1d1ce93931a0560cbb5b9ba2d6a3a2719c0c79",
+                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/3dafa2bcf6675854ed6410d1c84c0f71f819fc26",
+                "reference": "3dafa2bcf6675854ed6410d1c84c0f71f819fc26",
                 "shasum": ""
             },
             "conflict": {
@@ -8624,7 +8623,7 @@
                 "airesvsg/acf-to-rest-api": "<=3.1",
                 "akaunting/akaunting": "<2.1.13",
                 "akeneo/pim-community-dev": "<5.0.119|>=6,<6.0.53",
-                "alextselegidis/easyappointments": "<1.5",
+                "alextselegidis/easyappointments": "<=1.5",
                 "alterphp/easyadmin-extension-bundle": ">=1.2,<1.2.11|>=1.3,<1.3.1",
                 "amazing/media2click": ">=1,<1.3.3",
                 "ameos/ameos_tarteaucitron": "<1.2.23",
@@ -8958,11 +8957,12 @@
                 "localizationteam/l10nmgr": "<7.4|>=8,<8.7|>=9,<9.2",
                 "luyadev/yii-helpers": "<1.2.1",
                 "maestroerror/php-heic-to-jpg": "<1.0.5",
-                "magento/community-edition": "<2.4.5|==2.4.5|>=2.4.5.0-patch1,<2.4.5.0-patch10|==2.4.6|>=2.4.6.0-patch1,<2.4.6.0-patch8|>=2.4.7.0-beta1,<2.4.7.0-patch3",
+                "magento/community-edition": "<2.4.5|==2.4.5|>=2.4.5.0-patch1,<2.4.5.0-patch11|==2.4.6|>=2.4.6.0-patch1,<2.4.6.0-patch9|>=2.4.7.0-beta1,<2.4.7.0-patch4|>=2.4.8.0-beta1,<2.4.8.0-beta2",
                 "magento/core": "<=1.9.4.5",
                 "magento/magento1ce": "<1.9.4.3-dev",
                 "magento/magento1ee": ">=1,<1.14.4.3-dev",
                 "magento/product-community-edition": "<2.4.4.0-patch9|>=2.4.5,<2.4.5.0-patch8|>=2.4.6,<2.4.6.0-patch6|>=2.4.7,<2.4.7.0-patch1",
+                "magento/project-community-edition": "<=2.0.2",
                 "magneto/core": "<1.9.4.4-dev",
                 "maikuolan/phpmussel": ">=1,<1.6",
                 "mainwp/mainwp": "<=4.4.3.3",
@@ -9008,6 +9008,7 @@
                 "munkireport/reportdata": "<3.5",
                 "munkireport/softwareupdate": "<1.6",
                 "mustache/mustache": ">=2,<2.14.1",
+                "mwdelaney/wp-enable-svg": "<=0.2",
                 "namshi/jose": "<2.2",
                 "nategood/httpful": "<1",
                 "neoan3-apps/template": "<1.1.1",
@@ -9045,7 +9046,7 @@
                 "openid/php-openid": "<2.3",
                 "openmage/magento-lts": "<20.10.1",
                 "opensolutions/vimbadmin": "<=3.0.15",
-                "opensource-workshop/connect-cms": "<1.7.2|>=2,<2.3.2",
+                "opensource-workshop/connect-cms": "<1.8.7|>=2,<2.4.7",
                 "orchid/platform": ">=8,<14.43",
                 "oro/calendar-bundle": ">=4.2,<=4.2.6|>=5,<=5.0.6|>=5.1,<5.1.1",
                 "oro/commerce": ">=4.1,<5.0.11|>=5.1,<5.1.1",
@@ -9095,7 +9096,7 @@
                 "phpxmlrpc/extras": "<0.6.1",
                 "phpxmlrpc/phpxmlrpc": "<4.9.2",
                 "pi/pi": "<=2.5",
-                "pimcore/admin-ui-classic-bundle": "<1.5.4",
+                "pimcore/admin-ui-classic-bundle": "<1.7.4",
                 "pimcore/customer-management-framework-bundle": "<4.2.1",
                 "pimcore/data-hub": "<1.2.4",
                 "pimcore/data-importer": "<1.8.9|>=1.9,<1.9.3",
@@ -9141,7 +9142,7 @@
                 "rap2hpoutre/laravel-log-viewer": "<0.13",
                 "react/http": ">=0.7,<1.9",
                 "really-simple-plugins/complianz-gdpr": "<6.4.2",
-                "redaxo/source": "<5.18",
+                "redaxo/source": "<=5.18.1",
                 "remdex/livehelperchat": "<4.29",
                 "reportico-web/reportico": "<=8.1",
                 "rhukster/dom-sanitizer": "<1.0.7",
@@ -9149,6 +9150,7 @@
                 "robrichards/xmlseclibs": ">=1,<3.0.4",
                 "roots/soil": "<4.1",
                 "rudloff/alltube": "<3.0.3",
+                "rudloff/rtmpdump-bin": "<=2.3.1",
                 "s-cart/core": "<6.9",
                 "s-cart/s-cart": "<6.9",
                 "sabberworm/php-css-parser": ">=1,<1.0.1|>=2,<2.0.1|>=3,<3.0.1|>=4,<4.0.1|>=5,<5.0.9|>=5.1,<5.1.3|>=5.2,<5.2.1|>=6,<6.0.2|>=7,<7.0.4|>=8,<8.0.1|>=8.1,<8.1.1|>=8.2,<8.2.1|>=8.3,<8.3.1",
@@ -9466,7 +9468,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-02-05T22:04:25+00:00"
+            "time": "2025-02-14T21:04:39+00:00"
         },
         {
             "name": "sebastian/cli-parser",
