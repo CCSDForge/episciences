@@ -11,24 +11,23 @@ $tmp = $dataDescriptors;
         <div class="panel-heading">
             <?php
 
-            if ($paper->isSoftware()) {
-                $panelTile = $isMultiple ? 'Descripteurs de logiciel' : 'Descripteur de logiciel';
-            } else {
-                $panelTile = $isMultiple ? 'Descripteurs de données' : 'Descripteur de données';
-            }
-
-            ?>
-            <h2 class="panel-title"><?= $this->translate($panelTile) ?></h2>
-        </div>
-
-        <div class="panel-body in">
-
-            <?php
+            $isPublished = $paper->isPublished();
             $latest = array_shift($tmp);
+            /** @var \Episciences\Files\File $file */
             $file = $latest->getFile();
             $preview = sprintf('/docfiles/dd/%s/%s', $file->getDocid(), $file->getName());
 
+            if ($paper->isSoftware()) {
+                $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de logiciel' : 'Descripteur de logiciel';
+            } else {
+                $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de données' : 'Descripteur de données';
+            }
+
             ?>
+            <h2 class="panel-title"><?= sprintf('%s <span class="small fa-solid fa-chevron-right" style="margin-right:5px;"></span><span class="small">%s</span>',$this->translate($panelTile), $file->getName())?></h2>
+        </div>
+
+        <div class="panel-body in">
 
             <?php if ($paper->isPublished()) :
                 $linkedData = $paper->getLinkedDataByRelation();
