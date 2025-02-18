@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+### Fixed
+- Updating the volume number and year no longer works.
 ### Changed
 - Improved licence enrichment for dataset
 ### Fixed
