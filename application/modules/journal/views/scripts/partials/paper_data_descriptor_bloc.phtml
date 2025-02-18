@@ -1,45 +1,57 @@
 <?php
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
-$dataDescriptors = $paper->getDataDescriptors();
+$dataDescriptors = $paper->getDataDescriptors() ?? [];
 $tmp = $dataDescriptors;
-
+$isMultiple = count($dataDescriptors) > 1;
 ?>
 
-<?php if (!empty($dataDescriptors)): $isMultiple = count($dataDescriptors) > 1; ?>
-    <div class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <?php
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <?php
 
-            $isPublished = $paper->isPublished();
-            $latest = array_shift($tmp);
-            /** @var \Episciences\Files\File $file */
-            $file = $latest->getFile();
+        $isPublished = $paper->isPublished();
+        $latest = array_shift($tmp);
+        /** @var \Episciences\Files\File $file */
+        $file = $latest?->getFile();
+        $preview = null;
+        $fileName = '';
+
+        if ($file) {
             $preview = sprintf('%sdocfiles/dd/%s/%s', PREFIX_URL, $file->getDocid(), $file->getName());
+            $fileName = $file->getName();
+        }
 
-            if ($paper->isSoftware()) {
-                $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de logiciel' : 'Descripteur de logiciel';
-            } else {
-                $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de données' : 'Descripteur de données';
+        if ($paper->isSoftware()) {
+            $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de logiciel' : 'Descripteur de logiciel';
+        } else {
+            $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de données' : 'Descripteur de données';
+        }
+
+        ?>
+
+
+        <?php if ($isPublished) :
+            $linkedData = $paper->getLinkedDataByRelation();
+            if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEl) {
+                $fileName = $linkedData->getValue();
+                $preview = Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
             }
-
             ?>
-            <h2 class="panel-title"><?= sprintf('%s <span class="small fa-solid fa-chevron-right" style="margin-right:5px;"></span><span class="small">%s</span>',$this->translate($panelTile), $file->getName())?></h2>
-        </div>
+        <?php endif; ?>
 
-        <div class="panel-body in">
+        <h2 class="panel-title"><?= sprintf('%s <span class="small fa-solid fa-chevron-right" style="margin-right:5px;"></span><span class="small badge"">%s</span>', $this->translate($panelTile), $fileName) ?></h2>
+    </div>
 
-            <?php if ($paper->isPublished()) :
-                $linkedData = $paper->getLinkedDataByRelation();
-                if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEl) {
-                    $preview = Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
-                }
-                ?>
-            <?php endif; ?>
+    <div class="panel-body in">
 
-            <?= $this->partial('partials/data_descriptor_preview.phtml', ['typeMime' => $latest->getFile()->getTypeMime(), 'preview' => $preview]) ?>
+        <?php if ($preview) : ?>
+            <?= $this->partial('partials/data_descriptor_preview.phtml', ['typeMime' => $latest?->getFile()->getTypeMime(), 'preview' => $preview]) ?>
+        <?php endif; ?>
 
-            <?php if (Episciences_Auth::isSecretary() || $paper->isOwner()) : ?>
+        <?php if (Episciences_Auth::isSecretary() || $paper->isOwner()) : ?>
+
+            <?php if (!empty($dataDescriptors)) : ?>
 
                 <div class="small" style="margin-top: 10px;">
                     <table class="table" id="data-descriptor">
@@ -88,32 +100,35 @@ $tmp = $dataDescriptors;
 
                 </div>
 
-                <?php if ($this->ddNewVersionForm) : ?>
+            <?php endif; ?>
 
-                    <?php if ($this->isAllowedToAddNewVersion): ?>
+            <?php if ($this->ddNewVersionForm) : ?>
 
-                        <div>
-                            <button id="btn-add" class="btn btn-sm btn-default" type="button"
-                                    onclick="processForm($(this));"><i
-                                        class="fa-solid fa-plus"></i>&nbsp;<?= $this->translate("Ajouter une nouvelle version") ?>
-                            </button>
-                        </div>
+                <?php if ($this->isAllowedToAddNewVersion): ?>
 
-                    <?php endif; ?>
+                    <div>
+                        <button id="btn-add" class="btn btn-sm btn-default" type="button"
+                                onclick="processForm($(this));"><i
+                                    class="fa-solid fa-plus"></i>&nbsp;<?= $this->translate("Ajouter une nouvelle version") ?>
+                        </button>
+                    </div>
 
-                    <div id="dd-new-version-form" style="display: none;"><?= $this->ddNewVersionForm ?></div>
+                    <?php $this->jQuery()->addJavascriptFile('/js/paper/data_descriptor.js'); ?>
+
 
                 <?php endif; ?>
 
+                <div id="dd-new-version-form" style="display: none;"><?= $this->ddNewVersionForm ?></div>
+
             <?php endif; ?>
 
-        </div>
-
+        <?php endif; ?>
 
     </div>
 
 
-    <?php $this->jQuery()->addJavascriptFile('/js/paper/data_descriptor.js'); ?>
+</div>
 
-<?php endif; ?>
+
+
 
