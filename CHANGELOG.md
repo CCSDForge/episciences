@@ -14,19 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
-### Added
-- data descriptor viewer
-
-### Changed
+### Changed [current branch]
 - Ability to customise application environment variables
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 - Website menu:
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
+## Unreleased
+### Added
+- data descriptor viewer
+### Changed
+- Force the article type to "Article" only if it is a preprint when published,
 - Improved licence enrichment for dataset
 ### Fixed
+- Updating the volume number and year no longer works.
 - [#652](https://github.com/CCSDForge/episciences/issues/652): missing translation
 - RT#235731: failed to submit manuscript via ArXiv.
 - Cancelling a file download does not work.

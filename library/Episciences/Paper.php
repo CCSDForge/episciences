@@ -5163,6 +5163,11 @@ class Episciences_Paper
             $this->getType()[self::TITLE_TYPE] === self::DATASET_TYPE_TITLE;
     }
 
+    public function isPreprint(): bool
+    {
+        return in_array($this->_type[self::TITLE_TYPE], self::PREPRINT_TYPES, true);
+    }
+
 }
 
 

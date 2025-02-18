@@ -736,8 +736,8 @@ class Episciences_Volume
             $settingsProceeding[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
         }
 
-        $this->setVol_year($data['year'] ?? null);
-        $this->setVol_num($data['num'] ?? null);
+        $this->setVol_year(!empty($post['year']) ? $post['year'] : null);
+        $this->setVol_num(!empty($post['num']) ? $post['num'] : null);
         $this->setBib_reference($post['bib_reference']);
 
         if ($data['special_issue'] === "1" && $data['is_proceeding'] === "1") {
@@ -1256,7 +1256,7 @@ class Episciences_Volume
         return $this;
     }
 
-    public function getVol_year()
+    public function getVol_year(): ?int
     {
         if (!is_int($this->_vol_year)) {
             return null;
@@ -1266,7 +1266,7 @@ class Episciences_Volume
 
     public function setVol_year($volYear): \Episciences_Volume
     {
-        $this->_vol_year = $volYear;
+        $this->_vol_year =  (int)$volYear ?: null;
         return $this;
     }
 
@@ -1293,16 +1293,13 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        if($volNum){
-            $this->_vol_num = trim(strip_tags($volNum));
-        }
-
+        $this->_vol_num = $volNum ? (int)trim(strip_tags($volNum)) : null;
         return $this;
     }
 
     /**
      * update a volume
-     * @return int
+     * @return int|null
      */
     private function updateVolume(): ?int
     {
