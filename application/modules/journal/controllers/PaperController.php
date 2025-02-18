@@ -113,7 +113,7 @@ class PaperController extends PaperDefaultController
 
         $papersManager = new Episciences_PapersManager();
 
-        $paper = $papersManager::get($docId, RVID);
+        $paper = $papersManager::get($docId, true, RVID);
 
         // check if paper exists
         if (!$paper) {
