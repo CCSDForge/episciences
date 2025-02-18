@@ -4702,6 +4702,12 @@ class Episciences_Paper
         return $this->_linkedData;
     }
 
+
+    public function getLinkedDataByRelation(string $relation = 'isDocumentedBy' ): ?\Episciences_Paper_Dataset
+    {
+        return Episciences_Paper_DatasetsManager::findByrelation($this->getDocid(), $relation);
+    }
+
     /**
      * @throws Zend_Exception
      */
@@ -5148,6 +5154,11 @@ class Episciences_Paper
         return
             Episciences_Repositories::isDataverse($this->getRepoid()) ||
             $this->getType()[self::TITLE_TYPE] === self::DATASET_TYPE_TITLE;
+    }
+
+    public function isPreprint(): bool
+    {
+        return in_array($this->_type[self::TITLE_TYPE], self::PREPRINT_TYPES, true);
     }
 
 }
