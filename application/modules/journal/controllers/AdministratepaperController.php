@@ -2030,13 +2030,8 @@ class AdministratepaperController extends PaperDefaultController
             //delete paper password
             $paper->setPassword();
 
-
-            $currentType = $paper->getType();
-
-            if (
-                $currentType && $paper->getTypeWithKey() !== Episciences_Paper::DATASET_TYPE_TITLE  && $paper->getTypeWithKey() !== Episciences_Paper::DATA_PAPER_TYPE
-
-            ) {
+            if ($paper->isPreprint()) { // force article's type tor 'article'
+                $currentType = $paper->getType();
                 $currentType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE_TITLE;
                 $paper->setType($currentType);
             }

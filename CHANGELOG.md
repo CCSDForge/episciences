@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Updating the volume number and year no longer works.
 ### Changed
+- Force the article type to "Article" only if it is a preprint when published,
 - Improved licence enrichment for dataset
 ### Fixed
 - [#652](https://github.com/CCSDForge/episciences/issues/652): missing translation
