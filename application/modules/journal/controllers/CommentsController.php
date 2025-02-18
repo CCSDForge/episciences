@@ -38,7 +38,7 @@ class CommentsController extends PaperController
             $controllerName = 'administratepaper';
         }
 
-        $url = sprintf('%s/view/id/%s',  $controllerName, $paper->getLatestVersionId());
+        $url = $this->url(['controller' => $controllerName, 'action' => 'view', 'id' => $paper->getLatestVersionId() ]);
         $comment = new Episciences_Comment();
 
         try {
@@ -122,7 +122,8 @@ class CommentsController extends PaperController
 
         $pcid = (int)$request->getParam('pcid');
         $paper = null;
-        $url = '/';
+
+        $urlOptions = ['controller' => 'index'];
 
         $oldComment = Episciences_CommentsManager::getComment($pcid); // array | false
 
@@ -131,7 +132,7 @@ class CommentsController extends PaperController
         }
 
         if (!$paper) {
-            $this->_helper->redirector->gotoUrl($url);
+            $this->_helper->redirector->gotoUrl($this->url($urlOptions));
             return;
         }
 
@@ -169,23 +170,23 @@ class CommentsController extends PaperController
                 } else {
 
                     if ($paper->isOwner()) {
-                        $url = '/' . PaperDefaultController::PAPER_URL_STR . $paper->getDocid();
+                        $urlOptions = ['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()];
                     } elseif (Episciences_Auth::isSecretary()) {
-                        $url = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid();
+                        $urlOptions = ['controller' => PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $paper->getDocid()];
                     }
 
                     $message = $this->view->translate("Vos changements ont été enregistrés.");
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 }
 
-                $this->_helper->redirector->gotoUrl($url);
+                $this->_helper->redirector->gotoUrl($this->url($urlOptions));
                 return;
             }
 
         } else {
             $message = "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire.";
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector->gotoUrl('/paper/submitted');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'submitted']));
             return;
         }
 

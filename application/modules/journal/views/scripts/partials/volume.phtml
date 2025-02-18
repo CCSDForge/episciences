@@ -3,7 +3,7 @@
  * @var Episciences_Volume $volume
  */
 $volume = $this->volume;
-$volumeUrl = sprintf('/volume/view/id/%s', $this->escape($volume->getVid()));
+$volumeUrl = $this->url(['controller' => 'volume', 'action' => 'view', 'id' => $this->escape($volume->getVid())]);
 ?>
 
 <div class="media">

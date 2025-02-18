@@ -19,7 +19,7 @@ function assignReviewers(button, docid)
 	// Récupération du formulaire
 	var request = $.ajax({
 		type: "POST",
-		url: "/administratepaper/reviewersform",
+		url: JS_PREFIX_URL + "administratepaper/reviewersform",
 		data: {docid: docid}
 	});
 	
@@ -47,13 +47,14 @@ function assignReviewers(button, docid)
 		// Handlers du filtre des relecteurs
 		$('#filter').on('keyup', function() {filterList('#filter', '.editors-list label')} );
 		$('#filter').on('paste', function() {setTimeout(function() {filterList('#filter', '.reviewers-list label')}, 4)});
-		
-		
-		$('form[action^="assignreviewers"]').on('submit', function() {
+
+		let actionForm = JS_PREFIX_URL + 'administratepaper/assignreviewers';
+
+		$('form[action^="' + actionForm +'"]').on('submit', function() {
 			
 			// Traitement AJAX du formulaire
 			$.ajax({
-                url: '/administratepaper/assignreviewers',
+                url: actionForm,
                 type: 'POST',
                 datatype: 'json',
                 data: $(this).serialize() + "&docid="+docid,
@@ -69,7 +70,7 @@ function assignReviewers(button, docid)
                 		
                 		// Refresh de l'affichage
                 		$.ajax({
-                			url: "/administratepaper/reviewerslist",
+                			url: JS_PREFIX_URL + "administratepaper/reviewerslist",
                 			type: "POST",
                 			data: {docid: docid},
                 			success: function(result) {

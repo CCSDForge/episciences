@@ -22,7 +22,8 @@ build: ## Build the docker containers
 up: ## Start all the docker containers
 	$(DOCKER_COMPOSE) up -d
 	@echo "====================================================================="
-	@echo "Make sure you have [127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org] in /etc/hosts"
+	@echo "Make sure you have [127.0.0.1 localhost dev.episciences.org manager-dev.episciences.org oai-dev.episciences.org data-dev.episciences.org] in /etc/hosts"
+	@echo "Manager     : http://manager-dev.episciences.org/"
 	@echo "Journal     : http://dev.episciences.org/"
 	@echo "OAI-PMH     : http://oai-dev.episciences.org/"
 	@echo "Data        : http://data-dev.episciences.org/"

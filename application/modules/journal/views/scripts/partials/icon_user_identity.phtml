@@ -5,7 +5,7 @@ $uid = $this->user['uid'];
 
 <?php if (isset($name, $uid)) : ?>
 
-    <img src="/user/photo/name/<?= urlencode($this->escape($name)) ?>/uid/<?= $uid ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+    <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($name)) ?>/uid/<?= $uid ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
          class="user-photo-thumb" alt="avatar"
     >
 

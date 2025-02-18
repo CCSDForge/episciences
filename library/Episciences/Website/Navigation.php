@@ -2,39 +2,87 @@
 
 class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 {
-    const PAGE_INDEX = 'index';
-    const PAGE_CUSTOM = 'custom';
-    const PAGE_LINK = 'link';
-    const PAGE_FILE = 'file';
-    const PAGE_NEWS = 'news';
-    const PAGE_RSS = 'rss';
-    const PAGE_BROWSE_BY_AUTHOR = 'browseByAuthor';
-    const PAGE_BROWSE_BY_DATE = 'browseByDate';
-    const PAGE_BROWSE_BY_SECTION = 'browseBySection';
-    const PAGE_BROWSE_BY_VOLUME = 'browseByVolume';
+    public const PAGE_INDEX = 'index';
+    public const PAGE_CUSTOM = 'custom';
+    public const PAGE_LINK = 'link';
+    public const PAGE_FILE = 'file';
+    public const PAGE_NEWS = 'news';
+    public const PAGE_RSS = 'rss';
+    public const PAGE_BROWSE_BY_AUTHOR = 'browseByAuthor';
+    public const PAGE_BROWSE_BY_DATE = 'browseByDate';
+    public const PAGE_BROWSE_BY_SECTION = 'browseBySection';
+    public const PAGE_BROWSE_BY_VOLUME = 'browseByVolume';
 
-    const PAGE_BROWSE_LATEST = 'browseLatest';
-    const PAGE_BROWSE_CURRENT_ISSUES = 'browseCurrentIssues';
-    const PAGE_BROWSE_SPECIAL_ISSUES = 'browseSpecialIssues';
-    const PAGE_BROWSE_REGULAR_ISSUES = 'browseRegularIssues';
-    const PAGE_ACCEPTED_PAPERS_LIST = 'acceptedPapersList';
-    const PAGE_SEARCH = 'search';
-    const PAGE_EDITORIAL_STAFF = 'editorialStaff';
-    const PAGE_CREDITS = 'credits';
-    const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
-    const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
-    const PAGE_EDITORIAL_WORKFLOW = 'EditorialWorkflow';
-    const PAGE_PREPARE_SUBMISSION= 'PrepareSubmission';
-    const PAGE_ABOUT = 'about';
-    const PAGE_JOURNAL_INDEXING= 'journalIndexing';
-    const PAGE_EDITORIAL_BOARD = 'editorialBoard';
-    const PAGE_TECHNICAL_BOARD = 'technicalBoard';
-    const PAGE_SCIENTIFIC_ADVISORY_BOARD = 'scientificAdvisoryBoard';
-    const PAGE_FORMER_MEMBERS = 'formerMembers';
+    public const PAGE_BROWSE_LATEST = 'browseLatest';
+    public const PAGE_BROWSE_CURRENT_ISSUES = 'browseCurrentIssues';
+    public const PAGE_BROWSE_SPECIAL_ISSUES = 'browseSpecialIssues';
+    public const PAGE_BROWSE_REGULAR_ISSUES = 'browseRegularIssues';
+    public const PAGE_ACCEPTED_PAPERS_LIST = 'acceptedPapersList';
+    public const PAGE_SEARCH = 'search';
+    public const PAGE_EDITORIAL_STAFF = 'editorialStaff';
+    public const PAGE_CREDITS = 'credits';
+    public const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
+    public const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
+    public const PAGE_EDITORIAL_WORKFLOW = 'EditorialWorkflow';
+    public const PAGE_PREPARE_SUBMISSION= 'PrepareSubmission';
+    public  const PAGE_ABOUT = 'about';
+    public const PAGE_JOURNAL_INDEXING= 'journalIndexing';
+    public const PAGE_EDITORIAL_BOARD = 'editorialBoard';
+    public const PAGE_TECHNICAL_BOARD = 'technicalBoard';
+    public const PAGE_SCIENTIFIC_ADVISORY_BOARD = 'scientificAdvisoryBoard';
+    public const PAGE_FORMER_MEMBERS = 'formerMembers';
 
     protected $_table = 'WEBSITE_NAVIGATION';
     protected $_primary = 'NAVIGATIONID';
     protected $_sid = 0;
+
+    public static array $groupedPages = [
+        'Home (backend)' => [self::PAGE_INDEX],
+        'About' => [
+            self::PAGE_ABOUT,
+            self::PAGE_JOURNAL_INDEXING
+
+        ],
+
+        'Boards' => [
+            self::PAGE_EDITORIAL_BOARD,
+            self::PAGE_TECHNICAL_BOARD,
+            self::PAGE_SCIENTIFIC_ADVISORY_BOARD,
+            self::PAGE_FORMER_MEMBERS
+        ],
+
+        'For authors' => [
+            self::PAGE_EDITORIAL_WORKFLOW,
+            self::PAGE_ETHICAL_CHARTER,
+            self::PAGE_PREPARE_SUBMISSION,
+        ],
+
+        'Other' => [
+            self::PAGE_CREDITS,
+            self::PAGE_CUSTOM,
+            self::PAGE_NEWS,
+            self::PAGE_FILE,
+            self::PAGE_LINK,
+        ],
+    ];
+
+    /** You can now find them on the new sites */
+
+    public static array $ignoredPageTypes = [
+        self::PAGE_RSS,
+        self::PAGE_BROWSE_BY_AUTHOR,
+        self::PAGE_BROWSE_BY_DATE,
+        self::PAGE_BROWSE_BY_SECTION,
+        self:: PAGE_BROWSE_BY_VOLUME,
+        self::PAGE_BROWSE_LATEST,
+        self::PAGE_BROWSE_CURRENT_ISSUES,
+        self::PAGE_BROWSE_SPECIAL_ISSUES,
+        self::PAGE_BROWSE_REGULAR_ISSUES,
+        self::PAGE_ACCEPTED_PAPERS_LIST,
+        self::PAGE_PUBLISHING_POLICIES,
+        self::PAGE_SEARCH,
+        self::PAGE_EDITORIAL_STAFF,
+    ];
 
     public function setOptions($options = []): void
     {
@@ -67,9 +115,16 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             foreach ($this->_languages as $lang) {
                 $options['labels'][$lang] = $reader->get($row['LABEL'], $lang);
             }
-            if ($row['PARAMS'] != '') {
+            if ($row['PARAMS'] !== '') {
                 $options = array_merge($options, unserialize($row['PARAMS'], ['allowed_classes' => false]));
             }
+
+            $currentPageKey = lcfirst(str_replace('Episciences_Website_Navigation_Page_', '', $row['TYPE_PAGE']));
+
+            if(in_array($currentPageKey, self::$ignoredPageTypes, true)){
+                continue;
+            }
+
             //Création de la page
             $this->_pages[$row['PAGEID']] = new $row['TYPE_PAGE']($options);
             /** @var Episciences_Website_Navigation_Page $currentPage */
@@ -81,19 +136,18 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             }
             if ($row['PARENT_PAGEID'] == 0) {
                 $this->_order[$row['PAGEID']] = [];
+            } else if (isset($this->_order[$row['PARENT_PAGEID']])) {
+                $this->_order[$row['PARENT_PAGEID']][$row['PAGEID']] = [];
             } else {
-                if (isset($this->_order[$row['PARENT_PAGEID']])) {
-                    $this->_order[$row['PARENT_PAGEID']][$row['PAGEID']] = [];
-                } else {
-                    foreach ($this->_order as $i => $elem) {
-                        if (is_array($elem) && isset($this->_order[$i][$row['PARENT_PAGEID']])) {
-                            $this->_order[$i][$row['PARENT_PAGEID']][$row['PAGEID']] = [];
-                        }
+                foreach ($this->_order as $i => $elem) {
+                    if (is_array($elem) && isset($this->_order[$i][$row['PARENT_PAGEID']])) {
+                        $this->_order[$i][$row['PARENT_PAGEID']][$row['PAGEID']] = [];
                     }
                 }
             }
         }
-        if (count($this->_pages) == 0) {
+
+        if (count($this->_pages) === 0) {
             $this->_pages[0] = new Episciences_Website_Navigation_Page_Index();
             $this->_order[0] = [];
         }
@@ -250,6 +304,20 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
 
         return $subPagesArray;
+    }
+
+    public function getPageTypes($reload = false): array
+    {
+        $typePage = parent::getPageTypes($reload);
+
+        foreach ($typePage as $pageKey => $page) {
+
+            if(in_array(lcfirst($pageKey), self::$ignoredPageTypes, true)) {
+                unset($typePage[$pageKey]);
+            }
+        }
+        return $typePage;
+
     }
 
 

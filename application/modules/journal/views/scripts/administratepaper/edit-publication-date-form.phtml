@@ -2,7 +2,7 @@
 $id = 'publication-date-value-' . $this->docId;
 ?>
 <div style="width: 400px">
-    <form action="/administratepaper/savepublicationdate" id="publication-date-form-<?= $this->docId ?>" style="height : 34px;">
+    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'savepublicationdate'])?>" id="publication-date-form-<?= $this->docId ?>" style="height : 34px;">
 
         <div class="pull-right" style="padding-left : 10px;">
             <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>

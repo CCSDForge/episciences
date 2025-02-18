@@ -1,16 +1,16 @@
 <?php if (count($this->pages)) { ?>
     <ol class="breadcrumb">
-        <?php foreach($this->pages as $i => $page) {
+        <?php foreach ($this->pages as $i => $page) {
             $active = $page->isActive();
             ?>
-            <li class="<?php echo $active ? 'active' : ''?>">
+            <li class="<?= $active ? 'active' : '' ?>">
                 <?php if ($active) { ?>
-                    <?php echo $this->translate($page->getLabel())?>
+                    <?= $this->translate($page->getLabel()) ?>
                 <?php } else { ?>
-                    <a href="<?php echo '/' . $page->getController() . '/' . $page->getAction();?>"><?php echo $this->translate($page->getLabel())?></a>
+                    <a href="<?= $this->url(['controller' => $page->getController(), 'action' => $page->getAction()]) ?>"><?= $this->translate($page->getLabel()) ?></a>
                 <?php } ?>
             </li>
-        <?php
-        }?>
+            <?php
+        } ?>
     </ol>
 <?php } ?>

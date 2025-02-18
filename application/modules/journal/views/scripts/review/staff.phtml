@@ -15,7 +15,7 @@
                     <div class="col-sm-2">
                         <?php if ($this->isDisplayPhotos !== 0) : ?>
                             <img style="width: 128px"
-                                 src="/user/photo/uid/<?= $this->escape($member->getUid()) ?>/size/large<?php
+                                 src="<?= PREFIX_URL ?>user/photo/uid/<?= $this->escape($member->getUid()) ?>/size/large<?php
                                  if (Episciences_Auth::getUid() === $member->getUid()) {
                                      echo '?v=' . Episciences_Auth::getPhotoVersion();
                                  } ?>"
@@ -27,7 +27,7 @@
                     <div class="details col-sm-10">
                         <div style="margin-top: 0.5em;">
                             <?= $this->partial('user/user_orcid.phtml', ['orcid' => $member->getOrcid()]) ?>
-                            <h2 style="display: inline;"><a href="/user/view/userid/<?= $this->escape($member->getUid()) ?>"><?= $this->escape($member->getScreenName()) ?></a></h2>
+                            <h2 style="display: inline;"><a href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $this->escape($member->getUid())]) ?>"><?= $this->escape($member->getScreenName()) ?></a></h2>
                         </div>
 
                         <div><?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $member->getAffiliations()]) ?></div>
@@ -38,7 +38,7 @@
                             <?php if ((Episciences_Auth::isLogged()) && (Episciences_Auth::isAllowedToSendMail())): ?>
                                 <p>
                                     <a title="<?= $this->translate('Contacter') . ' ' . $this->escape($member->getScreenName()) ?>"
-                                       href="/administratemail/send/recipient/<?= $this->escape($member->getUid()) ?>"
+                                       href="<?= $this->url(['controller' => 'administratemail', 'action' => 'send', 'recipient' => $this->escape($member->getUid())]) ?>"
                                        data-width="50%" class="modal-opener">
                                         <button class="btn btn-default btn-sm" style="margin-top: 5px;"><span
                                                     class="glyphicon glyphicon-envelope grey" ></span> <?= $this->translate('Contacter') ?>

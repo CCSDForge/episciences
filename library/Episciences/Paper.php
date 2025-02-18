@@ -3151,6 +3151,7 @@ class Episciences_Paper
         $oReview->loadSettings();
 
         // Création des éléments et ajout au node episciences
+        $node->appendChild($dom->createElement('prefixUrl', PREFIX_URL));
         $node->appendChild($dom->createElement('id', $this->getDocid())); // Identifiant Episciences
         $node->appendChild($dom->createElement('paperId', $this->getPaperid())); // Identifiant unique perenne
         $repositoryIdentifier = Episciences_Repositories::getIdentifier($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
@@ -3234,10 +3235,13 @@ class Episciences_Paper
 
         $node->appendChild($dom->createElement('isOwner', $this->isOwner()));
 
+        $oVolume = false;
+
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
-            if ($oVolume instanceof Episciences_Volume) {
+
+            if ($oVolume) {
                 $node->appendChild($dom->createElement('volumeName', $oVolume->getNameKey()));
                 $oVolume->loadSettings();
             }
@@ -3288,9 +3292,11 @@ class Episciences_Paper
         // si l'option est activée
         // et qu'il s'agit d'un volume spécial
         // et qu'on est rédacteur de l'article
-        if ($this->getDocid() &&
+        if (
+            $oVolume &&
+            $this->getDocid() &&
             $oReview->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES) &&
-            isset($oVolume) && $oVolume instanceof Episciences_Volume && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+            $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
             array_key_exists(Episciences_Auth::getUid(), $this->getEditors(true, true))
         ) {
 
@@ -3623,6 +3629,7 @@ class Episciences_Paper
      */
     public function manageNewVersionErrors(array $options = [])
     {
+        $urlHelper = new Episciences_View_Helper_Url();
         $isEpiNotify = isset($options['isEpiNotify']) && $options['isEpiNotify'];
         $rvId = $options['rvId'] ?? RVID;
 
@@ -3650,7 +3657,7 @@ class Episciences_Paper
         $version = $this->getVersion();
         $repoId = $this->getRepoid();
         $isNewSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf'];
-        $link = $isNewSubmission ? '/submit/index' : '/paper/view?id=' . $id;
+        $link = $isNewSubmission ? $urlHelper->url(['controller' => 'submit']) : $urlHelper->url(['controller' =>'paper', 'action' => 'view', 'id' => $id]);
         $style = 'btn btn-default btn-xs';
 
         $exitLink = '&nbsp;&nbsp;&nbsp;';
@@ -3747,7 +3754,7 @@ class Episciences_Paper
                 } else {
 
 
-                    $url = '/paper/view/id/' . $this->getDocid();
+                    $url = $urlHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
                     $selfMsg = $result['message'];
                     $selfMsg .= $translator ?
                         $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ') :

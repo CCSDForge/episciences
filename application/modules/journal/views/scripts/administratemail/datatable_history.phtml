@@ -2,10 +2,10 @@
     <tr id="history_mail_<?php echo $mail['ID']; ?>">
         <td>
             <a class="modal-opener"
-               href="/administratemail/view?id=<?php echo $mail['ID'] ?>"
+               href="<?= $this->url(['controller' => 'administratemail', 'action' => 'view', 'id' => $mail['ID']])?>"
                data-width="50%" data-toggle="tooltip"
                title="<?php echo $this->translate('Voir cet e-mail'); ?>">
-                <?php echo ($mail['SUBJECT']) ? $mail['SUBJECT'] : $this->translate('Aucun sujet'); ?>
+                <?= ($mail['SUBJECT']) ?: $this->translate('Aucun sujet') ?>
             </a>
         </td>
         <td>

@@ -1,6 +1,6 @@
 <?php
 
-class AdministrateController extends Zend_Controller_Action
+class AdministrateController extends Episciences_Controller_Action
 {
     public function indexAction()
     {

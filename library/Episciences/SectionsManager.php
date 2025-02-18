@@ -156,7 +156,7 @@ class Episciences_SectionsManager
         if ($editors) {
 
             $form = new Zend_Form();
-            $form->setAction('/section/saveeditors');
+            $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'section', 'action' => 'saveeditors']));
 
             // Filtrer les résultats
             $form->addElement(new Zend_Form_Element_Text(array(

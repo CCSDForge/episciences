@@ -41,7 +41,7 @@ class Episciences_EditorsManager
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
         $form->setAttrib('id', $id);
-        $form->setAction('/administratepaper/saverefusedmonitoring?id=' . $docId);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'saverefusedmonitoring', 'd' => $docId ]));
 
         $form->addElement('textarea', $cStr . '_comment', [
             'label' => "Commentaire",

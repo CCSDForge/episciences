@@ -233,7 +233,7 @@ function updateModalButton(step) {
             let form_values = $('#send_form').serialize();
             let docId = $('#docid').val();
             $modal_body.html(getLoader());
-            let request = ajaxRequest('/administratemail/send', form_values );
+            let request = ajaxRequest(JS_PREFIX_URL + 'administratemail/send', form_values );
             request.done(function(result,xhr){
                 if (xhr === 'success'){
                     localStorage.removeItem('mailContent'+docId);

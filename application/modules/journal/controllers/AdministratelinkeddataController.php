@@ -1,6 +1,6 @@
 <?php
 
-class AdministratelinkeddataController extends Zend_Controller_Action
+class AdministratelinkeddataController extends Episciences_Controller_Action
 {
     public function addldAction(){
         $this->_helper->layout()->disableLayout();

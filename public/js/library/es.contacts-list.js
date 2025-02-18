@@ -11,7 +11,7 @@ $(function () {
         $contacts_container.html(getLoader());
 
         $.ajax({
-            url: '/administratemail/getcontacts?target=cc',
+            url: JS_PREFIX_URL + 'administratemail/getcontacts?target=cc',
             type: 'POST',
             data: {ajax: true},
             success: function (content) {

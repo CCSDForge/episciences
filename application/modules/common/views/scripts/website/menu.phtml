@@ -73,46 +73,53 @@ $this->jQuery()
 <?php //Ajout de nouvelles pages ?>
 <div class="form-actions">
     <div class="row">
-        <div class="col-md-5">
+        <div class="col-md-5 offset-md-1">
             <select name="type" id="type" class="form-control">
-                <?php foreach ($this->pageTypes as $type => $label) {
-                    $disabled = '';
+                <option value=""><?= $this->translate('Choisissez une page') ?></option>
+                <?php foreach ($this->groupedPageTypes as $group => $types) : ?>
+                    <optgroup label="<?= $this->translate($group) ?>">
+                        <?php foreach ($types as $type) :
 
+                            $label = sprintf('Episciences_Website_Navigation_Page_%s', ucfirst($type));
+                            $disabled = '';
 
-                    foreach ($this->pages as $page) {
-                        if ($label == get_class($page) && !$page->isMultiple()) {
-                            //La page est déjà ajoutée et non multiple
-                            $disabled = ' disabled = "disabled"';
-                            break;
-                        }
-                    }
+                            foreach ($this->pages as $page) {
+                                if ($label === get_class($page) && !$page->isMultiple()) {
+                                    //La page est déjà ajoutée et non multiple
+                                    $disabled = ' disabled = "disabled"';
+                                    break;
+                                }
+                            }
 
-                    ?>
-                    <option value="<?php echo $type; ?>" <?php echo $disabled; ?>
-                            type="<?php echo $label; ?>"><?php echo $this->translate($label); ?></option>
-                <?php } ?>
+                            ?>
+
+                            <option value="<?= $type ?>" <?= $disabled ?> type="<?= $label ?>"><?= $this->translate($label) ?></option>
+
+                        <?php endforeach; ?>
+                    </optgroup>
+                <?php endforeach; ?>
             </select>
         </div>
         <div class="col-md-6">
             <button type="button" class="btn btn-default" onclick="addformPage()"><i
-                        class="glyphicon glyphicon-file"></i>&nbsp;<?php echo $this->translate("Ajouter la page") ?>
+                        class="glyphicon glyphicon-file"></i>&nbsp;<?= $this->translate("Ajouter la page") ?>
             </button>
-            &nbsp;<?php echo $this->translate("ou") ?>&nbsp;
+            &nbsp;<?= $this->translate("ou") ?>&nbsp;
             <button type="button" class="btn btn-default" onclick="addformFolder()"><i
-                        class="glyphicon glyphicon-folder-open"></i>&nbsp;<?php echo $this->translate("Ajouter un dossier") ?>
+                        class="glyphicon glyphicon-folder-open"></i>&nbsp;<?= $this->translate("Ajouter un dossier") ?>
             </button>
         </div>
     </div>
 </div>
 
 <?php //Liste des pages ?>
-<form action="/website/menu" enctype="multipart/form-data" method="post" class="form-horizontal">
+<form action="<?= $this->url(['controller' => 'website', 'action' => 'menu']) ?>" enctype="multipart/form-data" method="post" class="form-horizontal">
     <table class="table table-hover" id="tableHeader">
         <thead>
         <tr>
             <th width="30px"></th>
-            <th width="70px"><?php echo $this->translate("Actions") ?></th>
-            <th><?php echo $this->translate("Pages") ?></th>
+            <th width="70px"><?= $this->translate("Actions") ?></th>
+            <th><?= $this->translate("Pages") ?></th>
         </tr>
         </thead>
     </table>
@@ -124,7 +131,7 @@ $this->jQuery()
             }
             $this->page = $this->pages[$key];
             ?>
-            <li id="page_<?php echo $this->i; ?>" class="<?php echo $this->page->isFolder() ? '' : 'no-nest' ?>">
+            <li id="page_<?= $this->i ?>" class="<?= $this->page->isFolder() ? '' : 'no-nest' ?>">
                 <?php include __DIR__ . "/menu-page.phtml";
                 if (is_array($value) && count($value) > 0) {
                     ?>
@@ -136,8 +143,8 @@ $this->jQuery()
                             }
                             $this->page = $this->pages[$k];
                             ?>
-                            <li id="page_<?php echo $this->i; ?>"
-                                class="<?php echo $this->page->isFolder() ? '' : 'no-nest' ?>">
+                            <li id="page_<?= $this->i ?>"
+                                class="<?= $this->page->isFolder() ? '' : 'no-nest' ?>">
                                 <?php include __DIR__ . "/menu-page.phtml";
                                 if (is_array($svalue) && count($svalue) > 0) {
                                     ?>
@@ -149,7 +156,7 @@ $this->jQuery()
                                             }
                                             $this->page = $this->pages[$sk];
                                             ?>
-                                            <li id="page_<?php echo $this->i; ?>" class="no-nest">
+                                            <li id="page_<?= $this->i; ?>" class="no-nest">
                                                 <?php include __DIR__ . "/menu-page.phtml"; ?>
                                             </li>
                                         <?php } ?>
@@ -173,7 +180,7 @@ $this->jQuery()
                         <td width="70px">
                             <div class="pull-right">
                                 <a class="btn btn-danger btn-xs" href="javascript:void(0)" onclick="$(this).closest('li').remove();"
-                                   title="<?php echo $this->translate("Supprimer"); ?>"><i
+                                   title="<?= $this->translate("Supprimer") ?>"><i
                                             class="glyphicon glyphicon-trash"></i></a>
                             </div>
                         </td>
@@ -184,18 +191,18 @@ $this->jQuery()
     </div>
 
     <div class="form-actions text-center">
-        <a href="/website/reset">
-            <button type="button" class="btn btn-default btn-sm"><?php echo $this->translate('Annuler'); ?></button>
+        <a href="<?= $this->url(['controller' => 'website', 'action' => 'reset'])?>">
+            <button type="button" class="btn btn-default btn-sm"><?= $this->translate('Annuler') ?></button>
         </a>
-        <button type="submit" class="btn btn-primary"><?php echo $this->translate('Enregistrer'); ?></button>
+        <button type="submit" class="btn btn-primary"><?= $this->translate('Enregistrer') ?></button>
     </div>
 
 </form>
 
-<?php echo $this->confirm("Suppression de la page", "Souhaitez-vous supprimer la page ?")
+<?= $this->confirm("Suppression de la page", "Souhaitez-vous supprimer la page ?")
     ->setTrigger('.remove-page')
     ->setJsInit('$("#confirm-id").val($(this).closest("li").find("input[type=hidden]").val());')
-    ->setJsCallback('deletePage();'); ?>
+    ->setJsCallback('deletePage();') ?>
 
 
 <script>
@@ -212,7 +219,7 @@ $this->jQuery()
             placeholder: 'placeholder',
             stop: function (event, ui) {
                 $.ajax({
-                    url: '/website/ajaxorder',
+                    url: JS_PREFIX_URL + 'website/ajaxorder',
                     type: 'post',
                     data: $('ul.sortable').nestedSortable('serialize')
                 });
@@ -243,7 +250,7 @@ $this->jQuery()
 
     function formNewPage(type) {
         $.ajax({
-            url: "/website/ajaxformpage",
+            url: JS_PREFIX_URL + "website/ajaxformpage",
             type: 'post',
             data: {'type': type},
             success: function (result) {
@@ -271,7 +278,7 @@ $this->jQuery()
 
     function deletePage() {
         $.ajax({
-            url: "/website/ajaxrmpage",
+            url: JS_PREFIX_URL + "website/ajaxrmpage",
             type: 'post',
             data: {'idx': $('#confirm-id').val()},
             success: function (result) {

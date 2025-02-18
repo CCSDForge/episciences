@@ -14,7 +14,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
 ?>
     <div class="form-actions">
-        <a class="btn btn-default" href="/volume/add">
+        <a class="btn btn-default" href="<?= $this->url(['controller' => 'volume', 'action' => 'add']) ?>">
             <span class="glyphicon glyphicon-book"></span>
             <span><?php echo $this->translate('Créer un volume'); ?></span>
         </a>
@@ -50,7 +50,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     <td class="sortable-handle"><span class="glyphicon glyphicon-move"></span></td>
                     <td>
                         <a title="<?php echo $this->translate('Modifier'); ?>"
-                           href="/volume/edit?id=<?php echo $volume->getVid(); ?>">
+                           href="<?= $this->url(['controller' => 'volume', 'action' => 'edit', 'id' =>$volume->getVid()]) ?>">
                             <?= Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()) ?>
                         </a>
                         <?php if ($this->review->getSetting(Episciences_Review::SETTING_SPECIAL_ISSUE_ACCESS_CODE) &&
@@ -111,12 +111,12 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     </td>
                     <td style="text-align:center;">
 
-                        <a href="/volume/edit?id=<?php echo $volume->getVid(); ?>" class="btn btn-default btn-xs"
+                        <a href="<?= $this->url(['controller' => 'volume', 'action' => 'edit', 'id' =>$volume->getVid()]) ?>" class="btn btn-default btn-xs"
                            title="<?php echo $this->translate("Modifier"); ?>">
                             <span class="glyphicon glyphicon-pencil"></span>
                         </a>
 &nbsp;
-                        <a href="/volume/delete?id=<?php echo $volume->getVid(); ?>" class="delete btn btn-danger btn-xs"
+                        <a href="<?= $this->url(['controller' => 'volume', 'action' => 'delete', 'id' => $volume->getVid()]) ?>" class="delete btn btn-danger btn-xs"
                            title="<?php echo $this->translate("Supprimer"); ?>">
                             <span class="glyphicon glyphicon-trash"></span>
                         </a>

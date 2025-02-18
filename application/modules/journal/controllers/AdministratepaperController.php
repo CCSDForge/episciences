@@ -42,7 +42,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // if editors encapsulation is on, redirect editors to "assigned papers" page
         if (Episciences_Auth::isAllowedToListOnlyAssignedPapers()) {
-            $this->_helper->redirector->gotoUrl($this->_helper->url(self::ACTION_ASSIGNED, self::ADMINISTRATE_PAPER_CONTROLLER));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => self::ACTION_ASSIGNED, 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER]));
         }
 
         // Ajax dataTable
@@ -390,7 +390,7 @@ class AdministratepaperController extends PaperDefaultController
         $params = $request->getPost();
         $docId = $params['docid'];
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $volumes = $review->getVolumes();
@@ -503,7 +503,7 @@ class AdministratepaperController extends PaperDefaultController
         if (!$paper || $paper->getRvid() !== RVID) {
             $actionName = Episciences_Auth::isAllowedToManagePaper() ? 'list' : self::ACTION_ASSIGNED;
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST));
-            $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/' . $actionName);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => $actionName ]));
         }
         $docId = $paper->getDocid();
 
@@ -602,7 +602,7 @@ class AdministratepaperController extends PaperDefaultController
                 if ($editor_comment_form->isValid($request->getPost()) && $this->save_editor_comment($paper)) {
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-                    $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
+                    $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER , 'action' => 'view', 'id' => $paper->getDocid()]));
 
                 } else {
                     $message = $this->view->translate("Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau.");
@@ -907,7 +907,7 @@ class AdministratepaperController extends PaperDefaultController
 
 
                 $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
-                $url = '/paper/view?id=' . $docId;
+                $url = $this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]);
 
             } else {
 
@@ -951,7 +951,7 @@ class AdministratepaperController extends PaperDefaultController
                     $message = $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
                 }
 
-                $url = '/coi/report?id=' . $docId;
+                $url = $this->url(['controller' => 'coi', 'action' => 'report', 'id' => $docId]);
 
             }
 
@@ -983,7 +983,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!empty($redirection) && array_key_exists('message', $redirection)) {
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($redirection['message']);
-            $this->_helper->redirector->gotoUrl($this->_helper->url(self::ACTION_ASSIGNED, self::ADMINISTRATE_PAPER_CONTROLLER, null, $params));
+            $this->_helper->redirector->gotoUrl($this->url(array_merge(['action' => self::ACTION_ASSIGNED, 'controller' =>  self::ADMINISTRATE_PAPER_CONTROLLER], $params)));
         }
 
         return empty($redirection);
@@ -1197,7 +1197,7 @@ class AdministratepaperController extends PaperDefaultController
             $docId = ($request->getPost('docid')) ?: $request->getParam('docid'); /* Erreur: le changement de la langue au cours de l'invitation d'un relecteur déclanche une erreur (docId = null)*/
 
             // sauvegarder d'où vient l'appel de l'invitation d'un relecteur
-            $referer = ($request->getPost('referer')) ?: '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/list';
+            $referer = ($request->getPost('referer')) ?: $this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'list']);
             $this->view->referer = $referer;
             $this->view->isExistingCriterionGrid = Episciences_Rating_Manager::isExistingCriterion();
 
@@ -1722,7 +1722,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, $paper_url);
         $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_REPO_URL, $paperRepoUrl);
         $mail->addTag(Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, $contributor->getFullName());
-        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin');
+        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, sprintf('%s://%s%s',SERVER_PROTOCOL,$_SERVER['SERVER_NAME'], $this->url(['controller' => 'user', 'action' => 'lostlogin'])));
         $mail->addTo($reviewer['email'], $reviewer['full_name']);
 
         // Other reciptients
@@ -1914,7 +1914,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     $additionalTags = [
                         Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_NAME => RVCODE . '_' . CE_RESOURCES_NAME,
-                        Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/website/public',
+                        Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], $this->url(['controller' => 'website', 'action' => 'public']))
                     ];
 
                     if ($journal->getDoiSettings()->getDoiAssignMode() === Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
@@ -1942,7 +1942,7 @@ class AdministratepaperController extends PaperDefaultController
 
         }
 
-        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+        $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
     }
 
     /**
@@ -1964,7 +1964,7 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
         if (!$paper) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Vos modifications n'ont pas pu être enregistrées");
-            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
             return;
         }
 
@@ -1989,7 +1989,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
         }
 
-        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+        $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
     }
 
     /**
@@ -2063,7 +2063,7 @@ class AdministratepaperController extends PaperDefaultController
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
                     $this->view->translate("Vous pouvez partager cette publication")
                     . '&nbsp;<a class="btn btn-default" href="'
-                    . APPLICATION_URL . $this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]) . '#share">'
+                    . APPLICATION_URL . $this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]) . '#share">'
                     . $this->view->translate('Partager')
                     . '</a>');
 
@@ -2084,7 +2084,7 @@ class AdministratepaperController extends PaperDefaultController
 
         }
 
-        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+        $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
     }
 
     /**
@@ -2143,7 +2143,7 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
-        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+        $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
     }
 
     /**
@@ -2170,7 +2170,7 @@ class AdministratepaperController extends PaperDefaultController
         if (!$this->getRequest()->isPost() && !$form->isValid($this->getRequest()->getPost())) {
             $message = $this->view->translate('Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.');
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER,'action' => 'view', 'id' => $paper->getDocid()]));
         }
 
         //Initialisation
@@ -2205,9 +2205,8 @@ class AdministratepaperController extends PaperDefaultController
         $this->newCommentNotifyManager($paper, $oComment);
 
         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Vos modifications ont bien été prises en compte');
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER,'action' => 'view', 'id' => $paper->getDocid()]));
 
-
-        $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
 
     }
 
@@ -3251,7 +3250,7 @@ class AdministratepaperController extends PaperDefaultController
         $reviewerUid = (int)$request->getParam('reviewer_uid');
 
         if (empty($docId) || empty($reviewerUid)) {
-            $this->_helper->redirector->goToUrl('/');
+            $this->_helper->redirector->goToUrl($this->url(['controller' => 'index']));
         }
 
         $report = Episciences_Rating_Report::find($docId, $reviewerUid);
@@ -3593,7 +3592,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $oPaper->getTitle($locale, true));
         $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $oPaper->formatAuthorsMetadata());
         $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($oPaper->getSubmission_date(), $locale));
-        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . 'view/id/' . $oPaper->getDocid());
+        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $oPaper->getDocid()]));
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
         $mail->setFromReview();
@@ -3797,7 +3796,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!$paper) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : article introuvable !");
-            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
         }
 
         if ($request->isPost()) {
@@ -3809,7 +3808,7 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
-        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+        $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
 
     }
 
@@ -3844,7 +3843,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (null === $result) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : auteur introuvable !");
-            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $paper->getDocid()]));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $paper->getDocid()]));
             return false;
         }
 
@@ -4071,7 +4070,7 @@ class AdministratepaperController extends PaperDefaultController
                 try {
                     if ($this->applyEditorRefusedMonitoring($paper, $post['refused_monitoring_comment'])) {
                         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
-                        $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/' . self::ACTION_ASSIGNED);
+                        $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'view' => self::ACTION_ASSIGNED]));
                     }
 
                 } catch (Exception $e) {
@@ -4361,7 +4360,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!$isTypeFound) { // type is not found
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : type incorrect !");
-            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
         }
 
         $review = Episciences_ReviewsManager::find(RVID);
@@ -4371,7 +4370,7 @@ class AdministratepaperController extends PaperDefaultController
         // check that paper exists
         if (!$paper) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : article introuvable !");
-            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
         }
 
         // check permissions
@@ -4388,7 +4387,7 @@ class AdministratepaperController extends PaperDefaultController
             // check that submitter exists
             if (null === $result) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : auteur introuvable !");
-                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
             }
 
             $locale = $submitter->getLangueid();
@@ -4401,14 +4400,14 @@ class AdministratepaperController extends PaperDefaultController
                 if (
                     $review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE)) {
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : la demande de révision n'est pas assortie d'un délai !");
-                    $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                    $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
                     return;
 
                 }
 
             } elseif (!Ccsd_Tools_String::validateDate($deadline)) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj.");
-                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
                 return;
 
             }
@@ -4495,7 +4494,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
         }
 
-        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+        $this->_helper->redirector->gotoUrl($this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]));
     }
 
     /**
@@ -4566,7 +4565,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->options = $availableVersions;
         $this->view->docId = $paper->getDocid();
         $this->view->latestversion = $paper->getVersion();
-        $this->view->action = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/savenewpostedversion';
+        $this->view->action = $this->url(['controller' => PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'savenewpostedversion']);
         $this->view->prefix = 'latest-repository-version';
         $this->view->isPublished = $paper->isPublished();
 

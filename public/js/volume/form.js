@@ -24,7 +24,7 @@ $(document).ready(function() {
 		
 		// Envoi des données
 		$.ajax({
-			url: '/volume/addfile',
+			url: JS_PREFIX_URL + 'volume/addfile',
 			type: 'POST',
 			data: data,
 			cache: false,

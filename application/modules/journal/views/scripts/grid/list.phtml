@@ -23,7 +23,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
             <?php $defaultGrid = null; ?>
             <p><?php echo $this->translate("Aucun critère de notation"); ?>.</p>
             <?php if (Episciences_Auth::isSecretary()) : ?>
-                <a href="/grid/addcriterion">
+                <a href="<?= $this->url(['controller' => 'grid', 'action' => 'addcriterion'])?>">
                     <button type="button" class="btn btn-default">
                         <?php echo $this->translate('Ajouter un critère'); ?>
                     </button>
@@ -54,7 +54,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 </div>
 
                 <div class="panel-footer" style="text-align: center;">
-                    <a href="/volume/edit?id=<?= filter_var($key, FILTER_SANITIZE_NUMBER_INT) ?>" class="btn btn-default" role="button">
+                    <a href="<?= $this->url(['controller' => 'volume', 'action' => 'edit', 'id' => filter_var($key, FILTER_SANITIZE_NUMBER_INT)]) ?>" class="btn btn-default" role="button">
                         <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                         <?= $this->translate('Modifier ce volume'); ?>
                     </a>

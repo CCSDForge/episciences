@@ -55,7 +55,7 @@ $title = $this->title ?? 'Accès à un article';
 
             let request = $.ajax({
                 type: "POST",
-                url: "/paper/ajaxgetlastpaperid",
+                url: JS_PREFIX_URL + "paper/ajaxgetlastpaperid",
                 data: {id: idValue, from: '<?= $this->from ?>'}
             });
             request.done(function (response) {
@@ -65,7 +65,7 @@ $title = $this->title ?? 'Accès à un article';
                     console.log(jsonParsed.exception);
                 }
                 if (lastDocid !== 0) {
-                    url = '/' + jsonParsed.controller + '/view?id=' + lastDocid;
+                    url = JS_PREFIX_URL + jsonParsed.controller + '/view?id=' + lastDocid;
                     document.location.href = url;
                     return true;
                 } else if (jsonParsed.error) {

@@ -84,7 +84,7 @@ function submit()
         		
 				// refresh reviewers list
         		$.ajax({
-        			url: "/administratepaper/displayinvitations",
+        			url: JS_PREFIX_URL + "administratepaper/displayinvitations",
         			type: "POST",
         			data: {docid: docid, partial: false},
         			success: function(reviewers) {
@@ -100,7 +100,7 @@ function submit()
 	        	logs_container.html(getLoader());
 	        	logs_container.fadeIn();
         		$.ajax({
-        			url: "/administratepaper/displaylogs",
+        			url: JS_PREFIX_URL + "administratepaper/displaylogs",
         			type: "POST",
         			data: {docid: docid},
         			success: function(logs) {

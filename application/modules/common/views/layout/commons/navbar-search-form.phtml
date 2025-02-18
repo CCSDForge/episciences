@@ -1,5 +1,5 @@
 <?php if (RVCODE !== 'portal'): ?>
-    <form id="search-simple-form-navbar" action="/search" name="search-simple-navbar" method="get"
+    <form id="search-simple-form-navbar" action="<?= $this->url(['controller' => 'search']) ?>" name="search-simple-navbar" method="get"
           class="navbar-form navbar-left" role="search">
         <div class="input-group">
             <input data-src="default" id="q" name="q" class="form-control" type="text"

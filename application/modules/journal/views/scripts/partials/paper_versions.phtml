@@ -23,7 +23,7 @@ $isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper-
             <?php foreach ($this->versions as $v => $paper) : ?>
                 <?php $docId = $paper->getDocid(); ?>
                 <li>
-                    <?php if ($currentPaper->getDocid() !== $docId) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docId ?>"><?php endif; ?>
+                    <?php if ($currentPaper->getDocid() !== $docId) : ?><a href="<?= $this->url(['controller' => $controller, 'action' => $action, 'id' => $docId])?>"><?php endif; ?>
                         <?php $sourceMsg = (!$paper->isImported()) ? $this->translate('Soumise le : ') : $this->translate('Importée le : ') ?>
                         <?= $this->translate("Version") ?>&nbsp;<span id="version-of-paper-<?= $docId ?>"><?= $v ?></span>
                         <span class="label label-status-0 pull-right"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>

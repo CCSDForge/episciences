@@ -5,7 +5,7 @@ $paper = $this->paper; ?>
         <h2 class="panel-title"><?php echo $this->translate('Ajouter un co-auteur'); ?></h2>
     </div>
     <div class="panel-body in">
-        <form action="/administratepaper/addcoauthor" enctype="multipart/form-data" class="form-inline" method="post">
+        <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'addcoauthor']) ?>" enctype="multipart/form-data" class="form-inline" method="post">
             <div class="ui-widget form-group">
 
                 <label for="autocompletedUserSelection"><?= $this->translate("Co-auteur") ?></label>

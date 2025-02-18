@@ -16,7 +16,7 @@ $this->layout()->description = $this->translate("Personnalisez le bandeau en-tê
     <button class="btn btn-default" type="button" onclick="addLogo()"><i
                 class="glyphicon glyphicon-plus"></i>&nbsp;<?php echo $this->translate("Ajouter un logo"); ?></button>
 </div>
-<form enctype="multipart/form-data" method="post" class="form-horizontal" action="/website/header">
+<form enctype="multipart/form-data" method="post" class="form-horizontal" action="<?= $this->url(['controller' => 'website', 'action' => 'header']) ?>">
     <table class="table table-hover" id="tableLogo">
         <thead>
         <tr>
@@ -101,7 +101,7 @@ $this->layout()->description = $this->translate("Personnalisez le bandeau en-tê
     //Ajout d'un logo à l'en-tête
     function addLogo() {
         $.ajax({
-            url: "/website/ajaxheader/id/logo_" + uniq,
+            url: JS_PREFIX_URL + "website/ajaxheader/id/logo_" + uniq,
             dataType: 'text',
             success: function (data) {
                 var cloneTr = $('#tableLogo tfoot>tr').clone();

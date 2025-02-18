@@ -1749,7 +1749,7 @@ class Episciences_Mail_TemplatesManager
         $id = $template->getId();
         $form = new Zend_Form();
         $form->setAttrib('id', 'template-' . $id);
-        $form->setAction('/administratemail/savetemplate?id=' . $id);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratemail', 'action' => 'savetemplate', 'id' => $id]));
         $form->setDecorators(array(
             'FormElements',
             array('HtmlTag', array('tag' => 'div', 'class' => 'tab-content')),

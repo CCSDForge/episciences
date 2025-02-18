@@ -1,5 +1,7 @@
 # See : https://git-scm.com/docs/gitignore
-/.env
+/.env.local
+/.env.local.php
+/.env.*.local
 /.settings
 /.buildpath
 /.project

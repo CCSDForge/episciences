@@ -13,7 +13,7 @@ function getEditors(button, vid) {
     }
 
     // Récupération du formulaire
-    let editorFormRequest = ajaxRequest('/volume/editorsform', {vid: vid});
+    let editorFormRequest = ajaxRequest(JS_PREFIX_URL + 'volume/editorsform', {vid: vid});
 
     $(button).popover({
         'container': 'body',
@@ -48,19 +48,21 @@ function getEditors(button, vid) {
             }, 4)
         });
 
-        $('form[action="/volume/saveeditors"]').on('submit', function () {
+        let saveEditorsAction = JS_PREFIX_URL + 'volume/saveeditors';
+
+        $('form[action="' + saveEditorsAction + '"]').on('submit', function () {
             if (!$(this).data('submitted')) { // to fix duplicate ajax request
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
                 let data = $(this).serialize() + "&vid=" + vid;
-                let saveEditorsRequest = ajaxRequest('/volume/saveeditors', data);
+                let saveEditorsRequest = ajaxRequest(saveEditorsAction, data);
                 saveEditorsRequest.done(function (response) {
                     if (response == 1) {
                         // Destruction du popup des rédacteurs
                         $(button).popover('destroy');
 
                         // Refresh de l'affichage des rédacteurs pour cette rubrique
-                        let refreshEditorsRequest = ajaxRequest('/volume/displayeditors', {vid: vid});
+                        let refreshEditorsRequest = ajaxRequest(JS_PREFIX_URL + 'volume/displayeditors', {vid: vid});
                         refreshEditorsRequest.done(function (editors) {
                             let td = $('#volume_' + vid + ' td:nth-child(4)');
                             let container = $(td).find('.editors');

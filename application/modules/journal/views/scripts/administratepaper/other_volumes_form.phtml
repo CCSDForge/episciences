@@ -1,5 +1,5 @@
 <div style="max-width: 400px;">
-    <form action="/administratepaper/saveothervolumes" id="volumes-form-<?php echo $this->docid ?>" role="form">
+    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'saveothervolumes'])?>" id="volumes-form-<?php echo $this->docid ?>" role="form">
 
         <div style="max-height: 100px; overflow: auto">
             <?php foreach ($this->volumes as $volume) : ?>

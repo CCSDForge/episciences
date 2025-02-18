@@ -42,7 +42,7 @@ $(document).ready(function () {
         update: function (event, ui) {
 
             $.ajax({
-                url: "/section/sort",
+                url: JS_PREFIX_URL + "section/sort",
                 type: 'POST',
                 data: {sorted: $(this).sortable("toArray")},
                 dataType: "json"

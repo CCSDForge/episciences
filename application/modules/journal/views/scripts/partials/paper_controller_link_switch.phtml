@@ -17,12 +17,12 @@ $isOwner = $paper->isOwner();
 if ($controller === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER) {
 
     $message = "Aller à la page publique de cet article";
-    $url = '/paper/view?id=' . $docId;
+    $url = $this->url(['controller' => PaperDefaultController::PUBLIC_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]);
 
 } elseif (!$isOwner && Episciences_Auth::isAllowedToManageDoi()) {
 
     $message = "Aller à la page de gestion de cet article";
-    $url = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $docId;
+    $url = $this->url(['controller' => PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]);
 }
 ?>
 

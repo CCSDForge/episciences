@@ -38,7 +38,7 @@ class SubmitController extends DefaultController
                 $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
                 $message .= $this->view->translate('Merci de les corriger.');
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-                $this->_helper->redirector('index', 'submit');
+                $this->_helper->redirector('index', 'submit', null, [PREFIX_ROUTE => RVCODE]);
                 return;
             }
         }
@@ -157,7 +157,7 @@ class SubmitController extends DefaultController
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 }
 
-                $this->_helper->redirector('submitted', 'paper');
+                $this->_helper->redirector('submitted', 'paper', null, [PREFIX_ROUTE => RVCODE]);
                 return;
             } // End isValid
 

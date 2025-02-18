@@ -89,7 +89,7 @@ if ($this->canEdit) {
     ?>
     <div class="form-actions">
         <button type="button" class="close" data-dismiss="alert">×</button>
-        <a class="btn btn-default" href="/website/news"><span
+        <a class="btn btn-default" href="<?= $this->url(['controller' => 'website', 'action' => 'news']) ?>"><span
                     class="glyphicon glyphicon-edit"></span>&nbsp;<?php echo $this->translate('Ajouter/Modifier une actualité') ?>
         </a>
     </div>

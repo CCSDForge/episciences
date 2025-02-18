@@ -1,6 +1,6 @@
 <?php
 
-class IndexController extends Zend_Controller_Action
+class IndexController extends Episciences_Controller_Action
 {
 
     // Homepage

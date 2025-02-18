@@ -652,6 +652,10 @@ return array(
     "Modifier ce volume" => "Edit this volume",
     'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the articles: ',
     "La grille a bien été supprimée." => "The grid has been successfully deleted.",
+    "La grille de destination n'existe pas." => "The destination grid does not exist.",
+    "Il n'est pas possible de fusionner la grille par défaut avec une grille déjà finalisée." => "It is not possible to merge the default grid with a grid that has already been finalised.",
+    "La grille source est vide." => "The source grid is empty",
+    "La grille cible contient déjà des éléments." => "The target grid already contains criteria.",
 
 
     // Gestion des relecteurs
@@ -1687,7 +1691,7 @@ return array(
     "Episciences_Website_Navigation_Page_Search" => "Search",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
-    "Episciences_Website_Navigation_Page_About" => "About",
+    "Episciences_Website_Navigation_Page_About" => "The Journal",
 
     "Episciences_Website_Navigation_Page_EditorialBoard" => "Editorial board",
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
@@ -1699,7 +1703,7 @@ return array(
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
-    "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexed in",
 
 
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
@@ -2146,12 +2150,16 @@ return array(
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
 
     //DD
+    'dernière version' => 'latest version',
     'Ajouter une nouvelle version' => 'Add a new version',
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
     'Descripteurs de données' => 'Data descriptors',
     'Descripteurs de logiciel' => 'Software descriptors',
     "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
-    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists."
+    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
+
+    // Website > menu
+    'Choisissez une page' => 'Select a page'
 
 );

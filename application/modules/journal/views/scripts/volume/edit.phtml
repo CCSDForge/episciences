@@ -19,7 +19,7 @@
             ?>
         </div>
         <div class="panel-footer" style="text-align: center;">
-            <a href="/grid/list" class="btn btn-default" role="button">
+            <a href="<?= $this->url(['controller' => 'grid', 'action' => 'list']) ?>" class="btn btn-default" role="button">
                 <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
                 <?= $this->translate('Grilles de relecture'); ?>
             </a>

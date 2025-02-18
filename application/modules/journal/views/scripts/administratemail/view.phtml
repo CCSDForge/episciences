@@ -89,7 +89,7 @@
             $filepath = str_replace(REVIEW_FILES_PATH, '', $filepath . '/' . urlencode($filename));
 
             echo '<div class="small">';
-            echo '<a target="_blank" href="/' . $filepath . '">';
+            echo '<a target="_blank" href="' . PREFIX_URL . $filepath . '">';
             echo $filename;
             echo '</a>';
             echo '</div>';

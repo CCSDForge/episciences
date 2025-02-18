@@ -1,6 +1,6 @@
 <?php
 
-class AdministrategraphabstractController extends Zend_Controller_Action
+class AdministrategraphabstractController extends Episciences_Controller_Action
 {
     public const PATH_FILE = REVIEW_PATH . "public";
     public const DOCUMENT_COL = "DOCUMENT";

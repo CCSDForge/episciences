@@ -15,7 +15,7 @@ $tmp = $dataDescriptors;
             $latest = array_shift($tmp);
             /** @var \Episciences\Files\File $file */
             $file = $latest->getFile();
-            $preview = sprintf('/docfiles/dd/%s/%s', $file->getDocid(), $file->getName());
+            $preview = sprintf('%sdocfiles/dd/%s/%s', PREFIX_URL, $file->getDocid(), $file->getName());
 
             if ($paper->isSoftware()) {
                 $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de logiciel' : 'Descripteur de logiciel';
@@ -70,7 +70,7 @@ $tmp = $dataDescriptors;
                             <?php if ($fileName = $dd->getFile()->getName()) : ?>
                                 <tr id="data-descriptor-<?= $dd->getId() ?>" <?= count($dataDescriptors) === $dd->getVersion() ? 'class="active"' : '' ?>>
                                     <td>
-                                        <a href="<?= sprintf('/docfiles/dd/%s/%s', $dd->getDocid(), $fileName) ?>"
+                                        <a href="<?= sprintf('%sdocfiles/dd/%s/%s', PREFIX_URL, $dd->getDocid(), $fileName) ?>"
                                            target="_blank"><?= sprintf('%s', $fileName) ?>
                                         </a>&nbsp;<?= $vLabel ?>
                                     </td>

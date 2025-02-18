@@ -5,12 +5,13 @@ $this->layout()->description = ($this->pageDescription) ?: $this->translate("Ges
 $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 
+
 /** @var Zend_Form $form */
 $form = $this->paperFilter();
 
 // A gérer en AJAX (dataTable)
 $form->getElement('submit')->setAttrib('type', '');
-$form->setAction('');
+$form->setAction($this->url());
 
 echo $form;
 ?>

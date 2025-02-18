@@ -16,7 +16,7 @@ function getSectionForm(button, docid, partial) {
     }
 
     // fetch section form
-    let sectionFormRequest = ajaxRequest('/administratepaper/sectionform', {docid: docid});
+    let sectionFormRequest = ajaxRequest(JS_PREFIX_URL + 'administratepaper/sectionform', {docid: docid});
 
     $(button).popover({
         'placement': placement,
@@ -46,7 +46,7 @@ function getSectionForm(button, docid, partial) {
                 let $editors_container = isPartial ? $(button).closest('tr').find('div.editors') : $('#editors').closest('.editors').parent();
                 // process form (ajax)
                 let jData = $(this).serialize() + '&docid=' + docid;
-                let saveSection = ajaxRequest('/administratepaper/savesection', jData);
+                let saveSection = ajaxRequest(JS_PREFIX_URL + 'administratepaper/savesection', jData);
                 saveSection.done(function (result) {
                     if (result) {
 
@@ -61,7 +61,7 @@ function getSectionForm(button, docid, partial) {
                         $section_container.fadeIn();
 
                         // refresh section block
-                        let refreshSection = ajaxRequest('/administratepaper/displaysection', {
+                        let refreshSection = ajaxRequest(JS_PREFIX_URL + 'administratepaper/displaysection', {
                             docid: docid,
                             partial: isPartial
                         });
@@ -79,7 +79,7 @@ function getSectionForm(button, docid, partial) {
                             $editors_container.html(getLoader());
                             $editors_container.fadeIn();
 
-                            let displayEditors = ajaxRequest('/administratepaper/displayeditors', {
+                            let displayEditors = ajaxRequest(JS_PREFIX_URL + 'administratepaper/displayeditors', {
                                 docid: docid,
                                 partial: isPartial
                             });

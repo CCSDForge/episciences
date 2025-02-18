@@ -1077,7 +1077,7 @@ class Episciences_PapersManager
      */
     public static function getReviewerInvitationForm($docId, $page, $referer, $params = null): \Ccsd_Form
     {
-        $action = '/administratepaper/savereviewerinvitation?docid=' . $docId;
+        $action = (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'savereviewerinvitation', 'docid' => $docId]);
         $action .= ($page) ? '&page=' . $page : '';
         $action .= (array_key_exists('vid', $params)) ? '&vid=' . $params['vid'] : '';
         $action .= (array_key_exists('special_issue', $params)) ? '&special_issue=' . $params['special_issue'] : '';
@@ -1409,7 +1409,7 @@ class Episciences_PapersManager
         $form->setAttrib('class', 'form-horizontal');
         $form->setName('suggeststatus');
         $form->setMethod(Zend_Form::METHOD_POST);
-        $form->setAction('/administratepaper/suggeststatus?id=' . $docId);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'suggeststatus', 'id' => $docId]));
         $csrfHashName = 'csrf_suggeststatus';
         $form->addElement('hash', $csrfHashName, array('salt' => 'unique'));
         $form->getElement($csrfHashName)->setTimeout(3600);
@@ -1533,6 +1533,7 @@ class Episciences_PapersManager
     /**
      * @param $default
      * @return Ccsd_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getAcceptanceForm($default): \Ccsd_Form
@@ -1540,7 +1541,7 @@ class Episciences_PapersManager
         $formId = 'acceptance-form';
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
-            'action' => '/administratepaper/accept/id/' . $default['id'],
+            'action' => (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'accept', 'id' => $default['id']]),
             'id' => $formId
         ]);
 
@@ -1616,6 +1617,7 @@ class Episciences_PapersManager
     /**
      * @param $default
      * @return Ccsd_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getPublicationForm($default): \Ccsd_Form
@@ -1623,7 +1625,7 @@ class Episciences_PapersManager
         $formId = 'publish-form';
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
-            'action' => '/administratepaper/publish/id/' . $default['id'],
+            'action' => (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'publish', 'id' => $default['id']]),
             'id' => $formId
         ]);
 
@@ -1699,6 +1701,7 @@ class Episciences_PapersManager
     /**
      * @param $default
      * @return Ccsd_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getRefusalForm($default): \Ccsd_Form
@@ -1706,7 +1709,7 @@ class Episciences_PapersManager
         $formId = 'refusal-form';
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
-            'action' => '/administratepaper/refuse/id/' . $default['id'],
+            'action' => (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'refuse', 'id' => $default['id']]),
             'id' => $formId
         ]);
 
@@ -1797,6 +1800,7 @@ class Episciences_PapersManager
      * @param $editors
      * @param $paper
      * @return Ccsd_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getAskOtherEditorsForm($default, $editors, $paper): \Ccsd_Form
@@ -1805,7 +1809,8 @@ class Episciences_PapersManager
         $form = new Ccsd_Form([
             'id' => $formId,
             'class' => 'form-horizontal',
-            'action' => '/administratepaper/askothereditors/id/' . $default['id']]);
+            'action' => (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'askothereditors', 'id' => $default['id']])
+        ]);
 
         $askeditors_subform = new Ccsd_Form_SubForm();
         $attachment_subform = new Ccsd_Form_SubForm();
@@ -1909,7 +1914,7 @@ class Episciences_PapersManager
 
         $form = new Ccsd_Form([
             'class' => 'form-horizontal',
-            'action' => '/administratepaper/revision/id/' . $default['id'] . '/type/' . $type,
+            'action' => (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'revision', 'id' => $default['id'], 'type' => $type]),
             'id' => $formId
         ]);
 
@@ -2129,7 +2134,7 @@ class Episciences_PapersManager
      * @return bool|Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      */
-    public static function get($docId, bool $withxsl = true, int $rvId = null)
+    public static function get($docId, bool $withxsl = true, int $rvId = null): Episciences_Paper|bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2163,12 +2168,13 @@ class Episciences_PapersManager
      * @param $aid
      * @param array $params
      * @return Ccsd_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getDeadlineForm($aid, $params = []): \Ccsd_Form
     {
         $form = new Ccsd_Form([
-            'action' => '/administratepaper/savenewdeadline/aid/' . $aid,
+            'action' => (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'savenewdeadline', 'aid' => $aid]),
             'class' => 'form-horizontal',
             'id' => 'deadline-form']);
 
@@ -2226,11 +2232,12 @@ class Episciences_PapersManager
      * Une invitation est à l'origine de la relecture ? true : oui, false: non
      * @param bool $isUninvited
      * @return Ccsd_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getReviewerRemovalForm($aid, $docId, bool $isUninvited = false): \Ccsd_Form
     {
-        $action = '/administratepaper/savereviewerremoval?aid=' . $aid . '&docid=' . $docId;
+        $action = (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'savereviewerremoval', 'aid' => $aid, 'docid' => $docId]);
 
         if ($isUninvited) {
             $action .= '&status=' . Episciences_Reviewer::STATUS_UNINVITED;
@@ -2290,12 +2297,13 @@ class Episciences_PapersManager
      * @param $docid
      * @param $editors
      * @return Ccsd_Form
+     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getReassignmentForm($docid, $editors): \Ccsd_Form
     {
         $form = new Ccsd_Form([
-            'action' => '/administratepaper/savereassignment?docid=' . $docid,
+            'action' => (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'savereassignment', 'docid' => $docid]),
             'class' => 'form-horizontal',
             'id' => 'paper-reassignment-form'
         ]);
@@ -2447,14 +2455,20 @@ class Episciences_PapersManager
             }
         }
 
-        $urlHelper = new Zend_View_Helper_Url();
+
+        $helperUrl = new Episciences_View_Helper_Url();
 
         $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-        $url = $site . $urlHelper->url([
+        $url = sprintf('%s%s', $site, $helperUrl->url([
                 'controller' => 'paper',
                 'action' => 'view',
                 'id' => $paper->getDocid()
-            ]);
+            ]));
+
+        $lostLoginUrl = sprintf('%s%s', $site, $helperUrl->url([
+            'controller' => 'user',
+            'action' => 'lostlogin'
+        ]));
 
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
@@ -2471,7 +2485,7 @@ class Episciences_PapersManager
             Episciences_Mail_Tags::TAG_PAPER_URL => $url,
             Episciences_Mail_Tags::TAG_PAPER_RATINGS => $ratings_string,
             Episciences_Mail_Tags::TAG_PAPER_REPO_URL => $paper->getDocUrl(),
-            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin'
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginUrl
         ]);
 
 
@@ -2516,6 +2530,8 @@ class Episciences_PapersManager
                 $revisionsDateIso = $paper->buildRevisionDates(); // all versions in ISO format
                 $paperPosition = $paper->getPaperPositionInVolume(); // position of paper in volume
                 $acceptanceDate = $paper->getAcceptanceDate();
+                $ceRessourcesUrl = sprintf('%s%spublic/', $site, PREFIX_URL);
+                $ceRessourcesUrl .= sprintf('%s_episciences.zip',RVCODE);
 
                 $addTags = array_merge($defaultTags, [
                     Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paperSubmissionDate, $locale),
@@ -2535,7 +2551,7 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_SECTION_NAME => $sectionName,
                     Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME => !empty($paperPosition) ? $paperPosition : $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_CURRENT_YEAR => date('Y'),
-                    Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL => $site . '/public/' . RVCODE . '_episciences.zip',
+                    Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_URL =>$ceRessourcesUrl,
                     Episciences_Mail_Tags::TAG_VOLUME_EDITORS => ($volume && $volume->formatEditors()) ? $volume->formatEditors() : $translator->translate('Aucun', $locale)
                 ]);
 
@@ -2937,7 +2953,7 @@ class Episciences_PapersManager
     {
         $form = self::getModalPaperStatusCommonForm($default, 'reviewFormattingDeposed');
         $form->setAttrib('id', 'review-formatting-deposed-form');
-        $form->setAction('/administratepaper/reviewformattingdeposed/id/' . $default['id']);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'reviewformattingdeposed', 'id' => $default['id']]));
         return $form;
     }
 
@@ -3045,7 +3061,7 @@ class Episciences_PapersManager
     {
         $form = self::getModalPaperStatusCommonForm($default, 'ceAcceptFinalVersionRequest');
         $form->setAttrib('id', 'ready-to-publish-form');
-        $form->setAction('/administratepaper/copyeditingacceptfinalversion/id/' . $default['id']);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'copyeditingacceptfinalversion', 'id' => $default['id']]));
         return $form;
     }
 
@@ -3061,7 +3077,7 @@ class Episciences_PapersManager
 
         $form = self::getModalPaperStatusCommonForm($default, 'authorSourcesRequest');
         $form->setAttrib('id', 'waiting-for-author-sources-form');
-        $form->setAction('/administratepaper/waitingforauthorsources/id/' . $default['id']);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'waitingforauthorsources', 'id' => $default['id']]));
 
         return $form;
     }
@@ -3078,7 +3094,7 @@ class Episciences_PapersManager
 
         $form = self::getModalPaperStatusCommonForm($default, 'authorFormattingRequest');
         $form->setAttrib('id', 'waiting-for-author-formatting-form');
-        $form->setAction('/administratepaper/waitingforauthorformatting/id/' . $default['id']);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'waitingforauthorformatting', 'id' => $default['id']]));
         return $form;
     }
 
@@ -3092,7 +3108,7 @@ class Episciences_PapersManager
     {
         $type = 'acceptedAskAuthorsFinalVersion';
         $formId = $type . '-form';
-        $formAction = '/administratepaper/acceptedaskauhorfinalversion/id/' . $default['id'] . '/type/' . $type;
+        $formAction = (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper' , 'action' => 'acceptedaskauhorfinalversion', 'id' => $default['id'], 'type' => $type ]);
         $form = self::getModalPaperStatusCommonForm($default, $type, true);
         $form->setAttrib('id', $formId);
         $form->setAction($formAction);
@@ -3108,7 +3124,7 @@ class Episciences_PapersManager
     public static function getAcceptedAskAuthorValidationForm(array $default): \Zend_Form
     {
         $formId = 'accepted-ask-author-validation-form';
-        $formAction = '/administratepaper/acceptedaskauthorvalidation/id/' . $default['id'];
+        $formAction = (new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => 'acceptedaskauthorvalidation', 'id' => $default['id']]);
         $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorValidation');
         $form->setAttrib('id', $formId);
         $form->setAction($formAction);
@@ -3361,7 +3377,7 @@ class Episciences_PapersManager
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
         $form->setName($id);
-        $form->setAction('/administratepaper/' . $action . '?id=' . $docId);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratepaper', 'action' => $action, 'id' => $docId]));
 
 
         $form->addElement('submit', 'submit', [
@@ -3391,7 +3407,7 @@ class Episciences_PapersManager
         $form = new Ccsd_Form;
 
         $form->setAttrib('id', 'form-affi-authors');
-        $form->setAction('/paper/addaffiliationsauthor');
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'paper', 'action' => 'addaffiliationsauthor']));
         $affiliationInfo = [
             'id' => 'affiliations',
             'label' => 'Affiliation(s)',

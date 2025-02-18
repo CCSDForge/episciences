@@ -153,7 +153,7 @@ class FileController extends DefaultController
         } else {
             $message = '<strong>' . $this->view->translate("Le fichier n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector('notfound', 'index');
+            $this->_helper->redirector('notfound', null, null, [PREFIX_ROUTE => RVCODE]);
         }
     }
 
@@ -339,7 +339,7 @@ class FileController extends DefaultController
 
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->redirect('/');
+            $this->redirect($this->url(['controller' => 'index']));
             return;
         }
 
@@ -406,17 +406,16 @@ class FileController extends DefaultController
     private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId): string
     {
         if ($path === 'tmp_attachments') {
-            $fileUrl = '/tmp_files/' . $paperId . '/' . $fileName;
+            $fileUrl = 'tmp_files/' . $paperId . '/' . $fileName;
         } elseif ($path === 'comment_attachments') {
-            $fileUrl = '/docfiles/comments/' . $docId . '/' . $fileName;
+            $fileUrl = 'docfiles/comments/' . $docId . '/' . $fileName;
         } elseif ($path === 'ce_attachments') {
-            $fileUrl = '/docfiles/ce/' . $docId . '/' . $fileName . '/' . $pcId;
+            $fileUrl = 'docfiles/ce/' . $docId . '/' . $fileName . '/' . $pcId;
         } else {
-            $fileUrl = '/';
-            $fileUrl .= substr(Episciences_Tools::getAttachmentsPath((string)$paperId), mb_strlen(REVIEW_FILES_PATH));
+            $fileUrl = substr(Episciences_Tools::getAttachmentsPath((string)$paperId), mb_strlen(REVIEW_FILES_PATH));
             $fileUrl .= $fileName;
         }
-        return $fileUrl;
+        return PREFIX_URL . $fileUrl;
     }
 
 }

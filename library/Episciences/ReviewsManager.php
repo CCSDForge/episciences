@@ -150,11 +150,7 @@ class Episciences_ReviewsManager
 
         $jNumber = 0;
         $journalCollection[$jNumber] = ['Number', 'Code', 'Title', 'ISSN', 'EISSN', 'Address', 'Accepted-repositories'];
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_REVIEW)->where('STATUS = 1');
-        $select->order('NAME ASC');
-        $allJournals = $db->fetchAll($select);
+        $allJournals = self::AllJournals();
         if (!$allJournals) {
             return $journalCollection;
         }
@@ -202,6 +198,14 @@ class Episciences_ReviewsManager
 
         return $journalCollection;
 
+    }
+
+    public static function AllJournals(int|string $status = Episciences_Review::ENABLED): ?array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_REVIEW)->where('STATUS = ?', $status);
+        $select->order('NAME ASC');
+        return $db->fetchAll($select);
     }
 
 }

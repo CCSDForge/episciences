@@ -911,7 +911,7 @@ class Episciences_User extends Ccsd_User_Models_User
     {
         if ($users) {
             $form = new Zend_Form();
-            $form->setAction('/user/saveroles');
+            $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'saveroles']));
 
             $form->addPrefixPath('Episciences_Form_Element', 'Episciences/Form/Element/', Zend_Form::ELEMENT);
             $form->addPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');

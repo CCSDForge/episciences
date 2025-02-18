@@ -2,13 +2,13 @@
     <li>
         <span><i class="fas fa-rss"></i></span>
         <a target="_blank"
-           href="/rss/papers"><?php echo $this->translate('Retrouvez les derniers articles publiés.'); ?></a>
+           href="<?= $this->url(['controller' => 'rss', 'action' => 'papers'])?>"><?php echo $this->translate('Retrouvez les derniers articles publiés.'); ?></a>
     </li>
 
 
     <li>
         <span><i class="fas fa-rss"></i></span>
-        <a target="_blank" href="/rss/news"><?php echo $this->translate('Retrouvez les dernières actualités.'); ?></a>
+        <a target="_blank" href="<?= $this->url(['controller' => 'rss', 'action' => 'news']) ?>"><?php echo $this->translate('Retrouvez les dernières actualités.'); ?></a>
     </li>
 
 </ul>

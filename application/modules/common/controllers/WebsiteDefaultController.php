@@ -1,6 +1,6 @@
 <?php
 
-class WebsiteDefaultController extends Zend_Controller_Action
+class WebsiteDefaultController extends Episciences_Controller_Action
 {
     protected $_session = null;
 
@@ -31,7 +31,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             unset($this->_session->website);
             Zend_Registry::set('languages', $form->getValue('languages'));
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
-            $this->redirect('/website/common');
+            $this->redirect($this->url(['controller' => 'website', 'action' => 'common']));
         }
         $this->view->form = $form;
     }
@@ -89,7 +89,6 @@ class WebsiteDefaultController extends Zend_Controller_Action
     public function publicAction(): void
     {
 
-
         $dir = REVIEW_PATH . 'public/';
         if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
             throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
@@ -103,7 +102,8 @@ class WebsiteDefaultController extends Zend_Controller_Action
         try {
             $translator = Zend_Registry::get('Zend_Translate');
         } catch (Zend_Exception $e) {
-            error_log($e->getMessage);
+            error_log($e->getMessage());
+            $translator = null;
         }
 
         if (isset($params['method']) && $request->isPost()) {
@@ -122,21 +122,24 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
 
-                copy($_FILES['file']['tmp_name'], $dir . $renamedFile );
+                copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
 
-                $message = $translator->translate('Le fichier a été déposé.');
+                if ($translator) {
+                    $message = $translator->translate('Le fichier a été déposé.');
 
-                if ($renamedFile !== $_FILES['file']['name'] ) {
-                    $message = $translator->translate( 'Le fichier a été téléchargé et a été renommé');
-                    $message .=' "';
-                    $message .= $renamedFile;
-                    $message .= '"';
-                    $message .= ' ';
-                    $message .= $translator->translate('car');
-                    $message .= ' "';
-                    $message .= $_FILES['file']['name'];
-                    $message .= '" ';
-                    $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
+                    if ($renamedFile !== $_FILES['file']['name']) {
+                        $message = $translator->translate('Le fichier a été téléchargé et a été renommé');
+                        $message .= ' "';
+                        $message .= $renamedFile;
+                        $message .= '"';
+                        $message .= ' ';
+                        $message .= $translator->translate('car');
+                        $message .= ' "';
+                        $message .= $_FILES['file']['name'];
+                        $message .= '" ';
+                        $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
+                    }
+
                 }
 
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($message);
@@ -168,13 +171,13 @@ class WebsiteDefaultController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if ($request->isPost()) {
+        if ($request->isPost() && !$request->getPost('lang')) {
             $valid = true;
             $pagesDisplay = [];
 
             foreach ($request->getPost() as $id => $options) {
 
-                if (strpos($id, 'pages_') !== 0) {
+                if (!str_starts_with($id, 'pages_')) {
                     continue;
                 }
 
@@ -211,15 +214,18 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     unlink(REVIEW_PATH . 'config/' . 'acl.ini');
                 }
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
-                $this->redirect('/website/menu');
+                $this->redirect($this->url(['controller' => 'website', 'action' => 'menu']));
             } else {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur de saisie");
             }
             $this->view->pagesDisplay = $pagesDisplay;
         }
+        $pageTypes = $this->_session->website->getPageTypes(true);
+        $groupedPageTypes = $this->processPageTypes($pageTypes);
         $this->view->pages = $this->_session->website->getPages();
         $this->view->order = $this->_session->website->getOrder();
-        $this->view->pageTypes = $this->_session->website->getPageTypes(true);
+        $this->view->pageTypes = $pageTypes;
+        $this->view->groupedPageTypes = $groupedPageTypes;
 
     }
 
@@ -276,7 +282,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
     public function resetAction()
     {
         unset($this->_session->website);
-        $this->redirect('/website/menu');
+        $this->redirect($this->url(['controller' => 'website', 'action' => 'menu']));
     }
 
     /**
@@ -293,7 +299,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             if ($form->isValid($post)) {
                 $news->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
-                $this->redirect('/website/news');
+                $this->redirect($this->url(['controller' => 'website', 'action' => 'news']));
 
             } elseif (isset($post['newsid'])) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur dans la saisie");
@@ -337,6 +343,22 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $news->delete($params['newsid']);
             Episciences_JournalNews::deleteByLegacyId($params['newsid']);
         }
+    }
+
+    private function processPageTypes(array $pageTypes = []): array
+    {
+
+        $processed = [];
+        foreach ($pageTypes as $type => $label) {
+            foreach (Episciences_Website_Navigation::$groupedPages as $group => $gTypes) {
+                if (in_array($type, $gTypes, true)) {
+                    $processed[$group][] = $type;
+                }
+            }
+        }
+        ksort($processed);
+        return $processed;
+
     }
 }
 

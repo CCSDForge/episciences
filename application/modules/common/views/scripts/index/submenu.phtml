@@ -3,12 +3,17 @@
     <?php
     foreach ($this->nav()->getPages() as $page) {
 
-        if (!$this->nav()->accept($page)) continue;
+        if (!$this->nav()->accept($page)) {
+            continue;
+        }
 
         if ($page->isActive(true) && $page->hasChildren()) {
             $actif = existPageActive($page);
             foreach ($page->getPages() as $spage) {
-                if (!$this->nav()->accept($spage)) continue;
+
+                if (!$this->nav()->accept($spage)) {
+                    continue;
+                }
 
                 if (!$actif) {
                     $multilevel = true;
@@ -20,16 +25,18 @@
                 ?>
                 <?php if ($multilevel) { ?>
                     <li>
-                    <a href="<?php echo '/' . $spage->getController() . '/' . $spage->getAction()?>"><?php echo $this->translate($spage->getLabel())?></a>
+                    <a href="<?= $this->url(['controller' => $spage->getController(), 'action' => $spage->getAction()]) ?>"><?= $this->translate($spage->getLabel()) ?></a>
                 <?php } ?>
                 <?php if ($page->hasChildren()) { ?>
                     <?php if ($multilevel) { ?>
                         <ul>
                     <?php } ?>
                     <?php foreach ($spage->getPages() as $sspage) {
-                        if (!$this->nav()->accept($sspage)) continue;
+                        if (!$this->nav()->accept($sspage)) {
+                            continue;
+                        }
                         ?>
-                        <li><a href="<?php echo ($sspage->getController() !== '' ? '/' . $sspage->getController() . '/' : '') . $sspage->getAction()?>"><?php echo $this->translate($sspage->getLabel())?></a></li>
+                        <li><a href="<?= $this->url(['controller' => $sspage->getController(), 'action'=> $sspage->getAction()]) ?>"><?= $this->translate($sspage->getLabel())?></a></li>
                     <?php } ?>
                     <?php if ($multilevel) { ?>
                         </ul>

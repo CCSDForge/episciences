@@ -132,7 +132,7 @@ function submit() {
 
             // Refresh de l'affichage des rédacteurs
             $.ajax({
-                url: "/administratepaper/displayeditors",
+                url: JS_PREFIX_URL + "administratepaper/displayeditors",
                 type: "POST",
                 data: {docid: docid, partial: false},
                 success: function (editors) {

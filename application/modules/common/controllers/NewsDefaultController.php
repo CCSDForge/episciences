@@ -1,6 +1,6 @@
 <?php
 
-class NewsDefaultController extends Zend_Controller_Action
+class NewsDefaultController extends Episciences_Controller_Action
 {
 	
 	public function indexAction()

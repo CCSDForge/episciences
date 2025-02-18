@@ -6,7 +6,7 @@ $(function () {
 
     $.ajax({
       type: "POST",
-      url: "/administratelinkeddata/ajaxgetldform/",
+      url: JS_PREFIX_URL + "administratelinkeddata/ajaxgetldform/",
       data: {
         typeld: typeld,
         option: option,
@@ -112,7 +112,7 @@ $(function () {
       }
       $.ajax({
         type: "POST",
-        url: "/administratelinkeddata/setnewinfold/",
+        url: JS_PREFIX_URL + "administratelinkeddata/setnewinfold/",
         data: {
           docId: docId,
           paperId: paperId,
@@ -191,7 +191,7 @@ $(function () {
       }
       $.ajax({
         type: "POST",
-        url: "/administratelinkeddata/addld/",
+        url: JS_PREFIX_URL + "administratelinkeddata/addld/",
         data: {
           typeld: typeLd,
           valueld: valueLd,
@@ -254,7 +254,7 @@ document.addEventListener("click", function (e) {
       });
 
       // Send the POST request using fetch
-      fetch("/administratelinkeddata/removeld/", {
+      fetch(JS_PREFIX_URL + "administratelinkeddata/removeld/", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

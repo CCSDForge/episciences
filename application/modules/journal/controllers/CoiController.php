@@ -35,6 +35,7 @@ class CoiController extends PaperDefaultController
         $loggedUid = Episciences_Auth::getUid();
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+        $controller = self::PUBLIC_PAPER_CONTROLLER;
 
         if (self::isConflictDetected($paper)) {
 
@@ -58,15 +59,11 @@ class CoiController extends PaperDefaultController
                 return;
             }
 
-            $url = '/' . self::PAPER_URL_STR . $paper->getDocid();
-
-
         } else {
-            $url = '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid();
-
+            $controller = self::ADMINISTRATE_PAPER_CONTROLLER;
         }
 
-        $this->_helper->redirector->gotoUrl($url);
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => $controller, 'action' => 'view', 'id' => $paper->getDocid()]));
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
     }
 
@@ -99,9 +96,7 @@ class CoiController extends PaperDefaultController
         }
 
         $loggedUid = Episciences_Auth::getUid();
-
-        $url = '/' . self::PAPER_URL_STR . $docId;
-
+        
         if ($coiReport !== Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
 
             $conflict = new Episciences_Paper_Conflict([
@@ -156,7 +151,7 @@ class CoiController extends PaperDefaultController
             }
 
             if ($coiReport === Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']) {
-                $url = '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $docId;
+                $url = $this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]);
             }
 
             $message = sprintf("<strong>%s</strong>", $this->view->translate("Votre réponse à bien été enregistrée."));
@@ -164,7 +159,7 @@ class CoiController extends PaperDefaultController
 
         }
 
-        $this->_helper->redirector->gotoUrl($url);
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId ]));
     }
 
     /**
