@@ -462,4 +462,18 @@ class Episciences_Paper_DatasetsManager
         }
         return $resUpdate;
     }
+
+    public static function findByRelation(int $docId, string $relation = 'isDocumentedBy'): ?Episciences_Paper_Dataset
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $sql = $db->select()
+            ->from(T_PAPER_DATASETS)
+            ->where('doc_id = ?', $docId)
+            ->where('relationship = ?', $relation);
+
+        $result = $db->fetchRow($sql);
+        return $result ? new Episciences_Paper_Dataset($result) : null;
+    }
+
 }

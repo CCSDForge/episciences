@@ -4702,6 +4702,12 @@ class Episciences_Paper
         return $this->_linkedData;
     }
 
+
+    public function getLinkedDataByRelation(string $relation = 'isDocumentedBy' ): ?\Episciences_Paper_Dataset
+    {
+        return Episciences_Paper_DatasetsManager::findByrelation($this->getDocid(), $relation);
+    }
+
     /**
      * @throws Zend_Exception
      */
