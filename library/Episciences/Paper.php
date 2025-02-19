@@ -5219,7 +5219,7 @@ class Episciences_Paper
 
         $linkedData = $this->getLinkedDataByRelation();
 
-        if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEl) {
+        if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
             return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
         }
 

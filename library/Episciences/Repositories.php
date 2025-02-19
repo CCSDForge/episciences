@@ -38,7 +38,7 @@ class Episciences_Repositories
     public const ZBMATH_OPEN = '17';
 
     public const EPI_USER_ID = '12';
-    public const HAL_LABEl = 'HAL';
+    public const HAL_LABEL = 'HAL';
 
     private static array $_repositories = [];
 
@@ -250,7 +250,7 @@ class Episciences_Repositories
 
     public static function isFromHalRepository(int $repoId): bool
     {
-        return str_contains(self::getLabel($repoId), self::HAL_LABEl);
+        return str_contains(self::getLabel($repoId), self::HAL_LABEL);
 
     }
 
