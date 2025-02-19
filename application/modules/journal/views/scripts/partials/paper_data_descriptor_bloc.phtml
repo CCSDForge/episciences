@@ -35,7 +35,7 @@
 
             <?php if ($isPublished) :
                 $linkedData = $paper->getLinkedDataByRelation();
-                if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEl) {
+                if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
                     $fileName = $linkedData->getValue();
                     $preview = Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
                 }
