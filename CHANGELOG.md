@@ -14,19 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## v1.0.49 - 2025-02-19
 ### Added
-- data descriptor viewer
-### Fixed
-- Updating the volume number and year no longer works.
+- data descriptor viewer for data papers and software papers
 ### Changed
 - Force the article type to "Article" only if it is a preprint when published,
 - Improved licence enrichment for dataset
 ### Fixed
+- Updating the volume number and year no longer works.
 - [#652](https://github.com/CCSDForge/episciences/issues/652): missing translation
 - RT#235731: failed to submit manuscript via ArXiv.
 - Cancelling a file download does not work.
 - Website resources: the file to be downloaded is saved repeatedly each time the page is refreshed.
+
 ## v1.0.48 - 2025-02-06
 ### Changed 
 - It is no longer possible to delete files attached to the temporary version.
