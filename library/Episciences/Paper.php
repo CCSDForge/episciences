@@ -1369,6 +1369,7 @@ class Episciences_Paper
             ],
             Episciences_Paper_XmlExportManager::DATABASE_KEY => [
                 'current' => [
+                    'mainPdfUrl' => $this->getMainPaperUrl(),
                     'original_language' => $xmlToArray[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_METADATA_KEY]['@language'] ?? 'en',
                     'identifiers' => [
                         'permanent_item_number' => $this->getPaperid(),
@@ -3117,7 +3118,10 @@ class Episciences_Paper
     /**
      * set article XML (record + local data)
      * @return bool
-     * @throws Zend_Db_Statement_Exception|DOMException
+     * @throws DOMException
+     * @throws JsonException
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public function updateXml()
     {
@@ -3172,7 +3176,11 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('version', $this->getVersion()));
         $node->appendChild($dom->createElement('esURL', SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN . '/' . $this->getDocid()));
         $node->appendChild($dom->createElement('docURL', $this->getDocUrl()));
-        $node->appendChild($dom->createElement('paperURL', $this->getPaperUrl()));
+        $mainUrl = $this->getMainPaperUrl();
+        // ----  @sse [#644]: https://github.com/CCSDForge/episciences/issues/644
+        $node->appendChild($dom->createElement('notHasHook', !empty($mainUrl)));
+        $node->appendChild($dom->createElement('paperURL', $mainUrl));
+        // ----- end @see [#644]
         $node->appendChild($dom->createElement('volume', $this->getVid()));
         $node->appendChild($dom->createElement('section', $this->getSid()));
         $node->appendChild($dom->createElement('status', $this->getStatus()));
@@ -3182,7 +3190,6 @@ class Episciences_Paper
         $submitter = ($this->getSubmitter()) ? $this->getSubmitter()->getFullName() : null;
         $node->appendChild($dom->createElement('submitter', $submitter));
         $node->appendChild($dom->createElement('uid', $this->getUid()));
-        $node->appendChild($dom->createElement('notHasHook', !$this->hasHook));
         $node->appendChild($dom->createElement('isImported', $this->isImported()));
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || $isAllowedToListOnlyAssignedPapers || $this->getUid() === Episciences_Auth::getUid()));
@@ -5159,6 +5166,65 @@ class Episciences_Paper
     public function isPreprint(): bool
     {
         return in_array($this->_type[self::TITLE_TYPE], self::PREPRINT_TYPES, true);
+    }
+
+    /**
+     * returns the repository url to the main paper's file
+     * @return string|null
+     */
+
+    public function getMainPaperUrl(): ?string
+    {
+        if ($this->isDataSetOrSoftware()) {
+            return $this->getDataDescriptorUrl();
+        }
+
+        if ($this->hasHook) {
+
+            $files = $this->getFiles();
+            /** @var Episciences_Paper_File $file */
+            $count = 0;
+
+            foreach ($files as $file) {
+
+                if (($file->getFileType() === 'pdf') && $file->getFileSize() <= MAX_PDF_SIZE) {
+                    return Episciences_Repositories::isDataverse($this->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
+                }
+
+                $count++;
+
+            }
+        } else {
+            return $this->getPaperUrl();
+        }
+
+        if ($count > 0) {
+            trigger_error(sprintf('PDF size is over %s', Episciences_Tools::toHumanReadable(MAX_PDF_SIZE)));
+        }
+
+        return null;
+    }
+
+
+    /**
+     * returns the repository DD url file
+     * @return string|null
+     */
+
+    public function getDataDescriptorUrl(): ?string
+    {
+        if (!$this->isDataSetOrSoftware()) {
+            return null;
+        }
+
+        $linkedData = $this->getLinkedDataByRelation();
+
+        if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEl) {
+            return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
+        }
+
+        return null;
+
     }
 
 }

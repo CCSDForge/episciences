@@ -34,41 +34,16 @@ class PaperController extends PaperDefaultController
 
         $this->requestingAnUnpublishedFile($paper);
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
+        $url = $paper->getMainPaperUrl();
 
-        $pdf_name = null;
-        $url = null;
-        $count = 0;
-
-        if ($paper->hasHook) {
-
-            $files = $paper->getFiles();
-
-            /** @var Episciences_Paper_File $file */
-
-            foreach ($files as $file) {
-
-                if ($file->getFileType() === 'pdf') {
-                    ++$count;
-                    if ($file->getFileSize() <= MAX_PDF_SIZE) {
-                        $pdf_name = $file->getFileName();
-                        $url = Episciences_Repositories::isDataverse($paper->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
-                        break;
-                    }
-                }
-
-            }
-        } else {
-            $pdf_name = $paper->getIdentifier() . '.pdf';
-            $url = $paper->getPaperUrl();
-        }
-
-        if (!$pdf_name || !$url) {
+        if (!$url) {
             Episciences_Tools::header('HTTP/1.1 404 Not Found');
-            $this->view->message = $count > 0 ? 'PDF size is over ' . Episciences_Tools::toHumanReadable(MAX_PDF_SIZE) : 'no PDF files found';
+            $this->view->message = 'no PDF files found';
             $this->renderScript('error/http_error.phtml');
             return;
         }
 
+        $pdf_name = $paper->getIdentifier() . '.pdf';
 
         $mainDocumentContent = $this->getMainDocumentContent($paper, $url);
 
