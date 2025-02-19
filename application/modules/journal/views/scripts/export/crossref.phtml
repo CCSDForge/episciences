@@ -333,17 +333,18 @@ $paperLanguage = $this->paperLanguage;
             </program>
 
             <doi_data>
+                <?php $pdfLink = $paper->getMainPaperUrl() ?>
                 <doi><?php echo htmlentities($this->doi, ENT_XML1); ?></doi>
                 <resource><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></resource>
                 <collection property="crawler-based">
                     <item crawler="iParadigms">
-                        <resource><?php echo $journalUrl . '/' . $paper->getDocid() . '/pdf'; ?></resource>
+                        <resource><?= $pdfLink ?></resource>
                     </item>
                 </collection>
                 <collection property="text-mining">
                     <item>
                         <resource
-                                mime_type="application/pdf"><?php echo $journalUrl . '/' . $paper->getDocid() . '/pdf'; ?></resource>
+                                mime_type="application/pdf"><?= $pdfLink ?></resource>
                     </item>
                 </collection>
             </doi_data>
