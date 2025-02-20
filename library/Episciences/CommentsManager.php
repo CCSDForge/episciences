@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\AppRegistry;
+
 class Episciences_CommentsManager
 {
     // possible comment types
@@ -35,6 +37,11 @@ class Episciences_CommentsManager
 
     public const COPY_EDITING_SOURCES = 'copy_editing_sources';
     public const TYPE_ANSWER_REQUEST = 'answerRequest';
+    public static array $suggestionTypes = [
+        self::TYPE_SUGGESTION_ACCEPTATION,
+        self::TYPE_SUGGESTION_REFUS,
+        self::TYPE_SUGGESTION_NEW_VERSION
+    ];
 
     public static array $_typeLabel = [
         self::TYPE_INFO_REQUEST => "demande d'éclaircissements",
@@ -175,11 +182,7 @@ class Episciences_CommentsManager
 
         $result = array_filter($result, static function ($value) {
 
-            $isEmptyCommentsAccepted = in_array((int)$value['TYPE'], [
-                self::TYPE_SUGGESTION_ACCEPTATION,
-                self::TYPE_SUGGESTION_REFUS,
-                self::TYPE_SUGGESTION_NEW_VERSION
-            ]);
+            $isEmptyCommentsAccepted = in_array((int)$value['TYPE'], self::$suggestionTypes, true);
 
             return
                 $isEmptyCommentsAccepted ||
@@ -746,34 +749,41 @@ class Episciences_CommentsManager
     }
 
     /**
+     * Save author comment and attached file
      * @param Episciences_Paper $paper
-     * @param array $coverLetter
+     * @param array|Episciences_Comment $coverLetter
      * @param bool $ignoreUpload // [true] the attached file has already been uploaded
-     * @return bool
+     * @return bool|Episciences_Comment
      */
 
-    public static function saveCoverLetter(Episciences_Paper $paper, array $coverLetter = ["message" => '', "attachedFile" => null], bool $ignoreUpload = false): bool
+    public static function saveCoverLetter(Episciences_Paper $paper, array | Episciences_Comment $coverLetter = ["message" => '', "attachedFile" => null], bool $ignoreUpload = false): bool | Episciences_Comment
     {
 
-        if (empty($coverLetter['message']) && empty($coverLetter['attachedFile'])) { //Avoid inserting an empty row
-            return true;
+        if ($coverLetter instanceof Episciences_Comment) {
+            $authorComment = $coverLetter;
+
+        } else {
+            $authorComment = new Episciences_Comment();
+            $authorComment->setMessage($coverLetter["message"]);
+            $authorComment->setFile($coverLetter["attachedFile"]);
+            $authorComment->setType(self::TYPE_AUTHOR_COMMENT);
+            $authorComment->setDocid($paper->getDocid());
         }
 
-        // Save author comment and attached file
-        $authorComment = new Episciences_Comment();
         $authorComment->setFilePath(REVIEW_FILES_PATH . $paper->getDocid() . '/comments/');
-        $authorComment->setType(self::TYPE_AUTHOR_COMMENT);
-        $authorComment->setDocid($paper->getDocid());
-        $authorComment->setMessage($coverLetter["message"]);
-        $authorComment->setFile($coverLetter["attachedFile"]);
+
+
+        if (!$authorComment->getFile() && empty(trim($authorComment->getMessage()))) { //Avoid inserting an empty row
+            return $authorComment;
+        }
 
 
         if (!$authorComment->save(false, null, $ignoreUpload)) {
-            trigger_error(sprintf('Failed to save cover letter for document #%s', $paper->getDocid()));
+            AppRegistry::getMonoLogger()?->warning(sprintf('Failed to save cover letter for document #%s', $paper->getDocid()));
             return false;
         }
 
-        return true;
+        return $authorComment;
     }
 
     /**

@@ -203,7 +203,6 @@ class Episciences_Mail_Send
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
-     * @throws Exception
      */
     public static function sendMailFromReview(
         Episciences_User  $recipient,
@@ -274,20 +273,26 @@ class Episciences_Mail_Send
                 $attachmentPath = Episciences_Tools::getAttachmentsPath($paper->getPaperid(), true);
 
             } catch (Exception $e) {
+                $attachmentPath = '';
                 trigger_error($e->getMessage());
             }
-            foreach ($attachmentsFiles as $fileName => $filePath) {
-                if (file_exists($filePath . $fileName)) {
-                    if (!$makeACopy) {
-                        $mail->addAttachedFile($attachmentPath . $fileName);
-                    } else {
-                        $newName = Episciences_Tools::filenameRotate($attachmentPath, $fileName);
-                        if (copy($filePath . $fileName, $attachmentPath . $newName)) {
-                            $mail->addAttachedFile($attachmentPath . $newName);
+
+            if($attachmentPath !== '') {
+                foreach ($attachmentsFiles as $fileName => $filePath) {
+                    if (file_exists($filePath . $fileName)) {
+                        if (!$makeACopy) {
+                            $mail->addAttachedFile($attachmentPath . $fileName);
+                        } else {
+                            $newName = Episciences_Tools::filenameRotate($attachmentPath, $fileName);
+                            if (copy($filePath . $fileName, $attachmentPath . $newName)) {
+                                $mail->addAttachedFile($attachmentPath . $newName);
+                            }
                         }
                     }
                 }
+
             }
+
         }
 
         $mail->writeMail($journalOptions['rvCode'], $journalOptions['rvId'], isset($journalOptions['debug']) && $journalOptions['debug']);
@@ -297,9 +302,7 @@ class Episciences_Mail_Send
             return false;
         }*/
 
-        if ($paper) {
-            $paper->log(Episciences_Paper_Logger::CODE_MAIL_SENT, $authUid, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
-        }
+        $paper?->log(Episciences_Paper_Logger::CODE_MAIL_SENT, $authUid, ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
 
         return true;
     }

@@ -5180,6 +5180,25 @@ class Episciences_Paper
         return in_array($this->_type[self::TITLE_TYPE], self::PREPRINT_TYPES, true);
     }
 
+
+    public function getOwner(): ?Episciences_User
+    {
+
+        $owner = new Episciences_User();
+        try {
+            $owner->find($this->getUid());
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        if(!$owner->getUid()){
+            return null;
+        }
+
+        return $owner;
+
+    }
+
     /**
      * returns the repository url to the main paper's file
      * @return string|null
