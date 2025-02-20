@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
 ### Changed [current branch]
 - Ability to customise application environment variables
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
@@ -21,9 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
-## Unreleased
+## v1.0.49 - 2025-02-19
 ### Added
-- data descriptor viewer
+- data descriptor viewer for data papers and software papers
 ### Changed
 - Force the article type to "Article" only if it is a preprint when published,
 - Improved licence enrichment for dataset
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RT#235731: failed to submit manuscript via ArXiv.
 - Cancelling a file download does not work.
 - Website resources: the file to be downloaded is saved repeatedly each time the page is refreshed.
+
 ## v1.0.48 - 2025-02-06
 ### Changed 
 - It is no longer possible to delete files attached to the temporary version.
