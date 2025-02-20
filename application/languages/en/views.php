@@ -430,6 +430,7 @@ return array(
     "nombre uniquement" => "number only",
     "supérieur à " => "greater than ",
     "dernière version soumise à la revue" => "latest version submitted to the journal",
+    'dernière version' => 'latest version',
     "La nouvelle version a bien été mise en ligne dans l'archive ouverte/l'entrepôt" => "The new version is online in the open archive/repository",
 
 
@@ -2076,7 +2077,7 @@ return array(
     "Réinitialiser le mot de passe API" => "Change your API password",
     "Changer le mot de passe API associé à votre compte" => 'Updating the API password for your account',
     'Changement de mot de passe API' => 'Updating the API password',
-    '8 caractères minimum pour votre nouveau mot de passe'=> '8 characters minimum for your new password',
+    '8 caractères minimum pour votre nouveau mot de passe' => '8 characters minimum for your new password',
 
     // co-author
     "Co-auteur" => "Co-author",

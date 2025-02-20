@@ -12,7 +12,7 @@ class HalController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
         header('Content-Type: text/json');
 
-        $repoId = Episciences_Repositories::getRepoIdByLabel(Episciences_Repositories::HAL_LABEl);
+        $repoId = Episciences_Repositories::getRepoIdByLabel(Episciences_Repositories::HAL_LABEL);
 
         $settings = ['is' => [
             'repoid' => $repoId,
