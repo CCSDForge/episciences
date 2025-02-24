@@ -5043,13 +5043,8 @@ class Episciences_Paper
     {
         if ($this->isPublished()) {
             $type = $this->getType();
-            if (
-                empty($type) || (
-                    isset($type[self::TITLE_TYPE]) &&
-                    (in_array($type[self::TITLE_TYPE], self::PREPRINT_TYPES, true))
-                )) {
+            if (empty($type) || (isset($type[self::TITLE_TYPE]) && $this->isPreprint())) {
                 $this->setType([self::TITLE_TYPE => self::ARTICLE_TYPE_TITLE]);
-
             }
 
         }
