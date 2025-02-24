@@ -463,8 +463,12 @@ class Episciences_Paper_DatasetsManager
         return $resUpdate;
     }
 
-    public static function findByRelation(int $docId, string $relation = 'isDocumentedBy'): ?Episciences_Paper_Dataset
+    public static function findByRelation(int $docId = null, string $relation = 'isDocumentedBy'): ?Episciences_Paper_Dataset
     {
+        if (!$docId) {
+            return null;
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $sql = $db->select()
