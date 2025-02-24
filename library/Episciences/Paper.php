@@ -255,6 +255,7 @@ class Episciences_Paper
     public const REGULAR_ARTICLE_TYPE_TITLE = 'regulararticle';
     public const JOURNAL_ARTICLE_TYPE_TITLE = 'journalarticle';
     public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
+    public const MED_ARXIV_PREPRINT = 'hwp-article-coll';
 
 
     public const ENUM_TYPES = [
@@ -271,6 +272,7 @@ class Episciences_Paper
         self::DEFAULT_TYPE_TITLE,
         self::TEXT_TYPE_TITLE,
         self::WORKING_PAPER_TYPE_TITLE,
+        self::MED_ARXIV_PREPRINT
     ];
     public const JSON_PATH_ABS_FILE = "$.database.current.graphical_abstract_file";
     public static array $_statusPriority = [
