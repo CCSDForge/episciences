@@ -5190,23 +5190,15 @@ class Episciences_Paper
 
             $files = $this->getFiles();
             /** @var Episciences_Paper_File $file */
-            $count = 0;
 
             foreach ($files as $file) {
 
-                if (($file->getFileType() === 'pdf') && $file->getFileSize() <= MAX_PDF_SIZE) {
+                if (($file->getFileType() === 'pdf')) {
                     return Episciences_Repositories::isDataverse($this->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
                 }
-
-                $count++;
-
             }
         } else {
             return $this->getPaperUrl();
-        }
-
-        if ($count > 0) {
-            trigger_error(sprintf('PDF size is over %s', Episciences_Tools::toHumanReadable(MAX_PDF_SIZE)));
         }
 
         return null;

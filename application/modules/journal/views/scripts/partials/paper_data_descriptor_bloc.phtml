@@ -30,17 +30,11 @@
                 $panelTile = $isMultiple && !$isPublished ? 'Descripteurs de données' : 'Descripteur de données';
             }
 
+            if ($isPublished) {
+                $preview = $paper->getMainPaperUrl();
+            }
+
             ?>
-
-
-            <?php if ($isPublished) :
-                $linkedData = $paper->getLinkedDataByRelation();
-                if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
-                    $fileName = $linkedData->getValue();
-                    $preview = Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
-                }
-                ?>
-            <?php endif; ?>
 
             <h2 class="panel-title"><?= sprintf('%s <span class="small fa-solid fa-chevron-right" style="margin-right:5px;"></span><span class="small badge"">%s</span>', $this->translate($panelTile), $fileName) ?></h2>
         </div>
