@@ -297,26 +297,7 @@ class getDoi extends JournalScript
         file_put_contents($this->getMetadataPathFileName(), $res->getBody());
     }
 
-    /**
-     * @return string
-     */
-    private function getJournalUrl(): string
-    {
-        if ($this->getJournalHostname() !== '') {
-            return $this->getJournalHostname();
-        }
-        return $this->getReview()->getCode() . '.' . DOMAIN;
-    }
-
-    /**
-     * @return string
-     */
-    public function getJournalHostname(): string
-    {
-        return $this->_journalHostname;
-    }
-
-    /**
+     /**
      * @param string $journalDomain
      */
     public function setJournalHostname(string $journalDomain): void
