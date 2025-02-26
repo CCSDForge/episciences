@@ -4068,6 +4068,18 @@ class Episciences_Paper
         return $this;
     }
 
+    public function getLatestDataDescriptor(): null|\Episciences\Paper\DataDescriptor
+    {
+        $allDd = $this->getDataDescriptors();
+
+        if (empty($allDd)) {
+            return null;
+        }
+
+        return $allDd[array_key_first($allDd)];
+
+    }
+
     /**
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception

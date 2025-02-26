@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [RT#237714]: The file renamed after downloading was not taken into account, which broke the link with this file.
   This bug affected the new version of the cover letter.
+- IDE Warning: Method 'getVersion' not found in array|null
 
 ## v1.0.49 - 2025-02-19
 ### Added
