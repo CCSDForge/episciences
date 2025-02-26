@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Fixed
+- [RT#237714]: The file renamed after downloading was not taken into account, which broke the link with this file.
+  This bug affected the new version of the cover letter.
+
 ## v1.0.49 - 2025-02-19
 ### Added
 - data descriptor viewer for data papers and software papers
