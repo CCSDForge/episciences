@@ -83,12 +83,12 @@ class DataDescriptor
         return $this;
     }
 
-    public function getVersion(): int
+    public function getVersion(): float
     {
         return $this->version;
     }
 
-    public function setVersion(int $version): self
+    public function setVersion(float $version): self
     {
         $this->version = $version;
         return $this;
