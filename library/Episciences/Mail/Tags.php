@@ -103,6 +103,8 @@ class Episciences_Mail_Tags
     public const TAG_REVISION_DEADLINE = '%%REVISION_DEADLINE%%';
     public const TAG_AUTHOR_FULL_NAME = '%%AUTHOR_FULLNAME%%'; // identique à "TAG_CONTRIBUTOR_FULL_NAME", dans le ca où vous le supprimeriez pour en garder un seul, penssez bien a son remplacement dans les templates de mails par default et personnalisés.
     public const TAG_AUTHOR_EMAIL = '%%AUTHOR_EMAIL%%';
+    public const TAG_AUTHOR_SCREEN_NAME = '%%AUTHOR_SCREEN_NAME%%';
+    // git #250
     // git #250
     public const TAG_REVISION_DATES = '%%REVISION_DATES%%'; // toutes les dates de révision
     public const TAG_REVISION_DATES_ISO = '%%REVISION_DATES_ISO%%'; // toutes les dates de révision en format ISO
@@ -209,5 +211,7 @@ class Episciences_Mail_Tags
         self::TAG_VOLUME_EDITORS => "tous les rédacteurs assignés au volume de l'article (e.g. : Hartman Rodney, Daniel Bryan, Walls John)",
         self::TAG_VOLUME_ID => "identifiant du volume de l'article",
         self::TAG_VOLUME_NAME => "nom du volume de l'article",
+        self::TAG_AUTHOR_FULL_NAME => "nom d'affichage de l’auteur",
+        self::TAG_AUTHOR_SCREEN_NAME => 'nom complet de l’auteur'
     ];
 }

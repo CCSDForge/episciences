@@ -2023,7 +2023,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME => $post[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME],
                 Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME => $_FILES[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? null,
                 Episciences_Submit::DD_FILE_ELEMENT_NAME => $_FILES[Episciences_Submit::DD_FILE_ELEMENT_NAME]['name'] ?? null,
-                Episciences_Submit::DD_PREVIOUS_VERSION_STR => $paper->getDataDescriptors()?->getVersion()
+                Episciences_Submit::DD_PREVIOUS_VERSION_STR => $paper->getLatestDataDescriptor()?->getVersion()
             ];
 
 

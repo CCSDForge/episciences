@@ -285,8 +285,7 @@ class getDoi extends JournalScript
      */
     private function getMetadataFile(): void
     {
-
-        $paperUrl = SERVER_PROTOCOL . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
+        $paperUrl = sprintf("%spapers/export/%s/crossref?code=%s", EPISCIENCES_API_URL, $this->getPaper()->getPaperid(), $this->getReview()->getCode());
         echo PHP_EOL . 'Requesting: ' . $paperUrl;
         $client = new Client();
         try {
@@ -353,6 +352,7 @@ class getDoi extends JournalScript
         } else {
             $apiUrl = DOI_API;
         }
+        echo PHP_EOL . 'Posting: ' . $this->getMetadataPathFileName();
 
         return (new Client())->request('POST', $apiUrl, [
             'multipart' => [

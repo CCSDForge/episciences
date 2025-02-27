@@ -220,6 +220,10 @@ return [
     "paper_comment_by_editor_editor_copy_tpl_name" => "Editor's comment about a paper (editors copy)",
     "paper_comment_by_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - editor comment about an article you're managing",
 
+    // Commentaire de l'auteur / lettre d'accompagnement
+    'paper_author_comment_editor_copy_tpl_name' => "Author's comments / Cover letter",
+    'paper_author_comment_editor_copy_mail_subject' => "Author's comments / Cover letter",
+
 
     // PAPER - SUGGESTIONS D'UN REDACTEUR ***************************************************************************************************************
     "paper_editor_suggestion_tpl_group" => "Paper - editor suggestions",

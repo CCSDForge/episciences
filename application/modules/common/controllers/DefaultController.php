@@ -1,6 +1,7 @@
 <?php
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Monolog\Logger;
 
 
 class DefaultController extends Episciences_Controller_Action
@@ -379,5 +380,4 @@ class DefaultController extends Episciences_Controller_Action
         $this->view->error = true;
 
     }
-
 }

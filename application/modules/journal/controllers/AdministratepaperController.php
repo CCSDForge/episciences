@@ -598,16 +598,16 @@ class AdministratepaperController extends PaperDefaultController
             $editor_comment_form = Episciences_CommentsManager::getForm('editor_comment_form');
             $this->view->editor_comment_form = $editor_comment_form;
 
-            if ($request->getPost('postComment') !== null) {
-                if ($editor_comment_form->isValid($request->getPost()) && $this->save_editor_comment($paper)) {
+            if (($request->getPost('postComment') !== null) && $editor_comment_form->isValid($request->getPost())) {
+                if ($this->save_editor_comment($paper)) {
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-                    $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER , 'action' => 'view', 'id' => $paper->getDocid()]));
-
                 } else {
                     $message = $this->view->translate("Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau.");
                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                 }
+
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER , 'action' => 'view', 'id' => $paper->getDocid()]));
             }
         }
 
@@ -1136,12 +1136,6 @@ class AdministratepaperController extends PaperDefaultController
     /**
      * @param Episciences_Paper $paper
      * @return bool
-     * @throws JsonException
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Json_Exception
      */
     private function save_editor_comment(Episciences_Paper $paper): bool
     {

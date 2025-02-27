@@ -255,6 +255,7 @@ class Episciences_Paper
     public const REGULAR_ARTICLE_TYPE_TITLE = 'regulararticle';
     public const JOURNAL_ARTICLE_TYPE_TITLE = 'journalarticle';
     public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
+    public const MED_ARXIV_PREPRINT = 'hwp-article-coll';
 
 
     public const ENUM_TYPES = [
@@ -271,6 +272,7 @@ class Episciences_Paper
         self::DEFAULT_TYPE_TITLE,
         self::TEXT_TYPE_TITLE,
         self::WORKING_PAPER_TYPE_TITLE,
+        self::MED_ARXIV_PREPRINT
     ];
     public const JSON_PATH_ABS_FILE = "$.database.current.graphical_abstract_file";
     public static array $_statusPriority = [
@@ -4075,6 +4077,18 @@ class Episciences_Paper
         return $this;
     }
 
+    public function getLatestDataDescriptor(): null|\Episciences\Paper\DataDescriptor
+    {
+        $allDd = $this->getDataDescriptors();
+
+        if (empty($allDd)) {
+            return null;
+        }
+
+        return $allDd[array_key_first($allDd)];
+
+    }
+
     /**
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -5048,13 +5062,8 @@ class Episciences_Paper
     {
         if ($this->isPublished()) {
             $type = $this->getType();
-            if (
-                empty($type) || (
-                    isset($type[self::TITLE_TYPE]) &&
-                    (in_array($type[self::TITLE_TYPE], self::PREPRINT_TYPES, true))
-                )) {
+            if (empty($type) || (isset($type[self::TITLE_TYPE]) && $this->isPreprint())) {
                 $this->setType([self::TITLE_TYPE => self::ARTICLE_TYPE_TITLE]);
-
             }
 
         }
@@ -5173,6 +5182,25 @@ class Episciences_Paper
     public function isPreprint(): bool
     {
         return in_array($this->_type[self::TITLE_TYPE], self::PREPRINT_TYPES, true);
+    }
+
+
+    public function getOwner(): ?Episciences_User
+    {
+
+        $owner = new Episciences_User();
+        try {
+            $owner->find($this->getUid());
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        if(!$owner->getUid()){
+            return null;
+        }
+
+        return $owner;
+
     }
 
     /**
