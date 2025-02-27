@@ -4070,6 +4070,18 @@ class Episciences_Paper
         return $this;
     }
 
+    public function getLatestDataDescriptor(): null|\Episciences\Paper\DataDescriptor
+    {
+        $allDd = $this->getDataDescriptors();
+
+        if (empty($allDd)) {
+            return null;
+        }
+
+        return $allDd[array_key_first($allDd)];
+
+    }
+
     /**
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -5163,6 +5175,25 @@ class Episciences_Paper
     public function isPreprint(): bool
     {
         return in_array($this->_type[self::TITLE_TYPE], self::PREPRINT_TYPES, true);
+    }
+
+
+    public function getOwner(): ?Episciences_User
+    {
+
+        $owner = new Episciences_User();
+        try {
+            $owner->find($this->getUid());
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        if(!$owner->getUid()){
+            return null;
+        }
+
+        return $owner;
+
     }
 
     /**

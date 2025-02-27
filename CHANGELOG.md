@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+### Added
+- [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
+
+### Fixed
+- [RT#237714]: The file renamed after downloading was not taken into account, which broke the link with this file.
+  This bug affected the new version of the cover letter.
+- IDE Warning: Method 'getVersion' not found in array|null
+
 ## v1.0.49 - 2025-02-19
 ### Added
 - data descriptor viewer for data papers and software papers

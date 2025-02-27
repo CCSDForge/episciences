@@ -1,4 +1,7 @@
 <?php
+
+use Episciences\AppRegistry;
+
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class PaperDefaultController extends DefaultController
@@ -322,44 +325,51 @@ class PaperDefaultController extends DefaultController
      * @param array $additionalAttachments
      * @param array $options : others options
      * @return bool
-     * @throws JsonException
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
+     *
      */
     protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [], array $options = []): bool
     {
+
+       $logger = AppRegistry::getMonoLogger();
+
         $commentatorUid = $oComment->getUid();
         $commentator = new Episciences_User();
 
         try {
             $commentator->findWithCAS($commentatorUid);
         } catch (Exception $e) {
-            trigger_error('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e);
+            $logger?->critical('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e);
             return false;
         }
 
         $attachmentsFiles = [];
         $docId = $paper->getDocid();
-        $recipients = $this->getAllEditors($paper);
-
-        // ne pas notifier le commentateur
-        unset($recipients[$commentatorUid]);
-
+        $recipients = [];
+        $CC = [];
+        try {
+            $recipients = $this->getAllEditors($paper);
+            // ne pas notifier le commentateur
+            unset($recipients[$commentatorUid]);
+        } catch (JsonException|Zend_Db_Statement_Exception$e) {
+            $logger?->warning($e);
+        }
         //false : si aucun rédacteur n'est affecté à l'article ou si le commentaire est une suggestion
         $strict = !empty($recipients) &&
-            (   !in_array($oComment->getType(), [
+            (!in_array($oComment->getType(), [
                 Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
                 Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
                 Episciences_CommentsManager::TYPE_SUGGESTION_REFUS
             ], true)
             );
 
-        Episciences_Review::checkReviewNotifications($recipients, $strict);
+        try {
+            Episciences_Review::checkReviewNotifications($recipients, $strict);
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+            $CC = $paper->extractCCRecipients($recipients);
+        } catch (Zend_Db_Statement_Exception $e) {
+            $logger?->critical($e);
+        }
 
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
-
-        $CC = $paper->extractCCRecipients($recipients);
 
         if (empty($recipients)) {
             $recipients = $CC;
@@ -376,9 +386,20 @@ class PaperDefaultController extends DefaultController
             Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
-            Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME => $commentator->getScreenName(),
-            Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME=> $commentator->getFullName()
         ];
+
+        if ($oComment->isEditorComment() || $oComment->isSuggestion()) {
+            $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] = $commentator->getScreenName();
+            $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] = $commentator->getFullName();
+        } elseif($paper->isOwner()){
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME] = Episciences_Auth::getScreenName();
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME] = Episciences_Auth::getFullName();
+
+        } else {
+            $owner = $paper->getOwner();
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME] = $owner?->getScreenName();
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME] = $owner?->getFullName();
+        }
 
         if ($oComment->getFile()) { //  attachment file
             $attachmentsFiles[$oComment->getFile()] = $oComment->getFilePath();
@@ -404,6 +425,9 @@ class PaperDefaultController extends DefaultController
                 $makeCopy = false; // see "save_reviewer_comment" function: makeCopy = true
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY;
                 break;
+            case Episciences_CommentsManager::TYPE_AUTHOR_COMMENT:
+                $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY;
+                break;
             default:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
         }
@@ -417,18 +441,19 @@ class PaperDefaultController extends DefaultController
         foreach ($recipients as $uid => $recipient) {
 
             $locale = $recipient->getLangueid();
-            $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
-            $recipientTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
             $recipientTags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = $this->view->Date($paper->getSubmission_date(), $locale);
 
             try {
+                $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
+                $recipientTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
                 Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC);
                 ++$nbNotifications;
                 $makeCopy = false;
-            } catch (Zend_Mail_Exception | Zend_Session_Exception $e) {
-                trigger_error('FAILED_TO_SEND_NEW_COMMENT_NOTIFICATION_TO_RECIPIENT_' . $uid . ' : ' . $e);
+            } catch (Zend_Db_Adapter_Exception|Zend_Mail_Exception|Zend_Exception|Zend_Session_Exception $e) {
+                $logger?->warning('FAILED_TO_SEND_NEW_COMMENT_NOTIFICATION_TO_RECIPIENT_' . $uid . ' : ' . $e);
                 continue;
             }
+
             // reset $CC
             $CC = [];
         }
