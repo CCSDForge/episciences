@@ -1807,6 +1807,10 @@ class UserDefaultController extends Zend_Controller_Action
         if ($input) {
             foreach ($input as $index => $value) {
 
+                if(empty($value)){
+                    continue;
+                }
+
                 if ($operationType === 'disassemble') {
 
                     $explodedValue = explode($separator, $value);

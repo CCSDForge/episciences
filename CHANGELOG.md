@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ### Fixed
+- [#654](https://github.com/CCSDForge/episciences/issues/654): Unable to modify a user's profile.
 - [RT#237714]: The file renamed after downloading was not taken into account, which broke the link with this file.
   This bug affected the new version of the cover letter.
 - IDE Warning: Method 'getVersion' not found in array|null
