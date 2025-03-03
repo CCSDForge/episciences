@@ -1882,6 +1882,10 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    "Évaluation" => "Évaluation",
+    "Évaluations reçues" => "Reviews received",
+    "Évaluations demandées" => "Reviews requested",
+    "Nombre médian d'évaluations d'articles de recherche" => "Median number of reviews for research articles",
     "le nombre total d'articles acceptés" => 'the total number of accepted for publication',
     "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of articles submitted during this period',
     "toutes les soumissions" => "all submissions",
