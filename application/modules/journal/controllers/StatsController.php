@@ -493,7 +493,7 @@ class StatsController extends Zend_Controller_Action
 
         foreach ($evaluations as $stats) {
             $var = Episciences_Tools::convertToCamelCase($stats['name'], '-');
-            $$var = $stats['value'];
+            $$var = $stats['value'] ?? null;
         }
     }
 
