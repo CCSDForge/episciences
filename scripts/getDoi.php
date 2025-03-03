@@ -17,8 +17,7 @@ $localopts = [
     'rvid=i' => 'RVID of a journal',
     'assign-accepted' => 'Assign DOI to all accepted papers',
     'assign-published' => 'Assign DOI to all accepted papers',
-    'request' => 'Request all assigned DOI of a journal',
-    'journal-hostname=s' => 'Get XML files from an alternate journal hostname, eg: test.episciences.org'
+    'request' => 'Request all assigned DOI of a journal'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {
@@ -55,11 +54,6 @@ class getDoi extends JournalScript
      */
     protected bool $_dryRun = true;
     /**
-     * @var string
-     */
-    protected string $_journalHostname;
-
-    /**
      * getDoi constructor.
      * @param $localopts
      */
@@ -76,13 +70,6 @@ class getDoi extends JournalScript
         } else {
             $this->setDryRun(false);
         }
-
-        $journalHostname = $this->getParam('journal-hostname');
-        if ($journalHostname === null) {
-            $journalHostname = '';
-        }
-        $this->setJournalHostname($journalHostname);
-
     }
 
     public function run()
@@ -285,8 +272,7 @@ class getDoi extends JournalScript
      */
     private function getMetadataFile(): void
     {
-
-        $paperUrl = SERVER_PROTOCOL . '://' . $this->getJournalUrl() . '/' . $this->getPaper()->getPaperid() . '/' . mb_strtolower(DOI_AGENCY);
+        $paperUrl = sprintf("%spapers/export/%s/crossref?code=%s", EPISCIENCES_API_URL, $this->getPaper()->getPaperid(), $this->getReview()->getCode());
         echo PHP_EOL . 'Requesting: ' . $paperUrl;
         $client = new Client();
         try {
@@ -296,33 +282,6 @@ class getDoi extends JournalScript
         }
 
         file_put_contents($this->getMetadataPathFileName(), $res->getBody());
-    }
-
-    /**
-     * @return string
-     */
-    private function getJournalUrl(): string
-    {
-        if ($this->getJournalHostname() !== '') {
-            return $this->getJournalHostname();
-        }
-        return $this->getReview()->getCode() . '.' . DOMAIN;
-    }
-
-    /**
-     * @return string
-     */
-    public function getJournalHostname(): string
-    {
-        return $this->_journalHostname;
-    }
-
-    /**
-     * @param string $journalDomain
-     */
-    public function setJournalHostname(string $journalDomain): void
-    {
-        $this->_journalHostname = $journalDomain;
     }
 
     /**
@@ -353,6 +312,7 @@ class getDoi extends JournalScript
         } else {
             $apiUrl = DOI_API;
         }
+        echo PHP_EOL . 'Posting: ' . $this->getMetadataPathFileName();
 
         return (new Client())->request('POST', $apiUrl, [
             'multipart' => [

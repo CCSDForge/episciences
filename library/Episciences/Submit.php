@@ -2140,9 +2140,9 @@ class Episciences_Submit
 
         $coveLetterFile = $data[self::COVER_LETTER_FILE_ELEMENT_NAME] ?? '';
 
-        if (isset($uploads[self::COVER_LETTER_FILE_ELEMENT_NAME])) {
+        if (isset($uploadsInfo[Uploader::UPLOADED_FILES_KEY][self::COVER_LETTER_FILE_ELEMENT_NAME])) {
             /** @var File $coveLetterFile */
-            $coveLetterFile = $uploads[self::COVER_LETTER_FILE_ELEMENT_NAME];
+            $coveLetterFile = $uploadsInfo[Uploader::UPLOADED_FILES_KEY][self::COVER_LETTER_FILE_ELEMENT_NAME];
             $coveLetterFile = $coveLetterFile->getName();
         }
 

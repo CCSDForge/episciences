@@ -141,7 +141,7 @@ class Episciences_Paper
     // status priorities
     public const STATUS_DICTIONARY = [
         self::STATUS_SUBMITTED => 'submitted',
-        self::STATUS_OK_FOR_REVIEWING => 'waitingFor reviewing',
+        self::STATUS_OK_FOR_REVIEWING => 'waitingForReviewing',
         self::STATUS_BEING_REVIEWED => 'underReview',
         self::STATUS_REVIEWED => 'reviewed pending editorial decision',
         self::STATUS_ACCEPTED => 'accepted',
@@ -4073,6 +4073,18 @@ class Episciences_Paper
     {
         $this->_data_descriptors = $data_descriptors;
         return $this;
+    }
+
+    public function getLatestDataDescriptor(): null|\Episciences\Paper\DataDescriptor
+    {
+        $allDd = $this->getDataDescriptors();
+
+        if (empty($allDd)) {
+            return null;
+        }
+
+        return $allDd[array_key_first($allDd)];
+
     }
 
     /**
