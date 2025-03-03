@@ -132,10 +132,10 @@ class Episciences_Repositories
     /**
      * @param $repoId
      * @param $identifier
-     * @param int|null $version
+     * @param float|null $version
      * @return string
      */
-    public static function getPaperUrl($repoId, $identifier, ?int $version = 1): string
+    public static function getPaperUrl($repoId, $identifier, ?float $version = 1): string
     {
         $repoPaperUrl = self::getRepositories()[$repoId][self::REPO_PAPERURL];
 
