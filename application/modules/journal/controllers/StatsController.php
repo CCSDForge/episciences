@@ -2,8 +2,6 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
 class StatsController extends Episciences_Controller_Action
@@ -30,25 +28,46 @@ class StatsController extends Episciences_Controller_Action
 
     /**
      * @return void
-     * @throws Zend_Exception
-     * @throws JsonException
      */
     public function indexAction(): void
     {
 
-        if (Zend_Registry::get('hideStatistics')) {
-            Episciences_Tools::header('HTTP/1.0 403 Forbidden');
-            $this->renderScript('index/notfound.phtml');
+        try {
+            /** @var Monolog\Logger $logger */
+            $logger = Zend_Registry::get('appLogger');
+        } catch (Zend_Exception $e) {
+            $logger = null;
+            trigger_error($e->getMessage());
+        }
+
+
+        try {
+            if (Zend_Registry::get('hideStatistics')) {
+                Episciences_Tools::header('HTTP/1.0 403 Forbidden');
+                $this->renderScript('index/notfound.phtml');
+                return;
+
+            }
+        } catch (Zend_Exception $e) {
+            $logger?->critical($e->getMessage());
             return;
         }
 
+
         $params = ['withDetails' => true];
+
+        $evalOptions = [];
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
 
-        $journalSettings = Zend_Registry::get('reviewSettings');
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+        } catch (Zend_Exception $e) {
+            $logger?->critical($e->getMessage());
+
+        }
         $startStatsAfterDate = isset($journalSettings['startStatsAfterDate']) && $journalSettings['startStatsAfterDate'] !== '' ?
             $journalSettings['startStatsAfterDate'] : null;
 
@@ -71,32 +90,35 @@ class StatsController extends Episciences_Controller_Action
 
         if ($yearQuery) {
             $params['year'] = $yearQuery;
+            $evalOptions['year'] = $yearQuery;
         }
 
         $yearCategories = [];
+        $dashboard = null;
 
         if ($askApi) {
-
-            try { // api request
+            try {
                 $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
-            } catch (GuzzleException $e) {
+            } catch (GuzzleException | JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
-                trigger_error($e->getMessage());
+                $logger?->warning($e->getMessage());
+            }
+
+            if (empty($dashboard)) {
+                $this->renderError($yearQuery);
                 return;
             }
 
+            try {
+                $this->processEvaluationStats($evalOptions, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
+            } catch (GuzzleException | JsonException $e) {
+                $this->view->errorMessage = $errorMessage;
+                $logger?->warning($e->getMessage());
+            }
         }
-
-
-        if (empty($dashboard)) {
-            $this->renderError($yearQuery);
-            return;
-        }
-
 
         $repositories = Episciences_Repositories::getRepositoriesByLabel();
-
-        $details = $dashboard['details'];
+        $details = $dashboard['details'] ?? [];
 
         if (isset($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR])) {
             $yearCategories = array_keys($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR]);
@@ -110,7 +132,6 @@ class StatsController extends Episciences_Controller_Action
             });
 
         }
-
 
         $this->view->yearCategories = $navYears; // navigation
 
@@ -161,10 +182,9 @@ class StatsController extends Episciences_Controller_Action
 
             // stats collectées par rapport à la date de modification
             $moreDetails = $details[self::NB_SUBMISSIONS][self::MORE_DETAILS] ?? [];
-            $submissionsByYearResponse = array_key_exists($year, $moreDetails) ? $moreDetails[$year] : [];
+            $submissionsByYearResponse = $moreDetails[$year] ?? [];
 
             foreach ($submissionsByYearResponse as $values) {
-
 
                 foreach ($values as $statusLabel => $nbSubmissions) {
 
@@ -175,7 +195,7 @@ class StatsController extends Episciences_Controller_Action
                     $status = array_search($statusLabel, Episciences_Paper::STATUS_DICTIONARY, true);
 
                     if ($status === false) {
-                        trigger_error("STATS: UNDEFINED_STATUS_DICTIONARY_LABEL $statusLabel");
+                        $logger?->warning("STATS: UNDEFINED_STATUS_DICTIONARY_LABEL $statusLabel");
                     }
 
 
@@ -226,20 +246,11 @@ class StatsController extends Episciences_Controller_Action
             }
 
             if (!empty($submissionsDelay)) {
-                if (array_key_exists($year, $submissionsDelay)) {
-                    $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $submissionsDelay[$year]['delay']['value'];
-                } else {
-                    $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = null;
-                }
+                $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $submissionsDelay[$year]['delay']['value'] ?? null;
             }
 
             if (!empty($publicationsDelay)) {
-
-                if (array_key_exists($year, $publicationsDelay)) {
-                    $series[self::SUBMISSION_PUBLICATION_DELAY][] = $publicationsDelay[$year]['delay']['value'];
-                } else {
-                    $series[self::SUBMISSION_PUBLICATION_DELAY][] = null;
-                }
+                $series[self::SUBMISSION_PUBLICATION_DELAY][] = $publicationsDelay[$year]['delay']['value'] ?? null;
             }
 
         }
@@ -331,7 +342,7 @@ class StatsController extends Episciences_Controller_Action
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Publication'), 'data' => $series[self::SUBMISSION_PUBLICATION_DELAY], 'backgroundColor' => self::COLORS_CODE[4]];
         $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
 
-        $isAvailableUsersStats = !$yearQuery && array_key_exists('nbUsers', $dashboard['value']);
+        $isAvailableUsersStats = !$yearQuery && isset($dashboard['value']['nbUsers']);
 
         //Users stats
         $rolesJs = [];
@@ -371,6 +382,8 @@ class StatsController extends Episciences_Controller_Action
         if (!$yearQuery) {
 
             try {
+
+
                 $totalPublishedArticles = (int)json_decode($this->askApi('journals/stats/nb-submissions/' . RVCODE, ['status' => Episciences_Paper::STATUS_PUBLISHED]), true, 512, JSON_THROW_ON_ERROR)['value'];
                 $totalArticles = (int)json_decode($this->askApi('journals/stats/nb-submissions/' . RVCODE), true, 512, JSON_THROW_ON_ERROR)['value'];
                 $totalImportedArticles = (int)json_decode($this->askApi('journals/stats/nb-submissions/' . RVCODE, ['flag' => 'imported']), true, 512, JSON_THROW_ON_ERROR)['value'];
@@ -385,8 +398,7 @@ class StatsController extends Episciences_Controller_Action
 
                 $this->view->totalArticles = $totalArticles;
             } catch (GuzzleException|JsonException  $e) {
-                trigger_error($e->getMessage());
-
+                $logger?->critical($e->getMessage());
             }
 
 
@@ -406,16 +418,20 @@ class StatsController extends Episciences_Controller_Action
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
+
+        $this->view->reviewsRequested = $reviewsRequested ?? null;
+        $this->view->reviewsReceived = $reviewsReceived ?? null;
+        $this->view->medianReviewsNumber = $medianReviewsNumber ?? null;
+
     }
 
     /**
      * @param string $uri
      * @param array $options
-     * @param bool $isAsynchronous
      * @return StreamInterface
      * @throws GuzzleException
      */
-    private function askApi(string $uri, array $options = [], bool $isAsynchronous = false): StreamInterface
+    private function askApi(string $uri, array $options = []): StreamInterface
     {
         $url = EPISCIENCES_API_URL . $uri;
 
@@ -430,34 +446,7 @@ class StatsController extends Episciences_Controller_Action
         ];
 
         $client = new Client();
-
-        if (!$isAsynchronous) {
-            try {
-                $request = $client->request('GET', $url, $gOptions);
-            } catch (GuzzleException $e) {
-                error_log('STATISTICS_MODULE: ' . $e->getMessage());
-                throw $e;
-            }
-
-            return $request->getBody();
-
-        }
-
-        $promise = $client->requestAsync('GET', $url, $gOptions);
-
-        $promise->then(
-            function (ResponseInterface $res) {
-                return $res->getBody();
-            },
-            function (RequestException $e) {
-                error_log('STATISTICS_MODULE: ' . $e->getMessage());
-                throw $e;
-            }
-        );
-
-        /** @var GuzzleHttp\Psr7\Response $response */
-        $response = $promise->wait();
-        return $response->getBody();
+        return $client->request('GET', $url, $gOptions)->getBody();
 
     }
 
@@ -478,6 +467,34 @@ class StatsController extends Episciences_Controller_Action
         $this->view->message = $message;
         $this->view->description = "Aucune information n'est disponible pour cette page pour le moment.";
         $this->renderScript('error/error.phtml');
+    }
+
+
+    /**
+     * /!\ variables used dynamically: do not delete
+     * @param $evalOptions
+     * @param float|null $reviewsRequested
+     * @param float|null $reviewsReceived
+     * @param float|null $medianReviewsNumber
+     * @return void
+     * @throws GuzzleException
+     * @throws JsonException
+     */
+    private function processEvaluationStats($evalOptions, float &$reviewsRequested = null, float &$reviewsReceived = null, float &$medianReviewsNumber = null): void
+    {
+
+        if (!isset($evalOptions['rvcode'])) {
+            $evalOptions['rvcode'] = RVCODE;
+        }
+
+        $evalOptions = array_merge($evalOptions, $evalOptions);
+        $evalUri = 'statistics/evaluation';
+        $evaluations = json_decode($this->askApi($evalUri, $evalOptions), true, 512, JSON_THROW_ON_ERROR);
+
+        foreach ($evaluations as $stats) {
+            $var = Episciences_Tools::convertToCamelCase($stats['name'], '-');
+            $$var = $stats['value'];
+        }
     }
 
 }

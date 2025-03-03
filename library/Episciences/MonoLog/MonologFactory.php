@@ -20,7 +20,7 @@ class MonologFactory
         $logger = new Logger('appLogger');
 
         $handler = new RotatingFileHandler(
-            sprintf('%s.monolog.log', EPISCIENCES_LOG_PATH . (defined(RVCODE) ? RVCODE : 'app')),
+            sprintf('%s.monolog.log', EPISCIENCES_LOG_PATH . (defined('RVCODE') ? RVCODE : 'app')),
             0, // unlimited
             Logger::DEBUG,
             true,
