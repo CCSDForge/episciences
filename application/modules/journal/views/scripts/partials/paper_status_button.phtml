@@ -8,6 +8,8 @@ $status = $paper->getStatus();
 $changeStatusMsg = "Changer le statut de l'article";
 $publishMsg = "Publier l'article";
 $refusalMsg = "Refuser l'article";
+$askForResubmissionOption = 'Demander une nouvelle version';
+$askForResubmissionTarget = 'resubmission-modal';
 
 if ($paper->isTmp()) {
     $acceptMsg = 'Demander la version définitive';
@@ -83,6 +85,11 @@ if (Episciences_Auth::isSecretary()) : ?>
                     <a href="#" data-toggle="modal"
                        data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
                 </li>
+
+                <li>
+                    <a href="#" data-toggle="modal" data-target=".<?= $askForResubmissionTarget?>" onclick="valide($(this));"><?= $this->translate($askForResubmissionOption) ?></a>
+                </li>
+
 
             <?php elseif ($paper->isAccepted()) : ?>
                 <?php // Ask author's final version  ?>
@@ -189,6 +196,10 @@ if (Episciences_Auth::isSecretary()) : ?>
                 <li>
                     <a href="#" data-toggle="modal"
                        data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
+                </li>
+
+                <li>
+                    <a href="#" data-toggle="modal" data-target=".<?= $askForResubmissionTarget ?>" onclick="valide($(this));"><?= $this->translate($askForResubmissionOption) ?></a>
                 </li>
 
             <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) : ?>
@@ -388,6 +399,9 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                         </li>
                         <li><a href="#" data-toggle="modal"
                                data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
+                        </li>
+                        <li>
+                            <a href="#" data-toggle="modal" data-target=".<?= $askForResubmissionTarget?>" onclick="valide($(this));"><?= $this->translate($askForResubmissionOption) ?></a>
                         </li>
                     <?php endif; ?>
                 <?php else : // if there is not enough rating reports, display a notice ?>
@@ -596,6 +610,14 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         'target' => 'major-revision-modal',
         'title' => 'Demander des modifications majeures',
         'body' => $this->majorRevisionForm
+    ]) ?>
+
+    <?php // *** Ask resubmission request form ********** ?>
+    <?=
+    $this->partial('partials/paper-status-modal.phtml', [
+        'target' => $askForResubmissionTarget ,
+        'title' => $askForResubmissionOption,
+        'body' => $this->resubmissionForm
     ]) ?>
 
     <?php // *** reject form ********** ?>

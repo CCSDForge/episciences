@@ -20,6 +20,7 @@ return array(
     Episciences_Paper_Logger::CODE_SECTION_SELECTION => "Déplacé dans une rubrique",
     Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST => 'Demande de modifications mineures',
     Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST => 'Demande de modifications majeures',
+    Episciences_Paper_Logger::CODE_RESUBMISSION_REQUEST => 'Demande de resoumission',
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER => 'Réponse à une demande de modifications (sans faire de modifications)',
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_NEW_VERSION => 'Réponse à une demande de modifications (nouvelle version)',
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION => 'Réponse à une demande de modifications (version temporaire)',

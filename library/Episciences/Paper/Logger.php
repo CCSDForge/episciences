@@ -22,6 +22,7 @@ class Episciences_Paper_Logger
     public const CODE_SECTION_SELECTION = 'section_selection';
     public const CODE_MINOR_REVISION_REQUEST = 'minor_revision_request';
     public const CODE_MAJOR_REVISION_REQUEST = 'major_revision_request';
+    public const CODE_RESUBMISSION_REQUEST = 'resubmission_request'; // ask for resubmission
     // revision request answer : comment
     public const CODE_REVISION_REQUEST_ANSWER = 'revision_request_answer';
     // revision request answer : new version
@@ -110,6 +111,7 @@ class Episciences_Paper_Logger
         self::CODE_SECTION_SELECTION => self::VIOLET,
         self::CODE_MINOR_REVISION_REQUEST => self::VIOLET,
         self::CODE_MAJOR_REVISION_REQUEST => self::VIOLET,
+        self::CODE_RESUBMISSION_REQUEST => self::VIOLET,
         self::CODE_REVISION_REQUEST_ANSWER => self::VIOLET,
         self::CODE_REVISION_REQUEST_NEW_VERSION => self::VIOLET,
         self::CODE_REVISION_REQUEST_TMP_VERSION => self::VIOLET,

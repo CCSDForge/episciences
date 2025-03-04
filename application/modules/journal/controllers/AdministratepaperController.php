@@ -755,6 +755,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse'], $docId);
             $this->view->minorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['minorRevision'], 'minor', $review, true, $docId);
             $this->view->majorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['majorRevision'], 'major', $review, true, $docId);
+            $this->view->resubmissionForm = Episciences_PapersManager::getRevisionForm($templates[Episciences_PapersManager::RESUBMISSION_REVISION_TYPE], Episciences_PapersManager::RESUBMISSION_REVISION_TYPE, $review, true, $docId); // ask for resubmission
             // waiting for author resources form request
             $this->view->authorSourcesRequestForm = Episciences_PapersManager::getWaitingForAuthorSourcesForm($templates['waitingAuthorSources']);
             // waiting for author formatting
@@ -4351,7 +4352,12 @@ class AdministratepaperController extends PaperDefaultController
 
         $isTypeFound = $isMinorRevision; // check revision type
 
+
         if ($isMajorRevision = (!$isTypeFound && $type === 'major')) { // not executed if type is found
+            $isTypeFound = true;
+        }
+
+        if ($isResubmission = (!$isTypeFound && $type === Episciences_PapersManager::RESUBMISSION_REVISION_TYPE)) {
             $isTypeFound = true;
         }
 
@@ -4448,6 +4454,8 @@ class AdministratepaperController extends PaperDefaultController
                 $actionLog = Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST;
             } elseif ($isAcceptedAskAuthorsFinalVersion) {
                 $actionLog = Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION;
+            }elseif($isResubmission){
+                $actionLog = Episciences_Paper_Logger::CODE_RESUBMISSION_REQUEST;
             } else {
                 $actionLog = 'undefined';
             }
@@ -4459,7 +4467,7 @@ class AdministratepaperController extends PaperDefaultController
                 'subject' => $subject,
                 'message' => $message,
                 'isAlreadyAccepted' => $isAlreadyAccepted,
-                'user' => Episciences_Auth::getUser()->toArray()
+                'user' => Episciences_Auth::getUser()?->toArray()
             ]);
 
             // sends an e-mail to the author
@@ -4469,19 +4477,33 @@ class AdministratepaperController extends PaperDefaultController
             ];
             $this->sendMailFromModal($submitter, $paper, $subject, $message, $data, $tags);
 
-            //Demande de modifications, les relecteurs devraient être notifiés (leurs éviter de poursuivre un travail inutile).
+            //Demande de modifications, les relecteurs devraient être notifiés (leur éviter de poursuivre un travail inutile).
             $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_REVISION_REQUEST_STOP_PENDING_REVIEWING);
 
             // if needed, set new status
 
             if (!$isAlreadyAccepted) {
-                $status = ($isMajorRevision) ? Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
+                $status = Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION;
+                if ($isMajorRevision) {
+                    $status = Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION;
+                } elseif ($isResubmission) {
+                    $status = Episciences_Paper::STATUS_WAITING_FOR_NEW_VERSION;
+                }
+
             } else {
 
-                $status = ($isMajorRevision) ? Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION;
+                if ($isMajorRevision) {
+                    $status = Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION;
+                } else {
+                    $status = Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION;
+                }
 
                 if ($paper->isTmp()) {
-                    $status = ($isMajorRevision) ? Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION : Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION;
+                    if ($isMajorRevision) {
+                        $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION;
+                    } else {
+                        $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION;
+                    }
                 }
             }
 

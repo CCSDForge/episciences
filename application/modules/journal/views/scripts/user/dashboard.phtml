@@ -1,6 +1,6 @@
 <?php // Bloc "Gérer la revue" ************************************************ ?>
 <?php $isAllowedToManegeReview = Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$this->review->getSetting('encapsulateEditors')); ?>
-<?php if (isset($this->onlyEditablePapersWithoutEditors) && !empty($this->onlyEditablePapersWithoutEditors) && Episciences_Auth::isSecretary()) : ?>
+<?php if (!empty($this->onlyEditablePapersWithoutEditors) && Episciences_Auth::isSecretary()) : ?>
 
     <?php //Alert on the existence of papers without assigned editors ?>
     <div id="unassigned-papers-alert" class="alert alert-warning" style="margin-top: 20px">

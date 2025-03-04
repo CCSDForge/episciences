@@ -53,13 +53,13 @@ class Episciences_Paper
     public const STATUS_WAITING_FOR_COMMENTS = 8;
     public const STATUS_TMP_VERSION = 9;
     public const STATUS_NO_REVISION = 10;
-    public const STATUS_NEW_VERSION = 11;
+    public const STATUS_WAITING_FOR_NEW_VERSION = 11;
     // paper removed by contributor (before publication)
     public const STATUS_DELETED = 12;
     // paper removed by editorial board (after publication)
     public const STATUS_REMOVED = 13;
     // reviewers have been invited, but no one has accepted yet
-    public const STATUS_REVIEWERS_INVITED = 14;
+    public const STATUS_WAITING_FOR_RESUBMISSION = 14; // ask for resubmission
     public const STATUS_WAITING_FOR_MAJOR_REVISION = 15;
     public const STATUS_PUBLISHED = 16;
     // Le processus de publication peut être stoppé tant que l'article n'est pas publié
@@ -116,7 +116,8 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION,
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
-        self::STATUS_NO_REVISION
+        self::STATUS_NO_REVISION,
+        self::STATUS_WAITING_FOR_NEW_VERSION
     ];
 
     // Non présents dans le filtre de recherche
@@ -124,7 +125,6 @@ class Episciences_Paper
     public const OTHER_STATUS_CODE = [
         self::STATUS_OBSOLETE,
         self::STATUS_TMP_VERSION,
-        self::STATUS_NEW_VERSION,
         self::STATUS_WAITING_FOR_COMMENTS,
         self::STATUS_DELETED,
         self::STATUS_REMOVED
@@ -153,7 +153,7 @@ class Episciences_Paper
         self::STATUS_WAITING_FOR_COMMENTS => 'pendingClarification',
         self::STATUS_TMP_VERSION => 'temporaryVersion',
         self::STATUS_NO_REVISION => 'revisionRequestAnswerWithoutAnyModifications',
-        self::STATUS_NEW_VERSION => 'answerToRevisionRequestNewVersion',
+        self::STATUS_WAITING_FOR_NEW_VERSION => 'pendingNewVersion',
         self::STATUS_DELETED => 'deleted',
         self::STATUS_ABANDONED => 'abandoned',
         self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES => "waitingForAuthorsSources",
@@ -220,7 +220,8 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
-        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+        self::STATUS_WAITING_FOR_NEW_VERSION
     ];
     public const All_STATUS_WAITING_FOR_FINAL_VERSION = [
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
@@ -313,10 +314,10 @@ class Episciences_Paper
         self::STATUS_OBSOLETE => 'obsolète',
         self::STATUS_WAITING_FOR_MINOR_REVISION => 'en attente de modifications mineures',
         self::STATUS_WAITING_FOR_MAJOR_REVISION => 'en attente de modifications majeures',
-        self::STATUS_WAITING_FOR_COMMENTS => 'en attente d\'éclaircissements',
+        self::STATUS_WAITING_FOR_NEW_VERSION => "en attente d'une nouvelle version",
+        self::STATUS_WAITING_FOR_COMMENTS => "en attente d'éclaircissements",
         self::STATUS_TMP_VERSION => 'version temporaire',
         self::STATUS_NO_REVISION => 'réponse à une demande de modifications : pas de modifications',
-        self::STATUS_NEW_VERSION => 'réponse à une demande de modifications: nouvelle version',
         self::STATUS_DELETED => 'supprimé',
         self::STATUS_ABANDONED => 'abandonné',
         self::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES => 'copy ed : en attente des sources auteurs',
