@@ -75,6 +75,14 @@ $loggedUid = Episciences_Auth::getUid();
         <?php endif; ?>
 
     <?php endforeach; ?>
+
+    <?php if ($this->isAllowedToSeeReportDetails && count($paper->getRatings()) > 1 && $paper->getAverageRating()) : ?>
+        <div style="margin-top: 20px; font-size: 16px" class="text-center darkgrey"><strong>
+                <?= $this->translate('Note moyenne') ?> :
+                <?= $paper->getAverageRating(1) . '/' . $report->getMax_score() ?>
+            </strong></div>
+    <?php endif; ?>
+
 </div>
 
 
