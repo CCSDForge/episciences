@@ -3631,7 +3631,9 @@ class Episciences_Paper
     /**
      * Gère les erreurs de soumission d'une nouvelle version
      * @param array $options
-     * @return string | array
+     *
+     * @return array|string
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     public function manageNewVersionErrors(array $options = [])
@@ -3712,7 +3714,7 @@ class Episciences_Paper
 
                 $result['message'] = $selfMsg;
 
-            } elseif ($status === self::STATUS_SUBMITTED || $status === self::STATUS_OK_FOR_REVIEWING) {  /* Soumis ou En attente de relecture */
+            } elseif ($this->canBeReplaced()) {  // submitted | waiting for review | ready to publish | approved by author, waiting for publication
                 $selfMsg = $result['message'];
                 $selfMsg .= !$isEpiNotify ? $question : ' *** The previous version will be replaced ***';
                 $selfMsg .= !$isFromCli ? $confirm : '';
@@ -3975,9 +3977,8 @@ class Episciences_Paper
 
             } elseif ($paper->getVersion() > $this->getVersion()) {
                 if (
-                    ($status === self::STATUS_SUBMITTED || $status === self::STATUS_OK_FOR_REVIEWING) ||
-                    ($status === self::STATUS_REFUSED && Episciences_PapersManager::renameIdentifier($this->getIdentifier(), $this->getIdentifier() . '-REFUSED'))
-                ) {
+                    $this->canBeReplaced() ||
+                    ($status === self::STATUS_REFUSED && Episciences_PapersManager::renameIdentifier($this->getIdentifier(), $this->getIdentifier() . '-REFUSED'))) {
 
                     if (isset($values['isEpiNotify']) && $values['isEpiNotify']) {
                         return ['code' => 1, 'message' => 'Okay for the update...'];
@@ -5238,6 +5239,10 @@ class Episciences_Paper
 
     }
 
+    public function canBeReplaced(): bool
+    {
+        return in_array($this->getStatus(),  [self::STATUS_SUBMITTED, self::STATUS_OK_FOR_REVIEWING, self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION], true);
+    }
 }
 
 
