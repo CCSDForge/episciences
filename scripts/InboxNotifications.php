@@ -978,7 +978,7 @@ class InboxNotifications extends Script
                     $paper->log(
                         Episciences_Paper_Logger::CODE_STATUS,
                         EPISCIENCES_UID,
-                        ['status' => Episciences_Paper::STATUS_SUBMITTED]
+                        ['status' => $paper->getStatus()]
                     );
                 } catch (Zend_Db_Adapter_Exception $e) {
                     $this->logger->critical($e->getMessage());
@@ -1061,6 +1061,7 @@ class InboxNotifications extends Script
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
+     * @throws DOMException
      */
     private function saveNewVersion(Episciences_Paper $context, array $newPaperData, Episciences_Review $journal, array $logDetails = []): bool
     {
@@ -1099,7 +1100,7 @@ class InboxNotifications extends Script
         $isAssignedReviewers = $reassignReviewers && $reviewers;
 
         if ($isCopyEditingProcessStarted) {
-            $status = ($newPaper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) ?
+            $status = ($context->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION) ?
                 Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION :
                 Episciences_Paper::STATUS_CE_READY_TO_PUBLISH;
         } elseif ($isAlreadyAccepted && !$isAssignedReviewers) {
