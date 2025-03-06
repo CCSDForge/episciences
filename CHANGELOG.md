@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 
 ### Fixed
+- [RT#238873]: it is now possible to replace an article with more recent version if its status is "Ready to publish"
 - The average rating is displayed twice.
 - [#654](https://github.com/CCSDForge/episciences/issues/654): Unable to modify a user's profile.
 - [RT#237714]: The file renamed after downloading was not taken into account, which broke the link with this file.
