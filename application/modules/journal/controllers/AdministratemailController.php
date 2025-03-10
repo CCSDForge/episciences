@@ -115,9 +115,9 @@ class AdministratemailController extends Zend_Controller_Action
         $id = (int)$request->getQuery('id');
 
         $template = new Episciences_Mail_Template();
-        $template->find($id);
+        $result = $template->find($id);
 
-        if (!$template) {
+        if (!$result) {
             throw new Zend_Exception("Ce template n'existe pas");
         }
 
@@ -161,8 +161,9 @@ class AdministratemailController extends Zend_Controller_Action
         $id = (int)$request->getQuery('id');
 
         $template = new Episciences_Mail_Template();
+        $result = $template->find($id);
 
-        if ($template->find($id) && $template->delete()) { // to avoid this type of exception : Syntax error or access violation: error in your SQL : DELETE FROM `MAIL_TEMPLATE` WHERE (ID = )
+        if ($result && $template->delete()) { // to avoid this type of exception : Syntax error or access violation: error in your SQL : DELETE FROM `MAIL_TEMPLATE` WHERE (ID = )
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Le template par défaut a été restauré');
         } else {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('La suppression du template personnalisé a échoué');

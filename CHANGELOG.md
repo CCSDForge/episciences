@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 ### Added
+- [#647](https://github.com/CCSDForge/episciences/issues/647): new option "Ask for resubmission"
 - [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 
 - [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 
