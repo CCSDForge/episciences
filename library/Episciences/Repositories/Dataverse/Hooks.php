@@ -337,7 +337,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
                                 }
 
                                 if ($cVal['typeName'] === 'dsDescriptionValue') {
-                                    $tmp['value'] = trim(str_replace(['<p>', '</p>'], '', $extractedValue));
+                                    $tmp['value'] = strip_tags($extractedValue);
                                 } elseif ($cVal['typeName'] === 'dsDescriptionLanguage') {
                                     $tmp['language'] = lcfirst(mb_substr($extractedValue, 0, 2));
                                 } elseif ($cVal['typeName'] === 'dsDescriptionDate') {
@@ -466,15 +466,11 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
             $tmp = [];
             $dataFile = $val['dataFile'];
 
-            $type = 'undefined';
-            $explodedContentType = explode('/', $dataFile['contentType']);
+            $fileName = $dataFile['filename'] ?? $dataFile['label'];
+            $explodedFileName = explode('.', $fileName);
 
-            if (isset($explodedContentType[0])) {
-                $type = $explodedContentType[0];
-            }
-
-            $tmp['file_name'] = $dataFile['filename'] ?? $dataFile['label'];
-            $tmp['file_type'] = $type;
+            $tmp['file_name'] = $fileName;
+            $tmp['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
             $tmp['file_size'] = $dataFile['filesize'];
             $tmp['checksum'] = $dataFile['checksum']['value'];
             $tmp['checksum_type'] = $dataFile['checksum']['type'];
