@@ -15,16 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-### Changed [current branch]
+### Changed
 - Ability to customise application environment variables
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 - Website menu:
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
+## v1.0.50 - 2025-03-13
 ### Added
 - [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 
 ### Fixed
+- Duplicate insertions when updating metadata
 - [RT#238873]: it is now possible to replace an article with more recent version if its status is "Ready to publish"
 - The average rating is displayed twice.
 - [#654](https://github.com/CCSDForge/episciences/issues/654): Unable to modify a user's profile.

@@ -349,10 +349,7 @@
                                     </xsl:attribute>
                                     <button class="btn btn-default btn-sm">
                                         <span class="fas fa-external-link-alt" style="margin-right: 5px"/>
-                                        <xsl:variable name="string">
-                                            <xsl:text>Voir la page du document sur</xsl:text>
-                                        </xsl:variable>
-                                        <xsl:value-of select="concat(php:function('Ccsd_Tools::translate', $string), ' ', episciences/repoLabel)"/>
+                                        <xsl:value-of select="episciences/docUrlBtnLabel"/>
                                     </button>
                                 </a>
                             </xsl:if>

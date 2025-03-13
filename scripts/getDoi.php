@@ -124,10 +124,11 @@ class getDoi extends JournalScript
 
     private function setReviewConstants(): void
     {
-        define('RVCODE', $this->getReview()->getCode());
-        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . RVCODE) . '/');
+        $journalCode = $this->getReview()->getCode();
+        define('RVCODE', $journalCode);
+        define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $journalCode) . '/');
         define('REVIEW_LANG_PATH', REVIEW_PATH . 'languages/');
-        define('CACHE_PATH', REVIEW_PATH . "tmp/");
+        define('CACHE_PATH', CACHE_PATH_METADATA . $journalCode . '/');
     }
 
     /**
