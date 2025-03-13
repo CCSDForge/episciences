@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+## v1.0.50 - 2025-03-13
 ### Added
 - [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 
 ### Fixed
