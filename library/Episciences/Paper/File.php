@@ -260,14 +260,7 @@ class Episciences_Paper_File
 
     public function getName(): string
     {
-        $name = $this->getFileName();
-
-        if ($this->getFileType()) {
-            $name .= '.';
-            $name .=  $this->getFileType();
-        }
-
-        return $name;
+        return $this->getFileName();
     }
 
 }

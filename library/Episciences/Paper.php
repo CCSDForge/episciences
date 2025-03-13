@@ -3197,8 +3197,9 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('isImported', $this->isImported()));
         $node->appendChild($dom->createElement('acceptance_date', $this->getAcceptanceDate()));
         $node->appendChild($dom->createElement('isAllowedToListAssignedPapers', Episciences_Auth::isSecretary() || $isAllowedToListOnlyAssignedPapers || $this->getUid() === Episciences_Auth::getUid()));
-        $node->appendChild($dom->createElement('repoLabel', Episciences_Repositories::getLabel($this->getRepoid())));
         $node->appendChild($dom->createElement('submissionType', ucfirst($this->getTypeWithKey())));
+        $node->appendChild($dom->createElement('docUrlBtnLabel', $this->combineDocUrlLabel()));
+
 
         //get licence paper
         if (!empty($this->getDocid())) {
@@ -5260,6 +5261,26 @@ class Episciences_Paper
     {
         return in_array($this->getStatus(),  [self::STATUS_SUBMITTED, self::STATUS_OK_FOR_REVIEWING, self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION], true);
     }
+
+    private function combineDocUrlLabel() : string{
+
+        $docUrlLabel = 'Voir la page du document sur';
+
+        if ($this->isDataSetOrSoftware()) {
+            if ($this->isSoftware()) {
+                $docUrlLabel = 'Voir le logiciel sur';
+            } else {
+                $docUrlLabel = 'Voir le jeu de données sur';
+            }
+        }
+
+        $docUrlLabel = Ccsd_Tools::translate($docUrlLabel);
+        $docUrlLabel .= ' ';
+        $docUrlLabel .= Episciences_Repositories::getLabel($this->getRepoid());
+        return $docUrlLabel;
+
+    }
+
 }
 
 

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
 ### Changed
 - Ability to customise application environment variables
@@ -25,10 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#647](https://github.com/CCSDForge/episciences/issues/647): new option "Ask for resubmission"
-- [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 
 - [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 
+## v1.0.50 - 2025-03-13
+### Added
+- [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports
 ### Fixed
+- Duplicate insertions when updating metadata
 - [RT#238873]: it is now possible to replace an article with more recent version if its status is "Ready to publish"
 - The average rating is displayed twice.
 - [#654](https://github.com/CCSDForge/episciences/issues/654): Unable to modify a user's profile.
