@@ -1904,7 +1904,7 @@ class Episciences_Submit
 
                 $authors = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
 
-                if (empty($authors) || $paper->getRepoid() !== (int)Episciences_Repositories::ARXIV_REPO_ID) { // to prevent manual changes being overwritten.
+                if (empty($authors)) { // to prevent manual changes being overwritten.
 
                     $insertedRows += Episciences_Paper_AuthorsManager::insert([
                         [
@@ -1912,6 +1912,14 @@ class Episciences_Submit
                             'paperId' => $paperId
                         ]
                     ]);
+
+                } elseif ($paper->getRepoid() !== (int)Episciences_Repositories::ARXIV_REPO_ID){
+                    $authors = new Episciences_Paper_Authors([
+                        'authors' => $jsonVals,
+                        'paperId' => $paperId
+                    ]);
+
+                    $insertedRows += Episciences_Paper_AuthorsManager::update($authors);
 
                 }
 
