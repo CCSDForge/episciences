@@ -53,6 +53,7 @@ class getDoi extends JournalScript
      * @var bool
      */
     protected bool $_dryRun = true;
+
     /**
      * getDoi constructor.
      * @param $localopts
@@ -90,6 +91,7 @@ class getDoi extends JournalScript
         $this->initApp();
         $this->initDb();
         $this->initTranslator();
+
     }
 
     private function processReview(): void
@@ -98,6 +100,10 @@ class getDoi extends JournalScript
         $review->loadSettings();
         $this->setReview($review);
         $this->setReviewConstants();
+
+        if (!is_dir(CACHE_PATH) && !mkdir(CACHE_PATH, 0777, true) && !is_dir(CACHE_PATH)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', CACHE_PATH));
+        }
 
         $this->setDoiSettings($review->getDoiSettings());
 
@@ -465,8 +471,8 @@ class getDoi extends JournalScript
      * Updates the DOI status of a given DOI queue.
      *
      * @param mixed $doiQueue The DOI queue to update.
-     * @throws Exception If an error occurs during the update process.
      * @return void
+     * @throws Exception If an error occurs during the update process.
      */
     private function updateDoiStatus($doiQueue): void
     {
