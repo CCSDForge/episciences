@@ -5242,7 +5242,7 @@ class Episciences_Paper
 
         $docUrlLabel = 'Voir la page du document sur';
 
-        if ($this->isDataSetOrSoftware() || Episciences_Repositories::isDataverse($this->getRepoid())) {
+        if ($this->isDataSetOrSoftware()) {
             if ($this->isSoftware()) {
                 $docUrlLabel = 'Voir le logiciel sur';
             } else {
