@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - published dataset/software: the title of the data/software descriptor is its identifier.
+- Only PDF files are backed up
 ### Fixed
 - File Not Found Error
 ## v1.0.50.1 - 2025-03-14
