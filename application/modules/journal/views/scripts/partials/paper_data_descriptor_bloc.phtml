@@ -31,7 +31,15 @@
             }
 
             if ($isPublished) {
-                $preview = $paper->getMainPaperUrl();
+
+                $preview = $paper->getMainPaperUrl() ?? $preview;
+
+                $regExp = '(hal:|HAL:)?([a-z]{3,}-|(sic|mem|ijn)_)\d{8}(v\d+)?';
+
+                if ($preview && preg_match(sprintf('#%s#', $regExp), $preview, $matches)) {
+                    $fileName = $matches[0];
+                }
+
             }
 
             ?>

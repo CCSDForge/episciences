@@ -2016,7 +2016,7 @@ class Episciences_Paper
                 $fTmp = [
                     'name' => $oCFile->getName(),
                     'size' => $oCFile->getFileSize(),
-                    'link' => !$this->isPublished() ? $oCFile->getSelfLink() : sprintf('%s/%s/oafiles/%s', $journalUrl, $this->getDocid(), urlencode($oCFile->getName()))
+                    'link' => $oCFile->getDownloadLike()
                 ];
 
                 $processedFile[] = $fTmp;
@@ -5208,7 +5208,7 @@ class Episciences_Paper
             foreach ($files as $file) {
 
                 if (($file->getFileType() === 'pdf')) {
-                    return Episciences_Repositories::isDataverse($this->getRepoid()) ? $file->_downloadLike : $file->getSelfLink();
+                    return Episciences_Repositories::isDataverse($this->getRepoid()) ? $file->getDownloadLike() : $file->getSelfLink();
                 }
             }
         } else {

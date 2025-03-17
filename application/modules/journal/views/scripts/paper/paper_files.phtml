@@ -22,16 +22,9 @@ $files = $paper->getFiles();
                 <tbody>
                 <?php /** @var  Episciences_Paper_File $oFile */ ?>
                 <?php foreach ($files as $oFile) : ?>
-                    <?php
-                    if ($paper->isPublished()) {
-                        $href = sprintf('%s%s/%s/%s', PREFIX_URL, $paper->getDocid(), $action, $oFile->getName());
-                    } else {
-                        $href = $oFile->getSelfLink();
-                    }
-                    ?>
                     <tr>
                         <td>
-                            <a href="<?= $href ?>" target="_blank"><?= $oFile->getName() ?></a>
+                            <a href="<?= $oFile->getSelfLink() ?>" target="_blank"><?= $oFile->getName() ?></a>
                             <br/>
                             <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
                                 <!-- i class="fas fa-question-circle text-muted" data-toggle="tooltip" data-placement="top"
@@ -41,7 +34,7 @@ $files = $paper->getFiles();
                         <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
                         <td>
                     <span class="pull-right">
-                        <a class="btn btn-xs btn-default" href="<?= $oFile->_downloadLike ?>" data-toggle="tooltip" title="<?= $this->translate('Télécharger le fichier') ?>">
+                        <a class="btn btn-xs btn-default" href="<?= $oFile->getDownloadLike() ?>" data-toggle="tooltip" title="<?= $this->translate('Télécharger le fichier') ?>">
                            <i class="fas fa-file-download"></i>
                         </a>
                     </span>

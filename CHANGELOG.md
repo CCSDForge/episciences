@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-## Unreleased
+# Unreleased
 ### Changed
 - Ability to customise application environment variables
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
+
+- published dataset/software: the title of the data/software descriptor is its identifier.
+- Only PDF files are backed up
+### Fixed
+- File Not Found Error
+## v1.0.50.1 - 2025-03-14
+### Fixed
+- Fixed CACHE_PATH not existing
+### Changed 
+- Button label renamed for datasets/software papers
+
 ## v1.0.50 - 2025-03-13
 ### Added
 - [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 

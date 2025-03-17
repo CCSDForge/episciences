@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @property string $_downloadLike // @see Episciences_Paper_FilesManager::findByDocId
- */
 class Episciences_Paper_File
 {
 
@@ -39,6 +36,8 @@ class Episciences_Paper_File
 
     /** @var DateTime */
     protected $_timeModified = 'CURRENT_TIMESTAMP';
+
+    protected ?string $_downloadLike = null;
 
     /**
      * Episciences_Paper_File constructor.
@@ -261,6 +260,31 @@ class Episciences_Paper_File
     public function getName(): string
     {
         return $this->getFileName();
+    }
+
+
+    public function setDownloadLike(): self
+    {
+
+        if (Episciences_Repositories::isDataverse($this->getSource())) {
+
+            $dUrl = Episciences_Repositories::getApiUrl($this->getSource());
+            $dUrl .= 'access/datafile/:persistentId?persistentId=';
+            $dUrl .= Episciences_Repositories_Dataverse_Hooks::IDENTIFIER_PREFIX;
+            $dUrl .= Episciences_DoiTools::cleanDoi($this->getSelfLink());
+            $this->_downloadLike = $dUrl;
+
+        } else {
+            $this->_downloadLike = $this->getSelfLink();
+
+        }
+
+        return $this;
+    }
+
+    public function getDownloadLike(): ?string
+    {
+        return $this->_downloadLike;
     }
 
 }
