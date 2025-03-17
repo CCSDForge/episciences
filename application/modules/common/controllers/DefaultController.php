@@ -314,7 +314,9 @@ class DefaultController extends Episciences_Controller_Action
             if (isset($headers['content-length'])){
                 $contentLength = is_array($headers['content-length']) ? $headers['content-length'][0] : $headers['content-length'];
 
-                if((int)$contentLength <= MAX_PDF_SIZE) {
+                $isPdf = isset($headers['content-type']) && in_array('application/pdf', $headers['content-type'], true);
+
+                if($isPdf && (int)$contentLength <= MAX_PDF_SIZE) {
                     $saveCopy = true;
                 }
 

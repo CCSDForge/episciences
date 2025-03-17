@@ -6,7 +6,7 @@ class Episciences_Paper_FilesManager
      * @param int $docId
      * @return array [Episciences_Paper_File]
      */
-    public static function findByDocId(int $docId)
+    public static function findByDocId(int $docId): array
     {
 
         $oResult = [];
@@ -20,21 +20,8 @@ class Episciences_Paper_FilesManager
 
         foreach ($rows as $value) {
             $file = new Episciences_Paper_File($value);
-
-            if (Episciences_Repositories::isDataverse($file->getSource())) {
-
-                $dUrl = Episciences_Repositories::getApiUrl($file->getSource());
-                $dUrl .= 'access/datafile/:persistentId?persistentId=';
-                $dUrl .= Episciences_Repositories_Dataverse_Hooks::IDENTIFIER_PREFIX;
-                $dUrl .= Episciences_DoiTools::cleanDoi($file->getSelfLink());
-                $file->_downloadLike = $dUrl;
-
-            } else {
-                $file->_downloadLike = $file->getSelfLink();
-
-            }
-
-            $oResult[] = $file;
+            $file->setDownloadLike();
+            $oResult[$file->getId()] = $file;
         }
 
         return $oResult;
@@ -59,6 +46,8 @@ class Episciences_Paper_FilesManager
         if ($row) {
             $oFile = new Episciences_Paper_File($row);
         }
+
+        $oFile->setDownloadLike();
 
         return $oFile;
     }

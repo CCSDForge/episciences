@@ -333,10 +333,9 @@ class FileController extends DefaultController
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
 
         /** @var Episciences_Paper_File | null $oFile */
-        $oFile = $paper->getFileByName($filename);
+        $oFile = $paper->getFileByName($file);
 
         if (!$oFile) {
-
             $message = $this->view->translate("Le document demandé a été supprimé par son auteur.");
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->redirect($this->url(['controller' => 'index']));
