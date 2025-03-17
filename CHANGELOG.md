@@ -14,15 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
-
 ## Unreleased
-### Added
+
 - [#647](https://github.com/CCSDForge/episciences/issues/647): new option "Ask for resubmission"
 - [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 
+### Changed
+- published dataset/software: the title of the data/software descriptor is its identifier.
+- Only PDF files are backed up
+### Fixed
+- File Not Found Error
+## v1.0.50.1 - 2025-03-14
+### Fixed
+- Fixed CACHE_PATH not existing
+### Changed 
+- Button label renamed for datasets/software papers
+
 ## v1.0.50 - 2025-03-13
 ### Added
-- [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports
+- [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 
 ### Fixed
 - Duplicate insertions when updating metadata
 - [RT#238873]: it is now possible to replace an article with more recent version if its status is "Ready to publish"
