@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up
+- [#649](https://github.com/CCSDForge/episciences/issues/649): Assigned editors are now automatically added as (hidden) copies of messages sent to reviewers
 ### Fixed
 - [#653](https://github.com/CCSDForge/episciences/issues/653): Filtering email history doesn't work
 - File Not Found Error
