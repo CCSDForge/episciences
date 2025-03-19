@@ -2,6 +2,7 @@
 
 class Episciences_View_Helper_Url extends Zend_View_Helper_Url
 {
+    public const URI_DELIMITER = '/';
 
     /**
      * @param array $urlOptions
@@ -10,13 +11,6 @@ class Episciences_View_Helper_Url extends Zend_View_Helper_Url
      * @param bool $encode
      * @param bool $withSegmentedParameters ([false]: ?param1=val1&param2=val2&... [true]: /param1/val1/param2/val2/...)
      * @return string
-     * @throws Zend_Exception
-     */
-
-    public const URI_DELIMITER = '/';
-
-    /**
-     * @throws Zend_Exception
      */
     public function url(array $urlOptions = [], $name = null, $reset = false, $encode = true, bool $withSegmentedParameters = false): string
     {
