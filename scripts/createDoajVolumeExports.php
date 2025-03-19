@@ -8,7 +8,7 @@ use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 $localopts = [
-    'rvcode=s' => "journal code",
+    'rvcode=s' => "The journalCode or use 'allJournals' to process all the journals",
     'ignorecache=b' => 'cache ignore for test',
     'removecache=b' => 'remove all cache'
 ];
