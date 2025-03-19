@@ -60,7 +60,7 @@ class Episciences_View_Helper_Url extends Zend_View_Helper_Url
             $uri .= $controller . self::URI_DELIMITER;
         }
 
-        if ((isset($urlOptions ['action']) && $urlOptions ['action'] !== 'index')) {
+        if (isset($urlOptions ['action']) && $urlOptions ['action'] !== 'index') {
 
             $action = $urlOptions ['action'];
 
