@@ -741,16 +741,16 @@ class Episciences_Mail extends Zend_Mail
 
     /**
      * Retourne l'historique des mails
-     * @param null $docId
+     * @param array $docIds
      * @param array $options
      * @param bool $isFilterInfos
      * @return array
      */
 
-    public function getHistory($docId = null, array $options = [], bool $isFilterInfos = false): array
+    public function getHistory(array $docIds = [], array $options = [], bool $isFilterInfos = false): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $this->getHistoryQuery($docId, $options, false, $isFilterInfos);
+        $sql = $this->getHistoryQuery($docIds, $options, false, $isFilterInfos);
 
         // limit
         if (array_key_exists('offset', $options) && array_key_exists('limit', $options)) {
@@ -774,17 +774,20 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
-     * @param null $docId
+     * @param array $docIds
      * @param array $options
      * @param bool $isCount
-     * @param bool $isFilterInfos
+     * @param bool $isFilterInfos : search filter
      * @return Zend_Db_Select
      */
-    private function getHistoryQuery($docId = null, array $options = [], bool $isCount = false, bool $isFilterInfos = false): \Zend_Db_Select
+    private function getHistoryQuery(array $docIds = [], array $options = [], bool $isCount = false, bool $isFilterInfos = false): \Zend_Db_Select
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // related to the conflicts of interest option: @sse AdministratemailController::historyProcessing()
+        // display the history of articles for which an explicit declaration of no conflict has been reported
+        // Note that logging in with another account will override this restriction (if the connected account is affected by the conflict declaration)
         $isStrict = isset($options['strict']) && $options['strict'];
 
         $sql = (!$isCount) ?
@@ -793,33 +796,22 @@ class Episciences_Mail extends Zend_Mail
 
         $sql->where('RVID = ?', $this->getRvid());
 
-        if (is_array($docId) && !empty($docId)) {
+        if (!empty($docIds)) {
 
+            $implodedDocId = implode(',', $docIds);
             if (!$isStrict) {
-
-                $sql->where('DOCID IS NULL OR DOCID IN (?)', $docId);
-
+                $sql->where(sprintf('DOCID IS NULL OR DOCID IN (%s) OR UID = %s', $implodedDocId, Episciences_Auth::getUid()));
             } else {
-                $sql->where('DOCID IN (?)', $docId);
+                $sql->where(sprintf('DOCID IN (%s) OR UID = %s', $implodedDocId, Episciences_Auth::getUid()));
             }
 
-        } elseif ($docId) {
-
-            if ($isStrict) {
-                $sql->where('DOCID IS NULL OR DOCID = ?', $docId);
-
-            } else {
-                $sql->where('DOCID = ?', $docId);
-            }
 
         } else {
-            (!$isStrict) ? $sql->where('DOCID IS NULL') : $sql->where('DOCID = ?', 0); // fix Empty IN clause parameter list in MySQL
+            !$isStrict ? $sql->where('DOCID IS NULL OR UID = ?', Episciences_Auth::getUid()) : $sql->where('UID = ?', Episciences_Auth::getUid());
         }
 
-        $sql->orWhere("UID = ?", Episciences_Auth::getUid());
-
         // DataTable search
-        if ($isFilterInfos && array_key_exists('search', $options)) {
+        if ($isFilterInfos && !empty($options['search'])) {
             $sql = $this->dataTableMailsSearchQuery($sql, $options['search']);
         }
 
@@ -839,13 +831,12 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
-     * Retourne le nombre de lignes selectionnées
      * @param array $docIds
      * @param array $options
      * @param bool $isFilterInfos
-     * @return int
+     * @return int : the number of elements
      */
-    public function getCountHistory($docIds, array $options = [], bool $isFilterInfos = false): int
+    public function getCountHistory(array $docIds = [], array $options = [], bool $isFilterInfos = false): int
     {
         $select = $this->getHistoryQuery($docIds, $options, true, $isFilterInfos);
         return (int)Zend_Db_Table_Abstract::getDefaultAdapter()->fetchOne($select);
