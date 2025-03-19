@@ -66,8 +66,6 @@ class Episciences_View_Helper_Url extends Zend_View_Helper_Url
 
             $uri .= $action;
 
-        } else {
-            $uri .= '';
         }
 
         unset ($urlOptions ['controller'], $urlOptions ['action']);
