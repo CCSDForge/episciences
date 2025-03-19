@@ -51,7 +51,7 @@ class UserDefaultController extends Episciences_Controller_Action
 
         } // else, user views his own profile
 
-        else if (Episciences_Auth::isLogged()) {
+        elseif (Episciences_Auth::isLogged()) {
             $user = Episciences_Auth::getInstance()->getIdentity();
             $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
         } else {
@@ -603,13 +603,14 @@ class UserDefaultController extends Episciences_Controller_Action
                     $this->render('create');
                     return;
                 }
-
-                $url = $this->view->url([
+                $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $url = $site . $this->view->url([
                     'controller' => 'user',
                     'action' => 'activate',
                     'token' => $userToken->getToken()], null, true);
 
-                $tokenUrl = APPLICATION_URL . $url;
+
+                $tokenUrl = $url;
 
                 $tags = [
                     Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
@@ -915,12 +916,15 @@ class UserDefaultController extends Episciences_Controller_Action
 
             $mail = new Episciences_Mail('UTF-8');
             // prepare retrieve password link
-            $url = APPLICATION_URL . $this->view->url([
+
+            $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+            $url = $site . $this->view->url([
                     'controller' => 'user',
                     'action' => 'resetpassword',
                     'lang' => $locale,
                     'token' => $userToken->getToken()
-                ], null, true);
+                ], '', true);
+
             $mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
             $mail->setFromReview();
             $mail->setTo($user);
