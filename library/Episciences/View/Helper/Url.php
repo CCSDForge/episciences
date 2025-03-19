@@ -22,12 +22,8 @@ class Episciences_View_Helper_Url extends Zend_View_Helper_Url
             ];
         }
 
-        if ($withSegmentedParameters) {
-
-            if (!defined('PREFIX_URL') || PREFIX_URL === PORTAL_PREFIX_URL) {
-                return parent::url($urlOptions, $name, $reset, $encode);
-            }
-
+        if ($withSegmentedParameters && (!defined('PREFIX_URL') || PREFIX_URL === PORTAL_PREFIX_URL)) {
+            return parent::url($urlOptions, $name, $reset, $encode);
         }
 
         return $this->processUri($urlOptions, $encode, $withSegmentedParameters);
