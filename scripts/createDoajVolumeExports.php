@@ -2,6 +2,7 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -27,12 +28,8 @@ class buildDoajVolumeExport extends JournalScript
     private Logger $logger;
     private Client $client;
 
-    public function __construct($localopts)
+    public function __construct(array $localopts)
     {
-        $loggerName = 'doajVolumeExports';
-        $this->logger = new Logger($loggerName);
-        $this->logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . $loggerName . '.log', Logger::INFO));
-
         $this->setRequiredParams([]);
         $this->setArgs(array_merge($this->getArgs(), $localopts));
         $guzzleOptions = [
@@ -44,39 +41,87 @@ class buildDoajVolumeExport extends JournalScript
 
     public function run(): void
     {
-        try {
-            $this->initApp();
-            $this->initDb();
-            $this->initTranslator();
-            defineJournalConstants();
 
+        $this->initApp();
+        $rvCode = $this->getParam('rvcode');
+        $allJournals = $this->retrieveJournalCodes();
 
-            $rvCode = $this->getParam('rvcode');
-
-
-            if ($rvCode === null) {
-                $this->logger->error('ERROR: MISSING RVCODE');
-                die('ERROR: MISSING RVCODE' . PHP_EOL);
-            }
-
-            if ($this->getParam('removecache') === '1') {
-                $cache = new FilesystemAdapter("doaj-volume-export-" . $rvCode, 0, CACHE_PATH_METADATA);
-                $cache->clear();
-                $this->logger->info("Cache cleared for RV code: $rvCode");
-            }
-
-            $volumeList = $this->getVolumeList($rvCode);
-
-
-            foreach ($volumeList as $oneVolume) {
-                $this->mergeDoajExportFromVolume($oneVolume, $rvCode);
-            }
-
-            $this->logger->info('Volumes Export completed.');
-        } catch (Exception $e) {
-            $this->logger->error('An error occurred: ' . $e->getMessage(), ['exception' => $e]);
-            die('An error occurred. Check the logs for details.' . PHP_EOL);
+        if ($rvCode !== 'allJournals') {
+            $allJournals = [$rvCode];
         }
+
+        foreach ($allJournals as $journal) {
+            $this->initLoggerForJournal($journal);
+            try {
+                if ($this->getParam('removecache') === '1') {
+                    $cache = new FilesystemAdapter("doaj-volume-export-" . $journal, 0, CACHE_PATH_METADATA);
+                    $cache->clear();
+                    $this->logger->info("Cache cleared for RV code: $journal");
+                }
+
+                $volumeList = $this->getVolumeList($journal);
+
+
+                foreach ($volumeList as $oneVolume) {
+                    $this->mergeDoajExportFromVolume($oneVolume, $journal);
+                }
+
+                $this->logger->info($journal . ' Volumes Export completed.');
+            } catch (Exception $e) {
+                $errorMessage = $journal . ' An error occurred: ' . $e->getMessage();
+                $this->logger->error($errorMessage, ['exception' => $e]);
+                die($errorMessage . PHP_EOL);
+            }
+
+        }
+    }
+
+    public function retrieveJournalCodes($itemsPerPage = 30): array
+    {
+        $page = 1;
+        $allCodes = [];
+        try {
+            do {
+                $response = $this->client->request('GET', EPISCIENCES_API_URL . 'journals/', [
+                    'query' => [
+                        'page' => $page,
+                        'itemsPerPage' => $itemsPerPage,
+                        'pagination' => 'false'
+                    ]
+                ]);
+
+                $journals = json_decode($response->getBody(), true);
+
+                $codes = array_column($journals, 'code');
+                $allCodes = array_merge($allCodes, $codes);
+
+                $page++;
+            } while (count($journals) === $itemsPerPage);
+
+            return $allCodes;
+        } catch (RequestException $e) {
+            $this->logger->error($e->getMessage(), [$e->getCode()]);
+            return [];
+        } catch (GuzzleException $e) {
+            $this->logger->error($e->getMessage(), [$e->getCode()]);
+            return [];
+        }
+    }
+
+    /**
+     * @param string $journalCode
+     * @return void
+     */
+    private function initLoggerForJournal(string $journalCode = 'emptyRvCode'): void
+    {
+        $loggerName = 'doajVolumeExports-' . $journalCode;
+        try {
+            $this->logger = new Logger($loggerName);
+            $this->logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . $loggerName . '.log', Logger::INFO));
+        } catch (Exception $e) {
+            die('Failed to create logger ' . $loggerName . ' ' . $e->getMessage());
+        }
+
     }
 
     /**
@@ -136,7 +181,16 @@ class buildDoajVolumeExport extends JournalScript
     {
         $docidCollection = [];
         foreach ($paperIdCollection as $paperId) {
-            $response = $this->client->get(EPISCIENCES_API_URL . 'papers/' . $paperId)->getBody()->getContents();
+            try {
+                $response = $this->client->get(EPISCIENCES_API_URL . 'papers/' . $paperId)->getBody()->getContents();
+            } catch (RequestException $e) {
+                $this->logger->error($e->getMessage(), [$e->getCode()]);
+                continue;
+            } catch (GuzzleException $e) {
+                $this->logger->error($e->getMessage(), [$e->getCode()]);
+                continue;
+            }
+
             $paperProperties = json_decode($response);
             $docId = $paperProperties->document->database->current->identifiers->document_item_number;
             $position = $paperProperties->document->database->current->position_in_volume;
@@ -189,40 +243,9 @@ class buildDoajVolumeExport extends JournalScript
         $cache->save($setVidList);
     }
 
-    /*    public function retrieveJournalCodes($itemsPerPage = 30)
-        {
-            $page = 1;
-            $allCodes = [];
-            try {
-                do {
-                    $response = $this->client->request('GET', EPISCIENCES_API_URL . 'journals/', [
-                        'query' => [
-                            'page' => $page,
-                            'itemsPerPage' => $itemsPerPage,
-                            'pagination' => 'false'
-                        ]
-                    ]);
-
-                    $journals = json_decode($response->getBody(), true);
-
-                    $codes = array_column($journals, 'code');
-                    $allCodes = array_merge($allCodes, $codes);
-
-                    $page++;
-                } while (count($journals) === $itemsPerPage);
-
-                return $allCodes;
-            } catch (RequestException $e) {
-                $this->logger->error($e->getMessage(), [$e->getCode()]);
-                return [];
-            } catch (GuzzleException $e) {
-                $this->logger->error($e->getMessage(), [$e->getCode()]);
-                return [];
-            }
-        }*/
-
 
 }
 
 $script = new buildDoajVolumeExport($localopts);
+
 $script->run();
