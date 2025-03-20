@@ -15,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-
-- [#647](https://github.com/CCSDForge/episciences/issues/647): new option "Ask for resubmission"
 - [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 
 ### Changed

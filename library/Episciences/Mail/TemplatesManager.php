@@ -15,7 +15,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_PUBLISHED_EDITOR_COPY = 'paper_published_editor_copy';
     public const TYPE_PAPER_REFUSED = 'paper_refused'; // author copy
     public const TYPE_PAPER_REFUSED_EDITORS_COPY = 'paper_refused_editors_copy'; // editors copy
-    public const TYPE_PAPER_ASK_RESUBMISSION_REQUEST = 'paper_revision_request'; // ask resubmission request
+    public const TYPE_PAPER_REVISION_REQUEST = 'paper_revision_request'; // not used
     public const TYPE_PAPER_MINOR_REVISION_REQUEST = 'paper_minor_revision_request';
     public const TYPE_PAPER_MAJOR_REVISION_REQUEST = 'paper_major_revision_request';
     public const TYPE_PAPER_UPDATED_RATING_DEADLINE = 'paper_updated_rating_deadline';
@@ -1505,7 +1505,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_PUBLISHED_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial de la publication de l'article", self::RECIPIENT => self::MANAGERS_RECEP_EXP],
         self::TYPE_PAPER_REFUSED => [self::DESCRIPTION => "confirmation de rejet de l'article", self::RECIPIENT => self::AUTHOR_RECEP_EXP], // author copy
         self::TYPE_PAPER_REFUSED_EDITORS_COPY => [self::DESCRIPTION => "notification informant le comité éditorial du rejet de l'article", self::RECIPIENT => self::MANAGERS_RECEP_EXP], // editors copy
-        self::TYPE_PAPER_ASK_RESUBMISSION_REQUEST => [self::DESCRIPTION => "non utilisé", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_REVISION_REQUEST => [self::DESCRIPTION => "non utilisé", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_MINOR_REVISION_REQUEST => [self::DESCRIPTION => "demande de modifications mineures", self::RECIPIENT => "l'auteur de l'article comme destinataire principal et en BCC (selon le paramétrage de la revue), les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
         self::TYPE_PAPER_MAJOR_REVISION_REQUEST => [self::DESCRIPTION => 'demande de modifications majeures', self::RECIPIENT => "l'auteur de l'article comme destinataire principal et en BCC (selon le paramétrage de la revue), les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
         self::TYPE_PAPER_UPDATED_RATING_DEADLINE => [self::DESCRIPTION => 'notification informant le relecteur de la nouvelle date limite de relecture', self::RECIPIENT => 'relecteur'],
@@ -1926,7 +1926,7 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY => self::paper_reviewer_refusal_reviewer_copy_tags,
             self::TYPE_PAPER_REVIEWER_REMOVAL => self::paper_reviewer_removal_tags,
             self::TYPE_PAPER_REVISION_ANSWER => self::paper_revision_answer_tags,
-            self::TYPE_PAPER_ASK_RESUBMISSION_REQUEST => self::paper_revision_request_tags,
+            self::TYPE_PAPER_REVISION_REQUEST => self::paper_revision_request_tags,
             self::TYPE_PAPER_SUBMISSION_AUTHOR_COPY => self::paper_submission_author_copy_tags,
             self::TYPE_PAPER_SUBMISSION_EDITOR_COPY => self::paper_submission_editor_copy_tags,
             self::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY => self::paper_submission_editor_copy_tags,

@@ -61,15 +61,6 @@ if (isset($this->ce)) {
     </a><br/>
 <?php endif; ?>
 
-<?php // Articles en attente de re-soumission (nouvelle version) ******************************* ?>
-<?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_WAITING_FOR_NEW_VERSION]); ?>
-<?php if ($count) : ?>
-    <?php $params['status'] = [Episciences_Paper::STATUS_WAITING_FOR_NEW_VERSION]; ?>
-    <a href="<?= $this->url($params) ?>"><strong><?= $count ?></strong>
-        <?= $this->translate(($count === 1) ? "article en attente d'une nouvelle version" : "articles en attente d'une nouvelle version") ?>
-    </a><br/>
-<?php endif; ?>
-
 <?php // refus de modifications : réponse à une demande de modifications : pas de modifications ?>
 <?php $count = Episciences_PapersManager::countByStatus($papers, [Episciences_Paper::STATUS_NO_REVISION]); ?>
 <?php if ($count) : ?>

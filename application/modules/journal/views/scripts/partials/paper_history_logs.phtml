@@ -63,7 +63,7 @@ $logs_with_details = [
             $status = isset($detail['status']) && in_array($detail['status'], array_merge(Episciences_Paper::STATUS_CODES, Episciences_Paper::OTHER_STATUS_CODE), false) ?
                 $this->translate(Episciences_Paper::$_statusLabel[$detail['status']]) :
                 $this->translate('undefined status');
-            $tag = (!empty($detail['user']['tag'])) ? (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
+            $tag = (isset($detail['user']['tag']) && !empty($detail['user']['tag'])) ? (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
 
             $fullName = 'undefined';
 

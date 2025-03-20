@@ -245,8 +245,8 @@ return [
     "paper_revision_tpl_group" => "Article - demandes de modifications",
 
     // Un rédacteur en chef demande des modifications sur l'article
-    "paper_revision_request_tpl_name" => "Demander une nouvelle version",
-    "paper_revision_request_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Soumission d'une nouvelle version de votre article",
+    "paper_revision_request_tpl_name" => "Demande de modifications d'un article",
+    "paper_revision_request_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Demande de modifications de votre article",
 
     // Un rédacteur en chef demande des modifications mineures sur l'article
     "paper_minor_revision_request_tpl_name" => "Demande de modifications mineures d'un article",
