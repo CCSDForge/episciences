@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v1.0.50 - 2025-03-13
 ### Added
+- [#647](https://github.com/CCSDForge/episciences/issues/647): new option "Ask for resubmission"
 - [#651](https://github.com/CCSDForge/episciences/issues/651): Statistics on invited and submitted referee reports 
 ### Fixed
 - Duplicate insertions when updating metadata

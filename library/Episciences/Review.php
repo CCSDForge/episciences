@@ -107,6 +107,7 @@ class Episciences_Review
     public const SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION = 'NewVersionAutomaticallyReassignSameReviewers';
     public const MAJOR_REVISION_ASSIGN_REVIEWERS = 'majorRevisionAssignReviewers';
     public const MINOR_REVISION_ASSIGN_REVIEWERS = 'minorRevisionAssignReviewers';
+    public const NEW_VERSION_ASSIGN_REVIEWERS = 'newVersionAssignReviewers'; // ask for resubmission request
     public const SETTING_CONTACT_JOURNAL = 'contactJournal';
     public const SETTING_JOURNAL_NOTICE = 'contactJournalNotice';
     public const SETTING_CONTACT_JOURNAL_EMAIL = 'contactJournalEmail';
@@ -1340,7 +1341,8 @@ class Episciences_Review
         $twoPoints = $translator->translate(" :");
         $mjrLabel = $translator->translate("En cas de demande de modifications majeures");
         $mrLabel = $translator->translate("En cas de demande de modifications mineures");
-        $multiCheckboxOptions = [self::MAJOR_REVISION_ASSIGN_REVIEWERS => $mjrLabel, self::MINOR_REVISION_ASSIGN_REVIEWERS => $mrLabel];
+        $newVersionLabel = $translator->translate("En cas de demande d'une nouvelle version");
+        $multiCheckboxOptions = [self::MAJOR_REVISION_ASSIGN_REVIEWERS => $mjrLabel, self::MINOR_REVISION_ASSIGN_REVIEWERS => $mrLabel,  self::NEW_VERSION_ASSIGN_REVIEWERS  => $newVersionLabel];
         $multiCheckboxDecorators = [
             'ViewHelper',
             ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
