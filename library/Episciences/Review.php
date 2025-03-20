@@ -345,10 +345,11 @@ class Episciences_Review
     /**
      * @param int|null $docId
      * @param string|null $role
+     * @param bool $isEditorsNotified // Assigned editors are automatically added as (hidden) copies of messages
      * @return string
      * @throws Zend_Db_Statement_Exception
      */
-    private static function buildFyiStr(?int $docId, ?string $role = null): string
+    private static function buildFyiStr(?int $docId, ?string $role = null, bool $isEditorsNotified = false): string
     {
         $paper = null;
         $cc = [];
@@ -365,7 +366,10 @@ class Episciences_Review
             if (!$role) {
                 self::checkReviewNotifications($cc);
                 Episciences_Submit::addIfNotExists($paper->getEditors(), $cc);
-                Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
+
+                if ($isEditorsNotified) {
+                    Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
+                }
 
             } elseif ($role === Episciences_Acl::ROLE_REVIEWER) {
 
@@ -511,15 +515,15 @@ class Episciences_Review
     /**
      * @param int|null $docId
      * @param string|null $role
+     * @param bool $isEditorsNotified // Assigned editors are automatically added as (hidden) copies of messages
      * @return string
-     *
      */
-    public static function forYourInformation(?int $docId = null, ?string $role = null): string
+    public static function forYourInformation(?int $docId = null, ?string $role = null, bool $isEditorsNotified = false): string
     {
         $fyi = '';
 
         try {
-            $fyi = self::buildFyiStr($docId, $role);
+            $fyi = self::buildFyiStr($docId, $role, $isEditorsNotified);
 
         } catch (Exception $e) {
             error_log($e->getMessage());
@@ -2529,7 +2533,7 @@ class Episciences_Review
 
         try {
             $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
 
             $cUidS = $isCoiEnabled ?
                 Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paperId]) :
