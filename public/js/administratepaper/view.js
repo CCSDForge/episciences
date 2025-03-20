@@ -164,7 +164,6 @@ $(document).ready(function () {
     $("[id$='-revision-deadline']").on('change keyup past', (function () {
         let $minorSubmit = $('button[id^="submit-modal-minor-revision"]');
         let $majorSubmit = $('button[id^="submit-modal-major-revision"]');
-        let $resubmissionSubmit = $('button[id^="submit-modal-resubmission"]');
 
         let locale = (author) && author.langueid !== siteLocale ? defaultLocale : author.langueid;
 
@@ -181,7 +180,6 @@ $(document).ready(function () {
                 alert(translate("La date limite de révision n'est pas valide : Veuillez saisir une date limite de révision au format : AAAA-mm-jj."));
                 disableModalSubmitButton($minorSubmit);
                 disableModalSubmitButton($majorSubmit);
-                disableModalSubmitButton($resubmissionSubmit)
                 return;
             }
 
@@ -199,13 +197,11 @@ $(document).ready(function () {
 
             enableModalSubmitButton($minorSubmit);
             enableModalSubmitButton($majorSubmit);
-            enableModalSubmitButton($resubmissionSubmit)
 
 
         } else {
             disableModalSubmitButton($minorSubmit);
             disableModalSubmitButton($majorSubmit);
-            disableModalSubmitButton($resubmissionSubmit)
 
         }
 

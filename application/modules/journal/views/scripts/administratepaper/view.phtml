@@ -108,7 +108,7 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
 <?php // paper status ***************************************************** ?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate("Statut de l'article") ?></h2>
+        <h2 class="panel-title"><?php echo $this->translate('Statut de l\'article'); ?></h2>
     </div>
     <div class="panel-body in">
         <?php

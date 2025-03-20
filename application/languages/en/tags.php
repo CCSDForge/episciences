@@ -130,7 +130,7 @@ return array(
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED_EDITORS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee of the rejection of the article",
 
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ASK_RESUBMISSION_REQUEST][Episciences_Mail_TemplatesManager::DESCRIPTION] => "Ask for resubmission",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_REQUEST][Episciences_Mail_TemplatesManager::DESCRIPTION] => "not used",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST][Episciences_Mail_TemplatesManager::DESCRIPTION] => "minor revision request",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST][Episciences_Mail_TemplatesManager::RECIPIENT] => "the author of the article as the main recipient and in BCC (depending on the journal's settings), the editors-in-chief, administrators and editorial secretaries",
@@ -349,7 +349,6 @@ return array(
     Episciences_Paper_Logger::CODE_SECTION_SELECTION => "Moved to a section",
     Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST => 'Minor revision request',
     Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST => 'Major revision request',
-    Episciences_Paper_Logger::CODE_RESUBMISSION_REQUEST => 'Resubmission request',
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER => 'Revision request answer (without any modifications)',
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_NEW_VERSION => 'Revision request answer (new version)',
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION => 'Revision request answer (temporary version)',
