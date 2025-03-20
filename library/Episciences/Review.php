@@ -2511,7 +2511,7 @@ class Episciences_Review
 
         try {
             $journalSettings = Zend_Registry::get('reviewSettings');
-            $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
+            $isCoiEnabled = isset($journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[self::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
 
             $cUidS = $isCoiEnabled ?
                 Episciences_Paper_ConflictsManager::fetchSelectedCol('by', ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paperId]) :
