@@ -5,7 +5,6 @@ class Episciences_PapersManager
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
-    public const RESUBMISSION_REVISION_TYPE = 'resubmission';
 
     /**
      * @return array
@@ -1131,7 +1130,7 @@ class Episciences_PapersManager
 
         $form->addElement('text', 'bcc', [
             'label' => 'BCC',
-            'value' => Episciences_Review::forYourInformation($docId),
+            'value' => Episciences_Review::forYourInformation($docId, null, true),
             'class' => 'form-control'
         ]);
 
@@ -1901,23 +1900,16 @@ class Episciences_PapersManager
         $minDate = date('Y-m-d');
         $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
 
-        $isChecked = ($type === 'major' || $type === self::RESUBMISSION_REVISION_TYPE) ? 1 : 0; // default
+        $isChecked = ($type === 'major') ? 1 : 0;
 
         if (null !== $review) { // git #123 : Ne jamais réassigner automatiquement les relecteurs, que ce soit pour des demandes de modif mineures ou majeures
             $automaticallyReassignSameReviewers = $review->getSetting(Episciences_Review::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION);
             $isRequiredRevisionDeadline = (bool)$review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE);
-
-
-            if(!empty($automaticallyReassignSameReviewers)){
-                if ($type === 'minor') {
-                    $isChecked = in_array(Episciences_Review::MINOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
-                } elseif ($type === 'major') {
-                    $isChecked = in_array(Episciences_Review::MAJOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
-                } elseif($type === self::RESUBMISSION_REVISION_TYPE) {
-                    $isChecked = in_array(Episciences_Review::NEW_VERSION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
-                }
+            if ($type === 'minor') {
+                $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MINOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
+            } elseif ($type === 'major') {
+                $isChecked = !empty($automaticallyReassignSameReviewers) && in_array(Episciences_Review::MAJOR_REVISION_ASSIGN_REVIEWERS, $automaticallyReassignSameReviewers, true);
             }
-
         }
 
         $form = new Ccsd_Form([
@@ -2417,7 +2409,6 @@ class Episciences_PapersManager
             'refuse' => Episciences_Mail_TemplatesManager::TYPE_PAPER_REFUSED,
             'minorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MINOR_REVISION_REQUEST,
             'majorRevision' => Episciences_Mail_TemplatesManager::TYPE_PAPER_MAJOR_REVISION_REQUEST,
-            self::RESUBMISSION_REVISION_TYPE => Episciences_Mail_TemplatesManager::TYPE_PAPER_ASK_RESUBMISSION_REQUEST,
         ];
 
         // accept paper (or request final version)

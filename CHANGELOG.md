@@ -15,10 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-### Fixed
-- reset password url
-- account creation token url
+
 ### Changed
+- [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
+
 - Ability to customise application environment variables
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 - Website menu:
@@ -26,14 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
 
-
-- [#647](https://github.com/CCSDForge/episciences/issues/647): new option "Ask for resubmission"
-- [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
-
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up
 - [#649](https://github.com/CCSDForge/episciences/issues/649): Assigned editors are now automatically added as (hidden) copies of messages sent to reviewers
 ### Fixed
+- reset password url
+- account creation token url
 - [#653](https://github.com/CCSDForge/episciences/issues/653): Filtering email history doesn't work
 - File Not Found Error
 ## v1.0.50.1 - 2025-03-14

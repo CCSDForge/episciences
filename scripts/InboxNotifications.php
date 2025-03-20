@@ -978,7 +978,7 @@ class InboxNotifications extends Script
                     $paper->log(
                         Episciences_Paper_Logger::CODE_STATUS,
                         EPISCIENCES_UID,
-                        ['status' => $paper->getStatus()]
+                        ['status' => Episciences_Paper::STATUS_SUBMITTED]
                     );
                 } catch (Zend_Db_Adapter_Exception $e) {
                     $this->logger->critical($e->getMessage());
