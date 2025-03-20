@@ -1892,7 +1892,7 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
-    "Évaluation" => "Évaluation",
+    "Évaluation" => "Evaluation",
     "Évaluations reçues" => "Reviews received",
     "Évaluations demandées" => "Reviews requested",
     "Nombre médian d'évaluations d'articles de recherche" => "Median number of reviews for research articles",
