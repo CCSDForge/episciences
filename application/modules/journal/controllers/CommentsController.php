@@ -142,66 +142,58 @@ class CommentsController extends PaperController
             return;
         }
 
-        if (
-            Episciences_Auth::isLogged() &&
-            (
-                $paper->isOwner() ||
-                Episciences_Auth::isSecretary()
-            )
-        ) { // Comments are edited by the author, administrator, editor-in-chief or secretary.
+       $this->checkAccess($paper);
 
-            /** @var Zend_Controller_Request_Http $request */
-            try {
-                $form = Episciences_CommentsManager::getEditAuthorCommentForm($oldComment);
-                if (
-                    $request?->isPost() &&
-                    $form->isValid($request?->getPost())
-                ) {
+        if ($paper->isOwner()) {
+            $url = $this->buildPublicPaperUrl($paper->getDocid());
+        } elseif (Episciences_Auth::isSecretary()) {
+            $url = $this->buildAdminPaperUrl($paper->getDocid());
+        }
 
-                    if ($paper->isOwner()) {
-                        $url = '/' . PaperDefaultController::PAPER_URL_STR . $paper->getDocid();
-                    } elseif (Episciences_Auth::isSecretary()) {
-                        $url = '/' . PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid();
-                    }
+        if (in_array($paper->getStatus(), $paper::$_noEditableStatus, true)) {
+            $this->_helper->redirector->gotoUrl($url);
+            return;
+        }
 
-                    $formValues = $form->getValues();
-                    $newComment = new Episciences_Comment($oldComment);
-                    $newComment->setMessage($formValues['author_comment'] ?? null);
+        /** @var Zend_Controller_Request_Http $request */
+        try {
+            $form = Episciences_CommentsManager::getEditAuthorCommentForm($oldComment);
+            if (
+                $request?->isPost() &&
+                $form->isValid($request?->getPost())
+            ) {
 
-                    if (isset($formValues[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME])) { // Chargement d'un nouveau fichier
-                        $newComment->setFile($formValues[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]);
-                    }
+                $formValues = $form->getValues();
+                $newComment = new Episciences_Comment($oldComment);
+                $newComment->setMessage($formValues['author_comment'] ?? null);
 
-                    if ($newComment->getFile() === $oldComment['FILE'] && $newComment->getMessage() === $oldComment['MESSAGE']){
-                        $this->_helper->redirector->gotoUrl($url);
-                        return;
-                    }
+                if (isset($formValues[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME])) { // Chargement d'un nouveau fichier
+                    $newComment->setFile($formValues[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]);
+                }
 
-                    $newComment = Episciences_CommentsManager::saveCoverLetter($paper, $newComment);
-
-                    if (!$newComment) {
-                        $message = $this->view->translate("Une erreur est survenue lors de l'enregistrement de votre commentaire.");
-                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-                    } else {
-
-                        $this->newCommentNotifyManager($paper, $newComment);
-                        $message = $this->view->translate("Vos changements ont été enregistrés.");
-                    }
-
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                if ($newComment->getFile() === $oldComment['FILE'] && $newComment->getMessage() === $oldComment['MESSAGE']) {
                     $this->_helper->redirector->gotoUrl($url);
                     return;
                 }
-            } catch (Zend_Form_Exception|Zend_Exception  $e) {
-                AppRegistry::getMonoLogger()?->critical($e->getMessage());
-            }
 
-        } else {
-            $message = "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire.";
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector->gotoUrl('/paper/submitted');
-            return;
+                $newComment = Episciences_CommentsManager::saveCoverLetter($paper, $newComment);
+
+                if (!$newComment) {
+                    $message = $this->view->translate("Une erreur est survenue lors de l'enregistrement de votre commentaire.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                } else {
+                    $this->newCommentNotifyManager($paper, $newComment);
+                    $message = $this->view->translate("Vos changements ont été enregistrés.");
+                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                }
+
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+            }
+        } catch (Zend_Form_Exception|Zend_Exception  $e) {
+            AppRegistry::getMonoLogger()?->critical($e->getMessage());
         }
+
 
         $this->view->edit_comment_form = $form;
     }
@@ -219,7 +211,7 @@ class CommentsController extends PaperController
     {
         $request = $this->getRequest();
 
-        $docId = (int)$request->getParam('docid');
+        $docId = (int)$request?->getParam('docid');
 
         $paper = Episciences_PapersManager::get($docId, false, RVID);
 
@@ -227,26 +219,32 @@ class CommentsController extends PaperController
 
         if ($paper) {
 
+            $this->checkAccess($paper);
+
+            if ($paper->isOwner()) {
+                $url = $this->buildPublicPaperUrl($docId);
+            } elseif (Episciences_Auth::isSecretary()) {
+                $url = $this->buildAdminPaperUrl($docId);
+            }
+
+            if (in_array($paper->getStatus(), $paper::$_noEditableStatus, true)) {
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+            }
+
             $author_comments = Episciences_CommentsManager::getList(
                 $paper->getDocid(),
                 [
                     'type' => Episciences_CommentsManager::TYPE_AUTHOR_COMMENT
                 ]);
 
-            if (
-                !$author_comments &&
-                (
-                    $paper->isOwner() ||
-                    Episciences_Auth::isSecretary()
-                )
-            ) {
+            if (!$author_comments) {
 
                 $form = Episciences_CommentsManager::getEditAuthorCommentForm();
 
-
                 if (
-                    $request->isPost() &&
-                    $form->isValid($request->getPost()
+                    $request?->isPost() &&
+                    $form->isValid($request?->getPost()
                     )
                 ) {
 
@@ -257,7 +255,10 @@ class CommentsController extends PaperController
                         "attachedFile" => $formValues[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME] ?? null
                     ];
 
-                    if (Episciences_CommentsManager::saveCoverLetter($paper, $coverLetter)) {
+                    $savedComment = Episciences_CommentsManager::saveCoverLetter($paper, $coverLetter);
+
+                    if ($savedComment) {
+                        $this->newCommentNotifyManager($paper, $savedComment);
                         $message = $this->view->translate("Vos changements ont été enregistrés.");
                         $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
 
@@ -266,14 +267,7 @@ class CommentsController extends PaperController
                         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                     }
 
-                    if ($paper->isOwner()) {
-                        $url = $this->buildPublicPaperUrl($docId);
-                    } elseif (Episciences_Auth::isSecretary()) {
-                        $url = $this->buildAdminPaperUrl($docId);
-                    }
-
                     $this->_helper->redirector->gotoUrl($url);
-
                 }
 
                 $this->view->form = $form;
@@ -284,8 +278,16 @@ class CommentsController extends PaperController
         } else {
             $this->_helper->redirector->gotoUrl($url);
         }
+    }
 
-
+    private function checkAccess(Episciences_Paper $paper): void
+    {
+        // Comments are edited by the author, administrator, editor-in-chief or secretary.
+        if (!$paper->isOwner() && !Episciences_Auth::isSecretary()) {
+            $message = "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire.";
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+            $this->_helper->redirector->gotoUrl('/paper/submitted');
+        }
     }
 
 }
