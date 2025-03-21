@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [#653](https://github.com/CCSDForge/episciences/issues/653): Filtering email history doesn't work
 - File Not Found Error
+- Wrong link on page "Invitation to review an article" for temporary versions
 ## v1.0.50.1 - 2025-03-14
 ### Fixed
 - Fixed CACHE_PATH not existing
