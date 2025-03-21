@@ -3272,8 +3272,8 @@ class AdministratepaperController extends PaperDefaultController
             return;
 
         }
-        $url = '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view/id/' . $docId;
-        $this->_helper->redirector->gotoUrl($url);
+
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]));
     }
 
     /**
