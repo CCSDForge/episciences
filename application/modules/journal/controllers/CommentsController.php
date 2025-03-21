@@ -183,7 +183,6 @@ class CommentsController extends PaperController
                     $message = $this->view->translate("Une erreur est survenue lors de l'enregistrement de votre commentaire.");
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 } else {
-
                     $this->newCommentNotifyManager($paper, $newComment);
                     $message = $this->view->translate("Vos changements ont été enregistrés.");
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
