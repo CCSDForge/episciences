@@ -1130,7 +1130,7 @@ class Episciences_PapersManager
 
         $form->addElement('text', 'bcc', [
             'label' => 'BCC',
-            'value' => Episciences_Review::forYourInformation($docId),
+            'value' => Episciences_Review::forYourInformation($docId, null, true),
             'class' => 'form-control'
         ]);
 
