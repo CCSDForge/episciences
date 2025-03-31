@@ -152,7 +152,7 @@ class Episciences_SectionsManager
     {
         // Passer les param par défaut (currentEditors)
         $editors = Episciences_Review::getEditors(false);
-
+        $options = [];
         if ($editors) {
 
             $form = new Zend_Form();
@@ -253,10 +253,16 @@ class Episciences_SectionsManager
             'label' => 'Valider',
             'class' => 'btn btn-primary'
         ));
+
+
+        $cancelUrl = (new Episciences_View_Helper_Url())->url(array(
+            'controller' => 'section',
+            'action' => 'index'
+        ));
         $form->setActions(true)->createCancelButton('back', array(
             'label' => 'Annuler',
             'class' => 'btn btn-default',
-            'onclick' => "window.location='/section'"));
+            'onclick' => "window.location='$cancelUrl'"));
 
         if ($defaults) {
             $form->setDefaults($defaults);
