@@ -148,6 +148,21 @@ class Ccsd_Website_Style
     }
 
     /**
+     * Récupération de la largeur du site (fluide, fixe)
+     * @return string
+     */
+    public function getContainerClass()
+    {
+        if (count($this->_tags) == 0) {
+            $this->load();
+        }
+        if (isset($this->_tags['container_width']) && $this->_tags['container_width'] === 'fluid') {
+            return '-fluid';
+        }
+        return '';
+    }
+
+    /**
      * Population du formulaire avec les styles du site
      */
     public function populate()

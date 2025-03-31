@@ -1,6 +1,7 @@
 <?php
 $prefixUrl = PREFIX_URL;
 $style = new Episciences_Website_Style();
+$this->containerClass = $style->getContainerClass();
 $this->navigation = $style->getNavigationOrientation();
 $this->cssFile = $style->getCssFile();
 
@@ -77,7 +78,7 @@ echo $this->doctype('HTML5');
 
 
 <?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml']); ?>
-<div id="container" class="container-fluid">
+<div id="container" class="container<?php echo $this->containerClass; ?>">
 
 
     <div class="logo">
@@ -97,7 +98,7 @@ echo $this->doctype('HTML5');
     <?php ?>
 
 
-    <div class="row-fluid">
+    <div class="row<?php echo $this->containerClass; ?>">
         <?php if ($this->navigation == Ccsd_Website_Style::MENU_LIST || $this->navigation == Ccsd_Website_Style::MENU_ACCORDION) { ?>
         <div class="col-md-2">
             <?php } else { ?>
