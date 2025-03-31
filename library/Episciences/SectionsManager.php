@@ -253,10 +253,16 @@ class Episciences_SectionsManager
             'label' => 'Valider',
             'class' => 'btn btn-primary'
         ));
+
+
+        $cancelUrl = (new Episciences_View_Helper_Url())->url(array(
+            'controller' => 'section',
+            'action' => 'index'
+        ));
         $form->setActions(true)->createCancelButton('back', array(
             'label' => 'Annuler',
             'class' => 'btn btn-default',
-            'onclick' => "window.location='/section'"));
+            'onclick' => "window.location='$cancelUrl'"));
 
         if ($defaults) {
             $form->setDefaults($defaults);
