@@ -152,7 +152,7 @@ class Episciences_SectionsManager
     {
         // Passer les param par défaut (currentEditors)
         $editors = Episciences_Review::getEditors(false);
-
+        $options = [];
         if ($editors) {
 
             $form = new Zend_Form();
