@@ -119,8 +119,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
                 $isOverwritten = isset($params['overwriteFile']) && $params['overwriteFile'] === 'on';
                 preg_match('/[^a-z0-9_\.-]/i', $_FILES['file']['name'], $matches);
                 $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
-                copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
-
+                move_uploaded_file($_FILES['file']['tmp_name'], $dir . $renamedFile);
                 if ($translator) {
                     $message = $translator->translate('Le fichier a été déposé.');
                     if ($renamedFile !== $_FILES['file']['name']) {
