@@ -55,7 +55,7 @@
     foreach ($this->files as $filename => $link) {
         $linkId = 0;
         $linkIdText = 'publicText-' . $linkId;
-        $publicAccessPath = $this->escape('/resources/' . $filename);
+        $publicAccessPath = $this->escape(sprintf("/%s/resources/%s", RVCODE, $filename));
         $managerAccessPath = $this->escape(REVIEW_URL . $filename);
         $filename = $this->escape($filename);
         ?>
