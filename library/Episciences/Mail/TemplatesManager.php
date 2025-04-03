@@ -134,14 +134,21 @@ class Episciences_Mail_TemplatesManager
     // git #513
     public const TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION = 'reminder_reviewed_article_editors_copy';
     public const TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION = 'reminder_submitted_article_editors_copy';
+    public const TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY = 'paper_author_comment_editor_copy';
 
     /**
+     * /!\
+     * These constants are used; do not delete them.
      * **** Used dynamically @see Episciences_Mail_Reminder constant($constant_name);
      */
 
     public const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
     public const TYPE_REMINDER_REVIEWED_ARTICLE_CHIEF_EDITOR_VERSION = 'reminder_reviewed_article_editors_copy';
     public const TYPE_REMINDER_SUBMITTED_ARTICLE_CHIEF_EDITOR_VERSION = 'reminder_submitted_article_editors_copy';
+    /**
+     * END Of /!\
+     */
+
 
     // available in all templates
     public const COMMON_TAGS = [
@@ -1475,6 +1482,17 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE
     ];
 
+    public const paper_author_comment_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+    ];
+
     public const TEMPLATE_DESCRIPTION_AND_RECIPIENT = [
         self::TYPE_USER_REGISTRATION => [self::DESCRIPTION => "confirmation et de validation d'un nouveau compte", self::RECIPIENT => "l'utilisateur qui vient de se créer un compte"],
         self::TYPE_USER_LOST_PASSWORD => [self::DESCRIPTION => 'réinitialisation de mot de passe', self::RECIPIENT => "l'utilisateur qui a oublié son mot de passe"],
@@ -1575,6 +1593,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => "confirmation de la soumission automatique de l'article depuis le serveur de preprint", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs que le travail de révision a été effectué par les relecteurs", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs des articles bloqués à l'état soumis", self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial qu'un auteur vient d'ajouter / éditer son commentaire (lettre d'accompagnement)", self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaire de rédaction"],
 
 
     ];
@@ -1653,7 +1672,8 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_USER_REGISTRATION,
         self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY,
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
-        self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION
+        self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
+        self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY
     ];
 
     /**
@@ -1966,7 +1986,8 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => self::paper_formatted_by_journal_waiting_author_validation_tags,
             self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => self::paper_submission_author_copy_tags,
             self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION => self::reminder_submitted_article_editor_version_tags,
-            self::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION => self::reminder_reviewed_article_editor_version_tags
+            self::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION => self::reminder_reviewed_article_editor_version_tags,
+            self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY => self::paper_author_comment_editor_copy_tags,
         ];
 
         if (array_key_exists($key, $map)) {

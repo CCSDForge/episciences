@@ -28,7 +28,7 @@
                     <a class="modal-opener"
                        title="<?= $this->translate($editTemplateTitle) ?>"
                        href="<?= $this->url(['controller' => 'administratemail', 'action' => 'edittemplate', 'id' => $template['ID']])?>">
-                        <?= $this->translate($template['KEY'] . '_tpl_name') ?>
+                        <?= $this->translate($template['KEY'] . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME) ?>
                     </a>
                 <?php else: ?>
                     <span class="text-info"><?= $this->translate($template['KEY'] . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME) ?></span>

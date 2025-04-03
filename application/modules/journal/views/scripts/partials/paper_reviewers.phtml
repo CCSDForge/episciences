@@ -124,9 +124,6 @@ try {
 
                                     <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
                                         <div class="reviewer">
-                                            <img
-                                                src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
-                                                class="user-photo-small" alt="avatar">
 
                                             <button
                                                 class="btn btn-default fas fa-ellipsis-v popover-link context-button"
@@ -142,9 +139,11 @@ try {
                                                 data-tmp="<?= $invitation['TMP_USER'] ?>">
                                             </button>
 
+                                            <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                                                    class="user-photo-small" alt="avatar">
 
-                                            <span
-                                                style="margin-left: 0.5em;"><strong><?= $this->escape($invitation['reviewer']['fullname']) ?></strong>
+
+                                            <span style="margin-left: 0.5em;"><strong><?= $this->escape($invitation['reviewer']['fullname']) ?></strong>
                                                 <?php if ($invitation['TMP_USER']) {
                                                     echo '(' . $this->translate("compte temporaire") . ')';
                                                 } else {

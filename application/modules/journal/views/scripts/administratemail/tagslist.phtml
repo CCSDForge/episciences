@@ -62,7 +62,7 @@ $this->layout()->pageTitle = $title
 
                     <tr>
                         <td><?= $tag ?></td>
-                        <td><?= ucfirst($this->translate(Episciences_Mail_Tags::TAG_DESCRIPTION[$tag])) ?></td>
+                        <td><?= isset(Episciences_Mail_Tags::TAG_DESCRIPTION[$tag]) ? ucfirst($this->translate(Episciences_Mail_Tags::TAG_DESCRIPTION[$tag])) : trigger_error(sprintf('Please remember to add %s in Episciences_Mail_Tags::TAG_DESCRIPTION', $tag)) ?></td>
                     </tr>
 
                 <?php endforeach; ?>

@@ -220,6 +220,10 @@ return [
     "paper_comment_by_editor_editor_copy_tpl_name" => "Commentaire d'un rédacteur sur un article (copie destinée aux rédacteurs)",
     "paper_comment_by_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un rédacteur a posté un commentaire concernant un article dont vous êtes responsable",
 
+    // Commentaire de l'auteur / lettre d'accompagnement
+    'paper_author_comment_editor_copy_tpl_name' => "Commentaire de l'auteur / lettre d'accompagnement",
+    'paper_author_comment_editor_copy_mail_subject' => "Commentaire de l'auteur / lettre d'accompagnement",
+
 
     // PAPER - SUGGESTIONS D'UN REDACTEUR ***************************************************************************************************************
     "paper_editor_suggestion_tpl_group" => "Article - suggestions d'un rédacteur",

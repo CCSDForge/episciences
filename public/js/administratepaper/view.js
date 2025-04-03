@@ -290,15 +290,17 @@ function getReviewerMenu(button) {
         content += '</li>';
     }
 
-    content += '<li>';
-    content += '<a class="modal-opener" href="' + JS_PREFIX_URL + 'administratemail/send/recipient/' + uid + '/paper/' + docid;
-    if (tmp) content += '/tmp/1';
-    content += '" ';
-    content += 'data-width="50%" ';
-    content += 'title="' + translate("Contacter un relecteur") + '">';
-    content += '<span class="glyphicon glyphicon-envelope" style="margin-right: 5px"></span> ' + translate('Contacter ce relecteur');
-    content += '</a>';
-    content += '</li>';
+    if (uid !== byUid) {
+        content += '<li>';
+        content += '<a class="modal-opener" href="' + JS_PREFIX_URL + 'administratemail/send/recipient/' + uid + '/paper/' + docid;
+        if (tmp) content += '/tmp/1';
+        content += '" ';
+        content += 'data-width="50%" ';
+        content += 'title="' + translate("Contacter un relecteur") + '">';
+        content += '<span class="glyphicon glyphicon-envelope" style="margin-right: 5px"></span> ' + translate('Contacter ce relecteur');
+        content += '</a>';
+        content += '</li>';
+    }
 
     if (canBeReviewed && status === 'expired') {
 

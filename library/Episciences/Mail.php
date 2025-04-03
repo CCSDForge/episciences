@@ -938,17 +938,17 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
-     * Ajout d'un fichier joint au mail
-     * @param $attachment string || array
+     * Ajout d'une pièce jointe
+     * @param $attachment string
      * $attachment peut être soit un string (chemin du fichier),
      * soit un array : ['name'=>$name, 'path'=>$path]
      */
-    public function addAttachedFile($attachment)
+    public function addAttachedFile(string $attachment): void
     {
         $this->attachments[] = $attachment;
     }
 
-    public function setSubject($subject, $charset = null, $encoding = Zend_Mime::ENCODING_QUOTEDPRINTABLE)
+    public function setSubject($subject = '', $charset = null, $encoding = Zend_Mime::ENCODING_QUOTEDPRINTABLE): void
     {
         $subject = htmlspecialchars($subject);
         $subject = $this->replaceTags($subject);
