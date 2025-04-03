@@ -3,6 +3,7 @@ DOCKER_COMPOSE:= docker compose
 NPX:= npx
 CNTR_NAME_SOLR := solr
 CNTR_NAME_PHP := php-fpm
+CNTR_NAME_HTTPD := httpd
 CNTR_APP_DIR := /var/www/htdocs
 CNTR_APP_USER := www-data
 
@@ -95,3 +96,5 @@ can-i-use-update: ## To be launched when Browserslist: caniuse-lite is outdated.
 enter-container-php: ## Open shell on PHP container
 	$(DOCKER) exec -it $(CNTR_NAME_PHP) sh -c "cd /var/www/htdocs && /bin/bash"
 
+enter-container-httpd: ## Open shell on HTTPD container
+	$(DOCKER) exec -it $(CNTR_NAME_HTTPD) sh -c "cd /var/www/htdocs && /bin/bash"
