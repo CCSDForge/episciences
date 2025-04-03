@@ -5189,6 +5189,10 @@ class Episciences_Paper
 
     public function getMainPaperUrl(): ?string
     {
+        if($this->isTmp()){
+            return null;
+        }
+
         if ($this->isDataSetOrSoftware()) {
             return $this->getDataDescriptorUrl();
         }
