@@ -34,6 +34,7 @@ return [
     "Afficher" => "Display",
     "Lignes" => "Lines",
     "lignes" => "lines",
+    "URL copiée" => "URL Copied",
     "Rechercher" => "Search",
     "Aucun résultat" => "No results",
     "à" => "to",
