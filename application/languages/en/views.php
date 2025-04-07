@@ -42,11 +42,13 @@ return array(
     // DOCUMENT TYPES
     'article' => array('article', 'articles'),
     'Article' => 'Article',
+    'Otherarticles' => 'Articles',
     'Preprint' => 'Preprint',
     'Conferenceobject' => 'Conference paper',
     'Text' => "Preprint",
     'Dataset' => 'Dataset',
     'Report' => 'Report',
+    'Imagedata' => 'Image data',
 
 
     'Relecteur <code>n</code>' => 'Reviewer <code>n</code>',

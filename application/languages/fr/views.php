@@ -302,16 +302,17 @@ return [
     "Software compilation" => "Compilation logicielle",
     "Supplement" => "Supplément",
 
-
+    // DOCUMENT TYPES
     'Journal article' => 'Article',
     'Publication' => 'Publication',
     'Report' => 'Rapport',
-
-
-    // DOCUMENT TYPES
     "Preprint" => "Pré-publication",
     'Conferenceobject' => 'Communication dans un congrès',
     'Dataset' => 'Jeu de données',
+    'Article' => 'Article',
+    'Otherarticles' => 'Articles',
+    'Text' => "Preprint",
+    'Imagedata' => 'Image - données',
 
     'classification_jel' => 'JEL Classification System',
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
