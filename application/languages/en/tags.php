@@ -329,6 +329,8 @@ return array(
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New version of the article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR][Episciences_Mail_TemplatesManager::DESCRIPTION] => "New temporary version of the article",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => 'Confirmation of automatic article submission via a preprint server',
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "all editors assigned to the article and, depending on the journal's settings, editors, administrators and editorial secretaries",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the Editorial Board that an author has just added/edited his/her comment (cover letter) ",
 
     Episciences_Paper_Logger::CODE_RESTORATION_OF_STATUS => 'Restoration of status',
     Episciences_Paper_Logger::CODE_STATUS => 'New status',

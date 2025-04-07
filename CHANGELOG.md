@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+## Unreleased
+- [#560](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
+- [#650] pas de notifications quand un commentaire est ajouté par l'auteur 
 
 ### Changed
 - published dataset/software: the title of the data/software descriptor is its identifier.

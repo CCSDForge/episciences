@@ -32,9 +32,9 @@ class Episciences_Comment
     protected $_uid;
 
     /**
-     * @var string
+     * @var string|null
      */
-    protected $_message;
+    protected ?string$_message = null;
 
 
     /**
@@ -325,11 +325,15 @@ class Episciences_Comment
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getMessage()
+    public function getMessage(): ?string
     {
-        return Episciences_Tools::epi_html_decode(html_entity_decode($this->_message));
+        if ($this->_message){
+            return Episciences_Tools::epi_html_decode(html_entity_decode($this->_message));
+        }
+
+        return null;
     }
 
     /**
@@ -449,12 +453,15 @@ class Episciences_Comment
     }
 
     /**
-     * @param string $message
+     * @param string|null $message
      * @return Episciences_Comment
      */
-    public function setMessage(string $message): Episciences_Comment
+    public function setMessage(string $message = null): Episciences_Comment
     {
-        $this->_message = htmlspecialchars(Episciences_Tools::epi_html_decode($message));
+        if ($message){
+            $this->_message = htmlspecialchars(Episciences_Tools::epi_html_decode(trim($message)));
+        }
+
         return $this;
     }
 
@@ -642,6 +649,16 @@ class Episciences_Comment
             }
         }
 
+    }
+
+    public function isSuggestion(): bool
+    {
+        return in_array($this->getType(), Episciences_CommentsManager::$suggestionTypes, true);
+    }
+
+    public function isEditorComment(): bool
+    {
+        return $this->getType() === Episciences_CommentsManager::TYPE_EDITOR_COMMENT;
     }
 
 

@@ -1,18 +1,23 @@
 <?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
 $first = key($this->author_comments);
 $isAllowedToEditComment = (
-    (
-        Episciences_Auth::isSecretary() &&
-        Zend_Controller_Front::getInstance()->getRequest()->getControllerName() === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER
-    ) ||
-    $this->paper->isOwner()
+        !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
+        (
+                (
+                        Episciences_Auth::isSecretary() &&
+                        Zend_Controller_Front::getInstance()->getRequest()->getControllerName() === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER
+                ) ||
+                $paper->isOwner()
+        )
 );
 ?>
 <div id="author_comments" style="max-height: 200px; overflow: auto">
 
     <?php if (!$this->author_comments) : ?>
         <?php if ($isAllowedToEditComment): ?>
-            <?php $addCommentUrl = '/comments/addcomment/docid/' . $this->paper->getDocid() ?>
+            <?php $addCommentUrl = '/comments/addcomment/docid/' . $paper->getDocid() ?>
             <button class="btn btn-default btn-xs pull-right" style="margin-right:9px;"
                     onclick="javascript:location.href='<?= $addCommentUrl ?>'">
                     <span class="glyphicon glyphicon-plus-sign"
