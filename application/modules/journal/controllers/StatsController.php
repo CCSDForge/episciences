@@ -99,7 +99,7 @@ class StatsController extends Zend_Controller_Action
         if ($askApi) {
             try {
                 $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
-            } catch (GuzzleException | JsonException $e) {
+            } catch (GuzzleException|JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
                 $logger?->warning($e->getMessage());
             }
@@ -111,7 +111,7 @@ class StatsController extends Zend_Controller_Action
 
             try {
                 $this->processEvaluationStats($evalOptions, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
-            } catch (GuzzleException | JsonException $e) {
+            } catch (GuzzleException|JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
                 $logger?->warning($e->getMessage());
             }
@@ -127,10 +127,9 @@ class StatsController extends Zend_Controller_Action
         $navYears = $details[self::NB_SUBMISSIONS]['years']['relevantYears'];
 
         if ($startStatsAfterDate) {
-            $navYears = array_filter($navYears, static function ($year) use ($startStatsAfterDateYear) {
+            $navYears = array_filter($navYears ?? [], static function ($year) use ($startStatsAfterDateYear) {
                 return $year >= $startStatsAfterDateYear;
             });
-
         }
 
         $this->view->yearCategories = $navYears; // navigation
