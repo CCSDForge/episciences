@@ -52,8 +52,9 @@
     </thead>
     <tbody>
     <?php
+
+    $linkId = 0;
     foreach ($this->files as $filename => $link) {
-        $linkId = 0;
         $linkIdText = 'publicText-' . $linkId;
         $publicAccessPath = $this->escape(sprintf("/%s/resources/%s", RVCODE, $filename));
         $managerAccessPath = $this->escape(REVIEW_URL . $filename);
