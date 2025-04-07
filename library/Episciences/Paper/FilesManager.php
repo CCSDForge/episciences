@@ -45,6 +45,9 @@ class Episciences_Paper_FilesManager
 
         if ($row) {
             $oFile = new Episciences_Paper_File($row);
+        } else {
+            trigger_error(sprintf("%s %s Docid: %d Filename: %s: File not found", __CLASS__, __FUNCTION__, $docId, $fileName), E_USER_WARNING);
+            return null;
         }
 
         $oFile->setDownloadLike();
