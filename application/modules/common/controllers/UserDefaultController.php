@@ -1799,34 +1799,59 @@ class UserDefaultController extends Zend_Controller_Action
      * @param string|null $operationType
      * @return array
      */
-    private function processAffiliations(?array $input, ?string $operationType = 'disassemble'): array
+    private function processAffiliations($input, ?string $operationType = 'disassemble'): array
     {
         $output = [];
         $separator = '#';
 
-        if ($input) {
-            foreach ($input as $index => $value) {
+        if (!is_array($input)) {
+            $input = $input ? [$input] : [];
+        }
 
-                if(empty($value)){
+        if (empty($input)) {
+            return $output;
+        }
+
+        foreach ($input as $index => $value) {
+            if(empty($value)){
+                continue;
+            }
+
+            if ($operationType === 'disassemble') {
+                if (is_array($value) && array_key_exists('label', $value) && array_key_exists('rorId', $value)) {
+                    $output[$index] = $value;
                     continue;
                 }
 
-                if ($operationType === 'disassemble') {
-
+                if (is_string($value)) {
                     $explodedValue = explode($separator, $value);
 
-                    $label = trim($explodedValue[0]);
-                    $rorId = trim($explodedValue[1]);
+                    $label = isset($explodedValue[0]) ? trim($explodedValue[0]): '';
+                    $rorId = isset($explodedValue[1]) ? trim($explodedValue[1]):'';
 
                     $rorId = Episciences_Tools::isRorIdentifier($rorId) ? $rorId : '';
 
                     $output[$index] = ['label' => $label, 'rorId' => $rorId];
+                    continue;
 
-                } elseif($operationType === 'assemble') {
-                    $output[$index] = isset($value['rorId']) && $value['rorId'] !== ''  ? implode(' ' . $separator, $value) : $value['label'];
                 }
-            }
+                $output[$index] = ['label' => '', 'rorId' => ''];
+            } elseif ($operationType === 'assemble') {
 
+                if (is_array($value)) {
+                    $label = array_key_exists('label', $value) ? $value['label'] : '';
+                    $rorId = array_key_exists('rorId', $value) ? $value['rorId'] : '';
+
+                    if (!empty($rorId)) {
+                        $output[$index] = $label . $separator . $rorId;
+                    } else {
+                        $output[$index] = $label;
+                    }
+                    continue;
+                }
+
+                $output[$index] = is_string($value) ? $value : '';
+            }
         }
 
         return $output;
