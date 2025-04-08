@@ -67,7 +67,7 @@ if ($this->results) {
         $docid = $this->escape($doc->docid);
         ?>
 
-        <h3><a href="/<?= $docid ?>"><?php echo $this->escape($title); ?></a></h3>
+        <h3><a href="<?= PREFIX_URL . $docid ?>"><?php echo $this->escape($title); ?></a></h3>
 
         <?php if ($doc->author_fullname_s) : ?>
             <span class="authors"><?php
@@ -135,13 +135,13 @@ if ($this->results) {
 
         <?php if ($volume) : ?>
             <div class="volume">
-                <a href="/volume/view/id/<?php echo $this->escape($doc->volume_id_i) ?>"><?php echo $volume; ?></a>
+                <a href="<?= $this->url(['controller' => 'volume', 'action' => 'view', 'id' => $this->escape($doc->volume_id_i) ]) ?>"><?= $volume ?></a>
             </div>
         <?php endif; ?>
 
         <?php if ($section) : ?>
             <div class="section">
-                <a href="/section/view/id/<?php echo $this->escape($doc->section_id_i) ?>"><?php echo $section; ?></a>
+                <a href="<?= $this->url(['controller' => 'section', 'action' => 'view', 'id' => $this->escape($doc->section_id_i) ])?>"><?= $section ?></a>
             </div>
         <?php endif; ?>
 

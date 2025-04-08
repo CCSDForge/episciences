@@ -4,7 +4,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Logger;
 
 
-class DefaultController extends Zend_Controller_Action
+class DefaultController extends Episciences_Controller_Action
 {
     protected function isPostMaxSizeReached(): bool
     {
@@ -51,20 +51,19 @@ class DefaultController extends Zend_Controller_Action
                 }
 
                 Episciences_Tools::header('HTTP/1.1 301 Moved Permanently', 301);
-                $location = sprintf('/%s/pdf', $publishedPaper->getDocid());
+                $location = sprintf('%s%s/pdf',PREFIX_URL, $publishedPaper->getDocid());
                 header('Location: ' . $location);
                 exit();
 
             }
 
             if (!Episciences_Auth::isLogged()) {
-                $this->redirect('/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid());
+                $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'pdf', 'id' => $paper->getDocid()]));
             }
 
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
-            $this->redirect('/');
-
+            $this->redirect($this->url(['controller' => 'index']));
         }
 
     }
@@ -81,7 +80,7 @@ class DefaultController extends Zend_Controller_Action
         if ($this->isRestrictedAccess($paper)) {
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
-            $this->redirect('/');
+            $this->redirect($this->url(['controller' => 'index']));
         }
     }
 
@@ -124,7 +123,7 @@ class DefaultController extends Zend_Controller_Action
             $message = $paper->isDeleted() ? 'Le document demandé a été supprimé par son auteur.' : 'Le document demandé a été supprimé par la revue.';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate($message));
             if ($forceRedirection) {
-                $this->redirect('/'); // redirect and immediately exit
+                $this->redirect($this->url(['controller' => 'index'])); // redirect and immediately exit
             }
         }
     }
@@ -358,12 +357,12 @@ class DefaultController extends Zend_Controller_Action
 
     protected function renderFormErrors(Zend_Form $form = null): void{
 
-        if(!$form){
+        if(!$form || empty($errors = $form->getMessages())) {
             return;
         }
 
         $validationErrors = '<ol  type="i">';
-        foreach ($form->getMessages() as $val) {
+        foreach ($errors as $val) {
             foreach ($val as $v) {
                 $v = is_array($v) ? implode(' ', array_values($v)) : $v;
                 $validationErrors .= '<li>';

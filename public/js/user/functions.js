@@ -78,7 +78,7 @@ function getRoles(button, uid) {
     // Récupération du formulaire
     var request = $.ajax({
         type: "POST",
-        url: "/user/rolesform",
+        url: JS_PREFIX_URL + "user/rolesform",
         data: {uid: uid}
     });
 
@@ -102,14 +102,15 @@ function getRoles(button, uid) {
             'html': true,
             'content': result
         }).popover('show');
+        let saveRolesUrl = JS_PREFIX_URL + 'user/saveroles';
 
-        $('form[action="/user/saveroles"]').on('submit', function () {
+        $('form[action="' + saveRolesUrl + '"]').on('submit', function () {
 
             $(this).parent().html(getLoader());
 
             // Traitement AJAX du formulaire
             $.ajax({
-                url: '/user/saveroles',
+                url: saveRolesUrl,
                 type: 'POST',
                 datatype: 'json',
                 // data: {uid:uid, data: $(this).serialize()},
@@ -125,7 +126,7 @@ function getRoles(button, uid) {
 
                         // Refresh de l'affichage des rôles pour cet utilisateur
                         $.ajax({
-                            url: "/user/displaytags",
+                            url: JS_PREFIX_URL + "user/displaytags",
                             type: "POST",
                             data: {uid: uid},
                             success: function (tags) {

@@ -25,7 +25,7 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
 
         $form = new Zend_Form();
         $form->setMethod('get');
-        $form->setAction('/'.$controller.'/'.$action);
+        $form->setAction($this->view->url(['controller' => $controller, 'action' => $action]));
         $form->setAttrib('class', 'form-inline');
         $form->setDecorators(array(array('ViewScript', array('viewScript'=>'/paper/filters.phtml', 'open'=>$open))));
 

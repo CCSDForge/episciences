@@ -5,7 +5,7 @@ use Solarium\QueryType\Select\Result\Result;
 /**
  * Class SearchController
  */
-class SearchController extends Zend_Controller_Action
+class SearchController extends Episciences_Controller_Action
 {
 
     /**

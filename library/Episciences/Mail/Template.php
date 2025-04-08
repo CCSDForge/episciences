@@ -17,7 +17,7 @@ class Episciences_Mail_Template
 
     protected $_locale;
     protected $_defaultLanguage = 'en';
-    protected $_tags;
+    protected $_tags = [];
     protected bool $_isAutomatic = false;
 
     /**

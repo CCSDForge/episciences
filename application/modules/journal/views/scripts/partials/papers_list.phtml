@@ -21,11 +21,17 @@
                     (<?php echo count($articles) . ' ' . $this->translate(array('article', 'articles', count($articles))); ?>
                     )
                 </p>
-                <?php $lastKey = array_search(end($volume), $volume); ?>
-                <?php foreach ($articles as $key => $article) : ?>
+                <?php
+                $lastKey = array_search(end($volume), $volume);
+                $options['controller'] = ($this->parent === 'user_papers') ? 'paper' : 'administratepaper';
+                $options['action'] = 'view';
+                ?>
+                <?php foreach ($articles as $key => $article) :
+                    $options['id'] = $article['docId'];
+                    ?>
                     <hr/>
                     <div>
-                        <a href="<?php echo ($this->parent == 'user_papers') ? '/paper' : '/administratepaper'; ?>/view?id=<?php echo $article['docId']; ?>">
+                        <a href="<?= $this->url($options) ?>">
                             <strong><?php echo $this->truncate($article['metadata']['title'])->toLength(85); ?></strong>
                             (v<?php
                             echo $article['metadata']['version'] ?>)
@@ -43,13 +49,13 @@
                         <div
                             class="smaller"><?php echo $this->translate('Rédacteur') . ' : ' . $article['editor']['SCREEN_NAME']; ?></div>
                     <?php endif; ?>
-                    <?php if ($this->parent != 'user_papers') : ?>
+                    <?php if ($this->parent !== 'user_papers') : ?>
                         <?php echo $this->partial('partials/paper_reviewers.phtml', array('article' => $article)); ?>
                     <?php endif; ?>
                     <div class="smaller"><?php
                         echo $this->translate('Proposé le') . ' : ';
                         echo $this->Date($article['date']);
-                        if ($this->parent != 'user_papers' && !empty($article['submitter']['SCREEN_NAME'])) {
+                        if ($this->parent !== 'user_papers' && !empty($article['submitter']['SCREEN_NAME'])) {
                             echo ' (' . $this->translate('par') . ' ' . $article['submitter']['SCREEN_NAME'] . ')';
                         }
                         ?></div>

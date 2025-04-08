@@ -420,8 +420,8 @@
 
     <div class="panel-footer">
         <div class="small">
-            <a href="/user/change_account_email" class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon courriel") ?></a>
-            <a href="/user/edit"><span class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?></a>
+            <a href="<?= $this->url(['controller' => 'user', 'action' => 'change_account_email'])?>" class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon courriel") ?></a>
+            <a href="<?= $this->url(['controller' => 'user', 'action' => 'edit'])?>"><span class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?></a>
         </div>
     </div>
 

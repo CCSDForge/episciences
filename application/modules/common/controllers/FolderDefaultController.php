@@ -4,7 +4,7 @@
  * Controller permettant le rendu d'une page personnalisable
  *
  */
-class FolderDefaultController extends Zend_Controller_Action
+class FolderDefaultController extends Episciences_Controller_Action
 {
 
     public function init ()

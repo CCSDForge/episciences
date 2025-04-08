@@ -9,7 +9,7 @@
                 <?php if ($graphAbs !== "") : ?>
                     <img alt="graphical abstract"
                          style="max-width: 100%;max-height: 100%; object-fit: contain; overflow: scroll"
-                         src="/public/documents/<?= $this->paper->getDocId() ?>/<?= $graphAbs ?>">
+                         src="<?= sprintf('%spublic/documents/%s/%s',PREFIX_URL, $this->paper->getDocId(), $graphAbs) ?>">
                 <?php endif; ?>
             </div>
             <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>

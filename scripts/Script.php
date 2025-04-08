@@ -1,5 +1,7 @@
 <?php
 
+use Symfony\Component\Dotenv\Dotenv;
+
 require_once dirname(__DIR__) . '/public/const.php';
 require_once dirname(__DIR__)  . '/public/bdd_const.php';
 require_once 'ProgressBar.php';
@@ -422,30 +424,24 @@ abstract class Script {
     /**
      * init Zend application
      */
-    public function initApp($isRequiredAppEnv = true)
+    public function initApp($isRequiredAppEnv = true): void
     {
         // check environment is valid
-        if ($isRequiredAppEnv && $this->getParam('app_env') && !in_array($this->getParam('app_env'), $this->_valid_envs))  {
+        if ($isRequiredAppEnv && $this->getParam('app_env') && !in_array($this->getParam('app_env'), $this->_valid_envs, true))  {
             $this->displayError("Incorrect application environment: " . $this->getParam('app_env') . PHP_EOL . "Should be one of these: " . implode(', ', $this->_valid_envs));
-        } else {
-
-
-            $dotEnv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-
-            foreach ($dotEnv->load() as $key => $value) {
-
-                if(!defined($key)){
-                    define($key, $value);
-                }
-                
-            }
-
+        } elseif(empty($_ENV)) {
+            $dotEnv = new Dotenv();
+            $envPath = sprintf('%s/.env', dirname(__DIR__));
+            //Loads env vars from .env. local. php if the file exists or from the other .env files otherwise
+            $dotEnv->bootEnv($envPath);
         }
 
         // set environment constant
         if (!defined('APPLICATION_ENV')) {
             if ($this->getParam('app_env')) {
                 define('APPLICATION_ENV', $this->getParam('app_env'));
+            } elseif (isset($_ENV['APP_ENV'])) {
+                define('APPLICATION_ENV', $_ENV['APP_ENV']);
             } else {
                 $this->displayError("Undefined application environment.");
                 die;

@@ -75,7 +75,7 @@ class Episciences_GridsManager
             if (!empty($options)) {
 
                 $form = new Ccsd_Form();
-                $form->setAction('/grid/add');
+                $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'grid', 'action' => 'add']));
                 $form->setAttrib('class', 'form-horizontal');
 
                 $form->addElement('select', 'volume', [
@@ -399,10 +399,15 @@ class Episciences_GridsManager
             'label' => 'Valider',
             'class' => 'btn btn-primary'
         ]);
+
+        $cancelUrl = (new Episciences_View_Helper_Url())->url(array(
+            'controller' => 'grid',
+            'action' => 'index'
+        ));
         $form->setActions(true)->createCancelButton('back', [
             'label' => 'Annuler',
             'class' => 'btn btn-default',
-            'onclick' => "window.location='/grid'"]);
+            'onclick' => "window.location='$cancelUrl'"]);
 
         if ($defaults) {
             $form->setDefaults($defaults);
@@ -459,10 +464,14 @@ class Episciences_GridsManager
             'label' => 'Valider',
             'class' => 'btn btn-primary'
         ]);
+        $cancelUrl = (new Episciences_View_Helper_Url())->url(array(
+            'controller' => 'grid',
+            'action' => 'index'
+        ));
         $form->setActions(true)->createCancelButton('back', [
             'label' => 'Annuler',
             'class' => 'btn btn-default',
-            'onclick' => "window.location='/grid'"]);
+            'onclick' => "window.location='$cancelUrl'"]);
 
         if ($defaults) {
             $form->setDefaults($defaults);

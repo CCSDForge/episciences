@@ -7,7 +7,7 @@
 $form = $this->paperFilter();
 // A gérer en AJAX (dataTable)
 $form->getElement('submit')->setAttrib('type', '');
-$form->setAction('');
+$form->setAction($this->url());
 echo $form;
 ?>
 <hr/>

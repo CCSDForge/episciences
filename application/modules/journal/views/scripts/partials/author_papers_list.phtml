@@ -8,12 +8,11 @@ $form = $this->paperFilter();
 
 // A gérer en AJAX (dataTable)
 $form->getElement('submit')->setAttrib('type', '');
-$form->setAction('');
+$form->setAction($this->url());
 
 echo $form;
 ?>
 <hr/>
-<?php //if ($this->papers) : ?>
 
 <?php
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
@@ -35,7 +34,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
         <th class="text-center"><?php echo $this->translate('Proposé le'); ?></th>
     </tr>
     </thead>
-    <tbody></tbody>
+    <tbody><?php // @see datatable_author_papers_list.phtml ?>></tbody>
 </table>
 
 <script type="text/javascript">
@@ -45,6 +44,3 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
 <?php $this->jQuery()->addJavascriptFile('/js/paper/submitted.js'); ?>
 
-<?php //else : ?>
-<?php //echo $this->translate('Aucun article pour le moment') ?>
-<?php //endif; ?>

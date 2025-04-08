@@ -124,6 +124,7 @@ try {
 
                                     <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
                                         <div class="reviewer">
+
                                             <button
                                                 class="btn btn-default fas fa-ellipsis-v popover-link context-button"
                                                 role="button"
@@ -138,9 +139,9 @@ try {
                                                 data-tmp="<?= $invitation['TMP_USER'] ?>">
                                             </button>
 
-                                            <img
-                                                    src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                                            <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                                                     class="user-photo-small" alt="avatar">
+
 
                                             <span style="margin-left: 0.5em;"><strong><?= $this->escape($invitation['reviewer']['fullname']) ?></strong>
                                                 <?php if ($invitation['TMP_USER']) {
@@ -329,6 +330,6 @@ try {
     });
 
     function confirmRating() {
-        location.href = "/paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
+        location.href = JS_PREFIX_URL + "paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
     }
 </script>

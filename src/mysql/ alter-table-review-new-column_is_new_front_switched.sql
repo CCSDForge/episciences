@@ -1,0 +1,1 @@
+ALTER TABLE `REVIEW` ADD `is_new_front_switched` ENUM('yes','no') NOT NULL DEFAULT 'no' AFTER `PIWIKID`;

@@ -167,13 +167,13 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                             <?php if (defined('RVCODE') && RVCODE !== 'portal'): ?>
 
                                 <a class="btn btn-default navbar-btn"
-                                   href="/user/create"> <i class="fas fa-plus"></i>&nbsp;<?= $view->translate('Créer un compte') ?>
+                                   href="<?= $view->url(['controller' => 'user', 'action' => 'create' ])?>"> <i class="fas fa-plus"></i>&nbsp;<?= $view->translate('Créer un compte') ?>
                                 </a>
 
                             <?php endif; ?>
 
                             &nbsp;
-                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;" action="/user/login" id="form-login" method="post">
+                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;" action="<?= $this->view->url(['controller' => 'user', 'action' => 'login']) ?>" id="form-login" method="post">
                                 <input type="hidden" name="forward-controller" value="<?php echo $request->getControllerName(); ?>"/>
                                 <input type="hidden" name="forward-action" value="<?php echo $request->getActionName(); ?>"/>
                                 <?php
@@ -205,10 +205,10 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                                         </li>
                                         <li class="divider"></li>
                                         <li>
-                                            <a href="/user/lostpassword"><?php echo $view->translate('Mot de passe oublié ?'); ?></a>
+                                            <a href="<?= $view->url(['controller' => 'user', 'action' => 'lostpassword'])?>"><?= $view->translate('Mot de passe oublié ?') ?></a>
                                         </li>
                                         <li>
-                                            <a href="/user/lostlogin"><?php echo $view->translate('Login oublié ?'); ?></a>
+                                            <a href="<?= $view->url(['controller' => 'user', 'action' => 'lostlogin'])?>"><?= $view->translate('Login oublié ?') ?></a>
                                         </li>
                                     </ul>
                                 </div>

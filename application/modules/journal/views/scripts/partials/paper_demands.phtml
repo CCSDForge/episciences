@@ -1,8 +1,8 @@
 <?php
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
-$tmpUrl = '/tmp_files/' . $paper->getPaperId();
-$commentUrl = '/docfiles/comments/' . $paper->getDocid();
+$tmpUrl = sprintf('%stmp_files/%s', PREFIX_URL, $paper->getPaperId());
+$commentUrl = sprintf('%sdocfiles/comments/%s', PREFIX_URL, $paper->getDocid());
 ?>
 
 <style>

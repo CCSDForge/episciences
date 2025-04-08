@@ -41,7 +41,7 @@ class CommentsController extends PaperController
             $controllerName = 'administratepaper';
         }
 
-        $url = sprintf('%s/view/id/%s', $controllerName, $paper->getLatestVersionId());
+        $url = $this->url(['controller' => $controllerName, 'action' => 'view', 'id' => $paper->getLatestVersionId() ]);
         $comment = new Episciences_Comment();
 
         try {
@@ -125,7 +125,8 @@ class CommentsController extends PaperController
 
         $pcid = (int)$request?->getParam('pcid');
         $paper = null;
-        $url = '/';
+
+        $url = $this->url( ['controller' => 'index']);
 
         $oldComment = Episciences_CommentsManager::getComment($pcid); // array | false
 
@@ -215,7 +216,7 @@ class CommentsController extends PaperController
 
         $paper = Episciences_PapersManager::get($docId, false, RVID);
 
-        $url = '/';
+        $url = $this->url( ['controller' => 'index']);
 
         if ($paper) {
 
@@ -286,7 +287,7 @@ class CommentsController extends PaperController
         if (!$paper->isOwner() && !Episciences_Auth::isSecretary()) {
             $message = "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire.";
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector->gotoUrl('/paper/submitted');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'submitted']));
         }
     }
 

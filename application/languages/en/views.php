@@ -657,6 +657,10 @@ return array(
     "Modifier ce volume" => "Edit this volume",
     'Des vides ont été détectés dans la numérotation des papiers : ' => 'Gaps were detected in the numbering of the articles: ',
     "La grille a bien été supprimée." => "The grid has been successfully deleted.",
+    "La grille de destination n'existe pas." => "The destination grid does not exist.",
+    "Il n'est pas possible de fusionner la grille par défaut avec une grille déjà finalisée." => "It is not possible to merge the default grid with a grid that has already been finalised.",
+    "La grille source est vide." => "The source grid is empty",
+    "La grille cible contient déjà des éléments." => "The target grid already contains criteria.",
 
 
     // Gestion des relecteurs
@@ -1648,12 +1652,15 @@ return array(
     "Souhaitez-vous supprimer l'actualité ?" => "Do you want to delete this news?",
     // RESSOURCES
     "Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."
-    => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their url or delete them.",
+    => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their URL or delete them.",
 
-    "Ajouter un nouveau fichier" => "Add a new file",
     "Ajouter un nouveau fichier" => "Add a new file",
     "Déposer le fichier" => "Upload the file",
     "Fichiers" => "Files",
+    "Copier URL" => "Copy URL",
+    "Copiez ce lien pour l'utiliser dans les pages de contenu destinées au site public" => "Copy this link to use it in the content pages for the public site",
+    "Poids" => "File size",
+    "URL publique - pages de contenu" => "Public URL - content pages",
     "Aucun fichier sélectionné." => "No file selected",
     'Souhaitez-vous supprimer le fichier ?' => 'Do you want to delete this file?',
     'existe déjà.' => 'already exists.',
@@ -1692,7 +1699,7 @@ return array(
     "Episciences_Website_Navigation_Page_Search" => "Search",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Editorial Staff members",
     "Episciences_Website_Navigation_Page_Credits" => "Credits",
-    "Episciences_Website_Navigation_Page_About" => "About",
+    "Episciences_Website_Navigation_Page_About" => "The Journal",
 
     "Episciences_Website_Navigation_Page_EditorialBoard" => "Editorial board",
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
@@ -1704,7 +1711,7 @@ return array(
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
-    "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexed in",
 
 
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
@@ -1886,7 +1893,7 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
-    "Évaluation" => "Évaluation",
+    "Évaluation" => "Evaluation",
     "Évaluations reçues" => "Reviews received",
     "Évaluations demandées" => "Reviews requested",
     "Nombre médian d'évaluations d'articles de recherche" => "Median number of reviews for research articles",
@@ -2155,12 +2162,16 @@ return array(
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
 
     //DD
+    'dernière version' => 'latest version',
     'Ajouter une nouvelle version' => 'Add a new version',
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
     'Descripteurs de données' => 'Data descriptors',
     'Descripteurs de logiciel' => 'Software descriptors',
     "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
-    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists."
+    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
+
+    // Website > menu
+    'Choisissez une page' => 'Select a page'
 
 );

@@ -97,7 +97,7 @@ $displayConflictsSection = isset($this->paperConflicts) && Episciences_Auth::isA
         bootbox.confirm(translate("Êtes-vous sûr ?"), function (isConfirmed) {
             if (isConfirmed) {
                 $.post(
-                    '/coi/delete/',
+                    JS_PREFIX_URL + 'coi/delete/',
                     {ajax: 1, conflictId: cId, docId: docId},
                     function (respond) {
                         if (parseInt(respond) === 1) {

@@ -7,7 +7,7 @@ function updateMetaData(button, docId) {
 
     let post = $.ajax({
         type: "POST",
-        url: "/paper/updaterecorddata",
+        url: JS_PREFIX_URL + "paper/updaterecorddata",
         data: {docid: docId}
     });
 

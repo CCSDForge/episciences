@@ -26,7 +26,7 @@ function getAssignUserForm(button, docid, vid, partial) {
         openedPopover = docid;
     }
 
-    let formUrl = '/administratepaper/' + buttonId + 'form';
+    let formUrl = JS_PREFIX_URL + 'administratepaper/' + buttonId + 'form';
 
     // fetch form
     let request = $.ajax({
@@ -65,7 +65,7 @@ function getAssignUserForm(button, docid, vid, partial) {
             }, 4)
         });
 
-        let saveAction = '/administratepaper/save' + buttonId;
+        let saveAction = JS_PREFIX_URL + 'administratepaper/save' + buttonId;
 
         $('form[id^=assign]').on('submit', function () {
             if (!$(this).data('submitted')) { // to fix duplicate ajax request
@@ -74,7 +74,7 @@ function getAssignUserForm(button, docid, vid, partial) {
                 let saveActionRequest = ajaxRequest(saveAction, $(this).serialize(), 'POST', 'json');
                 saveActionRequest.done(function (response) {
                     if (JSON.parse(response).result) {
-                        let displayAction = '/administratepaper/display' + buttonId;
+                        let displayAction = JS_PREFIX_URL + 'administratepaper/display' + buttonId;
                         let container = $(button).closest('.' + buttonId).parent();
 
                         // destroy editor or copy editor sassignment popup
@@ -112,7 +112,7 @@ function getAssignUserForm(button, docid, vid, partial) {
 function getRefusedMonitoringForm(docId, uid) {
     let refuseManagingFormRequest = $.ajax({
         type: "POST",
-        url: "/administratepaper/refusedmonitoringform",
+        url: JS_PREFIX_URL + "administratepaper/refusedmonitoringform",
         data: {docId: docId, uid: uid}
     });
 

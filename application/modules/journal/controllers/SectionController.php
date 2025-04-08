@@ -1,12 +1,12 @@
 <?php
 
-class SectionController extends Zend_Controller_Action
+class SectionController extends Episciences_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
 
     public function indexAction()
     {
-        $this->_helper->redirector('list');
+        $this->_helper->redirector('list', null, null, [PREFIX_ROUTE => RVCODE]);
     }
 
     public function listAction()
@@ -46,7 +46,7 @@ class SectionController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
-                $this->_helper->redirector('index', 'section');
+                $this->_helper->redirector('index', 'section', null, [PREFIX_ROUTE => RVCODE]);
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -74,7 +74,7 @@ class SectionController extends Zend_Controller_Action
         if (!$section) {
             $message = sprintf("<strong>%s</strong>", $this->view->translate("La section n'a pas été trouvée"));
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl($this->_helper->url('list', 'section'));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => 'list', 'controller' => 'section']));
             return;
         }
         $section->loadSettings();
@@ -97,7 +97,7 @@ class SectionController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
-                $this->_helper->redirector('index', 'section');
+                $this->_helper->redirector('index', 'section', null, [PREFIX_ROUTE => RVCODE]);
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -274,7 +274,7 @@ class SectionController extends Zend_Controller_Action
 
         if ($errorMessage !== false) {
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect('/browse/section');
+            $this->redirect($this->url(['controller' => 'browse', 'action' => 'section']));
             return;
         }
 

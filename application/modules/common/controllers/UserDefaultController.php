@@ -4,7 +4,7 @@ use neverbehave\Hcaptcha;
 use ReCaptcha\ReCaptcha;
 
 
-class UserDefaultController extends Zend_Controller_Action
+class UserDefaultController extends Episciences_Controller_Action
 {
 
     public const SUCCESS = 'success';
@@ -51,12 +51,12 @@ class UserDefaultController extends Zend_Controller_Action
 
         } // else, user views his own profile
 
-        else if (Episciences_Auth::isLogged()) {
+        elseif (Episciences_Auth::isLogged()) {
             $user = Episciences_Auth::getInstance()->getIdentity();
             $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
-            $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
+            $this->view->description = sprintf('<a href="%s">Connectez-vous</a>, ou <a href="%s">créez votre compte</a>.', $this->url(['controller' => 'user', 'action'=> 'login']), $this->url(['controller' => 'user', 'action' => 'create']));
             $this->renderScript('error/error.phtml');
             return;
         }
@@ -239,7 +239,7 @@ class UserDefaultController extends Zend_Controller_Action
                 if ($localUser->getHasAccountData() === false) {
                     $action = $this->getRequest()->getParam('forward-action', 'edit');
                     $controller = $this->getRequest()->getParam('forward-controller', 'user');
-                    $this->redirect($controller . '/' . $action);
+                    $this->redirect($this->url(['controller' => $controller, 'action' => $action]));
                     return;
                 }
 
@@ -251,11 +251,14 @@ class UserDefaultController extends Zend_Controller_Action
 
                         // Récupération des paramètres supplémentaires (et suppression de ceux dont on a plus besoin)
                         $params = $this->_request->getParams();
-                        unset ($params['forward-controller'],
+                        unset (
+                            $params['forward-controller'],
                             $params['forward-action'],
                             $params['controller'],
                             $params['action'],
-                            $params['module']);
+                            $params['module'],
+                            $params[PREFIX_ROUTE]
+                        );
 
                         $params['controller'] = $this->_request->getParam('forward-controller');
                         $params['action'] = $this->_request->getParam('forward-action');
@@ -392,7 +395,7 @@ class UserDefaultController extends Zend_Controller_Action
         $this->view->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 
         $form = new Ccsd_Form;
-        $form->setAction('/user/create')
+        $form->setAction($this->url(['controller' => 'user', 'action' => 'create']))
             ->setAttrib('id', 'fuser')
             ->setAttrib('class', 'form-horizontal');
 
@@ -456,7 +459,7 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $form = new Episciences_User_Form_Create();
-        $form->setAction('/user/create');
+        $form->setAction($this->url(['controller' => 'user', 'action' => 'create']));
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Créer un compte',
             'class' => 'btn btn-primary'
@@ -526,7 +529,7 @@ class UserDefaultController extends Zend_Controller_Action
                 }
             }
 
-            $this->_helper->redirector('list', 'user');
+            $this->_helper->redirector('list', 'user', null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
@@ -600,13 +603,14 @@ class UserDefaultController extends Zend_Controller_Action
                     $this->render('create');
                     return;
                 }
-
-                $url = $this->view->url([
+                $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $url = $site . $this->view->url([
                     'controller' => 'user',
                     'action' => 'activate',
                     'token' => $userToken->getToken()], null, true);
 
-                $tokenUrl = APPLICATION_URL . $url;
+
+                $tokenUrl = $url;
 
                 $tags = [
                     Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
@@ -631,7 +635,7 @@ class UserDefaultController extends Zend_Controller_Action
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_CREATE_SUCCESS;
 
             if ($isAllowedToAddUserAccounts) {
-                $this->_helper->redirector('list', 'user');
+                $this->_helper->redirector('list', 'user', null, [PREFIX_ROUTE => RVCODE]);
             } else {
                 $this->render('create');
             }
@@ -692,7 +696,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         if (!$casUserDefaults) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage('No user');
-            $this->_helper->redirector('list', 'user');
+            $this->_helper->redirector('list', 'user', null, [PREFIX_ROUTE => RVCODE]);
         }
 
         // Données par défaut du compte local (Episciences)
@@ -718,7 +722,7 @@ class UserDefaultController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if (!array_key_exists('submit', $post)) { // Profile editing form does not display correctly when changing language
-                $this->_helper->redirector('edit', 'user');
+                $this->_helper->redirector('edit', 'user', null, [PREFIX_ROUTE => RVCODE]);
                 return;
             }
 
@@ -789,9 +793,9 @@ class UserDefaultController extends Zend_Controller_Action
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
 
                 if (Episciences_Auth::isSecretary() && Episciences_Auth::getUid() != $user->getUid()) {
-                    $this->_helper->redirector('list', 'user');
+                    $this->_helper->redirector('list', 'user', null, [PREFIX_ROUTE => RVCODE]);
                 } else {
-                    $this->_helper->redirector('dashboard', 'user');
+                    $this->_helper->redirector('dashboard', 'user', null, [PREFIX_ROUTE => RVCODE]);
                 }
 
             }
@@ -864,7 +868,7 @@ class UserDefaultController extends Zend_Controller_Action
     public function lostpasswordAction()
     {
         if (Episciences_Auth::isLogged()) {
-            $this->_helper->redirector('/user/dashboard');
+            $this->_helper->redirector('dashboard', 'user', null, [PREFIX_ROUTE => RVCODE]);
         }
         $form = new Ccsd_User_Form_Accountlostpassword();
 
@@ -912,12 +916,15 @@ class UserDefaultController extends Zend_Controller_Action
 
             $mail = new Episciences_Mail('UTF-8');
             // prepare retrieve password link
-            $url = APPLICATION_URL . $this->view->url([
+
+            $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+            $url = $site . $this->view->url([
                     'controller' => 'user',
                     'action' => 'resetpassword',
                     'lang' => $locale,
                     'token' => $userToken->getToken()
-                ], null, true);
+                ], '', true);
+
             $mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
             $mail->setFromReview();
             $mail->setTo($user);
@@ -942,7 +949,7 @@ class UserDefaultController extends Zend_Controller_Action
 
 
         if (!Episciences_Auth::isLogged()) {
-            $this->redirect('user/login?forward-controller=user&forward-action=' . $this->getRequest()->getActionName());
+            $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'user', 'forward-action' => $this->getRequest()->getActionName()]));
         }
 
         /** @var Zend_Controller_Request_Http $request */
@@ -994,7 +1001,7 @@ class UserDefaultController extends Zend_Controller_Action
     public function lostloginAction(): void
     {
         if (Episciences_Auth::isLogged()) {
-            $this->redirect('/user/dashboard');
+            $this->redirect($this->url(['controller' => 'user', 'action' => 'dashboard']));
             return;
         }
 
@@ -1176,7 +1183,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $affectedRows = $userMapper->savePassword($user);
 
                 if ($affectedRows === 1) {
-                    $this->redirect('/user/logout/reason/passwordupdated/lang/' . Episciences_Auth::getLangueid());
+                    $this->redirect($this->url(['controller' => 'user', 'action' => 'logout', 'reason' => 'passwordupdated', 'lang' => Episciences_Auth::getLangueid()]));
                 } else {
                     $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
                     $this->render('changepassword');
@@ -1347,7 +1354,7 @@ class UserDefaultController extends Zend_Controller_Action
             $roles = $acl->getEditableRoles();
 
             $form = new Zend_Form();
-            $form->setAction('/user/saveroles');
+            $form->setAction($this->url(['controller' => 'user', 'action' => 'saveroles']));
             $element = new Zend_Form_Element_MultiCheckbox('roles_' . $uid, ['multiOptions' => $roles]);
             $element->setValue($userRoles);
             $element->setSeparator('<br/>');
@@ -1506,13 +1513,13 @@ class UserDefaultController extends Zend_Controller_Action
 
 
         // photo of a specific user
-        if ($uid != 0) {
+        if ($uid !== 0) {
             $user = new Ccsd_User_Models_User(['uid' => $uid]);
             $photoPathName = $user->getPhotoPathName($size);
         } else {
             // nobody or logged user
-            $uid = Episciences_Auth::getUid();
-            if ($uid != 0) {
+            $uid = (int)Episciences_Auth::getUid();
+            if ($uid !== 0) {
                 $user = new Ccsd_User_Models_User(['uid' => $uid]);
                 $photoPathName = $user->getPhotoPathName($size);
             }
@@ -1657,18 +1664,8 @@ class UserDefaultController extends Zend_Controller_Action
 
 
             if ($alertType === self::SUCCESS) {
-                $url = $fController . '/' . $fAction;
-
-                if ($postedUid) {
-
-                    $url .= '?userid=' . $postedUid;
-
-                }
-
-                $this->redirect($url);
+                $this->redirect($this->url(['controller' => $fController, 'action' => $fAction, 'userid' => $postedUid]));
             }
-
-
         }
 
     }
@@ -1746,7 +1743,7 @@ class UserDefaultController extends Zend_Controller_Action
                     $successMsg = "Votre mot de passe API a bien été réinitialisé";
 
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($successMsg);
-                    $this->redirect('/user/dashboard');
+                    $this->redirect($this->url(['controller' => 'user', 'action' => 'dashboard']));
 
                 } else {
                     $this->view->resultMessage = $this->view->message(
@@ -1799,34 +1796,59 @@ class UserDefaultController extends Zend_Controller_Action
      * @param string|null $operationType
      * @return array
      */
-    private function processAffiliations(?array $input, ?string $operationType = 'disassemble'): array
+    private function processAffiliations($input, ?string $operationType = 'disassemble'): array
     {
         $output = [];
         $separator = '#';
 
-        if ($input) {
-            foreach ($input as $index => $value) {
+        if (!is_array($input)) {
+            $input = $input ? [$input] : [];
+        }
 
-                if(empty($value)){
-                    continue;
-                }
+        if (empty($input)) {
+            return $output;
+        }
+
+        foreach ($input as $index => $value) {
+            if(empty($value)){
+                continue;
+            }
 
                 if ($operationType === 'disassemble') {
+                    if (is_array($value) && array_key_exists('label', $value) && array_key_exists('rorId', $value)) {
+                        $output[$index] = $value;
+                        continue;
+                    }
 
+                    if (is_string($value)) {
                     $explodedValue = explode($separator, $value);
 
-                    $label = trim($explodedValue[0]);
-                    $rorId = trim($explodedValue[1]);
+                    $label = isset($explodedValue[0]) ? trim($explodedValue[0]): '';
+                    $rorId = isset($explodedValue[1]) ? trim($explodedValue[1]):'';
 
                     $rorId = Episciences_Tools::isRorIdentifier($rorId) ? $rorId : '';
 
                     $output[$index] = ['label' => $label, 'rorId' => $rorId];
+                    continue;
 
-                } elseif($operationType === 'assemble') {
-                    $output[$index] = isset($value['rorId']) && $value['rorId'] !== ''  ? implode(' ' . $separator, $value) : $value['label'];
                 }
-            }
+                    $output[$index] = ['label' => '', 'rorId' => ''];
+            } elseif ($operationType === 'assemble') {
 
+                    if (is_array($value)) {
+                        $label = array_key_exists('label', $value) ? $value['label'] : '';
+                        $rorId = array_key_exists('rorId', $value) ? $value['rorId'] : '';
+
+                        if (!empty($rorId)) {
+                            $output[$index] = $label . $separator . $rorId;
+                        } else {
+                            $output[$index] = $label;
+                        }
+                        continue;
+                    }
+
+                    $output[$index] = is_string($value) ? $value : '';
+                }
         }
 
         return $output;

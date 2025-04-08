@@ -1,5 +1,5 @@
 <?php
-$exportUrl = '/' . $this->escape($this->docid);
+$exportUrl = sprintf('%s%s', PREFIX_URL, $this->escape($this->docid));
 $exportFormat['bibtex'] = 'BibTeX';
 $exportFormat['tei'] = 'TEI';
 $exportFormat['dc'] = 'Dublin Core';

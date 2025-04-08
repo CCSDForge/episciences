@@ -35,7 +35,7 @@ $logs_with_details = [
 <?php foreach ($this->logs as $log) : ?>
 
     <?php if (in_array($log['ACTION'], $logs_with_details, false)) : ?>
-        <?php $logHref = '/administratepaper/log?id=' . $log['LOGID']; ?>
+        <?php $logHref = $this->url(['controller' => 'administratepaper', 'action' => 'log', 'id' => $log['LOGID']]); ?>
         <a class="modal-opener" href="<?= $logHref ?>" data-width="50%" data-hidesubmit="true" title="<?= $this->translate($log['ACTION']) ?>">
     <?php endif; ?>
 

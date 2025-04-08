@@ -104,7 +104,7 @@
                             <span class="label label-status-<?= $paper['status'] ?>" data-toggle="tooltip"
                                   title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper['status']))) ?>">
                            <?= (int)$paperOrder + 1 ?></span>
-                                [<a href="/administratepaper/view?id=<?= $paperDocid ?>"># <?= $paperDocid ?></a>]&nbsp;
+                                [<a href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $paperDocid]) ?>"># <?= $paperDocid ?></a>]&nbsp;
                                 <?= $titleStr ?>
                             </div>
                         <?php endforeach; ?>

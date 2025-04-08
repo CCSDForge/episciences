@@ -30,7 +30,7 @@ $(document).ready(function () {
                     }
                     let request = $.ajax({
                         type: "POST",
-                        url: "/review/assignationmode",
+                        url: JS_PREFIX_URL + "review/assignationmode",
                         data: {editors_assignment_mode: currentVal}
                     });
                     request.done(function (html) {

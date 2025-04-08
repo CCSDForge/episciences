@@ -19,7 +19,7 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
     // Récupération du formulaire
     let request = $.ajax({
         type: "POST",
-        url: "/administratepaper/volumeform",
+        url: JS_PREFIX_URL + "administratepaper/volumeform",
         data: {docid: docid}
     });
 
@@ -43,12 +43,14 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
             'content': result
         }).popover('show');
 
-        $('form[action^="/administratepaper/savemastervolume"]').on('submit', function () {
+        let actionForm = JS_PREFIX_URL + 'administratepaper/savemastervolume';
+
+        $('form[action^="' + actionForm + '"]').on('submit', function () {
             if (!$(this).data('submitted')) { // to fix duplicate ajax request
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
                 $.ajax({
-                    url: '/administratepaper/savemastervolume',
+                    url: actionForm,
                     type: 'POST',
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,
@@ -58,21 +60,10 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
                             $(button).popover('destroy');
 
                             if (!isPartial) {// not partial
-
-                                // // refresh master volume
-                                // refreshVolumes({vid: vid, docId: docid, from: 'view'}, 'master',  $('#master_volume_name_' + docid) );
-                                //
-                                // // refresh secondary volumes
-                                // refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
-                                //
-                                // // refresh paper history
-                                // refreshPaperHistory(docid);
-
                                 location.replace(location.href);
-
                             } else { // refresh all master volumes display
 
-                                let url = '/administratepaper/refreshallmastervolumes';
+                                let url = JS_PREFIX_URL + 'administratepaper/refreshallmastervolumes';
                                 let jData = {docid: docid, vid: vid, old_vid: oldVid, from: 'list'};
                                 let refreshPositionsRequest = ajaxRequest(url, jData);
 
@@ -114,7 +105,7 @@ function getOtherVolumesForm(button, docid, partial) {
     // Récupération du formulaire
     let request = $.ajax({
         type: "POST",
-        url: "/administratepaper/othervolumesform",
+        url: JS_PREFIX_URL + "administratepaper/othervolumesform",
         data: {docid: docid}
     });
 
@@ -138,12 +129,14 @@ function getOtherVolumesForm(button, docid, partial) {
             'content': result
         }).popover('show');
 
-        $('form[action^="/administratepaper/saveothervolumes"]').on('submit', function () {
+        let actionForm = JS_PREFIX_URL + 'administratepaper/saveothervolumes';
+
+        $('form[action^="' + actionForm + '"]').on('submit', function () {
             if (!$(this).data('submitted')) { // to fix duplicate ajax request
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
                 $.ajax({
-                    url: '/administratepaper/saveothervolumes',
+                    url: actionForm,
                     type: 'POST',
                     datatype: 'json',
                     data: $(this).serialize() + "&docid=" + docid,
@@ -178,10 +171,10 @@ function closeResult() {
  */
 function refreshVolumes($jsonData, volumeType = 'master', $container = null) {
 
-    let url = '/administratepaper/refreshmastervolume';
+    let url = JS_PREFIX_URL + 'administratepaper/refreshmastervolume';
 
     if (volumeType === 'others') { // seconder volumes
-        url = '/administratepaper/refreshothervolumes';
+        url = JS_PREFIX_URL + 'administratepaper/refreshothervolumes';
     }
 
     let request = ajaxRequest(url, $jsonData);

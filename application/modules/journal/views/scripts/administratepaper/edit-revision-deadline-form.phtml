@@ -7,7 +7,7 @@ $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFA
 $id = 'revision-deadline-value-' . $paper->getDocid();
 ?>
 <div style="width: 400px">
-    <form action="/administratepaper/updaterevisiondeadline" id="revision-deadline-form-<?= $paper->getDocid() ?>"
+    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'updaterevisiondeadline']) ?>" id="revision-deadline-form-<?= $paper->getDocid() ?>"
           style="height : 34px;">
 
         <div class="pull-right btn-xs" style="padding-left : 10px;">

@@ -59,7 +59,7 @@ $(function () {
       button.html('<img src="/img/loading.gif" />');
       let request = $.ajax({
         type: "POST",
-        url: "/submit/accesscode/",
+        url: JS_PREFIX_URL + "submit/accesscode/",
         data: { code: access_code },
       });
 
@@ -168,7 +168,7 @@ $(function () {
 
     let request = $.ajax({
       type: "POST",
-      url: "/submit/getdoc/",
+      url: JS_PREFIX_URL + "submit/getdoc/",
       data: {
         docId: id,
         repoId: repoId,

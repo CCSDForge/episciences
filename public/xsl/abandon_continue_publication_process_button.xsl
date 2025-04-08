@@ -7,6 +7,7 @@
     <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
     <xsl:template match="/record">
+        <xsl:variable name="prefixUrl" select="episciences/prefixUrl/text()"/>
         <xsl:if test="episciences/canAbandonContinuePublicationProcess">
             <xsl:variable name="fontType">
                 <xsl:choose>
@@ -59,7 +60,7 @@
                             </xsl:attribute>
                             <xsl:attribute name="href">
                                 <xsl:value-of
-                                        select="concat(concat('/paper/', $action), 'publicationprocess/docid/', episciences/id)"/>
+                                        select="concat(concat(concat($prefixUrl, 'paper/'), $action), 'publicationprocess/docid/', episciences/id)"/>
                             </xsl:attribute>
 
                             <button id="pause-play-process-button" class="btn {$buttonColor} btn-xs">

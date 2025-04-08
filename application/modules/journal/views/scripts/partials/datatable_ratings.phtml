@@ -66,10 +66,10 @@ foreach ($this->papers as $paper) : ?>
         <td>
             <?php
             $url = ($invitation && (in_array($status, [Episciences_Reviewer_Reviewing::STATUS_UNANSWERED, Episciences_Reviewer_Reviewing::STATUS_DECLINED], true))) ?
-                ('/reviewer/invitation/id/' . $invitation->getId()) :
-                ('/' . $controller . '/rating?id=' . $paper->getDocid());
+                $this->url(['controller' => 'reviewer', 'action' => 'invitation', 'id' => $invitation->getId()]) :
+                $this->url(['controller' => $controller, 'action' => 'rating', 'id' => $paper->getDocid()]);
             ?>
-            <a href="<?php echo $url ?>"><strong><?php echo Ccsd_Tools::truncate($paper->getTitle(), 75); ?></strong></a>
+            <a href="<?= $url ?>"><strong><?php echo Ccsd_Tools::truncate($paper->getTitle(), 75); ?></strong></a>
         </td>
 
         <?php // article volume ******************************************* ?>

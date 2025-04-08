@@ -18,7 +18,7 @@
 <div style="margin-top: 30px">
 	<a 	class="modal-opener"
 		title="<?php echo $this->translate('Créer une relance automatique'); ?>"
-		href="/administratemail/editreminder"
+		href="<?= $this->url(['controller' => 'administratemail', 'action' => 'editreminder']) ?>"
 		data-callback="submit"
 		data-width="50%">
 	<button id="addreminder" name="addreminder" type="button" class="btn btn-default" aria-label="<?php echo $this->translate('Créer une relance automatique'); ?>">

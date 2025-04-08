@@ -1,13 +1,12 @@
 <?php
 
-class VolumeController extends Zend_Controller_Action
+class VolumeController extends Episciences_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
     public const MIN_VOLUME_DATE = '1950';
-
     public function indexAction()
     {
-        $this->_helper->redirector('list');
+        $this->_helper->redirector('list',null, null, [PREFIX_ROUTE => RVCODE]);
     }
 
     public function listAction()
@@ -65,7 +64,7 @@ class VolumeController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
-                $this->_helper->redirector('index', 'volume');
+                $this->_helper->redirector('index', 'volume', null, [PREFIX_ROUTE => RVCODE]);
             } else {
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -109,6 +108,9 @@ class VolumeController extends Zend_Controller_Action
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
     }
+
+
+
 
     /**
      * @return false|void
@@ -276,8 +278,7 @@ class VolumeController extends Zend_Controller_Action
 
         if ($errorMessage !== false) {
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect('/browse/volumes');
-        }
+            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volume']));        }
 
 
         try {
@@ -300,9 +301,9 @@ class VolumeController extends Zend_Controller_Action
         if ($request->getHeader('Accept') !== self::JSON_MIMETYPE) {
 
             $request->getParam('id') ?
-                $this->redirect('/volume/edit?id=' . $this->getRequest()->getParam('id'))
+                $this->redirect($this->url(['controller' => 'volume', 'action' => 'edit', 'id' => $this->getRequest()->getParam('id')]))
                 :
-                $this->redirect('/volume/list');
+                $this->redirect($this->url(['controller' => 'volume', 'action' => 'list']));
 
             return;
         }
@@ -324,11 +325,11 @@ class VolumeController extends Zend_Controller_Action
         $from = $request->getParam('from');
 
         if (!empty($from) && $from === 'view' && !empty($docId)) {
-            $referer = '/administratepaper/view?id=' . $docId;
+            $referer = $this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
         } elseif ($from === 'list') {
-            $referer = '/administratepaper/list'; // papers list
+            $referer = $this->url(['controller' => 'administratepaper', 'action' => 'list']); // papers list
         } else {
-            $referer = '/volume/list';
+            $referer = $this->url(['controller' => 'volume', 'action' => 'list']);
         }
 
         $volume = Episciences_VolumesManager::find($vid, RVID);
@@ -336,7 +337,7 @@ class VolumeController extends Zend_Controller_Action
         if (!$volume) {
             $message = sprintf("<strong>%s</strong>", $this->view->translate("Le volume n'a pas été trouvé"));
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl($this->_helper->url('list', 'volume'));
+            $this->_helper->redirector->gotoUrl($this->url(['action' => 'list', 'controller' => 'volume']));
             return;
         }
 
@@ -456,7 +457,7 @@ class VolumeController extends Zend_Controller_Action
         if (!$vid || !is_numeric($vid)) {
             $errorMessage = "Identifiant du volume absent ou incorrect.";
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect('/browse/volumes');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'browse', 'action' => 'volumes']));
             return;
         }
 
@@ -467,7 +468,7 @@ class VolumeController extends Zend_Controller_Action
         if (!$volume) {
             $errorMessage = "Ce volume n'existe pas.";
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect('/browse/volumes');
+            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volume']));
             return;
         }
 
@@ -476,7 +477,7 @@ class VolumeController extends Zend_Controller_Action
         if (!$volume->isProceeding()) {
             $errorMessage = "Type de volume non pris en charge pour l'export Crossref.";
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect('/browse/volumes');
+            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volume']));
             return;
         }
 

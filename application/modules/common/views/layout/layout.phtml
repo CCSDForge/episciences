@@ -1,5 +1,5 @@
 <?php
-
+$prefixUrl = PREFIX_URL;
 $style = new Episciences_Website_Style();
 $this->containerClass = $style->getContainerClass();
 $this->navigation = $style->getNavigationOrientation();
@@ -198,5 +198,9 @@ echo $this->doctype('HTML5');
     echo $this->render('commons/debug.phtml');
     }
     ?>
+
+    <script>
+        const JS_PREFIX_URL = <?= "'$prefixUrl'" ?>;
+    </script>
 </body>
 </html>

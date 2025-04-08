@@ -1,6 +1,6 @@
 <?php
 
-class DoiController extends Zend_Controller_Action
+class DoiController extends Episciences_Controller_Action
 {
     public function indexAction()
     {
@@ -31,7 +31,7 @@ class DoiController extends Zend_Controller_Action
                 if (Episciences_Review_DoiSettingsManager::save($journalDoiSettings, RVID)) {
                     $message = sprintf("<strong>%s</strong>", $this->view->translate("Les modifications ont bien été enregistrées."));
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-                    $url = $this->_helper->url($this->getRequest()->getActionName(), $this->getRequest()->getControllerName());
+                    $url = $this->url(['action' => $this->getRequest()->getActionName(), 'controller' =>$this->getRequest()->getControllerName()]);
                     $this->_helper->redirector->gotoUrl($url);
                 } else {
                     $message = sprintf("<strong>%s</strong>", $this->view->translate("Les modifications n'ont pas pu être enregistrées."));

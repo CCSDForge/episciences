@@ -2,7 +2,8 @@ let $controller = controller;
 let $action = action;
 let $docId = docId;
 $(function () {
-    let $url = '/' + $controller + '/' + $action;
+    let $url = JS_PREFIX_URL + $controller + '/' + $action;
+    console.log($url);
     //Supprimer un événement de click précédemment associé.
     $('#submit-modal').unbind('click');
     $('#submit-modal').on('click', function () {

@@ -54,9 +54,9 @@
 				
 			</td>
 			<td style="text-align:right;"> 
-				<a href="/user/view?userid=<?php echo $user['UID']; ?>"><i class="darkgrey icon-info-sign"></i></a>&nbsp;
+				<a href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $user['UID']]) ?>"><i class="darkgrey icon-info-sign"></i></a>&nbsp;
 				<?php if (Episciences_Auth::isSecretary()) :?>
-				<a href="/user/edit?userid=<?php echo $user['UID']; ?>"><i class="darkgrey icon-edit"></i></a>&nbsp;
+				<a href="<?= $this->url(['controller' => 'user', 'action' => 'edit', 'userid' => $user['UID']]) ?>"><i class="darkgrey icon-edit"></i></a>&nbsp;
 				<a id="delete_localUsers_<?php echo $user['UID']; ?>" href="#"><i class="darkgrey icon-trash"></i></a>
 				<?php endif; ?>
 			</td>

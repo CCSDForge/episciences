@@ -1,9 +1,8 @@
 <?php
 if(!$this->report->isCompleted() &&
-    ($this->report->getUid() == Episciences_Auth::getUid() || Episciences_Auth::isAllowedToUploadPaperReport() || $this->paper->getEditor(Episciences_Auth::getUid()))
+    ($this->report->getUid() === Episciences_Auth::getUid() || Episciences_Auth::isAllowedToUploadPaperReport() || $this->paper->getEditor(Episciences_Auth::getUid()))
   ): ?>
-    <?php $file_delete_url = '/paper/deleteattachmentreport/docid/' . $this->report->getDocid()
-        . '/uid/' . $this->report->getUid() . '/file/' . $this->criterion->getAttachment();
+    <?php $file_delete_url = $this->url(['controller' => 'paper', 'action' => 'deleteattachmentreport', 'docid' => $this->report->getDocid(), 'uid' => $this->report->getUid(), 'file' => $this->criterion->getAttachment()]);
     $js = "javascript:if(confirm(translate('Voulez-vous supprimer ce fichier ?'))){
                 location.href='$file_delete_url'}"
     ?>

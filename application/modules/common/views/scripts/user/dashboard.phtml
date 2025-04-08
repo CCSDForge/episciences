@@ -96,10 +96,10 @@
 	</div>
 	
 	<div class="panel-footer">
-		<a class="btn btn-default btn-sm" href="/administratepaper/list"><span class="glyphicon glyphicon-file"></span> <?php echo $this->translate("Gérer les articles"); ?></a>&nbsp;
-		<a class="btn btn-default btn-sm" href="/volume/list"><span class="glyphicon glyphicon-book"></span> <?php echo $this->translate("Gérer les volumes"); ?></a>&nbsp;
-		<a class="btn btn-default btn-sm" href="/grid/list"><span class="glyphicon glyphicon-tasks"></span> <?php echo $this->translate("Grilles de relecture"); ?></a>&nbsp;
-		<a class="btn btn-default btn-sm" href="/review/settings"><span class="glyphicon glyphicon-cog"></span> <?php echo $this->translate("Paramètres de la revue"); ?></a>
+		<a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'list']) ?>"><span class="glyphicon glyphicon-file"></span> <?php echo $this->translate("Gérer les articles"); ?></a>&nbsp;
+		<a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'volume', 'action' => 'list']) ?>"><span class="glyphicon glyphicon-book"></span> <?php echo $this->translate("Gérer les volumes"); ?></a>&nbsp;
+		<a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'grid', 'action' => 'list'])?>"><span class="glyphicon glyphicon-tasks"></span> <?php echo $this->translate("Grilles de relecture"); ?></a>&nbsp;
+		<a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'review', 'action' => 'settings']) ?>"><span class="glyphicon glyphicon-cog"></span> <?php echo $this->translate("Paramètres de la revue"); ?></a>
 	</div>
 	
 </div>
@@ -232,9 +232,9 @@
 	</div>
 	
 	<div class="panel-footer">
-		<a class="btn btn-default btn-sm" href="/paper/submitted"><span class="glyphicon glyphicon-file"></span> <?php echo $this->translate('Voir tous mes articles'); ?></a>
+		<a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'paper', 'action' => 'submitted']) ?>"><span class="glyphicon glyphicon-file"></span> <?php echo $this->translate('Voir tous mes articles'); ?></a>
         &nbsp;
-		<a class="btn btn-default btn-sm" href="/submit"><span class="glyphicon glyphicon-upload"></span> <?php echo $this->translate(Episciences_Submit::SUBMIT_DOCUMENT_LABEL); ?></a>
+		<a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'submit']) ?>"><span class="glyphicon glyphicon-upload"></span> <?php echo $this->translate(Episciences_Submit::SUBMIT_DOCUMENT_LABEL); ?></a>
 	</div>
 	
 </div>
@@ -314,7 +314,7 @@
 	</div>
 	
 	<div class="panel-footer">
-		<a class="btn btn-default btn-sm" href="/paper/ratings"><span class="glyphicon glyphicon-file"></span> <?php echo $this->translate("Relire les articles"); ?></a>
+		<a class="btn btn-default btn-sm" href="<?= $this->url(['controller' => 'paper', 'action' => 'ratings']) ?>"><span class="glyphicon glyphicon-file"></span> <?php echo $this->translate("Relire les articles"); ?></a>
 	</div>
 	
 </div>
@@ -335,7 +335,7 @@
 	</div>
 	
 	<div class="panel-footer">
-		<div class="small"><a href="/user/edit"><span class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?></a></div>
+		<div class="small"><a href="<?= $this->url(['controller' => 'user', 'action' => 'edit']) ?>"><span class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?></a></div>
 	</div>
 	
 </div>

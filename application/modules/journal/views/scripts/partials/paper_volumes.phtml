@@ -21,7 +21,7 @@ $docId = $this->article->getDocid();
             !$this->article->isDeleted()) : ?>
             <button class="btn btn-default btn-xs popover-link" role="button" <?= $this->disabled?>
                     style="margin-right: 5px"
-                    onclick="getMasterVolumeForm(this, <?= $docId; ?>, <?= $vid; ?>, '<?= $this->isPartial ?>')">
+                    onclick="getMasterVolumeForm(this, <?= $docId ?>, <?= $vid ?>, '<?= $this->isPartial ?>')">
                 <span class="caret"></span>
             </button>
         <?php else : ?>

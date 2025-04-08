@@ -158,7 +158,7 @@ class PaperController extends PaperDefaultController
                 $this->redirect('/' . $id);
             } elseif (!Episciences_Auth::isLogged()) {
                 // redirect to login if user is not logged in
-                $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
+                $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'view', 'id' => $docId ]));
             }
 
             $this->redirectsIfHaveNotEnoughPermissions($paper);
@@ -349,7 +349,7 @@ class PaperController extends PaperDefaultController
                         }
 
                         // redirect
-                        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+                        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]));
                         return;
 
                     }
@@ -468,7 +468,7 @@ class PaperController extends PaperDefaultController
                         }
 
                         // redirect
-                        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+                        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]));
                         return;
 
                     }
@@ -598,7 +598,7 @@ class PaperController extends PaperDefaultController
                 }
 
                 $isErrors ? $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message) : $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-                $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => self::CONTROLLER_NAME, 'action' => 'view', 'id' => $paper->getDocid()]));
 
 
             }
@@ -962,7 +962,7 @@ class PaperController extends PaperDefaultController
         $docId = $paper->getDocid();
 
         // La page de l'article
-        $paperUrl = '/' . self::CONTROLLER_NAME . '/view?id=' . $docId;
+        $paperUrl = $this->url(['controller' => self::CONTROLLER_NAME, 'action' => 'view', 'id' => $docId ]);
         $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
 
         $tags = [
@@ -1158,8 +1158,7 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
-        $url = self::ADMINPAPER_URL_STR . $paperId;
-        $this->_helper->redirector->gotoUrl($url);
+        $this->_helper->redirector->gotoUrl($this->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $paperId ]));
     }
 
     /**
@@ -1191,7 +1190,7 @@ class PaperController extends PaperDefaultController
         }
 
 
-        $form->setAction('/paper/saveanswer?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'saveanswer', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
     }
@@ -1214,8 +1213,6 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
         $docId = $request->getQuery(self::DOC_ID_STR);
-
-        $url = self::PAPER_URL_STR . $docId;
 
         $message = "Votre réponse n'a pas pu être enregistrée : merci de bien vouloir compléter les champs marqués d'un astérisque (*).";
         $nameSpace = 'error';
@@ -1334,7 +1331,7 @@ class PaperController extends PaperDefaultController
 
         // redirection and success message
         $this->_helper->FlashMessenger->setNamespace($nameSpace)->addMessage($this->view->translate($message));
-        $this->_helper->redirector->gotoUrl($url);
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
 
     }
 
@@ -1378,7 +1375,7 @@ class PaperController extends PaperDefaultController
         $oComment->find($id);
 
         $form = Episciences_Submit::getTmpVersionForm($oComment);
-        $form->setAction('/paper/savetmpversion?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'savetmpversion', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $form->setAttrib('method', 'post');
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
@@ -1450,7 +1447,7 @@ class PaperController extends PaperDefaultController
             $message = 'TMP_VERSION : ';
             $message .= $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre commentaire.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
         }
 
         // unassign reviewers from previous version
@@ -1525,7 +1522,7 @@ class PaperController extends PaperDefaultController
         } else {
             $message = $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
         }
 
 
@@ -1631,7 +1628,7 @@ class PaperController extends PaperDefaultController
                 ]);
         } else {
 
-            $url = self::PAPER_URL_STR . $tmpPaper->getDocid();
+            $url = $this->url(['controller' => 'paper', 'action' => 'view', 'id' => $tmpPaper->getDocid()]);
 
         }
 
@@ -1801,7 +1798,7 @@ class PaperController extends PaperDefaultController
 
         // load form
         $form = Episciences_Submit::getNewVersionForm($paper, $options);
-        $form->setAction('/paper/savenewversion?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'savenewversion', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
 
         $this->view->form = $form;
 
@@ -1862,7 +1859,7 @@ class PaperController extends PaperDefaultController
 
         if (!$form?->isValid($post)) {
             $this->renderFormErrors($form);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId ]));
             return;
         }
 
@@ -1907,7 +1904,7 @@ class PaperController extends PaperDefaultController
             if (!$conceptIdentifier || $conceptIdentifier !== $paper->getConcept_identifier()) {
                 $message = $this->view->translate("Vos modifications n'ont pas été prises en compte : la version du document n'est pas liée à la précédente.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
                 return;
             }
 
@@ -1925,7 +1922,7 @@ class PaperController extends PaperDefaultController
         if ($currentVersion < $paper->getVersion()) {
             $message = $this->view->translate("la version de l'article à mettre à jour doit être supérieure à la version précédente.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
             return;
         }
 
@@ -1933,7 +1930,7 @@ class PaperController extends PaperDefaultController
         if (!$this->dataProcessing($post[self::SEARCH_DOC_STR])['isValid'] && $paper->isRequiredPaperPwd()) {
             $message = $this->view->translate("Votre soumission n'a pas été enregistrée : le mot de passe du papier n'a pas été rempli, veuillez réessayer.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
             return;
         }
 
@@ -1983,7 +1980,7 @@ class PaperController extends PaperDefaultController
         if ($newPaper->alreadyExists()) {
             $message = $this->view->translate("L'article que vous tentez d'envoyer existe déjà.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
             return;
         }
 
@@ -2215,12 +2212,16 @@ class PaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
 
             // Redirection
-            $redUrl = ($paper->isOwner()) ? 'paper/submitted' : '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $newPaper->getDocid();
+            if (($paper->isOwner())) {
+                $redUrl = $this->url(['controller' => 'paper', 'action' => 'submitted']);
+            } else {
+                $redUrl = $this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $newPaper->getDocid()]);
+            }
             $this->_helper->redirector->gotoUrl($redUrl);
         } else {
             $message = $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
         }
 
     }
@@ -2439,7 +2440,7 @@ class PaperController extends PaperDefaultController
         if (!$docId || !is_numeric($docId)) {
             $message = $this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST);
             $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
@@ -2449,7 +2450,7 @@ class PaperController extends PaperDefaultController
         if (!$paper) {
             $message = $this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST);
             $this->_helper->FlashMessenger->setNamespace(self::WARNING)->addMessage($message);
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
@@ -2460,9 +2461,9 @@ class PaperController extends PaperDefaultController
             $message = $this->view->translate("Cet article ne peut pas être relu par son auteur");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
             if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid())) {
-                $this->_helper->redirector('list', self::ADMINISTRATE_PAPER_CONTROLLER);
+                $this->_helper->redirector('list', self::ADMINISTRATE_PAPER_CONTROLLER, null, [PREFIX_ROUTE => RVCODE]);
             } else {
-                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             }
             return;
         }
@@ -2524,7 +2525,7 @@ class PaperController extends PaperDefaultController
                     $message = $this->view->translate("Votre commentaire n'a pas pu être envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector->gotoUrl('/paper/rating?id=' . $paper->getDocid());
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'rating', 'id' => $paper->getDocid()]));
             }
         }
 
@@ -2729,7 +2730,7 @@ class PaperController extends PaperDefaultController
     {
         $report = null;
         if ($reviewerUid < 0) {
-            $this->redirect('/administratepaper/view/id/' . $paper->getDocid());
+            $this->redirect($this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $paper->getDocid()]));
 
         } elseif ($reviewerUid === 0) { // Déjà relecteur pour cet article
             $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid());
@@ -2785,6 +2786,7 @@ class PaperController extends PaperDefaultController
 
         $this->_helper->FlashMessenger->setNamespace($type)->addMessage($message);
         $this->_helper->redirector('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, [
+            PREFIX_ROUTE => RVCODE,
             'id' => $paper->getDocid(),
             'is_completed' => json_encode($report_status)
         ]);
@@ -2884,7 +2886,7 @@ class PaperController extends PaperDefaultController
             if ($paper->isRevisionRequested()) {
                 $message = $this->view->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+                $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
                 return;
             }
 
@@ -2939,10 +2941,10 @@ class PaperController extends PaperDefaultController
         }
 
         if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid())) {
-            $this->_helper->redirector->gotoUrl('administratepaper/view?id=' . $paper->getDocid());
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $paper->getDocid()]));
         } else {
             // show the usual reviewer all his reviews
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
         }
 
     }
@@ -3095,14 +3097,14 @@ class PaperController extends PaperDefaultController
         $file = $request->getParam('file');
 
         if (!$docid || !$uid) {
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
         $paper = Episciences_PapersManager::get($docid);
 
         if (!$paper) {
-            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
+            $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
 
@@ -3128,8 +3130,8 @@ class PaperController extends PaperDefaultController
             $message = $this->view->translate("Vous n'avez pas les autorisations nécessaires pour supprimer ce fichier.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
         }
-        $url = '/paper/rating?id=' . $docid . '&reviewer_uid=' . $uid;
-        $this->redirect($url);
+
+        $this->redirect($this->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docid, 'reviewer_uid' => $uid]));
     }
 
     /**
@@ -3159,7 +3161,7 @@ class PaperController extends PaperDefaultController
             if (!in_array($paper->getStatus(), $authorizedStatus, true)) {
                 $message = $this->view->translate("L'article ne peut pas être supprimé en raison de son statut.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl('/' . $docId);
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'id' => $docId]));
                 return;
             }
 
@@ -3167,7 +3169,7 @@ class PaperController extends PaperDefaultController
             if (!$paper->isOwner()) {
                 $message = $this->view->translate("L'article ne peut être supprimé que par son déposant.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl('/' . $docId);
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'id' =>  $docId]));
                 return;
             }
 
@@ -3241,7 +3243,7 @@ class PaperController extends PaperDefaultController
         }
 
         // redirect *******************************
-        $this->_helper->redirector->gotoUrl('paper/submitted');
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'submitted']));
     }
 
     /**
@@ -3816,7 +3818,7 @@ class PaperController extends PaperDefaultController
         $oComment = new Episciences_Comment;
         $oComment->find($id);
         $form = Episciences_CommentsManager::answerRevisionForm('contactRequest');
-        $form->setAction('/paper/saveanswer?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
+        $form->setAction($this->url(['controller' => 'paper', 'action' => 'saveanswer', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $form->addElement('hidden', 'type', [
             'id' => 'hidden-id-' . $id,
             'value' => Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT

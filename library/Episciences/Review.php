@@ -7,6 +7,8 @@
 class Episciences_Review
 {
 
+    public const IS_NEW_FRONT_SWITCHED = 'is_new_front_switched';
+
     public const STATUS_NOTVALID = 0;
     public const STATUS_VALID = 1;
     public const STATUS_REFUSED = 2;
@@ -151,6 +153,7 @@ class Episciences_Review
      * @var Episciences_Review_DoiSettings
      */
     protected $_doiSettings;
+    private bool $isNewFrontSwitched = false;
 
     /**
      * Episciences_Review constructor.
@@ -253,7 +256,14 @@ class Episciences_Review
         $this->setDoiSettings($doiSet);
 
         foreach ($options as $key => $value) {
-            $method = 'set' . ucfirst(strtolower($key));
+
+            $method = 'set';
+            if ($key === self::IS_NEW_FRONT_SWITCHED) {
+                $method .= sprintf('%s', Episciences_Tools::convertToCamelCase($key, '_', true));
+            } else {
+                $method .= ucfirst(strtolower($key));
+            }
+
             if (in_array($method, $methods, true)) {
                 $this->$method($value);
             } elseif (in_array($key, $this->_settingsKeys, true)) {
@@ -2162,7 +2172,7 @@ class Episciences_Review
         $backButtonOptions = [
             'class' => 'btn btn-default',
             'label' => 'Retour aux paramètres de la revue',
-            'onclick' => 'window.location.href=\'/review/settings\';',
+            'onclick' => 'window.location.href=JS_PREFIX_URL + "review/setting";',
             'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'closeOnly' => true]]]
         ];
 
@@ -2321,6 +2331,18 @@ class Episciences_Review
     public function getSettings(): array
     {
         return $this->_settings;
+    }
+
+
+    public function isNewFrontSwitched(): bool
+    {
+        return $this->isNewFrontSwitched;
+    }
+
+    public function setIsNewFrontSwitched(bool $isNewFrontSwitched ): self
+    {
+        $this->isNewFrontSwitched = $isNewFrontSwitched;
+        return $this;
     }
 
     /**

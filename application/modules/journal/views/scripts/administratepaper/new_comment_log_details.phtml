@@ -35,10 +35,15 @@
     </table>
 <?php
 $attachments = $log['detail']['comment']['file'];
-$files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachments, true) : (array)$attachments; ?>
+try {
+    $files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachments, true, 512, JSON_THROW_ON_ERROR) : (array)$attachments;
+} catch (JsonException $e) {
+    trigger_error($e->getMessage());
+    $files = [];
+} ?>
 <?php if (!empty($files)): ?>
     <hr>
-    <?php if (is_array($files)): ?>
+    <?php ?>
         <p class="small">
             <strong><?= $this->translate(['Fichier joint', 'Fichiers joints', count($files)]); ?> :</strong>
         </p>
@@ -48,20 +53,20 @@ $files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachmen
             $type = $log['detail']['comment']['type'];
             $docId = $log['detail']['comment']['docid'];
 
-            if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments
+            if ($type === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION) { // tmp version comments
                 $attachmentUrl = 'tmp_files/' . $docId . '/' . $file;
-            } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes))) { //other comments
+            } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes), true)) { //other comments
                 $attachmentUrl = 'docfiles/comments/' . $docId . '/' . $file;
 
             } else { //copy editing comments
                 $attachmentUrl = 'docfiles/ce/' . $docId . '/' . $file . '/' . $log['detail']['comment']['pcid'];
             }
             ?>
-            <?= '<div class="small">'; ?>
-            <?= '<a target="_blank" href="/' . $attachmentUrl . '">'; ?>
-            <?= $file; ?>
-            <?= '</a>'; ?>
-            <?= '</div>'; ?>
+            <?= '<div class="small">' ?>
+            <?= '<a target="_blank" href="' .PREFIX_URL . $attachmentUrl . '">' ?>
+            <?= $file ?>
+            <?= '</a>' ?>
+            <?= '</div>' ?>
         <?php endforeach; ?>
-    <?php endif; ?>
+    <?php ?>
 <?php endif; ?>

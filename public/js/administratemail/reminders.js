@@ -59,7 +59,7 @@ function submit() {
                 $(container).fadeIn();
 
                 let request = $.ajax({
-                    url: "/administratemail/refreshreminders",
+                    url: JS_PREFIX_URL + "administratemail/refreshreminders",
                     type: "POST",
                 });
                 request.done(function (result) {

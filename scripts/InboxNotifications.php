@@ -737,7 +737,7 @@ class InboxNotifications extends Script
         }
 
 
-        $journalOptions = ['rvCode' => $journal->getCode(), 'rvId' => $journal->getRvid()];
+        $journalOptions = ['rvCode' => $journal->getCode(), 'rvId' => $journal->getRvid(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $journal->isNewFrontSwitched()];
 
         $isVerbose = $this->isVerbose();
 

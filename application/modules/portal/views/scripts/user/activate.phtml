@@ -3,6 +3,6 @@
 <div class="alert alert-success"><?php echo $this->translate('Votre compte est désormais actif')?>.</div>
 <div class="alert alert-info">
 	<?php echo $this->translate('Vous pouvez dès maintenant vous')?> 
-	<a href="/user/login"><?php echo $this->translate('identifier')?></a> 
+	<a href="<?= $this->url(['controller' => 'user','action' => 'login']) ?>"><?php echo $this->translate('identifier')?></a>
 	<?php echo $this->translate('sur le service central d\'authentification du CCSD')?>.
 </div>

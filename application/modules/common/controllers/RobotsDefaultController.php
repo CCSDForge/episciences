@@ -3,7 +3,7 @@
  * Class RobotsDefaultController
  * robots.txt
  */
-class RobotsDefaultController extends Zend_Controller_Action
+class RobotsDefaultController extends Episciences_Controller_Action
 {
     public function indexAction()
     {
@@ -13,7 +13,7 @@ class RobotsDefaultController extends Zend_Controller_Action
         echo '# Episciences robots.txt' . PHP_EOL;
 
         echo "User-Agent: *\n";
-        if (APPLICATION_ENV == ENV_PROD) {
+        if (APPLICATION_ENV === ENV_PROD) {
             $pathsToDisallow = [
                 '/search',
                 '/index.php/search',

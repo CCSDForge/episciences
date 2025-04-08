@@ -1,8 +1,8 @@
 <div class="row">
 
     <div class="col-md-2">
-        <img src="/user/photo/size/large?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>"
-             class="user-photo-normal" alt="<?= $this->translate('Ma photo'); ?>"/>
+        <img src="<?= sprintf('%suser/photo/size/large?v=%s', PREFIX_URL,Episciences_Auth::getPhotoVersion())?>"
+             class="user-photo-normal" alt="<?= $this->translate('Ma photo') ?>"/>
     </div>
 
     <div class="col-md-10">

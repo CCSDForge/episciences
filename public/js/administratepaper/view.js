@@ -284,16 +284,15 @@ function getReviewerMenu(button) {
 
     if (!tmp) {
         content += '<li>';
-        content += '<a href="/user/view/userid/' + uid + '" target="_blank">';
+        content += '<a href="' + JS_PREFIX_URL + 'user/view/userid/' + uid + '" target="_blank">';
         content += '<span class="glyphicon glyphicon-user" style="margin-right: 5px"></span> ' + translate('Voir le profil');
         content += '</a>';
         content += '</li>';
     }
 
-
-    if(uid !== byUid){
+    if (uid !== byUid) {
         content += '<li>';
-        content += '<a class="modal-opener" href="/administratemail/send/recipient/' + uid + '/paper/' + docid;
+        content += '<a class="modal-opener" href="' + JS_PREFIX_URL + 'administratemail/send/recipient/' + uid + '/paper/' + docid;
         if (tmp) content += '/tmp/1';
         content += '" ';
         content += 'data-width="50%" ';
@@ -317,7 +316,7 @@ function getReviewerMenu(button) {
     if (canBeReviewed && rating !== 2 && (status === 'active' || status === 'pending')) {
 
         content += '<li>';
-        content += '<a class="modal-opener" href="/administratepaper/updatedeadline/aid/' + aid + '" ';
+        content += '<a class="modal-opener" href="' + JS_PREFIX_URL + 'administratepaper/updatedeadline/aid/' + aid + '" ';
         content += 'data-width="50%" ';
         content += 'data-callback="submit" ';
         content += 'title="' + translate("Modification de la date limite de rendu de relecture") + '">';
@@ -326,7 +325,7 @@ function getReviewerMenu(button) {
     }
 
     if (status === 'pending' || ((status === 'active' || status === 'uninvited') && rating === 0)) {
-        let href = '/administratepaper/removereviewer/aid/' + aid;
+        let href = JS_PREFIX_URL + 'administratepaper/removereviewer/aid/' + aid;
 
         if (status === 'uninvited') {
             href += '/status/' + status;
@@ -343,7 +342,7 @@ function getReviewerMenu(button) {
     if (canBeReviewed && (status === 'active' || status === 'uninvited') && (rating === 0 || rating === 1)) {
 
         content += '<li>';
-        content += '<a href="/paper/rating?id=' + docid + '&reviewer_uid=' + uid + '&byUid=' + byUid + '"  ';
+        content += '<a href="' + JS_PREFIX_URL + 'paper/rating?id=' + docid + '&reviewer_uid=' + uid + '&byUid=' + byUid + '"  ';
         content += 'data-callback="submit"';
         content += 'title="' + translate("Remplir l'évaluation pour le compte de ce relecteur") + '">';
         content += '<span class="glyphicon glyphicon-edit" style="margin-right: 5px"></span> ' + translate('Télécharger le rapport du relecteur') + '</a></li>';
@@ -351,14 +350,13 @@ function getReviewerMenu(button) {
     }
     if (canBeReviewed && (status === 'active' || status === 'uninvited') && rating === 2) {
         content += '<li>';
-        content += '<a href="/administratepaper/refreshrating/id/' + docid + '/reviewer_uid/' + uid + '"  ';
+        content += '<a href="' + JS_PREFIX_URL + 'administratepaper/refreshrating/id/' + docid + '/reviewer_uid/' + uid + '"  ';
         content += 'data-callback="submit"';
         content += 'title="' + translate("Permettre au relecteur de modifier son évaluation") + '">';
         content += '<span class="glyphicon glyphicon-refresh" style="margin-right: 5px"></span> ' + translate('Autoriser la modification de la relecture') + '</a></li>';
 
     }
 
-    //content += '<li><a href="#"><span class="glyphicon glyphicon-remove" style="margin-right: 5px"></span> ' + translate('Supprimer ce relecteur')+'</a></li>';
     content += '</ul>';
 
     $(button).popover({
@@ -407,13 +405,13 @@ function getUserMenu(button) {
     let content = '<ul class="context-menu">';
 
     content += '<li>';
-    content += '<a href="/user/view/userid/' + uid + '" target="_blank">';
+    content += '<a href="' + JS_PREFIX_URL + 'user/view/userid/' + uid + '" target="_blank">';
     content += '<span class="glyphicon glyphicon-user" style="margin-right: 5px"></span> ' + translate('Voir le profil');
     content += '</a>';
     content += '</li>';
 
     content += '<li>';
-    content += '<a class="modal-opener" href="/administratemail/send/recipient/' + uid + '/paper/' + docid + '" ';
+    content += '<a class="modal-opener" href="' + JS_PREFIX_URL + 'administratemail/send/recipient/' + uid + '/paper/' + docid + '" ';
     content += 'data-width="50%" ';
     content += 'title="' + translate(modalTitle) + '">';
     content += '<span class="glyphicon glyphicon-envelope" style="margin-right: 5px"></span> ' + translate(userTitle);
@@ -458,7 +456,7 @@ function cancel() {
  * @param popoverParams
  * @returns {boolean|*}
  */
-function getCommunForm(button, docId, url = '/administratepaper/doiform', popoverParams = {}) {
+function getCommunForm(button, docId, url = JS_PREFIX_URL + 'administratepaper/doiform', popoverParams = {}) {
 
     const defaultParams = {
         'placement': 'bottom',
@@ -509,7 +507,7 @@ function getCommunForm(button, docId, url = '/administratepaper/doiform', popove
  */
 function getPublicationDateForm(button, docId) {
 
-    let request = getCommunForm(button, docId, '/administratepaper/publicationdateform');
+    let request = getCommunForm(button, docId, JS_PREFIX_URL + 'administratepaper/publicationdateform');
 
     let popoverParams = {
         'placement': 'bottom',
@@ -527,10 +525,12 @@ function getPublicationDateForm(button, docId) {
         popoverParams.content = result;
         $(button).popover(popoverParams).popover('show');
 
-        $('form[action^="/administratepaper/savepublicationdate"]').on('submit', function () {
+        let formAction = JS_PREFIX_URL + 'administratepaper/savepublicationdate';
+
+        $('form[action^="' + formAction + '"]').on('submit', function () {
             let $publicationDate = $("#publication-date");
             // Traitement AJAX du formulaire
-            let sRequest = ajaxRequest('/administratepaper/savepublicationdate', $(this).serialize() + "&docid=" + docId, 'POST', 'json');
+            let sRequest = ajaxRequest(formAction, $(this).serialize() + "&docid=" + docId, 'POST', 'json');
             sRequest.done(function (response) {
                 // Destruction du popup
                 $(button).popover('destroy');
@@ -556,7 +556,7 @@ function getPublicationDateForm(button, docId) {
  * @param docId
  * @param url
  */
-function getDoiForm(button, docId, url = '/administratepaper/doiform') {
+function getDoiForm(button, docId, url = JS_PREFIX_URL + 'administratepaper/doiform') {
     let request = getCommunForm(button, docId);
 
     let popoverParams = {
@@ -566,6 +566,7 @@ function getDoiForm(button, docId, url = '/administratepaper/doiform') {
         'content': getLoader()
     }
     request.done(function (result) {
+        let saveDoiUrl = JS_PREFIX_URL + 'administratepaper/savedoi';
         // Destruction du popup de chargement
         $(button).popover('destroy');
         openedPopover = null;
@@ -573,8 +574,8 @@ function getDoiForm(button, docId, url = '/administratepaper/doiform') {
         popoverParams.content = result;
         $(button).popover(popoverParams).popover('show');
 
-        $('form[action^="/administratepaper/savedoi"]').on('submit', function () {
-            let sRequest = ajaxRequest('/administratepaper/savedoi', $(this).serialize() + "&paperid=" + docId, 'POST', 'json');
+        $('form[action^="'+ saveDoiUrl + '"]').on('submit', function () {
+            let sRequest = ajaxRequest(saveDoiUrl, $(this).serialize() + "&paperid=" + docId, 'POST', 'json');
             sRequest.done(function (response) {
                 $(button).popover('destroy');
                 $("#doi-link").html(response);
@@ -612,7 +613,7 @@ function refreshPaperHistory(docid) {
     logs_container.hide();
     logs_container.html(getLoader());
     logs_container.fadeIn();
-    let refreshLogs = ajaxRequest('/administratepaper/displaylogs', {docid: docid});
+    let refreshLogs = ajaxRequest(JS_PREFIX_URL + 'administratepaper/displaylogs', {docid: docid});
 
     refreshLogs.done(function (logs) {
         $(logs_container).hide();
@@ -672,7 +673,7 @@ function editAttachmentDescription(target) {
 
 function getVersionEditingForm(button, docId) {
 
-    let request = getCommunForm(button, docId, '/administratepaper/latestversioneditingform');
+    let request = getCommunForm(button, docId, JS_PREFIX_URL + 'administratepaper/latestversioneditingform');
 
     let popoverParams = {
         'placement': 'bottom',
@@ -689,7 +690,7 @@ function getVersionEditingForm(button, docId) {
         popoverParams.content = result;
         $(button).popover(popoverParams).popover('show');
 
-        let actionStr = '/administratepaper/savenewpostedversion';
+        let actionStr = JS_PREFIX_URL + 'administratepaper/savenewpostedversion';
 
         $('form[action^="' + actionStr + '"]').on('submit', function () {
             let $inProgress = $('#in-progress');
@@ -734,7 +735,7 @@ function getVersionEditingForm(button, docId) {
 }
 
 function removeDoi(button, paperId, docId, doi) {
-    let removeDoi = ajaxRequest('/administratepaper/ajaxrequestremovedoi', {paperId: paperId, docId: docId, doi: doi});
+    let removeDoi = ajaxRequest(JS_PREFIX_URL + 'administratepaper/ajaxrequestremovedoi', {paperId: paperId, docId: docId, doi: doi});
     let $doiStatusLoader = $('#doi-status-loader');
     $doiStatusLoader.html(getLoader());
     $doiStatusLoader.show();
@@ -748,7 +749,7 @@ function removeDoi(button, paperId, docId, doi) {
 }
 
 function removeCoAuthor(docId, uid, rvid) {
-    let removeCoAuthor = ajaxRequest('/administratepaper/ajaxrequestremovecoauthor', {
+    let removeCoAuthor = ajaxRequest(JS_PREFIX_URL + 'administratepaper/ajaxrequestremovecoauthor', {
         docId: docId,
         uid: uid,
         rvid: rvid
@@ -760,7 +761,7 @@ function removeCoAuthor(docId, uid, rvid) {
 
 function getRevisionDeadlineForm(button, docId, commentId = null) {
 
-    let request = getCommunForm(button, docId, '/administratepaper/revisiondeadlineform');
+    let request = getCommunForm(button, docId, JS_PREFIX_URL + 'administratepaper/revisiondeadlineform');
 
     let popoverParams = {
         'placement': 'bottom',
@@ -777,11 +778,12 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
         // Affichage du formulaire dans le popover
         popoverParams.content = result;
         $(button).popover(popoverParams).popover('show');
+        let actionForm = JS_PREFIX_URL + 'administratepaper/updaterevisiondeadline';
 
-        $('form[action^="/administratepaper/updaterevisiondeadline"]').on('submit', function () {
+        $('form[action^="' + actionForm + '"]').on('submit', function () {
             let $revisionDeadline = $("#revision-deadline");
             // Traitement AJAX du formulaire
-            let sRequest = ajaxRequest('/administratepaper/updaterevisiondeadline', $(this).serialize() + "&docid=" + docId + "&pcid=" + commentId, 'POST', 'json');
+            let sRequest = ajaxRequest(actionForm, $(this).serialize() + "&docid=" + docId + "&pcid=" + commentId, 'POST', 'json');
             sRequest.done(function (response) {
                 // Destruction du popup
                 $(button).popover('destroy');

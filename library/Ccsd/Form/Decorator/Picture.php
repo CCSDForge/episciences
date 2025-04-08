@@ -43,7 +43,7 @@ class Ccsd_Form_Decorator_Picture extends Zend_Form_Decorator_Abstract
         $placement = $this->getPlacement();
 
         $image = "<div class='col-md-3' style='padding-left: 0px;'>";
-        $image .= '<img src="/user/photo/';
+        $image .= sprintf('<img src="%suser/photo/', PREFIX_URL);
 
         $originalIdentity =Episciences_Auth::getOriginalIdentity();
 

@@ -39,7 +39,7 @@ class Ccsd_Auth_Plugin extends Zend_Controller_Plugin_Abstract
         $resource = $request->getControllerName() . '-' . $request->getActionName();
         
         if (! $this->isAllowed($resource)) {
-            $request->setControllerName(self::FAIL_AUTH_CONTROLLER);
+            $request->setControllerName( self::FAIL_AUTH_CONTROLLER);
             $request->setActionName(self::FAIL_AUTH_ACTION);
             $request->setParam('error_message', "Erreur d'authentification");
             $request->setParam('error_description', "L'accès à la ressource vous est interdit");

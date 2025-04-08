@@ -12,7 +12,7 @@ foreach ($this->list as $paper) : ?>
 
     <?php
 
-    $href ='/' . $controller . '/view?id=' . $paper->getDocid();
+    $href = $this->url(['controller' => $controller, 'action' => 'view', 'id' => $paper->getDocid()]);
     $canBeReviewed = (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) && (Episciences_Auth::getUid() !== $paper->getUid()) && $paper->canBeReviewed();
 
     try {
@@ -226,7 +226,7 @@ foreach ($this->list as $paper) : ?>
                                          style="float: left; margin-right: 10px; cursor: pointer">
                                         <a class="modal-opener"
                                            title="<?= $this->translate('Envoyer un message au relecteur') ?>"
-                                           href="/administratepaper/contactreviewer?docid=<?= $paper->getDocid() ?>&id=<?= $reviewer->getUid() ?>">
+                                           href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'contactreviewer', 'docid' => $paper->getDocid(), 'id' => $reviewer->getUid()])?>">
                                                     <span data-toggle="tooltip"
                                                           data-original-title="<?= $this->translate('Envoyer un message au relecteur') ?>"
                                                           class="icon-envelope"></span>

@@ -2,8 +2,8 @@
 
 <?php if ($this->message == Ccsd_User_Models_User::LOGOUT_SUCCESS) : ?>
     <div class="alert alert-success"><?php echo $this->translate('Déconnexion réussie')?></div>
-    <p><a href="/" class="btn"><?php echo $this->translate('Retourner à l\'accueil')?></a></p>
+    <p><a href="<?= $this->url(['controller' => 'index']) ?>" class="btn"><?php echo $this->translate('Retourner à l\'accueil')?></a></p>
 <?php else : ?>
     <div class="alert alert-error"><?php echo $this->translate('Échec de la déconnexion')?></div>
-    <p><a href="/" class="btn btn-danger"><?php echo $this->translate('Retourner à l\'accueil')?></a></p>
+    <p><a href="<?= $this->url(['controller' => 'index']) ?>" class="btn btn-danger"><?php echo $this->translate('Retourner à l\'accueil')?></a></p>
 <?php endif; ?>
