@@ -1,3 +1,7 @@
+/**
+ * index page
+ */
+
 // Importer les couleurs de base
 @import "../base/colors";
 
@@ -10,23 +14,22 @@ $border-color: #ddd;
     margin-bottom: 50px;
 }
 
-
 .review-title {
-    font-size: 32px;
+    font-size: 36px;
     margin-bottom: 30px;
 }
 
-
 .list-group {
+
     .list-group-item {
         border-radius: 4px;
         margin-bottom: 5px;
         transition: background-color 0.2s ease;
+        position: relative;
 
         &:hover {
             background-color: $light-grey;
         }
-
 
         .review-number {
             display: inline-block;
@@ -41,27 +44,31 @@ $border-color: #ddd;
             padding: 0 5px;
         }
 
-
         .review-logo {
             height: 40px;
             margin-right: 10px;
             float: left;
         }
 
-
         .review-name {
             line-height: 40px;
             display: inline-block;
-        }
 
+            @media (max-width: 768px) {
+                max-width: 60%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
 
         .review-link {
             float: right;
             line-height: 40px;
+            color: $text-muted;
         }
     }
 }
-
 
 .pagination-container {
     margin-top: 30px;
@@ -71,12 +78,10 @@ $border-color: #ddd;
     }
 }
 
-
 .review-count {
     color: $grey;
-    margin-top: 20px;
+    margin-top: 10px;
 }
-
 
 .no-reviews {
     padding: 15px;
@@ -86,14 +91,34 @@ $border-color: #ddd;
     color: $dark-grey;
 }
 
+
 @media (max-width: 768px) {
-    .col-xs-4 {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 15px;
+    .review-container {
+        .col-xs-4 {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .text-right {
+            text-align: center !important;
+        }
+
+        .pagination-container {
+            .col-xs-4 {
+                margin-bottom: 10px;
+            }
+        }
     }
 
-    .text-right {
-        text-align: center !important;
+    .list-group-item {
+        padding-right: 30px;
+
+        .review-link {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
     }
 }
