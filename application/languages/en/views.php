@@ -94,6 +94,11 @@ return array(
     "Accueil" => "Home",
     "Retourner à l'accueil" => 'Go back to homepage',
 
+    // Homepage
+    "Liste des revues" => "Journal List",
+    "Nombre total de revues" => "Total number of journals",
+    "Aucune revue disponible" => "No journals available",
+
     // Roles
 
     // TO FIX
