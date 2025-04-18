@@ -404,6 +404,8 @@ class VolumeController extends Episciences_Controller_Action
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
             $post = $request->getPost();
 
+            error_log('POST data: ' . print_r($request->getPost(), true));
+
             if ($form->isValid($post)) {
                 $this->checkValidateDate($post['year'], $request);
                 $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
