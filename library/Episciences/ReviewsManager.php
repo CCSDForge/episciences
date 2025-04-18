@@ -14,13 +14,15 @@ class Episciences_ReviewsManager
      */
     public static function getList(array $settings = null, $toArray = false)
     {
-        $settings['is'] = ['is_new_front_switched' => 'yes', 'status' => Episciences_Review::ENABLED];
-        $settings['isNot'] = ['rvid' => 0];
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $reviews = array();
 
         $select = $db->select()->from(T_REVIEW);
+
+        // ORDER PAR NAME
+        $settings['sortBy'] = $settings['sortBy'] ?? 'NAME ASC';
+        $select->order($settings['sortBy']);
 
         // FILTRES
         $validFilters = array('rvid', 'code', 'status', 'name', 'is_new_front_switched');
