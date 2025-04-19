@@ -7,16 +7,13 @@
 class Episciences_ReviewsManager
 {
     /**
-     * @param array|null $settings
-     * @param bool $toArray
-     * @return Episciences_Review[]
      * fetch a list of all episciences reviews
      */
-    public static function getList(array $settings = null, $toArray = false)
+    public static function getList(array $settings = null): array
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $reviews = array();
+        $reviews = [];
 
         $select = $db->select()->from(T_REVIEW);
 
@@ -59,7 +56,7 @@ class Episciences_ReviewsManager
         if ($data) {
             foreach ($data as $options) {
                 $oReview = new Episciences_Review($options);
-                $reviews[$oReview->getRvid()] = ($toArray) ? $oReview->toArray() : $oReview;
+                $reviews[$oReview->getRvid()] = $oReview;
             }
         }
         return $reviews;
