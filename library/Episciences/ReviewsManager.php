@@ -11,54 +11,39 @@ class Episciences_ReviewsManager
      */
     public static function getList(array $settings = null): array
     {
-
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $reviews = [];
 
         $select = $db->select()->from(T_REVIEW);
 
-        // ORDER PAR NAME
-        $settings['sortBy'] = $settings['sortBy'] ?? 'NAME ASC';
-        $select->order($settings['sortBy']);
+        // Apply sorting
+        $select->order($settings['sortBy'] ?? 'NAME ASC');
 
-        // FILTRES
-        $validFilters = array('rvid', 'code', 'status', 'name', 'is_new_front_switched');
-
-        if (isset($settings['is'])) {
-            foreach ($settings['is'] as $setting => $value) {
-                if (in_array(strtolower($setting), $validFilters)) {
-                    $setting = strtoupper($setting);
-                    if (is_array($value)) {
-                        $select->where("$setting IN (?)", $value);
-                    } else {
-                        $select->where("$setting = ?", $value);
+        // Apply filters
+        $validFilters = ['rvid', 'code', 'status', 'name', 'is_new_front_switched'];
+        foreach (['is' => '=', 'isNot' => '!='] as $filterType => $operator) {
+            if (isset($settings[$filterType])) {
+                foreach ($settings[$filterType] as $key => $value) {
+                    if (in_array(strtolower($key), $validFilters)) {
+                        $key = strtoupper($key);
+                        if (is_array($value)) {
+                            $condition = "$key " . ($operator === '=' ? 'IN' : 'NOT IN') . " (?)";
+                        } else {
+                            $condition = "$key $operator ?";
+                        }
+                        $select->where($condition, $value);
                     }
                 }
             }
         }
 
-        if (isset($settings['isNot'])) {
-            foreach ($settings['isNot'] as $setting => $value) {
-                if (in_array(strtolower($setting), $validFilters)) {
-                    $setting = strtoupper($setting);
-                    if (is_array($value)) {
-                        $select->where("$setting NOT IN (?)", $value);
-                    } else {
-                        $select->where("$setting != ?", $value);
-                    }
-                }
-            }
-        }
-
+        // Fetch and process data
         $data = $db->fetchAll($select);
-
-
-        if ($data) {
-            foreach ($data as $options) {
-                $oReview = new Episciences_Review($options);
-                $reviews[$oReview->getRvid()] = $oReview;
-            }
+        foreach ($data as $options) {
+            $oReview = new Episciences_Review($options);
+            $reviews[$oReview->getRvid()] = $oReview;
         }
+
         return $reviews;
     }
 
