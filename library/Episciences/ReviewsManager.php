@@ -101,8 +101,6 @@ class Episciences_ReviewsManager
 
     /**
      * Find a review by RVCODE (string)
-     * @param string $rvcode
-     * @return bool|Episciences_Review
      */
     public static function findByRvcode(string $rvcode, bool $enabledOnly = false)
     {
