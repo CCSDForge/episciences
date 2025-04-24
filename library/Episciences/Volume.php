@@ -670,11 +670,9 @@ class Episciences_Volume
     public function save(array $data, int $vid = null, array $post = []): bool
     {
         $post = array_merge($post, $data);
-        $post['title'] = Episciences_VolumesManager::revertVolumeDescriptionToTextareaArray($post) ?? null;
+        $post['title'] = Episciences_VolumesManager::revertVolumeTitleToTextArray($post) ?? null;
         $post['description'] = Episciences_VolumesManager::revertVolumeDescriptionToTextareaArray($post) ?? null;
         $post['bib_reference'] = $post['bib_reference'] ?? null;
-Zend_Debug::dump($post);
-//exit;
 
         // Enregistrement de la position des articles
         if (

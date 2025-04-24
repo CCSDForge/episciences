@@ -239,16 +239,34 @@ class Episciences_VolumesManager
      */
     public static function getFormDefaults(Episciences_Volume $volume): array
     {
-
-        $defaults['title'] = $volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML);
+        //$defaults = self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML));
+        //$defaults['title'] = $volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML);
         // $defaults['description'] = $volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML);
-        $defaults = self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML));
+        //$defaults = self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML));
+        $defaults = array_merge(
+            self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML)),
+            self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML))
+        );
 
         foreach ($volume->getSettings() as $setting => $value) {
             $defaults[$setting] = $value;
         }
 
         return $defaults;
+    }
+
+    private static function volumeTitleToTextArray(?array $titles): array
+    {
+        $output = [];
+        if (empty($titles)) {
+            return $output;
+        }
+
+        foreach ($titles as $lang => $value) {
+            $output["title_$lang"] = $value;
+        }
+
+        return $output;
     }
 
     private static function volumeDescriptionToTextareaArray(?array $descriptions): array
@@ -264,6 +282,9 @@ class Episciences_VolumesManager
 
         return $output;
     }
+
+
+
 
 
     /**
@@ -642,6 +663,23 @@ class Episciences_VolumesManager
 
         return $output;
     }
+
+    public static function revertVolumeTitleToTextArray(?array $input): ?array
+    {
+        $output = [];
+        if (empty($input)) {
+            return null;
+        }
+        foreach ($input as $key => $value) {
+            if (str_starts_with($key, 'title_')) {
+                $lang = substr($key, strlen('title_'));
+                $output[$lang] = $value;
+            }
+        }
+
+        return $output;
+    }
+
 
     /**
      * @param int $vid
