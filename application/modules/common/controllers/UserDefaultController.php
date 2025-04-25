@@ -1814,7 +1814,7 @@ class UserDefaultController extends Episciences_Controller_Action
                 continue;
             }
 
-                if ($operationType === 'disassemble') {
+            if ($operationType === 'disassemble') {
                     if (is_array($value) && array_key_exists('label', $value) && array_key_exists('rorId', $value)) {
                         $output[$index] = $value;
                         continue;
