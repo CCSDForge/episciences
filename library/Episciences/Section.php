@@ -292,15 +292,9 @@ class Episciences_Section
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public function save(array $post = []): bool
+    public function save(): bool
     {
-        // Convert the data
-        $titles = Episciences_SectionsManager::revertSectionTitleToTextArray($post) ?? null;
-        $descriptions = Episciences_SectionsManager::revertSectionDescriptionToTextareaArray($post) ?? null;
 
-        // Update the properties of the object
-        $this->setTitles($titles);
-        $this->setDescriptions($descriptions);
 
         if (!$this->getRvid()) { // If RVID has not been defined, it is specified here
             $this->setRvid(RVID);
