@@ -31,6 +31,8 @@ class Episciences_Volume
     const VOLUME_YEAR = 'year';
 
     const VOLUME_NUM = 'num';
+    public const VOLUME_PREFIX_DESCRIPTION = 'description_';
+    public const VOLUME_PREFIX_TITLE = 'title_';
 
     protected $_db = null;
     private $_vid;
@@ -670,7 +672,8 @@ class Episciences_Volume
     public function save(array $data, int $vid = null, array $post = []): bool
     {
         $post = array_merge($post, $data);
-        $post['description'] = $post['description'] ?? null;
+        $post['title'] = Episciences_VolumesManager::revertVolumeTitleToTextArray($post) ?? null;
+        $post['description'] = Episciences_VolumesManager::revertVolumeDescriptionToTextareaArray($post) ?? null;
         $post['bib_reference'] = $post['bib_reference'] ?? null;
 
         // Enregistrement de la position des articles

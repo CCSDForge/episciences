@@ -35,12 +35,21 @@ class SectionController extends Episciences_Controller_Action
 
             if ($form->isValid($request->getPost())) {
 
-                $section = new Episciences_Section($form->getValues());
+                $formValues = $form->getValues();
+                $section = new Episciences_Section($formValues);
                 $section->setSetting('status', $form->getValue('status'));
+
+                // Convert the data
+                $titles = Episciences_SectionsManager::revertSectionTitleToTextArray($formValues) ?? null;
+                $descriptions = Episciences_SectionsManager::revertSectionDescriptionToTextareaArray($formValues) ?? null;
+                // Update the properties of the object
+                $section->setTitles($titles);
+                $section->setDescriptions($descriptions);
+
 
                 if ($section->save()) {
                     $message = '<strong>' . $this->view->translate("La nouvelle rubrique a bien été créée.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
                 } else {
                     $message = '<strong>' . $this->view->translate("La nouvelle rubrique n'a pas pu être créée.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -51,6 +60,7 @@ class SectionController extends Episciences_Controller_Action
                 $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
+                return;
             }
         }
 
@@ -89,7 +99,16 @@ class SectionController extends Episciences_Controller_Action
                 $section->setOptions($values);
                 $section->setSetting('status', $form->getValue('status'));
 
+                // Convert the data
+                $titles = Episciences_SectionsManager::revertSectionTitleToTextArray($values) ?? null;
+                $descriptions = Episciences_SectionsManager::revertSectionDescriptionToTextareaArray($values) ?? null;
+                // Update the properties of the object
+                $section->setTitles($titles);
+                $section->setDescriptions($descriptions);
+
+
                 if ($section->save()) {
+
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {

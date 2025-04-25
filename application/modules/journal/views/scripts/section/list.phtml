@@ -13,77 +13,74 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 ?>
 
 <div class="form-actions">
-    <a class="btn btn-default" href="<?= $this->url(['controller' => 'section', 'action' => 'add']) ?>">
-    <span class="glyphicon glyphicon-book"></span>
-    <span><?php echo $this->translate('Créer une rubrique'); ?></span>
-    </a>
+    <a class="btn btn-default" href="<?= $this->url(['controller' => 'section', 'action' => 'add']) ?>"> <span class="glyphicon glyphicon-book"></span>
+        <span><?php echo $this->translate('Créer une rubrique'); ?></span> </a>
 </div>
-<hr />
+<hr/>
 
 <?php if ($this->sections) : ?>
     <?= $this->partial('partials/datatable-sort-with-search-filter-alert.phtml') ?>
-<div>
-	<table  class="table table-striped table-bordered dataTable" id="sections">
-		<thead>
-			<tr>
-				<th class="hidden"><?php echo $this->translate('Position')?></th>
-				<th width="14"></th>
-				<th><?php echo $this->translate('Titre'); ?></th>
-				<th width="150"><?php echo $this->translate('Rédacteurs'); ?></th>
-				<th width="75" style="text-align:center"><?php echo $this->translate("Statut"); ?></th>
-				<th width="30"><?php echo $this->translate('Actions'); ?></th>
-			</tr>
-		</thead>
-		<tbody class="sortable">
-			<?php foreach ($this->sections as $section) : ?>
-			<tr id="section_<?php echo $section->getSid()	; ?>">
-				<td class="hidden"><?php echo $section->getPosition(); ?></td>
-				<td class="sortable-handle"><span class="glyphicon glyphicon-move"></span></td>
-				<td><?= Episciences_Tools::convertMarkdownToHtml($section->getNameKey()) ?></td>
-				<td>
-					<div class="editors">
-					<?php if ($section->getEditors()) : ?>
-					<?php 	echo $this->partial('section/editors_list.phtml', array('editors'=>$section->getEditors()))?>
-					<?php endif;?>
-					</div>
-					<button id="popover-link-<?php echo $section->getSid() ?>"
-							style="float: right; 
-							font-size: 10px" 
-							class="btn btn-xs btn-default popover-link" 
-							onclick="getEditors(this, <?php echo $section->getSid() ?>)">
-							<span class="caret"></span>
-					</button>
-				</td>
-				<td style="text-align:center">
-					<?php 
-						$status = '-';
-						if ($section->getSetting('status') == 0) {
-							$status = "Fermé";
-							$class = "label-danger";
-						} else {
-							$status = "Ouvert";
-							$class = "label-success";
-						}
-					?>
-					<span class="label <?php echo $class?>"><?php echo $this->translate($status);?></span>			    		
-				</td>
-				<td style="text-align:right;">
-						<a 	class=""
-							title="<?php echo $this->translate('Modifier'); ?>" 
-							href="<?= $this->url(['controller' => 'section', 'action' => 'edit', 'id' => $section->getSid()])?>">
-							<span class="darkgrey glyphicon glyphicon-edit"></span></a>
-						<a 	class="delete" 
-							title="<?php echo $this->translate('Supprimer'); ?>" 
-							href="<?= $this->url(['controller' => 'section', 'action' => 'delete', 'id' => $section->getSid()]) ?>">
-							<span class="darkgrey glyphicon glyphicon-remove-sign"></span></a>
-				</td>
-			</tr>
-			<?php endforeach; ?>
-		</tbody>
-	</table>
-</div>	
+    <div>
+        <table class="table table-striped table-bordered dataTable" id="sections">
+            <thead>
+            <tr>
+                <th class="hidden"><?php echo $this->translate('Position') ?></th>
+                <th style="width:5%"></th>
+                <th><?php echo $this->translate('Titre'); ?></th>
+                <th><?php echo $this->translate('Rédacteurs'); ?></th>
+                <th style="width:10%;text-align:center"><?php echo $this->translate("Statut"); ?></th>
+                <th style="width:10%;text-align:center"><?php echo $this->translate('Actions'); ?></th>
+            </tr>
+            </thead>
+            <tbody class="sortable">
+            <?php foreach ($this->sections as $section) : ?>
+                <tr id="section_<?php echo $section->getSid(); ?>">
+                    <td class="hidden"><?php echo $section->getPosition(); ?></td>
+                    <td class="sortable-handle"><span class="glyphicon glyphicon-move"></span></td>
+                    <td><?= Episciences_Tools::convertMarkdownToHtml($section->getNameKey()) ?></td>
+                    <td>
+                        <div class="editors">
+                            <?php if ($section->getEditors()) : ?>
+                                <?php echo $this->partial('section/editors_list.phtml', array('editors' => $section->getEditors())) ?>
+                            <?php endif; ?>
+                        </div>
+                        <button id="popover-link-<?php echo $section->getSid() ?>"
+                                style="float: right;
+							font-size: 10px"
+                                class="btn btn-xs btn-default popover-link"
+                                onclick="getEditors(this, <?php echo $section->getSid() ?>)">
+                            <span class="caret"></span>
+                        </button>
+                    </td>
+                    <td style="text-align:center">
+                        <?php
+                        $status = '-';
+                        if ($section->getSetting('status') == 0) {
+                            $status = "Fermé";
+                            $class = "label-danger";
+                        } else {
+                            $status = "Ouvert";
+                            $class = "label-success";
+                        }
+                        ?>
+                        <span class="label <?php echo $class ?>"><?php echo $this->translate($status); ?></span>
+                    </td>
+                    <td style="text-align:center;">
+                        <a title="<?php echo $this->translate('Modifier'); ?>"
+                           href="<?= $this->url(['controller' => 'section', 'action' => 'edit', 'id' => $section->getSid()])?>"> <span
+                                    class="btn btn-default btn-xs darkgrey glyphicon glyphicon-edit"></span></a> <a
+                                class="delete btn btn-danger btn-xs"
+                                title="<?php echo $this->translate('Supprimer'); ?>"
+                                href="<?= $this->url(['controller' => 'section', 'action' => 'delete', 'id' => $section->getSid()]) ?>"> <span
+                                    class="glyphicon glyphicon-trash"></span></a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 <?php else : ?>
 
-<?php echo $this->translate('Aucune rubrique enregistrée')?>.
+    <?php echo $this->translate('Aucune rubrique enregistrée') ?>.
 
 <?php endif; ?>
