@@ -31,6 +31,8 @@ class Episciences_Volume
     const VOLUME_YEAR = 'year';
 
     const VOLUME_NUM = 'num';
+    public const VOLUME_PREFIX_DESCRIPTION = 'description_';
+    public const VOLUME_PREFIX_TITLE = 'title_';
 
     protected $_db = null;
     private $_vid;

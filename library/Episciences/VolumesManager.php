@@ -324,13 +324,13 @@ class Episciences_VolumesManager
         foreach ($languages as $languageCode => $language) {
 
             // Nom du volume
-            $form->addElement('text', 'title_' . $languageCode, [
+            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, [
                 'label' => 'Nom (' . $language . ')',
                 'maxlength' => self::MAX_STRING_LENGTH,
                 'required' => true,
             ]);
 
-            $form->addElement('textarea', 'description_' . $languageCode, [
+            $form->addElement('textarea', Episciences_Volume::VOLUME_PREFIX_DESCRIPTION . $languageCode, [
                 'label' => 'Description (' . $language . ')',
                 'tiny' => true,
                 'rows' => 5,
@@ -656,8 +656,8 @@ class Episciences_VolumesManager
             return null;
         }
         foreach ($input as $key => $value) {
-            if (str_starts_with($key, 'description_')) {
-                $lang = substr($key, strlen('description_'));
+            if (str_starts_with($key, Episciences_Volume::VOLUME_PREFIX_DESCRIPTION)) {
+                $lang = substr($key, strlen(Episciences_Volume::VOLUME_PREFIX_DESCRIPTION));
                 $output[$lang] = $value;
             }
         }
@@ -672,8 +672,8 @@ class Episciences_VolumesManager
             return null;
         }
         foreach ($input as $key => $value) {
-            if (str_starts_with($key, 'title_')) {
-                $lang = substr($key, strlen('title_'));
+            if (str_starts_with($key, Episciences_Volume::VOLUME_PREFIX_TITLE)) {
+                $lang = substr($key, strlen(Episciences_Volume::VOLUME_PREFIX_TITLE));
                 $output[$lang] = $value;
             }
         }
