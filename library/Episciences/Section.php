@@ -23,6 +23,9 @@ class Episciences_Section
 
     const SETTING_STATUS = 'status';
 
+    public const SECTION_PREFIX_DESCRIPTION = 'description_';
+    public const SECTION_PREFIX_TITLE = 'title_';
+
     /**
      * Section ID
      * @var int
@@ -86,14 +89,44 @@ class Episciences_Section
      */
     public function getFormDefaults(Episciences_Section $section): array
     {
-        $defaults['titles'] = $section->getTitles();
-        $defaults['descriptions'] = $section->getDescriptions();
+        $defaults = array_merge(
+            self::sectionTitleToTextArray($section->getTitles()),
+            self::sectionDescriptionToTextareaArray($section->getDescriptions())
+        );
 
         foreach ($section->getSettings() as $setting => $value) {
             $defaults[$setting] = $value;
         }
 
         return $defaults;
+    }
+
+    private static function sectionTitleToTextArray(?array $titles): array
+    {
+        $output = [];
+        if (empty($titles)) {
+            return $output;
+        }
+
+        foreach ($titles as $lang => $value) {
+            $output["title_$lang"] = $value;
+        }
+
+        return $output;
+    }
+
+    private static function sectionDescriptionToTextareaArray(?array $descriptions): array
+    {
+        $output = [];
+        if (empty($descriptions)) {
+            return $output;
+        }
+
+        foreach ($descriptions as $lang => $value) {
+            $output["description_$lang"] = $value;
+        }
+
+        return $output;
     }
 
     /**
@@ -259,8 +292,16 @@ class Episciences_Section
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
-    public function save(): bool
+    public function save(array $post = []): bool
     {
+        // Convert the data
+        $titles = Episciences_SectionsManager::revertSectionTitleToTextArray($post) ?? null;
+        $descriptions = Episciences_SectionsManager::revertSectionDescriptionToTextareaArray($post) ?? null;
+
+        // Update the properties of the object
+        $this->setTitles($titles);
+        $this->setDescriptions($descriptions);
+
         if (!$this->getRvid()) { // If RVID has not been defined, it is specified here
             $this->setRvid(RVID);
         }
@@ -271,6 +312,7 @@ class Episciences_Section
             'titles' => $this->getTitles(),
             'descriptions' => $this->getDescriptions()
         ];
+
 
         $sectionSettings = [
             'SID' => $this->getSid(),

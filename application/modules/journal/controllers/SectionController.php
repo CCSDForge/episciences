@@ -89,7 +89,8 @@ class SectionController extends Zend_Controller_Action
                 $section->setOptions($values);
                 $section->setSetting('status', $form->getValue('status'));
 
-                if ($section->save()) {
+                if ($section->save($request->getPost())) {
+
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
