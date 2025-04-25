@@ -723,6 +723,11 @@ return array(
     "Créer un volume" => "Create a new volume",
     "Modifier un volume" => "Edit this volume",
     "Nom du volume" => "Volume name",
+    'Nom (French)' => 'Name (French)',
+    'Nom (English)' => 'Name (English)',
+    'Description (English)' => 'Description (English)',
+    'Description (French)' => 'Description (French)',
+
     "Aucun volume enregistré" => "No volume yet",
     "Métadonnées" => "Metadata",
     "Dans ce cas, le glisser-déposer repositionne tous les éléments affichés, les faisant apparaître en haut de la liste." => "In this case, drag & drop repositions all displayed items, making them appear at the top of the list.",
