@@ -325,12 +325,13 @@ class Episciences_VolumesManager
 
             // Nom du volume
             $form->addElement('text', 'title_' . $languageCode, [
-                'label' => 'Nom ' . $language,
+                'label' => 'Nom (' . $language . ')',
                 'maxlength' => self::MAX_STRING_LENGTH,
+                'required' => true,
             ]);
 
             $form->addElement('textarea', 'description_' . $languageCode, [
-                'label' => 'Description ' . $language,
+                'label' => 'Description (' . $language . ')',
                 'tiny' => true,
                 'rows' => 5,
                 'maxlength' => self::MAX_STRING_LENGTH,
