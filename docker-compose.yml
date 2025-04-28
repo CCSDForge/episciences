@@ -90,6 +90,9 @@ services:
       - type: bind
         source: ./src/mysql/docker/episciences/episciences.sql
         target: /docker-entrypoint-initdb.d/init.sql
+      - type: bind
+        source: ./src/mysql/docker/episciences/my.cnf
+        target: /etc/mysql/conf.d/my.cnf
     env_file:
       - src/mysql/docker/episciences/mysql.env
     networks:
