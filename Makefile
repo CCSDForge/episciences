@@ -98,3 +98,6 @@ enter-container-php: ## Open shell on PHP container
 
 enter-container-httpd: ## Open shell on HTTPD container
 	$(DOCKER) exec -it $(CNTR_NAME_HTTPD) sh -c "cd /var/www/htdocs && /bin/bash"
+
+enter-container-db-episciences: ## Open shell on db-episciences container
+	$(DOCKER) exec -it db-episciences sh -c "cd /etc && /bin/bash"
