@@ -1788,7 +1788,7 @@ return array(
     "articles en attente d'éclaircissements" => 'articles waiting for clarifications',
 
     "article accepté" => 'accepted article',
-    "articles acceptés" => 'accepted articles',
+    "articles acceptés non publiés" => 'accepted but unpublished articles',
     "article soumis" => 'submitted article',
     "articles soumis" => 'submitted articles',
     "article proposé" => 'submitted article',

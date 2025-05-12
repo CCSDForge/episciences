@@ -96,11 +96,15 @@ class StatsController extends Episciences_Controller_Action
         $yearCategories = [];
         $dashboard = null;
 
+        //var_dump($askApi);
         if ($askApi) {
             try {
                 $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
+                //debug
+                Zend_Debug::dump($dashboard, 'API Dashboard Data');
             } catch (GuzzleException|JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
+                //var_dump($e);
                 $logger?->warning($e->getMessage());
             }
 
@@ -119,6 +123,7 @@ class StatsController extends Episciences_Controller_Action
 
         $repositories = Episciences_Repositories::getRepositoriesByLabel();
         $details = $dashboard['details'] ?? [];
+        Zend_Debug::dump($details , 'détails');
 
         if (isset($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR])) {
             $yearCategories = array_keys($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR]);
@@ -160,67 +165,68 @@ class StatsController extends Episciences_Controller_Action
             $this->view->submissionAcceptanceTimeUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['unit'];
 
         }
+        Zend_Debug::dump($submissionAcceptanceTime, 'submissionAcceptanceTime');
 
         if (!empty($dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'])) {
             $submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'];
             $this->view->submissionPublicationTime = $submissionPublicationTime;
             $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'];
         }
+        Zend_Debug::dump($submissionPublicationTime , 'submissionPublicationTime');
 
         $submissionsDelay = $details[self::SUBMISSION_ACCEPTANCE_DELAY];
         $publicationsDelay = $details[self::SUBMISSION_PUBLICATION_DELAY];
         $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null; // all review submissions
         $totalByYear = 0;
 
+
         foreach ($yearCategories as $year) {
 
             $nbRefusals = $nbAcceptations = $nbOthers = 0;
 
-            $nbPublications = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['publications'] ?? 0;
-            $allPublications += $nbPublications; // l'ensemble de la revue
+            $submissionsByYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year] ?? [];
+            //$allPublications += $nbPublications; // l'ensemble de la revue
 
             // stats collectées par rapport à la date de modification
-            $moreDetails = $details[self::NB_SUBMISSIONS][self::MORE_DETAILS] ?? [];
-            $submissionsByYearResponse = $moreDetails[$year] ?? [];
-
-            foreach ($submissionsByYearResponse as $values) {
-
-                foreach ($values as $statusLabel => $nbSubmissions) {
-
-                    if ($statusLabel === 'strictly_accepted') {
-                        $statusLabel = str_replace('strictly_', '', $statusLabel);
-                    }
-
-                    $status = array_search($statusLabel, Episciences_Paper::STATUS_DICTIONARY, true);
-
-                    if ($status === false) {
-                        $logger?->warning("STATS: UNDEFINED_STATUS_DICTIONARY_LABEL $statusLabel");
-                    }
+            //$moreDetails = $details[self::NB_SUBMISSIONS][self::MORE_DETAILS] ?? [];
+            //$submissionsByYearResponse = $moreDetails[$year] ?? [];
 
 
-                    if ($status === Episciences_Paper::STATUS_PUBLISHED) {
-                        continue;
-                    }
+            if (is_array($submissionsByYear ) )  {
 
-                    if ($status === Episciences_Paper::STATUS_REFUSED) {
-                        $allRefusals += $nbSubmissions[self::NB_SUBMISSIONS];
-                        $nbRefusals += $nbSubmissions[self::NB_SUBMISSIONS];
-                    } elseif (in_array($status, self::ACCEPTED_SUBMISSIONS, true)) {
-                        $allAcceptations += $nbSubmissions[self::NB_SUBMISSIONS];
-                        $nbAcceptations += $nbSubmissions[self::NB_SUBMISSIONS];
-                    } else {  // others status (except published status)
-                        $allOtherStatus += $nbSubmissions[self::NB_SUBMISSIONS];
-                        $nbOthers += $nbSubmissions[self::NB_SUBMISSIONS];
-                    }
+                // Get the number of publications directly
+                $nbPublications = $submissionsByYear['publishedFromSubmissions'] ?? 0;
+                $allPublications += $nbPublications;
 
-                    unset($status, $nbSubmissions);
-                }
+                // Get the total number of submissions directly
+                $totalSubmissions = $submissionsByYear['submissions'] ?? 0;
+
+                // Get the number of acceptances directly
+                //$nbAcceptations = $submissionsByYear['acceptedSubmittedSameYear'] ?? 0;
+                // TODO:Adjust the code to avoid double counting:
+                $nbAcceptations = ($submissionsByYear['acceptedSubmittedSameYear'] ?? 0) - $nbPublications;
+                $nbAcceptations = max(0, $nbAcceptations);
+                $allAcceptations += $nbAcceptations;
+
+
+                // Get the number of refusals from the value structure
+                $nbRefusals = $dashboard['value']['totalRefused'] ?? 0;
+                $allRefusals += $nbRefusals;
+
+                // Calculate other statuses
+                $nbOthers = $totalSubmissions - $nbPublications - $nbAcceptations - $nbRefusals;
+
+                // Ensure nbOthers doesn't become negative
+                $nbOthers = max(0, $nbOthers);
+                $allOtherStatus += $nbOthers;
 
                 $totalByYear = $nbRefusals + $nbAcceptations + $nbOthers;
 
             }
 
-            $totalByYear += $nbPublications;
+            Zend_Debug::dump($nbAcceptations, 'Nombre d\'articles acceptés cette année');
+            Zend_Debug::dump($nbRefusals , 'Nombre d\'articles refusés cette année');
+            Zend_Debug::dump($totalByYear , '$totalByYear ');
 
             $series[self::SUBMISSIONS_BY_YEAR]['submissions'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['submissions'] ?? 0; // only submissions (1st version) of the current year
             $series['acceptationByYear']['acceptations'][] = $nbAcceptations;
@@ -229,6 +235,14 @@ class StatsController extends Episciences_Controller_Action
             $series['otherStatusByYear']['otherStatus'][] = $nbOthers; //totalNumberOfPapersAccepted
             $series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'] ?? 0;
 
+            Zend_Debug::dump([
+                'submissions' => $series[self::SUBMISSIONS_BY_YEAR]['submissions'],
+                'acceptations' => $series['acceptationByYear']['acceptations'],
+                'refusals' => $series['refusalsByYear']['refusals'],
+                'publications' => $series['publicationsByYear']['publications'],
+                'otherStatus' => $series['otherStatusByYear']['otherStatus'],
+                'acceptedSubmittedSameYear' => $series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear']
+            ]);
 
             if ($totalByYear) {
                 $series['acceptationByYear']['percentage'][] = round($nbAcceptations / $totalByYear * 100, 2); //'acceptedSubmittedSameYear'
@@ -262,17 +276,23 @@ class StatsController extends Episciences_Controller_Action
             $allRefusals = $series['refusalsByYear']['refusals'][0];
             $allAcceptations = $series['acceptationByYear']['acceptations'][0];
             $allOtherStatus = $series['otherStatusByYear']['otherStatus'][0];
+           //TODO: question: Does the number of accepted submissions include the published ones?
+            $totalStatuses = $allPublications + $allAcceptations + $allRefusals + $allOtherStatus;
+            //$totalStatuses= $allAcceptations + $allRefusals + $allOtherStatus;
 
-            if ($totalByYear) {
-                $publicationsPercentage = $series['publicationsByYear']['percentage'][0];
-                $refusalsPercentage = $series['refusalsByYear']['percentage'][0];
-                $acceptationsPercentage = $series['acceptationByYear']['percentage'][0];
-                $otherStatusPercentage = $series['otherStatusByYear']['percentage'][0];
+            if ($totalStatuses > 0) {
+                $publicationsPercentage = round($allPublications / $totalStatuses * 100, 2);
+                $refusalsPercentage = round($allRefusals/ $totalStatuses * 100, 2);
+                $acceptationsPercentage = round( $allAcceptations / $totalStatuses * 100, 2);
+                $otherStatusPercentage = round($allOtherStatus / $totalStatuses * 100, 2);
+            } else {
+                $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = $otherStatusPercentage = 0;
+               //$acceptationsPercentage = $refusalsPercentage = $otherStatusPercentage = 0;
             }
 
             unset($totalByYear);
 
-            $this->view->acceptedSubmittedSameYaer = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'];
+            $this->view->acceptedSubmittedSameYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'];
             $this->view->acceptationRateSubmittedSameYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptanceRate'];
 
 
@@ -283,22 +303,40 @@ class StatsController extends Episciences_Controller_Action
             $otherStatusPercentage = round($allOtherStatus / $allSubmissions * 100, 2);
         }
 
+        Zend_Debug::dump([
+            'allPublications' => $allPublications,
+            'allAcceptations' => $allAcceptations,
+            'allRefusals' => $allRefusals,
+            'allOtherStatus' => $allOtherStatus,
+        ]);
+
         $label1 = ucfirst($this->view->translate('soumissions'));
         $label2 = ucfirst($this->view->translate('articles publiés'));
         $label3 = ucfirst($this->view->translate('articles refusés'));
-        $label4 = ucfirst($this->view->translate('articles acceptés'));
+        $label4 = ucfirst($this->view->translate('articles acceptés non publiés'));
         $label5 = ucfirst($this->view->translate('autres statuts'));
         $label6 = ucfirst($this->view->translate('articles acceptés (soumis la même année)'));
 
         // figure 1
         $this->view->chart1Title = $this->view->translate("En un coup d'oeil");
 
+        Zend_Debug::dump([
+            'publicationsPercentage' => $publicationsPercentage,
+            'acceptationsPercentage' => $acceptationsPercentage,
+            'refusalsPercentage' => $refusalsPercentage,
+            'otherStatusPercentage' => $otherStatusPercentage
+        ]);
+
+
         $seriesJs['allSubmissionsPercentage']['datasets'][] = [
             'data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage, $otherStatusPercentage],
+            //'data' => [$acceptationsPercentage, $refusalsPercentage, $otherStatusPercentage],
             'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]]
+            //'backgroundColor' => [self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]]
         ];
 
         $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3, $label5];
+        //$seriesJs['allSubmissionsPercentage']['labels'] = [ $label4, $label3, $label5];
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
 
         //figure 2
@@ -436,7 +474,7 @@ class StatsController extends Episciences_Controller_Action
 
         $headers = [
             'Accept' => 'application/json',
-            'Content-type' => 'application/json',
+            'Content-type' => 'application/json'
         ];
 
         $gOptions = [
@@ -444,7 +482,7 @@ class StatsController extends Episciences_Controller_Action
             'query' => $options
         ];
 
-        $client = new Client();
+        $client = new Client(['verify' => false]);
         return $client->request('GET', $url, $gOptions)->getBody();
 
     }
