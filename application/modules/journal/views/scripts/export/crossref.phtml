@@ -30,7 +30,7 @@ $modificationDate = $paper->getModification_date();
 
 if ($modificationDate) {
     try {
-        $modificationDate = $acceptanceDate = new DateTime($modificationDate);
+        $modificationDate = new DateTime($modificationDate);
     } catch (Exception $e) {
         $modificationDate = null;
         trigger_error($e->getMessage());
