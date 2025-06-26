@@ -279,16 +279,25 @@ class getDoi extends JournalScript
      */
     private function getMetadataFile(): void
     {
-        $paperUrl = sprintf("%spapers/export/%s/crossref?code=%s", EPISCIENCES_API_URL, $this->getPaper()->getPaperid(), $this->getReview()->getCode());
+        $paperId = $this->getPaper()->getPaperid();
+
+        $docid = Episciences_PapersManager::getPublishedPaperId($paperId);
+        if ($docid === 0) {
+            echo sprintf("%sPaper ID %s is not published yet, skipping metadata request.%s", PHP_EOL, $paperId, PHP_EOL);
+            return;
+        }
+
+        $paperUrl = sprintf("%spapers/export/%s/crossref?code=%s", EPISCIENCES_API_URL, $docid, $this->getReview()->getCode());
         echo PHP_EOL . 'Requesting: ' . $paperUrl;
         $client = new Client();
         try {
             $res = $client->request('GET', $paperUrl);
         } catch (GuzzleException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+            echo PHP_EOL . 'Requesting: ' . $paperUrl . ' failed with error: ' . $e->getMessage();
+            trigger_error($e->getMessage(), E_USER_ERROR);
         }
-
         file_put_contents($this->getMetadataPathFileName(), $res->getBody());
+
     }
 
     /**
