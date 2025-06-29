@@ -332,6 +332,9 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                     $name = $author['name'];
                     $creatorsDc[] = $name;
                     $explodedName = explode(', ', $name);
+                    // Clear memory to avoid carrying over data from the previous author
+                    $tmp = [];
+
                     $tmp['fullname'] = $name;
                     $tmp['given'] = isset($explodedName[1]) ? trim($explodedName[1]) : '';
                     $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
