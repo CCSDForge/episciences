@@ -289,7 +289,7 @@ class Episciences_OpenAireResearchGraphTools
 
         } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
             self::logErrorMsg($msgLogAuthorFound);
-            if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
+            if (array_key_exists("@orcid", $authorInfoFromApi)) {
                 $decodeAuthor[$keyDbJson]['orcid'] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
                 $flagNewOrcid = 1;
             }
