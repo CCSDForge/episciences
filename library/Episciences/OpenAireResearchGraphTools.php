@@ -128,7 +128,14 @@ class Episciences_OpenAireResearchGraphTools
     public static function insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId): int
     {
         $affectedRow = 0;
-        if ($setsOpenAireCreator->isHit() && !empty($fileFound = json_decode($setsOpenAireCreator->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) && $fileFound !== [""]) {
+        if ($setsOpenAireCreator->isHit()){
+            return $affectedRow;
+        }
+        try {
+            $fileFound = json_decode($setsOpenAireCreator->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            if (empty($fileFound) || $fileFound === [""]) {
+                return $affectedRow;
+            }
             $reformatFileFound = [];
             if (!array_key_exists(0, $fileFound)) {
                 $reformatFileFound[] = $fileFound;
@@ -139,28 +146,87 @@ class Episciences_OpenAireResearchGraphTools
             foreach ($selectAuthor as $key => $authorInfo) {
                 // LOOP IN ARRAY FROM DB
                 $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                $originalAuthorsArray = $decodeAuthor;
+                $recordUpdated = false;
                 // WE NEED TO DECODE JSON IN DB TO LOOP IN
-                foreach ($decodeAuthor as $keyDbJson => $authorFromDB) {
-                    $needleFullName = $authorFromDB['fullname'];
-                    $flagNewOrcid = 0;
-                    // GET EACH FULLNAME TO COMPARE IN THE API ARRAY
-                    foreach ($reformatFileFound as $authorInfoFromApi) {
-                        // TRY TO FIND CORRESPONDING AUTHOR AND ORCID (IF EXIST)
-                        [$decodeAuthor, $flagNewOrcid] = self::getOrcidApiForDb($needleFullName, $authorInfoFromApi, $decodeAuthor, $keyDbJson, $flagNewOrcid);
+                foreach ($decodeAuthor as $authorIndex => $singleAuthor) {
+                    $authorFullName = $singleAuthor['fullname'] ?? '';
+                    if (empty($authorFullName)) {
+                        continue;
                     }
-                    if ($flagNewOrcid === 1) {
-                        self::insertAuthors($decodeAuthor, $paperId, $key);
-                        $affectedRow++;
-                        if (PHP_SAPI ==='cli') {
-                            echo PHP_EOL . 'new Orcid for id ' . $key . ' and paper ' . $paperId . PHP_EOL;
+                    $foundOrcid = self::findOrcidForAuthor($authorFullName, $reformatFileFound, $authorIndex);
+                    if ($foundOrcid && empty($singleAuthor['orcid'])) {
+                        $decodeAuthor[$authorIndex]['orcid'] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($foundOrcid);
+                        $recordUpdated = true;
+                        if (PHP_SAPI === 'cli') {
+                            echo PHP_EOL . "Added ORCID $foundOrcid for author $authorFullName (record $key, paper $paperId)" . PHP_EOL;
                         }
                     }
+                    }
+                if ($recordUpdated && $decodeAuthor  !== $originalAuthorsArray) {
+                    self::insertAuthors($decodeAuthor, $paperId, $key);
+                    $affectedRow++;
                 }
             }
+        } catch (JsonException $e) {
+            self::logErrorMsg("JSON decode error in insertOrcidAuthorFromOARG: " . $e->getMessage());
         }
+
         return $affectedRow;
     }
 
+    /**
+     * Find ORCID for a specific author from API data
+     *
+     * This method searches through the OpenAire Research Graph API data
+     * to find a matching ORCID for the given author name.
+     *
+     * @param string $needleFullName The author's full name from database
+     * @param array $reformatFileFound The formatted API data array
+     * @param int $authorIndex The index of the author being processed
+     * @return string|null The ORCID if found, null otherwise
+     */
+    private static function findOrcidForAuthor(string $needleFullName, array $reformatFileFound, int $authorIndex): ?string
+    {
+        // Loop through each author record from the API
+        foreach ($reformatFileFound as $authorInfoFromApi) {
+            // Initialize match flag
+            $isMatch = false;
+
+            // see if the author name appears anywhere in the API data
+            if (array_search($needleFullName, $authorInfoFromApi, false) !== false ||
+                array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
+                $isMatch = true;
+            }
+            elseif (isset($authorInfoFromApi['$']) &&
+                Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
+                $isMatch = true;
+            }
+
+            // If found a match, process the ORCID
+            if ($isMatch) {
+                // Log the successful match (using original log format)
+                $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, true) .
+                    "\n API: \n" . print_r($authorInfoFromApi, true);
+                self::logErrorMsg($msgLogAuthorFound);
+
+                // Extract and return the ORCID if it exists
+                if (array_key_exists("@orcid", $authorInfoFromApi)) {
+                    $orcid = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
+                    self::logErrorMsg("ORCID found: $orcid for author: $needleFullName");
+                    return $orcid;
+                }
+            } else {
+                // Log when no match is found
+                $apiName = $authorInfoFromApi['$'] ?? 'UNKNOWN';
+                self::logErrorMsg("No matching : API " . $apiName . " #DB# " . $needleFullName);
+            }
+        }
+
+        // Log when no ORCID is found for this author
+        self::logErrorMsg("ORCID not found for author: " . $needleFullName);
+        return null;
+    }
     /**
      * @param $decodeOpenAireResp
      * @param $doi
@@ -223,7 +289,7 @@ class Episciences_OpenAireResearchGraphTools
 
         } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
             self::logErrorMsg($msgLogAuthorFound);
-            if (array_key_exists("@orcid", $authorInfoFromApi)) {
+            if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
                 $decodeAuthor[$keyDbJson]['orcid'] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
                 $flagNewOrcid = 1;
             }
