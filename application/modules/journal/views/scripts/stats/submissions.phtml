@@ -82,7 +82,7 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                             <li>
                                 <?= ucfirst($this->translate('articles acceptés')) ?>
                                 <span class="small">(<?= $this->translate('soumis la même année') ?>)</span>
-                                <code><?= $this->acceptedSubmittedSameYaer ?></code>
+                                <code><?= $this->acceptedSubmittedSameYear ?></code>
 
                             </li>
 
@@ -129,7 +129,7 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
 
 
                         <li>
-                            <?= ucfirst($this->translate('articles acceptés')) ?>
+                            <?= ucfirst($this->translate('articles acceptés non publiés')) ?>
                             <code><?= $this->allAcceptations ?></code>
                             <?php if ($isYear): ?>
                                 <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
