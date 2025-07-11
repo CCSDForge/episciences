@@ -25,7 +25,8 @@
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        <xsl:variable name="description">
+        <!-- Determine primary description for backward compatibility -->
+        <xsl:variable name="primary_description">
             <xsl:choose>
                 <xsl:when test="metadata/oai_dc:dc/dc:description/@xml:lang = $client_language">
                     <xsl:value-of select="metadata/oai_dc:dc/dc:description[@xml:lang = $client_language]"
@@ -76,9 +77,38 @@
                     </i>
                 </p>
 
-                <p class="small force-word-wrap" style="text-align: justify">
-                    <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($description))"/>
-                </p>
+                <!-- Display all available descriptions with language labels -->
+                <xsl:choose>
+                    <xsl:when test="count(metadata/oai_dc:dc/dc:description) > 1">
+                        <!-- Multiple descriptions: show each with language label -->
+                        <xsl:for-each select="metadata/oai_dc:dc/dc:description">
+                            <div class="small force-word-wrap description-multilingual" style="text-align: justify; margin-bottom: 10px;">
+                                <xsl:if test="@xml:lang">
+                                    <strong class="text-muted">
+                                        <xsl:text>[</xsl:text>
+                                        <xsl:choose>
+                                            <xsl:when test="@xml:lang = 'en'">English</xsl:when>
+                                            <xsl:when test="@xml:lang = 'fr'">Français</xsl:when>
+                                            <xsl:when test="@xml:lang = 'es'">Español</xsl:when>
+                                            <xsl:when test="@xml:lang = 'de'">Deutsch</xsl:when>
+                                            <xsl:when test="@xml:lang = 'it'">Italiano</xsl:when>
+                                            <xsl:when test="@xml:lang = 'cpg'">Ελληνικά</xsl:when>
+                                            <xsl:otherwise><xsl:value-of select="@xml:lang"/></xsl:otherwise>
+                                        </xsl:choose>
+                                        <xsl:text>] </xsl:text>
+                                    </strong>
+                                </xsl:if>
+                                <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.))" disable-output-escaping="yes"/>
+                            </div>
+                        </xsl:for-each>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <!-- Single description: show without language label -->
+                        <p class="small force-word-wrap" style="text-align: justify">
+                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($primary_description))"/>
+                        </p>
+                    </xsl:otherwise>
+                </xsl:choose>
 
                 <hr/>
 

@@ -18,6 +18,9 @@ class Episciences_UsersManager
                 $localUsers[$key]['CAS'] = $casUsers[$key];
                 $localUsers[$key]['isCasUserValid'] = (bool)$casUsers[$key]['VALID'];
                 unset ($casUsers[$key]);
+            } else {
+                $localUsers[$key]['CAS'] = null;
+                $localUsers[$key]['isCasUserValid'] = false;
             }
         }
 

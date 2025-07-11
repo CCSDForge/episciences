@@ -4,7 +4,10 @@
 class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_HooksInterface
 {
     public const API_RECORDS_URL = 'https://zenodo.org/api/records';
+    public const OAI_PMH_BASE_URL = 'https://zenodo.org/oai2d';
     public const CONCEPT_IDENTIFIER = 'conceptrecid';
+    public const ENABLE_OAI_ENRICHMENT = true;
+
 
 
     public static function hookCleanXMLRecordInput(array $input): array
@@ -90,31 +93,39 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookApiRecords(array $hookParams): array
     {
+
         if (!isset($hookParams['identifier'])) {
             return [];
         }
 
         try {
+            //Fetch basic REST Data
             $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
+
+            //Zend_Debug::dump($response, "ZENODO API RAW RESPONSE");
+
 
             if (false === $response) {
                 throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
             }
 
-        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-            throw new Ccsd_Error($e->getMessage());
-        }
+            //Enrichment process
+            if ($response) {
+                 self::enrichmentProcess($response);
+             }
+            //Zend_Debug::dump($response, "ZENODO API ENRICHED RESPONSE");
 
-        if ($response) {
-            self::enrichmentProcess($response);
-        }
-
-        if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
-            $response['record'] = Episciences_Repositories_Common::toDublinCore($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]);
-        }
-
+            // Compile enriched data into Dublin Core metadata
+            if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
+                $response['record'] = Episciences_Repositories_Common::toDublinCore($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]);
+              }
+            } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+                throw new Ccsd_Error($e->getMessage());
+            }
+        Zend_Debug::dump($response, "RÉPONSE FINALE COMPLÈTE");
         return $response ?: [];
     }
+
 
     /**
      * @param array $hookParams ['identifier' => '1234', 'response' => []]
@@ -205,20 +216,28 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         return ['conceptIdentifier' => $conceptIdentifier];
     }
 
+//correct to avoid the recursive call to hookApiRecords
     /**
      * @param array $hookParams
      * @return array
      */
     private static function checkResponse(array $hookParams): array
     {
-        $response = [];
-        if (isset($hookParams['identifier']) && empty($hookParams['response'])) {
-            $response = self::hookApiRecords(['identifier' => $hookParams['identifier']]);
-        } elseif (isset($hookParams['response'])) {
-            $response = $hookParams['response'];
+        //check if response is already set in hookParams
+        if (isset($hookParams['response']) && !empty($hookParams['response'])) {
+            return $hookParams['response'];
+        }
+        // If identifier is set, fetch the record from the API
+        if (isset($hookParams['identifier']) && !empty($hookParams['identifier'])) {
+            try {
+                $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
+                return $response ?: [];
+            } catch (Exception $e) {
+                return [];
+            }
         }
 
-        return $response;
+        return [];
 
     }
 
@@ -259,6 +278,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     }
 
     /**
+     * Unified enrichment process that handles both REST and OAI-PMH data
      * @param array $data
      * @return void
      */
@@ -267,13 +287,13 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         if (empty($data)) {
             return;
         }
-
+        // Initialize variables
         $identifiers = [];
         $datestamp = '';
         $xmlElements = [];
         $headers = [];
         $body = [];
-
+        // Process identifiers
         if (isset($data['doi_url'])) {
             $urlIdentifier = $data['doi_url'];
             $headers['identifier'] = $urlIdentifier;
@@ -317,41 +337,85 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             }
         }
 
+
         $dcType = mb_strtolower($type[Episciences_Paper::TITLE_TYPE_INDEX] ??
             $type[Episciences_Paper::TYPE_TYPE_INDEX] ??
             $type[Episciences_Paper::TYPE_SUBTYPE_INDEX]);
 
-
+        // Process authors and affiliations
         if (isset($metadata['creators']) && is_array($metadata['creators'])) {
+            // Get OAI-PMH affiliations with ROR
+            $oaiAffiliations = [];
+            if (isset($data['id'])) {
+                $oaiAffiliations = self::getOAIAffiliations($data['id']);
+                //Zend_Debug::dump(count($oaiAffiliations), "DEBUG: OAI Affiliations result count");
+                //Zend_Debug::dump($oaiAffiliations, "DEBUG: OAI Affiliations content");
+                //Zend_Debug::dump(count($metadata['creators']), "DEBUG: REST authors count");
+            }
 
-            foreach ($metadata['creators'] as $author) {
-
-                $affiliations = [];
-
+            // Process each author with OAI affiliations
+            foreach ($metadata['creators'] as $authorIndex => $author) {
                 if (isset($author['name']) && $author['name'] !== '') {
                     $name = $author['name'];
+                    //Zend_Debug::dump("Processing author $authorIndex: $name", "DEBUG");
+                    //Zend_Debug::dump("Looking for OAI author at index $authorIndex", "DEBUG");
                     $creatorsDc[] = $name;
                     $explodedName = explode(', ', $name);
-                    // Clear memory to avoid carrying over data from the previous author
-                    $tmp = [];
 
+                    $tmp = [];
                     $tmp['fullname'] = $name;
                     $tmp['given'] = isset($explodedName[1]) ? trim($explodedName[1]) : '';
                     $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
 
+                    // Add ORCID if available
                     if (isset($author['orcid']) && $author['orcid'] !== '') {
                         $tmp['orcid'] = $author['orcid'];
                     }
 
-                    if (isset($author['affiliation'])) {
+                    // Process OAI-PMH affiliations with ROR
+                    if (!empty($oaiAffiliations) && isset($oaiAffiliations[$authorIndex])) {
+                        //fwrite(STDERR, "DEBUG: Found OAI author at index $authorIndex\n");
+                        $oaiAuthor = $oaiAffiliations[$authorIndex];
 
-                        $affiliations[] = ['name' => $author['affiliation']];
-                        $tmp['affiliation'] = $affiliations;
+                        if (!empty($oaiAuthor['affiliations'])) {
+                            $authorAffiliations = [];
 
+                            foreach ($oaiAuthor['affiliations'] as $oaiAff) {
+                                $affiliationData = ['name' => $oaiAff['name']];
+
+                                // Add ROR if available
+                                if (isset($oaiAff['ror_id']) && $oaiAff['ror_id']) {
+                                    $affiliationData['id'] = [[
+                                        'id' => 'https://ror.org/' . $oaiAff['ror_id'],
+                                        'id-type' => 'ROR'
+                                    ]];
+                                }
+
+                                $authorAffiliations[] = $affiliationData;
+                            }
+
+                            $tmp['affiliation'] = $authorAffiliations;
+                        }
                     }
 
                     $authors[] = $tmp;
                 }
+            }
+        }
+
+        // Fetch OAI-PMH descriptions if enabled
+        if (self::isOaiEnrichmentEnabled() && isset($data['id'])) {
+            //Zend_Debug::dump("About to call getOAIDescriptions", "DEBUG");
+            $oaiDescriptions = self::getOAIDescriptions($data['id']);
+            //Zend_Debug::dump(count($oaiDescriptions), "DEBUG: OAI Descriptions count");
+            //Zend_Debug::dump($oaiDescriptions, "DEBUG: OAI Descriptions content");
+
+            if (!empty($oaiDescriptions)) {
+                $data['oai_descriptions'] = $oaiDescriptions;
+                $data[Episciences_Repositories_Common::ENRICHMENT]['descriptions'] = $oaiDescriptions;
+                //Zend_Debug::dump("OAI Descriptions added to response", "DEBUG");
+            } else {
+                //Zend_Debug::dump("No OAI Descriptions found", "DEBUG");
             }
         }
 
@@ -407,6 +471,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $body['rights'][] = 'info:eu-repo/semantics/openAccess';
         }
 
+
         $xmlElements['headers'] = $headers;
         $xmlElements['body'] = $body;
 
@@ -424,7 +489,278 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         if (isset($data[Episciences_Repositories_Common::FILES])) {
             $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
         }
+        //Zend_Debug::dump($data, 'DATA FINAL enrichmentProcess - OAI AFFILIATIONS ONLY');
     }
 
+    /**
+     * Get OAI-PMH affiliations with ROR identifiers
+     * @param string $identifier
+     * @return array
+     */
+
+    private static function getOAIAffiliations(string $identifier): array
+    {
+        //Zend_Debug::dump($identifier, "DEBUG: getOAIAffiliations called with identifier");
+        if (empty($identifier)) {
+            //Zend_Debug::dump("Empty identifier", "DEBUG");
+            return [];
+        }
+
+        try {
+            // Build OAI-PMH request URL
+            $oaiUrl = self::OAI_PMH_BASE_URL . '?' . http_build_query([
+                    'verb' => 'GetRecord',
+                    'identifier' => 'oai:zenodo.org:' . $identifier,
+                    'metadataPrefix' => 'datacite'
+                ]);
+
+            //Zend_Debug::dump($oaiUrl, "DEBUG: OAI URL");
+
+            //Zend_Debug::dump("About to call API", "DEBUG");
+            // Make HTTP request
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $oaiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; EpisciencesBot)');
+
+            $xmlResponse = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            //Zend_Debug::dump($httpCode, "DEBUG: HTTP response code");
+
+            if ($xmlResponse === false || $httpCode !== 200) {
+                //Zend_Debug::dump("API call failed", "DEBUG");
+                return [];
+            }
+
+            //Zend_Debug::dump(strlen($xmlResponse), "DEBUG: XML response length");
+            //Zend_Debug::dump(substr($xmlResponse, 0, 500), "DEBUG: XML preview (first 500 chars)");
+
+            $result = self::parseOAIAffiliations($xmlResponse);
+            //Zend_Debug::dump(count($result), "DEBUG: parseOAIAffiliations returned count");
+
+            // Parse XML response for affiliations only
+            return $result;
+
+        } catch (Exception $e) {
+            //Zend_Debug::dump($e->getMessage(), "DEBUG: Exception in getOAIAffiliations");
+            return [];
+        }
+    }
+
+    /**
+     * Parse OAI-PMH XML to extract affiliations with ROR
+     * @param string $xmlString
+     * @return array
+     */
+    private static function parseOAIAffiliations(string $xmlString): array
+    {
+        if (empty($xmlString)) {
+            return [];
+        }
+
+        try {
+            $dom = new DOMDocument();
+            libxml_use_internal_errors(true);
+            $loaded = $dom->loadXML($xmlString);
+
+            if (!$loaded) {
+                return [];
+            }
+
+            $xpath = new DOMXPath($dom);
+            // Register the datacite namespace
+            $xpath->registerNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+            // Get all creator nodes
+            $creatorNodes = $xpath->query('//datacite:creator');
+            $authors = [];
+
+            foreach ($creatorNodes as $creatorNode) {
+                $authors[] = self::parseCreatorNode($xpath, $creatorNode);
+            }
+
+            return $authors;
+
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Parse individual creator node to extract name and affiliations
+     * @param DOMXPath $xpath
+     * @param DOMNode $creatorNode
+     * @return array
+     */
+    private static function parseCreatorNode(DOMXPath $xpath, DOMNode $creatorNode): array
+    {
+        $author = [
+            'name' => '',
+            'given_name' => '',
+            'family_name' => '',
+            'orcid' => '',
+            'affiliations' => []
+        ];
+
+        // Extract creator name
+        $creatorNameNode = $xpath->query('datacite:creatorName', $creatorNode)->item(0);
+        if ($creatorNameNode) {
+            $author['name'] = trim($creatorNameNode->nodeValue);
+        }
+
+        // Extract given name
+        $givenNameNode = $xpath->query('datacite:givenName', $creatorNode)->item(0);
+        if ($givenNameNode) {
+            $author['given_name'] = trim($givenNameNode->nodeValue);
+        }
+
+        // Extract family name
+        $familyNameNode = $xpath->query('datacite:familyName', $creatorNode)->item(0);
+        if ($familyNameNode) {
+            $author['family_name'] = trim($familyNameNode->nodeValue);
+        }
+
+        // Extract ORCID
+        $orcidNode = $xpath->query('datacite:nameIdentifier[@nameIdentifierScheme="ORCID"]', $creatorNode)->item(0);
+        if ($orcidNode) {
+            $author['orcid'] = trim($orcidNode->nodeValue);
+        }
+
+        // Extract affiliations
+        $affiliationNodes = $xpath->query('datacite:affiliation', $creatorNode);
+        //fwrite(STDERR, "DEBUG: Author '" . $author['name'] . "' has " . $affiliationNodes->length . " affiliations\n");
+
+        foreach ($affiliationNodes as $affiliationNode) {
+            $affiliation = [
+                'name' => trim($affiliationNode->nodeValue),
+                'ror_id' => '',
+                'ror_url' => ''
+            ];
+
+            // Check if affiliation has ROR identifier
+            $rorId = $affiliationNode->getAttribute('affiliationIdentifier');
+            $rorScheme = $affiliationNode->getAttribute('affiliationIdentifierScheme');
+
+            if ($rorScheme === 'ROR' && !empty($rorId)) {
+                $affiliation['ror_url'] = $rorId;
+                // Extract ROR ID from URL
+                $affiliation['ror_id'] = basename($rorId);
+            }
+
+            $author['affiliations'][] = $affiliation;
+        }
+
+        return $author;
+    }
+
+    /**
+     * Get OAI-PMH descriptions
+     * @param string $identifier
+     * @return array
+     */
+    private static function getOAIDescriptions(string $identifier): array
+    {
+        //Zend_Debug::dump($identifier, "DEBUG: getOAIDescriptions called with identifier");
+
+        if (empty($identifier)) {
+            //Zend_Debug::dump("Empty identifier", "DEBUG");
+            return [];
+        }
+
+        try {
+            // Build OAI-PMH request URL
+            $oaiUrl = self::OAI_PMH_BASE_URL . '?' . http_build_query([
+                    'verb' => 'GetRecord',
+                    'identifier' => 'oai:zenodo.org:' . $identifier,
+                    'metadataPrefix' => 'datacite'
+                ]);
+
+            //Zend_Debug::dump($oaiUrl, "DEBUG: OAI URL for descriptions");
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $oaiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; EpisciencesBot)');
+
+            $xmlResponse = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            //Zend_Debug::dump($httpCode, "DEBUG: HTTP response code for descriptions");
+
+            if ($xmlResponse === false || $httpCode !== 200) {
+                //Zend_Debug::dump("API call failed for descriptions", "DEBUG");
+                return [];
+            }
+
+            //Zend_Debug::dump(strlen($xmlResponse), "DEBUG: XML response length for descriptions");
+
+            // Parse XML response for ALL descriptions
+            $result = self::parseOAIDescriptions($xmlResponse);
+
+            //Zend_Debug::dump(count($result), "DEBUG: parseOAIDescriptions returned count");
+
+            return $result;
+
+        } catch (Exception $e) {
+            //Zend_Debug::dump($e->getMessage(), "DEBUG: Exception in getOAIDescriptions");
+            return [];
+        }
+    }
+
+    /**
+     * Parse OAI-PMH XML to extract ALL descriptions
+     * @param string $xmlString
+     * @return array
+     */
+    private static function parseOAIDescriptions(string $xmlString): array
+    {
+        if (empty($xmlString)) {
+            return [];
+        }
+
+        try {
+            $abstracts = Episciences_Tools::xpath(
+                $xmlString,
+                '//*[local-name()="description"]',
+                true,
+                true
+            );
+
+            $result = [];
+
+            if (is_array($abstracts) && count($abstracts) > 0) {
+                foreach ($abstracts as $key => $content) {
+                    $description = [
+                        'text' => $content,
+                        'type' => 'Abstract',
+                        'language' => is_numeric($key) ? 'en' : $key
+                    ];
+
+                    $result[] = $description;
+                }
+            }
+
+            return $result;
+
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Check if OAI-PMH enrichment is enabled
+     * @return bool
+     */
+    private static function isOaiEnrichmentEnabled(): bool
+    {
+        return self::ENABLE_OAI_ENRICHMENT;
+    }
 
 }
