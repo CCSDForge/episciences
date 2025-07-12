@@ -323,7 +323,7 @@ class Episciences_Tools
      * @return bool
      * @throws Zend_Exception
      */
-    public static function getLanguageLabel($code, $locale = null): bool
+    public static function getLanguageLabel($code, $locale = null)
     {
         if (!isset($locale)) {
             $locale = Zend_Registry::get('lang');

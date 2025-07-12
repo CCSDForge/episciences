@@ -102,9 +102,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             //Fetch basic REST Data
             $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams['identifier']);
 
-            //Zend_Debug::dump($response, "ZENODO API RAW RESPONSE");
-
-
             if (false === $response) {
                 throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
             }
@@ -113,7 +110,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             if ($response) {
                  self::enrichmentProcess($response);
              }
-            //Zend_Debug::dump($response, "ZENODO API ENRICHED RESPONSE");
 
             // Compile enriched data into Dublin Core metadata
             if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
@@ -122,7 +118,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             } catch (\GuzzleHttp\Exception\GuzzleException $e) {
                 throw new Ccsd_Error($e->getMessage());
             }
-        Zend_Debug::dump($response, "RÉPONSE FINALE COMPLÈTE");
         return $response ?: [];
     }
 
@@ -216,7 +211,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         return ['conceptIdentifier' => $conceptIdentifier];
     }
 
-//correct to avoid the recursive call to hookApiRecords
+    //correct to avoid the recursive call to hookApiRecords
     /**
      * @param array $hookParams
      * @return array
@@ -348,17 +343,12 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $oaiAffiliations = [];
             if (isset($data['id'])) {
                 $oaiAffiliations = self::getOAIAffiliations($data['id']);
-                //Zend_Debug::dump(count($oaiAffiliations), "DEBUG: OAI Affiliations result count");
-                //Zend_Debug::dump($oaiAffiliations, "DEBUG: OAI Affiliations content");
-                //Zend_Debug::dump(count($metadata['creators']), "DEBUG: REST authors count");
             }
 
             // Process each author with OAI affiliations
             foreach ($metadata['creators'] as $authorIndex => $author) {
                 if (isset($author['name']) && $author['name'] !== '') {
                     $name = $author['name'];
-                    //Zend_Debug::dump("Processing author $authorIndex: $name", "DEBUG");
-                    //Zend_Debug::dump("Looking for OAI author at index $authorIndex", "DEBUG");
                     $creatorsDc[] = $name;
                     $explodedName = explode(', ', $name);
 
@@ -374,7 +364,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
                     // Process OAI-PMH affiliations with ROR
                     if (!empty($oaiAffiliations) && isset($oaiAffiliations[$authorIndex])) {
-                        //fwrite(STDERR, "DEBUG: Found OAI author at index $authorIndex\n");
                         $oaiAuthor = $oaiAffiliations[$authorIndex];
 
                         if (!empty($oaiAuthor['affiliations'])) {
@@ -404,34 +393,41 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         // Fetch OAI-PMH descriptions if enabled
+        $oaiDescriptions = [];
         if (self::isOaiEnrichmentEnabled() && isset($data['id'])) {
-            //Zend_Debug::dump("About to call getOAIDescriptions", "DEBUG");
             $oaiDescriptions = self::getOAIDescriptions($data['id']);
-            //Zend_Debug::dump(count($oaiDescriptions), "DEBUG: OAI Descriptions count");
-            //Zend_Debug::dump($oaiDescriptions, "DEBUG: OAI Descriptions content");
 
             if (!empty($oaiDescriptions)) {
                 $data['oai_descriptions'] = $oaiDescriptions;
                 $data[Episciences_Repositories_Common::ENRICHMENT]['descriptions'] = $oaiDescriptions;
-                //Zend_Debug::dump("OAI Descriptions added to response", "DEBUG");
-            } else {
-                //Zend_Debug::dump("No OAI Descriptions found", "DEBUG");
             }
         }
 
         $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
 
-        if (isset($metadata['description'])) {
-            $desValue = Episciences_Tools::epi_html_decode($metadata['description'], ['HTML.AllowedElements' => 'p']);
-            $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
-        } else {
-            $value = '';
-        }
+        $description = [];
 
-        $description[] = [
-            'value' => $value, // (exp. #10027122)
-            'language' => $language
-        ];
+        if (!empty($oaiDescriptions)) {
+            // Utiliser les descriptions enrichies OAI-PMH
+            foreach ($oaiDescriptions as $oaiDesc) {
+                $description[] = [
+                    'value' => $oaiDesc['text'] ?? '',
+                    'language' => $oaiDesc['language'] ?? $language
+                ];
+            }
+        } else {
+            if (isset($metadata['description'])) {
+                $desValue = Episciences_Tools::epi_html_decode($metadata['description'], ['HTML.AllowedElements' => 'p']);
+                $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
+            } else {
+                $value = '';
+            }
+
+            $description[] = [
+                'value' => $value, // (exp. #10027122)
+                'language' => $language
+            ];
+        }
 
         $body['title'] = $metadata['title'] ?? '';
         $body['creator'] = $creatorsDc;
@@ -489,7 +485,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         if (isset($data[Episciences_Repositories_Common::FILES])) {
             $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
         }
-        //Zend_Debug::dump($data, 'DATA FINAL enrichmentProcess - OAI AFFILIATIONS ONLY');
     }
 
     /**
@@ -500,9 +495,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
     private static function getOAIAffiliations(string $identifier): array
     {
-        //Zend_Debug::dump($identifier, "DEBUG: getOAIAffiliations called with identifier");
         if (empty($identifier)) {
-            //Zend_Debug::dump("Empty identifier", "DEBUG");
             return [];
         }
 
@@ -513,40 +506,29 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                     'identifier' => 'oai:zenodo.org:' . $identifier,
                     'metadataPrefix' => 'datacite'
                 ]);
-
-            //Zend_Debug::dump($oaiUrl, "DEBUG: OAI URL");
-
-            //Zend_Debug::dump("About to call API", "DEBUG");
             // Make HTTP request
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $oaiUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; EpisciencesBot)');
+            try {
+                $xmlResponse = Episciences_Tools::callApi($oaiUrl, [
+                    'timeout' => 30,
+                    'allow_redirects' => true,
+                    'headers' => [
+                        'User-Agent' => 'CCSD Episciences support@episciences.org',
+                        'Content-type' => 'application/xml'
+                    ]
+                ]);
 
-            $xmlResponse = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            //Zend_Debug::dump($httpCode, "DEBUG: HTTP response code");
-
-            if ($xmlResponse === false || $httpCode !== 200) {
-                //Zend_Debug::dump("API call failed", "DEBUG");
+                if ($xmlResponse === false || empty($xmlResponse)) {
+                    return [];
+                }
+            } catch (Exception $e) {
                 return [];
             }
 
-            //Zend_Debug::dump(strlen($xmlResponse), "DEBUG: XML response length");
-            //Zend_Debug::dump(substr($xmlResponse, 0, 500), "DEBUG: XML preview (first 500 chars)");
-
             $result = self::parseOAIAffiliations($xmlResponse);
-            //Zend_Debug::dump(count($result), "DEBUG: parseOAIAffiliations returned count");
-
             // Parse XML response for affiliations only
             return $result;
 
         } catch (Exception $e) {
-            //Zend_Debug::dump($e->getMessage(), "DEBUG: Exception in getOAIAffiliations");
             return [];
         }
     }
@@ -632,7 +614,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         // Extract affiliations
         $affiliationNodes = $xpath->query('datacite:affiliation', $creatorNode);
-        //fwrite(STDERR, "DEBUG: Author '" . $author['name'] . "' has " . $affiliationNodes->length . " affiliations\n");
 
         foreach ($affiliationNodes as $affiliationNode) {
             $affiliation = [
@@ -664,10 +645,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     private static function getOAIDescriptions(string $identifier): array
     {
-        //Zend_Debug::dump($identifier, "DEBUG: getOAIDescriptions called with identifier");
-
         if (empty($identifier)) {
-            //Zend_Debug::dump("Empty identifier", "DEBUG");
             return [];
         }
 
@@ -679,37 +657,27 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                     'metadataPrefix' => 'datacite'
                 ]);
 
-            //Zend_Debug::dump($oaiUrl, "DEBUG: OAI URL for descriptions");
+            try {
+                $xmlResponse = Episciences_Tools::callApi($oaiUrl, [
+                    'timeout' => 30,
+                    'allow_redirects' => true,
+                    'headers' => [
+                        'User-Agent' => 'CCSD Episciences support@episciences.org',
+                        'Content-type' => 'application/xml'
+                    ]
+                ]);
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $oaiUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; EpisciencesBot)');
-
-            $xmlResponse = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            //Zend_Debug::dump($httpCode, "DEBUG: HTTP response code for descriptions");
-
-            if ($xmlResponse === false || $httpCode !== 200) {
-                //Zend_Debug::dump("API call failed for descriptions", "DEBUG");
+                if ($xmlResponse === false || empty($xmlResponse)) {
+                    return [];
+                }
+            } catch (Exception $e) {
                 return [];
             }
 
-            //Zend_Debug::dump(strlen($xmlResponse), "DEBUG: XML response length for descriptions");
-
             // Parse XML response for ALL descriptions
             $result = self::parseOAIDescriptions($xmlResponse);
-
-            //Zend_Debug::dump(count($result), "DEBUG: parseOAIDescriptions returned count");
-
             return $result;
-
         } catch (Exception $e) {
-            //Zend_Debug::dump($e->getMessage(), "DEBUG: Exception in getOAIDescriptions");
             return [];
         }
     }
@@ -728,7 +696,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         try {
             $abstracts = Episciences_Tools::xpath(
                 $xmlString,
-                '//*[local-name()="description"]',
+                '//*[local-name()="description"][@descriptionType="Abstract"]',
                 true,
                 true
             );

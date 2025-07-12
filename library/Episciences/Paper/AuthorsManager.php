@@ -12,12 +12,10 @@ class Episciences_Paper_AuthorsManager
 
     public static function formatAuthorEnrichmentForViewByPaper($paperId): array
     {
-        //Zend_Debug::dump($paperId, "PAPER ID");
         $decodedauthor = [];
         foreach (self::getAuthorByPaperId($paperId) as $value) {
             $decodedauthor = json_decode($value['authors'], true);
         }
-        //Zend_Debug::dump($decodedauthor, "DECODED AUTHORS FROM DB");
         $templateString = "";
         $sizeArr = count($decodedauthor);
         //create TMP text to save orcid for view popup Jquery
@@ -50,7 +48,6 @@ class Episciences_Paper_AuthorsManager
                     $tmpArrayAfUrl[] = $tmpInfoAffi;
                 }
             }
-            //Zend_Debug::dump($tmpArrayAfUrl, "FORMATTED AFFILIATIONS");
             // make unique array of url and affiliation and reindex it
             $tmpArrayAfUrl = array_map("unserialize", array_unique(array_map("serialize", $tmpArrayAfUrl)));
             $i = 0;
@@ -58,7 +55,6 @@ class Episciences_Paper_AuthorsManager
                 $uniqueAffi[$i] = $value;
                 $i++;
             }
-            //Zend_Debug::dump($uniqueAffi, "UNIQUE AFFILIATIONS");
             foreach ($decodedauthor as $key => $value) {
                 $fullname = html_entity_decode(htmlspecialchars($value['fullname']));
                 $authorsList .= $fullname;
@@ -114,7 +110,6 @@ class Episciences_Paper_AuthorsManager
                 }
 
             }
-            //Zend_Debug::dump($uniqueAffi, "UNIQUE AFFI BEFORE HTML GENERATION");
             //List of affiliation
 
             $stringListAffi .= '<ul class="list-unstyled">';
@@ -136,11 +131,9 @@ class Episciences_Paper_AuthorsManager
 
     public static function getAuthorByPaperId($paperId): array
     {
-        //Zend_Debug::dump($paperId, "GET AUTHOR BY PAPER ID - PAPER ID");
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_PAPER_AUTHORS)->where('PAPERID = ?', $paperId); // prevent empty row
         $result = $db->fetchAssoc($select); //debug result
-        //Zend_Debug::dump($result, "RAW AUTHORS FROM DATABASE");
         return $db->fetchAssoc($select);
     }
 

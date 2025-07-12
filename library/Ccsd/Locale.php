@@ -12,7 +12,8 @@ class Ccsd_Locale
     static $_topListLanguages = array('en', 'fr', 'de', 'it', 'es');
 
     static protected $_accepted3lettersLanguage = [
-        'sah' => 'Yakoute languages'
+        'sah' => 'Yakoute languages',
+        'cpg' => 'Cappadocian Greek'
     ];
     protected $_conversionTable = array(
         "aar" => "aa",

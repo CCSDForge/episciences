@@ -3209,22 +3209,17 @@ class Episciences_Paper
         }
         //author with orcid
         $authorEnrich = Episciences_Paper_AuthorsManager::formatAuthorEnrichmentForViewByPaper($this->_paperId);
-        //Zend_Debug::dump($this->_paperId, "PAPER updateXML - PAPER ID");
-        //Zend_Debug::dump($authorEnrich, "PAPER updateXML - AUTHOR ENRICHMENT RESULT");
-
         if (!empty($authorEnrich['template'])) {
             $node->appendChild($dom->createElement('authorEnriched', $authorEnrich['template']));
             $node->appendChild($dom->createElement('authorsOrcid', $authorEnrich['orcid']));
             $node->appendChild($dom->createElement('listAffi', $authorEnrich['listAffi']));
             $node->appendChild($dom->createElement('listAuthors', $authorEnrich['authorsList']));
-            //Zend_Debug::dump("SUCCESS", "AUTHOR ENRICH ADDED TO XML");
 
         } else {
             $node->appendChild($dom->createElement('authorEnriched', ""));
             $node->appendChild($dom->createElement('authorsOrcid', ""));
             $node->appendChild($dom->createElement('listAffi', ""));
             $node->appendChild($dom->createElement('listAuthors', ""));
-            //Zend_Debug::dump("EMPTY", "AUTHOR ENRICH IS EMPTY - ADDED EMPTY VALUES");
         }
 
         // project Funding

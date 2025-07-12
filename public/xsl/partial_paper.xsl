@@ -25,8 +25,7 @@
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        <!-- Determine primary description for backward compatibility -->
-        <xsl:variable name="primary_description">
+        <xsl:variable name="description">
             <xsl:choose>
                 <xsl:when test="metadata/oai_dc:dc/dc:description/@xml:lang = $client_language">
                     <xsl:value-of select="metadata/oai_dc:dc/dc:description[@xml:lang = $client_language]"
@@ -86,15 +85,7 @@
                                 <xsl:if test="@xml:lang">
                                     <strong class="text-muted">
                                         <xsl:text>[</xsl:text>
-                                        <xsl:choose>
-                                            <xsl:when test="@xml:lang = 'en'">English</xsl:when>
-                                            <xsl:when test="@xml:lang = 'fr'">Français</xsl:when>
-                                            <xsl:when test="@xml:lang = 'es'">Español</xsl:when>
-                                            <xsl:when test="@xml:lang = 'de'">Deutsch</xsl:when>
-                                            <xsl:when test="@xml:lang = 'it'">Italiano</xsl:when>
-                                            <xsl:when test="@xml:lang = 'cpg'">Ελληνικά</xsl:when>
-                                            <xsl:otherwise><xsl:value-of select="@xml:lang"/></xsl:otherwise>
-                                        </xsl:choose>
+                                        <xsl:value-of select="php:function('strtoupper', string(@xml:lang))"/>
                                         <xsl:text>] </xsl:text>
                                     </strong>
                                 </xsl:if>
@@ -105,7 +96,7 @@
                     <xsl:otherwise>
                         <!-- Single description: show without language label -->
                         <p class="small force-word-wrap" style="text-align: justify">
-                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($primary_description))"/>
+                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($description))"/>
                         </p>
                     </xsl:otherwise>
                 </xsl:choose>

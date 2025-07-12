@@ -1877,7 +1877,6 @@ class Episciences_Submit
 
     public static function enrichmentProcess(Episciences_Paper $paper, array $enrichment = []): int
     {
-        //Zend_Debug::dump($enrichment, "ENRICHMENT PROCESS - INPUT");
 
         if (empty ($enrichment)) {
             return 0;

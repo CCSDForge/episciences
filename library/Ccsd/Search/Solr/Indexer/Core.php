@@ -180,7 +180,7 @@ class Ccsd_Search_Solr_Indexer_Core extends Ccsd_Runable
         if ($file) {
             $indexer -> setOrigin($UPDATE);
             $arrayOfDocId = $indexer->getListOfDocIdToIndexFromFile($file);
-            Zend_Debug::dump($arrayOfDocId);
+            //Zend_Debug::dump($arrayOfDocId);
             $indexer->processArrayOfDocid($arrayOfDocId);
             unset($arrayOfDocId);
             return;
