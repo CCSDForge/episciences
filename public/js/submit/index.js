@@ -85,7 +85,14 @@ $(document).ready(function () {
         identifier = urlSearch.replace("?persistentId=", "");
       }
 
-      identifier = identifier.replace(/v\d+|(&version=\d+).\d+/, ""); // Delete VERSION from IDENTIFIER
+      if (identifier.match(/^\d{4}\.\d{4,5}v\d+$/)) {
+        // arXiv format: remove version suffix (e.g., "2301.12345v1" → "2301.12345")
+        identifier = identifier.replace(/v\d+$/, "");
+      } else {
+        // Other repositories (HAL, etc.): remove various version formats
+        identifier = identifier.replace(/v\d+|(&version=\d+).\d+/, ""); // Delete VERSION from IDENTIFIER
+      }
+
       $(this).val(identifier);
     }
   });
