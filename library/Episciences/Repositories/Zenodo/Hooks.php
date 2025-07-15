@@ -118,6 +118,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             } catch (\GuzzleHttp\Exception\GuzzleException $e) {
                 throw new Ccsd_Error($e->getMessage());
             }
+//Zend_Debug::dump($response);
         return $response ?: [];
     }
 
@@ -398,7 +399,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $oaiDescriptions = self::getOAIDescriptions($data['id']);
 
             if (!empty($oaiDescriptions)) {
-                $data['oai_descriptions'] = $oaiDescriptions;
+                //$data['oai_descriptions'] = $oaiDescriptions;
                 $data[Episciences_Repositories_Common::ENRICHMENT]['descriptions'] = $oaiDescriptions;
             }
         }
