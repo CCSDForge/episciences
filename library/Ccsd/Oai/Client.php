@@ -84,7 +84,6 @@ class Ccsd_Oai_Client {
             $options[CURLOPT_USERAGENT] = $userAgent;
 			$url = $this->baseUrl.'?verb=GetRecord&identifier='.$identifier.'&metadataPrefix='.$format;
 			$curlResponse = (string)Ccsd_Tools::curlSourceGetContents($url, $options);
-            error_log($url);
 
             if(empty($curlResponse)) {
                 throw new Ccsd_Error("No body returned");
