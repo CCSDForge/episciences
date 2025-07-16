@@ -71,31 +71,51 @@ $(document).ready(function () {
   // Extracting the ID from URL
 
   $searchDocDocId.change(function () {
-    let input = $(this).val();
+    let input = $(this).val().trim();
+    if (!input) {
+      return;
+    }
+    let processedIdentifier;
 
     if (isValidHttpUrl(input)) {
-      let url = new URL(input);
+      processedIdentifier = processUrlIdentifier(input);
+    } else {
+      processedIdentifier = processDirectIdentifier(input);
+    }
+    $(this).val(processedIdentifier);
+  });
+
+  function processUrlIdentifier(input) {
+    try {
+      const url = new URL(input);
       let identifier = url.pathname;
-      let urlSearch = url.search;
+      const urlSearch = url.search;
 
       if (!$isDataverseRepo && urlSearch === "") {
-        identifier = identifier.replace(/\/\w+\//, "");
-        identifier = identifier.replace(/^\//, "");
+        identifier = identifier.replace(/\/\w+\//, "").replace(/^\//, "");
       } else {
         identifier = urlSearch.replace("?persistentId=", "");
       }
 
-      if (identifier.match(/^\d{4}\.\d{4,5}v\d+$/)) {
-        // arXiv format: remove version suffix (e.g., "2301.12345v1" → "2301.12345")
-        identifier = identifier.replace(/v\d+$/, "");
-      } else {
-        // Other repositories (HAL, etc.): remove various version formats
-        identifier = identifier.replace(/v\d+|(&version=\d+).\d+/, ""); // Delete VERSION from IDENTIFIER
-      }
-
-      $(this).val(identifier);
+      return removeVersionFromIdentifier(identifier);
+    } catch (error) {
+      return input;
     }
-  });
+  }
+
+  function processDirectIdentifier(input) {
+    return removeVersionFromIdentifier(input);
+  }
+
+//Removes version information from an identifier string.
+  function removeVersionFromIdentifier(identifier) {
+    return identifier
+        // Remove "v1", "v2", etc. at the end
+        .replace(/v\d+$/, '')
+        // Remove "v[1]", "v[2]", etc. at the end
+        .replace(/v\[\d+\]$/, '')
+  }
+
 
   function checkDataverse() {
     let isDataverseRequest = ajaxRequest(JS_PREFIX_URL + "submit/ajaxisdataverse", {
