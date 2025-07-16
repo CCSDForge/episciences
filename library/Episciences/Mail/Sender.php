@@ -153,7 +153,9 @@ class Episciences_Mail_Sender
             $mailer = new PHPMailer(true);
             $mailer->CharSet = PHPMailer::CHARSET_UTF8;
             $mailer->XMailer = DOMAIN;
-            $mailer->isMail();
+            $mailer->isSMTP();
+            $mailer->Host = 'localhost';
+            $mailer->SMTPAuth = false;
 
             // Initialisation *******************************************************
             $subject = ($this->mail->subject) ? htmlspecialchars_decode($this->mail->subject) : '';
