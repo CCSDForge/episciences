@@ -71,24 +71,49 @@ $(document).ready(function () {
   // Extracting the ID from URL
 
   $searchDocDocId.change(function () {
-    let input = $(this).val();
+     input = $(this).val().trim();
+    if (!input) {
+      return;
+    }
+
+    let processedIdentifier;
 
     if (isValidHttpUrl(input)) {
-      let url = new URL(input);
+      processedIdentifier = processUrlIdentifier(input);
+    } else {
+      processedIdentifier = processDirectIdentifier(input);
+    }
+    $(this).val(processedIdentifier);
+  });
+
+  function processUrlIdentifier(input) {
+    try {
+      const url = new URL(input);
       let identifier = url.pathname;
-      let urlSearch = url.search;
+      const urlSearch = url.search;
 
       if (!$isDataverseRepo && urlSearch === "") {
-        identifier = identifier.replace(/\/\w+\//, "");
-        identifier = identifier.replace(/^\//, "");
+        identifier = identifier.replace(/\/\w+\//, "").replace(/^\//, "");
       } else {
         identifier = urlSearch.replace("?persistentId=", "");
       }
 
-      identifier = identifier.replace(/v\d+|(&version=\d+).\d+/, ""); // Delete VERSION from IDENTIFIER
-      $(this).val(identifier);
+      return removeVersionFromIdentifier(identifier);
+    } catch (error) {
+      return input;
     }
-  });
+    }
+
+  function processDirectIdentifier(input) {
+    return removeVersionFromIdentifier(input);
+  }
+
+//Removes version information from an identifier string.
+  function removeVersionFromIdentifier(identifier) {
+    // Remove "v1", "v2", etc. at the end
+    return identifier.replace(/v\d+$/, '')
+  }
+
 
   function checkDataverse() {
     let isDataverseRequest = ajaxRequest(JS_PREFIX_URL + "submit/ajaxisdataverse", {
