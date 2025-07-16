@@ -172,55 +172,49 @@ class StatsController extends Episciences_Controller_Action
         $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null; // all review submissions
         $totalByYear = 0;
 
+
         foreach ($yearCategories as $year) {
 
             $nbRefusals = $nbAcceptations = $nbOthers = 0;
 
-            $nbPublications = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['publications'] ?? 0;
-            $allPublications += $nbPublications; // l'ensemble de la revue
+            $submissionsByYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year] ?? [];
+            //$allPublications += $nbPublications; // l'ensemble de la revue
 
             // stats collectées par rapport à la date de modification
-            $moreDetails = $details[self::NB_SUBMISSIONS][self::MORE_DETAILS] ?? [];
-            $submissionsByYearResponse = $moreDetails[$year] ?? [];
-
-            foreach ($submissionsByYearResponse as $values) {
-
-                foreach ($values as $statusLabel => $nbSubmissions) {
-
-                    if ($statusLabel === 'strictly_accepted') {
-                        $statusLabel = str_replace('strictly_', '', $statusLabel);
-                    }
-
-                    $status = array_search($statusLabel, Episciences_Paper::STATUS_DICTIONARY, true);
-
-                    if ($status === false) {
-                        $logger?->warning("STATS: UNDEFINED_STATUS_DICTIONARY_LABEL $statusLabel");
-                    }
+            //$moreDetails = $details[self::NB_SUBMISSIONS][self::MORE_DETAILS] ?? [];
+            //$submissionsByYearResponse = $moreDetails[$year] ?? [];
 
 
-                    if ($status === Episciences_Paper::STATUS_PUBLISHED) {
-                        continue;
-                    }
+            if (is_array($submissionsByYear ) )  {
 
-                    if ($status === Episciences_Paper::STATUS_REFUSED) {
-                        $allRefusals += $nbSubmissions[self::NB_SUBMISSIONS];
-                        $nbRefusals += $nbSubmissions[self::NB_SUBMISSIONS];
-                    } elseif (in_array($status, self::ACCEPTED_SUBMISSIONS, true)) {
-                        $allAcceptations += $nbSubmissions[self::NB_SUBMISSIONS];
-                        $nbAcceptations += $nbSubmissions[self::NB_SUBMISSIONS];
-                    } else {  // others status (except published status)
-                        $allOtherStatus += $nbSubmissions[self::NB_SUBMISSIONS];
-                        $nbOthers += $nbSubmissions[self::NB_SUBMISSIONS];
-                    }
+                // Get the number of publications directly
+                $nbPublications = $submissionsByYear['publications'] ?? 0;
+                $allPublications += $nbPublications;
 
-                    unset($status, $nbSubmissions);
-                }
+                // Get the total number of submissions directly
+                $totalSubmissions = $submissionsByYear['submissions'] ?? 0;
+
+                // Get the number of acceptances directly
+                $nbAcceptations = ($submissionsByYear['acceptedSubmittedSameYear'] ?? 0) - $nbPublications;
+                $nbAcceptations = max(0, $nbAcceptations);
+                $allAcceptations += $nbAcceptations;
+
+
+                // Get the number of refusals from the value structure
+                $nbRefusals = $dashboard['value']['totalRefused'] ?? 0;
+                $allRefusals += $nbRefusals;
+
+                // Calculate other statuses
+                $nbOthers = $totalSubmissions - $nbPublications - $nbAcceptations - $nbRefusals;
+
+                // Ensure nbOthers doesn't become negative
+                $nbOthers = max(0, $nbOthers);
+                $allOtherStatus += $nbOthers;
 
                 $totalByYear = $nbRefusals + $nbAcceptations + $nbOthers;
 
             }
 
-            $totalByYear += $nbPublications;
 
             $series[self::SUBMISSIONS_BY_YEAR]['submissions'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['submissions'] ?? 0; // only submissions (1st version) of the current year
             $series['acceptationByYear']['acceptations'][] = $nbAcceptations;
@@ -228,7 +222,6 @@ class StatsController extends Episciences_Controller_Action
             $series['publicationsByYear']['publications'][] = $nbPublications;
             $series['otherStatusByYear']['otherStatus'][] = $nbOthers; //totalNumberOfPapersAccepted
             $series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'] ?? 0;
-
 
             if ($totalByYear) {
                 $series['acceptationByYear']['percentage'][] = round($nbAcceptations / $totalByYear * 100, 2); //'acceptedSubmittedSameYear'
@@ -262,17 +255,19 @@ class StatsController extends Episciences_Controller_Action
             $allRefusals = $series['refusalsByYear']['refusals'][0];
             $allAcceptations = $series['acceptationByYear']['acceptations'][0];
             $allOtherStatus = $series['otherStatusByYear']['otherStatus'][0];
-
-            if ($totalByYear) {
-                $publicationsPercentage = $series['publicationsByYear']['percentage'][0];
-                $refusalsPercentage = $series['refusalsByYear']['percentage'][0];
-                $acceptationsPercentage = $series['acceptationByYear']['percentage'][0];
-                $otherStatusPercentage = $series['otherStatusByYear']['percentage'][0];
+            $totalStatuses = $allPublications + $allAcceptations + $allRefusals + $allOtherStatus;
+            if ($totalStatuses > 0) {
+                $publicationsPercentage = round($allPublications / $totalStatuses * 100, 2);
+                $refusalsPercentage = round($allRefusals/ $totalStatuses * 100, 2);
+                $acceptationsPercentage = round( $allAcceptations / $totalStatuses * 100, 2);
+                $otherStatusPercentage = round($allOtherStatus / $totalStatuses * 100, 2);
+            } else {
+                $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = $otherStatusPercentage = 0;
             }
 
             unset($totalByYear);
 
-            $this->view->acceptedSubmittedSameYaer = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'];
+            $this->view->acceptedSubmittedSameYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'];
             $this->view->acceptationRateSubmittedSameYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptanceRate'];
 
 
@@ -283,10 +278,11 @@ class StatsController extends Episciences_Controller_Action
             $otherStatusPercentage = round($allOtherStatus / $allSubmissions * 100, 2);
         }
 
+
         $label1 = ucfirst($this->view->translate('soumissions'));
         $label2 = ucfirst($this->view->translate('articles publiés'));
         $label3 = ucfirst($this->view->translate('articles refusés'));
-        $label4 = ucfirst($this->view->translate('articles acceptés'));
+        $label4 = ucfirst($this->view->translate('articles acceptés non publiés'));
         $label5 = ucfirst($this->view->translate('autres statuts'));
         $label6 = ucfirst($this->view->translate('articles acceptés (soumis la même année)'));
 
@@ -436,7 +432,7 @@ class StatsController extends Episciences_Controller_Action
 
         $headers = [
             'Accept' => 'application/json',
-            'Content-type' => 'application/json',
+            'Content-type' => 'application/json'
         ];
 
         $gOptions = [
