@@ -71,10 +71,11 @@ $(document).ready(function () {
   // Extracting the ID from URL
 
   $searchDocDocId.change(function () {
-    let input = $(this).val().trim();
+     input = $(this).val().trim();
     if (!input) {
       return;
     }
+
     let processedIdentifier;
 
     if (isValidHttpUrl(input)) {
@@ -108,11 +109,8 @@ $(document).ready(function () {
 
 //Removes version information from an identifier string.
   function removeVersionFromIdentifier(identifier) {
-    return identifier
-        // Remove "v1", "v2", etc. at the end
-        .replace(/v\d+$/, '')
-        // Remove "v[1]", "v[2]", etc. at the end
-        .replace(/v\[\d+\]$/, '')
+    // Remove "v1", "v2", etc. at the end
+    return identifier.replace(/v\d+$/, '')
   }
 
 
