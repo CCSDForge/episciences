@@ -12,6 +12,7 @@ return [
     'https://creativecommons.org/licenses/by-nd/2.5' => 'Attribution - Pas de Modification 2.5 Générique (CC BY-ND 2.5)',
     'https://creativecommons.org/licenses/by-nd/3.0' => 'Attribution - Pas de Modification 3.0 non transposé (CC BY-ND 3.0)',
     'https://creativecommons.org/licenses/by-nd/4.0' => 'Attribution - Pas de Modification 4.0 International (CC BY-ND 4.0)',
+    'https://creativecommons.org/licenses/cc-by-4.0' => 'Creative Commons Attribution 4.0 International (CC BY 4.0)',
     'https://creativecommons.org/licenses/by-nd-nc/1.0' => 'Attribution - Pas de Modification - Pas d\'Utilisation Commerciale 1.0 Générique (CC BY-ND-NC 1.0)',
     'https://creativecommons.org/licenses/by-nc-nd/2.0' => 'Attribution - Pas d\'Utilisation Commerciale - Pas de Modification 2.0 Générique (CC BY-NC-ND 2.0)',
     'https://creativecommons.org/licenses/by-nc-nd/2.5' => 'Attribution - Pas d\'Utilisation Commerciale - Pas de Modification 2.5 Générique (CC BY-NC-ND 2.5)',
@@ -37,6 +38,10 @@ return [
     'info:eu-repo/semantics/closedAccess' => 'Accès fermé',
     'info:eu-repo/semantics/embargoedAccess' => 'Accès sous embargo',
     'info:eu-repo/semantics/restrictedAccess' => 'Accès restreint',
-    'info:eu-repo/semantics/openAccess' => 'Accès ouvert'
+    'info:eu-repo/semantics/openAccess' => 'Accès ouvert',
+    'http://hal.archives-ouvertes.fr/licences/publicDomain/'=> 'HAL - Public Domain',
+    'http://creativecommons.org/licenses/by-nc-nd/'=> 'Attribution - Pas d\'Utilisation Commerciale - Pas de Modification 3.0 non transposé (CC BY-NC-ND)',
+    'http://creativecommons.org/licenses/by-nc/'=> 'Creative Commons Attribution International (CC BY-NC)',
+    'https://creativecommons.org/licenses/cc-by-4.0' => 'Creative Commons Attribution 4.0 International (CC BY 4.0)',
 ];
 
