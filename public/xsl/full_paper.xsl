@@ -172,36 +172,46 @@
                 </xsl:if>
 
                 <div class="paper-actions" style="margin-bottom: 10px;">
-                    <a target="_blank">
-                        <xsl:attribute name="href">
-                            <xsl:choose>
-                                <xsl:when test="episciences/status = 16">
-                                    <xsl:value-of select="concat('/', episciences/id, '/pdf')"/>
-                                </xsl:when>
-                                <xsl:otherwise>
-                                    <xsl:value-of select="episciences/paperURL"/>
-                                </xsl:otherwise>
-                            </xsl:choose>
-                        </xsl:attribute>
-                        <xsl:if test="episciences/notHasHook/text() = '1'">
-                            <button class="btn btn-primary btn" style="margin-right: 5px">
-                                <span class="fas fa-file-download" style="margin-right: 5px"/>
-                                <xsl:value-of select="php:function('Ccsd_Tools::translate', &quot;Télécharger l'article&quot;)"/>
-                            </button>
-                        </xsl:if>
-                    </a>
+                    <xsl:if test="episciences">
+                        <xsl:choose>
+                            <xsl:when test="episciences/tmp/text() = '1'">
+                                <xsl:variable name="docUrls"
+                                              select="php:function('Episciences_Tools::buildHtmlTmpDocUrls', episciences/id)"/>
+                                <xsl:value-of select=" $docUrls" disable-output-escaping="yes"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <a target="_blank">
+                                    <xsl:attribute name="href">
+                                        <xsl:choose>
+                                            <xsl:when test="episciences/status = 16">
+                                                <xsl:value-of select="concat('/', episciences/id, '/pdf')"/>
+                                            </xsl:when>
+                                            <xsl:otherwise>
+                                                <xsl:value-of select="episciences/paperURL"/>
+                                            </xsl:otherwise>
+                                        </xsl:choose>
+                                    </xsl:attribute>
+                                    <xsl:if test="episciences/notHasHook/text() = '1'">
+                                        <button class="btn btn-primary btn" style="margin-right: 5px">
+                                            <span class="fas fa-file-download" style="margin-right: 5px"/>
+                                            <xsl:value-of select="php:function('Ccsd_Tools::translate', &quot;Télécharger l'article&quot;)"/>
+                                        </button>
+                                    </xsl:if>
+                                </a>
 
-                    <xsl:if test="episciences/docURL != episciences/paperURL">
-                        <a rel="noopener" target="_blank">
-                            <xsl:attribute name="href">
-                                <xsl:value-of select="episciences/docURL"/>
-                            </xsl:attribute>
-                            <button class="btn btn-default btn-sm">
-                                <span class="fas fa-external-link-alt" style="margin-right: 5px"/>
-
-                                <xsl:value-of select="episciences/docUrlBtnLabel"/>
-                            </button>
-                        </a>
+                                <xsl:if test="episciences/docURL != episciences/paperURL">
+                                    <a rel="noopener" target="_blank">
+                                        <xsl:attribute name="href">
+                                            <xsl:value-of select="episciences/docURL"/>
+                                        </xsl:attribute>
+                                        <button class="btn btn-default btn-sm">
+                                            <span class="fas fa-external-link-alt" style="margin-right: 5px"/>
+                                            <xsl:value-of select="episciences/docUrlBtnLabel"/>
+                                        </button>
+                                    </a>
+                                </xsl:if>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </xsl:if>
                 </div>
 
@@ -251,7 +261,6 @@
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Importé le : ')"/>
                             <xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(episciences/submission_date))"/>
                         </div>
-                        <hr />
                     </xsl:when>
                     <xsl:otherwise>
 
@@ -270,6 +279,7 @@
                         </xsl:if>
                     </xsl:otherwise>
                 </xsl:choose>
+
 
                 <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
                     <div class="small force-word-wrap">
@@ -329,7 +339,7 @@
 <!--                        <xsl:value-of select="episciences/classification" disable-output-escaping="yes"/>-->
 <!--                    </div>-->
 <!--                </xsl:if>-->
-
+                <hr />
                 <xsl:if test="(episciences/status = '') and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = '')">
                     <a>
                         <xsl:attribute name="href">
@@ -348,40 +358,30 @@
 
                 <xsl:if test="episciences">
                     <div id='record-loading' style="display:none"/>
-                    <xsl:choose>
-                        <xsl:when test="episciences/tmp/text() = '1'">
-                            <xsl:variable name="docUrls"
-                                          select="php:function('Episciences_Tools::buildHtmlTmpDocUrls', episciences/id)"/>
-                            <xsl:value-of select=" $docUrls" disable-output-escaping="yes"/>
-                        </xsl:when>
-                        <xsl:otherwise>
+                    <xsl:if test="$rightOrcid = '1'">
+                        <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
+                            <xsl:attribute name="onclick">
+                                <xsl:value-of select="'updateOrcidAuthors()'"/>
+                            </xsl:attribute>
+                            <span class="fab fa-orcid" style="margin-right: 5px"></span>
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
+                        </button>
+                        <div id="rightOrcid" style="display:none;">
+                            <xsl:value-of select="$rightOrcid"/>
+                        </div>
+                    </xsl:if>
+                    <xsl:if test="episciences/isAllowedToListAssignedPapers/text() = '1'">
 
-                            <xsl:if test="$rightOrcid = '1'">
-                                <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
-                                    <xsl:attribute name="onclick">
-                                        <xsl:value-of select="'updateOrcidAuthors()'"/>
-                                    </xsl:attribute>
-                                    <span class="fab fa-orcid" style="margin-right: 5px"></span>
-                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
-                                </button>
-                                <div id="rightOrcid" style="display:none;">
-                                    <xsl:value-of select="$rightOrcid"/>
-                                </div>
-                            </xsl:if>
-                            <xsl:if test="episciences/isAllowedToListAssignedPapers/text() = '1'">
+                        <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
+                            <xsl:attribute name="onclick">
+                                <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
+                            </xsl:attribute>
+                            <span class="fas fa-sync-alt" style="margin-right: 5px"/>
+                            <xsl:value-of
+                                    select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
+                        </button>
 
-                                <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
-                                    <xsl:attribute name="onclick">
-                                        <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
-                                    </xsl:attribute>
-                                    <span class="fas fa-sync-alt" style="margin-right: 5px"/>
-                                    <xsl:value-of
-                                            select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
-                                </button>
-
-                            </xsl:if>
-                        </xsl:otherwise>
-                    </xsl:choose>
+                    </xsl:if>
 
                     <!-- Abandon/resume publication process -->
                     <xsl:if test="episciences/uid = php:function('Episciences_Auth::getUid')">
