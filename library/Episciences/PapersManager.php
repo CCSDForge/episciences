@@ -2759,6 +2759,7 @@ class Episciences_PapersManager
         $affectedRows += Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
 
         ////////Creator OA and HAL
+        /// Traitement spécial HAL (affiliations, ORCID, financements)
         $strRepoId = (string)$repoId;
         if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
 
