@@ -96,7 +96,6 @@ $(document).ready(function () {
       } else {
         identifier = urlSearch.replace("?persistentId=", "");
       }
-
       return removeVersionFromIdentifier(identifier);
     } catch (error) {
       return input;
