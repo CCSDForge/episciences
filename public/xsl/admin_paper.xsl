@@ -311,7 +311,6 @@
                         </div>
                         <hr />
                     </xsl:when>
-
                     <xsl:otherwise>
                         <xsl:for-each select="metadata/oai_dc:dc/dc:rights">
                             <xsl:variable name="doc_rights" select="."/>

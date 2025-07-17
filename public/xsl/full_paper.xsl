@@ -23,7 +23,7 @@
                                         select="php:function('Ccsd_Tools::translate', 'Ajouter les ORCID aux auteurs')"/></h5>
                             </div>
                             <div id="modal-body-authors" class="modal-body">
-                                <input class='hidden' id='modal-called' value='0'></input>
+                                <input class='hidden' id='modal-called' value='0' />
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
@@ -279,7 +279,6 @@
                         </xsl:if>
                     </xsl:otherwise>
                 </xsl:choose>
-
 
                 <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
                     <div class="small force-word-wrap">
