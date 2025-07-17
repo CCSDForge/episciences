@@ -341,15 +341,7 @@
 
                 <xsl:if test="episciences">
                     <div id='record-loading' style="display:none"/>
-                    <xsl:choose>
-                        <xsl:when test="episciences/tmp/text() = '1'">
-                            <xsl:variable name="docUrls"
-                                          select="php:function('Episciences_Tools::buildHtmlTmpDocUrls', episciences/id)"/>
-                            <xsl:value-of select=" $docUrls" disable-output-escaping="yes"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-
-
+                         <xsl:if test="not(episciences/tmp/text() = '1')">
                             <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
                                 <xsl:attribute name="onclick">
                                     <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
@@ -370,8 +362,7 @@
                                     <xsl:value-of select="$rightOrcid"/>
                                 </div>
                             </xsl:if>
-                        </xsl:otherwise>
-                    </xsl:choose>
+                 </xsl:if>
 
                     <xsl:if test="episciences/reassign_button">
                         <a class="modal-opener" data-callback="submit" data-width="50%">

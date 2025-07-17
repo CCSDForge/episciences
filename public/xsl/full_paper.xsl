@@ -358,20 +358,20 @@
 
                 <xsl:if test="episciences">
                     <div id='record-loading' style="display:none"/>
-                    <xsl:if test="$rightOrcid = '1'">
-                        <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
-                            <xsl:attribute name="onclick">
-                                <xsl:value-of select="'updateOrcidAuthors()'"/>
-                            </xsl:attribute>
-                            <span class="fab fa-orcid" style="margin-right: 5px"></span>
-                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
-                        </button>
-                        <div id="rightOrcid" style="display:none;">
-                            <xsl:value-of select="$rightOrcid"/>
-                        </div>
-                    </xsl:if>
+                    <xsl:if test="not(episciences/tmp/text() = '1')">
+                        <xsl:if test="$rightOrcid = '1'">
+                            <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
+                                <xsl:attribute name="onclick">
+                                    <xsl:value-of select="'updateOrcidAuthors()'"/>
+                                </xsl:attribute>
+                                <span class="fab fa-orcid" style="margin-right: 5px"/>
+                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
+                            </button>
+                            <div id="rightOrcid" style="display:none;">
+                                <xsl:value-of select="$rightOrcid"/>
+                            </div>
+                        </xsl:if>
                     <xsl:if test="episciences/isAllowedToListAssignedPapers/text() = '1'">
-
                         <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
                             <xsl:attribute name="onclick">
                                 <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
@@ -380,7 +380,7 @@
                             <xsl:value-of
                                     select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
                         </button>
-
+                        </xsl:if>
                     </xsl:if>
 
                     <!-- Abandon/resume publication process -->
