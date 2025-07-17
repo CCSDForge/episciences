@@ -51,7 +51,7 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
                 'belongsTo' => 'pages_' . $pageidx,
                 'onchange' => "setVisibility($pageidx, this)",
                 'multioptions' => ['Publique'], // Predefined pages are always public
-                'value' => 0
+                'value' => 0 // 0 means public
             ]);
 
         $this->_form->getElement('labels')->setOptions(['class' => 'inputlangmulti permalien-src']);
