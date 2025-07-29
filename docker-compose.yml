@@ -50,7 +50,7 @@ services:
         - epi-network
 
   solr:
-    image: solr:9.6
+    image: solr:9.9
     container_name: solr
     ports:
       - "8983:8983"
