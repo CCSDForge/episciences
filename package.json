@@ -14,5 +14,8 @@
     "webpack-notifier": "^1.15.0",
     "yarn-upgrade-all": "^0.7.4"
   },
-  "packageManager": "yarn@3.2.4"
+  "packageManager": "yarn@3.2.4",
+  "dependencies": {
+    "caniuse-lite": "^1.0.30001731"
+  }
 }
