@@ -4270,12 +4270,12 @@ __metadata:
     resolve-url-loader: "npm:^5.0.0"
     sass: "npm:^1.78.0"
     sass-loader: "npm:^16.0.1"
-    ts-loader: "npm:^9.5.1"
-    typescript: "npm:^5.6.2"
-    webpack: "npm:^5.94.0"
+    ts-loader: "npm:^9.5.2"
+    typescript: "npm:^5.8.3"
+    webpack: "npm:^5.101.0"
     webpack-cli: "npm:^5.1.4"
     webpack-notifier: "npm:^1.15.0"
-    yarn-upgrade-all: "npm:^0.7.4"
+    yarn-upgrade-all: "npm:^0.7.5"
   languageName: unknown
   linkType: soft
 
@@ -4698,7 +4698,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-loader@npm:^9.5.1":
+"ts-loader@npm:^9.5.2":
   version: 9.5.2
   resolution: "ts-loader@npm:9.5.2"
   dependencies:
@@ -4714,7 +4714,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.6.2":
+"typescript@npm:^5.8.3":
   version: 5.8.3
   resolution: "typescript@npm:5.8.3"
   bin:
@@ -4724,7 +4724,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.6.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
   version: 5.8.3
   resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=379a07"
   bin:
@@ -4902,7 +4902,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webpack@npm:^5.94.0":
+"webpack@npm:^5.101.0":
   version: 5.101.0
   resolution: "webpack@npm:5.101.0"
   dependencies:
@@ -5019,7 +5019,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yarn-upgrade-all@npm:^0.7.4":
+"yarn-upgrade-all@npm:^0.7.5":
   version: 0.7.5
   resolution: "yarn-upgrade-all@npm:0.7.5"
   dependencies:
