@@ -143,5 +143,6 @@ Full-text search powered by Apache Solr with custom indexing for papers and meta
 - Follow the coding standards and best practices outlined in the repository documentation
 - Use the provided Docker environment for development to ensure consistency and avoid dependency issues
 - Always run tests before pushing changes to ensure code quality and functionality
+- **NEVER use `git add -A`** - This command stages all changes indiscriminately and can lead to committing unintended files. Use `git add .` for current directory or specify files explicitly.
 - The project is open source and contributions are welcome.
 - The project is licensed under the GNU General Public License v3.0 (GPL-3.0). Please review the LICENSE file for details.

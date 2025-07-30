@@ -8,6 +8,7 @@
 /.idea/
 /.sass-cache/
 /.php_cs.cache/
+/.claude/
 
 # /data/
 /data/
@@ -29,6 +30,8 @@
 
 # logs and errors
 /scripts/imports/*
+/scripts/importData/*
+!/scripts/importData/README.md
 /scripts/*.log
 /errors/
 
@@ -62,8 +65,10 @@ assets/node_modules/
 
 #PHPunit
 /.phpunit.result.cache
+
 /tmp/
 /docker-compose.override.yml
 /.user.ini
 /logs/
 /config/translationUpdater-config.yaml
+
