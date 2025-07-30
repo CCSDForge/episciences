@@ -1,10 +1,12 @@
+@use "sass:color";
+
 //Slightly lighten a color
 //@access public
 //@param {Color} $color - color to tint
 //@param {Number} $percentage - percentage of `$color` in returned color
 //@return {Color}
 @function tint($color, $percentage) {
-  @return mix(white, $color, $percentage);
+  @return color.mix(white, $color, $percentage);
 }
 
 body {
@@ -18,7 +20,7 @@ h1 {
   line-height: 30px;
   padding-bottom: 5px;
   margin-bottom: 30px;
-  border-bottom: 1px solid tint($h1-text-color, 75);
+  border-bottom: 1px solid tint($h1-text-color, 75%);
 }
 
 h2 {

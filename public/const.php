@@ -143,6 +143,9 @@ function defineJournalConstants(string $rvCode = null): void
                 define('APPLICATION_URL', sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')));
             } elseif(isset($_ENV['MANAGER_APPLICATION_URL'])){
                 define('APPLICATION_URL', sprintf('%s%s', rtrim($_ENV['MANAGER_APPLICATION_URL'], '/'), rtrim(PREFIX_URL, '/')));
+            } else {
+                // Fallback for CLI usage
+                define('APPLICATION_URL', sprintf("%s://%s.%s", SERVER_PROTOCOL, $rvCode, DOMAIN));
             }
         }
 

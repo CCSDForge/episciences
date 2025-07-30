@@ -58,7 +58,13 @@ Encore
     })
 
     // enables Sass/SCSS support
-    .enableSassLoader()
+    .enableSassLoader((options) => {
+        options.sassOptions = {
+            quietDeps: true,
+            verbose: false,
+            silenceDeprecations: ["legacy-js-api", "import", "global-builtin"]
+        };
+    })
 
 // uncomment if you use TypeScript
 //.enableTypeScriptLoader()

@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
-
+- CSV import functionality for sections
 
 v1.0.51 - 2025-04-07
 ### Changed
@@ -45,13 +45,12 @@ v1.0.51 - 2025-04-07
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up
 - [#649](https://github.com/CCSDForge/episciences/issues/649): Assigned editors are now automatically added as (hidden) copies of messages sent to reviewers
-- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 
 ### Fixed
-- reset password url (Manager only)
-- account creation token url (Manager only)
+- Manager: reset password url
+- Manager: account creation token url
 - [#653](https://github.com/CCSDForge/episciences/issues/653): Filtering email history doesn't work
-- File Not Found Error
+- Manager File Not Found Error
 - Wrong link on page "Invitation to review an article" for temporary versions
 
 ## v1.0.50.1 - 2025-03-14
