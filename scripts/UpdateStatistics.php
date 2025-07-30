@@ -49,7 +49,8 @@ class UpdateStatistics extends Command
         $this->setName('update:statistics')
             ->setDescription('Update statistics for the site')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'The journal code (e.g., mbj)')
-            ->addOption('date', null, InputOption::VALUE_OPTIONAL, 'Date to process (format: YYYY-mm-dd, default: yesterday)', $this->getYesterdayDate());
+            ->addOption('date', null, InputOption::VALUE_OPTIONAL, 'Date to process (format: YYYY-mm-dd, default: yesterday)', $this->getYesterdayDate())
+            ->addOption('logs-path', null, InputOption::VALUE_OPTIONAL, 'Path to the logs directory', $this->logsBasePath);
     }
 
     /**
@@ -81,6 +82,11 @@ class UpdateStatistics extends Command
             $this->logger->error($e->getMessage());
             return Command::FAILURE;
         }
+
+        // Set the logs base path from input option
+        $this->logsBasePath = $input->getOption('logs-path');
+        $this->io->text('Using logs path: ' . $this->logsBasePath);
+        $this->logger->info('Using logs path: ' . $this->logsBasePath);
 
         $this->io->text('Processing logs for the date: ' . $formattedDate . ' (only entries from 00:00:00 to 23:59:59)');
         $this->logger->info('Processing logs for the date: ' . $formattedDate . ' (only entries from 00:00:00 to 23:59:59)');
