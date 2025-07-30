@@ -1652,12 +1652,15 @@ return array(
     "Souhaitez-vous supprimer l'actualité ?" => "Do you want to delete this news?",
     // RESSOURCES
     "Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."
-    => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their url or delete them.",
+    => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their URL or delete them.",
 
-    "Ajouter un nouveau fichier" => "Add a new file",
     "Ajouter un nouveau fichier" => "Add a new file",
     "Déposer le fichier" => "Upload the file",
     "Fichiers" => "Files",
+    "Copier URL" => "Copy URL",
+    "Copiez ce lien pour l'utiliser dans les pages de contenu destinées au site public" => "Copy this link to use it in the content pages for the public site",
+    "Poids" => "File size",
+    "URL publique - pages de contenu" => "Public URL - content pages",
     "Aucun fichier sélectionné." => "No file selected",
     'Souhaitez-vous supprimer le fichier ?' => 'Do you want to delete this file?',
     'existe déjà.' => 'already exists.',
@@ -1785,7 +1788,7 @@ return array(
     "articles en attente d'éclaircissements" => 'articles waiting for clarifications',
 
     "article accepté" => 'accepted article',
-    "articles acceptés" => 'accepted articles',
+    "articles acceptés non publiés" => 'accepted but unpublished articles',
     "article soumis" => 'submitted article',
     "articles soumis" => 'submitted articles',
     "article proposé" => 'submitted article',
