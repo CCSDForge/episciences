@@ -247,7 +247,7 @@ class getDoi extends JournalScript
         foreach ($papers as $p) {
             /** @var $p Episciences_Paper */
             if (empty($p->getDoi()) && ($rvid === $p->getRvid())) {
-                $doi = $doiSettings->createDoiWithTemplate($p);
+                $doi = $doiSettings->createDoiWithTemplate($p, $rvcode);
                 $p->setDoi($doi);
                 $p->save();
                 $doiQ = new Episciences_Paper_DoiQueue(['paperid' => $p->getPaperId(), 'doi_status' => Episciences_Paper_DoiQueue::STATUS_ASSIGNED]);
