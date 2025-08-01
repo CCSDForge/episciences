@@ -7,7 +7,7 @@
 # - Scheduling (Sundays at 22:00 UTC)
 # - Language selection (JavaScript only)
 #
-name: "CodeQL"
+name: "CodeQL advanced configuration"
 
 on:
   push:
