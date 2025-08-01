@@ -7,6 +7,11 @@
 /.sass-cache/
 /.php_cs.cache/
 
+# Test coverage reports
+/coverage/
+coverage-*.xml
+*.lcov
+
 # /data/
 /data/
 
