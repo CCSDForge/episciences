@@ -86,8 +86,13 @@ function processUrlIdentifier(input, options = {}) {
       // For non-Dataverse repos without query parameters
       if (url.hostname === 'arxiv.org' && url.pathname.includes('/abs/')) {
         // Special handling for ArXiv URLs: extract only the ArXiv ID
-        // Handles both new format (e.g., 2310.02192) and old format (e.g., hep-th/9704188, alg-geom/9202002)
+        // For new format (e.g., 2310.02192), use as-is
+        // For old format (e.g., hep-th/9704188, alg-geom/9202002), extract only the final identifier
         identifier = url.pathname.replace(/^\/abs\//, '');
+        // If it contains a slash (old format), take only the part after the last slash
+        if (identifier.includes('/')) {
+          identifier = identifier.split('/').pop();
+        }
       } else {
         // General handling for other repos
         // Remove leading path segments and slashes

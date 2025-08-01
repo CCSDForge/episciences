@@ -89,8 +89,8 @@ describe('Submit Functions', () => {
         const mockVersionField = createMockElement('');
         const result = processUrlIdentifier('https://arxiv.org/abs/hep-th/9704188v1', { mockVersionField });
         
-        // Old ArXiv format: extract category/identifier and handle version
-        expect(result).toBe('hep-th/9704188');
+        // Old ArXiv format: extract only the final identifier part (9704188) and handle version
+        expect(result).toBe('9704188');
         expect(mockVersionField.value).toBe('1');
       });
 
@@ -98,8 +98,8 @@ describe('Submit Functions', () => {
         const mockVersionField = createMockElement('');
         const result = processUrlIdentifier('https://arxiv.org/abs/hep-th/9704188', { mockVersionField });
         
-        // Old ArXiv format: extract category/identifier without version
-        expect(result).toBe('hep-th/9704188');
+        // Old ArXiv format: extract only the final identifier part (9704188) without version
+        expect(result).toBe('9704188');
         expect(mockVersionField.value).toBe('');
       });
 
@@ -107,8 +107,8 @@ describe('Submit Functions', () => {
         const mockVersionField = createMockElement('');
         const result = processUrlIdentifier('https://arxiv.org/abs/alg-geom/9202002v1', { mockVersionField });
         
-        // Old ArXiv format: extract category/identifier and handle version
-        expect(result).toBe('alg-geom/9202002');
+        // Old ArXiv format: extract only the final identifier part (9202002) and handle version
+        expect(result).toBe('9202002');
         expect(mockVersionField.value).toBe('1');
       });
 
@@ -116,8 +116,8 @@ describe('Submit Functions', () => {
         const mockVersionField = createMockElement('');
         const result = processUrlIdentifier('https://arxiv.org/abs/alg-geom/9202002', { mockVersionField });
         
-        // Old ArXiv format: extract category/identifier without version
-        expect(result).toBe('alg-geom/9202002');
+        // Old ArXiv format: extract only the final identifier part (9202002) without version
+        expect(result).toBe('9202002');
         expect(mockVersionField.value).toBe('');
       });
     });
