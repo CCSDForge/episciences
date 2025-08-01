@@ -160,16 +160,7 @@
 
                 <hr/>
 
-                <xsl:if test="episciences/doi and episciences/doi != ''">
-                    <div class="paper-doi small">
-                        <a rel="noopener" target="_blank">
-                            <xsl:attribute name="href">
-                                <xsl:text>https://doi.org/</xsl:text><xsl:value-of select="episciences/doi"/>
-                            </xsl:attribute>
-                            https://doi.org/<xsl:value-of select="episciences/doi"/>
-                        </a>
-                    </div>
-                </xsl:if>
+
 
                 <div class="paper-actions" style="margin-bottom: 10px;">
                     <xsl:if test="episciences">
@@ -215,7 +206,16 @@
                     </xsl:if>
                 </div>
 
-                <hr/>
+                <xsl:if test="episciences/doi and episciences/doi != ''">
+                    <div class="paper-doi small">
+                        <a rel="noopener" target="_blank">
+                            <xsl:attribute name="href">
+                                <xsl:text>https://doi.org/</xsl:text><xsl:value-of select="episciences/doi"/>
+                            </xsl:attribute>
+                            https://doi.org/<xsl:value-of select="episciences/doi"/>
+                        </a>
+                    </div>
+                </xsl:if>
 
                 <xsl:if test="episciences/identifier and episciences/identifier != ''">
                     <div class="small">
@@ -347,7 +347,7 @@
                         <button class="btn btn-danger btn-sm" style="margin-right: 5px">
                             <span class="glyphicon glyphicon-remove-circle" style="margin-right: 5px"/>
                             <xsl:variable name="string">
-                                <xsl:text>Supprimer l'article</xsl:text>
+                                <xsl:text>Supprimer la soumission</xsl:text>
                             </xsl:variable>
                             <xsl:value-of
                                     select="php:function('Ccsd_Tools::translate', $string)"/>

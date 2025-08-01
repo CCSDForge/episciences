@@ -153,16 +153,7 @@
 
                 <hr/>
 
-                <xsl:if test="episciences/doi and episciences/doi != ''">
-                    <div class="paper-doi small">
-                        <a rel="noopener" target="_blank">
-                            <xsl:attribute name="href">
-                                <xsl:text>https://doi.org/</xsl:text><xsl:value-of select="episciences/doi"/>
-                            </xsl:attribute>
-                            https://doi.org/<xsl:value-of select="episciences/doi"/>
-                        </a>
-                    </div>
-                </xsl:if>
+
 
                 <div class="paper-actions" style="margin-bottom: 10px;">
                     <xsl:if test="episciences">
@@ -208,7 +199,19 @@
                     </xsl:if>
                 </div>
 
-                <hr/>
+
+
+
+                <xsl:if test="episciences/doi and episciences/doi != ''">
+                    <div class="paper-doi small">
+                        <a rel="noopener" target="_blank">
+                            <xsl:attribute name="href">
+                                <xsl:text>https://doi.org/</xsl:text><xsl:value-of select="episciences/doi"/>
+                            </xsl:attribute>
+                            https://doi.org/<xsl:value-of select="episciences/doi"/>
+                        </a>
+                    </div>
+                </xsl:if>
 
                 <xsl:if test="episciences/identifier and episciences/identifier != ''">
                     <div class="small">
@@ -309,7 +312,7 @@
                                         select="php:function('Ccsd_Tools::translate', string(episciences/paperLicence))"/>
                             </a>
                         </div>
-                        <hr />
+
                     </xsl:when>
                     <xsl:otherwise>
                         <xsl:for-each select="metadata/oai_dc:dc/dc:rights">
