@@ -1,0 +1,1 @@
+See `scripts/importSamples` directory for examples on how to import data into the database.

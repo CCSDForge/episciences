@@ -132,6 +132,12 @@ function defineJournalConstants(string $rvCode = null): void
         define('RVCODE', $rvCode);
         define('PREFIX_URL', $prefixUrl);
     }
+    
+    // Ensure PREFIX_URL is always defined, even if RVCODE was already defined
+    if (!defined('PREFIX_URL')) {
+        $prefixUrl = ($rvCode && $rvCode !== 'portal') ? sprintf('/%s/', $rvCode) : PORTAL_PREFIX_URL;
+        define('PREFIX_URL', $prefixUrl);
+    }
 
     if ($rvCode) {
 
@@ -143,6 +149,9 @@ function defineJournalConstants(string $rvCode = null): void
                 define('APPLICATION_URL', sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')));
             } elseif(isset($_ENV['MANAGER_APPLICATION_URL'])){
                 define('APPLICATION_URL', sprintf('%s%s', rtrim($_ENV['MANAGER_APPLICATION_URL'], '/'), rtrim(PREFIX_URL, '/')));
+            } else {
+                // Fallback for CLI usage
+                define('APPLICATION_URL', sprintf("%s://%s.%s", SERVER_PROTOCOL, $rvCode, DOMAIN));
             }
         }
 

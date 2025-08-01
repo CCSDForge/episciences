@@ -1,24 +1,22 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
+# IMPORTANT: This workflow conflicts with GitHub's default CodeQL setup.
+# If you get the error "CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled",
+# you must disable the default setup in: Repository Settings → Code security and analysis → CodeQL analysis → Configure → Advanced → Disable
 #
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
+# This custom workflow provides more control over:
+# - Branch targeting (runs on specific branches)
+# - Scheduling (Sundays at 22:00 UTC)
+# - Language selection (JavaScript only)
 #
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-#
-name: "CodeQL"
+name: "CodeQL advanced configuration"
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ develop ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
   schedule:
-    - cron: '27 14 * * 4'
+    - cron: '0 22 * * 0'
 
 jobs:
   analyze:
@@ -29,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         language: [ 'javascript' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
+        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby', 'swift' ]
         # Learn more:
         # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
 
