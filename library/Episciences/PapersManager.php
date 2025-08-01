@@ -741,22 +741,17 @@ class Episciences_PapersManager
      * Retourne l'identifiant de l'article si ce dernier est dèjà publié
      * @param int $paperId
      * @return int
+     * @throws Zend_Db_Statement_Exception
      */
     public static function getPublishedPaperId(int $paperId): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        try {
-            $select = $db
-                ->select()
-                ->from(T_PAPERS)
-                ->where('PAPERID = ?', $paperId)
-                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
-            $data = $select->query()->fetch();
-        } catch (Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-            return 0;
-        }
+        $select = $db
+            ->select()
+            ->from(T_PAPERS)
+            ->where('PAPERID = ?', $paperId)
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        $data = $select->query()->fetch();
 
         if (!$data) {
             return 0;
@@ -2520,6 +2515,7 @@ class Episciences_PapersManager
                 }
 
 
+
                 if ($sectionId) {
                     $section = Episciences_SectionsManager::find($sectionId);
                     if ($section) {
@@ -2573,12 +2569,12 @@ class Episciences_PapersManager
             $tags = [...$tags, ...$addTags];
 
 
-            if ($template['subject']) {
+            if ($template['subject']){
                 $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
                 $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);
             }
 
-            if ($template['body']) {
+            if($template['body']) {
                 $template['body'] = str_replace(array_keys($tags), array_values($tags), $template['body']);
                 $template['body'] = nl2br($template['body']);
                 $template['body'] = Ccsd_Tools::clear_nl($template['body']);
@@ -2655,7 +2651,7 @@ class Episciences_PapersManager
 
         $result = self::getPaperParams($docId);
 
-        $identifier = str_replace('-REFUSED', '', $result['IDENTIFIER']);
+        $identifier = str_replace('-REFUSED', '',$result['IDENTIFIER']);
         $repoId = (int)$result['REPOID'];
         $version = (float)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];
@@ -2697,7 +2693,7 @@ class Episciences_PapersManager
 
         }
 
-        if ($record !== '') {
+        if($record !== ''){
             $record = preg_replace('#xmlns="(.*)"#', '', $record);
         }
 
@@ -3994,6 +3990,10 @@ class Episciences_PapersManager
             trigger_error($e->getMessage());
         }
     }
+
+
+
+
 
 
 }
