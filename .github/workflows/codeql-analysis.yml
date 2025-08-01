@@ -13,7 +13,7 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ main, preprod, preprod-epi-manager ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
