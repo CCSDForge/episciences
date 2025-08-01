@@ -10,6 +10,11 @@
 /.php_cs.cache/
 /.claude/
 
+# Test coverage reports
+/coverage/
+coverage-*.xml
+*.lcov
+
 # /data/
 /data/
 

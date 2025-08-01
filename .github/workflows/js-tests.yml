@@ -1,0 +1,71 @@
+name: JavaScript Tests
+
+# Run tests on pull requests and pushes to main branch
+on:
+  pull_request:
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    paths:
+      - 'public/js/**'
+      - 'tests/js/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.github/workflows/js-tests.yml'
+  push:
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    paths:
+      - 'public/js/**'
+      - 'tests/js/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.github/workflows/js-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      
+    - name: Run JavaScript tests
+      run: yarn test --coverage --watchAll=false
+      
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      if: matrix.node-version == '20.x'
+      with:
+        file: ./coverage/lcov.info
+        flags: javascript
+        name: javascript-coverage
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        
+    - name: Comment test results on PR
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request' && matrix.node-version == '20.x'
+      with:
+        script: |
+          const fs = require('fs');
+          const path = './coverage/lcov-report/index.html';
+          
+          if (fs.existsSync(path)) {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ JavaScript tests passed! Coverage report generated.'
+            });
+          }

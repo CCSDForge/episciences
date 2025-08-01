@@ -31,7 +31,7 @@ v1.0.51 - 2025-04-07
 - [#650](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 - Ability to customise application environment variables
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
-- Website menu:
+- *Manager only* Website menu:
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
@@ -39,7 +39,7 @@ v1.0.51 - 2025-04-07
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up
 - [#649](https://github.com/CCSDForge/episciences/issues/649): Assigned editors are now automatically added as (hidden) copies of messages sent to reviewers
-
+- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 
 ### Fixed
 - Manager: reset password url
