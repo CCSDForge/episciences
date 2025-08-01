@@ -46,6 +46,10 @@ This directory contains automated CI/CD workflows for the Episciences project.
 - 📊 SARIF results uploaded to GitHub Security tab
 - 🕒 Regular scheduled scans for continuous monitoring
 
+⚠️ **Important:** This custom workflow requires disabling GitHub's default CodeQL setup:
+- Go to **Repository Settings** → **Code security and analysis** → **CodeQL analysis**
+- Click **Configure** → **Advanced** → **Disable**
+
 ## Usage
 
 ### For Developers
