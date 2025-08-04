@@ -2,9 +2,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
   push:
-    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
 
 jobs:
   # php-tests:
