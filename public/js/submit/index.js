@@ -15,7 +15,7 @@ $(document).ready(function () {
 
   $searchDocRepoId.on("change", function () {
     toggleVersionBloc();
-
+    checkDataverse();
   });
 
   function toggleVersionBloc() {
@@ -54,57 +54,148 @@ $(document).ready(function () {
         $versionBloc.show();
       }
     });
-
-    $searchDocRepoId.change(function () {
-      checkDataverse();
-    });
   }
 
   function setPlaceholder() {
-    $searchDocDocId.attr(
-      "placeholder",
-      translate("exemple : ") + examples[$searchDocRepoId.val()],
-    );
-    $searchDocDocId.attr("size", $searchDocDocId.attr("placeholder").length);
+    const searchDocDocId = document.getElementById("search_doc-docId");
+    const searchDocRepoId = document.getElementById("search_doc-repoId");
+    
+    if (searchDocDocId && searchDocRepoId) {
+      const placeholderText = translate("exemple : ") + examples[searchDocRepoId.value];
+      searchDocDocId.setAttribute("placeholder", placeholderText);
+      searchDocDocId.setAttribute("size", placeholderText.length);
+    }
   }
 
   // Extracting the ID from URL
 
   $searchDocDocId.change(function () {
-    let input = $(this).val();
+     input = $(this).val().trim();
+    if (!input) {
+      return;
+    }
+
+    let processedIdentifier;
 
     if (isValidHttpUrl(input)) {
-      let url = new URL(input);
-      let identifier = url.pathname;
-      let urlSearch = url.search;
-
-      if (!$isDataverseRepo && urlSearch === "") {
-        identifier = identifier.replace(/\/\w+\//, "");
-        identifier = identifier.replace(/^\//, "");
-      } else {
-        identifier = urlSearch.replace("?persistentId=", "");
-      }
-
-      identifier = identifier.replace(/v\d+|(&version=\d+).\d+/, ""); // Delete VERSION from IDENTIFIER
-      $(this).val(identifier);
+      processedIdentifier = processUrlIdentifier(input);
+    } else {
+      processedIdentifier = processDirectIdentifier(input);
     }
+    $(this).val(processedIdentifier);
   });
 
+  function processUrlIdentifier(input) {
+    try {
+      const url = new URL(input);
+      let identifier = "";
+      let versionFromUrl = null;
+      
+      // Handle different repository types
+      if ($isDataverseRepo || url.search) {
+        // For Dataverse repos or URLs with query parameters
+        if (url.search.includes("persistentId=")) {
+          identifier = url.searchParams.get("persistentId") || 
+                      url.search.replace(/^\?.*persistentId=/, "").split("&")[0];
+          
+          // Check for version parameter in URL
+          const versionParam = url.searchParams.get("version");
+          if (versionParam) {
+            versionFromUrl = versionParam;
+            const versionField = document.getElementById('search_doc-version');
+            if (versionField) {
+              // Keep full version number (e.g. "1.1", "2.0", "1.5")
+              versionField.value = versionParam;
+            }
+          }
+        } else {
+          // Fallback to pathname if no persistentId found
+          identifier = url.pathname.replace(/^\/+|\/+$/g, "");
+        }
+      } else {
+        // For non-Dataverse repos without query parameters
+        // Remove leading path segments and slashes
+        identifier = url.pathname
+          .replace(/^\/+/, "")           // Remove leading slashes
+          .replace(/\/\w+\/$/, "")       // Remove trailing /word/ pattern
+          .replace(/\/+$/, "");          // Remove trailing slashes
+      }
+      
+      // Clean up empty identifier
+      if (!identifier.trim()) {
+        identifier = url.pathname.replace(/^\/+|\/+$/g, "") || url.href;
+      }
+
+      // Only call removeVersionFromIdentifier if we didn't already handle version from URL params
+      if (versionFromUrl) {
+        return identifier; // Don't process further since we already handled the version
+      } else {
+        return removeVersionFromIdentifier(identifier);
+      }
+    } catch (error) {
+      // If URL parsing fails, return the original input
+      console.warn("URL parsing failed for:", input, error);
+      return removeVersionFromIdentifier(input);
+    }
+  }
+
+  function processDirectIdentifier(input) {
+    return removeVersionFromIdentifier(input);
+  }
+
+//Extracts version information from an identifier string and populates the version field.
+  function removeVersionFromIdentifier(identifier) {
+    const versionField = document.getElementById('search_doc-version');
+    const versionMatch = identifier.match(/v(\d+)$/);
+    
+    if (versionMatch && versionField) {
+      // Extract the version number (without the 'v' prefix)
+      versionField.value = versionMatch[1];
+      
+      // Return identifier without the version
+      return identifier.replace(/v\d+$/, '');
+    }
+    
+    // If no version found, clear the version field and return original identifier
+    if (versionField) {
+      versionField.value = '';
+    }
+    return identifier;
+  }
+
+
   function checkDataverse() {
-    let isDataverseRequest = ajaxRequest("/submit/ajaxisdataverse", {
-      repoId: $searchDocRepoId.val(),
-    });
-    isDataverseRequest.done(function (response) {
-      let oResponse = JSON.parse(response);
+    const searchDocRepoId = document.getElementById("search_doc-repoId");
+    const submitEntry = document.querySelector("a[href='/submit/index']");
+    
+    if (!searchDocRepoId) return;
+    
+    const formData = new FormData();
+    formData.append("repoId", searchDocRepoId.value);
+    
+    fetch("/submit/ajaxisdataverse", {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      body: formData
+    })
+    .then(response => response.text())
+    .then(responseText => {
+      const oResponse = JSON.parse(responseText);
       $isDataverseRepo = oResponse.hasOwnProperty("isDataverse")
         ? oResponse.isDataverse
         : false;
-      if ($submitEntry.length > 0) {
-        let submitEntryTitle = $isDataverseRepo
+      
+      if (submitEntry) {
+        const submitEntryTitle = $isDataverseRepo
           ? "Proposer un jeu de données"
           : "Proposer un article";
-        $submitEntry.text(translate(submitEntryTitle));
+        submitEntry.textContent = translate(submitEntryTitle);
       }
+    })
+    .catch(error => {
+      console.error("Error checking dataverse:", error);
     });
   }
 });

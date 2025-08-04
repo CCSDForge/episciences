@@ -8,7 +8,7 @@ CNTR_APP_USER := www-data
 
 SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 MYSQL_CONNECT_EPISCIENCES:= mysql -u root -proot -h 127.0.0.1 -P 33060 episciences
-MYSQL_CONNECT_AUTH:= mysql -u root -proot -h 127.0.0.1 -P 33062 cas_users
+MYSQL_CONNECT_AUTH:= mysql -u root -proot -h 127.0.0.1 -P 33060 cas_users
 
 .PHONY: build up down collection index clean help
 

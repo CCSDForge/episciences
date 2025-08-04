@@ -775,6 +775,7 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $attachments = $request->getPost(Episciences_Mail_Send::ATTACHMENTS); // see js/library/es.fileupload.js
+        $attachments = is_array($attachments) ? $attachments : [];
 
         $templateAuthorType = '';
         $templateEditorType = '';
