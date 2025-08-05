@@ -41,11 +41,8 @@ if (typeof window === 'undefined') {
         // Check for valid hostname format (allow localhost, IP addresses, and domains)
         const hostnamePattern = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$|^localhost$|^(\d{1,3}\.){3}\d{1,3}$|^\[([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]*\]$/;
         
-        if (!hostnamePattern.test(url.hostname)) {
-            return false;
-        }
-        
-        return true;
+        return hostnamePattern.test(url.hostname);
+
     }
 }
 
