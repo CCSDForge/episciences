@@ -78,11 +78,51 @@ function getFirstOf(data) {
         return data[key];
 }
 
-function readabeBytes(bytes, locale) {
-    var s = (locale === 'fr') ? ['octets', 'Ko', 'Mo', 'Go', 'To', 'Po'] : ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-    var e = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, e)) + " " + s[e];
+function readableBytes(bytes, locale) {
+    // Input validation
+    if (typeof bytes !== 'number' || isNaN(bytes) || bytes < 0) {
+        return '0 bytes';
+    }
+    
+    // Handle zero bytes
+    if (bytes === 0) {
+        return locale === 'fr' ? '0 octet' : '0 bytes';
+    }
+    
+    // Define unit arrays with proper pluralization
+    var units = (locale === 'fr') ? 
+        ['octet', 'Ko', 'Mo', 'Go', 'To', 'Po'] : 
+        ['byte', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    
+    var pluralUnits = (locale === 'fr') ? 
+        ['octets', 'Ko', 'Mo', 'Go', 'To', 'Po'] : 
+        ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    
+    // Calculate the appropriate unit scale
+    var unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
+    
+    // Clamp to available units (prevent array out of bounds)
+    unitIndex = Math.min(unitIndex, units.length - 1);
+    
+    // Calculate the scaled value
+    var scaledValue = bytes / Math.pow(1024, unitIndex);
+    
+    // Format with appropriate precision
+    var formattedValue;
+    if (scaledValue >= 100) {
+        formattedValue = Math.round(scaledValue);
+    } else if (scaledValue >= 10) {
+        formattedValue = Math.round(scaledValue * 10) / 10;
+    } else {
+        formattedValue = Math.round(scaledValue * 100) / 100;
+    }
+    
+    // Choose singular or plural unit
+    var unit = (formattedValue === 1 && unitIndex === 0) ? units[unitIndex] : pluralUnits[unitIndex];
+    
+    return formattedValue + ' ' + unit;
 }
+
 
 //Tableau de remplacement des accents
 var stripAccentsMap = [

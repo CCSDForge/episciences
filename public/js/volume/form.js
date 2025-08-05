@@ -36,7 +36,7 @@ $(document).ready(function() {
 				var values = (($('#mTmpData').val())) ? JSON.parse($('#mTmpData').val()) : new Object();
 				values.tmpfile = JSON.stringify(file);
 				$('#mTmpData').val(JSON.stringify(values));
-				$('#mFile_content').empty().append(formatFileLabel(file.name + ' (' + readabeBytes(file.size, lang) + ')'));
+				$('#mFile_content').empty().append(formatFileLabel(file.name + ' (' + readableBytes(file.size, lang) + ')'));
 				$('#value_mFile').val('');
 			}
 		});	
