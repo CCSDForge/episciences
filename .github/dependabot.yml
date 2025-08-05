@@ -7,10 +7,6 @@ updates:
       interval: "weekly"
     target-branch: "staging"
     open-pull-requests-limit: 10
-    reviewers:
-      - "maintainer"
-    assignees:
-      - "maintainer"
 
   # PHP Composer dependencies
   - package-ecosystem: "composer"
@@ -19,10 +15,6 @@ updates:
       interval: "weekly"
     target-branch: "staging" 
     open-pull-requests-limit: 10
-    reviewers:
-      - "maintainer"
-    assignees:
-      - "maintainer"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
