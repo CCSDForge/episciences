@@ -2914,30 +2914,30 @@
         },
         {
             "name": "laravolt/avatar",
-            "version": "6.1.2",
+            "version": "6.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravolt/avatar.git",
-                "reference": "e7b7d182e7f1fab60555a4a69f5e77d591c2b836"
+                "reference": "d0941f19aa2375b98333a80c1b272137bdd0a18b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravolt/avatar/zipball/e7b7d182e7f1fab60555a4a69f5e77d591c2b836",
-                "reference": "e7b7d182e7f1fab60555a4a69f5e77d591c2b836",
+                "url": "https://api.github.com/repos/laravolt/avatar/zipball/d0941f19aa2375b98333a80c1b272137bdd0a18b",
+                "reference": "d0941f19aa2375b98333a80c1b272137bdd0a18b",
                 "shasum": ""
             },
             "require": {
                 "illuminate/cache": "^10.0|^11.0|^12.0",
                 "illuminate/support": "^10.0|^11.0|^12.0",
                 "intervention/image": "^3.4",
-                "php": ">=8.1"
+                "php": ">=8.2"
             },
             "require-dev": {
-                "mockery/mockery": "~1.3",
+                "mockery/mockery": "^1.6.7",
                 "pestphp/pest": "^2.34|^3.7",
                 "pestphp/pest-plugin-type-coverage": "^2.8|^3.3",
                 "php-coveralls/php-coveralls": "^2.1",
-                "phpunit/phpunit": "^10.5",
+                "phpunit/phpunit": "^11.5.3",
                 "roave/security-advisories": "dev-latest"
             },
             "suggest": {
@@ -2985,7 +2985,7 @@
             ],
             "support": {
                 "issues": "https://github.com/laravolt/avatar/issues",
-                "source": "https://github.com/laravolt/avatar/tree/6.1.2"
+                "source": "https://github.com/laravolt/avatar/tree/6.2.0"
             },
             "funding": [
                 {
@@ -3001,7 +3001,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2025-04-16T13:45:35+00:00"
+            "time": "2025-04-16T14:21:06+00:00"
         },
         {
             "name": "league/commonmark",
@@ -11233,6 +11233,6 @@
         "ext-xml": "*",
         "ext-xsl": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }
