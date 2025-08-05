@@ -56,7 +56,7 @@ function addValue (btn)
 	$(clone).find('button[id^="close_"]').parent('div').attr('id', 'close_'+pos+'-element'); // Nouveau name du <div> du <button> close
 	$(clone).find('input:last').attr('id', 'position_'+pos);
 	$(clone).find('input:last').attr('name', 'position_'+pos);
-	$(clone).find('label').html(pos+'/'+max); // Nouveau label
+	$(clone).find('label').text(pos+'/'+max); // Nouveau label
 	
 	
 	$(clone).find('input').val(''); // Vidage de la valeur de l'input 
@@ -72,8 +72,8 @@ function addValue (btn)
 	
 	// Update de tous les autres labels
 	$('.sortable').children().find('label').each(function(i) {
-		var label = $(this).html().split('/')[0] + '/' + max;
-		$(this).html(label);
+		var label = $(this).text().split('/')[0] + '/' + max;
+		$(this).text(label);
 	});
 	
 
@@ -102,7 +102,7 @@ function removeValue (btn)
 		} 
 				
 		var label =  thisPos+'/'+max;
-		$(this).find('label').html(label);
+		$(this).find('label').text(label);
 		$(this).find('input[id^="position_"]').val(thisPos);
 	});
 	
@@ -133,8 +133,8 @@ $(document).ready(function() {
 				$('#position_'+id).val(pos);
 				
 				// Mise à jour des labels
-				var max = $('label[for^="option_'+id+'"]').html().split('/')[1];
-				$('label[for="option_'+id+'"]').html(pos+'/'+max);
+				var max = $('label[for^="option_'+id+'"]').text().split('/')[1];
+				$('label[for="option_'+id+'"]').text(pos+'/'+max);
 			}
 		},
 		placeholder: "sortable-placeholder",
