@@ -2429,7 +2429,7 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         // Il est possible (depuis la page de la gestion de l'article) :
-        // d'jouter un rapport de relecture à la place d'un autre relecteur (relire à la place...)
+        // d'ajouter un rapport de relecture à la place d'un autre relecteur (relire à la place...)
         // d'ajouter un nouveau rapport de relecture (relire cet article...)
         $reviewer_uid = (int)$request->getParam('reviewer_uid');
 
