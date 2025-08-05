@@ -72,10 +72,30 @@ $(document).ready(function () {
     });
 });
 
-// fetch first element of an array or an object
+/**
+ * Get the first value from an object or array
+ * @param {Object|Array} data - The object or array to get the first value from
+ * @returns {*} The first value found, or undefined if data is empty/invalid
+ */
 function getFirstOf(data) {
-    for (var key in data)
-        return data[key];
+    // Input validation
+    if (!data || typeof data !== 'object') {
+        return undefined;
+    }
+    
+    // Handle arrays more efficiently
+    if (Array.isArray(data)) {
+        return data.length > 0 ? data[0] : undefined;
+    }
+    
+    // Handle objects
+    for (var key in data) {
+        if (data.hasOwnProperty(key)) {
+            return data[key];
+        }
+    }
+    
+    return undefined;
 }
 
 function readableBytes(bytes, locale) {
