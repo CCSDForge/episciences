@@ -380,7 +380,7 @@ function getMessageHtml(text, type) {
     return '<div class="alert '
         + type
         + '"><button type="button" class="close" data-dismiss="alert">&times;</button>'
-        + text + '</div>';
+        + htmlEntities(text) + '</div>';
 }
 
 // check if multiling. input languages have been set
@@ -455,9 +455,9 @@ function addToggleButton(datatable, target) {
     $(datatable).DataTable().columns().every(function () {
         var th = this.header();
         var i = this.index();
-        var label = ($(th).data('name')) ? $(th).data('name') : $(th).html();
+        var label = ($(th).data('name')) ? $(th).data('name') : $(th).text();
         var checked = (this.visible()) ? 'checked' : '';
-        content += '<div><input id="col-' + i + '" name="col-' + i + '" type="checkbox" value="' + i + '" ' + checked + ' /> <label for="col-' + i + '">' + label + '</label></div>';
+        content += '<div><input id="col-' + i + '" name="col-' + i + '" type="checkbox" value="' + i + '" ' + checked + ' /> <label for="col-' + i + '">' + htmlEntities(label) + '</label></div>';
     });
     content += '</div>';
 
@@ -486,7 +486,7 @@ function applyCollapse(object) {
     var closeTooltip = translate('Replier');
     var style = ($(object).find('.panel-body:first').hasClass('in')) ? 'glyphicon-chevron-up' : 'glyphicon-chevron-down';
     var tooltip = ($(object).find('.panel-body:first').hasClass('in')) ? closeTooltip : openTooltip;
-    var button = '<div class="collapseButton" data-toggle="tooltip" title="' + tooltip + '"><span class="glyphicon ' + style + '"></span></div>';
+    var button = '<div class="collapseButton" data-toggle="tooltip" title="' + htmlEntities(tooltip) + '"><span class="glyphicon ' + style + '"></span></div>';
     $(object).find('.panel-heading:first .panel-title').append(button);
     if (!$(object).find('.panel-body:first').hasClass('in')) {
         $(object).find('.panel-body').css('display', 'none');
@@ -572,7 +572,7 @@ function openModal(url, title, params, source) {
     }
 
     // init modal
-    $modal_box.find('.modal-title').html(title);
+    $modal_box.find('.modal-title').text(title);
     $modal_box.draggable({handle: ".modal-header"});
     if (url) {
         // if ajax, destroy TinyMCE editors before refreshing content
