@@ -285,12 +285,34 @@ function isValidDate(input, separator) {
     return isISOdate(isoDate, null, true); // Use strict validation
 }
 
+/**
+ * Check if a date is between two other dates (inclusive)
+ * @param {string|Date} input - The date to check
+ * @param {string|Date} min - The minimum date (inclusive)
+ * @param {string|Date} max - The maximum date (inclusive)
+ * @returns {boolean} True if date is between min and max, false otherwise
+ */
 function dateIsBetween(input, min, max) {
+    // If either boundary is missing, return true (no constraints)
     if (!min || !max) return true;
-    var date = new Date(input);
-    var min = new Date(min);
-    var max = new Date(max);
-    return (date >= min && date <= max) ? true : false;
+    
+    // Convert all inputs to Date objects
+    const inputDate = new Date(input);
+    const minDate = new Date(min);
+    const maxDate = new Date(max);
+    
+    // Validate all dates are valid
+    if (isNaN(inputDate.getTime()) || isNaN(minDate.getTime()) || isNaN(maxDate.getTime())) {
+        return false;
+    }
+    
+    // Ensure min is not greater than max
+    if (minDate > maxDate) {
+        return false;
+    }
+    
+    // Check if input date is between min and max (inclusive)
+    return inputDate >= minDate && inputDate <= maxDate;
 }
 
 function nl2br(str, is_xhtml) {
