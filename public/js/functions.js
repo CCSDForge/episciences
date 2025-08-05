@@ -395,12 +395,47 @@ function isISOdate(input, pattern, strict = false) {
     return true;
 }
 
+/**
+ * Check if a date string in YYYY-MM-DD format represents a valid date
+ * @param {string} input - The date string to validate
+ * @param {string} [separator='-'] - The separator used in the date string
+ * @returns {boolean} True if the date is valid and actually exists
+ */
 function isValidDate(input, separator) {
+    // Input validation
+    if (typeof input !== 'string' || input.trim() === '') {
+        return false;
+    }
+    
+    // Default separator
     if (!separator) separator = '-';
-    var parts = input.split(separator);
-    var y = parts[0], m = parts[1], d = parts[2];
-    var date = new Date(input);
-    return (date == 'Invalid Date' || m != (date.getMonth() + 1)) ? false : true;
+    
+    // If using default separator (-), leverage isISOdate function
+    if (separator === '-') {
+        return isISOdate(input, null, true); // Use strict validation
+    }
+    
+    // For custom separators, convert to ISO format and validate
+    const parts = input.trim().split(separator);
+    
+    // Must have exactly 3 parts
+    if (parts.length !== 3) {
+        return false;
+    }
+    
+    // Check format: should be YYYY-MM-DD order
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+    
+    // Basic format validation (4 digits for year, 2 digits for month/day)
+    if (!/^\d{4}$/.test(year) || !/^\d{2}$/.test(month) || !/^\d{2}$/.test(day)) {
+        return false;
+    }
+    
+    // Convert to ISO format and use isISOdate for validation
+    const isoDate = `${year}-${month}-${day}`;
+    return isISOdate(isoDate, null, true); // Use strict validation
 }
 
 function dateIsBetween(input, min, max) {
