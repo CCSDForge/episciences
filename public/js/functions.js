@@ -882,8 +882,32 @@ function enableModalSubmitButton($selector = null) {
     }
 }
 
-function isBackDated(input){
-    return new Date().toISOString() > new Date(input).toISOString();
+function isBackDated(input) {
+    // Input validation
+    if (input == null || input === '') {
+        return false;
+    }
+    
+    // Handle different input types
+    let inputDate;
+    if (input instanceof Date) {
+        inputDate = input;
+    } else if (typeof input === 'string' || typeof input === 'number') {
+        inputDate = new Date(input);
+    } else {
+        return false; // Invalid input type
+    }
+    
+    // Check if input date is valid
+    if (isNaN(inputDate.getTime())) {
+        return false;
+    }
+    
+    // Get current date and time
+    const now = new Date();
+    
+    // Compare dates - input is backdated if it's before now
+    return inputDate < now;
 }
 
 /**
