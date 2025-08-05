@@ -17,7 +17,10 @@ if (typeof window === 'undefined') {
             pattern = /^\d{4}-\d{2}-\d{2}$/;
         }
         
-        // Check pattern match
+        // Check pattern match (reset global regex state)
+        if (pattern.global) {
+            pattern.lastIndex = 0; // Reset global regex state
+        }
         if (!pattern.test(input)) {
             return false;
         }

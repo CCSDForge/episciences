@@ -56,13 +56,16 @@ if (typeof window === 'undefined') {
         // Default separator
         if (!separator) separator = '-';
         
+        // Trim whitespace from input
+        input = input.trim();
+        
         // If using default separator (-), leverage isISOdate function
         if (separator === '-') {
             return isISOdate(input, null, true); // Use strict validation
         }
         
         // For custom separators, convert to ISO format and validate
-        const parts = input.trim().split(separator);
+        const parts = input.split(separator);
         
         // Must have exactly 3 parts
         if (parts.length !== 3) {

@@ -105,7 +105,7 @@ function readableBytes(bytes, locale) {
     }
     
     // Input validation
-    if (typeof bytes !== 'number' || isNaN(bytes) || bytes < 0) {
+    if (typeof bytes !== 'number' || isNaN(bytes) || bytes < 0 || !isFinite(bytes)) {
         return '0 bytes';
     }
     
@@ -366,7 +366,10 @@ function isISOdate(input, pattern, strict = false) {
         pattern = /^\d{4}-\d{2}-\d{2}$/;
     }
     
-    // Check pattern match
+    // Check pattern match (reset global regex state)
+    if (pattern.global) {
+        pattern.lastIndex = 0; // Reset global regex state
+    }
     if (!pattern.test(input)) {
         return false;
     }
@@ -409,6 +412,9 @@ function isValidDate(input, separator) {
     
     // Default separator
     if (!separator) separator = '-';
+    
+    // Trim whitespace from input
+    input = input.trim();
     
     // If using default separator (-), leverage isISOdate function
     if (separator === '-') {

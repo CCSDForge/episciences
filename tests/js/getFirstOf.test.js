@@ -186,7 +186,7 @@ describe('getFirstOf function', function() {
         
         it('should handle objects with numeric keys', function() {
             expect(getFirstOf({0: 'zero', 1: 'one'})).toBe('zero');
-            expect(getFirstOf({10: 'ten', 5: 'five'})).toBe('ten'); // First enumerated property
+            expect(getFirstOf({10: 'ten', 5: 'five'})).toBe('five'); // Numeric keys are enumerated in ascending order
         });
         
         it('should handle objects with mixed key types', function() {
