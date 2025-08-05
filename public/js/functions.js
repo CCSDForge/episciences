@@ -783,13 +783,30 @@ function getMultiScripts(sArr) {
 }
 
 function in_array(needle, haystack, strict = false) {
-    let found = 0;
-    for (let i = 0, len = haystack.length; i < len; i++) {
-        let condition = (!strict) ? (haystack[i] == needle) : (haystack[i] === needle);
-        if (condition) return i;
-        found++;
+    // Input validation
+    if (!Array.isArray(haystack)) {
+        return -1;
     }
-    return -1;
+    
+    // Handle empty array
+    if (haystack.length === 0) {
+        return -1;
+    }
+    
+    // Use built-in methods for better performance when appropriate
+    if (strict) {
+        // For strict comparison, use indexOf which uses ===
+        return haystack.indexOf(needle);
+    } else {
+        // For loose comparison, we need to check each element manually
+        for (let i = 0; i < haystack.length; i++) {
+            // Use == for loose comparison (mimics PHP in_array behavior)
+            if (haystack[i] == needle) {
+                return i;
+            }
+        }
+        return -1;
+    }
 }
 
 /**
