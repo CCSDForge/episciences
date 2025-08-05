@@ -623,7 +623,7 @@ return array(
     "Créer une grille pour le volume :" => 'Create a new grid for this volume:',
     "Créer la grille" => 'Create this grid',
     "Visibilité du critère" => "Criterion visibility",
-    "Visibilité" => "visibility",
+    "Visibilité" => "Visibility",
     "Type de notation" => "Rating type",
     "Type d'évaluation" => "Evaluation type",
     "Notation sur 10" => "Grading on a 0-10 scale",
