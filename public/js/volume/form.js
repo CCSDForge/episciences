@@ -224,25 +224,72 @@ function getMetadata()
 	var title = (value.title[lang]) ? value.title[lang] : getFirstOf(value.title); 
 	var content = (value.content[lang]) ? value.content[lang] : getFirstOf(value.content);	
 
-	var html = '';
-	html += '<div class="metadata input-group" style="margin-bottom: 2px">';
-	html += '<span style="font-size: inherit; display: block; text-align: justify; white-space: normal; padding: 1px  0px 1px 10px;" class="label label-primary">';
-	html += title;
-	html += ' <a class="modal-opener" data-width="50%" data-init="init" data-callback="submit" title="Modifier une métadonnée">';
-	html += '<button class="btn btn-xs btn-primary edit-metadata" type="button"><span class="glyphicon glyphicon-pencil"></span></button>';
-	html += '</a>';
-	html += '<button onclick="removeMetadata($(this))" data-placement="right" style="border-radius:0; height: 20px; padding-top:0; padding-bottom: 0;" class="btn btn-xs btn-primary" type="button"><span class="glyphicon glyphicon-trash"></span></button>';
-	html += '</span>';
+	// Create DOM elements securely instead of HTML string concatenation
+	var $div = $('<div>').addClass('metadata input-group').css('margin-bottom', '2px');
 	
-	html += '<input type="hidden" value="">';
-	html += '</div>';
+	var $span = $('<span>')
+		.addClass('label label-primary')
+		.css({
+			'font-size': 'inherit',
+			'display': 'block',
+			'text-align': 'justify',
+			'white-space': 'normal',
+			'padding': '1px 0px 1px 10px'
+		});
 	
-	var tag = $(html);
-	$(tag).find('input').val(JSON.stringify(value));
-	$(tag).find('input').uniqueId();
-	$(tag).find('input').attr('name', 'md_'+$(tag).find('input').attr('id'));
+	// Safely add title text
+	$span.append(document.createTextNode(title));
 	
-	return tag;
+	// Create edit button
+	var $editLink = $('<a>')
+		.addClass('modal-opener')
+		.attr({
+			'data-width': '50%',
+			'data-init': 'init',
+			'data-callback': 'submit',
+			'title': translate('Modifier une métadonnée')
+		});
+	
+	var $editButton = $('<button>')
+		.addClass('btn btn-xs btn-primary edit-metadata')
+		.attr('type', 'button')
+		.append($('<span>').addClass('glyphicon glyphicon-pencil'));
+	
+	$editLink.append($editButton);
+	$span.append(' ').append($editLink);
+	
+	// Create delete button
+	var $deleteButton = $('<button>')
+		.addClass('btn btn-xs btn-primary')
+		.attr({
+			'type': 'button',
+			'onclick': 'removeMetadata($(this))',
+			'data-placement': 'right'
+		})
+		.css({
+			'border-radius': '0',
+			'height': '20px',
+			'padding-top': '0',
+			'padding-bottom': '0'
+		})
+		.append($('<span>').addClass('glyphicon glyphicon-trash'));
+	
+	$span.append($deleteButton);
+	$div.append($span);
+	
+	// Add hidden input
+	var $hiddenInput = $('<input>')
+		.attr('type', 'hidden')
+		.attr('value', '');
+	
+	$div.append($hiddenInput);
+	
+	// Set the input value and attributes
+	$hiddenInput.val(JSON.stringify(value));
+	$hiddenInput.uniqueId();
+	$hiddenInput.attr('name', 'md_' + $hiddenInput.attr('id'));
+	
+	return $div;
 	
 }
 
@@ -278,17 +325,34 @@ function validate()
 	*/
 	
 	if (errors.length) {
-		var html = '<div class="col-md-offset-3" style="padding-left: 15px">';
-		html += '<div style="margin-bottom: 5px; color: red"><strong>' + translate('Erreurs :') + '</strong></div>';
+		// Create DOM elements securely instead of HTML string concatenation
+		var $errorContainer = $('<div>')
+			.addClass('col-md-offset-3')
+			.css('padding-left', '15px');
+		
+		var $errorHeader = $('<div>')
+			.css({
+				'margin-bottom': '5px',
+				'color': 'red'
+			})
+			.append($('<strong>').text(translate('Erreurs :')));
+		
+		$errorContainer.append($errorHeader);
+		
 		for(var i in errors) {
-			html += '<div style="margin-left: 10px; color: red"> * ' + errors[i] + '</div>';
+			var $errorItem = $('<div>')
+				.css({
+					'margin-left': '10px',
+					'color': 'red'
+				})
+				.text(' * ' + errors[i]);
+			$errorContainer.append($errorItem);
 		}
-		html += '</div>';
 		
 		if (!$('.modal-body .errors').length) {
-			$('.modal-body').append('<div class="errors">'+html+'</div>');
+			$('.modal-body').append($('<div>').addClass('errors').append($errorContainer));
 		} else {
-			$('.modal-body .errors').html(html);
+			$('.modal-body .errors').empty().append($errorContainer);
 		}
 		return false;
 	} else {
