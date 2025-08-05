@@ -161,22 +161,26 @@ function stripAccents(string) {
 }
 
 function getLoader() {
-    let loading = '';
-    loading += '<div class="loader">';
-    loading += '<div class="text-info text-center" style="font-size: 12px">' + translate("Chargement en cours") + '</div>';
-    loading += '<div class="progress progress-striped active" style="height: 7px;">';
-    loading += '<div class="progress-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">';
-    loading += '</div>';
-    loading += '</div>';
-    loading += '</div>';
-
-    return loading;
+    const loading = `
+        <div class="loader">
+            <div class="text-info text-center" style="font-size: 12px;">
+                ${translate("Chargement en cours")}
+            </div>
+            <div class="progress progress-striped active" style="height: 7px;">
+                <div class="progress-bar" role="progressbar" aria-valuenow="100"
+                     aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                </div>
+            </div>
+        </div>
+    `;
+    return loading.trim();
 }
 
-function getLoaderAffi(){
-    loading = "<img src=/img/episciences_sign_50x50.png class='loader-affi'>";
-    return loading;
+
+function getLoaderAffi() {
+    return `<img src="/img/episciences_sign_50x50.png" class="loader-affi" alt="${translate('Chargement en cours')}" />`;
 }
+
 
 function ucfirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -315,13 +319,14 @@ function dateIsBetween(input, min, max) {
     return inputDate >= minDate && inputDate <= maxDate;
 }
 
-function nl2br(str, is_xhtml) {
-    var breakTag = (is_xhtml || typeof is_xhtml === 'undefined') ? '<br />' : '<br>';
-    return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1' + breakTag + '$2');
+function nl2br(str) {
+    if (str == null) return '';
+    const breakTag = '<br>';
+    return String(str).replace(/([^\r\n]*)(\r\n|\n\r|\r|\n)/g, `$1${breakTag}$2`);
 }
 
 function isPositiveInteger(s) {
-    return !!s.match(/^[0-9]+$/);
+    return typeof s === 'string' && /^[1-9][0-9]*$/.test(s.trim());
 }
 
 function filterList(input, elements) {
@@ -351,13 +356,17 @@ function scrollTo(target, container) {
 }
 
 function htmlEntities(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    if (str == null) return '';
+    const entityMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    };
+    return String(str).replace(/[&<>"']/g, match => entityMap[match]);
 }
+
 
 /**
  * create a permalink from a string
