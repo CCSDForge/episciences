@@ -79,6 +79,11 @@ function getFirstOf(data) {
 }
 
 function readableBytes(bytes, locale) {
+    // Convert string numbers to actual numbers
+    if (typeof bytes === 'string' && !isNaN(bytes) && bytes.trim() !== '') {
+        bytes = parseFloat(bytes);
+    }
+    
     // Input validation
     if (typeof bytes !== 'number' || isNaN(bytes) || bytes < 0) {
         return '0 bytes';
@@ -122,7 +127,6 @@ function readableBytes(bytes, locale) {
     
     return formattedValue + ' ' + unit;
 }
-
 
 //Tableau de remplacement des accents
 var stripAccentsMap = [
