@@ -44,7 +44,7 @@ jobs:
       run: yarn test --coverage --watchAll=false
       
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: matrix.node-version == '20.x'
       with:
         file: ./coverage/lcov.info
