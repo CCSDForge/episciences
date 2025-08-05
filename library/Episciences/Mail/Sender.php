@@ -256,7 +256,7 @@ class Episciences_Mail_Sender
 
             if (empty($subject) && empty($bodyHtml) && empty($filesList)) {
                 $this->moveDirectory($mailPath, $this->getPath() . 'log/' . $mail_directory);
-                return ($mailPath . ' : ERROR: Message without Content');
+                return $mailPath . ' : ERROR: Message without Content';
             }
 
             if (APPLICATION_ENV == ENV_DEV) {
@@ -318,14 +318,11 @@ class Episciences_Mail_Sender
     /**
      * Récupération d'une liste d'adresses pour le header
      * Le paramètre est le nom de la liste à récupérer (to, cc_, bcc)
-     * @param $listname string
-     * @return string
      */
-    private function getAddressList($listname)
+    private function getAddressList($listname): bool|array
     {
-        $res = false;
         if (empty($this->mail->{$listname . '_list'}->$listname)) {
-            return $res;
+            return false;
         }
 
         $res = [];
@@ -414,7 +411,7 @@ class Episciences_Mail_Sender
      * Met à jour le log
      * @param $message string
      */
-    private function updateLog($message)
+    private function updateLog($message): void
     {
         file_put_contents($this->getPath() . 'log/log.txt', $message . PHP_EOL, FILE_APPEND);
     }

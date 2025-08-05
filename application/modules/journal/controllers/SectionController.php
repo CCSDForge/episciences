@@ -99,7 +99,16 @@ class SectionController extends Zend_Controller_Action
                 $section->setOptions($values);
                 $section->setSetting('status', $form->getValue('status'));
 
+                // Convert the data
+                $titles = Episciences_SectionsManager::revertSectionTitleToTextArray($values) ?? null;
+                $descriptions = Episciences_SectionsManager::revertSectionDescriptionToTextareaArray($values) ?? null;
+                // Update the properties of the object
+                $section->setTitles($titles);
+                $section->setDescriptions($descriptions);
+
+
                 if ($section->save()) {
+
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
