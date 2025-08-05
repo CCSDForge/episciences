@@ -3,7 +3,7 @@ name: JavaScript Tests
 # Run tests on pull requests and pushes to main branch
 on:
   pull_request:
-    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
     paths:
       - 'public/js/**'
       - 'tests/js/**'
@@ -11,7 +11,7 @@ on:
       - 'yarn.lock'
       - '.github/workflows/js-tests.yml'
   push:
-    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
     paths:
       - 'public/js/**'
       - 'tests/js/**'

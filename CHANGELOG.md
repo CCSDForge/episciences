@@ -19,11 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - DOI metadata: stop overwriting acceptance date with the last modification date
 - #693 allow to save comment without attachment
+- #690 ORCID might be duplicated when one of the authors has no ORCID
 - #702 Inclusion of arxiv article version invalidates document identifier
 
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
-
+- CSV import functionality for sections
 
 v1.0.51 - 2025-04-07
 ### Changed

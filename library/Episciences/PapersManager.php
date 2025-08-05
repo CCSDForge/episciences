@@ -741,22 +741,17 @@ class Episciences_PapersManager
      * Retourne l'identifiant de l'article si ce dernier est dèjà publié
      * @param int $paperId
      * @return int
+     * @throws Zend_Db_Statement_Exception
      */
     public static function getPublishedPaperId(int $paperId): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        try {
-            $select = $db
-                ->select()
-                ->from(T_PAPERS)
-                ->where('PAPERID = ?', $paperId)
-                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
-            $data = $select->query()->fetch();
-        } catch (Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-            return 0;
-        }
+        $select = $db
+            ->select()
+            ->from(T_PAPERS)
+            ->where('PAPERID = ?', $paperId)
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        $data = $select->query()->fetch();
 
         if (!$data) {
             return 0;

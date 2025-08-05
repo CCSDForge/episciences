@@ -1,5 +1,6 @@
 <?php
 
+use Html2Text\Html2Text;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
@@ -103,7 +104,7 @@ class Episciences_Mail_Sender
 
         // Chargement du XML ****************************************************
         if (!is_dir($mailPath)) {
-            return ("Le chemin spécifié n'existe pas : " . $mailPath);
+            return "Le chemin spécifié n'existe pas : " . $mailPath;
         }
 
         $xmlfilename = $mailPath . '/mail.xml';
@@ -165,7 +166,7 @@ class Episciences_Mail_Sender
             $bodyHtml = ($this->mail->bodyHtml) ? htmlspecialchars_decode($this->mail->bodyHtml) : '';
 
             $mailer->msgHTML($bodyHtml, '', function ($bodyHtml) {
-                $converter = new \Html2Text\Html2Text($bodyHtml);
+                $converter = new Html2Text($bodyHtml);
                 return $converter->getText();
             });
 
@@ -173,7 +174,7 @@ class Episciences_Mail_Sender
 
             if (empty($to)) {
                 $this->moveDirectory($mailPath, $this->getPath() . 'log/' . $mail_directory);
-                return ($mailPath . ' : Error: No recipient');
+                return $mailPath . ' : Error: No recipient';
             }
 
             foreach ($to as $TO_recipientArray) {
