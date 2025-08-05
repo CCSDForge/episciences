@@ -348,9 +348,51 @@ function isEmail(email) {
 }
 
 
-function isISOdate(input, pattern) {
-    if (!pattern) pattern = /(^\d{4}-\d{1,2}-\d{1,2}$)/g;
-    return (input.match(pattern)) ? true : false;
+/**
+ * Check if a string matches ISO date format (YYYY-MM-DD)
+ * @param {string} input - The string to validate
+ * @param {RegExp} [pattern] - Optional custom pattern (defaults to ISO date pattern)
+ * @param {boolean} [strict=false] - If true, validates that the date actually exists
+ * @returns {boolean} True if input matches the pattern and is a valid date (if strict)
+ */
+function isISOdate(input, pattern, strict = false) {
+    // Input validation
+    if (typeof input !== 'string' || input.trim() === '') {
+        return false;
+    }
+    
+    // Default pattern for ISO date format (YYYY-MM-DD)
+    if (!pattern) {
+        pattern = /^\d{4}-\d{2}-\d{2}$/;
+    }
+    
+    // Check pattern match
+    if (!pattern.test(input)) {
+        return false;
+    }
+    
+    // If strict validation is requested, check if the date actually exists
+    if (strict) {
+        const date = new Date(input + 'T00:00:00.000Z'); // Add time to avoid timezone issues
+        
+        // Check if date is valid and matches the input
+        if (isNaN(date.getTime())) {
+            return false;
+        }
+        
+        // Extract parts from input
+        const parts = input.split('-');
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+        
+        // Verify the date components match (handles invalid dates like 2023-02-30)
+        return date.getUTCFullYear() === year &&
+               date.getUTCMonth() === month - 1 && // Month is 0-indexed
+               date.getUTCDate() === day;
+    }
+    
+    return true;
 }
 
 function isValidDate(input, separator) {
