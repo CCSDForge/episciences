@@ -36,7 +36,7 @@ $(document).ready(function() {
 				var values = (($('#mTmpData').val())) ? JSON.parse($('#mTmpData').val()) : new Object();
 				values.tmpfile = JSON.stringify(file);
 				$('#mTmpData').val(JSON.stringify(values));
-				$('#mFile_content').html( formatFileLabel(file.name + ' (' + readabeBytes(file.size, lang) + ')') );
+				$('#mFile_content').empty().append(formatFileLabel(file.name + ' (' + readabeBytes(file.size, lang) + ')'));
 				$('#value_mFile').val('');
 			}
 		});	
@@ -66,13 +66,28 @@ function getContainer(element)
 
 function formatFileLabel(label) 
 {
-	var html = '';
-	html += '<div class="small grey">';
-	html += '<span class="glyphicon glyphicon-remove-circle remove-file" onclick="removeFile()" style="margin-right: 5px; cursor: pointer" /> ';
-	html += label;
-	html += '<input type="hidden" name="" />';
-	html += '</div>';
-	return html;
+	// Create DOM elements securely instead of HTML string concatenation
+	var $div = $('<div>').addClass('small grey');
+	
+	var $span = $('<span>')
+		.addClass('glyphicon glyphicon-remove-circle remove-file')
+		.attr('onclick', 'removeFile()')
+		.css({
+			'margin-right': '5px',
+			'cursor': 'pointer'
+		});
+	
+	var $hiddenInput = $('<input>')
+		.attr('type', 'hidden')
+		.attr('name', '');
+	
+	// Safely add text content and append elements
+	$div.append($span)
+		.append(' ')
+		.append(document.createTextNode(label))
+		.append($hiddenInput);
+	
+	return $div;
 }
 
 function removeFile()
@@ -87,7 +102,7 @@ function removeFile()
 		values.tmpfile = '';
 		$('#mFile_content').html('');
 		if (values.file) {
-			$('#mFile_content').html(formatFileLabel(values.file));
+			$('#mFile_content').empty().append(formatFileLabel(values.file));
 		}
 		$('#mTmpData').val(JSON.stringify(values));
 		
@@ -143,7 +158,7 @@ function init(source) {
 				var filename = values.file;
 			}
 			var container = getContainer($('#mFile'));
-			$(container).html(formatFileLabel(filename));
+			$(container).empty().append(formatFileLabel(filename));
 		}
 	}
 }
