@@ -79,7 +79,7 @@ jobs:
         cache: 'yarn'
         
     - name: Install JavaScript dependencies
-      run: yarn install --immutable
+      run: yarn install
       
     - name: Run JavaScript tests
       run: yarn test --coverage --watchAll=false --verbose
