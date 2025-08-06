@@ -14,6 +14,12 @@
     {
       "matchBaseBranches": ["staging"],
       "labels": ["staging-update"]
+    },
+    {
+      "matchManagers": ["composer"],
+      "matchDepTypes": ["require", "require-dev"],
+      "constraintsFiltering": "strict",
+      "ignoreUnstable": false
     }
   ]
 }
