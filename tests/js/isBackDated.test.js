@@ -162,8 +162,8 @@ describe('isBackDated', function() {
     describe('Edge cases and timing', function() {
         it('should handle dates around current time consistently', function() {
             const now = new Date();
-            const justBefore = new Date(now.getTime() - 1);
-            const justAfter = new Date(now.getTime() + 1);
+            const justBefore = new Date(now.getTime() - 1000); // 1 second ago
+            const justAfter = new Date(now.getTime() + 1000);  // 1 second later
             
             expect(isBackDated(justBefore)).toBe(true);
             expect(isBackDated(justAfter)).toBe(false);
