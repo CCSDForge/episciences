@@ -1,11 +1,17 @@
 const DATATABLE_LANGUAGE = {
-    "lengthMenu": translate("Afficher") + " _MENU_ " + translate("lignes"),
-    "search": translate("Rechercher") + " :",
-    "zeroRecords": translate("Aucun résultat"),
-    "info": translate("Lignes") + " _START_ " + translate("à") + " _END_, " + translate("sur") + " _TOTAL_ ",
-    "infoEmpty": translate("Aucun résultat affiché"),
-    "infoFiltered": "(" + translate("filtrés sur les") + " _MAX_)",
-    "paginate": {"sPrevious": "", "sNext": ""}
+    lengthMenu: translate('Afficher') + ' _MENU_ ' + translate('lignes'),
+    search: translate('Rechercher') + ' :',
+    zeroRecords: translate('Aucun résultat'),
+    info:
+        translate('Lignes') +
+        ' _START_ ' +
+        translate('à') +
+        ' _END_, ' +
+        translate('sur') +
+        ' _TOTAL_ ',
+    infoEmpty: translate('Aucun résultat affiché'),
+    infoFiltered: '(' + translate('filtrés sur les') + ' _MAX_)',
+    paginate: { sPrevious: '', sNext: '' },
 };
 
 var $modal_box;
@@ -17,7 +23,6 @@ var $modal_form;
 var openedPopover;
 
 $(document).ready(function () {
-
     $modal_box = $('#modal-box');
     $modal_body = $modal_box.find('.modal-body');
     $modal_footer = $modal_box.find('.modal-footer');
@@ -26,7 +31,8 @@ $(document).ready(function () {
 
     // fix for making TinyMCE dialog boxes work with bootstrap modals
     $(document).on('focusin', function (e) {
-        if ($(e.target).closest(".tox-dialog").length) { //https://stackoverflow.com/questions/18111582/tinymce-4-links-plugin-modal-in-not-editable
+        if ($(e.target).closest('.tox-dialog').length) {
+            //https://stackoverflow.com/questions/18111582/tinymce-4-links-plugin-modal-in-not-editable
             e.stopImmediatePropagation();
         }
     });
@@ -42,7 +48,7 @@ $(document).ready(function () {
         },
         hide: function () {
             $(this).css('overflow', 'hidden');
-        }
+        },
     });
 
     // tooltips activation
@@ -57,7 +63,12 @@ $(document).ready(function () {
     $(document).on('click', 'a.modal-opener', function (e) {
         e.preventDefault();
         $('.popover-link').popover('destroy');
-        openModal($(this).attr('href'), $(this).attr('title'), $(this).data(), e);
+        openModal(
+            $(this).attr('href'),
+            $(this).attr('title'),
+            $(this).data(),
+            e
+        );
         return false;
     });
 
@@ -82,19 +93,19 @@ function getFirstOf(data) {
     if (!data || typeof data !== 'object') {
         return undefined;
     }
-    
+
     // Handle arrays more efficiently
     if (Array.isArray(data)) {
         return data.length > 0 ? data[0] : undefined;
     }
-    
+
     // Handle objects
     for (var key in data) {
         if (data.hasOwnProperty(key)) {
             return data[key];
         }
     }
-    
+
     return undefined;
 }
 
@@ -103,35 +114,42 @@ function readableBytes(bytes, locale) {
     if (typeof bytes === 'string' && !isNaN(bytes) && bytes.trim() !== '') {
         bytes = parseFloat(bytes);
     }
-    
+
     // Input validation
-    if (typeof bytes !== 'number' || isNaN(bytes) || bytes < 0 || !isFinite(bytes)) {
+    if (
+        typeof bytes !== 'number' ||
+        isNaN(bytes) ||
+        bytes < 0 ||
+        !isFinite(bytes)
+    ) {
         return '0 bytes';
     }
-    
+
     // Handle zero bytes
     if (bytes === 0) {
         return locale === 'fr' ? '0 octet' : '0 bytes';
     }
-    
+
     // Define unit arrays with proper pluralization
-    var units = (locale === 'fr') ? 
-        ['octet', 'Ko', 'Mo', 'Go', 'To', 'Po'] : 
-        ['byte', 'KB', 'MB', 'GB', 'TB', 'PB'];
-    
-    var pluralUnits = (locale === 'fr') ? 
-        ['octets', 'Ko', 'Mo', 'Go', 'To', 'Po'] : 
-        ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-    
+    var units =
+        locale === 'fr'
+            ? ['octet', 'Ko', 'Mo', 'Go', 'To', 'Po']
+            : ['byte', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
+    var pluralUnits =
+        locale === 'fr'
+            ? ['octets', 'Ko', 'Mo', 'Go', 'To', 'Po']
+            : ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
     // Calculate the appropriate unit scale
     var unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
-    
+
     // Clamp to available units (prevent array out of bounds)
     unitIndex = Math.min(unitIndex, units.length - 1);
-    
+
     // Calculate the scaled value
     var scaledValue = bytes / Math.pow(1024, unitIndex);
-    
+
     // Format with appropriate precision
     var formattedValue;
     if (scaledValue >= 100) {
@@ -141,10 +159,13 @@ function readableBytes(bytes, locale) {
     } else {
         formattedValue = Math.round(scaledValue * 100) / 100;
     }
-    
+
     // Choose singular or plural unit
-    var unit = (formattedValue === 1 && unitIndex === 0) ? units[unitIndex] : pluralUnits[unitIndex];
-    
+    var unit =
+        formattedValue === 1 && unitIndex === 0
+            ? units[unitIndex]
+            : pluralUnits[unitIndex];
+
     return formattedValue + ' ' + unit;
 }
 
@@ -164,7 +185,7 @@ function getLoader() {
     const loading = `
         <div class="loader">
             <div class="text-info text-center" style="font-size: 12px;">
-                ${translate("Chargement en cours")}
+                ${translate('Chargement en cours')}
             </div>
             <div class="progress progress-striped active" style="height: 7px;">
                 <div class="progress-bar" role="progressbar" aria-valuenow="100"
@@ -176,11 +197,9 @@ function getLoader() {
     return loading.trim();
 }
 
-
 function getLoaderAffi() {
     return `<img src="/img/episciences_sign_50x50.png" class="loader-affi" alt="${translate('Chargement en cours')}" />`;
 }
-
 
 function ucfirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -188,10 +207,10 @@ function ucfirst(string) {
 
 function isEmail(email) {
     // Simple, efficient email validation pattern that avoids backtracking issues
-    var pattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    var pattern =
+        /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     return pattern.test(email);
 }
-
 
 /**
  * Check if a string matches ISO date format (YYYY-MM-DD)
@@ -205,12 +224,12 @@ function isISOdate(input, pattern, strict = false) {
     if (typeof input !== 'string' || input.trim() === '') {
         return false;
     }
-    
+
     // Default pattern for ISO date format (YYYY-MM-DD)
     if (!pattern) {
         pattern = /^\d{4}-\d{2}-\d{2}$/;
     }
-    
+
     // Check pattern match (reset global regex state)
     if (pattern.global) {
         pattern.lastIndex = 0; // Reset global regex state
@@ -218,28 +237,30 @@ function isISOdate(input, pattern, strict = false) {
     if (!pattern.test(input)) {
         return false;
     }
-    
+
     // If strict validation is requested, check if the date actually exists
     if (strict) {
         const date = new Date(input + 'T00:00:00.000Z'); // Add time to avoid timezone issues
-        
+
         // Check if date is valid and matches the input
         if (isNaN(date.getTime())) {
             return false;
         }
-        
+
         // Extract parts from input
         const parts = input.split('-');
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10);
         const day = parseInt(parts[2], 10);
-        
+
         // Verify the date components match (handles invalid dates like 2023-02-30)
-        return date.getUTCFullYear() === year &&
-               date.getUTCMonth() === month - 1 && // Month is 0-indexed
-               date.getUTCDate() === day;
+        return (
+            date.getUTCFullYear() === year &&
+            date.getUTCMonth() === month - 1 && // Month is 0-indexed
+            date.getUTCDate() === day
+        );
     }
-    
+
     return true;
 }
 
@@ -254,36 +275,40 @@ function isValidDate(input, separator) {
     if (typeof input !== 'string' || input.trim() === '') {
         return false;
     }
-    
+
     // Default separator
     if (!separator) separator = '-';
-    
+
     // Trim whitespace from input
     input = input.trim();
-    
+
     // If using default separator (-), leverage isISOdate function
     if (separator === '-') {
         return isISOdate(input, null, true); // Use strict validation
     }
-    
+
     // For custom separators, convert to ISO format and validate
     const parts = input.trim().split(separator);
-    
+
     // Must have exactly 3 parts
     if (parts.length !== 3) {
         return false;
     }
-    
+
     // Check format: should be YYYY-MM-DD order
     const year = parts[0];
     const month = parts[1];
     const day = parts[2];
-    
+
     // Basic format validation (4 digits for year, 2 digits for month/day)
-    if (!/^\d{4}$/.test(year) || !/^\d{2}$/.test(month) || !/^\d{2}$/.test(day)) {
+    if (
+        !/^\d{4}$/.test(year) ||
+        !/^\d{2}$/.test(month) ||
+        !/^\d{2}$/.test(day)
+    ) {
         return false;
     }
-    
+
     // Convert to ISO format and use isISOdate for validation
     const isoDate = `${year}-${month}-${day}`;
     return isISOdate(isoDate, null, true); // Use strict validation
@@ -299,22 +324,26 @@ function isValidDate(input, separator) {
 function dateIsBetween(input, min, max) {
     // If either boundary is missing, return true (no constraints)
     if (!min || !max) return true;
-    
+
     // Convert all inputs to Date objects
     const inputDate = new Date(input);
     const minDate = new Date(min);
     const maxDate = new Date(max);
-    
+
     // Validate all dates are valid
-    if (isNaN(inputDate.getTime()) || isNaN(minDate.getTime()) || isNaN(maxDate.getTime())) {
+    if (
+        isNaN(inputDate.getTime()) ||
+        isNaN(minDate.getTime()) ||
+        isNaN(maxDate.getTime())
+    ) {
         return false;
     }
-    
+
     // Ensure min is not greater than max
     if (minDate > maxDate) {
         return false;
     }
-    
+
     // Check if input date is between min and max (inclusive)
     return inputDate >= minDate && inputDate <= maxDate;
 }
@@ -322,7 +351,10 @@ function dateIsBetween(input, min, max) {
 function nl2br(str) {
     if (str == null) return '';
     const breakTag = '<br>';
-    return String(str).replace(/([^\r\n]*)(\r\n|\n\r|\r|\n)/g, `$1${breakTag}$2`);
+    return String(str).replace(
+        /([^\r\n]*)(\r\n|\n\r|\r|\n)/g,
+        `$1${breakTag}$2`
+    );
 }
 
 function isPositiveInteger(s) {
@@ -335,16 +367,18 @@ function filterList(input, elements) {
     if (query.length) {
         $(elements).css('display', 'none');
         $(elements).next('br').css('display', 'none');
-        $(elements).filter(function (index) {
-            var value = stripAccents($(this).text());
-            var regex = new RegExp(query, 'gi');
-            if (value.match(regex)) {
-                $(this).next('br').css('display', '');
-                return true;
-            } else {
-                return false;
-            }
-        }).css('display', '');
+        $(elements)
+            .filter(function (index) {
+                var value = stripAccents($(this).text());
+                var regex = new RegExp(query, 'gi');
+                if (value.match(regex)) {
+                    $(this).next('br').css('display', '');
+                    return true;
+                } else {
+                    return false;
+                }
+            })
+            .css('display', '');
     } else {
         $(elements).css('display', '');
         $(elements).next('br').css('display', '');
@@ -367,7 +401,6 @@ function htmlEntities(str) {
     return String(str).replace(/[&<>"']/g, match => entityMap[match]);
 }
 
-
 /**
  * create a permalink from a string
  * @param str
@@ -375,8 +408,8 @@ function htmlEntities(str) {
  */
 function permalink(str) {
     str = str.toLowerCase();
-    var from = "àáäâèéëêìíïîòóöôùúüûñç·_,:;";
-    var to = "aaaaeeeeiiiioooouuuunc-----";
+    var from = 'àáäâèéëêìíïîòóöôùúüûñç·_,:;';
+    var to = 'aaaaeeeeiiiioooouuuunc-----';
     for (var i = 0, l = from.length; i < l; i++) {
         str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
     }
@@ -389,17 +422,20 @@ function permalink(str) {
 }
 
 function message(text, type) {
-    $("#flash-messages").html(getMessageHtml(text, type));
+    $('#flash-messages').html(getMessageHtml(text, type));
     setTimeout(function () {
-        $("#flash-messages").find(".alert").alert("close");
+        $('#flash-messages').find('.alert').alert('close');
     }, 10000);
 }
 
 function getMessageHtml(text, type) {
-    return '<div class="alert '
-        + type
-        + '"><button type="button" class="close" data-dismiss="alert">&times;</button>'
-        + htmlEntities(text) + '</div>';
+    return (
+        '<div class="alert ' +
+        type +
+        '"><button type="button" class="close" data-dismiss="alert">&times;</button>' +
+        htmlEntities(text) +
+        '</div>'
+    );
 }
 
 // check if multiling. input languages have been set
@@ -407,20 +443,38 @@ function validMultilangInput(id, mce) {
     var langs = [];
 
     if (mce) {
-        $('#' + id).next('div').find('li a').each(function () {
-            langs.push($(this).attr('val'));
-        });
+        $('#' + id)
+            .next('div')
+            .find('li a')
+            .each(function () {
+                langs.push($(this).attr('val'));
+            });
         for (i in langs) {
-            if (!$modal_form.find('textarea[name="' + id + '[' + langs[i] + ']"]').val() && (!tinyMCE.activeEditor.getContent() || $('#' + id + '-element').find('button[data-toggle="dropdown"]').val() != langs[i])) {
+            if (
+                !$modal_form
+                    .find('textarea[name="' + id + '[' + langs[i] + ']"]')
+                    .val() &&
+                (!tinyMCE.activeEditor.getContent() ||
+                    $('#' + id + '-element')
+                        .find('button[data-toggle="dropdown"]')
+                        .val() != langs[i])
+            ) {
                 return false;
             }
         }
     } else {
-        $('#' + id).next('span').find('li a').each(function () {
-            langs.push($(this).attr('val'));
-        });
+        $('#' + id)
+            .next('span')
+            .find('li a')
+            .each(function () {
+                langs.push($(this).attr('val'));
+            });
         for (i in langs) {
-            if (!$modal_form.find('input[name="' + id + '[' + langs[i] + ']"]').val()) {
+            if (
+                !$modal_form
+                    .find('input[name="' + id + '[' + langs[i] + ']"]')
+                    .val()
+            ) {
                 return false;
             }
         }
@@ -442,10 +496,10 @@ function activateTooltips(params = {}) {
     params.hide = params.hide || 100;
 
     $("[data-toggle~='tooltip']").tooltip({
-        'container': params.container,
-        'placement': params.placement,
-        'html': params.html,
-        'delay': {'show': params.show, 'hide': params.hide}
+        container: params.container,
+        placement: params.placement,
+        html: params.html,
+        delay: { show: params.show, hide: params.hide },
     });
 }
 
@@ -455,15 +509,16 @@ function activateTooltips(params = {}) {
  */
 function activateTooltip($target) {
     $target.tooltip({
-        delay: {'show': 500},
+        delay: { show: 500 },
         html: true,
-        placement: 'bottom'
+        placement: 'bottom',
     });
 }
 
 function addToggleButton(datatable, target) {
     var toggle_button = '';
-    toggle_button += '<button class="dt-toggle-button btn btn-default btn-sm pull-right" ';
+    toggle_button +=
+        '<button class="dt-toggle-button btn btn-default btn-sm pull-right" ';
     toggle_button += 'style="margin-left: 2px" ';
     toggle_button += 'title="' + translate('Afficher / Masquer') + '">';
     toggle_button += '<span class="glyphicon glyphicon-list-alt"></span>';
@@ -471,20 +526,36 @@ function addToggleButton(datatable, target) {
     $(target).prepend(toggle_button);
 
     var content = '<div class="dt-columns">';
-    $(datatable).DataTable().columns().every(function () {
-        var th = this.header();
-        var i = this.index();
-        var label = ($(th).data('name')) ? $(th).data('name') : $(th).text();
-        var checked = (this.visible()) ? 'checked' : '';
-        content += '<div><input id="col-' + i + '" name="col-' + i + '" type="checkbox" value="' + i + '" ' + checked + ' /> <label for="col-' + i + '">' + htmlEntities(label) + '</label></div>';
-    });
+    $(datatable)
+        .DataTable()
+        .columns()
+        .every(function () {
+            var th = this.header();
+            var i = this.index();
+            var label = $(th).data('name') ? $(th).data('name') : $(th).text();
+            var checked = this.visible() ? 'checked' : '';
+            content +=
+                '<div><input id="col-' +
+                i +
+                '" name="col-' +
+                i +
+                '" type="checkbox" value="' +
+                i +
+                '" ' +
+                checked +
+                ' /> <label for="col-' +
+                i +
+                '">' +
+                htmlEntities(label) +
+                '</label></div>';
+        });
     content += '</div>';
 
     $('.dt-toggle-button').popover({
-        'container': '#container',
-        'placement': 'bottom',
-        'html': true,
-        'content': content
+        container: '#container',
+        placement: 'bottom',
+        html: true,
+        content: content,
     });
 
     $('body').on('change', '.dt-columns :checkbox', function () {
@@ -492,20 +563,34 @@ function addToggleButton(datatable, target) {
         column.visible($(this).is(':checked'));
     });
 
-    $('.dt-toggle-button').popover().on('shown.bs.popover', function () {
-        $(datatable).DataTable().columns().every(function () {
-            $('#col-' + this.index()).prop('checked', this.visible());
+    $('.dt-toggle-button')
+        .popover()
+        .on('shown.bs.popover', function () {
+            $(datatable)
+                .DataTable()
+                .columns()
+                .every(function () {
+                    $('#col-' + this.index()).prop('checked', this.visible());
+                });
         });
-    });
 }
 
 function applyCollapse(object) {
     // alert($(object).attr('id') + ' : collapsable');
     var openTooltip = translate('Déplier');
     var closeTooltip = translate('Replier');
-    var style = ($(object).find('.panel-body:first').hasClass('in')) ? 'glyphicon-chevron-up' : 'glyphicon-chevron-down';
-    var tooltip = ($(object).find('.panel-body:first').hasClass('in')) ? closeTooltip : openTooltip;
-    var button = '<div class="collapseButton" data-toggle="tooltip" title="' + htmlEntities(tooltip) + '"><span class="glyphicon ' + style + '"></span></div>';
+    var style = $(object).find('.panel-body:first').hasClass('in')
+        ? 'glyphicon-chevron-up'
+        : 'glyphicon-chevron-down';
+    var tooltip = $(object).find('.panel-body:first').hasClass('in')
+        ? closeTooltip
+        : openTooltip;
+    var button =
+        '<div class="collapseButton" data-toggle="tooltip" title="' +
+        htmlEntities(tooltip) +
+        '"><span class="glyphicon ' +
+        style +
+        '"></span></div>';
     $(object).find('.panel-heading:first .panel-title').append(button);
     if (!$(object).find('.panel-body:first').hasClass('in')) {
         $(object).find('.panel-body').css('display', 'none');
@@ -514,17 +599,28 @@ function applyCollapse(object) {
     $('.collapseButton', object).tooltip();
     $('.panel-heading:first', object).click(function () {
         $(this).closest('.panel').find('.panel-body').toggle();
-        if ($(this).find('.collapseButton span').hasClass('glyphicon-chevron-down')) {
-            $(this).find('.collapseButton span').removeClass('glyphicon-chevron-down');
-            $(this).find('.collapseButton span').addClass('glyphicon-chevron-up');
+        if (
+            $(this)
+                .find('.collapseButton span')
+                .hasClass('glyphicon-chevron-down')
+        ) {
+            $(this)
+                .find('.collapseButton span')
+                .removeClass('glyphicon-chevron-down');
+            $(this)
+                .find('.collapseButton span')
+                .addClass('glyphicon-chevron-up');
 
             $(this).find('.collapseButton').tooltip('destroy');
             $(this).find('.collapseButton').attr('title', closeTooltip);
             $(this).find('.collapseButton').tooltip();
-
         } else {
-            $(this).find('.collapseButton span').removeClass('glyphicon-chevron-up');
-            $(this).find('.collapseButton span').addClass('glyphicon-chevron-down');
+            $(this)
+                .find('.collapseButton span')
+                .removeClass('glyphicon-chevron-up');
+            $(this)
+                .find('.collapseButton span')
+                .addClass('glyphicon-chevron-down');
 
             $(this).find('.collapseButton').tooltip('destroy');
             $(this).find('.collapseButton').attr('title', openTooltip);
@@ -534,7 +630,7 @@ function applyCollapse(object) {
 }
 
 function modalStructureExists() {
-    return ($modal_box && $modal_box.length);
+    return $modal_box && $modal_box.length;
 }
 
 function createModalStructure(params) {
@@ -549,12 +645,11 @@ function createModalStructure(params) {
             $modal_body = $modal_box.find('.modal-body');
             $modal_footer = $modal_box.find('.modal-footer');
             $modal_button = $('#submit-modal');
-        }
+        },
     });
 }
 
 function openModal(url, title, params, source) {
-
     // set css params
     if (params) {
         for (let key in params) {
@@ -574,12 +669,16 @@ function openModal(url, title, params, source) {
     // run callback method (if there is one)
     if (params['callback']) {
         $modal_button.off('click.callback');
-        $modal_button.on('click.callback', {callback: params['callback']}, function (e) {
-            var callback = e.data.callback;
-            if (jQuery.isFunction(window[callback])) {
-                window[callback](source.target);
+        $modal_button.on(
+            'click.callback',
+            { callback: params['callback'] },
+            function (e) {
+                var callback = e.data.callback;
+                if (jQuery.isFunction(window[callback])) {
+                    window[callback](source.target);
+                }
             }
-        });
+        );
     } else {
         $modal_button.on('click', function (e) {
             // submit form if necessary
@@ -592,18 +691,21 @@ function openModal(url, title, params, source) {
 
     // init modal
     $modal_box.find('.modal-title').text(title);
-    $modal_box.draggable({handle: ".modal-header"});
+    $modal_box.draggable({ handle: '.modal-header' });
     if (url) {
         // if ajax, destroy TinyMCE editors before refreshing content
         $modal_box.find('textarea').each(function () {
-            if (typeof (tinyMCE) != "undefined") {
-                tinyMCE.execCommand('mceRemoveEditor', false, $(this).attr('id'));
+            if (typeof tinyMCE != 'undefined') {
+                tinyMCE.execCommand(
+                    'mceRemoveEditor',
+                    false,
+                    $(this).attr('id')
+                );
             }
         });
         $modal_body.html(getLoader());
     }
     $modal_box.modal();
-
 
     // load content from remote url (ajax)
     if (url) {
@@ -611,12 +713,11 @@ function openModal(url, title, params, source) {
         let urlParams = oUrl.param();
         urlParams['ajax'] = true;
 
-        let displayContactsRequest = ajaxRequest(oUrl.attr('path'), urlParams );
-        displayContactsRequest.done(function(content){
+        let displayContactsRequest = ajaxRequest(oUrl.attr('path'), urlParams);
+        displayContactsRequest.done(function (content) {
             $modal_body.html(content);
             $modal_form = $modal_box.find('form');
         });
-
     } else if (params['content']) {
         $modal_body.html(params['content']);
     } else if (params['source']) {
@@ -639,7 +740,7 @@ function openModal(url, title, params, source) {
 
     $('#myModal').on('hidden.bs.modal', function () {
         // do something…
-    })
+    });
 }
 
 function resizeModal(width, height) {
@@ -654,21 +755,21 @@ function resizeModal(width, height) {
     $modal_box.find('.modal').css('margin-left', function () {
         return -($(this).width() / 2);
     });
-    $modal_body.css({'max-height': height});
+    $modal_body.css({ 'max-height': height });
 }
 
 function resetModalSize() {
     var default_width = '560px';
     var default_height = '400px';
-    var default_ml = '-' + (default_width / 2) + 'px';
+    var default_ml = '-' + default_width / 2 + 'px';
 
     $modal_box.find('.modal').css({
-        'width': default_width,
-        'margin': '-250px 0 0 ' + default_ml
+        width: default_width,
+        margin: '-250px 0 0 ' + default_ml,
     });
 
     $modal_body.css({
-        'max-height': default_height
+        'max-height': default_height,
     });
 }
 
@@ -682,8 +783,11 @@ function resetModalSize() {
  * @returns {string}
  */
 
-function getLocaleDate(date , oLocale = {language: 'en', country: 'br'}, options = {year: 'numeric', month: 'long', day: 'numeric'}) {
-
+function getLocaleDate(
+    date,
+    oLocale = { language: 'en', country: 'br' },
+    options = { year: 'numeric', month: 'long', day: 'numeric' }
+) {
     let parseDate = Date.parse(date);
 
     if (isNaN(parseDate)) {
@@ -707,20 +811,20 @@ function getLocaleDate(date , oLocale = {language: 'en', country: 'br'}, options
  * @returns {*}
  */
 function updateDeadlineTag(body, tagName, date, locale = 'en') {
-
     let search = new RegExp('<span class="' + tagName + '">(.*?)<\/span>');
     let content = body.getContent();
-    let replace = '<span class="revision_deadline">' + translate('dès que possible', locale) + '</span>';
+    let replace =
+        '<span class="revision_deadline">' +
+        translate('dès que possible', locale) +
+        '</span>';
 
     if (isISOdate(date) && isValidDate(date) && !isBackDated(date)) {
-
         let localeDate = getLocaleDate(date, {
             language: locale,
-            country: locale
+            country: locale,
         });
 
         replace = '<span class="' + tagName + '">' + localeDate + '</span>';
-
     }
 
     content = content.replace(search, replace);
@@ -754,12 +858,11 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
     let params = {
         url: url,
         type: type,
-        data: jData
+        data: jData,
     };
 
     if (dataType) {
         params.datatype = dataType;
-
     }
     return $.ajax(params);
 }
@@ -772,12 +875,14 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
 
 function getMultiScripts(sArr) {
     let _sArr = $.map(sArr, function (scr) {
-        return $.getScript((scr.path || "") + scr.script);
+        return $.getScript((scr.path || '') + scr.script);
     });
 
-    _sArr.push($.Deferred(function (deferred) {
-        $(deferred.resolve);
-    }));
+    _sArr.push(
+        $.Deferred(function (deferred) {
+            $(deferred.resolve);
+        })
+    );
 
     return $.when.apply($, _sArr);
 }
@@ -787,12 +892,12 @@ function in_array(needle, haystack, strict = false) {
     if (!Array.isArray(haystack)) {
         return -1;
     }
-    
+
     // Handle empty array
     if (haystack.length === 0) {
         return -1;
     }
-    
+
     // Use built-in methods for better performance when appropriate
     if (strict) {
         // For strict comparison, use indexOf which uses ===
@@ -814,57 +919,55 @@ function in_array(needle, haystack, strict = false) {
  * @param selector
  */
 function clearErrors(selector = '.errors') {
-    if($(selector).length){
+    if ($(selector).length) {
         if ($(selector)) {
             $(selector).empty();
         }
     }
 }
 
-
 function isValidHttpUrl(string) {
     // Input validation
     if (typeof string !== 'string' || string.trim() === '') {
         return false;
     }
-    
+
     // Trim whitespace
     string = string.trim();
-    
+
     // Basic length check (URLs shouldn't be too long)
     if (string.length > 2048) {
         return false;
     }
-    
+
     let url;
-    
+
     try {
         url = new URL(string);
     } catch (_) {
         return false;
     }
-    
+
     // Check protocol
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
         return false;
     }
-    
+
     // Check hostname exists and is valid
     if (!url.hostname || url.hostname.trim() === '') {
         return false;
     }
-    
+
     // Basic hostname validation - no spaces, basic format check
     if (/\s/.test(url.hostname) || url.hostname.includes('..')) {
         return false;
     }
-    
-    // Check for valid hostname format (allow localhost, IP addresses, and domains)
-    const hostnamePattern = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$|^localhost$|^(\d{1,3}\.){3}\d{1,3}$|^\[([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]*\]$/;
-    
-    return hostnamePattern.test(url.hostname);
-    
 
+    // Check for valid hostname format (allow localhost, IP addresses, and domains)
+    const hostnamePattern =
+        /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$|^localhost$|^(\d{1,3}\.){3}\d{1,3}$|^\[([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]*\]$/;
+
+    return hostnamePattern.test(url.hostname);
 }
 
 // jQuery sortable table bug fix
@@ -876,25 +979,23 @@ let fixHelperSortable = function (e, ui) {
 };
 
 function disableModalSubmitButton($selector = null) {
-
-    if($selector){
+    if ($selector) {
         $selector.prop('disabled', true);
         return;
     }
 
-    if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
+    if (typeof $modal_button !== 'undefined' && $modal_button.length > 0) {
         $modal_button.prop('disabled', true);
     }
 }
 
 function enableModalSubmitButton($selector = null) {
-
-    if($selector){
+    if ($selector) {
         $selector.prop('disabled', false);
         return;
     }
 
-    if(typeof $modal_button !== 'undefined' && $modal_button.length > 0){
+    if (typeof $modal_button !== 'undefined' && $modal_button.length > 0) {
         $modal_button.prop('disabled', false);
     }
 }
@@ -904,7 +1005,7 @@ function isBackDated(input) {
     if (input == null || input === '') {
         return false;
     }
-    
+
     // Handle different input types
     let inputDate;
     if (input instanceof Date) {
@@ -914,15 +1015,15 @@ function isBackDated(input) {
     } else {
         return false; // Invalid input type
     }
-    
+
     // Check if input date is valid
     if (isNaN(inputDate.getTime())) {
         return false;
     }
-    
+
     // Get current date and time
     const now = new Date();
-    
+
     // Compare dates - input is backdated if it's before now
     return inputDate < now;
 }
@@ -932,10 +1033,47 @@ function isBackDated(input) {
  * @param $element
  * @param newTitle
  */
-function updateTooltipTitle($element, newTitle = ''){
-
-    $element.attr('title', translate(newTitle))
+function updateTooltipTitle($element, newTitle = '') {
+    $element
+        .attr('title', translate(newTitle))
         .tooltip('fixTitle')
         .tooltip('show');
 }
 
+export function isEmptyData(arrayOrObject) {
+    let foundEmptyValue = 0;
+
+    if (Array.isArray(arrayOrObject)) {
+        let length = arrayOrObject.length;
+
+        for (let cpt = 0; cpt < length; cpt++) {
+            if (
+                arrayOrObject[cpt] === null ||
+                arrayOrObject[cpt] === 'undefined' ||
+                arrayOrObject[cpt] === 0 ||
+                arrayOrObject[cpt] === '0'
+            ) {
+                foundEmptyValue += 1;
+            }
+        }
+
+        return arrayOrObject.length === foundEmptyValue;
+    } else if (typeof arrayOrObject === 'object') {
+        for (const prop in arrayOrObject) {
+            if (Object.hasOwn(arrayOrObject, prop)) {
+                return false;
+            }
+        }
+    } else {
+        return true;
+    }
+}
+
+function truncate(string, length)
+{
+    if(string.length <= length) {
+        return string;
+    } else {
+        return string.substring(0,length)+end;
+    }
+}
