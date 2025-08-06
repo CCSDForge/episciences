@@ -3,11 +3,13 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "format": "prettier --write \"public/js/**/*.js\"",
-    "format:check": "prettier --check \"public/js/**/*.js\"",
-    "format:js": "prettier --write \"public/js/**/*.js\"",
+    "format": "prettier --write \"public/js/**/*.js\" \"tests/js/**/*.js\"",
+    "format:check": "prettier --check \"public/js/**/*.js\" \"tests/js/**/*.js\"",
+    "format:js": "prettier --write \"public/js/**/*.js\" \"tests/js/**/*.js\"",
     "format:json": "prettier --write \"public/js/**/*.json\"",
-    "lint:prettier": "prettier --check \"public/js/**/*.js\""
+    "format:tests": "prettier --write \"tests/js/**/*.js\"",
+    "format:tests:check": "prettier --check \"tests/js/**/*.js\"",
+    "lint:prettier": "prettier --check \"public/js/**/*.js\" \"tests/js/**/*.js\""
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
