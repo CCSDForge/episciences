@@ -46,7 +46,7 @@ jobs:
   #       fi
   #       
   #   - name: Upload PHP coverage
-  #     uses: codecov/codecov-action@v4
+  #     uses: codecov/codecov-action@v5
   #     if: matrix.php-version == '8.2'
   #     with:
   #       file: ./coverage-php.xml
@@ -80,7 +80,7 @@ jobs:
       run: yarn test --coverage --watchAll=false --verbose
       
     - name: Upload JavaScript coverage
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: matrix.node-version == '20.x'
       with:
         file: ./coverage/lcov.info
