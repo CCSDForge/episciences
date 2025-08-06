@@ -10,6 +10,9 @@
     "workarounds:all"
   ],
   "baseBranches": ["staging"],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "matchBaseBranches": ["staging"],
