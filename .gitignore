@@ -1,10 +1,13 @@
 # See : https://git-scm.com/docs/gitignore
 /.env
+.run/
 /.settings
 /.buildpath
 /.project
 /.idea/
 /.sass-cache/
+/sass/.sass-cache/
+/sass/components/.sass-cache/
 /.php_cs.cache/
 /.claude/
 
