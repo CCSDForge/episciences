@@ -1039,41 +1039,59 @@ function updateTooltipTitle($element, newTitle = '') {
         .tooltip('fixTitle')
         .tooltip('show');
 }
-
-export function isEmptyData(arrayOrObject) {
-    let foundEmptyValue = 0;
-
-    if (Array.isArray(arrayOrObject)) {
-        let length = arrayOrObject.length;
-
-        for (let cpt = 0; cpt < length; cpt++) {
-            if (
-                arrayOrObject[cpt] === null ||
-                arrayOrObject[cpt] === 'undefined' ||
-                arrayOrObject[cpt] === 0 ||
-                arrayOrObject[cpt] === '0'
-            ) {
-                foundEmptyValue += 1;
-            }
-        }
-
-        return arrayOrObject.length === foundEmptyValue;
-    } else if (typeof arrayOrObject === 'object') {
-        for (const prop in arrayOrObject) {
-            if (Object.hasOwn(arrayOrObject, prop)) {
-                return false;
-            }
-        }
-    } else {
+export function isEmptyData(value, visited = new WeakSet()) {
+    // Handle null and undefined
+    if (value === null || value === undefined) {
         return true;
     }
+    
+    // Handle arrays
+    if (Array.isArray(value)) {
+        // Check for circular reference
+        if (visited.has(value)) {
+            return false; // Circular arrays are not considered empty
+        }
+        visited.add(value);
+        
+        const result = value.length === 0 || value.every(item => isEmptyData(item, visited));
+        visited.delete(value);
+        return result;
+    }
+    
+    // Handle objects (but not Date, RegExp, etc.)
+    if (typeof value === 'object' && value.constructor === Object) {
+        // Check for circular reference
+        if (visited.has(value)) {
+            return false; // Circular objects are not considered empty
+        }
+        visited.add(value);
+        
+        const result = Object.keys(value).length === 0 || 
+               Object.values(value).every(val => isEmptyData(val, visited));
+        visited.delete(value);
+        return result;
+    }
+    
+    // Handle strings (including whitespace-only strings)
+    if (typeof value === 'string') {
+        return value.trim() === '';
+    }
+    
+    // Handle numbers (0 is considered empty for chart data)
+    if (typeof value === 'number') {
+        return value === 0;
+    }
+    
+    // Handle booleans (false is not considered empty)
+    if (typeof value === 'boolean') {
+        return false;
+    }
+    
+    // For other types (functions, symbols, etc.), consider them not empty
+    return false;
 }
 
-function truncate(string, length)
-{
-    if(string.length <= length) {
-        return string;
-    } else {
-        return string.substring(0,length)+end;
-    }
+export function truncate(str, length, suffix = '...') {
+    if (typeof str !== 'string') return '';
+    return str.length <= length ? str : str.slice(0, length) + suffix;
 }
