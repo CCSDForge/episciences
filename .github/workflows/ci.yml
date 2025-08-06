@@ -6,6 +6,11 @@ on:
   push:
     branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   # php-tests:
   #   name: PHP Tests (Disabled)
