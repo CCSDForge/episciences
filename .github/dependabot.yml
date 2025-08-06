@@ -1,13 +1,5 @@
 version: 2
 updates:
-  # JavaScript/Node.js dependencies
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    target-branch: "staging"
-    open-pull-requests-limit: 10
-
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
