@@ -8,14 +8,6 @@ updates:
     target-branch: "staging"
     open-pull-requests-limit: 10
 
-  # PHP Composer dependencies
-  - package-ecosystem: "composer"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    target-branch: "staging" 
-    open-pull-requests-limit: 10
-
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"

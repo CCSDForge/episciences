@@ -9,11 +9,11 @@
     "replacements:all",
     "workarounds:all"
   ],
-  "baseBranches": ["preprod"],
+  "baseBranches": ["staging"],
   "packageRules": [
     {
-      "matchBaseBranches": ["preprod"],
-      "labels": ["preprod-update"]
+      "matchBaseBranches": ["staging"],
+      "labels": ["staging-update"]
     }
   ]
 }
