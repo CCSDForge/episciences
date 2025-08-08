@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+public/build/
+public/css/
+public/fonts/
+public/img/
+var/cache/
+var/log/
+
+# Configuration files
+.env*
+config/pwd.json*
+
+# Generated files
+*.min.js
+*.min.css
+*.map
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Legacy/vendor JavaScript libraries
+public/js/vendor/
+public/js/lib/
+public/js/libraries/
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Lock files (optional - you might want to format these)
+# package-lock.json
+# yarn.lock
+
+# project specific files
+data/
+cache/

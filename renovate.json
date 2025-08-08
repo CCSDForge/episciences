@@ -9,11 +9,20 @@
     "replacements:all",
     "workarounds:all"
   ],
-  "baseBranches": ["preprod"],
+  "baseBranches": ["staging"],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "matchBaseBranches": ["preprod"],
-      "labels": ["preprod-update"]
+      "matchBaseBranches": ["staging"],
+      "labels": ["staging-update"]
+    },
+    {
+      "matchManagers": ["composer"],
+      "matchDepTypes": ["require", "require-dev"],
+      "constraintsFiltering": "strict",
+      "ignoreUnstable": false
     }
   ]
 }

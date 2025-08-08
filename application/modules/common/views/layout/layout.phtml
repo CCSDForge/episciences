@@ -60,7 +60,6 @@ echo $this->doctype('HTML5');
 
 
     // JS
-    $this->jQuery()->addJavascriptFile("/js/tools.js");
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
     $this->jQuery()->addJavascriptFile(VENDOR_BOOTBOX);
     $this->jQuery()->addJavascriptFile("/js/functions.js");

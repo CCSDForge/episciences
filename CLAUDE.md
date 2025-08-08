@@ -105,6 +105,97 @@ The application uses a modular architecture:
   - OAI: http://oai-dev.episciences.org/
   - Data: http://data-dev.episciences.org/
 
+## JavaScript Development
+
+### Code Formatting with Prettier
+The project uses Prettier for consistent JavaScript code formatting in the `public/js/` directory.
+
+#### Installation
+Prettier is already installed as a dev dependency. If you need to reinstall:
+```bash
+yarn add -D prettier
+```
+
+#### Usage Commands
+```bash
+# Format all JavaScript files in public/js/
+yarn format
+
+# Check if JavaScript files are properly formatted
+yarn format:check
+
+# Format only JavaScript files
+yarn format:js
+
+# Format only JSON files in public/js/
+yarn format:json
+
+# Check formatting for CI/linting
+yarn lint:prettier
+```
+
+#### Configuration
+- `.prettierrc` - Prettier configuration (single quotes, 4-space tabs, etc.)
+- `.prettierignore` - Files and directories to ignore
+
+#### PhpStorm Integration
+1. Go to Settings → Languages & Frameworks → JavaScript → Prettier
+2. Set Prettier package path to: `node_modules/prettier`
+3. Enable "On 'Reformat Code' action" and "On save" if desired
+4. Set config file path to: `.prettierrc`
+
+### JavaScript Testing
+The project uses Jest for JavaScript unit testing.
+
+#### Installation
+Jest is already installed as a dev dependency. If you need to reinstall:
+```bash
+yarn add -D jest @babel/core @babel/preset-env
+```
+
+#### Usage Commands
+```bash
+# Run all tests
+yarn test
+
+# Run tests in watch mode (reruns on file changes)
+yarn test:watch
+
+# Run tests with coverage report
+yarn test:coverage
+
+# Run specific test file
+yarn test stripAccents.test.js
+
+# Run tests matching a pattern
+yarn test --testPathPattern=functions
+```
+
+#### Test Structure
+- Test files are located in `tests/js/`
+- Test files use the naming convention `*.test.js`
+- Example test files:
+  - `tests/js/stripAccents.test.js`
+  - `tests/js/dateIsBetween.test.js`
+  - `tests/js/isValidDate.test.js`
+  - `tests/js/readableBytes.test.js`
+
+#### Writing Tests
+Tests follow Jest conventions:
+```javascript
+describe('functionName', function() {
+    it('should do something', function() {
+        expect(functionName(input)).toBe(expectedOutput);
+    });
+});
+```
+
+#### Testing Best Practices
+- Write tests for all utility functions in `public/js/functions.js`
+- Test edge cases, invalid inputs, and error conditions
+- Maintain test coverage above 80%
+- Use descriptive test names and group related tests in `describe` blocks
+
 ## Common Development Workflows
 
 ### Paper Submission and Review Process
@@ -143,6 +234,5 @@ Full-text search powered by Apache Solr with custom indexing for papers and meta
 - Follow the coding standards and best practices outlined in the repository documentation
 - Use the provided Docker environment for development to ensure consistency and avoid dependency issues
 - Always run tests before pushing changes to ensure code quality and functionality
-- **NEVER use `git add -A`** - This command stages all changes indiscriminately and can lead to committing unintended files. Use `git add .` for current directory or specify files explicitly.
 - The project is open source and contributions are welcome.
 - The project is licensed under the GNU General Public License v3.0 (GPL-3.0). Please review the LICENSE file for details.

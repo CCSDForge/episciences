@@ -249,6 +249,7 @@ return [
     //DD
     'Descripteur de logiciel' => 'Software descriptor',
     'Descripteurs de logiciel' => 'Software descriptors',
+    'Modifier une métadonnée'=> 'Edit a metadata',
 
 
 ];
