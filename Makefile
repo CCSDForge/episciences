@@ -60,9 +60,9 @@ clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all dat
 	@echo "  - episciences-gpl_mysql-db-indexing" 
 	@echo "  - episciences-gpl_mysql-db-auth"
 	@echo ""
-	@printf "Are you sure you want to continue? [y/N]: "; \
+	@printf "Type 'Yes delete database volumes' to confirm: "; \
 	read -r answer; \
-	if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+	if [ "$$answer" = "Yes delete database volumes" ]; then \
 		echo "Removing MySQL volumes..."; \
 		docker volume rm episciences-gpl_mysql-db-episciences episciences-gpl_mysql-db-indexing episciences-gpl_mysql-db-auth 2>/dev/null || true; \
 		echo "MySQL volumes removed successfully."; \
