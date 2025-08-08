@@ -244,11 +244,13 @@ index: ## Index content into Solr
 dev-setup: up wait-for-db ## Complete development environment setup
 	@echo "Setting up complete development environment..."
 	@if [ -f $(SQL_DUMP_DIR)/episciences.sql ]; then \
+		echo "Loading episciences.sql ..."; \
 		$(MAKE) load-db-episciences; \
 	else \
 		echo "Warning: $(SQL_DUMP_DIR)/episciences.sql not found, skipping database import"; \
 	fi
 	@if [ -f $(SQL_DUMP_DIR)/cas_users.sql ]; then \
+		echo "Loading cas_users.sql ..."; \
 		$(MAKE) load-db-auth; \
 	else \
 		echo "Warning: $(SQL_DUMP_DIR)/cas_users.sql not found, skipping auth database import"; \
