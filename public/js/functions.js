@@ -1039,7 +1039,7 @@ function updateTooltipTitle($element, newTitle = '') {
         .tooltip('fixTitle')
         .tooltip('show');
 }
-export function isEmptyData(value, visited = new WeakSet()) {
+function isEmptyData(value, visited = new WeakSet()) {
     // Handle null and undefined
     if (value === null || value === undefined) {
         return true;
@@ -1091,7 +1091,7 @@ export function isEmptyData(value, visited = new WeakSet()) {
     return false;
 }
 
-export function truncate(str, length, suffix = '...') {
+function truncate(str, length, suffix = '...') {
     if (typeof str !== 'string') return '';
     return str.length <= length ? str : str.slice(0, length) + suffix;
 }
