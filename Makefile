@@ -10,7 +10,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 MYSQL_CONNECT_EPISCIENCES:= mysql -u root -proot -h 127.0.0.1 -P 33060 episciences
 MYSQL_CONNECT_AUTH:= mysql -u root -proot -h 127.0.0.1 -P 33060 cas_users
 
-.PHONY: build up down collection index clean help
+.PHONY: build up down collection index clean clean-mysql help
 
 help: ## Display this help
 	@echo "Available targets:"
@@ -51,6 +51,24 @@ index: ## Index the content into Solr
 clean: down ## Clean up unused docker resources
 	#docker stop $(docker ps -a -q)
 	docker system prune -f
+
+clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all database data!)
+	@echo "WARNING: This will permanently delete all MySQL database data!"
+	@echo "This may be needed when downgrading from MySQL 8.4 to 8.0"
+	@echo "Volumes to be removed:"
+	@echo "  - episciences-gpl_mysql-db-episciences"
+	@echo "  - episciences-gpl_mysql-db-indexing" 
+	@echo "  - episciences-gpl_mysql-db-auth"
+	@echo ""
+	@printf "Are you sure you want to continue? [y/N]: "; \
+	read -r answer; \
+	if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+		echo "Removing MySQL volumes..."; \
+		docker volume rm episciences-gpl_mysql-db-episciences episciences-gpl_mysql-db-indexing episciences-gpl_mysql-db-auth 2>/dev/null || true; \
+		echo "MySQL volumes removed successfully."; \
+	else \
+		echo "Operation cancelled."; \
+	fi
 
 load-db-episciences: ## Load an SQL dump from ./tmp/episciences.sql
 	$(MYSQL_CONNECT_EPISCIENCES) < ~/tmp/episciences.sql
