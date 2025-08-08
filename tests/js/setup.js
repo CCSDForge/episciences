@@ -15,6 +15,31 @@ global.console = {
     error: jest.fn()
 };
 
+// Mock global functions that functions.js expects
+global.translate = function(text, locale) {
+    return text; // Simple passthrough for tests
+};
+
+// Mock jQuery-like $ function for functions.js compatibility
+global.$ = function(selector) {
+    // Minimal jQuery mock for tests
+    const element = {
+        attr: () => element,
+        tooltip: () => element,
+        prepend: () => element,
+        find: () => element,
+        hasClass: () => false,
+        ready: (callback) => {
+            // For document ready, call immediately in test environment
+            if (typeof callback === 'function') {
+                callback();
+            }
+            return element;
+        }
+    };
+    return element;
+};
+
 // Clean up after each test
 afterEach(() => {
     jest.clearAllMocks();

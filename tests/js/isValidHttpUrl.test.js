@@ -1,49 +1,15 @@
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function isValidHttpUrl(string) {
-        // Input validation
-        if (typeof string !== 'string' || string.trim() === '') {
-            return false;
-        }
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-        // Trim whitespace
-        string = string.trim();
-
-        // Basic length check (URLs shouldn't be too long)
-        if (string.length > 2048) {
-            return false;
-        }
-
-        let url;
-
-        try {
-            url = new URL(string);
-        } catch (_) {
-            return false;
-        }
-
-        // Check protocol
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-            return false;
-        }
-
-        // Check hostname exists and is valid
-        if (!url.hostname || url.hostname.trim() === '') {
-            return false;
-        }
-
-        // Basic hostname validation - no spaces, basic format check
-        if (/\s/.test(url.hostname) || url.hostname.includes('..')) {
-            return false;
-        }
-
-        // Check for valid hostname format (allow localhost, IP addresses, and domains)
-        const hostnamePattern =
-            /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$|^localhost$|^(\d{1,3}\.){3}\d{1,3}$|^\[([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]*\]$/;
-
-        return hostnamePattern.test(url.hostname);
-    }
+// Extract just the isValidHttpUrl function to avoid jQuery dependencies
+const isValidHttpUrlFunctionMatch = functionsJs.match(/function isValidHttpUrl\(string\) \{[\s\S]*?\n\}/);
+if (isValidHttpUrlFunctionMatch) {
+    eval(isValidHttpUrlFunctionMatch[0]);
 }
 
 describe('isValidHttpUrl', function () {

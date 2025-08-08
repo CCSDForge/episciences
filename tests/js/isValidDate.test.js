@@ -1,97 +1,20 @@
-/**
- * Test suite for isValidDate function
- * Tests the improved version that focuses on YYYY-MM-DD format validation using isISOdate
- */
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the isISOdate function definition for testing
-    function isISOdate(input, pattern, strict = false) {
-        // Input validation
-        if (typeof input !== 'string' || input.trim() === '') {
-            return false;
-        }
+// Extract both isValidDate and isISOdate functions to avoid jQuery dependencies
+const isValidDateFunctionMatch = functionsJs.match(/function isValidDate\(input, separator\) \{[\s\S]*?\n\}/);
+if (isValidDateFunctionMatch) {
+    eval(isValidDateFunctionMatch[0]);
+}
 
-        // Default pattern for ISO date format (YYYY-MM-DD)
-        if (!pattern) {
-            pattern = /^\d{4}-\d{2}-\d{2}$/;
-        }
-
-        // Check pattern match
-        if (!pattern.test(input)) {
-            return false;
-        }
-
-        // If strict validation is requested, check if the date actually exists
-        if (strict) {
-            const date = new Date(input + 'T00:00:00.000Z'); // Add time to avoid timezone issues
-
-            // Check if date is valid and matches the input
-            if (isNaN(date.getTime())) {
-                return false;
-            }
-
-            // Extract parts from input
-            const parts = input.split('-');
-            const year = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10);
-            const day = parseInt(parts[2], 10);
-
-            // Verify the date components match (handles invalid dates like 2023-02-30)
-            return (
-                date.getUTCFullYear() === year &&
-                date.getUTCMonth() === month - 1 && // Month is 0-indexed
-                date.getUTCDate() === day
-            );
-        }
-
-        return true;
-    }
-
-    // Add the isValidDate function definition for testing
-    function isValidDate(input, separator) {
-        // Input validation
-        if (typeof input !== 'string' || input.trim() === '') {
-            return false;
-        }
-
-        // Default separator
-        if (!separator) separator = '-';
-
-        // Trim whitespace from input
-        input = input.trim();
-
-        // If using default separator (-), leverage isISOdate function
-        if (separator === '-') {
-            return isISOdate(input, null, true); // Use strict validation
-        }
-
-        // For custom separators, convert to ISO format and validate
-        const parts = input.split(separator);
-
-        // Must have exactly 3 parts
-        if (parts.length !== 3) {
-            return false;
-        }
-
-        // Check format: should be YYYY-MM-DD order
-        const year = parts[0];
-        const month = parts[1];
-        const day = parts[2];
-
-        // Basic format validation (4 digits for year, 2 digits for month/day)
-        if (
-            !/^\d{4}$/.test(year) ||
-            !/^\d{2}$/.test(month) ||
-            !/^\d{2}$/.test(day)
-        ) {
-            return false;
-        }
-
-        // Convert to ISO format and use isISOdate for validation
-        const isoDate = `${year}-${month}-${day}`;
-        return isISOdate(isoDate, null, true); // Use strict validation
-    }
+const isISOdateFunctionMatch = functionsJs.match(/function isISOdate\(input, pattern, strict = false\) \{[\s\S]*?\n\}/);
+if (isISOdateFunctionMatch) {
+    eval(isISOdateFunctionMatch[0]);
 }
 
 // Test suite

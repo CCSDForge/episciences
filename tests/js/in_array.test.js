@@ -1,32 +1,15 @@
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function in_array(needle, haystack, strict = false) {
-        // Input validation
-        if (!Array.isArray(haystack)) {
-            return -1;
-        }
+// Load the functions.js file and extract only the in_array function
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-        // Handle empty array
-        if (haystack.length === 0) {
-            return -1;
-        }
-
-        // Use built-in methods for better performance when appropriate
-        if (strict) {
-            // For strict comparison, use indexOf which uses ===
-            return haystack.indexOf(needle);
-        } else {
-            // For loose comparison, we need to check each element manually
-            for (let i = 0; i < haystack.length; i++) {
-                // Use == for loose comparison (mimics PHP in_array behavior)
-                if (haystack[i] == needle) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-    }
+// Extract just the in_array function to avoid jQuery dependencies
+const in_arrayFunctionMatch = functionsJs.match(/function in_array\(needle, haystack, strict = false\) \{[\s\S]*?\n\}/);
+if (in_arrayFunctionMatch) {
+    eval(in_arrayFunctionMatch[0]);
 }
 
 describe('in_array', function () {

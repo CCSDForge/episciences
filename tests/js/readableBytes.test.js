@@ -1,70 +1,15 @@
-/**
- * Test suite for readableBytes function
- * Tests the improved version with proper error handling and localization
- */
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function readableBytes(bytes, locale) {
-        // Convert string numbers to actual numbers
-        if (typeof bytes === 'string' && !isNaN(bytes) && bytes.trim() !== '') {
-            bytes = parseFloat(bytes);
-        }
-
-        // Input validation
-        if (
-            typeof bytes !== 'number' ||
-            isNaN(bytes) ||
-            bytes < 0 ||
-            !isFinite(bytes)
-        ) {
-            return '0 bytes';
-        }
-
-        // Handle zero bytes
-        if (bytes === 0) {
-            return locale === 'fr' ? '0 octet' : '0 bytes';
-        }
-
-        // Define unit arrays with proper pluralization
-        var units =
-            locale === 'fr'
-                ? ['octet', 'Ko', 'Mo', 'Go', 'To', 'Po']
-                : ['byte', 'KB', 'MB', 'GB', 'TB', 'PB'];
-
-        var pluralUnits =
-            locale === 'fr'
-                ? ['octets', 'Ko', 'Mo', 'Go', 'To', 'Po']
-                : ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-
-        // Calculate the appropriate unit scale
-        var unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
-
-        // Clamp to available units (prevent array out of bounds)
-        unitIndex = Math.min(unitIndex, units.length - 1);
-
-        // Calculate the scaled value
-        var scaledValue = bytes / Math.pow(1024, unitIndex);
-
-        // Format with appropriate precision
-        var formattedValue;
-        if (scaledValue >= 100) {
-            formattedValue = Math.round(scaledValue);
-        } else if (scaledValue >= 10) {
-            formattedValue = Math.round(scaledValue * 10) / 10;
-        } else {
-            formattedValue = Math.round(scaledValue * 100) / 100;
-        }
-
-        // Choose singular or plural unit
-        var unit =
-            formattedValue === 1 && unitIndex === 0
-                ? units[unitIndex]
-                : pluralUnits[unitIndex];
-
-        return formattedValue + ' ' + unit;
-    }
+// Extract just the readableBytes function to avoid jQuery dependencies
+const readableBytesFunctionMatch = functionsJs.match(/function readableBytes\(bytes, locale\) \{[\s\S]*?\n\}/);
+if (readableBytesFunctionMatch) {
+    eval(readableBytesFunctionMatch[0]);
 }
 
 // Test suite

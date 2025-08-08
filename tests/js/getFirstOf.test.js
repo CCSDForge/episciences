@@ -3,29 +3,18 @@
  * Tests the improved version with proper input validation and array optimization
  */
 
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function getFirstOf(data) {
-        // Input validation
-        if (!data || typeof data !== 'object') {
-            return undefined;
-        }
+// Load the functions.js file and extract only the getFirstOf function
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-        // Handle arrays more efficiently
-        if (Array.isArray(data)) {
-            return data.length > 0 ? data[0] : undefined;
-        }
-
-        // Handle objects
-        for (var key in data) {
-            if (data.hasOwnProperty(key)) {
-                return data[key];
-            }
-        }
-
-        return undefined;
-    }
+// Extract just the getFirstOf function to avoid jQuery dependencies
+const getFirstOfFunctionMatch = functionsJs.match(/function getFirstOf\(data\) \{[\s\S]*?\n\}/);
+if (getFirstOfFunctionMatch) {
+    eval(getFirstOfFunctionMatch[0]);
 }
 
 // Test suite

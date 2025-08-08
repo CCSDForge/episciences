@@ -1,9 +1,15 @@
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function isPositiveInteger(s) {
-        return typeof s === 'string' && /^[1-9][0-9]*$/.test(s.trim());
-    }
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
+
+// Extract just the isPositiveInteger function to avoid jQuery dependencies
+const isPositiveIntegerFunctionMatch = functionsJs.match(/function isPositiveInteger\(s\) \{[\s\S]*?\n\}/);
+if (isPositiveIntegerFunctionMatch) {
+    eval(isPositiveIntegerFunctionMatch[0]);
 }
 
 describe('isPositiveInteger', function () {

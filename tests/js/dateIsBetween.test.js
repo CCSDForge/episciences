@@ -3,35 +3,18 @@
  * Tests the improved version with proper input validation and error handling
  */
 
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function dateIsBetween(input, min, max) {
-        // If either boundary is missing, return true (no constraints)
-        if (!min || !max) return true;
+// Load the functions.js file and extract only the dateIsBetween function
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-        // Convert all inputs to Date objects
-        const inputDate = new Date(input);
-        const minDate = new Date(min);
-        const maxDate = new Date(max);
-
-        // Validate all dates are valid
-        if (
-            isNaN(inputDate.getTime()) ||
-            isNaN(minDate.getTime()) ||
-            isNaN(maxDate.getTime())
-        ) {
-            return false;
-        }
-
-        // Ensure min is not greater than max
-        if (minDate > maxDate) {
-            return false;
-        }
-
-        // Check if input date is between min and max (inclusive)
-        return inputDate >= minDate && inputDate <= maxDate;
-    }
+// Extract just the dateIsBetween function to avoid jQuery dependencies
+const dateIsBetweenFunctionMatch = functionsJs.match(/function dateIsBetween\(input, min, max\) \{[\s\S]*?\n\}/);
+if (dateIsBetweenFunctionMatch) {
+    eval(dateIsBetweenFunctionMatch[0]);
 }
 
 // Test suite

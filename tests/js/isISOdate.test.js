@@ -3,53 +3,18 @@
  * Tests the improved version with proper input validation, pattern handling, and strict date validation
  */
 
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function isISOdate(input, pattern, strict = false) {
-        // Input validation
-        if (typeof input !== 'string' || input.trim() === '') {
-            return false;
-        }
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-        // Default pattern for ISO date format (YYYY-MM-DD)
-        if (!pattern) {
-            pattern = /^\d{4}-\d{2}-\d{2}$/;
-        }
-
-        // Check pattern match (reset global regex state)
-        if (pattern.global) {
-            pattern.lastIndex = 0; // Reset global regex state
-        }
-        if (!pattern.test(input)) {
-            return false;
-        }
-
-        // If strict validation is requested, check if the date actually exists
-        if (strict) {
-            const date = new Date(input + 'T00:00:00.000Z'); // Add time to avoid timezone issues
-
-            // Check if date is valid and matches the input
-            if (isNaN(date.getTime())) {
-                return false;
-            }
-
-            // Extract parts from input
-            const parts = input.split('-');
-            const year = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10);
-            const day = parseInt(parts[2], 10);
-
-            // Verify the date components match (handles invalid dates like 2023-02-30)
-            return (
-                date.getUTCFullYear() === year &&
-                date.getUTCMonth() === month - 1 && // Month is 0-indexed
-                date.getUTCDate() === day
-            );
-        }
-
-        return true;
-    }
+// Extract just the isISOdate function to avoid jQuery dependencies
+const isISOdateFunctionMatch = functionsJs.match(/function isISOdate\(input, pattern, strict = false\) \{[\s\S]*?\n\}/);
+if (isISOdateFunctionMatch) {
+    eval(isISOdateFunctionMatch[0]);
 }
 
 // Test suite

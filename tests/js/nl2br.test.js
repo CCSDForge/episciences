@@ -1,14 +1,15 @@
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function nl2br(str) {
-        if (str == null) return '';
-        const breakTag = '<br>';
-        return String(str).replace(
-            /([^\r\n]*)(\r\n|\n\r|\r|\n)/g,
-            `$1${breakTag}$2`
-        );
-    }
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
+
+// Extract just the nl2br function to avoid jQuery dependencies
+const nl2brFunctionMatch = functionsJs.match(/function nl2br\(str\) \{[\s\S]*?\n\}/);
+if (nl2brFunctionMatch) {
+    eval(nl2brFunctionMatch[0]);
 }
 
 describe('nl2br', function () {

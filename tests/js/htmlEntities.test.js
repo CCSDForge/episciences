@@ -1,17 +1,15 @@
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function htmlEntities(str) {
-        if (str == null) return '';
-        const entityMap = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;',
-        };
-        return String(str).replace(/[&<>"']/g, match => entityMap[match]);
-    }
+// Load the functions.js file and extract only the htmlEntities function
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
+
+// Extract just the htmlEntities function to avoid jQuery dependencies
+const htmlEntitiesFunctionMatch = functionsJs.match(/function htmlEntities\(str\) \{[\s\S]*?\n\}/);
+if (htmlEntitiesFunctionMatch) {
+    eval(htmlEntitiesFunctionMatch[0]);
 }
 
 describe('htmlEntities', function () {

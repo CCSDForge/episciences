@@ -3,63 +3,18 @@
  * Tests the improved version with comprehensive empty data detection
  */
 
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function isEmptyData(value, visited = new WeakSet()) {
-        // Handle null and undefined
-        if (value === null || value === undefined) {
-            return true;
-        }
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-        // Handle arrays
-        if (Array.isArray(value)) {
-            // Check for circular reference
-            if (visited.has(value)) {
-                return false; // Circular arrays are not considered empty
-            }
-            visited.add(value);
-
-            const result =
-                value.length === 0 ||
-                value.every(item => isEmptyData(item, visited));
-            visited.delete(value);
-            return result;
-        }
-
-        // Handle objects (but not Date, RegExp, etc.)
-        if (typeof value === 'object' && value.constructor === Object) {
-            // Check for circular reference
-            if (visited.has(value)) {
-                return false; // Circular objects are not considered empty
-            }
-            visited.add(value);
-
-            const result =
-                Object.keys(value).length === 0 ||
-                Object.values(value).every(val => isEmptyData(val, visited));
-            visited.delete(value);
-            return result;
-        }
-
-        // Handle strings (including whitespace-only strings)
-        if (typeof value === 'string') {
-            return value.trim() === '';
-        }
-
-        // Handle numbers (0 is considered empty for chart data)
-        if (typeof value === 'number') {
-            return value === 0;
-        }
-
-        // Handle booleans (false is not considered empty)
-        if (typeof value === 'boolean') {
-            return false;
-        }
-
-        // For other types (functions, symbols, etc.), consider them not empty
-        return false;
-    }
+// Extract just the isEmptyData function to avoid jQuery dependencies
+const isEmptyDataFunctionMatch = functionsJs.match(/function isEmptyData\(value, visited = new WeakSet\(\)\) \{[\s\S]*?\n\}/);
+if (isEmptyDataFunctionMatch) {
+    eval(isEmptyDataFunctionMatch[0]);
 }
 
 describe('isEmptyData', function () {

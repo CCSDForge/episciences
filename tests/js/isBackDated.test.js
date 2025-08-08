@@ -1,33 +1,15 @@
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function isBackDated(input) {
-        // Input validation
-        if (input == null || input === '') {
-            return false;
-        }
+// Load the functions.js file
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
 
-        // Handle different input types
-        let inputDate;
-        if (input instanceof Date) {
-            inputDate = input;
-        } else if (typeof input === 'string' || typeof input === 'number') {
-            inputDate = new Date(input);
-        } else {
-            return false; // Invalid input type
-        }
-
-        // Check if input date is valid
-        if (isNaN(inputDate.getTime())) {
-            return false;
-        }
-
-        // Get current date and time
-        const now = new Date();
-
-        // Compare dates - input is backdated if it's before now
-        return inputDate < now;
-    }
+// Extract just the isBackDated function to avoid jQuery dependencies
+const isBackDatedFunctionMatch = functionsJs.match(/function isBackDated\(input\) \{[\s\S]*?\n\}/);
+if (isBackDatedFunctionMatch) {
+    eval(isBackDatedFunctionMatch[0]);
 }
 
 describe('isBackDated', function () {

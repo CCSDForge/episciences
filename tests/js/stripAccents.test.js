@@ -3,20 +3,18 @@
  * Tests the improved version with Unicode normalization and fallback support
  */
 
-// Mock dependencies if running in Node.js environment
-if (typeof window === 'undefined') {
-    // Add the function definition for testing
-    function stripAccents(string) {
-        try {
-            // Test if Unicode property escapes are supported
-            new RegExp('\\p{Diacritic}', 'u');
-            // If no error, use the more robust method
-            return string.normalize('NFD').replace(/\p{Diacritic}/gu, '');
-        } catch (e) {
-            // Fallback to the compatible method
-            return string.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        }
-    }
+// Load the functions.js file and extract only the stripAccents function
+const fs = require('fs');
+const path = require('path');
+const functionsJs = fs.readFileSync(
+    path.join(__dirname, '../../public/js/functions.js'),
+    'utf8'
+);
+
+// Extract just the stripAccents function to avoid jQuery dependencies
+const stripAccentsFunctionMatch = functionsJs.match(/function stripAccents\(string\) \{[\s\S]*?\n\}/);
+if (stripAccentsFunctionMatch) {
+    eval(stripAccentsFunctionMatch[0]);
 }
 
 // Test suite
