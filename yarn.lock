@@ -3048,10 +3048,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"caniuse-lite@npm:^1.0.0, caniuse-lite@npm:^1.0.30001726, caniuse-lite@npm:^1.0.30001731":
-  version: 1.0.30001731
-  resolution: "caniuse-lite@npm:1.0.30001731"
-  checksum: 10/ad6771127c0cca13a711ca363bb0165a687f9a5c76f057b2c8c9746608a6bae2f15c7b6955063eefcd4ca0e5733d429f25292cc093a40a189d662f3a8647a020
+"caniuse-lite@npm:^1.0.0, caniuse-lite@npm:^1.0.30001726, caniuse-lite@npm:^1.0.30001733":
+  version: 1.0.30001733
+  resolution: "caniuse-lite@npm:1.0.30001733"
+  checksum: 10/c269ecbf4cbdf4f8308334f6809ddca9ad3db8e0ea91c9851f5bdde291b15dac39c3e76bc5ecc3f069ac805f2a93805e19d5ccf10c22c0d57a11beff370433ae
   languageName: node
   linkType: hard
 
@@ -6341,7 +6341,7 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.4"
     "@symfony/webpack-encore": "npm:^5.1.0"
-    caniuse-lite: "npm:^1.0.30001731"
+    caniuse-lite: "npm:^1.0.30001733"
     compass-mixins: "npm:^0.12.12"
     jest: "npm:^30.0.0"
     jest-environment-jsdom: "npm:^30.0.5"
