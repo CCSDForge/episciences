@@ -4831,8 +4831,8 @@ class AdministratepaperController extends PaperDefaultController
                 $casUserMapper->find($selectedUserId, $user);
                 $user->setScreenName();
                 $user->setIs_valid();
-                $user->setRegistration_date();
-                $user->setModification_date();
+                $user->setRegistrationDate();
+                $user->setModificationDate();
                 $screenName = $user->getScreenName();
 
                 if ($user->save()) {
