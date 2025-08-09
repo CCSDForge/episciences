@@ -4840,10 +4840,8 @@ class AdministratepaperController extends PaperDefaultController
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté en tant que co-auteur du document");
                     $success = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $success);
                     $addcoAuthor = $this->addRoleCoAuthor($docId, $selectedUserId);
-                    if ($addcoAuthor) {
-                        $message = Zend_Registry::get('Zend_Translate')->translate("Utilisateur ajouté en tant que co-auteur");
-                    } else {
-                        $message = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur est déjà co-auteur de ce document");
+                    if (!$addcoAuthor) {
+                        $success .= ' ' . Zend_Registry::get('Zend_Translate')->translate("L'utilisateur est déjà co-auteur de ce document");
                     }
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($success);
                 } else {
