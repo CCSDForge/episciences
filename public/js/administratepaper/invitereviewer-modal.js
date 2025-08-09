@@ -84,7 +84,7 @@ $(document).ready(function () {
             if (ignore_list) {
                 request.ignore_list = ignore_list;
             }
-            $.getJSON("/user/findcasusers", request, function (data) {
+            $.getJSON(JS_PREFIX_URL + "user/findcasusers", request, function (data) {
                 cache[term] = data;
                 response(data);
             });

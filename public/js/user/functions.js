@@ -16,7 +16,7 @@ $(function () {
                 response(cache[term]);
                 return;
             }
-            $.getJSON("/user/findcasusers", request, function (data, status, xhr) {
+            $.getJSON(JS_PREFIX_URL + "user/findcasusers", request, function (data, status, xhr) {
                 cache[term] = data;
                 response(data);
             });

@@ -4817,8 +4817,9 @@ class AdministratepaperController extends PaperDefaultController
 
             $user = new Episciences_User();
 
+            $docId = (int)$request->getPost('docId');
             if ($user->hasLocalData($selectedUserId) && $user->hasRoles($selectedUserId)) {
-                $addcoAuthor = $this->addRoleCoAuthor((int)$request->getPost('docId'), $selectedUserId);
+                $addcoAuthor = $this->addRoleCoAuthor($docId, $selectedUserId);
                 if ($addcoAuthor) {
                     $message = Zend_Registry::get('Zend_Translate')->translate("Utilisateur ajouté en tant que co-auteur");
                 } else {
@@ -4838,7 +4839,7 @@ class AdministratepaperController extends PaperDefaultController
                 if ($user->save()) {
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté en tant que co-auteur du document");
                     $success = str_replace('%%RECIPIENT_SCREEN_NAME%%', $screenName, $success);
-                    $addcoAuthor = $this->addRoleCoAuthor((int)$request->getPost('docId'), $selectedUserId);
+                    $addcoAuthor = $this->addRoleCoAuthor($docId, $selectedUserId);
                     if ($addcoAuthor) {
                         $message = Zend_Registry::get('Zend_Translate')->translate("Utilisateur ajouté en tant que co-auteur");
                     } else {
@@ -4851,8 +4852,7 @@ class AdministratepaperController extends PaperDefaultController
                     $this->_helper->FlashMessenger->setNamespace('error')->addMessage($error);
                 }
             }
-            $url = self::ADMINPAPER_URL_STR . (int)$request->getPost('docId');
-            $this->_helper->redirector->gotoUrl($url);
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER , 'action' => 'view', 'id' => $docId]));
         }
     }
 
