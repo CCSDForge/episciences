@@ -372,6 +372,13 @@ fieldset legend {
 select#vid, select#sid {
   width: 100%;
 }
+
+// Make autocomplete input wider for better usability
+#autocompletedUserSelection {
+  min-width: 300px !important;
+  width: 300px !important;
+}
+
 button.btn.btn-primary:disabled {
   background-color: grey;
   cursor: not-allowed;

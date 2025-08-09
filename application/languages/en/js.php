@@ -35,6 +35,7 @@ return [
     "Lignes" => "Lines",
     "lignes" => "lines",
     "Rechercher" => "Search",
+    "Recherche..." => "Searching...",
     "Aucun résultat" => "No results",
     "à" => "to",
     "sur" => "of",
