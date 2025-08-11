@@ -1111,6 +1111,8 @@ return array(
     "Le volume n'a pas été trouvé" => "The volume wasn't found",
     "La section n'a pas été trouvée" => "The section wasn't found",
     "Cette rubrique a été supprimée" => "This section has been removed",
+    'La nouvelle rubrique a bien été créée.' => 'The new section has been created.',
+    "La nouvelle rubrique n'a pas pu être créée." => 'The creation of the new section failed.',
 
     //Notifications
     "Paramètres de notification" => "Notification Settings",
