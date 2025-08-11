@@ -100,13 +100,6 @@ describe('Affiliations Autocomplete', function() {
         // Setup DOM
         createMockDOM();
         
-        // Mock getLoaderAffi function
-        window.getLoaderAffi = function() {
-            const loader = document.createElement('div');
-            loader.className = 'loader-affi';
-            loader.textContent = 'Loading...';
-            return loader;
-        };
         
         // Mock fetch
         global.fetch = mockFetch;

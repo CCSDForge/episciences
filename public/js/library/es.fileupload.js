@@ -58,7 +58,7 @@ $(function () {
             idCpt++;
 
             let file_name = data.files[0].name;
-            let file_size = formatFileSize(data.files[0].size);
+            let file_size = readableBytes(data.files[0].size);
 
             let tpl_content = '<div class="file_container working">';
             tpl_content += '<input class="upload_filename" type="hidden" name="attachments[]" value="' + file_name + '" />';
@@ -168,22 +168,6 @@ $(function () {
 
     });
 
-    // Helper function that formats the file sizes
-    function formatFileSize(bytes) {
-        if (typeof bytes !== 'number') {
-            return '';
-        }
-
-        if (bytes >= 1000000000) {
-            return (bytes / 1000000000).toFixed(2) + ' GB';
-        }
-
-        if (bytes >= 1000000) {
-            return (bytes / 1000000).toFixed(2) + ' MB';
-        }
-
-        return (bytes / 1000).toFixed(2) + ' KB';
-    }
 });
 
 /**

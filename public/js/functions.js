@@ -197,9 +197,6 @@ function getLoader() {
     return loading.trim();
 }
 
-function getLoaderAffi() {
-    return `<img src="/img/episciences_sign_50x50.png" class="loader-affi" alt="${translate('Chargement en cours')}" />`;
-}
 
 function ucfirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -361,29 +358,117 @@ function isPositiveInteger(s) {
     return typeof s === 'string' && /^[1-9][0-9]*$/.test(s.trim());
 }
 
+/**
+ * Optimized filterList function with caching and reduced DOM manipulation
+ * Performance improvements:
+ * - Cache compiled RegExp objects
+ * - Cache stripped text content  
+ * - Batch DOM updates using native methods
+ * - Minimize jQuery overhead
+ * - Use requestAnimationFrame for smooth filtering
+ */
 function filterList(input, elements) {
-    var query = stripAccents($(input).val());
-
-    if (query.length) {
-        $(elements).css('display', 'none');
-        $(elements).next('br').css('display', 'none');
-        $(elements)
-            .filter(function (index) {
-                var value = stripAccents($(this).text());
-                var regex = new RegExp(query, 'gi');
-                if (value.match(regex)) {
-                    $(this).next('br').css('display', '');
-                    return true;
-                } else {
-                    return false;
-                }
-            })
-            .css('display', '');
-    } else {
-        $(elements).css('display', '');
-        $(elements).next('br').css('display', '');
+    // Get input value and early return if empty
+    const inputEl = input.nodeType ? input : document.querySelector(input);
+    const query = inputEl ? stripAccents(inputEl.value).trim() : '';
+    
+    // Get elements array (convert jQuery/selector to native elements)
+    const elementsArray = elements.nodeType ? [elements] : 
+                         typeof elements === 'string' ? Array.from(document.querySelectorAll(elements)) :
+                         elements.length !== undefined ? Array.from(elements) : [];
+    
+    if (elementsArray.length === 0) return;
+    
+    // Cache for this filter operation
+    const cacheKey = elements.toString ? elements.toString() : elements;
+    if (!filterList._cache) filterList._cache = new Map();
+    if (!filterList._textCache) filterList._textCache = new Map();
+    
+    // Use cached compiled regex or create new one
+    let regex = null;
+    if (query.length > 0) {
+        const regexKey = query.toLowerCase();
+        if (filterList._cache.has(regexKey)) {
+            regex = filterList._cache.get(regexKey);
+        } else {
+            // Escape special regex characters for safety
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            regex = new RegExp(escapedQuery, 'gi');
+            filterList._cache.set(regexKey, regex);
+            
+            // Limit cache size to prevent memory leaks
+            if (filterList._cache.size > 100) {
+                const firstKey = filterList._cache.keys().next().value;
+                filterList._cache.delete(firstKey);
+            }
+        }
     }
+    
+    // Batch DOM updates for better performance
+    const showElements = [];
+    const hideElements = [];
+    
+    for (let i = 0; i < elementsArray.length; i++) {
+        const element = elementsArray[i];
+        const elementKey = `${cacheKey}_${i}`;
+        
+        // Get cached text content or compute and cache it
+        let textContent;
+        if (filterList._textCache.has(elementKey)) {
+            textContent = filterList._textCache.get(elementKey);
+        } else {
+            textContent = stripAccents(element.textContent || element.innerText || '');
+            filterList._textCache.set(elementKey, textContent);
+            
+            // Limit text cache size
+            if (filterList._textCache.size > 500) {
+                const firstKey = filterList._textCache.keys().next().value;
+                filterList._textCache.delete(firstKey);
+            }
+        }
+        
+        // Determine visibility
+        const shouldShow = query.length === 0 || (regex && regex.test(textContent));
+        
+        if (shouldShow) {
+            showElements.push(element);
+        } else {
+            hideElements.push(element);
+        }
+        
+        // Reset regex lastIndex for global regex
+        if (regex && regex.global) {
+            regex.lastIndex = 0;
+        }
+    }
+    
+    // Batch DOM updates using requestAnimationFrame for smooth performance
+    requestAnimationFrame(() => {
+        // Hide elements
+        hideElements.forEach(el => {
+            el.style.display = 'none';
+            const nextBr = el.nextElementSibling;
+            if (nextBr && nextBr.tagName === 'BR') {
+                nextBr.style.display = 'none';
+            }
+        });
+        
+        // Show elements  
+        showElements.forEach(el => {
+            el.style.display = '';
+            const nextBr = el.nextElementSibling;
+            if (nextBr && nextBr.tagName === 'BR') {
+                nextBr.style.display = '';
+            }
+        });
+    });
 }
+
+// Clear caches when needed (useful for memory management)
+filterList.clearCache = function() {
+    if (filterList._cache) filterList._cache.clear();
+    if (filterList._textCache) filterList._textCache.clear();
+};
 
 function scrollTo(target, container) {
     window.location.hash = target;
@@ -438,50 +523,6 @@ function getMessageHtml(text, type) {
     );
 }
 
-// check if multiling. input languages have been set
-function validMultilangInput(id, mce) {
-    var langs = [];
-
-    if (mce) {
-        $('#' + id)
-            .next('div')
-            .find('li a')
-            .each(function () {
-                langs.push($(this).attr('val'));
-            });
-        for (i in langs) {
-            if (
-                !$modal_form
-                    .find('textarea[name="' + id + '[' + langs[i] + ']"]')
-                    .val() &&
-                (!tinyMCE.activeEditor.getContent() ||
-                    $('#' + id + '-element')
-                        .find('button[data-toggle="dropdown"]')
-                        .val() != langs[i])
-            ) {
-                return false;
-            }
-        }
-    } else {
-        $('#' + id)
-            .next('span')
-            .find('li a')
-            .each(function () {
-                langs.push($(this).attr('val'));
-            });
-        for (i in langs) {
-            if (
-                !$modal_form
-                    .find('input[name="' + id + '[' + langs[i] + ']"]')
-                    .val()
-            ) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
 
 /**
  * activate tooltip on each element with data-toggle="tooltip"

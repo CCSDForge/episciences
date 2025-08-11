@@ -36,6 +36,7 @@ return [
     "lignes" => "lines",
     "URL copiée" => "URL Copied",
     "Rechercher" => "Search",
+    "Recherche..." => "Searching...",
     "Aucun résultat" => "No results",
     "à" => "to",
     "sur" => "of",
