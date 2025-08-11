@@ -75,7 +75,7 @@ $(document).ready(function () {
         inputId: 'autocomplete',
         selectedUserIdField: null, // We handle selection differently
         selectButtonId: null,
-        url: JS_PREFIX_URL + '/user/findcasusers',
+        url: JS_PREFIX_URL + 'user/findcasusers',
         maxResults: 100,
         onSelectCallback: function(user) {
             $('#autocomplete').val('');

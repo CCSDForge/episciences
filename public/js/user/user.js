@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append('uid', uid);
 
-            fetch(JS_PREFIX_URL + '/user/ajaxdeletephoto', {
+            fetch(JS_PREFIX_URL + 'user/ajaxdeletephoto', {
                 method: 'POST',
                 body: formData,
                 headers: {

@@ -11,7 +11,7 @@ async function updateMetaData(button, docId) {
         const formData = new URLSearchParams();
         formData.append('docid', docId);
 
-        const response = await fetch(JS_PREFIX_URL + '/paper/updaterecorddata', {
+        const response = await fetch(JS_PREFIX_URL + 'paper/updaterecorddata', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
