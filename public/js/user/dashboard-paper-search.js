@@ -75,7 +75,7 @@ class DashboardPaperSearch {
                 }
                 
                 if (lastDocid && lastDocid > 0) {
-                    window.location.href = '/' + jsonParsed.controller + '/view?id=' + lastDocid;
+                    window.location.href = JS_PREFIX_URL + jsonParsed.controller + '/view?id=' + lastDocid;
                 } else if (jsonParsed.error) {
                     alert(jsonParsed.error);
                 } else {
