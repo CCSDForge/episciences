@@ -197,9 +197,6 @@ function getLoader() {
     return loading.trim();
 }
 
-function getLoaderAffi() {
-    return `<img src="/img/episciences_sign_50x50.png" class="loader-affi" alt="${translate('Chargement en cours')}" />`;
-}
 
 function ucfirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
