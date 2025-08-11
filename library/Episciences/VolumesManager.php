@@ -150,13 +150,13 @@ class Episciences_VolumesManager
 
     /**
      * Supprime un volume
-     * @param $id
+     * @param int $id
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public static function delete($id): bool
+    public static function delete(int $id): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $docIds = array_keys(self::getAssignedPapers($id));
@@ -194,13 +194,9 @@ class Episciences_VolumesManager
 
             // Suppression des metadatas du volume
             if ($db->delete(T_VOLUME_METADATAS, 'VID = ' . $id)) {
-                $path = REVIEW_FILES_PATH . 'volumes/' . $id;
-                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-                foreach ($files as $file) {
-                    unlink($file->getPathName());
-                }
-                rmdir($path);
+                self::deleteVolumeMetadataFiles($id);
             }
+
 
             //suppression de la file pour le volume
 
@@ -691,6 +687,32 @@ class Episciences_VolumesManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = self::isPapersInVolumeQuery($vid);
         return (int)$db->fetchOne($select) > 0;
+    }
+
+    /**
+     * @param int $id
+     * @return void
+     */
+    private static function deleteVolumeMetadataFiles(int $id): void
+    {
+        $path = rtrim(REVIEW_FILES_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'volumes' . DIRECTORY_SEPARATOR . $id;
+
+        if (is_dir($path)) {
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
+
+            foreach ($files as $file) {
+                if ($file->isDir()) {
+                    rmdir($file->getPathname());
+                } else {
+                    unlink($file->getPathname());
+                }
+            }
+
+            rmdir($path);
+        }
     }
 
 
