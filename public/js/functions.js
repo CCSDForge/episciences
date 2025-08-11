@@ -526,50 +526,6 @@ function getMessageHtml(text, type) {
     );
 }
 
-// check if multiling. input languages have been set
-function validMultilangInput(id, mce) {
-    var langs = [];
-
-    if (mce) {
-        $('#' + id)
-            .next('div')
-            .find('li a')
-            .each(function () {
-                langs.push($(this).attr('val'));
-            });
-        for (i in langs) {
-            if (
-                !$modal_form
-                    .find('textarea[name="' + id + '[' + langs[i] + ']"]')
-                    .val() &&
-                (!tinyMCE.activeEditor.getContent() ||
-                    $('#' + id + '-element')
-                        .find('button[data-toggle="dropdown"]')
-                        .val() != langs[i])
-            ) {
-                return false;
-            }
-        }
-    } else {
-        $('#' + id)
-            .next('span')
-            .find('li a')
-            .each(function () {
-                langs.push($(this).attr('val'));
-            });
-        for (i in langs) {
-            if (
-                !$modal_form
-                    .find('input[name="' + id + '[' + langs[i] + ']"]')
-                    .val()
-            ) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
 
 /**
  * activate tooltip on each element with data-toggle="tooltip"
