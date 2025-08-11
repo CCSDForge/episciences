@@ -2,15 +2,15 @@
 
 ## Framework & Structure
 - zf1-future (PHP 8.1+ compatible Zend Framework 1.x)
-- MySQL dual database (main + auth)
+- MySQL 8.0 dual database (main + auth)
 - Apache Solr integration
 - Webpack Encore + Sass
 
 ## Key Directories
 - `application/` - MVC structure (modules: journal, portal, oai, common)
-- `library/Episciences/` - Main application classes
+- `library/Episciences/` + `library/Ccsd/` - Main application classes
 - `public/` - Web root + JavaScript files
-- `tests/` - PHPUnit test suite
+- `tests/` - PHPUnit + Jest test suite
 
 ## Core Classes
 - `Episciences\Paper` - Paper/article entity
@@ -28,3 +28,10 @@
 - `application/configs/application.ini` - Main config
 - `config/pwd.json` - Credentials (not in repo)
 - `public/bdd_const.php` - Database constants
+
+# Directories to ignore
+- `data/`
+- `cache/`
+- `tmp/`
+- `log/`
+- `logs/` 
