@@ -194,7 +194,13 @@ class Episciences_VolumesManager
 
             // Suppression des metadatas du volume
             if ($db->delete(T_VOLUME_METADATAS, 'VID = ' . $id)) {
-                self::deleteVolumeMetadataFiles($id);
+                try {
+                    self::deleteVolumeMetadataFiles($id);
+                } catch (InvalidArgumentException | RuntimeException $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    return false;
+                }
+
             }
 
 
@@ -695,25 +701,59 @@ class Episciences_VolumesManager
      */
     private static function deleteVolumeMetadataFiles(int $id): void
     {
-        $path = rtrim(REVIEW_FILES_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'volumes' . DIRECTORY_SEPARATOR . $id;
+        if ($id <= 0) {
+            throw new InvalidArgumentException("Invalid volume ID: must be positive integer");
+        }
 
-        if (is_dir($path)) {
-            $files = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
-                RecursiveIteratorIterator::CHILD_FIRST
-            );
+        // Build and normalize base path
+        $baseDir = rtrim(REVIEW_PUBLIC_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'volumes';
+        $path = $baseDir . DIRECTORY_SEPARATOR . $id;
 
-            foreach ($files as $file) {
-                if ($file->isDir()) {
-                    rmdir($file->getPathname());
-                } else {
-                    unlink($file->getPathname());
-                }
+        $realBase = realpath($baseDir);
+        $realTarget = realpath($path);
+
+        // If the target doesn't exist, nothing to do
+        if ($realTarget === false) {
+            return;
+        }
+
+        // Ensure the target is inside the base directory
+        if (!str_starts_with($realTarget, $realBase)) {
+            throw new RuntimeException("Deletion path is outside the allowed directory");
+        }
+
+        // Use child-first order to delete files before directories
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($realTarget, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($files as $file) {
+            $filePath = $file->getPathname();
+
+            // Symlink protection
+            if ($file->isLink()) {
+                continue;
             }
 
-            rmdir($path);
+            // File or directory deletion
+            if ($file->isDir()) {
+                if (!rmdir($filePath)) {
+                    throw new RuntimeException("Failed to delete directory: $filePath");
+                }
+            } else {
+                if (!unlink($filePath)) {
+                    throw new RuntimeException("Failed to delete file: $filePath");
+                }
+            }
+        }
+
+        // Remove the main directory
+        if (!rmdir($realTarget)) {
+            throw new RuntimeException("Failed to delete base directory: $realTarget");
         }
     }
+
 
 
 }
