@@ -19,10 +19,6 @@
  *
  * @method string render(string $name)
  *         @see Zend_View_Interface::render()
- * @method jwplayer(array $options)
- *     @see Ccsd_View_Helper_Jwplayer
- * @method Cookiewatcher(string $service)
- *     @see \Ccsd\View\Helper\Cookiewatcher
  */
 
 class Ccsd_View extends Zend_View
