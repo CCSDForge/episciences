@@ -271,7 +271,7 @@ test: ## Run tests (if available)
 
 phpunit: ## Run PHPUnit tests inside container
 	@echo "Running PHPUnit tests..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit
 
 # =============================================================================
 # PHP Development Commands
