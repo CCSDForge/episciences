@@ -24,6 +24,9 @@
 - `yarn test` - JavaScript tests (Jest)
 - `yarn format` - Format JS with Prettier
 
+## PhpUnit
+- run php tests inside the container with `make phpunit`
+
 ## Key Files
 - `application/configs/application.ini` - Main config
 - `config/pwd.json` - Credentials (not in repo)
