@@ -10,6 +10,7 @@ final class Episciences_Paper_ProjectsManagerTest extends TestCase {
 
     /**
      * @dataProvider sampleOaProjects
+     * @param $sampleOaProjects
      * @return void
      */
     public function testFormatFundingOAForDB($sampleOaProjects): void {

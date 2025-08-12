@@ -85,7 +85,8 @@ class Episciences_Repositories
 
     public static function getBaseUrl($repoId)
     {
-        return self::getRepositories()[$repoId][self::REPO_BASEURL];
+        $repositories = self::getRepositories();
+        return isset($repositories[$repoId]) ? $repositories[$repoId][self::REPO_BASEURL] : null;
     }
 
     public static function getIdentifier($repoId, $identifier, $version = null)

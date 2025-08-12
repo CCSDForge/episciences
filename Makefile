@@ -17,6 +17,7 @@ CNTR_NAME_PHP := php-fpm
 CNTR_NAME_HTTPD := httpd
 CNTR_APP_DIR := /var/www/htdocs
 CNTR_APP_USER := www-data
+CNTR_USER_ID := 1000:1000
 
 # Database Configuration
 DB_PORT_EPISCIENCES := 33060
@@ -52,7 +53,7 @@ VOLUME_MYSQL_AUTH := $(PROJECT_NAME)_mysql-db-auth
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
-.PHONY: enter-container-php test
+.PHONY: enter-container-php test phpunit
 
 # =============================================================================
 # Help & Information
@@ -71,7 +72,7 @@ help: ## Display this help message
 	@grep -E '^(collection|index):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Development Commands:"
-	@grep -E '^(dev-setup|composer|yarn|enter|test):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(dev-setup|composer|yarn|enter|test|phpunit):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Other Commands:"
 	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -268,21 +269,25 @@ test: ## Run tests (if available)
 		echo "No phpunit.xml found, skipping tests"; \
 	fi
 
+phpunit: ## Run PHPUnit tests inside container
+	@echo "Running PHPUnit tests..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit
+
 # =============================================================================
 # PHP Development Commands
 # =============================================================================
 composer-install: ## Install composer dependencies
 	@echo "Installing Composer dependencies..."
-	@$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer install --no-interaction --prefer-dist --optimize-autoloader
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer install --no-interaction --prefer-dist --optimize-autoloader
 
 composer-update: ## Update composer dependencies
 	@echo "Updating Composer dependencies..."
-	@$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer update --no-interaction --prefer-dist --optimize-autoloader
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer update --no-interaction --prefer-dist --optimize-autoloader
 
 yarn-encore-production: ## Build frontend assets for production
 	@echo "Building frontend assets..."
-	@$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
-	@$(DOCKER_COMPOSE) exec -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
 
 enter-container-php: ## Open shell in PHP container
 	@$(DOCKER) exec -it $(CNTR_NAME_PHP) sh -c "cd $(CNTR_APP_DIR) && /bin/bash"
