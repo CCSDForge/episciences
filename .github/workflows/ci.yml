@@ -12,53 +12,76 @@ permissions:
   issues: write
 
 jobs:
-  # php-tests:
-  #   name: PHP Tests (Disabled)
-  #   runs-on: ubuntu-latest
-  #   
-  #   strategy:
-  #     matrix:
-  #       php-version: [8.1, 8.2]
-  #       
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
-  #     
-  #   - name: Setup PHP ${{ matrix.php-version }}
-  #     uses: shivammathur/setup-php@v2
-  #     with:
-  #       php-version: ${{ matrix.php-version }}
-  #       extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json
-  #       coverage: xdebug
-  #       
-  #   - name: Cache Composer dependencies
-  #     uses: actions/cache@v4
-  #     with:
-  #       path: /tmp/composer-cache
-  #       key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
-  #       restore-keys: |
-  #         ${{ runner.os }}-php${{ matrix.php-version }}-composer-
-  #         
-  #   - name: Install PHP dependencies
-  #     run: composer install --no-progress --prefer-dist --optimize-autoloader
-  #     
-  #   - name: Run PHP tests
-  #     run: |
-  #       if [ -f "phpunit.xml" ]; then
-  #         ./bin/phpunit --coverage-clover=coverage-php.xml
-  #       else
-  #         echo "No phpunit.xml found, skipping PHP tests"
-  #       fi
-  #       
-  #   - name: Upload PHP coverage
-  #     uses: codecov/codecov-action@v5
-  #     if: matrix.php-version == '8.2'
-  #     with:
-  #       file: ./coverage-php.xml
-  #       flags: php
-  #       name: php-coverage
-  #     env:
-  #       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  php-tests:
+    name: PHP Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2']
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_episciences
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup PHP ${{ matrix.php-version }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, zip
+        coverage: xdebug
+        tools: composer:v2
+        
+    - name: Cache Composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php${{ matrix.php-version }}-composer-
+          
+    - name: Install PHP dependencies
+      run: composer install --no-progress --prefer-dist --optimize-autoloader
+      
+    - name: Wait for MySQL
+      run: |
+        while ! mysqladmin ping -h"127.0.0.1" -P3306 --silent; do
+          sleep 1
+        done
+        
+    - name: Setup test database
+      run: |
+        mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences;"
+        mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences_auth;"
+      
+    - name: Run PHP tests
+      run: vendor/bin/phpunit --coverage-clover=coverage-php.xml
+      env:
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USER: root
+        DB_PASSWORD: root
+        DB_NAME: test_episciences
+        
+    - name: Upload PHP coverage
+      uses: codecov/codecov-action@v5
+      if: matrix.php-version == '8.2'
+      with:
+        file: ./coverage-php.xml
+        flags: php
+        name: php-coverage
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   js-tests:
     name: JavaScript Tests
