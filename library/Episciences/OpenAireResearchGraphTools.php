@@ -101,8 +101,7 @@ class Episciences_OpenAireResearchGraphTools
         ////// CACHE GLOBAL RESEARCH GRAPH
         $fileOpenAireGlobalResponse = trim(explode("/", $doiTrim)[1]) . ".json";
         $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $getsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
-        return $getsGlobalOARG;
+        return $cacheOARG->getItem($fileOpenAireGlobalResponse);
     }
 
     /**
