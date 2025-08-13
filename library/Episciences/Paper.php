@@ -3229,16 +3229,6 @@ class Episciences_Paper
             $node->appendChild($dom->createElement('funding', ""));
         }
 
-
-        //$classification = Episciences_Paper_ClassificationsManager::formatClassificationForview($this->_paperId);
-
-//        if (!empty($classification)) {
-//            $node->appendChild($dom->createElement('classification', $classification));
-//        } else {
-//            $node->appendChild($dom->createElement('classification', ""));
-//        }
-
-
         ($this->isAllowedToManageOrcidAuthor(true)) ? $node->appendChild($dom->createElement('rightOrcid', '1'))
             : $node->appendChild($dom->createElement('rightOrcid', "0"));
 
