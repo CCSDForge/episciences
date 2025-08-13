@@ -186,9 +186,10 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     }
 
     /**
-     * Retourne l'identifiant unique qui lie les différentes  versions
+     * Retourne l'identifiant unique qui lie les différentes versions
      * @param array $hookParams
      * @return array
+     * @throws Exception
      */
 
     public static function hookConceptIdentifier(array $hookParams): array
@@ -208,6 +209,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
+     * @throws Exception
      */
     private static function checkResponse(array $hookParams): array
     {
@@ -225,6 +227,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
+     * @throws Exception
      */
     public static function hookGetLinkedIdentifiers(array $hookParams): array
     {
@@ -241,6 +244,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     /**
      * @param array $hookParams
      * @return array
+     * @throws Exception
      */
 
     public static function hookLinkedDataProcessing(array $hookParams): array
@@ -324,35 +328,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         if (isset($metadata['creators']) && is_array($metadata['creators'])) {
 
-            foreach ($metadata['creators'] as $author) {
-
-                $affiliations = [];
-
-                if (isset($author['name']) && $author['name'] !== '') {
-                    $name = $author['name'];
-                    $creatorsDc[] = $name;
-                    $explodedName = explode(', ', $name);
-                    // Clear memory to avoid carrying over data from the previous author
-                    $tmp = [];
-
-                    $tmp['fullname'] = $name;
-                    $tmp['given'] = isset($explodedName[1]) ? trim($explodedName[1]) : '';
-                    $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
-
-                    if (isset($author['orcid']) && $author['orcid'] !== '') {
-                        $tmp['orcid'] = $author['orcid'];
-                    }
-
-                    if (isset($author['affiliation'])) {
-
-                        $affiliations[] = ['name' => $author['affiliation']];
-                        $tmp['affiliation'] = $affiliations;
-
-                    }
-
-                    $authors[] = $tmp;
-                }
-            }
+            list($creatorsDc, $authors) = self::enrichmentProcessCreators($metadata['creators'], $creatorsDc, $authors);
         }
 
         $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
@@ -424,6 +400,46 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         if (isset($data[Episciences_Repositories_Common::FILES])) {
             $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
         }
+    }
+
+    /**
+     * @param $creators
+     * @param array $creatorsDc
+     * @param array $authors
+     * @return array
+     */
+    private static function enrichmentProcessCreators($creators, array $creatorsDc, array $authors): array
+    {
+        foreach ($creators as $author) {
+
+            $affiliations = [];
+
+            if (isset($author['name']) && $author['name'] !== '') {
+                $name = $author['name'];
+                $creatorsDc[] = $name;
+                $explodedName = explode(', ', $name);
+                // Clear memory to avoid carrying over data from the previous author
+                $tmp = [];
+
+                $tmp['fullname'] = $name;
+                $tmp['given'] = isset($explodedName[1]) ? trim($explodedName[1]) : '';
+                $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
+
+                if (isset($author['orcid']) && $author['orcid'] !== '') {
+                    $tmp['orcid'] = $author['orcid'];
+                }
+
+                if (isset($author['affiliation'])) {
+
+                    $affiliations[] = ['name' => $author['affiliation']];
+                    $tmp['affiliation'] = $affiliations;
+
+                }
+
+                $authors[] = $tmp;
+            }
+        }
+        return array($creatorsDc, $authors);
     }
 
 
