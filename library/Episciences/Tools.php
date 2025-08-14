@@ -14,7 +14,7 @@ class Episciences_Tools
 {
 
     public const DEFAULT_MKDIR_PERMISSIONS = 0770;
-    
+
     /**
      * Bidirectional mapping between ISO 639-2/T and ISO 639-2/B codes
      */
@@ -2090,9 +2090,9 @@ class Episciences_Tools
         if (empty($code) || strlen($code) !== 3) {
             return $code;
         }
-        
+
         $code = strtolower($code);
-        
+
         return self::ISO639_BIDIRECTIONAL_MAP[$code] ?? $code;
     }
 
