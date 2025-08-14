@@ -2664,9 +2664,6 @@ class Episciences_PapersManager
                 'version' => $version
             ]
         );
-
-      //  Zend_Debug::dump($response['license']);exit;
-
         // Use enriched record from hookApiRecords if available, otherwise fallback to OAI
         if (!empty($response['record'])) {
             $record = $response['record'];
