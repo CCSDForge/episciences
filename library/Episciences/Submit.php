@@ -793,7 +793,6 @@ class Episciences_Submit
         try {
 
             $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId, 'version' => $version]);
-
             if (!empty($hookApiRecord)) {
                 $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
             }
@@ -818,32 +817,28 @@ class Episciences_Submit
                 $paper->setVersion(null);
             }
 
-            if ($oai) {
+            // Use enriched record from hookApiRecords if available, otherwise fallback to OAI
+            if (!empty($hookApiRecord['record'])) {
+                $result['record'] = $hookApiRecord['record'];
+            } elseif ($oai) {
                 $result['record'] = $oai->getRecord($identifier);
                 $type = Episciences_Tools::xpath($result['record'], '//dc:type');
 
                 if (!empty($type)) {
                     $result[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
                 }
-
-
             } else {
-
-                $result['record'] = $hookApiRecord ['record'] ?? null;
-
-                if (
-                    isset($hookApiRecord['error']) ||
-                    empty($result['record'])
-                ) {
+                if (isset($hookApiRecord['error'])) {
                     throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
                 }
-
+                $result['record'] = null;
             }
+
+
 
             if (isset($hookApiRecord[Episciences_Repositories_Common::ENRICHMENT])) {
                 $result[Episciences_Repositories_Common::ENRICHMENT] = $hookApiRecord[Episciences_Repositories_Common::ENRICHMENT];
             }
-
             $conceptIdentifier = null;
 
             if (isset($hookApiRecord['conceptrecid'])) {
@@ -955,11 +950,7 @@ class Episciences_Submit
             $result['status'] = 0;
             $parsedError = $e->parseError();
 
-            $mailToStr = '<a href="mailto:';
-            $mailToStr .= EPISCIENCES_SUPPORT;
-            $mailToStr .= '">';
-            $mailToStr .= EPISCIENCES_SUPPORT;
-            $mailToStr .= '</a>';
+            $mailToStr = sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
 
             $error = $translator ? $translator->translate($parsedError) : $parsedError;
 
@@ -979,7 +970,7 @@ class Episciences_Submit
                 $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
             }
 
-            return ($result);
+            return $result;
 
         } catch (Exception $e) { // other exceptions: generic message
             $result['status'] = 0;
@@ -992,10 +983,10 @@ class Episciences_Submit
 
             }
 
-            return ($result);
+            return $result;
         }
 
-        return ($result);
+        return $result;
     }
 
     /**
@@ -1138,8 +1129,7 @@ class Episciences_Submit
 
             $hookParams = ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()];
 
-            $response = Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
-
+            Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
             Episciences_Repositories::callHook('hookLinkedDataProcessing', array_merge($hookParams));
 
 
@@ -1156,11 +1146,9 @@ class Episciences_Submit
             self::enrichmentProcess($paper, $enrichment);
 
             try {
-
                 if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) { // try to enrich with TEI HAL
                     Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
                 }
-
             } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
                 trigger_error($e->getMessage());
             }
