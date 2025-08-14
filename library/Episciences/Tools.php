@@ -1910,32 +1910,23 @@ class Episciences_Tools
      * @param $value
      * @return false|string
      */
-    public static function checkValueType($value)
+    public static function checkValueType($value): bool|string
     {
-        $isHal = self::isHal($value);
-        if ($isHal) {
-            return 'hal';
+        $checks = [
+            'hal' => fn() => self::isHal($value),
+            'doi' => fn() => self::isDoi($value),
+            'software' => fn() => self::isSoftwareHeritageId($value),
+            'url' => fn() => Zend_Uri::check($value),
+            'handle' => fn() => self::isHandle($value),
+            'arxiv' => fn() => self::isArxiv($value),
+        ];
+
+        foreach ($checks as $type => $checkFunction) {
+            if ($checkFunction()) {
+                return $type;
+            }
         }
-        $isDoi = self::isDoi($value);
-        if ($isDoi) {
-            return 'doi';
-        }
-        $isSwhid = self::isSoftwareHeritageId($value);
-        if ($isSwhid) {
-            return 'software';
-        }
-        $isUrl = Zend_Uri::check($value);
-        if ($isUrl) {
-            return 'url';
-        }
-        $isHdl = self::isHandle($value);
-        if ($isHdl) {
-            return 'handle';
-        }
-        $isArxiv = self::isArxiv($value);
-        if ($isArxiv) {
-            return 'arxiv';
-        }
+
         return false;
     }
 
