@@ -2111,6 +2111,7 @@ class Episciences_Submit
                 } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
                 } elseif ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
+                    $value = Episciences_Tools::cleanHandle($value);
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
                 }
                 if (!empty($noProcessed)) {
