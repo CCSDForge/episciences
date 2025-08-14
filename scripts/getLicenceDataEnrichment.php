@@ -79,7 +79,7 @@ class getLicenceDataEnrichment extends JournalScript
             $sets->expiresAfter(self::ONE_MONTH);
             if (!$sets->isHit()) {
                 $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
-                Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
+                Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
             }
         }
 
