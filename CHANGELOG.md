@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prettier to format Javascript
 - Configured Github actions for CI (PHP+JS tests)
 - Updated Renovate and Dependabot tests to target staging branch
+- New Makefile with reorganised commands + new commands
 
 ### Changed
 - Refactored some Javascript with more modern approach
