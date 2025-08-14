@@ -358,9 +358,11 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
     {
         $relatedIdentifiers = [];
 
+        $xmlString = self::getArcheOaiDatacite($hookParams['identifier']);
+
+
         // Check if we have XML data to parse
-        if (isset($hookParams['xml']) && !empty($hookParams['xml'])) {
-            $xmlString = $hookParams['xml'];
+        if (!empty($xmlString)) {
             $metadata = simplexml_load_string($xmlString);
 
             if ($metadata !== false) {

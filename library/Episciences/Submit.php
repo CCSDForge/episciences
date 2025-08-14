@@ -2044,15 +2044,25 @@ class Episciences_Submit
 
         $options = ['sourceId' => $repoId];
 
+
+
+
         foreach ($allDatasets as $datasets) {
-
-
-
+/*
+            ["identifier"] => string(48) "https://hdl.handle.net/21.11115/0000-0016-7FC9-8"
+            ["relation"] => string(7) "HasPart"
+            ["resource_type"] => string(7) "dataset"
+            ["scheme"] => string(3) "url"
+*/
             foreach ($datasets as $key => $value) {
+
+
+                // Skip existing Dataset
                 if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
                     continue;
                 }
-                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID) {
+
+                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID|| $repoId === (int)Episciences_Repositories::ARCHE_ID) {
 
                     if ($key !== 'identifier') {
                         continue;
@@ -2062,8 +2072,12 @@ class Episciences_Submit
                     $datasets = $value;
                 }
 
+
+
                 $value = trim($value);
                 $typeLd = Episciences_Tools::checkValueType($value);
+
+
 
                 if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
                     $result = Episciences_DoiTools::getMetadataFromDoi($value);
@@ -2096,15 +2110,15 @@ class Episciences_Submit
                     }
                 } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
+                } elseif ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
+                    $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
                 }
-
                 if (!empty($noProcessed)) {
                     $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
                 }
 
             }
         }
-
         return $affectedRows;
 
     }
