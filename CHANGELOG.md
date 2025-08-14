@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #693 allow to save comment without attachment
 - #690 ORCID might be duplicated when one of the authors has no ORCID
 - #702 Inclusion of arxiv article version invalidates document identifier
+- When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
 
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
