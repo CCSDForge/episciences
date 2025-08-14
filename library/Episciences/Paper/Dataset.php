@@ -11,6 +11,8 @@ class Episciences_Paper_Dataset
     public const HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE = 'swhidId_s';
     public const DOI_CODE = 'doi';
     public const URL_CODE = 'url';
+
+    public const HANDLE_CODE = 'handle';
     public const SOFTWARE_CODE = 'software';
     public const PUBLICATION = 'publication';
     public const DATASET = 'dataset';

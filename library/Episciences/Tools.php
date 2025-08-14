@@ -1868,13 +1868,52 @@ class Episciences_Tools
         return $matches;
     }
 
+
     /**
-     * @param string $handle
-     * @return bool
+     * Extracts a raw Handle string from a full Handle URL, excluding DOIs.
+     *
+     * @param string $input Input string
+     * @return string Cleaned handle (original string if not a Handle URL or if it’s a DOI)
      */
-    public static function isHandle(string $handle): bool
+    public static function cleanHandle(string $input): string
     {
-        return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
+        $input = trim($input);
+
+        // Skip cleaning if it’s a DOI URL
+        if (preg_match('~^https?://doi\.org/~i', $input)) {
+            return $input;
+        }
+
+        // Clean only Handle.net URLs
+        return preg_replace(
+            '~^(https?:\/\/hdl\.handle\.net\/)~i',
+            '',
+            $input
+        );
+    }
+
+    /**
+     * Validates whether a string is a Handle (Handle.net) identifier.
+     * DOIs (starting with "10.") are explicitly excluded.
+     *
+     * @param string $handle The handle to validate
+     * @param bool $clean Whether to clean the handle first (removing URL prefixes)
+     * @return bool True if valid handle, false otherwise
+     */
+    public static function isHandle(string $handle, bool $clean = true): bool
+    {
+        if ($clean) {
+            $handle = self::cleanHandle($handle);
+        }
+
+        // Exclude DOIs (common DOI prefix pattern)
+        if (preg_match('/^10\.\d{4,9}\//', $handle)) {
+            return false;
+        }
+
+        // Basic Handle regex
+        $pattern = '/^[0-9]+(\.[0-9]+)*\/[^\s]+$/u';
+        return (bool) preg_match($pattern, $handle);
     }
 
     /**
@@ -1916,9 +1955,9 @@ class Episciences_Tools
             'hal' => fn() => self::isHal($value),
             'doi' => fn() => self::isDoi($value),
             'software' => fn() => self::isSoftwareHeritageId($value),
-            'url' => fn() => Zend_Uri::check($value),
             'handle' => fn() => self::isHandle($value),
             'arxiv' => fn() => self::isArxiv($value),
+            'url' => fn() => Zend_Uri::check($value), // check at the end, lots of ids are also url
         ];
 
         foreach ($checks as $type => $checkFunction) {
