@@ -23,14 +23,7 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
 
     public static function hookApiRecords(array $hookParams): array
     {
-        $client = new Client();
-        try {
-            $response = $client->get(self::ARCHE_OAI_PMH_API . $hookParams['identifier']);
-        } catch (GuzzleException $e) {
-            throw new Ccsd_Error($e->getMessage());
-        }
-
-        $xmlString = $response->getBody()->getContents();
+        $xmlString = self::getArcheOaiDatacite($hookParams['identifier']);
         $data = self::enrichmentProcess($xmlString);
 
 
@@ -391,6 +384,24 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
     public static function extractRelatedIdentifiers(array $hookParams): array
     {
         return $hookParams['metadata']['related_identifiers'] ?? [];
+    }
+
+    /**
+     * @param $identifier
+     * @return string
+     * @throws Ccsd_Error
+     */
+    private static function getArcheOaiDatacite($identifier): string
+    {
+        $client = new Client();
+        try {
+            $response = $client->get(self::ARCHE_OAI_PMH_API . $identifier);
+        } catch (GuzzleException $e) {
+            throw new Ccsd_Error($e->getMessage());
+        }
+
+        $xmlString = $response->getBody()->getContents();
+        return $xmlString;
     }
 
 
