@@ -1884,9 +1884,9 @@ class Episciences_Tools
             return $input;
         }
 
-        // Clean only Handle.net URLs
+        // Clean Handle.net URLs (with or without protocol)
         return preg_replace(
-            '~^(https?:\/\/hdl\.handle\.net\/)~i',
+            '~^(https?:\/\/)?hdl\.handle\.net\/~i',
             '',
             $input
         );

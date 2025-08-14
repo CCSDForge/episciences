@@ -13,37 +13,70 @@ class Episciences_Paper_LicenceManager
     const DATACITE_DOI_API = 'https://api.datacite.org/dois/';
 
     /**
-     * @param $repoId
-     * @param $identifier
+     * @param string|int $repoId
+     * @param string $identifier
      * @param int $version
      * @return string
      * @throws GuzzleException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function getApiResponseByRepoId($repoId, $identifier, int $version): string
+    public static function getApiResponseByRepoId($repoId, string $identifier, int $version): string
     {
-        $callArrayResp = '';
-        switch ($repoId) {
-            case Episciences_Repositories::HAL_REPO_ID:
-                $callArrayResp = self::getLicenceFromTeiHal($identifier, $version);
-                break;
-            case Episciences_Repositories::ARXIV_REPO_ID:
-                $url = self::DATACITE_DOI_API . self::ARXIV_DOI_PREFIX . $identifier;
-                $callArrayResp = self::callApiForLicenceByRepoId($url);
-                sleep(1);
-                break;
-            case Episciences_Repositories::ZENODO_REPO_ID:
-                $url = self::DATACITE_DOI_API . self::ZENODO_DOI_PREFIX . $identifier;
-                $callArrayResp = self::callApiForLicenceByRepoId($url);
-                sleep(1);
-                break;
-            case Episciences_Repositories::ARCHE_ID:
-                $callArrayResp = self::getLicenceFromArcheDatacite($identifier);
-                break;
-            default: //OTHERS
-                break;
+        if (empty(trim($identifier))) {
+            return '';
         }
-        return $callArrayResp;
+
+        $repoId = (string) $repoId;
+        
+        $response = match ($repoId) {
+            Episciences_Repositories::HAL_REPO_ID => self::getLicenceFromTeiHal($identifier, $version),
+            Episciences_Repositories::ARXIV_REPO_ID => self::getDataciteLicence(self::ARXIV_DOI_PREFIX . $identifier),
+            Episciences_Repositories::ZENODO_REPO_ID => self::getDataciteLicence(self::ZENODO_DOI_PREFIX . $identifier),
+            Episciences_Repositories::ARCHE_ID => self::getLicenceFromArcheDatacite($identifier),
+            default => ''
+        };
+
+        if (self::shouldRateLimit($repoId)) {
+            self::applyRateLimit();
+        }
+
+        return $response;
+    }
+
+    /**
+     * Check if rate limiting should be applied for the given repository
+     *
+     * @param string $repoId
+     * @return bool
+     */
+    private static function shouldRateLimit(string $repoId): bool
+    {
+        return in_array($repoId, [
+            Episciences_Repositories::ARXIV_REPO_ID,
+            Episciences_Repositories::ZENODO_REPO_ID,
+            Episciences_Repositories::ARCHE_ID
+        ], true);
+    }
+
+    /**
+     * Apply rate limiting to avoid overwhelming external APIs
+     */
+    private static function applyRateLimit(): void
+    {
+        sleep(1);
+    }
+
+    /**
+     * Get license information from DataCite API
+     *
+     * @param string $doiIdentifier
+     * @return string
+     * @throws GuzzleException
+     */
+    private static function getDataciteLicence(string $doiIdentifier): string
+    {
+        $url = self::DATACITE_DOI_API . $doiIdentifier;
+        return self::callApiForLicenceByRepoId($url);
     }
 
     /**
