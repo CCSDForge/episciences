@@ -2020,9 +2020,9 @@ class Episciences_Submit
 
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
-
+        $affectedRows = 0;
         if (!$allDatasets) {
-            $allDatasets = [];
+            return $affectedRows;
         }
 
         $current = $paper;
@@ -2037,7 +2037,7 @@ class Episciences_Submit
             }
 
         }
-        $affectedRows = 0;
+
         $noProcessed = [];
         $docId = $current->getDocid();
         $repoId = $current->getRepoid();
@@ -2045,6 +2045,8 @@ class Episciences_Submit
         $options = ['sourceId' => $repoId];
 
         foreach ($allDatasets as $datasets) {
+
+
 
             foreach ($datasets as $key => $value) {
                 if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
