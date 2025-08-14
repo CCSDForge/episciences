@@ -402,8 +402,7 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
             throw new Ccsd_Error($e->getMessage());
         }
 
-        $xmlString = $response->getBody()->getContents();
-        return $xmlString;
+        return $response->getBody()->getContents();
     }
 
 
