@@ -296,6 +296,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_UID', 0);
         define('EPISCIENCES_Z_SUBMIT', 0);
         define('EPISCIENCES_USER_AGENT', '');
+        define('EPISCIENCES_SUPPORT','');
         define('NOTIFY_TARGET_HAL_INBOX', '');
         define('NOTIFY_TARGET_HAL_URL', '');
         define('OPENALEX_MAILTO', '');
