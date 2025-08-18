@@ -76,9 +76,8 @@ if ! git fetch --all; then
     exit 1
 fi
 
-if ! git fetch --tags; then
-    log_error "Failed to fetch tags"
-    exit 1
+if ! git fetch --tags --force; then
+    log_warning "Failed to fetch some tags (this may be normal if tags were moved)"
 fi
 
 if [ "$IS_TAG" = true ]; then
