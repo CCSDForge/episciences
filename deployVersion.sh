@@ -127,9 +127,18 @@ if [ ! -f "composer.phar" ]; then
 fi
 
 log "Installing Composer dependencies..."
-if ! $PHP_BIN composer.phar install -o --no-dev --no-interaction; then
+COMPOSER_OUTPUT=$($PHP_BIN composer.phar install -o --no-dev --no-interaction 2>&1)
+COMPOSER_EXIT_CODE=$?
+
+if [ $COMPOSER_EXIT_CODE -ne 0 ]; then
     log_error "Composer install failed"
+    echo "$COMPOSER_OUTPUT"
     exit 1
+fi
+
+# Check for lock file warning
+if echo "$COMPOSER_OUTPUT" | grep -q "lock file is not up to date"; then
+    log_warning "Composer lock file is outdated - consider running 'composer update' in development"
 fi
 
 # Check if package.json exists

@@ -5,6 +5,10 @@
 # Suppress directory change messages
 MAKEFLAGS += --no-print-directory
 
+# Include sub-makefiles
+include makefiles/deploy.mk
+include makefiles/database.mk
+
 # Configuration Variables
 DOCKER := docker
 DOCKER_COMPOSE := docker compose
@@ -19,30 +23,8 @@ CNTR_APP_DIR := /var/www/htdocs
 CNTR_APP_USER := www-data
 CNTR_USER_ID := 1000:1000
 
-# Database Configuration
-DB_PORT_EPISCIENCES := 33060
-DB_PORT_INDEXING := 33061
-DB_PORT_AUTH := 33062
-DB_HOST := 127.0.0.1
-DB_USER := root
-DB_PASS := $(shell echo $$MYSQL_ROOT_PASSWORD)
-ifeq ($(DB_PASS),)
-    DB_PASS := root
-endif
-
 # Paths Configuration  
-SQL_DUMP_DIR := ~/tmp
 SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
-
-# MySQL Connection Commands
-MYSQL_CONNECT_EPISCIENCES := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_EPISCIENCES) episciences
-MYSQL_CONNECT_INDEXING := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_INDEXING) solr_index_queue  
-MYSQL_CONNECT_AUTH := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_AUTH) cas_users
-
-# Volume Names
-VOLUME_MYSQL_EPISCIENCES := $(PROJECT_NAME)_mysql-db-episciences
-VOLUME_MYSQL_INDEXING := $(PROJECT_NAME)_mysql-db-indexing
-VOLUME_MYSQL_AUTH := $(PROJECT_NAME)_mysql-db-auth
 
 # =============================================================================
 # PHONY Targets
@@ -73,6 +55,9 @@ help: ## Display this help message
 	@echo ""
 	@echo "Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter|test|phpunit):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Deployment Commands:"
+	@grep -E '^(deploy):.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Other Commands:"
 	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
