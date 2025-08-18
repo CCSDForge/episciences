@@ -27,13 +27,13 @@ log_warning() {
 
 # Validate input parameter
 if [ -z "$1" ]; then
-    log_error "Branch name is required as the first argument"
-    echo "Usage: $0 <branch-name>"
+    log_error "Branch or tag name is required as the first argument"
+    echo "Usage: $0 <branch-or-tag-name>"
     exit 1
 fi
 
 BRANCH="$1"
-log "Starting deployment of branch: $BRANCH"
+log "Starting deployment of: $BRANCH"
 
 # Detect PHP binary
 if test -f "/usr/bin/php8.1"; then
@@ -53,9 +53,18 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if branch exists remotely
-if ! git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
-    log_error "Branch '$BRANCH' does not exist on remote"
+# Check if it's a tag or branch
+IS_TAG=false
+IS_BRANCH=false
+
+if git ls-remote --exit-code --tags origin "refs/tags/$BRANCH" > /dev/null 2>&1; then
+    IS_TAG=true
+    log "Detected '$BRANCH' as a tag"
+elif git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+    IS_BRANCH=true
+    log "Detected '$BRANCH' as a branch"
+else
+    log_error "Neither branch nor tag '$BRANCH' exists on remote"
     exit 1
 fi
 
@@ -67,26 +76,34 @@ if ! git fetch --all; then
     exit 1
 fi
 
-if ! git fetch --tags; then
-    log_error "Failed to fetch tags"
-    exit 1
+if ! git fetch --tags --force; then
+    log_warning "Failed to fetch some tags (this may be normal if tags were moved)"
 fi
 
-log "Checking out branch: $BRANCH"
-if ! git checkout "$BRANCH"; then
-    log_error "Failed to checkout branch: $BRANCH"
-    exit 1
+if [ "$IS_TAG" = true ]; then
+    log "Checking out tag: $BRANCH"
+    if ! git checkout "tags/$BRANCH"; then
+        log_error "Failed to checkout tag: $BRANCH"
+        exit 1
+    fi
+    log "Tag '$BRANCH' checked out successfully (detached HEAD state)"
+else
+    log "Checking out branch: $BRANCH"
+    if ! git checkout "$BRANCH"; then
+        log_error "Failed to checkout branch: $BRANCH"
+        exit 1
+    fi
+    
+    log "Pulling latest changes for branch: $BRANCH"
+    if ! git pull; then
+        log_error "Failed to pull latest changes"
+        exit 1
+    fi
 fi
 
-log "Pulling latest changes for branch: $BRANCH"
-if ! git pull; then
-    log_error "Failed to pull latest changes"
-    exit 1
-fi
-
-gitHashCommit=$(git rev-parse --short "$BRANCH")
+gitHashCommit=$(git rev-parse --short HEAD)
 if [ -z "$gitHashCommit" ]; then
-    log_error "Failed to get git hash for branch: $BRANCH"
+    log_error "Failed to get git hash for current HEAD"
     exit 1
 fi
 
@@ -110,9 +127,18 @@ if [ ! -f "composer.phar" ]; then
 fi
 
 log "Installing Composer dependencies..."
-if ! $PHP_BIN composer.phar install -o --no-dev; then
+COMPOSER_OUTPUT=$($PHP_BIN composer.phar install -o --no-dev --no-interaction 2>&1)
+COMPOSER_EXIT_CODE=$?
+
+if [ $COMPOSER_EXIT_CODE -ne 0 ]; then
     log_error "Composer install failed"
+    echo "$COMPOSER_OUTPUT"
     exit 1
+fi
+
+# Check for lock file warning
+if echo "$COMPOSER_OUTPUT" | grep -q "lock file is not up to date"; then
+    log_warning "Composer lock file is outdated - consider running 'composer update' in development"
 fi
 
 # Check if package.json exists
@@ -126,9 +152,9 @@ else
     fi
 
     log "Installing Node.js dependencies..."
-    # Use --frozen-lockfile for production deployments to avoid modifications
-    if ! yarn install --frozen-lockfile --production=false; then
-        log_warning "Frozen lockfile failed, trying normal install..."
+    # Use --immutable for production deployments to avoid modifications
+    if ! yarn install --immutable; then
+        log_warning "Immutable install failed, trying normal install..."
         if ! yarn install; then
             log_error "yarn install failed"
             exit 1
@@ -158,7 +184,11 @@ else
 fi
 
 log_success "Deployment completed successfully!"
-log "Branch: $BRANCH"
+if [ "$IS_TAG" = true ]; then
+    log "Tag: $BRANCH"
+else
+    log "Branch: $BRANCH"
+fi
 log "Commit: $gitHashCommit"
 log "Deploy time: $deployDate"
 
