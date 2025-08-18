@@ -1159,7 +1159,17 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
-        $this->_helper->redirector->gotoUrl($this->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $paperId ]));
+
+
+        try {
+            // Attempt to redirect to the latest version
+            $paper = Episciences_PapersManager::getLastPaper($paperId, true);
+            $docid = $paper->getDocid();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $docid = $paperId;
+        }
+
+        $this->_helper->redirector->gotoUrl($this->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $docid ]));
     }
 
     /**

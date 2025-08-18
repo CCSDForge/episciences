@@ -23,10 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #702 Inclusion of arxiv article version invalidates document identifier
 - Manager: Force predefined pages to be public
 - Manager: Review Report: attached document URL has not been updated for the manager application
+- When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
+- #629 Malfunction when updating volume description
+
 
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
 - CSV import functionality for sections
+- When pasting URL for repository identifiers, the URL is automatically cleaned to keep only the identifier, if the version number is in the URL, it is also automatically added into the "Version" field
+- Javascript Tests with Jest
+- PHP tests with Phpunit (updated test + new tests)
+- Prettier to format Javascript
+- Configured Github actions for CI (PHP+JS tests)
+- Updated Renovate and Dependabot tests to target staging branch
+- New Makefile with reorganised commands + new commands
+
+### Changed
+- Refactored some Javascript with more modern approach
 
 v1.0.51 - 2025-04-07
 ### Changed
@@ -42,7 +55,7 @@ v1.0.51 - 2025-04-07
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up
 - [#649](https://github.com/CCSDForge/episciences/issues/649): Assigned editors are now automatically added as (hidden) copies of messages sent to reviewers
-
+- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 
 ### Fixed
 - Manager: reset password url
