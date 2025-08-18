@@ -127,7 +127,7 @@ if [ ! -f "composer.phar" ]; then
 fi
 
 log "Installing Composer dependencies..."
-if ! $PHP_BIN composer.phar install -o --no-dev; then
+if ! $PHP_BIN composer.phar install -o --no-dev --no-interaction; then
     log_error "Composer install failed"
     exit 1
 fi
@@ -143,9 +143,9 @@ else
     fi
 
     log "Installing Node.js dependencies..."
-    # Use --frozen-lockfile for production deployments to avoid modifications
-    if ! yarn install --frozen-lockfile --production=false; then
-        log_warning "Frozen lockfile failed, trying normal install..."
+    # Use --immutable for production deployments to avoid modifications
+    if ! yarn install --immutable; then
+        log_warning "Immutable install failed, trying normal install..."
         if ! yarn install; then
             log_error "yarn install failed"
             exit 1
