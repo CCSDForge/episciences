@@ -27,13 +27,13 @@ log_warning() {
 
 # Validate input parameter
 if [ -z "$1" ]; then
-    log_error "Branch name is required as the first argument"
-    echo "Usage: $0 <branch-name>"
+    log_error "Branch or tag name is required as the first argument"
+    echo "Usage: $0 <branch-or-tag-name>"
     exit 1
 fi
 
 BRANCH="$1"
-log "Starting deployment of branch: $BRANCH"
+log "Starting deployment of: $BRANCH"
 
 # Detect PHP binary
 if test -f "/usr/bin/php8.1"; then
@@ -53,9 +53,18 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if branch exists remotely
-if ! git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
-    log_error "Branch '$BRANCH' does not exist on remote"
+# Check if it's a tag or branch
+IS_TAG=false
+IS_BRANCH=false
+
+if git ls-remote --exit-code --tags origin "refs/tags/$BRANCH" > /dev/null 2>&1; then
+    IS_TAG=true
+    log "Detected '$BRANCH' as a tag"
+elif git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+    IS_BRANCH=true
+    log "Detected '$BRANCH' as a branch"
+else
+    log_error "Neither branch nor tag '$BRANCH' exists on remote"
     exit 1
 fi
 
@@ -72,21 +81,30 @@ if ! git fetch --tags; then
     exit 1
 fi
 
-log "Checking out branch: $BRANCH"
-if ! git checkout "$BRANCH"; then
-    log_error "Failed to checkout branch: $BRANCH"
-    exit 1
+if [ "$IS_TAG" = true ]; then
+    log "Checking out tag: $BRANCH"
+    if ! git checkout "tags/$BRANCH"; then
+        log_error "Failed to checkout tag: $BRANCH"
+        exit 1
+    fi
+    log "Tag '$BRANCH' checked out successfully (detached HEAD state)"
+else
+    log "Checking out branch: $BRANCH"
+    if ! git checkout "$BRANCH"; then
+        log_error "Failed to checkout branch: $BRANCH"
+        exit 1
+    fi
+    
+    log "Pulling latest changes for branch: $BRANCH"
+    if ! git pull; then
+        log_error "Failed to pull latest changes"
+        exit 1
+    fi
 fi
 
-log "Pulling latest changes for branch: $BRANCH"
-if ! git pull; then
-    log_error "Failed to pull latest changes"
-    exit 1
-fi
-
-gitHashCommit=$(git rev-parse --short "$BRANCH")
+gitHashCommit=$(git rev-parse --short HEAD)
 if [ -z "$gitHashCommit" ]; then
-    log_error "Failed to get git hash for branch: $BRANCH"
+    log_error "Failed to get git hash for current HEAD"
     exit 1
 fi
 
@@ -158,7 +176,11 @@ else
 fi
 
 log_success "Deployment completed successfully!"
-log "Branch: $BRANCH"
+if [ "$IS_TAG" = true ]; then
+    log "Tag: $BRANCH"
+else
+    log "Branch: $BRANCH"
+fi
 log "Commit: $gitHashCommit"
 log "Deploy time: $deployDate"
 
