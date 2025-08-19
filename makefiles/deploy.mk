@@ -10,7 +10,7 @@ LATEST_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "no-tag
 # =============================================================================
 # Deployment Commands
 # =============================================================================
-.PHONY: deploy deploy-staging deploy-current deploy-latest deploy-prod deploy-check deploy-dry-run
+.PHONY: deploy deploy-staging deploy-current deploy-latest deploy-prod deploy-force deploy-check deploy-dry-run
 
 deploy: ## Deploy branch or tag (usage: make deploy TARGET=staging)
 ifndef TARGET
@@ -56,6 +56,24 @@ ifndef TAG
 endif
 	@echo "Deploying production tag $(TAG)..."
 	@bash $(DEPLOY_SCRIPT) $(TAG)
+
+deploy-force: ## Force deploy branch/tag, discarding local changes (usage: make deploy-force TARGET=staging)
+ifndef TARGET
+	@echo "Error: TARGET parameter is required"
+	@echo "Usage: make deploy-force TARGET=staging"
+	@echo "       make deploy-force TARGET=v1.2.3"
+	@echo ""
+	@echo "    Don't underestimate the Force."
+	@echo ""
+	@echo "⚠️  WARNING: This will discard ALL local changes!"
+	@exit 1
+endif
+	@echo "⚠️  Force deploying $(TARGET) - this will discard local changes!"
+	@echo "Continuing in 7 seconds... (Ctrl+C to cancel)"
+	@sleep 7
+	@git reset --hard HEAD
+	@git clean -fd
+	@bash $(DEPLOY_SCRIPT) $(TARGET)
 
 deploy-check: ## Check deployment script syntax and git status
 	@echo "Checking deployment script syntax..."
