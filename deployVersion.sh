@@ -94,10 +94,33 @@ else
         exit 1
     fi
     
+    log "Checking for local modifications..."
+    if ! git diff-index --quiet HEAD --; then
+        log_warning "Local modifications detected. Stashing changes before pull..."
+        
+        # Stash local changes
+        if ! git stash push -m "Auto-stash by deployment script $(date)"; then
+            log_error "Failed to stash local changes"
+            exit 1
+        fi
+        
+        STASHED_CHANGES=true
+        log "Local changes stashed successfully"
+    else
+        STASHED_CHANGES=false
+    fi
+    
     log "Pulling latest changes for branch: $BRANCH"
     if ! git pull; then
         log_error "Failed to pull latest changes"
         exit 1
+    fi
+    
+    # For production deployments, we keep stashed changes but don't restore them
+    if [ "$STASHED_CHANGES" = true ]; then
+        log "Local changes have been stashed for deployment cleanliness"
+        log "Stashed changes are preserved in git stash - use 'git stash list' to view them"
+        log "Use 'git stash pop' if you need to restore them later"
     fi
 fi
 
