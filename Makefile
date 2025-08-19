@@ -8,6 +8,7 @@ MAKEFLAGS += --no-print-directory
 # Include sub-makefiles
 include makefiles/deploy.mk
 include makefiles/database.mk
+include makefiles/testing.mk
 
 # Configuration Variables
 DOCKER := docker
@@ -30,12 +31,11 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection index wait-for-db dev-setup backup-db
-.PHONY: load-db-episciences load-db-auth shell-mysql-episciences shell-mysql-auth shell-mysql-indexing
+.PHONY: collection index dev-setup
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
-.PHONY: enter-container-php test phpunit
+.PHONY: enter-container-php
 
 # =============================================================================
 # Help & Information
@@ -54,7 +54,10 @@ help: ## Display this help message
 	@grep -E '^(collection|index):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Development Commands:"
-	@grep -E '^(dev-setup|composer|yarn|enter|test|phpunit):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Testing Commands:"
+	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
 	@echo ""
 	@echo "Deployment Commands:"
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
@@ -181,17 +184,6 @@ dev-setup: up wait-for-db ## Complete development environment setup
 	@$(MAKE) index
 	@echo "Development environment setup complete!"
 
-test: ## Run tests (if available)
-	@if [ -f phpunit.xml ]; then \
-		echo "Running PHPUnit tests..."; \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit; \
-	else \
-		echo "No phpunit.xml found, skipping tests"; \
-	fi
-
-phpunit: ## Run PHPUnit tests inside container
-	@echo "Running PHPUnit tests..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit
 
 # =============================================================================
 # PHP Development Commands
