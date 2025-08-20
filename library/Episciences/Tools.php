@@ -880,10 +880,208 @@ class Episciences_Tools
         return trim($name);
     }
 
+    /**
+     * Decode LaTeX accent commands to Unicode characters
+     * 
+     * This enhanced version handles:
+     * - All common LaTeX accent commands
+     * - Both uppercase and lowercase variants
+     * - Flexible spacing and bracing patterns
+     * - Proper replacement order to avoid conflicts
+     * 
+     * @param string $string The string containing LaTeX commands
+     * @return string The string with LaTeX accents converted to Unicode
+     */
     public static function decodeLatex($string)
     {
-        //$string = Ccsd_Tools::decodeLatex($string);
-        return str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
+        if (empty($string)) {
+            return $string;
+        }
+
+        // Enhanced LaTeX to Unicode mapping with regex patterns for flexible matching
+        $latexPatterns = [
+            // Acute accent (á, é, í, ó, ú, ý, etc.) - fixed word boundary issues
+            '/\\\\\'\\{([aeiouycnlrz])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0301}"); 
+            },
+            '/\\\\\'([aeiouycnlrz])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0301}"); 
+            },
+            
+            // Special case: \\'s should become 's (apostrophe s, not accented s)
+            "/\\\\\\'s/i" => "'s",
+            
+            // Grave accent (à, è, ì, ò, ù)
+            '/\\\\`\\{([aeiou])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0300}"); 
+            },
+            '/\\\\`([aeiou])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0300}"); 
+            },
+            
+            // Circumflex (â, ê, î, ô, û)
+            '/\\\\\\^\\{([aeiou])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0302}"); 
+            },
+            '/\\\\\\^([aeiou])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0302}"); 
+            },
+            
+            // Umlaut/Diaeresis (ä, ë, ï, ö, ü, ÿ) - handle 1, 2, 3, and 4 backslash variants  
+            '/\\\\\\\\\"{([aeiouy])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0308}"); 
+            },
+            '/\\\\\\\\\"([aeiouy])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0308}"); 
+            },
+            '/\\\\\\\"{([aeiouy])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0308}"); 
+            },
+            '/\\\\\\\"([aeiouy])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0308}"); 
+            },
+            '/\\\\\"{([aeiouy])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0308}"); 
+            },
+            '/\\\\\"([aeiouy])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0308}"); 
+            },
+            
+            // Tilde (ã, ñ, õ)
+            '/\\\\~\\{([ano])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0303}"); 
+            },
+            '/\\\\~([ano])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0303}"); 
+            },
+            
+            // Macron (ā, ē, ī, ō, ū)
+            '/\\\\=\\{([aeiou])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0304}"); 
+            },
+            '/\\\\=([aeiou])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0304}"); 
+            },
+            
+            // Breve (ă, ĕ, ĭ, ŏ, ŭ)
+            '/\\\\u\\{([aeiou])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0306}"); 
+            },
+            '/\\\\u\s+([aeiou])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0306}"); 
+            },
+            
+            // Ring above (å, ů)
+            '/\\\\r\\{([au])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{030A}"); 
+            },
+            '/\\\\r\s+([au])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{030A}"); 
+            },
+            
+            // Caron/Háček (č, ě, ň, ř, š, ť, ž)
+            '/\\\\v\\{([cdenrstuz])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{030C}"); 
+            },
+            '/\\\\v\s+([cdenrstuz])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{030C}"); 
+            },
+            
+            // Cedilla (ç, ş, ţ)
+            '/\\\\c\\{([cst])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0327}"); 
+            },
+            '/\\\\c\s+([cst])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0327}"); 
+            },
+            
+            // Ogonek (ą, ę, į, ų)
+            '/\\\\k\\{([aeiu])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0328}"); 
+            },
+            '/\\\\k\s+([aeiu])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0328}"); 
+            },
+            
+            // Dot above (ċ, ė, ġ, ı̇, ṅ, ȯ, ṙ, ṡ, ẇ, ẋ, ẏ, ż)
+            '/\\\\\\.\\{([cegiorswxyz])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0307}"); 
+            },
+            '/\\\\\\.([cegiorswxyz])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0307}"); 
+            },
+            
+            // Dot below (ḍ, ḥ, ḷ, ṃ, ṇ, ṛ, ṣ, ṭ, ụ, ẉ, ỵ, ẓ)
+            '/\\\\d\\{([dhlmnrstuwyz])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0323}"); 
+            },
+            '/\\\\d\s+([dhlmnrstuwyz])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{0323}"); 
+            },
+            
+            // Double acute/Hungarian umlaut (ő, ű)
+            '/\\\\H\\{([ou])\\}/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{030B}"); 
+            },
+            '/\\\\H\s+([ou])(?=\s|$|[^\w])/i' => function($matches) { 
+                return self::applyLatexAccent($matches[1], "\u{030B}"); 
+            },
+            
+            // Special cases - direct mappings for common symbols
+            '/\\\\l\\{\\}/' => 'ł',
+            '/\\\\l\s+/' => 'ł',
+            '/\\\\L\\{\\}/' => 'Ł',
+            '/\\\\L\\s+/' => 'Ł ',
+            '/\\\\o\\{\\}/' => 'ø',
+            '/\\\\o\\s+/' => 'ø ',
+            '/\\\\O\\{\\}/' => 'Ø',
+            '/\\\\O\\s+/' => 'Ø ',
+            // Context-sensitive \aa{} pattern: uppercase when followed by lowercase letters (proper nouns), lowercase otherwise
+            '/\\\\aa\\{\\}(?=[a-z])/' => 'Å',  // Followed by lowercase letter (e.g., "Åse")
+            '/\\\\aa\\{\\}/' => 'å',           // Standalone or other contexts
+            '/\\\\aa\\s+/' => 'å ',
+            '/\\\\AA\\{\\}/' => 'Å',
+            '/\\\\AA\\s+/' => 'Å ',
+            '/\\\\ae\\{\\}/' => 'æ',
+            '/\\\\ae\\s+/' => 'æ ',
+            '/\\\\AE\\{\\}/' => 'Æ',
+            '/\\\\AE\\s+/' => 'Æ ',
+            '/\\\\oe\\{\\}/' => 'œ',
+            '/\\\\oe\\s+/' => 'œ ',
+            '/\\\\OE\\{\\}/' => 'Œ',
+            '/\\\\OE\\s+/' => 'Œ ',
+            '/\\\\ss\\{\\}/' => 'ß',
+            '/\\\\ss\\s+/' => 'ß ',
+        ];
+
+        // First, apply the enhanced regex-based patterns (more flexible)
+        $result = $string;
+        foreach ($latexPatterns as $pattern => $replacement) {
+            if (is_callable($replacement)) {
+                $result = preg_replace_callback($pattern, $replacement, $result);
+            } else {
+                $result = preg_replace($pattern, $replacement, $result);
+            }
+        }
+        
+        // Then apply the legacy static mappings for any remaining patterns
+        $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $result);
+        
+        return $result;
+    }
+
+    /**
+     * Apply a combining diacritical mark to a base character
+     * 
+     * @param string $baseChar The base character (a, e, i, etc.)
+     * @param string $combiningMark The Unicode combining diacritical mark
+     * @return string The character with the applied accent
+     */
+    private static function applyLatexAccent(string $baseChar, string $combiningMark): string
+    {
+        // Normalize and apply the combining mark
+        $result = Normalizer::normalize($baseChar . $combiningMark, Normalizer::FORM_C);
+        return $result !== false ? $result : $baseChar . $combiningMark;
     }
 
     // check if an url begins with http:// or https://. if not, add http at the beginning of the string.

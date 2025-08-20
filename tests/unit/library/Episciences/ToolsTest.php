@@ -491,4 +491,231 @@ class ToolsTest extends TestCase
         $this->assertSame('e', Episciences_Tools::replaceAccents('e' . "\u{0302}")); // e + combining circumflex
     }
 
+    /**
+     * Test decodeLatex function - basic accent patterns
+     */
+    public function testDecodeLatexBasicAccents(): void
+    {
+        // Test acute accents - both brace and space formats
+        $this->assertSame('á', Episciences_Tools::decodeLatex("\\'{a}"));
+        $this->assertSame('á', Episciences_Tools::decodeLatex("\\'a"));
+        $this->assertSame('É', Episciences_Tools::decodeLatex("\\'{E}"));
+        $this->assertSame('É', Episciences_Tools::decodeLatex("\\'E"));
+        
+        // Test grave accents
+        $this->assertSame('à', Episciences_Tools::decodeLatex("\\`{a}"));
+        $this->assertSame('à', Episciences_Tools::decodeLatex("\\`a"));
+        $this->assertSame('È', Episciences_Tools::decodeLatex("\\`{E}"));
+        $this->assertSame('È', Episciences_Tools::decodeLatex("\\`E"));
+        
+        // Test circumflex accents
+        $this->assertSame('â', Episciences_Tools::decodeLatex("\\^{a}"));
+        $this->assertSame('â', Episciences_Tools::decodeLatex("\\^a"));
+        $this->assertSame('Ô', Episciences_Tools::decodeLatex("\\^{O}"));
+        $this->assertSame('Ô', Episciences_Tools::decodeLatex("\\^O"));
+        
+        // Test umlaut/diaeresis
+        $this->assertSame('ä', Episciences_Tools::decodeLatex('\\\"{a}'));
+        $this->assertSame('ä', Episciences_Tools::decodeLatex('\\\"a'));
+        $this->assertSame('Ü', Episciences_Tools::decodeLatex('\\\"{U}'));
+        $this->assertSame('Ü', Episciences_Tools::decodeLatex('\\\"U'));
+    }
+
+    /**
+     * Test decodeLatex function - advanced accent patterns
+     */
+    public function testDecodeLatexAdvancedAccents(): void
+    {
+        // Test tilde
+        $this->assertSame('ñ', Episciences_Tools::decodeLatex("\\~{n}"));
+        $this->assertSame('ñ', Episciences_Tools::decodeLatex("\\~n"));
+        $this->assertSame('Ã', Episciences_Tools::decodeLatex("\\~{A}"));
+        $this->assertSame('õ', Episciences_Tools::decodeLatex("\\~o"));
+        
+        // Test macron
+        $this->assertSame('ā', Episciences_Tools::decodeLatex("\\={a}"));
+        $this->assertSame('ā', Episciences_Tools::decodeLatex("\\=a"));
+        $this->assertSame('Ē', Episciences_Tools::decodeLatex("\\={E}"));
+        
+        // Test breve
+        $this->assertSame('ă', Episciences_Tools::decodeLatex("\\u{a}"));
+        $this->assertSame('ă', Episciences_Tools::decodeLatex("\\u a"));
+        $this->assertSame('Ŏ', Episciences_Tools::decodeLatex("\\u{O}"));
+        
+        // Test ring above
+        $this->assertSame('å', Episciences_Tools::decodeLatex("\\r{a}"));
+        $this->assertSame('å', Episciences_Tools::decodeLatex("\\r a"));
+        $this->assertSame('Ů', Episciences_Tools::decodeLatex("\\r{U}"));
+        
+        // Test caron/háček
+        $this->assertSame('č', Episciences_Tools::decodeLatex("\\v{c}"));
+        $this->assertSame('č', Episciences_Tools::decodeLatex("\\v c"));
+        $this->assertSame('Š', Episciences_Tools::decodeLatex("\\v{S}"));
+        $this->assertSame('ž', Episciences_Tools::decodeLatex("\\v z"));
+    }
+
+    /**
+     * Test decodeLatex function - special characters and combinations
+     */
+    public function testDecodeLatexSpecialCharacters(): void
+    {
+        // Test cedilla
+        $this->assertSame('ç', Episciences_Tools::decodeLatex("\\c{c}"));
+        $this->assertSame('ç', Episciences_Tools::decodeLatex("\\c c"));
+        $this->assertSame('Ş', Episciences_Tools::decodeLatex("\\c{S}"));
+        
+        // Test ogonek
+        $this->assertSame('ą', Episciences_Tools::decodeLatex("\\k{a}"));
+        $this->assertSame('ą', Episciences_Tools::decodeLatex("\\k a"));
+        $this->assertSame('Ę', Episciences_Tools::decodeLatex("\\k{E}"));
+        
+        // Test dot above
+        $this->assertSame('ċ', Episciences_Tools::decodeLatex("\\.{c}"));
+        $this->assertSame('ċ', Episciences_Tools::decodeLatex("\\.c"));
+        $this->assertSame('Ż', Episciences_Tools::decodeLatex("\\.{Z}"));
+        
+        // Test dot below
+        $this->assertSame('ḍ', Episciences_Tools::decodeLatex("\\d{d}"));
+        $this->assertSame('ḍ', Episciences_Tools::decodeLatex("\\d d"));
+        $this->assertSame('Ṭ', Episciences_Tools::decodeLatex("\\d{T}"));
+        
+        // Test double acute/Hungarian umlaut
+        $this->assertSame('ő', Episciences_Tools::decodeLatex("\\H{o}"));
+        $this->assertSame('ő', Episciences_Tools::decodeLatex("\\H o"));
+        $this->assertSame('Ű', Episciences_Tools::decodeLatex("\\H{U}"));
+        
+        // Test special direct mappings
+        $this->assertSame('ł', Episciences_Tools::decodeLatex("\\l{}"));
+        $this->assertSame('ł', Episciences_Tools::decodeLatex("\\l "));
+        $this->assertSame('Ł', Episciences_Tools::decodeLatex("\\L{}"));
+        $this->assertSame('ø', Episciences_Tools::decodeLatex("\\o{}"));
+        $this->assertSame('Ø', Episciences_Tools::decodeLatex("\\O{}"));
+        $this->assertSame('æ', Episciences_Tools::decodeLatex("\\ae{}"));
+        $this->assertSame('Æ', Episciences_Tools::decodeLatex("\\AE{}"));
+        $this->assertSame('œ', Episciences_Tools::decodeLatex("\\oe{}"));
+        $this->assertSame('Œ', Episciences_Tools::decodeLatex("\\OE{}"));
+        $this->assertSame('ß', Episciences_Tools::decodeLatex("\\ss{}"));
+        $this->assertSame('å', Episciences_Tools::decodeLatex("\\aa{}"));
+        $this->assertSame('Å', Episciences_Tools::decodeLatex("\\AA{}"));
+    }
+
+    /**
+     * Test decodeLatex function - real-world academic examples
+     */
+    public function testDecodeLatexRealWorldExamples(): void
+    {
+        // Test author names from different countries
+        $this->assertSame('François Müller', Episciences_Tools::decodeLatex("Fran\\c{c}ois M\\\"{u}ller"));
+        $this->assertSame('José María López', Episciences_Tools::decodeLatex("Jos\\'e Mar\\'ia L\\'opez"));
+        $this->assertSame('Bjørn Åse', Episciences_Tools::decodeLatex("Bj\\o{}rn \\aa{}se"));
+        $this->assertSame('Dvořák', Episciences_Tools::decodeLatex("Dvo\\v{r}\\'ak"));
+        $this->assertSame('László Erdős', Episciences_Tools::decodeLatex("L\\'aszl\\'o Erd\\H{o}s"));
+        
+        // Test paper titles with accents
+        $this->assertSame('Étude des phénomènes', Episciences_Tools::decodeLatex("\\'Etude des ph\\'enom\\`enes"));
+        $this->assertSame('Análisis de señales', Episciences_Tools::decodeLatex("An\\'alisis de se\\~nales"));
+        $this->assertSame('Poincaré conjecture', Episciences_Tools::decodeLatex("Poincar\\'e conjecture"));
+        
+        // Test mixed legacy and new patterns
+        $this->assertSame('André café résumé', Episciences_Tools::decodeLatex("Andr\\'e caf\\'e r\\'esum\\'e"));
+        $this->assertSame('naïve approach', Episciences_Tools::decodeLatex("na\\\"{i}ve approach"));
+        
+        // Test mathematical notation with accents
+        $this->assertSame('Schrödinger equation', Episciences_Tools::decodeLatex("Schr\\\"{o}dinger equation"));
+        $this->assertSame('Hölder inequality', Episciences_Tools::decodeLatex("H\\\"{o}lder inequality"));
+    }
+
+    /**
+     * Test decodeLatex function - edge cases and boundary conditions
+     */
+    public function testDecodeLatexEdgeCases(): void
+    {
+        // Test empty string
+        $this->assertSame('', Episciences_Tools::decodeLatex(''));
+        
+        // Test strings without LaTeX commands
+        $this->assertSame('regular text', Episciences_Tools::decodeLatex('regular text'));
+        $this->assertSame('123 numbers', Episciences_Tools::decodeLatex('123 numbers'));
+        
+        // Test multiple accents on same word
+        $this->assertSame('résumé', Episciences_Tools::decodeLatex("r\\'esum\\'e"));
+        $this->assertSame('naïve café', Episciences_Tools::decodeLatex("na\\\"{i}ve caf\\'e"));
+        
+        // Test whitespace preservation
+        $this->assertSame('  spaced  words  ', Episciences_Tools::decodeLatex('  spaced  words  '));
+        $this->assertSame('word1 wórd2', Episciences_Tools::decodeLatex("word1 w\\'ord2"));
+        
+        // Test boundary conditions - accent at word boundaries
+        $this->assertSame('á word', Episciences_Tools::decodeLatex("\\'a word"));
+        $this->assertSame('word é', Episciences_Tools::decodeLatex("word \\'e"));
+        $this->assertSame('á é í', Episciences_Tools::decodeLatex("\\'a \\'e \\'i"));
+        
+        // Test punctuation handling
+        $this->assertSame('café, résumé!', Episciences_Tools::decodeLatex("caf\\'e, r\\'esum\\'e!"));
+        $this->assertSame('naïve (approach)', Episciences_Tools::decodeLatex("na\\\"{i}ve (approach)"));
+        
+        // Test mixed case preservation
+        $this->assertSame('François MÜLLER', Episciences_Tools::decodeLatex("Fran\\c{c}ois M\\\"{U}LLER"));
+    }
+
+    /**
+     * Test decodeLatex function - backwards compatibility with legacy patterns
+     */
+    public function testDecodeLatexBackwardsCompatibility(): void
+    {
+        // Test that original static mappings still work
+        $this->assertSame('ç', Episciences_Tools::decodeLatex("\\c{c}"));
+        $this->assertSame('ç', Episciences_Tools::decodeLatex("\\c c"));
+        $this->assertSame('ą', Episciences_Tools::decodeLatex("\\k{a}"));
+        $this->assertSame('ą', Episciences_Tools::decodeLatex("\\k a"));
+        $this->assertSame('ł', Episciences_Tools::decodeLatex("\\l{}"));
+        $this->assertSame('ł', Episciences_Tools::decodeLatex("\\l "));
+        $this->assertSame('š', Episciences_Tools::decodeLatex("\\v{s}"));
+        $this->assertSame('š', Episciences_Tools::decodeLatex("\\v s"));
+        $this->assertSame('â', Episciences_Tools::decodeLatex('\\^a'));
+        
+        // Test specific legacy patterns from the original static array
+        $this->assertSame('á', Episciences_Tools::decodeLatex("\\'{a}"));
+        $this->assertSame('á', Episciences_Tools::decodeLatex("\\'a"));
+        $this->assertSame('à', Episciences_Tools::decodeLatex("\\`{a}"));
+        $this->assertSame('à', Episciences_Tools::decodeLatex("\\`a"));
+        $this->assertSame('ă', Episciences_Tools::decodeLatex("\\u{a}"));
+        $this->assertSame('ă', Episciences_Tools::decodeLatex("\\u a"));
+        $this->assertSame('ä', Episciences_Tools::decodeLatex('\\\"{a}'));
+        $this->assertSame('ä', Episciences_Tools::decodeLatex('\\\"a'));
+        $this->assertSame('ì', Episciences_Tools::decodeLatex("\\`i"));
+        $this->assertSame('ő', Episciences_Tools::decodeLatex("\\H{o}"));
+        $this->assertSame('ő', Episciences_Tools::decodeLatex("\\H o"));
+        $this->assertSame('ű', Episciences_Tools::decodeLatex("\\H{u}"));
+        $this->assertSame('ű', Episciences_Tools::decodeLatex("\\H u"));
+    }
+
+    /**
+     * Test decodeLatex function - comprehensive integration test
+     */
+    public function testDecodeLatexComprehensiveIntegration(): void
+    {
+        // Test a complex academic text with various LaTeX accents
+        $latexText = "The work of Poincar\\'e, Schr\\\"{o}dinger, and Erd\\H{o}s in the caf\\'es of Par\\'is " .
+                     "influenced modern mathematics. The na\\\"{i}ve approach of Bj\\o{}rn and his prot\\'eg\\'e " .
+                     "led to significant advances in the field. Their r\\'esum\\'e included work on " .
+                     "G\\\"{o}del\\'s incompleteness theorems and L\\'evy processes.";
+                     
+        $expectedText = "The work of Poincaré, Schrödinger, and Erdős in the cafés of París " .
+                        "influenced modern mathematics. The naïve approach of Bjørn and his protégé " .
+                        "led to significant advances in the field. Their résumé included work on " .
+                        "Gödel's incompleteness theorems and Lévy processes.";
+        
+        $this->assertSame($expectedText, Episciences_Tools::decodeLatex($latexText));
+        
+        // Test author list with various international names
+        $authorList = "Jos\\'e Mar\\'ia Garc\\'ia-L\\'opez, Fran\\c{c}ois M\\\"{u}ller, Dvo\\v{r}\\'ak Pavel, " .
+                      "Lars \\AA{}kesson, Stanis\\l{}aw Kowalski, and Andr\\'e Sch\\\"{a}fer";
+                      
+        $expectedAuthors = "José María García-López, François Müller, Dvořák Pavel, " .
+                          "Lars Åkesson, Stanisław Kowalski, and André Schäfer";
+        
+        $this->assertSame($expectedAuthors, Episciences_Tools::decodeLatex($authorList));
+    }
+
 }
