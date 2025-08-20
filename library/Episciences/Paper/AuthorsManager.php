@@ -519,7 +519,7 @@ class Episciences_Paper_AuthorsManager
         foreach ($authorDb as $indexAuthor => $authorInfoDb) {
             foreach ($authorTei as $indexAuthorTei => $authorInfoTei) {
                 if (($authorInfoDb['fullname'] === $authorInfoTei['fullname'])
-                    || (Episciences_Tools::replace_accents($authorInfoTei['fullname']) === Episciences_Tools::replace_accents($authorInfoDb['fullname']))) {
+                    || (Episciences_Tools::replaceAccents($authorInfoTei['fullname']) === Episciences_Tools::replaceAccents($authorInfoDb['fullname']))) {
                     if (array_key_exists('orcid', $authorInfoTei) && !array_key_exists('orcid', $authorInfoDb)) {
                         $authorDb[$indexAuthor]['orcid'] = $authorInfoTei['orcid'];
                         if (PHP_SAPI === 'cli') {

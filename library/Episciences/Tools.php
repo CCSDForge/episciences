@@ -1502,11 +1502,53 @@ class Episciences_Tools
         return !empty($tmp) ? $tmp : null;
     }
 
-    public static function replace_accents($str): string
+    /**
+     * Remove accents from a string by converting accented characters to their base form
+     *
+     * Uses Unicode normalization (NFD) to decompose characters and then removes diacritical marks.
+     * Falls back to transliteration if Normalizer is not available.
+     *
+     * @param string $str The string to process
+     * @return string The string with accents removed
+     */
+    public static function replaceAccents(string $str): string
     {
+        if (empty($str)) {
+            return $str;
+        }
+
+        // Method 1: Use Normalizer if available (most efficient and comprehensive)
+        if (class_exists('Normalizer')) {
+            // Normalize to NFD (decomposed form) and remove combining diacritical marks
+            $normalized = Normalizer::normalize($str, Normalizer::FORM_D);
+            if ($normalized !== false) {
+                // Remove combining diacritical marks (Unicode category Mn)
+                return preg_replace('/\p{Mn}/u', '', $normalized);
+            }
+        }
+
+        // Method 2: Use iconv transliteration (fallback)
+        if (function_exists('iconv')) {
+            $result = iconv('UTF-8', 'ASCII//TRANSLIT', $str);
+            if ($result !== false) {
+                // Clean up any remaining unwanted characters from transliteration
+                return preg_replace('/[\'`"^~]/', '', $result);
+            }
+        }
+
+        // Method 3: Legacy fallback using htmlentities (original method)
         $str = htmlentities($str, ENT_COMPAT, "UTF-8");
         $str = preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|ring|slash);/', '$1', $str);
         return html_entity_decode($str);
+    }
+
+    /**
+     * @deprecated Use replaceAccents() instead
+     */
+    public static function replace_accents($str): string
+    {
+        trigger_error('replace_accents() is deprecated. Use replaceAccents() instead.', E_USER_DEPRECATED);
+        return self::replaceAccents($str);
     }
 
     /**
