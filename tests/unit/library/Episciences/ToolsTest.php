@@ -257,4 +257,238 @@ class ToolsTest extends TestCase
         $this->assertSame('application/zip', Episciences_Tools::getMimeFileZip('file.zip'));
         $this->assertSame('application/zip', Episciences_Tools::getMimeFileZip('file.unknown'));
     }
+
+    /**
+     * Test convertToCamelCase with default parameters
+     */
+    public function testConvertToCamelCaseDefault(): void
+    {
+        // Test basic underscore to camelCase conversion
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test_string'));
+        $this->assertSame('myVariableName', Episciences_Tools::convertToCamelCase('my_variable_name'));
+        $this->assertSame('simpleTest', Episciences_Tools::convertToCamelCase('simple_test'));
+        
+        // Test real-world variable names
+        $this->assertSame('dateCreation', Episciences_Tools::convertToCamelCase('date_creation'));
+        $this->assertSame('dateCreation', Episciences_Tools::convertToCamelCase('date_Creation'));
+        $this->assertSame('dateCreation', Episciences_Tools::convertToCamelCase('dateCreation')); // already camelCase
+        $this->assertSame('datecreation', Episciences_Tools::convertToCamelCase('datecreation')); // all lowercase
+        
+        // Test common database field names
+        $this->assertSame('userId', Episciences_Tools::convertToCamelCase('user_id'));
+        $this->assertSame('createdAt', Episciences_Tools::convertToCamelCase('created_at'));
+        $this->assertSame('updatedAt', Episciences_Tools::convertToCamelCase('updated_at'));
+        $this->assertSame('firstName', Episciences_Tools::convertToCamelCase('first_name'));
+        $this->assertSame('lastName', Episciences_Tools::convertToCamelCase('last_name'));
+        $this->assertSame('emailAddress', Episciences_Tools::convertToCamelCase('email_address'));
+        
+        // Test single word
+        $this->assertSame('test', Episciences_Tools::convertToCamelCase('test'));
+        
+        // Test empty string
+        $this->assertSame('', Episciences_Tools::convertToCamelCase(''));
+    }
+
+    /**
+     * Test convertToCamelCase with capitalizeFirstCharacter = true
+     */
+    public function testConvertToCamelCaseCapitalizeFirst(): void
+    {
+        // Test with first character capitalization
+        $this->assertSame('TestString', Episciences_Tools::convertToCamelCase('test_string', '_', true));
+        $this->assertSame('MyVariableName', Episciences_Tools::convertToCamelCase('my_variable_name', '_', true));
+        
+        // Test single word with capitalization
+        $this->assertSame('Test', Episciences_Tools::convertToCamelCase('test', '_', true));
+        
+        // Test already capitalized
+        $this->assertSame('TestString', Episciences_Tools::convertToCamelCase('TestString', '_', true));
+    }
+
+    /**
+     * Test convertToCamelCase with different separators
+     */
+    public function testConvertToCamelCaseCustomSeparator(): void
+    {
+        // Test with dash separator
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test-string', '-'));
+        $this->assertSame('myVariableName', Episciences_Tools::convertToCamelCase('my-variable-name', '-'));
+        
+        // Test with dot separator
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test.string', '.'));
+        
+        // Test with space separator
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test string', ' '));
+        
+        // Test with custom separator and capitalization
+        $this->assertSame('TestString', Episciences_Tools::convertToCamelCase('test-string', '-', true));
+    }
+
+    /**
+     * Test convertToCamelCase with stringToRemove parameter
+     */
+    public function testConvertToCamelCaseWithStringRemoval(): void
+    {
+        // Test basic string removal
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('prefix_test_string', '_', false, 'prefix_'));
+        $this->assertSame('variableName', Episciences_Tools::convertToCamelCase('my_variable_name', '_', false, 'my_'));
+        
+        // Test string removal with capitalization
+        $this->assertSame('TestString', Episciences_Tools::convertToCamelCase('prefix_test_string', '_', true, 'prefix_'));
+        
+        // Test removing multiple occurrences (str_replace removes ALL occurrences)
+        $this->assertSame('string', Episciences_Tools::convertToCamelCase('test_test_string', '_', false, 'test_'));
+        
+        // Test removing non-existent string (should not affect result)
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test_string', '_', false, 'nonexistent'));
+        
+        // Test removing empty string (should not affect result)
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test_string', '_', false, ''));
+    }
+
+    /**
+     * Test convertToCamelCase with uppercase strings
+     */
+    public function testConvertToCamelCaseWithUppercase(): void
+    {
+        // Test all uppercase strings (should be converted to lowercase first)
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('TEST_STRING'));
+        $this->assertSame('myVariable', Episciences_Tools::convertToCamelCase('MY_VARIABLE'));
+        
+        // Test mixed case (should preserve mixed case if not all uppercase)
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('Test_String'));
+        $this->assertSame('myVariable', Episciences_Tools::convertToCamelCase('My_Variable'));
+        
+        // Test uppercase with capitalization
+        $this->assertSame('TestString', Episciences_Tools::convertToCamelCase('TEST_STRING', '_', true));
+    }
+
+    /**
+     * Test convertToCamelCase edge cases
+     */
+    public function testConvertToCamelCaseEdgeCases(): void
+    {
+        // Test consecutive separators
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test__string'));
+        $this->assertSame('myVariableName', Episciences_Tools::convertToCamelCase('my___variable___name'));
+        
+        // Test starting/ending with separator
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('_test_string'));
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('test_string_'));
+        $this->assertSame('testString', Episciences_Tools::convertToCamelCase('_test_string_'));
+        
+        // Test only separators
+        $this->assertSame('', Episciences_Tools::convertToCamelCase('___'));
+        
+        // Test single character parts
+        $this->assertSame('aBC', Episciences_Tools::convertToCamelCase('a_b_c'));
+        
+        // Test numbers
+        $this->assertSame('test123String', Episciences_Tools::convertToCamelCase('test_123_string'));
+        $this->assertSame('var1Name2', Episciences_Tools::convertToCamelCase('var_1_name_2'));
+    }
+
+    /**
+     * Test convertToCamelCase with real-world scenarios (most common usage without stringToRemove)
+     */
+    public function testConvertToCamelCaseRealWorldScenarios(): void
+    {
+        // Test typical database/model field names commonly found in this codebase
+        $this->assertSame('dateCreation', Episciences_Tools::convertToCamelCase('date_creation'));
+        $this->assertSame('dateModification', Episciences_Tools::convertToCamelCase('date_modification'));
+        $this->assertSame('datePublication', Episciences_Tools::convertToCamelCase('date_publication'));
+        $this->assertSame('dateAcceptation', Episciences_Tools::convertToCamelCase('date_acceptation'));
+        $this->assertSame('dateSubmission', Episciences_Tools::convertToCamelCase('date_submission'));
+        
+        // Test volume/paper related fields
+        $this->assertSame('volumeId', Episciences_Tools::convertToCamelCase('volume_id'));
+        $this->assertSame('paperPosition', Episciences_Tools::convertToCamelCase('paper_position'));
+        $this->assertSame('sectionId', Episciences_Tools::convertToCamelCase('section_id'));
+        $this->assertSame('reviewId', Episciences_Tools::convertToCamelCase('review_id'));
+        
+        // Test user/author related fields
+        $this->assertSame('authorId', Episciences_Tools::convertToCamelCase('author_id'));
+        $this->assertSame('userRole', Episciences_Tools::convertToCamelCase('user_role'));
+        $this->assertSame('isCorrespondingAuthor', Episciences_Tools::convertToCamelCase('is_corresponding_author'));
+        
+        // Test metadata fields
+        $this->assertSame('metaDescription', Episciences_Tools::convertToCamelCase('meta_description'));
+        $this->assertSame('metaKeywords', Episciences_Tools::convertToCamelCase('meta_keywords'));
+        $this->assertSame('xmlMetadata', Episciences_Tools::convertToCamelCase('xml_metadata'));
+        
+        // Test configuration fields
+        $this->assertSame('configValue', Episciences_Tools::convertToCamelCase('config_value'));
+        $this->assertSame('settingName', Episciences_Tools::convertToCamelCase('setting_name'));
+        $this->assertSame('defaultValue', Episciences_Tools::convertToCamelCase('default_value'));
+        
+        // Test mixed case input scenarios that might occur in the real codebase
+        $this->assertSame('dateCreation', Episciences_Tools::convertToCamelCase('Date_Creation'));
+        $this->assertSame('userRole', Episciences_Tools::convertToCamelCase('User_Role'));
+        $this->assertSame('volumeId', Episciences_Tools::convertToCamelCase('Volume_Id'));
+        
+        // Test with PascalCase conversion (first letter capitalized)
+        $this->assertSame('DateCreation', Episciences_Tools::convertToCamelCase('date_creation', '_', true));
+        $this->assertSame('UserRole', Episciences_Tools::convertToCamelCase('user_role', '_', true));
+        $this->assertSame('VolumeId', Episciences_Tools::convertToCamelCase('volume_id', '_', true));
+    }
+
+    /**
+     * Test convertToCamelCase with complex combinations
+     */
+    public function testConvertToCamelCaseComplexCombinations(): void
+    {
+        // Test all parameters together
+        $this->assertSame('TestString', Episciences_Tools::convertToCamelCase('prefix-test-string', '-', true, 'prefix-'));
+        $this->assertSame('MyVariableName', Episciences_Tools::convertToCamelCase('OLD_MY_VARIABLE_NAME', '_', true, 'OLD_'));
+        
+        // Test with different separator and string removal
+        $this->assertSame('configValue', Episciences_Tools::convertToCamelCase('app.config.value', '.', false, 'app.'));
+        
+        // Test uppercase with custom separator and string removal
+        $this->assertSame('TestMethod', Episciences_Tools::convertToCamelCase('CLASS::TEST::METHOD', '::', true, 'CLASS::'));
+    }
+
+    /**
+     * Test replaceAccents function (modern implementation using Unicode normalization)
+     */
+    public function testReplaceAccents(): void
+    {
+        // Test basic accent removal
+        $this->assertSame('Cafe a la creme', Episciences_Tools::replaceAccents('Café à la crème'));
+        $this->assertSame('resume', Episciences_Tools::replaceAccents('résumé'));
+        $this->assertSame('naive', Episciences_Tools::replaceAccents('naïve'));
+        
+        // Test various accented characters from different languages
+        $this->assertSame('Andre Muller', Episciences_Tools::replaceAccents('André Müller'));
+        $this->assertSame('senor nino', Episciences_Tools::replaceAccents('señor niño'));
+        $this->assertSame('Francois Ake', Episciences_Tools::replaceAccents('François Åke'));
+        
+        // Test comprehensive accent removal (modern Unicode normalization approach)
+        $this->assertSame('eeeee', Episciences_Tools::replaceAccents('eèéêë'));
+        $this->assertSame('aaaaaaa', Episciences_Tools::replaceAccents('aàáâãäå'));
+        $this->assertSame('ooooooø', Episciences_Tools::replaceAccents('oòóôõöø')); // ø is preserved as it's a separate letter, not a diacritic
+        $this->assertSame('uuuuu', Episciences_Tools::replaceAccents('uùúûü'));
+        $this->assertSame('nnnn', Episciences_Tools::replaceAccents('nñńň')); // n, ñ, ń, ň -> n, n, n, n
+        $this->assertSame('ccccc', Episciences_Tools::replaceAccents('çćčĉċ')); // Various c with diacritics
+        
+        // Test complex multilingual text
+        $this->assertSame('Zelazny', Episciences_Tools::replaceAccents('Żelazny')); // Polish
+        $this->assertSame('Dvorak', Episciences_Tools::replaceAccents('Dvořák')); // Czech
+        $this->assertSame('Bjork', Episciences_Tools::replaceAccents('Björk')); // Swedish
+        $this->assertSame('Pena', Episciences_Tools::replaceAccents('Peña')); // Spanish
+        
+        // Test edge cases
+        $this->assertSame('', Episciences_Tools::replaceAccents(''));
+        $this->assertSame('hello world', Episciences_Tools::replaceAccents('hello world'));
+        $this->assertSame('123 test', Episciences_Tools::replaceAccents('123 test'));
+        $this->assertSame('English text without accents', Episciences_Tools::replaceAccents('English text without accents'));
+        
+        // Test that the function handles whitespace correctly
+        $this->assertSame('  spaces  preserved  ', Episciences_Tools::replaceAccents('  spacés  presèrved  '));
+        
+        // Test combining characters (Unicode normalization strength test)
+        $this->assertSame('a', Episciences_Tools::replaceAccents('a' . "\u{0301}")); // a + combining acute accent
+        $this->assertSame('e', Episciences_Tools::replaceAccents('e' . "\u{0302}")); // e + combining circumflex
+    }
+
 }
