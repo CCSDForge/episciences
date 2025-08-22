@@ -1,5 +1,5 @@
 # See : https://git-scm.com/docs/gitignore
-/.env
+/.env.local*
 .run/
 /.settings
 /.buildpath
