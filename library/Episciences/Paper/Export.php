@@ -151,9 +151,10 @@ class Export
         $paperLanguage = (string)$paper->getMetadata('language');
 
         $paperLanguagelength = strlen($paperLanguage);
+        $docid = $paper->getDocid();
         if ($paperLanguagelength > 3 || $paperLanguagelength < 2) {
             trigger_error(
-                sprintf("Paper # %s : %s is not a valid language", $paper->getDocid(), htmlspecialchars($paperLanguage)),
+                sprintf("Paper # %s : %s is not a valid language", $docid, htmlspecialchars($paperLanguage)),
                 E_USER_WARNING
             );
             $paperLanguage = $default;
@@ -161,7 +162,7 @@ class Export
 
         if ($paperLanguage && !Languages::exists($paperLanguage)) {
             trigger_error(
-                sprintf("Paper # %s : %s is not a valid language", $paper->getDocid(), htmlspecialchars($paperLanguage)),
+                sprintf("Paper # %s : %s is not a valid language", $docid, htmlspecialchars($paperLanguage)),
                 E_USER_WARNING
             );
             // Crossref schema 5.3.1 says language is optional
@@ -175,7 +176,7 @@ class Export
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
                 trigger_error(
-                    sprintf("Paper # %s: %s", $paper->getDocid(), $e->getMessage()),
+                    sprintf("Paper # %s: %s", $docid, $e->getMessage()),
                     E_USER_WARNING
                 );
             }
@@ -189,7 +190,7 @@ class Export
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
                 trigger_error(
-                    sprintf("Paper # %s: - %s - %s", $paper->getDocid(), $paperLanguage, $e->getMessage()),
+                    sprintf("Paper # %s: - %s - %s", $docid, $paperLanguage, $e->getMessage()),
                     E_USER_WARNING
                 );
             }
