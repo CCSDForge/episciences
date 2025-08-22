@@ -20,6 +20,8 @@ use Episciences_Tools;
 use Episciences_Volume;
 use Episciences_VolumesManager;
 use Episciences_ZbjatsTools;
+use Episciences_Language_LanguageCodeProcessor;
+use Episciences_Language_LanguageProcessorConfig;
 use Exception;
 use JsonException;
 use Psr\Cache\InvalidArgumentException;
@@ -147,59 +149,29 @@ class Export
      */
     public static function getPaperLanguageCode(Episciences_Paper $paper, int $returnWithLangCodeLength = 2, string $default = '', $convertIso639Code = false): string
     {
-        // Ensure that the language metadata is treated as a string
+        // Create processor configuration based on parameters
+        $config = new Episciences_Language_LanguageProcessorConfig([
+            'convert_iso639_code' => $convertIso639Code,
+            'default_languages' => [
+                'default' => $default
+            ]
+        ]);
+        
+        $processor = new Episciences_Language_LanguageCodeProcessor($config);
+        
+        // Get language code from paper metadata
         $paperLanguage = (string)$paper->getMetadata('language');
-
-        $paperLanguagelength = strlen($paperLanguage);
-        $docid = $paper->getDocid();
-        if ($paperLanguagelength > 3 || $paperLanguagelength < 2) {
-            trigger_error(
-                sprintf("Paper # %s : %s is not a valid language", $docid, htmlspecialchars($paperLanguage)),
-                E_USER_WARNING
-            );
-            $paperLanguage = $default;
-        }
-
-        if ($paperLanguage && !Languages::exists($paperLanguage)) {
-            trigger_error(
-                sprintf("Paper # %s : %s is not a valid language", $docid, htmlspecialchars($paperLanguage)),
-                E_USER_WARNING
-            );
-            // Crossref schema 5.3.1 says language is optional
-            $paperLanguage = $default; // Invalid language, set to $default
-        }
-
-        // Crossref requires 2-character language codes
-        if ((strlen($paperLanguage) === 3) && ($returnWithLangCodeLength === 2)) {
-            try {
-                $paperLanguage = Languages::getAlpha2Code($paperLanguage);
-            } catch (MissingResourceException $e) {
-                $paperLanguage = $default; // Fallback if invalid
-                trigger_error(
-                    sprintf("Paper # %s: %s", $docid, $e->getMessage()),
-                    E_USER_WARNING
-                );
-            }
-        }
-
-        // DOAJ requires 3-character language codes
-        if ((strlen($paperLanguage) === 2) && ($returnWithLangCodeLength === 3)) {
-
-            try {
-                $paperLanguage = Languages::getAlpha3Code($paperLanguage);
-            } catch (MissingResourceException $e) {
-                $paperLanguage = $default; // Fallback if invalid
-                trigger_error(
-                    sprintf("Paper # %s: - %s - %s", $docid, $paperLanguage, $e->getMessage()),
-                    E_USER_WARNING
-                );
-            }
-            if ($convertIso639Code) {
-                // DOAJ is in the iso_639-2b Team VS our library is in the iso_639-2t team
-                $paperLanguage = Episciences_Tools::convertIso639Code($paperLanguage);
-            }
-        }
-        return $paperLanguage;
+        $paperId = (string)$paper->getDocid();
+        
+        // Process the language code
+        $result = $processor->processLanguageCode(
+            $paperLanguage,
+            $returnWithLangCodeLength,
+            $paperId,
+            'paper'
+        );
+        
+        return $result->getConvertedCode()->getCode();
     }
 
     /**
@@ -212,66 +184,32 @@ class Export
         return self::getMetaWithLanguagesCode($paper, 'getAllTitles', 2, '');
     }
 
+    /**
+     * Process metadata with language codes using the new LanguageCodeProcessor
+     */
     private static function getMetaWithLanguagesCode(Episciences_Paper $paper, string $method, int $returnWithLangCodeLength = 2, string $default = '', $convertIso639Code = false): array
     {
-
-        $collection = [];
+        // Create processor configuration based on parameters
+        $config = new Episciences_Language_LanguageProcessorConfig([
+            'convert_iso639_code' => $convertIso639Code,
+            'default_languages' => [
+                'default' => $default
+            ]
+        ]);
+        
+        $processor = new Episciences_Language_LanguageCodeProcessor($config);
+        
+        // Get metadata items from paper
         $items = $paper->$method();
-
-        foreach ($items as $language => $content) {
-
-            // Validate or set default language
-            if (!Languages::exists($language)) {
-                trigger_error(
-                    sprintf("Paper %s of # %s: %s is not a valid language", ucfirst($method), htmlspecialchars($content), htmlspecialchars($language)),
-                    E_USER_WARNING
-                );
-                $language = $default; // invalid language, default to $default
-            }
-            $strlenOfMetaLanguage = strlen($language);
-
-            if ($strlenOfMetaLanguage > 3 || $strlenOfMetaLanguage < 2) {
-                trigger_error(
-                    sprintf("Paper %s of # %s: %s is not a valid language", ucfirst($method), htmlspecialchars($content), htmlspecialchars($language)),
-                    E_USER_WARNING
-                );
-                $language = $default;
-            }
-
-            // Convert 3-character codes to 2-character codes
-
-            if (($strlenOfMetaLanguage === 3) && ($returnWithLangCodeLength === 2)) {
-                try {
-                    $language = Languages::getAlpha2Code($language);
-                } catch (MissingResourceException $e) {
-                    $language = $default; // If the language is still invalid, set to $default
-                    trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
-                        E_USER_WARNING
-                    );
-                }
-            }
-
-            if (($strlenOfMetaLanguage === 2) && ($returnWithLangCodeLength === 3)) {
-                try {
-                    $language = Languages::getAlpha3Code($language);
-                } catch (MissingResourceException $e) {
-                    $language = $default; // If the language is still invalid, set to $default
-                    trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
-                        E_USER_WARNING
-                    );
-                }
-                if ($convertIso639Code) {
-                    // DOAJ is in the iso_639-2b Team VS our library is in the iso_639-2t team
-                    $language = Episciences_Tools::convertIso639Code($language);
-                }
-            }
-
-            $collection[][$language] = trim($content);
-        }
-
-        return $collection;
+        $paperId = (string)$paper->getDocid();
+        
+        // Process language codes using the new processor
+        return $processor->processLanguageCodes(
+            $items,
+            $returnWithLangCodeLength,
+            $paperId,
+            $method
+        );
     }
 
     /**
