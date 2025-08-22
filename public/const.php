@@ -132,7 +132,7 @@ function defineJournalConstants(string $rvCode = null): void
         define('RVCODE', $rvCode);
         define('PREFIX_URL', $prefixUrl);
     }
-    
+
     // Ensure PREFIX_URL is always defined, even if RVCODE was already defined
     if (!defined('PREFIX_URL')) {
         $prefixUrl = ($rvCode && $rvCode !== 'portal') ? sprintf('/%s/', $rvCode) : PORTAL_PREFIX_URL;
