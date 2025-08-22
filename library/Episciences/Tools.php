@@ -14,6 +14,32 @@ class Episciences_Tools
 {
 
     public const DEFAULT_MKDIR_PERMISSIONS = 0770;
+    
+    /**
+     * Bidirectional mapping between ISO 639-2/T and ISO 639-2/B codes
+     */
+    private const ISO639_BIDIRECTIONAL_MAP = [
+        'alb' => 'sqi', 'sqi' => 'alb', // Albanian
+        'arm' => 'hye', 'hye' => 'arm', // Armenian
+        'baq' => 'eus', 'eus' => 'baq', // Basque
+        'bur' => 'mya', 'mya' => 'bur', // Burmese
+        'chi' => 'zho', 'zho' => 'chi', // Chinese
+        'cze' => 'ces', 'ces' => 'cze', // Czech
+        'dut' => 'nld', 'nld' => 'dut', // Dutch
+        'fre' => 'fra', 'fra' => 'fre', // French
+        'geo' => 'kat', 'kat' => 'geo', // Georgian
+        'ger' => 'deu', 'deu' => 'ger', // German
+        'gre' => 'ell', 'ell' => 'gre', // Greek (modern)
+        'ice' => 'isl', 'isl' => 'ice', // Icelandic
+        'mac' => 'mkd', 'mkd' => 'mac', // Macedonian
+        'mao' => 'mri', 'mri' => 'mao', // Maori
+        'may' => 'msa', 'msa' => 'may', // Malay
+        'per' => 'fas', 'fas' => 'per', // Persian
+        'rum' => 'ron', 'ron' => 'rum', // Romanian
+        'slo' => 'slk', 'slk' => 'slo', // Slovak
+        'tib' => 'bod', 'bod' => 'tib', // Tibetan
+        'wel' => 'cym', 'cym' => 'wel', // Welsh
+    ];
     public static $bashColors = [
         'red' => "\033[0;31m",
         'blue' => "\033[0;34m",
@@ -2059,6 +2085,24 @@ class Episciences_Tools
         if ($cleanedKey === $cleanedPattern) {
             unset($translations[$key]);
         }
+    }
+
+
+    /**
+     * Convert between ISO 639-2/T and ISO 639-2/B codes.
+     *
+     * @param string $code ISO 639-2 code (either /T or /B).
+     * @return string Converted code (or the same code if no mapping exists or invalid input).
+     */
+    public static function convertIso639Code(string $code): string
+    {
+        if (empty($code) || strlen($code) !== 3) {
+            return $code;
+        }
+        
+        $code = strtolower($code);
+        
+        return self::ISO639_BIDIRECTIONAL_MAP[$code] ?? $code;
     }
 
 }
