@@ -12,8 +12,8 @@
     "lint:prettier": "prettier --check \"public/js/**/*.js\" \"tests/js/**/*.js\""
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@babel/preset-env": "^7.25.4",
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
     "@symfony/webpack-encore": "^5.1.0",
     "compass-mixins": "^0.12.12",
     "jest": "^30.0.0",
@@ -25,7 +25,7 @@
     "sass-loader": "^16.0.1",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.2",
-    "webpack": "^5.94.0",
+    "webpack": "^5.101.3",
     "webpack-cli": "^5.1.4",
     "webpack-notifier": "^1.15.0",
     "yarn-upgrade-all": "^0.7.4"
