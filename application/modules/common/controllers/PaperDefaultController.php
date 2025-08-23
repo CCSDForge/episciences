@@ -330,7 +330,8 @@ class PaperDefaultController extends DefaultController
     protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [], array $options = []): bool
     {
 
-       $logger = AppRegistry::getMonoLogger();
+        $logger = AppRegistry::getMonoLogger();
+        $editors = [];
 
         $commentatorUid = $oComment->getUid();
         $commentator = new Episciences_User();
@@ -350,6 +351,7 @@ class PaperDefaultController extends DefaultController
             $recipients = $this->getAllEditors($paper);
             // ne pas notifier le commentateur
             unset($recipients[$commentatorUid]);
+            $editors = $recipients;
         } catch (JsonException|Zend_Db_Statement_Exception$e) {
             $logger?->warning($e);
         }
@@ -364,7 +366,12 @@ class PaperDefaultController extends DefaultController
 
         try {
             Episciences_Review::checkReviewNotifications($recipients, $strict);
+            // remove users if COI is enabled
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+            // Put editors back in the loop anyway
+            // Why? because if COI is active, we will unassign an editor who declares a COI
+            // The goal is to make sure editors receive comments even before checking the COI
+            $recipients = $recipients + $editors;
             $CC = $paper->extractCCRecipients($recipients);
         } catch (Zend_Db_Statement_Exception $e) {
             $logger?->critical($e);
