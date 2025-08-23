@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manager: Review Report: attached document URL has not been updated for the manager application
 - When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
 - #629 Malfunction when updating volume description
-
+- #639 DOAJ Export unavailable. Added a function to Convert between ISO 639-2/T and ISO 639-2/B codes. DOAJ is in the team iso_639-2b whereas our current tools create iso_639-2t not supported by the DOAJ Schema
 
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
