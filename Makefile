@@ -63,7 +63,7 @@ help: ## Display this help message
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
 	@echo "Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|update-statistics):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -247,6 +247,32 @@ get-classification-jel: ## Get JEL Classifications from OpenAIRE Research Graph
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."
 	@$(NPX) update-browserslist-db@latest
+
+update-statistics: ## Update statistics for journal logs (rvcode=JOURNAL [date=YYYY-MM-DD] [month=YYYY-MM] [start-date=YYYY-MM-DD end-date=YYYY-MM-DD] [force=1])
+	@if [ -z "$(rvcode)" ]; then \
+		echo "Error: rvcode parameter is required"; \
+		echo "Usage: make update-statistics rvcode=JOURNAL_CODE [options]"; \
+		echo "Options:"; \
+		echo "  date=YYYY-MM-DD          Process specific date"; \
+		echo "  month=YYYY-MM            Process entire month"; \
+		echo "  start-date=YYYY-MM-DD    Start date for range"; \
+		echo "  end-date=YYYY-MM-DD      End date for range"; \
+		echo "  force=1                  Force reprocessing"; \
+		exit 1; \
+	fi
+	@echo "Updating statistics for journal: $(rvcode)..."
+	@cmd="php scripts/UpdateStatistics.php update:statistics --rvcode=$(rvcode)"; \
+	if [ -n "$(date)" ]; then \
+		cmd="$$cmd --date=$(date)"; \
+	elif [ -n "$(month)" ]; then \
+		cmd="$$cmd --month=$(month)"; \
+	elif [ -n "$(start-date)" ] && [ -n "$(end-date)" ]; then \
+		cmd="$$cmd --start-date=$(start-date) --end-date=$(end-date)"; \
+	fi; \
+	if [ "$(force)" = "1" ]; then \
+		cmd="$$cmd --force"; \
+	fi; \
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) $$cmd
 
 # =============================================================================
 # Default Target
