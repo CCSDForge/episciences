@@ -32,7 +32,7 @@ class UpdateStatisticsTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up temporary directories
-        if (is_dir($this->tempLogDir)) {
+        if ($this->tempLogDir && is_dir($this->tempLogDir)) {
             $this->removeDirectory($this->tempLogDir);
         }
     }
@@ -57,7 +57,7 @@ class UpdateStatisticsTest extends TestCase
         $this->assertStringContainsString('Invalid date format', $this->commandTester->getDisplay());
     }
 
-    public function testValidDateRange()
+    public function testInvalidDateRangeOrder()
     {
         $this->commandTester->execute([
             'command' => $this->command->getName(),
@@ -83,7 +83,7 @@ class UpdateStatisticsTest extends TestCase
         $this->assertStringContainsString('Please specify only one of', $this->commandTester->getDisplay());
     }
 
-    public function testMonthFormatValidation()
+    public function testInvalidMonthFormat()
     {
         $this->commandTester->execute([
             'command' => $this->command->getName(),
@@ -95,7 +95,7 @@ class UpdateStatisticsTest extends TestCase
         $this->assertStringContainsString('Invalid month format', $this->commandTester->getDisplay());
     }
 
-    public function testDateRangeRequiresBothDates()
+    public function testIncompleteDateRange()
     {
         $this->commandTester->execute([
             'command' => $this->command->getName(),

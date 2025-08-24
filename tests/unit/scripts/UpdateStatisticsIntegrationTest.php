@@ -31,7 +31,7 @@ class UpdateStatisticsIntegrationTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up temporary directories
-        if (is_dir($this->tempLogDir)) {
+        if ($this->tempLogDir && is_dir($this->tempLogDir)) {
             $this->removeDirectory($this->tempLogDir);
         }
     }

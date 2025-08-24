@@ -199,8 +199,11 @@ class UpdateStatistics extends Command
         $endDate = $input->getOption('end-date');
         $month = $input->getOption('month');
 
+        // Check if date option was explicitly provided (not just using default value)
+        $dateExplicitlyProvided = $date !== $this->getYesterdayDate();
+
         $optionCount = 0;
-        if ($date) $optionCount++;
+        if ($dateExplicitlyProvided) $optionCount++;
         if ($startDate || $endDate) $optionCount++;
         if ($month) $optionCount++;
 
@@ -221,8 +224,8 @@ class UpdateStatistics extends Command
             return $this->getDateRange($startDate, $endDate);
         }
 
-        // Process single date option (or default to yesterday)
-        $dateToProcess = $date ?: $this->getYesterdayDate();
+        // Process single date option (use provided date or default to yesterday)
+        $dateToProcess = $dateExplicitlyProvided ? $date : $this->getYesterdayDate();
         $dateObj = $this->validateDate($dateToProcess);
         return [$dateObj];
     }
@@ -534,7 +537,7 @@ class UpdateStatistics extends Command
                     }
 
                     $ip = sprintf("%u", ip2long($ipv4));
-                    $userAgent = $this->extractUserAgent($line);
+                    $userAgent = $this->sanitizeUserAgent($this->extractUserAgent($line));
 
                     // Add the access to our collection
                     $articleAccesses[] = [
@@ -778,8 +781,13 @@ class UpdateStatistics extends Command
         // Regular expression to capture all quoted elements in the log line
         preg_match_all('/"([^"]+)"/', $line, $matches);
 
-        // The User-Agent is always the last captured element
-        $userAgent = $matches[1][count($matches[1]) - 1] ?? 'unknown';
+        // The User-Agent should be the last captured element, but only if there are at least 2 quoted strings
+        // (first is usually the HTTP request, second+ could be referer/user-agent)
+        if (count($matches[1]) >= 2) {
+            $userAgent = $matches[1][count($matches[1]) - 1];
+        } else {
+            $userAgent = 'unknown';
+        }
 
         if ($userAgent === 'unknown') {
             $this->logger->warning("Could not extract User-Agent from line");
@@ -857,7 +865,9 @@ class UpdateStatistics extends Command
     }
 }
 
-// Execute the script
-$application = new Application();
-$application->add(new UpdateStatistics());
-$application->run();
+// Execute the script only when called directly (not when included by tests)
+if (isset($argv) && realpath($argv[0]) === realpath(__FILE__)) {
+    $application = new Application();
+    $application->add(new UpdateStatistics());
+    $application->run();
+}
