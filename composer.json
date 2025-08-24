@@ -24,6 +24,7 @@
     "ext-xml": "*",
     "ext-xsl": "*",
     "ext-zip": "*",
+    "ext-zlib": "*",
     "apereo/phpcas": "1.6.1",
     "cottagelabs/coar-notifications": "^0.9.70",
     "defuse/php-encryption": "^2.3",
