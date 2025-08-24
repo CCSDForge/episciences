@@ -22,7 +22,7 @@ class UpdateStatistics extends Command
     ];
 
 // Base path for the logs
-    private string $logsBasePath = 'logs/httpd';
+    private string $logsBasePath = '../logs/httpd';
     private Logger $logger;
     private SymfonyStyle $io;
 
@@ -50,6 +50,10 @@ class UpdateStatistics extends Command
             ->setDescription('Update statistics for the site')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'The journal code (e.g., mbj)')
             ->addOption('date', null, InputOption::VALUE_OPTIONAL, 'Date to process (format: YYYY-mm-dd, default: yesterday)', $this->getYesterdayDate())
+            ->addOption('start-date', null, InputOption::VALUE_OPTIONAL, 'Start date for range processing (format: YYYY-mm-dd)')
+            ->addOption('end-date', null, InputOption::VALUE_OPTIONAL, 'End date for range processing (format: YYYY-mm-dd)')
+            ->addOption('month', null, InputOption::VALUE_OPTIONAL, 'Process entire month (format: YYYY-mm)')
+            ->addOption('force', null, InputOption::VALUE_NONE, 'Force reprocessing of already processed files')
             ->addOption('logs-path', null, InputOption::VALUE_OPTIONAL, 'Path to the logs directory', $this->logsBasePath);
     }
 
@@ -73,10 +77,9 @@ class UpdateStatistics extends Command
             return Command::FAILURE;
         }
 
-        $date = $input->getOption('date');
+        // Validate date options
         try {
-            $dateObj = $this->validateDate($date);
-            $formattedDate = $dateObj->format('Y-m-d');
+            $dateRange = $this->validateAndProcessDateOptions($input);
         } catch (\Exception $e) {
             $this->io->error($e->getMessage());
             $this->logger->error($e->getMessage());
@@ -88,39 +91,66 @@ class UpdateStatistics extends Command
         $this->io->text('Using logs path: ' . $this->logsBasePath);
         $this->logger->info('Using logs path: ' . $this->logsBasePath);
 
-        $this->io->text('Processing logs for the date: ' . $formattedDate . ' (only entries from 00:00:00 to 23:59:59)');
-        $this->logger->info('Processing logs for the date: ' . $formattedDate . ' (only entries from 00:00:00 to 23:59:59)');
-
         $siteName = $rvcode . '.episciences.org';
+        $force = $input->getOption('force');
 
         try {
             // Initialize the application and database
             $this->initializeApplication();
 
-            // Build and validate the log file path
-            $logFile = $this->buildLogFilePath($siteName, $dateObj);
+            $totalProcessed = 0;
+            
+            // Process each date in the range
+            foreach ($dateRange as $dateObj) {
+                $formattedDate = $dateObj->format('Y-m-d');
+                
+                $this->io->text('Processing logs for the date: ' . $formattedDate);
+                $this->logger->info('Processing logs for the date: ' . $formattedDate);
 
-            // Collect and filter article accesses
-            $articleAccesses = $this->collectArticleAccesses($logFile, $formattedDate);
+                // Check if already processed (unless force flag is set)
+                if (!$force && $this->isDateAlreadyProcessed($rvcode, $formattedDate)) {
+                    $this->io->text("Date {$formattedDate} already processed. Use --force to reprocess.");
+                    continue;
+                }
 
-            if (empty($articleAccesses)) {
-                $this->io->info("No article access found in log file for the specified date");
-                $this->logger->info("No article access found in log file for the specified date");
-                return Command::SUCCESS;
+                // Build and validate the log file path
+                $logFile = $this->buildLogFilePath($siteName, $dateObj);
+                
+                if (!$logFile) {
+                    $this->io->warning("Log file not found for date: {$formattedDate}");
+                    continue;
+                }
+
+                // Collect and filter article accesses
+                $articleAccesses = $this->collectArticleAccesses($logFile, $formattedDate);
+
+                if (empty($articleAccesses)) {
+                    $this->io->text("No article access found in log file for date: {$formattedDate}");
+                    $this->logger->info("No article access found in log file for date: {$formattedDate}");
+                    $this->markDateAsProcessed($rvcode, $formattedDate, $logFile, 0, 'success');
+                    continue;
+                }
+
+                $this->io->text("Found " . count($articleAccesses) . " article accesses for " . $formattedDate);
+                $this->logger->info("Found " . count($articleAccesses) . " article accesses for " . $formattedDate);
+
+                // Insert data into STAT_TEMP
+                $insertedCount = $this->insertIntoStatTemp($articleAccesses);
+
+                $this->io->text("Inserted {$insertedCount} records into STAT_TEMP for {$formattedDate}");
+                $this->logger->info("Inserted {$insertedCount} records into STAT_TEMP for {$formattedDate}");
+                
+                // Mark as processed
+                $this->markDateAsProcessed($rvcode, $formattedDate, $logFile, $insertedCount, 'success');
+                $totalProcessed += $insertedCount;
             }
 
-            $this->io->success("Found " . count($articleAccesses) . " article accesses for " . $formattedDate);
-            $this->logger->info("Found " . count($articleAccesses) . " article accesses for " . $formattedDate);
-
-            // Display data summary
-            $this->displayDataSummary($articleAccesses);
-
-            // Insert data into STAT_TEMP
-            $this->io->section("Inserting data into STAT_TEMP...");
-            $insertedCount = $this->insertIntoStatTemp($articleAccesses);
-
-            $this->io->success("Inserted {$insertedCount} records into STAT_TEMP");
-            $this->logger->info("Inserted {$insertedCount} records into STAT_TEMP");
+            if ($totalProcessed > 0) {
+                $this->io->success("Processing complete! Total records inserted: {$totalProcessed}");
+                $this->logger->info("Processing complete! Total records inserted: {$totalProcessed}");
+            } else {
+                $this->io->info("No new data to process.");
+            }
 
         } catch (\Exception $e) {
             $this->io->error("Error: " . $e->getMessage());
@@ -156,6 +186,235 @@ class UpdateStatistics extends Command
     }
 
     /**
+     * Validate and process date options from input
+     *
+     * @param InputInterface $input Command input
+     * @return array Array of DateTime objects to process
+     * @throws \Exception If date options are invalid
+     */
+    private function validateAndProcessDateOptions(InputInterface $input): array
+    {
+        $date = $input->getOption('date');
+        $startDate = $input->getOption('start-date');
+        $endDate = $input->getOption('end-date');
+        $month = $input->getOption('month');
+
+        $optionCount = 0;
+        if ($date) $optionCount++;
+        if ($startDate || $endDate) $optionCount++;
+        if ($month) $optionCount++;
+
+        if ($optionCount > 1) {
+            throw new \Exception('Please specify only one of: --date, --start-date/--end-date, or --month');
+        }
+
+        // Process month option
+        if ($month) {
+            return $this->getMonthDateRange($month);
+        }
+
+        // Process date range option
+        if ($startDate || $endDate) {
+            if (!$startDate || !$endDate) {
+                throw new \Exception('Both --start-date and --end-date are required for range processing');
+            }
+            return $this->getDateRange($startDate, $endDate);
+        }
+
+        // Process single date option (or default to yesterday)
+        $dateToProcess = $date ?: $this->getYesterdayDate();
+        $dateObj = $this->validateDate($dateToProcess);
+        return [$dateObj];
+    }
+
+    /**
+     * Get date range for a specific month
+     *
+     * @param string $month Month in YYYY-MM format
+     * @return array Array of DateTime objects
+     * @throws \Exception If month format is invalid
+     */
+    private function getMonthDateRange(string $month): array
+    {
+        if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+            throw new \Exception('Invalid month format. Required format: YYYY-MM');
+        }
+
+        $startDate = $month . '-01';
+        $dateObj = $this->validateDate($startDate);
+        $endDate = $dateObj->format('Y-m-t'); // Last day of month
+
+        return $this->getDateRange($startDate, $endDate);
+    }
+
+    /**
+     * Get date range between start and end dates
+     *
+     * @param string $startDate Start date in YYYY-MM-DD format
+     * @param string $endDate End date in YYYY-MM-DD format
+     * @return array Array of DateTime objects
+     * @throws \Exception If date range is invalid
+     */
+    private function getDateRange(string $startDate, string $endDate): array
+    {
+        $start = $this->validateDate($startDate);
+        $end = $this->validateDate($endDate);
+
+        if ($start > $end) {
+            throw new \Exception('Start date must be before or equal to end date');
+        }
+
+        $dates = [];
+        $current = clone $start;
+        while ($current <= $end) {
+            $dates[] = clone $current;
+            $current->add(new \DateInterval('P1D'));
+        }
+
+        return $dates;
+    }
+
+    /**
+     * Open log file (handles both regular and gzipped files)
+     *
+     * @param string $logfile Path to log file
+     * @return resource File handle
+     * @throws \Exception If file cannot be opened
+     */
+    private function openLogFile(string $logfile)
+    {
+        if (str_ends_with($logfile, '.gz')) {
+            $handle = gzopen($logfile, 'r');
+            if ($handle === false) {
+                throw new \Exception("Cannot open gzipped log file: {$logfile}");
+            }
+        } else {
+            $handle = fopen($logfile, 'r');
+            if ($handle === false) {
+                throw new \Exception("Cannot open log file: {$logfile}");
+            }
+        }
+
+        return $handle;
+    }
+
+    /**
+     * Read line from file handle (handles both regular and gzipped files)
+     *
+     * @param resource $handle File handle
+     * @param string $logfile Path to log file (for error reporting)
+     * @return string|false Line or false on EOF
+     */
+    private function readLine($handle, string $logfile)
+    {
+        if (str_ends_with($logfile, '.gz')) {
+            return gzgets($handle);
+        } else {
+            return fgets($handle);
+        }
+    }
+
+    /**
+     * Close file handle (handles both regular and gzipped files)
+     *
+     * @param resource $handle File handle
+     * @param string $logfile Path to log file
+     */
+    private function closeFile($handle, string $logfile): void
+    {
+        if (str_ends_with($logfile, '.gz')) {
+            gzclose($handle);
+        } else {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Sanitize document ID
+     *
+     * @param mixed $docId Document ID
+     * @return int Sanitized document ID
+     * @throws \Exception If document ID is invalid
+     */
+    private function sanitizeDocId($docId): int
+    {
+        if (!is_numeric($docId) || $docId <= 0 || $docId > 9999999) {
+            throw new \Exception("Invalid document ID: {$docId}");
+        }
+        return (int)$docId;
+    }
+
+    /**
+     * Sanitize IP address
+     *
+     * @param mixed $ip IP address
+     * @return int Sanitized IP as unsigned integer
+     * @throws \Exception If IP is invalid
+     */
+    private function sanitizeIp($ip): int
+    {
+        if (!is_numeric($ip)) {
+            throw new \Exception("IP must be numeric: {$ip}");
+        }
+        $ipInt = (int)$ip;
+        if ($ipInt < 0) {
+            throw new \Exception("Invalid IP value: {$ip}");
+        }
+        return $ipInt;
+    }
+
+    /**
+     * Sanitize user agent string
+     *
+     * @param string $userAgent User agent string
+     * @return string Sanitized user agent
+     */
+    private function sanitizeUserAgent(string $userAgent): string
+    {
+        // Remove potentially harmful characters and limit length
+        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $userAgent);
+        $sanitized = mb_substr($sanitized, 0, 2000, 'UTF-8');
+        return $sanitized;
+    }
+
+    /**
+     * Check if a date has already been processed for a journal
+     *
+     * @param string $journalCode Journal code
+     * @param string $date Date in Y-m-d format
+     * @return bool True if already processed
+     */
+    private function isDateAlreadyProcessed(string $journalCode, string $date): bool
+    {
+        $db = $this->getDb();
+        $sql = 'SELECT COUNT(*) FROM STAT_PROCESSING_LOG WHERE JOURNAL_CODE = ? AND PROCESSED_DATE = ?';
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$journalCode, $date]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * Mark a date as processed for a journal
+     *
+     * @param string $journalCode Journal code
+     * @param string $date Date in Y-m-d format
+     * @param string $filePath Path to processed file
+     * @param int $recordsProcessed Number of records processed
+     * @param string $status Processing status
+     */
+    private function markDateAsProcessed(string $journalCode, string $date, string $filePath, int $recordsProcessed, string $status): void
+    {
+        $db = $this->getDb();
+        $sql = 'INSERT INTO STAT_PROCESSING_LOG (JOURNAL_CODE, PROCESSED_DATE, FILE_PATH, RECORDS_PROCESSED, STATUS) 
+                VALUES (?, ?, ?, ?, ?) 
+                ON DUPLICATE KEY UPDATE 
+                PROCESSED_AT = CURRENT_TIMESTAMP, FILE_PATH = VALUES(FILE_PATH), 
+                RECORDS_PROCESSED = VALUES(RECORDS_PROCESSED), STATUS = VALUES(STATUS)';
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$journalCode, $date, $filePath, $recordsProcessed, $status]);
+    }
+
+    /**
      * Get yesterday's date formatted as Y-m-d
      *
      * @return string Yesterday's date
@@ -176,31 +435,38 @@ class UpdateStatistics extends Command
     }
 
     /**
-     * Build the path to the log file and check if it exists
+     * Build the path to the log file and check if it exists (supports .gz files)
      *
      * @param string $siteName Site name
      * @param \DateTime $date Date object
-     * @return string Path to the log file
-     * @throws \Exception If log file doesn't exist
+     * @return string|null Path to the log file or null if not found
      */
-    private function buildLogFilePath(string $siteName, \DateTime $date): string
+    private function buildLogFilePath(string $siteName, \DateTime $date): ?string
     {
         $year = $date->format('Y');
         $month = $date->format('m');
         $day = $date->format('d');
 
-        $logFile = $this->logsBasePath . '/' . $siteName . '/' . $year . '/' . $month . '/' .
+        $baseLogFile = $this->logsBasePath . '/' . $siteName . '/' . $year . '/' . $month . '/' .
             $day . '-' . $siteName . '.access_log';
 
-        if (!file_exists($logFile)) {
-            throw new \Exception("Log file '{$logFile}' does not exist");
+        // Check for uncompressed file first
+        if (file_exists($baseLogFile)) {
+            return $baseLogFile;
         }
 
-        return $logFile;
+        // Check for gzipped file
+        $gzLogFile = $baseLogFile . '.gz';
+        if (file_exists($gzLogFile)) {
+            return $gzLogFile;
+        }
+
+        $this->logger->warning("Log file not found: {$baseLogFile} or {$gzLogFile}");
+        return null;
     }
 
     /**
-     * Collect and filter article accesses for a specific date
+     * Collect and filter article accesses for a specific date (supports .gz files)
      *
      * @param string $logfile Path to the log file
      * @param string $targetDate Date to filter (Y-m-d format)
@@ -222,16 +488,16 @@ class UpdateStatistics extends Command
             $endDay
         ));
 
-        // Process the log file line by line
+        // Process the log file line by line (handle both regular and gzipped files)
         if (file_exists($logfile)) {
             $this->logger->info("Processing log file: {$logfile}");
-            $handle = fopen($logfile, 'r');
+            $handle = $this->openLogFile($logfile);
             if ($handle) {
                 $lineCount = 0;
                 $matchCount = 0;
                 $dateMatches = 0;
 
-                while (($line = fgets($handle)) !== false) {
+                while (($line = $this->readLine($handle, $logfile)) !== false) {
                     $lineCount++;
 
                     // Extract timestamp first and verify its format
@@ -281,7 +547,7 @@ class UpdateStatistics extends Command
                     ];
                 }
 
-                fclose($handle);
+                $this->closeFile($handle, $logfile);
                 $this->logger->info(sprintf(
                     "Processed %d lines, found %d entries matching date %s, %d matching patterns",
                     $lineCount, $dateMatches, $targetDate, $matchCount
@@ -417,17 +683,17 @@ class UpdateStatistics extends Command
             $this->progressBar = $this->io->createProgressBar(count($articleAccesses));
             $this->progressBar->start();
 
-            // Prepare the insert query
-            $sql = 'INSERT INTO STAT_TEMP (docId, ip, http_user_agent, Dhit, Consult) VALUES (?, ?, ?, ?, ?)';
+            // Prepare the insert query (excluding VISITID for auto-increment)
+            $sql = 'INSERT INTO STAT_TEMP (DOCID, IP, HTTP_USER_AGENT, DHIT, CONSULT) VALUES (?, ?, ?, ?, ?)';
 
             $stmt = $db->prepare($sql);
 
             foreach ($articleAccesses as $access) {
-                // Parameters for insertion
+                // Parameters for insertion (sanitized)
                 $params = [
-                    $access['doc_id'],
-                    $access['ip'],
-                    $access['user_agent'],
+                    $this->sanitizeDocId($access['doc_id']),
+                    $this->sanitizeIp($access['ip']),
+                    $this->sanitizeUserAgent($access['user_agent']),
                     $access['date_time'],
                     $access['access_type']
                 ];
