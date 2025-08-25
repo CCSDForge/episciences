@@ -7,7 +7,6 @@ use cottagelabs\coarNotifications\COARNotificationTarget;
 use cottagelabs\coarNotifications\COARNotificationURL;
 use cottagelabs\coarNotifications\orm\COARNotificationException;
 use cottagelabs\coarNotifications\orm\COARNotificationNoDatabaseException;
-use Doctrine\ORM\ORMException;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
@@ -98,7 +97,6 @@ class Episciences_Notify_Hal
 
     /**
      * @return string
-     * @throws ORMException
      * @throws COARNotificationException
      * @throws COARNotificationNoDatabaseException
      */
