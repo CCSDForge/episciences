@@ -1,5 +1,8 @@
 <?php
 
+// Load autoloader first
+require_once '../vendor/autoload.php';
+
 require_once 'const.php';
 defineProtocol();
 defineSimpleConstants();
@@ -14,9 +17,6 @@ require_once 'bdd_const.php';
 
 // Ensure library/ is on include_path
 set_include_path(implode(PATH_SEPARATOR, array_merge([__DIR__ . '/../library'], [get_include_path()])));
-
-
-require_once '../vendor/autoload.php';
 
 
 // Create application, bootstrap, and run
