@@ -115,7 +115,14 @@ class Episciences_Notify_Hal
         ];
 
 
-        $coarNotificationManager = new COARNotificationManager($conn, $cn_logger);
+        $coarNotificationManager = new COARNotificationManager(
+            $conn,
+            $cn_logger,
+            $cn_journal->getUrl(),
+            INBOX_URL,
+            5,
+            EPISCIENCES_USER_AGENT
+        );
 
 
         // Sender Episciences
@@ -162,8 +169,13 @@ class Episciences_Notify_Hal
             NOTIFY_TARGET_HAL_URL,
             NOTIFY_TARGET_HAL_INBOX);
 
+        try {
+            $notification = $coarNotificationManager->createOutboundNotification($actor, $object, $context, $target);
+        } catch (COARNotificationException|Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return '';
+        }
 
-        $notification = $coarNotificationManager->createOutboundNotification($actor, $object, $context, $target);
         $coarNotificationManager->announceEndorsement($notification);
 
         return $notification->getId();
