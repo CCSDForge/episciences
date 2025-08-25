@@ -95,21 +95,6 @@ function defineJournalConstants(string $rvCode = null): void
     }
 
     if ($rvCode) {
-
-        // define application ur
-        if (!defined('APPLICATION_URL')) {
-            if (getenv('RVCODE')) {
-                define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
-            } elseif (isset($_SERVER['SERVER_NAME'])) {
-                define('APPLICATION_URL', sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')));
-            } elseif (isset($_ENV['MANAGER_APPLICATION_URL'])) {
-                define('APPLICATION_URL', sprintf('%s%s', rtrim($_ENV['MANAGER_APPLICATION_URL'], '/'), rtrim(PREFIX_URL, '/')));
-            } else {
-                // Fallback for CLI usage
-                define('APPLICATION_URL', sprintf("%s://%s.%s", SERVER_PROTOCOL, $rvCode, DOMAIN));
-            }
-        }
-
         // define application module
         switch ($rvCode) {
             case PORTAL:
@@ -122,6 +107,8 @@ function defineJournalConstants(string $rvCode = null): void
                 define('APPLICATION_MODULE', 'journal');
         }
 
+        // define application url
+        define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
 
         // define review path
         define('REVIEW_PATH', realpath(APPLICATION_PATH . '/../data/' . $rvCode) . '/');
