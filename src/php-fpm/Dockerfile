@@ -52,6 +52,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Add Xdebug configuration
 COPY ./src/php-fpm/xdebug.ini /usr/local/etc/php/conf.d/
 
+# Add upload configuration
+COPY ./src/php-fpm/upload.ini /usr/local/etc/php/conf.d/
+
 # disable opcache configuration
 #COPY ./src/php-fpm/opcache.ini /usr/local/etc/php/conf.d/
 
