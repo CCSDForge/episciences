@@ -41,7 +41,9 @@ class Episciences_Notify_Reader
                 $this->getConnectionParamsArray(),
                 $this->getLogger(),
                 INBOX_ID,
-                INBOX_URL
+                INBOX_URL,
+                10,
+                EPISCIENCES_USER_AGENT
             );
         } catch (Exception $e) {
             $this->coarNotificationManager = null;
