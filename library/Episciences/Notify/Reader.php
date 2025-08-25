@@ -2,8 +2,6 @@
 
 
 use cottagelabs\coarNotifications\COARNotificationManager;
-
-use Doctrine\Persistence\ObjectRepository;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
