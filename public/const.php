@@ -145,9 +145,9 @@ function defineJournalConstants(string $rvCode = null): void
         if (!defined('APPLICATION_URL')) {
             if (getenv('RVCODE')) {
                 define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
-            } elseif(isset($_SERVER['SERVER_NAME'])) {
+            } elseif (isset($_SERVER['SERVER_NAME'])) {
                 define('APPLICATION_URL', sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')));
-            } elseif(isset($_ENV['MANAGER_APPLICATION_URL'])){
+            } elseif (isset($_ENV['MANAGER_APPLICATION_URL'])) {
                 define('APPLICATION_URL', sprintf('%s%s', rtrim($_ENV['MANAGER_APPLICATION_URL'], '/'), rtrim(PREFIX_URL, '/')));
             } else {
                 // Fallback for CLI usage
@@ -394,5 +394,12 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_MAIL_PATH', '');
         define('ENV_DEV', '');
         define('MANAGER_APPLICATION_URL', '');
+        define('INBOX_ID', '');
+        define('INBOX_URL', '');
+        define('INBOX_DB_HOST', '');
+        define('INBOX_DB_DRIVER', '');
+        define('INBOX_DB_USER', '');
+        define('INBOX_DB_PASSWORD', '');
+        define('INBOX_DB_NAME', '');
     }
 }
