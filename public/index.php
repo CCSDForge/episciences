@@ -8,13 +8,12 @@ defineProtocol();
 defineSimpleConstants();
 defineSQLTableConstants();
 defineApplicationConstants();
-defineJournalConstants();
 defineVendorCssLibraries();
 defineVendorJsLibraries();
 
 
 require_once 'bdd_const.php';
-
+defineJournalConstants();
 // Ensure library/ is on include_path
 set_include_path(implode(PATH_SEPARATOR, array_merge([__DIR__ . '/../library'], [get_include_path()])));
 
