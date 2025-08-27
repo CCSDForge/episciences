@@ -389,26 +389,29 @@
         <xsl:variable name="desc_count" select="count(metadata/oai_dc:dc/dc:description)"/>
         
         <xsl:for-each select="metadata/oai_dc:dc/dc:description">
-            <xsl:choose>
-                <xsl:when test="$justify = 'true'">
-                    <p class="small force-word-wrap" style="text-align: justify">
-                        <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
-                        <xsl:if test="$desc_count > 1 and @xml:lang">
-                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
-                        </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.))" disable-output-escaping="yes"/>
-                    </p>
-                </xsl:when>
-                <xsl:otherwise>
-                    <p class="small force-word-wrap" style="">
-                        <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
-                        <xsl:if test="$desc_count > 1 and @xml:lang">
-                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
-                        </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.))" disable-output-escaping="yes"/>
-                    </p>
-                </xsl:otherwise>
-            </xsl:choose>
+            <!-- Skip descriptions with value 'International audience' -->
+            <xsl:if test="normalize-space(.) != 'International audience'">
+                <xsl:choose>
+                    <xsl:when test="$justify = 'true'">
+                        <p class="small force-word-wrap" style="text-align: justify">
+                            <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
+                            <xsl:if test="$desc_count > 1 and @xml:lang">
+                                <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            </xsl:if>
+                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        </p>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <p class="small force-word-wrap" style="">
+                            <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
+                            <xsl:if test="$desc_count > 1 and @xml:lang">
+                                <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            </xsl:if>
+                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        </p>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:if>
         </xsl:for-each>
     </xsl:template>
 

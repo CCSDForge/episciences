@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
 - #629 Malfunction when updating volume description
 - Fixed unescaped identifiers causing invalid XML in OpenAire export format
+- #600 Abstract ignores line breaks
+- #694 accents via LaTeX macros in abstracts aren't rendered
 
 
 ### Added
