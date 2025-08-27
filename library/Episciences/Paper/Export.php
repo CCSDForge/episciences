@@ -151,10 +151,10 @@ class Export
         $paperLanguage = (string)$paper->getMetadata('language');
 
         $paperLanguagelength = strlen($paperLanguage);
-        $docid = $paper->getDocid();
+        $docid = (string)$paper->getDocid();
         if ($paperLanguagelength > 3 || $paperLanguagelength < 2) {
             trigger_error(
-                sprintf("Paper # %s : %s is not a valid language", $docid, htmlspecialchars($paperLanguage)),
+                sprintf(PHP_EOL . "Paper # %s : {%s} is not a valid language. Invalid length %s", $docid, htmlspecialchars($paperLanguage), $paperLanguagelength),
                 E_USER_WARNING
             );
             $paperLanguage = $default;
@@ -162,7 +162,7 @@ class Export
 
         if ($paperLanguage && !Languages::exists($paperLanguage)) {
             trigger_error(
-                sprintf("Paper # %s : %s is not a valid language", $docid, htmlspecialchars($paperLanguage)),
+                sprintf(PHP_EOL . "Paper # %s : {%s} is not a valid language. Language not found", $docid, htmlspecialchars($paperLanguage)),
                 E_USER_WARNING
             );
             // Crossref schema 5.3.1 says language is optional
@@ -176,7 +176,7 @@ class Export
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
                 trigger_error(
-                    sprintf("Paper # %s: %s", $docid, $e->getMessage()),
+                    sprintf(PHP_EOL . "Paper # %s: %s", $docid, $e->getMessage()),
                     E_USER_WARNING
                 );
             }
@@ -190,7 +190,7 @@ class Export
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
                 trigger_error(
-                    sprintf("Paper # %s: - %s - %s", $docid, $paperLanguage, $e->getMessage()),
+                    sprintf(PHP_EOL . "Paper # %s: - %s - %s", $docid, $paperLanguage, $e->getMessage()),
                     E_USER_WARNING
                 );
             }
@@ -217,13 +217,14 @@ class Export
 
         $collection = [];
         $items = $paper->$method();
-
+        $docid = (string)$paper->getDocid();
         foreach ($items as $language => $content) {
 
             // Validate or set default language
+
             if (!Languages::exists($language)) {
                 trigger_error(
-                    sprintf("Paper %s of # %s: %s is not a valid language", ucfirst($method), htmlspecialchars($content), htmlspecialchars($language)),
+                    sprintf("Paper %s of # %s: {%s} is not a valid language", ucfirst($method), $docid, htmlspecialchars($language)),
                     E_USER_WARNING
                 );
                 $language = $default; // invalid language, default to $default
@@ -232,7 +233,7 @@ class Export
 
             if ($strlenOfMetaLanguage > 3 || $strlenOfMetaLanguage < 2) {
                 trigger_error(
-                    sprintf("Paper %s of # %s: %s is not a valid language", ucfirst($method), htmlspecialchars($content), htmlspecialchars($language)),
+                    sprintf("Paper %s of # %s: {%s} is not a valid language. Invalid length: %s", ucfirst($method), $docid, htmlspecialchars($language), $strlenOfMetaLanguage),
                     E_USER_WARNING
                 );
                 $language = $default;
@@ -246,7 +247,7 @@ class Export
                 } catch (MissingResourceException $e) {
                     $language = $default; // If the language is still invalid, set to $default
                     trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
+                        sprintf("Paper %s of # %s: %s", ucfirst($method), $docid, $e->getMessage()),
                         E_USER_WARNING
                     );
                 }
@@ -258,7 +259,7 @@ class Export
                 } catch (MissingResourceException $e) {
                     $language = $default; // If the language is still invalid, set to $default
                     trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
+                        sprintf("Paper %s of # %s: %s", ucfirst($method), $docid, $e->getMessage()),
                         E_USER_WARNING
                     );
                 }

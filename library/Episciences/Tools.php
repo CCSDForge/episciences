@@ -77,6 +77,8 @@ class Episciences_Tools
         //caron/háček ("v") over the letter
         "\\v{s}" => 'š',
         "\\v s" => 'š',
+        "\\v{r}" => 'ř',
+        "\\v r" => 'ř',
         // git #270 : (circumflex)
         '\\^a' => 'â',
 
@@ -119,6 +121,15 @@ class Episciences_Tools
         //acute accent
         "\\'{o}" => 'ó',
         "\\'o" => 'ó',
+        // c with acute accent (Polish)
+        "\\'{c}" => 'ć',
+        "\\'c" => 'ć',
+        // n with acute accent (Polish)
+        "\\'{n}" => 'ń',
+        "\\'n" => 'ń',
+        // y with acute accent (Czech/Slovak)
+        "\\'{y}" => 'ý',
+        "\\'y" => 'ý',
         //circumflex
         "\\^{o}" => 'ô',
         "\\^o" => 'ô',
@@ -906,10 +917,44 @@ class Episciences_Tools
         return trim($name);
     }
 
-    public static function decodeLatex($string)
+    public static function decodeLatex($string, $preserveLineBreaks = false)
     {
-        //$string = Ccsd_Tools::decodeLatex($string);
-        return str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
+        $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
+        
+        if ($preserveLineBreaks) {
+            // First handle double line breaks (clear paragraph breaks)
+            $result = preg_replace('/\n\s*\n/', '<br /><br />', $result);
+            
+            // Then handle single line breaks more intelligently:
+            // Convert single line breaks to <br> EXCEPT when they appear to be text wrapping
+            
+            // Text wrapping patterns (convert to spaces):
+            // 1. Line breaks after short words (articles, prepositions, conjunctions)
+            $result = preg_replace('/(\b\w{1,3})\s*\n/', '$1 ', $result);
+            // 2. Line breaks in the middle of sentences (not after punctuation)
+            $result = preg_replace('/([^.!?:;])\s*\n(?!\s*[-*•])/', '$1 ', $result);
+            
+            // Convert remaining single line breaks to <br> (intentional paragraph breaks)
+            $result = preg_replace('/\n/', '<br />', $result);
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Check if a language code represents a right-to-left language
+     *
+     * @param string|null $langCode Language code (e.g., 'ar', 'he', 'fa')
+     * @return bool True if the language is RTL, false otherwise
+     */
+    public static function isRtlLanguage(?string $langCode): bool
+    {
+        if (empty($langCode)) {
+            return false;
+        }
+
+        $rtlLanguages = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv', 'ku', 'yi', 'arc'];
+        return in_array(strtolower(trim($langCode)), $rtlLanguages, true);
     }
 
     // check if an url begins with http:// or https://. if not, add http at the beginning of the string.

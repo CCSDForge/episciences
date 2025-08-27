@@ -491,4 +491,276 @@ class ToolsTest extends TestCase
         $this->assertSame('e', Episciences_Tools::replaceAccents('e' . "\u{0302}")); // e + combining circumflex
     }
 
+    /**
+     * Test decodeLatex function without line break preservation (default behavior)
+     */
+    public function testDecodeLatexWithoutLineBreaks(): void
+    {
+        // Test basic LaTeX character replacement
+        $input = "Test with \\c{c} and \\k{a} characters.";
+        $expected = "Test with ç and ą characters.";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input));
+        
+        // Test with line breaks - should remain unchanged (no nl2br conversion)
+        $input = "Line 1\nLine 2\nLine 3";
+        $expected = "Line 1\nLine 2\nLine 3";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input));
+        
+        // Test explicit false parameter
+        $input = "Test \\l{} with\nnew lines";
+        $expected = "Test ł with\nnew lines";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, false));
+        
+        // Test empty string
+        $this->assertSame('', Episciences_Tools::decodeLatex(''));
+        $this->assertSame('', Episciences_Tools::decodeLatex('', false));
+    }
+
+    /**
+     * Test decodeLatex function with line break preservation
+     */
+    public function testDecodeLatexWithLineBreaks(): void
+    {
+        // Test text wrapping (line breaks after common words) - should be converted to spaces
+        $input = "We incorporate strong negation in the theory of\ncomputable functionals and\ndefining simultaneously strong negation";
+        $expected = "We incorporate strong negation in the theory of computable functionals and defining simultaneously strong negation";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test intentional line breaks (after sentence endings) - should be converted to <br>
+        $input = "First sentence.\nSecond sentence.\nThird sentence.";
+        $expected = "First sentence.<br />Second sentence.<br />Third sentence.";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test double line breaks (paragraph breaks) - should be converted to <br><br>
+        $input = "Paragraph 1\n\nParagraph 2";
+        $expected = "Paragraph 1<br /><br />Paragraph 2";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test bullet points - should preserve line breaks before bullets, but merge text without punctuation
+        $input = "Introduction.\n- First point.\n- Second point.\nConclusion.";
+        $expected = "Introduction.<br />- First point.<br />- Second point.<br />Conclusion.";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test mixed wrapping and intentional breaks
+        $input = "Text with\nwrapping in middle.\n\nNew paragraph with\nmore wrapping.";
+        $expected = "Text with wrapping in middle.<br /><br />New paragraph with more wrapping.";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+    }
+
+    /**
+     * Test decodeLatex with paragraph-like structures (double line breaks)
+     */
+    public function testDecodeLatexWithParagraphs(): void
+    {
+        // Test abstract-like content with double line breaks
+        $input = "We pose the fine-grained hardness hypothesis that the textbook algorithm for the NFA Acceptance problem is optimal up to subpolynomial factors.\n\nThis study underscores how the choice of workflow is never neutral: it profoundly shapes the quality.";
+        $expected = "We pose the fine-grained hardness hypothesis that the textbook algorithm for the NFA Acceptance problem is optimal up to subpolynomial factors.<br /><br />This study underscores how the choice of workflow is never neutral: it profoundly shapes the quality.";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test multiple paragraphs
+        $input = "First paragraph.\n\nSecond paragraph with more content.\n\nThird paragraph.";
+        $expected = "First paragraph.<br /><br />Second paragraph with more content.<br /><br />Third paragraph.";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+    }
+
+    /**
+     * Test decodeLatex combining LaTeX decoding and line break preservation
+     */
+    public function testDecodeLatexCombined(): void
+    {
+        // Test realistic academic abstract with LaTeX and line breaks
+        $input = "This article explores the Music Encoding Initiative (MEI) by examining \\c{c}ommonly used workflows.\n\nSince its creation to fill the absence of a standard for encoding musical works, MEI has evolved into a powerful framework capable of representing not only Western common music notation but also specialised systems such as mensural and neumatic notations.\n\nThe article emphasises that adopting MEI is not simply a technical choice but one that entails significant human considerations.";
+        
+        $expected = "This article explores the Music Encoding Initiative (MEI) by examining çommonly used workflows.<br /><br />Since its creation to fill the absence of a standard for encoding musical works, MEI has evolved into a powerful framework capable of representing not only Western common music notation but also specialised systems such as mensural and neumatic notations.<br /><br />The article emphasises that adopting MEI is not simply a technical choice but one that entails significant human considerations.";
+        
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test with multiple LaTeX characters and text wrapping
+        $input = "Authors: Fran\\c{c}ois M\\\"uller and Tom Smith\\k{a}\nwith line wrapping\n\nAbstract follows here.";
+        $expected = "Authors: François Müller and Tom Smithą with line wrapping<br /><br />Abstract follows here.";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+    }
+
+    /**
+     * Test decodeLatex edge cases
+     */
+    public function testDecodeLatexEdgeCases(): void
+    {
+        // Test multiple consecutive line breaks (treated as one big paragraph break)
+        $input = "\n\n\n\n";
+        $expected = "<br /><br />";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test only LaTeX characters (no line breaks)
+        $input = "\\c{c}\\k{a}\\l{}";
+        $expected = "çął";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test string that starts/ends with single line breaks (treated as intentional)
+        $input = "\nMiddle content\n";
+        $expected = "<br />Middle content ";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test single line break at end (text wrapping)
+        $input = "Content\n";
+        $expected = "Content ";
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, true));
+        
+        // Test null-like values
+        $this->assertSame('', Episciences_Tools::decodeLatex('', true));
+        
+        // Test line break without preserveLineBreaks (ensure backward compatibility)
+        $input = "Line 1\nLine 2";
+        $expected = "Line 1\nLine 2"; // Should remain unchanged
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input));
+        $this->assertSame($expected, Episciences_Tools::decodeLatex($input, false));
+    }
+
+    /**
+     * Test decodeLatex with realistic academic content (similar to Zenodo example)
+     */
+    public function testDecodeLatexRealWorldContent(): void
+    {
+        // Test content similar to the user's example with proper paragraph breaks and bullet points
+        $input = "We pose the fine-grained hardness hypothesis that the textbook algorithm for the NFA Acceptance problem is optimal.\n\n- It gives a tight lower bound for Context-Free Language Reachability.\n- It gives a tight \$(n+nm^{1/3})^{1-o(1)}\$ lower bound for the Word Break problem.\n- It implies the popular OMv hypothesis.\n\nThus, a proof of the NFA Acceptance hypothesis would resolve several interesting barriers.";
+        
+        $expected = "We pose the fine-grained hardness hypothesis that the textbook algorithm for the NFA Acceptance problem is optimal.<br /><br />- It gives a tight lower bound for Context-Free Language Reachability.<br />- It gives a tight \$(n+nm^{1/3})^{1-o(1)}\$ lower bound for the Word Break problem.<br />- It implies the popular OMv hypothesis.<br /><br />Thus, a proof of the NFA Acceptance hypothesis would resolve several interesting barriers.";
+        
+        $result = Episciences_Tools::decodeLatex($input, true);
+        $this->assertSame($expected, $result);
+        
+        // Verify that without line break preservation, line breaks remain unchanged
+        $resultNoLineBreaks = Episciences_Tools::decodeLatex($input, false);
+        $this->assertSame($input, $resultNoLineBreaks);
+    }
+
+    /**
+     * Test decodeLatex with wrapped text (like user's problematic example)
+     */
+    public function testDecodeLatexWithWrappedText(): void
+    {
+        // Test content with text wrapping that should NOT create <br> tags
+        $input = "We incorporate strong negation in the theory of computable functionals TCF, a\ncommon extension of Plotkin's PCF and Gödel's system \$\\mathbf{T}\$, by\ndefining simultaneously strong negation \$A^{\\mathbf{N}}\$ of a formula \$A\$ and\nstrong negation \$P^{\\mathbf{N}}\$ of a predicate \$P\$ in TCF.";
+        
+        $expected = "We incorporate strong negation in the theory of computable functionals TCF, a common extension of Plotkin's PCF and Gödel's system \$\\mathbf{T}\$, by defining simultaneously strong negation \$A^{\\mathbf{N}}\$ of a formula \$A\$ and strong negation \$P^{\\mathbf{N}}\$ of a predicate \$P\$ in TCF.";
+        
+        $result = Episciences_Tools::decodeLatex($input, true);
+        $this->assertSame($expected, $result);
+        
+        // Test with actual paragraph breaks in the same content
+        $inputWithParagraphs = "We incorporate strong negation in the theory of computable functionals TCF, a\ncommon extension of Plotkin's PCF and Gödel's system \$\\mathbf{T}\$, by\ndefining simultaneously strong negation \$A^{\\mathbf{N}}\$ of a formula \$A\$ and\nstrong negation \$P^{\\mathbf{N}}\$ of a predicate \$P\$ in TCF.\n\nWe prove appropriate versions of the Ex falso quodlibet and\nof double negation elimination for strong negation in TCF.";
+        
+        $expectedWithParagraphs = "We incorporate strong negation in the theory of computable functionals TCF, a common extension of Plotkin's PCF and Gödel's system \$\\mathbf{T}\$, by defining simultaneously strong negation \$A^{\\mathbf{N}}\$ of a formula \$A\$ and strong negation \$P^{\\mathbf{N}}\$ of a predicate \$P\$ in TCF.<br /><br />We prove appropriate versions of the Ex falso quodlibet and of double negation elimination for strong negation in TCF.";
+        
+        $resultWithParagraphs = Episciences_Tools::decodeLatex($inputWithParagraphs, true);
+        $this->assertSame($expectedWithParagraphs, $resultWithParagraphs);
+    }
+
+    /**
+     * Test isRtlLanguage function with known RTL languages
+     */
+    public function testIsRtlLanguageWithRtlCodes(): void
+    {
+        // Test all supported RTL language codes
+        $rtlLanguages = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv', 'ku', 'yi', 'arc'];
+        
+        foreach ($rtlLanguages as $langCode) {
+            $this->assertTrue(
+                Episciences_Tools::isRtlLanguage($langCode),
+                "Language code '$langCode' should be recognized as RTL"
+            );
+        }
+    }
+
+    /**
+     * Test isRtlLanguage function with case variations
+     */
+    public function testIsRtlLanguageWithCaseVariations(): void
+    {
+        // Test uppercase
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('AR'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('HE'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('FA'));
+        
+        // Test mixed case
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('Ar'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('He'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('Fa'));
+        
+        // Test with whitespace
+        $this->assertTrue(Episciences_Tools::isRtlLanguage(' ar '));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('  he  '));
+    }
+
+    /**
+     * Test isRtlLanguage function with non-RTL languages
+     */
+    public function testIsRtlLanguageWithLtrCodes(): void
+    {
+        // Test common LTR language codes
+        $ltrLanguages = ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'];
+        
+        foreach ($ltrLanguages as $langCode) {
+            $this->assertFalse(
+                Episciences_Tools::isRtlLanguage($langCode),
+                "Language code '$langCode' should NOT be recognized as RTL"
+            );
+        }
+    }
+
+    /**
+     * Test isRtlLanguage function with edge cases
+     */
+    public function testIsRtlLanguageEdgeCases(): void
+    {
+        // Test null
+        $this->assertFalse(Episciences_Tools::isRtlLanguage(null));
+        
+        // Test empty string
+        $this->assertFalse(Episciences_Tools::isRtlLanguage(''));
+        
+        // Test whitespace only
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('   '));
+        
+        // Test invalid/unknown codes
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('xx'));
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('invalid'));
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('123'));
+        
+        // Test very long strings (should still work due to trim)
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('    ar    '));
+    }
+
+    /**
+     * Test isRtlLanguage function with specific real-world language codes
+     */
+    public function testIsRtlLanguageRealWorldCases(): void
+    {
+        // Arabic variants
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ar')); // Modern Standard Arabic
+        
+        // Hebrew
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('he')); // Modern Hebrew
+        
+        // Persian/Farsi variants  
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('fa')); // Persian
+        
+        // Urdu
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ur')); // Urdu
+        
+        // Less common RTL languages
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ps')); // Pashto
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('syr')); // Syriac
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('dv')); // Divehi
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ku')); // Kurdish
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('yi')); // Yiddish
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('arc')); // Aramaic
+        
+        // Ensure common LTR languages are not detected as RTL
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('en')); // English
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('fr')); // French
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('de')); // German
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('es')); // Spanish
+    }
+
 }
