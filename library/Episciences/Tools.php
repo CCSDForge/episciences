@@ -941,6 +941,22 @@ class Episciences_Tools
         return $result;
     }
 
+    /**
+     * Check if a language code represents a right-to-left language
+     *
+     * @param string|null $langCode Language code (e.g., 'ar', 'he', 'fa')
+     * @return bool True if the language is RTL, false otherwise
+     */
+    public static function isRtlLanguage(?string $langCode): bool
+    {
+        if (empty($langCode)) {
+            return false;
+        }
+
+        $rtlLanguages = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv', 'ku', 'yi', 'arc'];
+        return in_array(strtolower(trim($langCode)), $rtlLanguages, true);
+    }
+
     // check if an url begins with http:// or https://. if not, add http at the beginning of the string.
     public static function checkUrl($url): string
     {

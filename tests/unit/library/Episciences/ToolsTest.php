@@ -656,4 +656,111 @@ class ToolsTest extends TestCase
         $this->assertSame($expectedWithParagraphs, $resultWithParagraphs);
     }
 
+    /**
+     * Test isRtlLanguage function with known RTL languages
+     */
+    public function testIsRtlLanguageWithRtlCodes(): void
+    {
+        // Test all supported RTL language codes
+        $rtlLanguages = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv', 'ku', 'yi', 'arc'];
+        
+        foreach ($rtlLanguages as $langCode) {
+            $this->assertTrue(
+                Episciences_Tools::isRtlLanguage($langCode),
+                "Language code '$langCode' should be recognized as RTL"
+            );
+        }
+    }
+
+    /**
+     * Test isRtlLanguage function with case variations
+     */
+    public function testIsRtlLanguageWithCaseVariations(): void
+    {
+        // Test uppercase
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('AR'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('HE'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('FA'));
+        
+        // Test mixed case
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('Ar'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('He'));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('Fa'));
+        
+        // Test with whitespace
+        $this->assertTrue(Episciences_Tools::isRtlLanguage(' ar '));
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('  he  '));
+    }
+
+    /**
+     * Test isRtlLanguage function with non-RTL languages
+     */
+    public function testIsRtlLanguageWithLtrCodes(): void
+    {
+        // Test common LTR language codes
+        $ltrLanguages = ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'];
+        
+        foreach ($ltrLanguages as $langCode) {
+            $this->assertFalse(
+                Episciences_Tools::isRtlLanguage($langCode),
+                "Language code '$langCode' should NOT be recognized as RTL"
+            );
+        }
+    }
+
+    /**
+     * Test isRtlLanguage function with edge cases
+     */
+    public function testIsRtlLanguageEdgeCases(): void
+    {
+        // Test null
+        $this->assertFalse(Episciences_Tools::isRtlLanguage(null));
+        
+        // Test empty string
+        $this->assertFalse(Episciences_Tools::isRtlLanguage(''));
+        
+        // Test whitespace only
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('   '));
+        
+        // Test invalid/unknown codes
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('xx'));
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('invalid'));
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('123'));
+        
+        // Test very long strings (should still work due to trim)
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('    ar    '));
+    }
+
+    /**
+     * Test isRtlLanguage function with specific real-world language codes
+     */
+    public function testIsRtlLanguageRealWorldCases(): void
+    {
+        // Arabic variants
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ar')); // Modern Standard Arabic
+        
+        // Hebrew
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('he')); // Modern Hebrew
+        
+        // Persian/Farsi variants  
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('fa')); // Persian
+        
+        // Urdu
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ur')); // Urdu
+        
+        // Less common RTL languages
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ps')); // Pashto
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('syr')); // Syriac
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('dv')); // Divehi
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('ku')); // Kurdish
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('yi')); // Yiddish
+        $this->assertTrue(Episciences_Tools::isRtlLanguage('arc')); // Aramaic
+        
+        // Ensure common LTR languages are not detected as RTL
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('en')); // English
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('fr')); // French
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('de')); // German
+        $this->assertFalse(Episciences_Tools::isRtlLanguage('es')); // Spanish
+    }
+
 }
