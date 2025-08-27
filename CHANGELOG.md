@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #702 Inclusion of arxiv article version invalidates document identifier
 - When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
 - #629 Malfunction when updating volume description
+- Fixed unescaped identifiers causing invalid XML in OpenAire export format
+- #600 Abstract ignores line breaks
+- #694 accents via LaTeX macros in abstracts aren't rendered
 
 
 ### Added
@@ -35,10 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configured Github actions for CI (PHP+JS tests)
 - Updated Renovate and Dependabot tests to target staging branch
 - New Makefile with reorganised commands + new commands
+- Document view:
+    - Now displaying the abstract in all languages we have, prefixed with the language code
+    - Now displaying keywords prefixed with their language code
 
 ### Changed
 - Refactored some Javascript with more modern approach
 - Editor Comments: in case conflict of interests is enabled in the journal, editors will receive the comments even if they have not yet answered to COI. If they declare a COI, they will be unassigned and will stop receiving editors comments
+- Crossref title export: in case of multiple titles, the priority is given to the title in the language of the document or fallback to the fist title if no language
 
 v1.0.51 - 2025-04-07
 ### Changed

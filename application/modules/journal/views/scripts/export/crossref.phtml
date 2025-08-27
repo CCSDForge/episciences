@@ -56,6 +56,7 @@ $issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences
 $dateTime = new DateTime('now');
 $timestamp = $dateTime->format('YmdHisv');
 $paperLanguage = $this->paperLanguage;
+$paperLanguageRaw = $this->paperLanguage;
 ?>
 <doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://www.crossref.org/schema/5.3.1 https://www.crossref.org/schemas/crossref5.3.1.xsd"
@@ -114,24 +115,32 @@ $paperLanguage = $this->paperLanguage;
         ?>
         <journal_article publication_type="full_text"<?= $paperLanguage; ?>>
             <titles>
+                <?php $title = 'undefined'; ?>
                 <?php foreach ($titles as $titleCount => $titleArray) : ?>
                     <?php
-                    $title = array_values($titleArray);
-                    $title = $this->escape($title[0])
+                    if (array_key_exists($paperLanguageRaw, $titleArray) && !empty($titleArray[$paperLanguageRaw])) {
+                        $title = $titleArray[$paperLanguageRaw]; // get title in the language of paper
+                    }
                     ?>
-                    <?php if ($titleCount === 0): ?>
-                        <title><?= $title ?></title>
-                    <?php endif; ?>
                 <?php endforeach; ?>
+                <?php
+                if ($title === 'undefined') {
+                    // unable to find title in the language of paper, get the first title and quit
+                    foreach ($titles as $titleCount => $titleArray) {
+                        $title = array_values($titleArray);
+                        $title = $title[0];
+                        break;
+                    }
+                }
+                ?>
+                <title><?= $this->escape($title) ?></title>
             </titles>
 
 
             <?php
             if (is_array($authors)) : ?>
                 <contributors>
-                    <?php foreach ($authors
-
-                    as $order => $creatorName) : ?>
+                    <?php foreach ($authors as $order => $creatorName) : ?>
                     <?php
                     $givenName = '';
                     $familyName = '';
@@ -200,6 +209,7 @@ $paperLanguage = $this->paperLanguage;
                         }
                         $abstract = array_values($abstractArray);
                         $abstract = $this->escape($abstract[0]);
+                        $abstract = trim($abstract);
 
 
                         echo '<jats:p' . $abstractLang . '>';

@@ -122,6 +122,9 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             if (!empty($responseFromOai[self::META_DESCRIPTION])) {
                 $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'][self::META_DESCRIPTION] = $responseFromOai[self::META_DESCRIPTION];
             }
+            if (!empty($responseFromOai['title'])) {
+                $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body']['title'] = $responseFromOai['title'];
+            }
         }
 
         if (isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
@@ -562,33 +565,21 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             }
         }
 
-
         // Extract titles
         $titles = self::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
-
-        // Extract subjects
-        $subjects = self::extractMultilingualContent($metadata, '//datacite:subjects/datacite:subject', $language);
 
         // Extract descriptions
         $descriptions = self::extractDescriptions($metadata, $language);
 
-            // Build additional data
-        $data['title'] = !empty($titles) ? $titles[0]['value'] : '';
+        // Build additional data
+        $data['title'] = $titles;
         $data['titles'] = $titles;
-        $data['subject'] = $subjects;
         $data[self::META_DESCRIPTION] = $descriptions;
         $data['language'] = $language;
 
         // Prepare body data for Dublin Core conversion
-        $body = $data;
-
-        // Override language field to ensure only 2-letter code is used
-        // Remove any existing language arrays and set single language code
-        unset($body['language']);
-        $body['language'] = (string)$language; // Force as single-element array
-
         $xmlElements = [];
-        $xmlElements['body'] = $body;
+        $xmlElements['body'] = $data;
 
 
 
