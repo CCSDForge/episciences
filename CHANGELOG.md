@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactored some Javascript with more modern approach
 - Editor Comments: in case conflict of interests is enabled in the journal, editors will receive the comments even if they have not yet answered to COI. If they declare a COI, they will be unassigned and will stop receiving editors comments
+- Crossref title export: in case of multiple titles, the priority is given to the title in the language of the document or fallback to the fist title if no language
 
 v1.0.51 - 2025-04-07
 ### Changed
