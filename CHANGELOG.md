@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #702 Inclusion of arxiv article version invalidates document identifier
 - When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
 - #629 Malfunction when updating volume description
+- Fixed unescaped identifiers causing invalid XML in OpenAire export format
 
 
 ### Added
