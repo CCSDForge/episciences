@@ -19,9 +19,9 @@
 - `*Controller` classes - MVC controllers
 
 ## Testing Commands
-- `phpunit` - PHP tests
+- `make test-php` - PHP tests
 - `phpstan` - Static analysis
-- `yarn test` - JavaScript tests (Jest)
+- `make test-js` - JavaScript tests (Jest)
 - `yarn format` - Format JS with Prettier
 
 ## PhpUnit
